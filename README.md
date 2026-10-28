@@ -12,6 +12,9 @@ npm run build      # statyczna wersja w dist/
 npm run art        # przegenerowanie grafik do public/assets/
 ```
 
+Wersja online: https://dfgrzyska.github.io/pr0ject-jpn/ — budowana automatycznie przy każdym pushu na `main`
+(`.github/workflows/pages.yml`; w Settings → Pages źródło musi być ustawione na „GitHub Actions”).
+
 Parametry do testów w adresie: `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
 `?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5).
 
