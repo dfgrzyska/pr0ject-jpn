@@ -59,6 +59,7 @@ export class Stage extends Phaser.Scene {
     this.score = new Score(step);
     this.waves = new Waves(stage1.waves);
     this.music = getMusic(this);
+    this.sfx = this.music.sfx;
     this.hud = new Hud(this);
 
     // debug: ?t=120 starts at 120 s, ?god makes the ship invulnerable, ?weapon=laser&power=5
@@ -103,7 +104,7 @@ export class Stage extends Phaser.Scene {
       '',
       [touch ? 'PRZESUWAJ PALCEM' : 'STRZAŁKI / WASD - RUCH', 0xb0aec0],
       [touch ? 'BOMBA - PRZYCISK W ROGU' : 'Z - BOMBA   ESC - PAUZA', 0xb0aec0],
-      [touch ? 'MUZYKA - GŁOŚNIK U GÓRY' : 'M - MUZYKA', 0xb0aec0],
+      [touch ? 'DŹWIĘK - GŁOŚNIK U GÓRY' : 'M - DŹWIĘK', 0xb0aec0],
       '',
       [touch ? 'DOTKNIJ, ABY ZACZĄĆ' : 'ENTER - START', 0xffe080, 1, true],
     ]);

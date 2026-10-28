@@ -26,6 +26,7 @@ export class Fx {
   explode(x, y, size, u = null) {
     const pool = u === null ? this.air : this.ground;
     const e = pool.spawn(`expl_${size}_0`, x, y, { u, vx: 0, vy: 0 });
+    this.scene.sfx.explode(size);
     e.play(`expl_${size}`);
     e.once('animationcomplete', () => pool.kill(e));
     return e;

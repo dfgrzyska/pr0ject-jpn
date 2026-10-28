@@ -146,6 +146,7 @@ export class Player {
     const { x, y } = this;
     const lv = this.level - 1;
     this.volleys++;
+    this.scene.sfx.shot(this.weapon === 'homing' ? 'basic' : this.weapon);
     switch (this.weapon) {
       case 'basic': {
         const n = 1 + this.level;
@@ -186,6 +187,7 @@ export class Player {
   launchOrbs() {
     const { speed, damage, orbs, life } = WEAPONS.homing;
     const n = orbs[this.level - 1];
+    this.scene.sfx.shot('homing');
     for (let i = 0; i < n; i++) {
       const side = i % 2 ? 1 : -1;
       const ang = -Math.PI / 2 + side * (0.5 + Math.floor(i / 2) * 0.35);

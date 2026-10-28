@@ -1,6 +1,7 @@
 // Step sequencer for the procedural soundtrack. Notes are scheduled slightly ahead on the
 // AudioContext clock (lookahead scheduler), so timing stays tight regardless of frame rate.
 import { PERCUSSION, SONGS, parseSong } from './score.js';
+import { Sfx } from './Sfx.js';
 import { Synth } from './synth.js';
 
 const VOLUME = 0.6;
@@ -18,15 +19,27 @@ function loadEnabled() {
 export class Music {
   constructor(ctx, destination) {
     this.ctx = ctx;
+    this.enabled = loadEnabled();
+    // master = the speaker toggle (music + effects); out = music only (ducked on pause)
+    this.master = ctx.createGain();
+    this.master.gain.value = this.enabled ? 1 : 0;
+    // safety limiter: music peaks + a big explosion must never clip
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -4;
+    limiter.knee.value = 2;
+    limiter.ratio.value = 16;
+    limiter.attack.value = 0.002;
+    limiter.release.value = 0.12;
+    this.master.connect(limiter).connect(destination);
     this.out = ctx.createGain();
+    this.out.gain.value = VOLUME;
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -16;
     comp.ratio.value = 3;
-    this.out.connect(comp).connect(destination);
+    this.out.connect(comp).connect(this.master);
     this.synth = new Synth(ctx, this.out);
+    this.sfx = new Sfx(ctx, this.master);
     this.songs = Object.fromEntries(Object.entries(SONGS).map(([k, v]) => [k, parseSong(k, v)]));
-    this.enabled = loadEnabled();
-    this.out.gain.value = this.enabled ? VOLUME : 0;
     this.current = null;
     this.pending = null;
     this.bar = 0; // global bar counter (keeps stage songs in step with each other)
@@ -72,7 +85,7 @@ export class Music {
 
   setPaused(p) {
     this.paused = p;
-    this.out.gain.setTargetAtTime(p || !this.enabled ? 0 : VOLUME, this.ctx.currentTime, 0.04);
+    this.out.gain.setTargetAtTime(p ? 0 : VOLUME, this.ctx.currentTime, 0.04);
     if (!p) this.next = this.ctx.currentTime + 0.06;
   }
 
@@ -83,7 +96,7 @@ export class Music {
     } catch {
       /* ignore */
     }
-    this.out.gain.setTargetAtTime(this.enabled && !this.paused ? VOLUME : 0, this.ctx.currentTime, 0.05);
+    this.master.gain.setTargetAtTime(this.enabled ? 1 : 0, this.ctx.currentTime, 0.05);
     return this.enabled;
   }
 
@@ -129,6 +142,7 @@ export class Music {
 }
 
 const SILENT = {
+  sfx: { shot() {}, explode() {} },
   play() {},
   stop() {},
   unlock() {},
@@ -141,7 +155,7 @@ const SILENT = {
 
 let instance = null;
 
-/** One shared music player for the whole game (survives scene restarts). */
+/** One shared audio player (music + effects) for the whole game; survives scene restarts. */
 export function getMusic(scene) {
   if (instance) return instance;
   const sound = scene.sound;
