@@ -1,5 +1,6 @@
 // 5x7 pixel font with Polish diacritics, rendered white with a dark outline.
-// Cell: 7x12 (1px outline, 2 accent rows above, 1 ogonek row below).
+// Cell: 7x13 (1px outline, accent rows above with a 1px gap, 1 ogonek row below),
+// cells separated by a 1px transparent gutter so GPUs that sample at texel edges never bleed in a neighbour.
 import { Raster } from '../lib/raster.mjs';
 
 const G = {
@@ -63,8 +64,8 @@ const G = {
   Ł: ['.#...', '.#...', '.#.#.', '.##..', '##...', '.#...', '.####'],
 };
 
-// Diacritics: base glyph + marks in the accent rows (-2,-1) or the ogonek row (7).
-const ACUTE = [[3, -2], [2, -1]];
+// Diacritics: base glyph + marks in the accent rows (-3,-2; row -1 stays empty) or the ogonek row (7).
+const ACUTE = [[3, -3], [2, -2]];
 const DIACRITICS = {
   Ą: ['A', [[4, 7], [3, 7]]],
   Ć: ['C', ACUTE],
@@ -73,10 +74,10 @@ const DIACRITICS = {
   Ó: ['O', ACUTE],
   Ś: ['S', ACUTE],
   Ź: ['Z', ACUTE],
-  Ż: ['Z', [[2, -2], [2, -1]]],
+  Ż: ['Z', [[2, -3], [2, -2]]],
 };
 
-export const FONT = { cellW: 7, cellH: 12, perRow: 16 };
+export const FONT = { cellW: 7, cellH: 13, gap: 1, perRow: 16 };
 
 export function buildFont() {
   const glyphs = [];
@@ -84,10 +85,12 @@ export function buildFont() {
   for (const [ch, [base, marks]] of Object.entries(DIACRITICS)) glyphs.push([ch, G[base], marks]);
   const chars = glyphs.map((g) => g[0]).join('');
   const rowsCount = Math.ceil(glyphs.length / FONT.perRow);
-  const img = new Raster(FONT.cellW * FONT.perRow, FONT.cellH * rowsCount);
+  const pitchX = FONT.cellW + FONT.gap;
+  const pitchY = FONT.cellH + FONT.gap;
+  const img = new Raster(pitchX * FONT.perRow - FONT.gap, pitchY * rowsCount - FONT.gap);
   glyphs.forEach(([, rows, marks], i) => {
-    const ox = (i % FONT.perRow) * FONT.cellW + 1;
-    const oy = Math.floor(i / FONT.perRow) * FONT.cellH + 3;
+    const ox = (i % FONT.perRow) * pitchX + 1;
+    const oy = Math.floor(i / FONT.perRow) * pitchY + 4;
     const on = new Set();
     rows.forEach((r, y) => [...r].forEach((c, x) => c === '#' && on.add(`${x},${y}`)));
     for (const [x, y] of marks) on.add(`${x},${y}`);

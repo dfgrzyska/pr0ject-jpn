@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import stage1 from '../data/stage1.json';
+import { getMusic } from '../audio/Music.js';
 import { DEPTH, PLAYER, SCORE, VIEW, WEAPONS } from '../config.js';
 import { Bullets } from '../game/Bullets.js';
 import { Enemies } from '../game/Enemies.js';
@@ -57,6 +58,7 @@ export class Stage extends Phaser.Scene {
         : SCORE.multiplierStep;
     this.score = new Score(step);
     this.waves = new Waves(stage1.waves);
+    this.music = getMusic(this);
     this.hud = new Hud(this);
 
     // debug: ?t=120 starts at 120 s, ?god makes the ship invulnerable, ?weapon=laser&power=5
@@ -66,7 +68,7 @@ export class Stage extends Phaser.Scene {
     if (WEAPONS[q.get('weapon')]) this.player.weapon = q.get('weapon');
     if (q.get('power')) this.player.level = Phaser.Math.Clamp(Number(q.get('power')), 1, PLAYER.maxPower);
 
-    this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,ESC,P,ENTER,SPACE');
+    this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,ESC,P,ENTER,SPACE');
     this.input.on('pointerdown', this.onPointerDown, this);
     this.input.on('pointermove', (p) => this.state === 'play' && !this.paused && this.player.dragMove(p));
     this.input.on('pointerup', (p) => this.player.endDrag(p));
@@ -79,7 +81,10 @@ export class Stage extends Phaser.Scene {
     });
 
     if (data.autostart) this.startGame();
-    else this.showTitle();
+    else {
+      this.showTitle();
+      this.music.play('title'); // audible once the browser allows audio (first tap / key)
+    }
   }
 
   // ---------------------------------------------------------------- flow
@@ -98,12 +103,15 @@ export class Stage extends Phaser.Scene {
       '',
       [touch ? 'PRZESUWAJ PALCEM' : 'STRZAŁKI / WASD - RUCH', 0xb0aec0],
       [touch ? 'BOMBA - PRZYCISK W ROGU' : 'Z - BOMBA   ESC - PAUZA', 0xb0aec0],
+      [touch ? 'MUZYKA - GŁOŚNIK U GÓRY' : 'M - MUZYKA', 0xb0aec0],
       '',
       [touch ? 'DOTKNIJ, ABY ZACZĄĆ' : 'ENTER - START', 0xffe080, 1, true],
     ]);
   }
 
   startGame() {
+    this.music.unlock();
+    this.music.play('intro', true);
     this.hud.closePanel();
     this.state = 'play';
     if (this.debugStart) {
@@ -121,6 +129,7 @@ export class Stage extends Phaser.Scene {
 
   gameOver() {
     this.state = 'over';
+    this.music.play('over', true);
     this.endTimer = 1.8;
     const hi = this.recordHi();
     this.time.delayedCall(1300, () =>
@@ -138,6 +147,7 @@ export class Stage extends Phaser.Scene {
 
   stageClear() {
     this.state = 'clear';
+    this.music.play('clear', true);
     this.clearT = 0;
     this.endTimer = 3;
     this.player.bombs = 1; // no bosses yet: the bomb refills at the end of the stage
@@ -173,6 +183,7 @@ export class Stage extends Phaser.Scene {
     if (this.state !== 'play') return;
     this.paused = !this.paused;
     this.player.drag = null;
+    this.music.setPaused(this.paused);
     if (this.paused) {
       const touch = this.sys.game.device.input.touch;
       this.hud.panel([['PAUZA', 0xffffff, 2], '', [touch ? 'DOTKNIJ, ABY WRÓCIĆ' : 'ESC - POWRÓT', 0xffe080, 1, true]]);
@@ -187,6 +198,11 @@ export class Stage extends Phaser.Scene {
 
   // ---------------------------------------------------------------- input
   onPointerDown(p) {
+    if (this.hud.hitSound(p)) {
+      this.music.unlock();
+      this.music.toggle();
+      return;
+    }
     if (this.state === 'title') return this.startGame();
     if (this.state === 'over' || this.state === 'clear') {
       if (this.endTimer <= 0) this.restart();
@@ -203,6 +219,7 @@ export class Stage extends Phaser.Scene {
     const confirm = down(k.ENTER) || down(k.SPACE);
     const bomb = down(k.Z);
     if (down(k.ESC) || down(k.P)) this.togglePause();
+    if (down(k.M)) this.music.toggle();
     if (this.state === 'title') {
       if (confirm || bomb) this.startGame();
     } else if (this.state === 'over' || this.state === 'clear') {
@@ -241,6 +258,7 @@ export class Stage extends Phaser.Scene {
         this.warned.add(hv);
         this.hud.show('UWAGA!', 'CIĘŻKI CEL', 2.6, true);
       }
+      this.music.play(this.stageSong(hv));
     }
     if (this.bombClear > 0) {
       this.bombClear -= dt;
@@ -260,6 +278,15 @@ export class Stage extends Phaser.Scene {
 
     if (playing && this.t >= this.stage.end && this.waves.done && (this.enemies.count() === 0 || this.t > this.stage.end + 12))
       this.stageClear();
+  }
+
+  /** Music follows the stage: calm town, shrine build-up, full drive on the ridge, miniboss, summit. */
+  stageSong(heavyIncoming) {
+    if (heavyIncoming || this.enemies.heavy) return 'boss';
+    if (this.t < 24) return 'intro';
+    if (this.t < 47) return 'build';
+    if (this.t >= 196) return 'final';
+    return 'full';
   }
 
   spawnPickup(color, x, y, vy) {

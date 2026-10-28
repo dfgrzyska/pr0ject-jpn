@@ -61,7 +61,7 @@ export class Fx {
 
   text(x, y, str, life = 1.2, tint = 0xffffff) {
     const t = this.scene.add.bitmapText(Math.round(x), Math.round(y), FONT, str).setOrigin(0.5).setDepth(DEPTH.fx + 2);
-    t.setLetterSpacing(-1).setTint(tint);
+    t.setLetterSpacing(-1).setTint(tint).setVertexRoundMode('full');
     this.texts.push({ t, life, max: life });
   }
 

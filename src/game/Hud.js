@@ -2,6 +2,8 @@ import { DEPTH, PLAYER, SCORE, VIEW } from '../config.js';
 import { FONT } from '../scenes/Boot.js';
 
 const W = VIEW.width;
+// Line pitch for panels: 7px glyphs + raised Polish accents need 14px to never touch the line above.
+const LINE = 14;
 const WEAPON_ICON = { basic: 'wpn_basic', spread: 'wpn_spread', laser: 'wpn_laser', homing: 'wpn_homing' };
 
 export class Hud {
@@ -18,6 +20,7 @@ export class Hud {
     for (let i = 0; i < PLAYER.maxPower; i++) this.pips.push(scene.add.image(15 + i * 5, 0, 'sprites', 'pip_off').setDepth(d));
     this.bombBtn = scene.add.image(0, 0, 'sprites', 'btn_bomb').setDepth(d);
     this.pauseBtn = scene.add.image(W - 10, 10, 'sprites', 'btn_pause').setDepth(d).setAlpha(0.7);
+    this.soundBtn = scene.add.image(W - 28, 10, 'sprites', 'btn_sound_on').setDepth(d).setAlpha(0.7);
     this.boss = scene.add.graphics().setDepth(d);
     this.banner = this.text(W / 2, 0, '', 0.5).setDepth(d + 1);
     this.bannerSub = this.text(W / 2, 0, '', 0.5).setDepth(d + 1);
@@ -29,7 +32,13 @@ export class Hud {
   }
 
   text(x, y, str, origin = 0.5) {
-    return this.scene.add.bitmapText(x, y, FONT, str).setOrigin(origin, origin === 0 ? 0 : 0.5).setLetterSpacing(-1);
+    // 'full' snaps glyph quads to whole pixels even when centred on a half pixel or scaled x2,
+    // otherwise some GPUs (iPhone) sample the font texture at texel edges and mangle thin accents
+    return this.scene.add
+      .bitmapText(x, y, FONT, str)
+      .setOrigin(origin, origin === 0 ? 0 : 0.5)
+      .setLetterSpacing(-1)
+      .setVertexRoundMode('full');
   }
 
   layout(H) {
@@ -38,11 +47,15 @@ export class Hud {
     this.pips.forEach((p, i) => p.setPosition(18 + i * 5, H - 8));
     this.bombBtn.setPosition(W - 18, H - 18);
     this.banner.y = Math.round(H * 0.36);
-    this.bannerSub.y = Math.round(H * 0.36) + 12;
+    this.bannerSub.y = Math.round(H * 0.36) + LINE;
   }
 
   hitPause(p) {
     return Math.hypot(p.x - this.pauseBtn.x, p.y - this.pauseBtn.y) < 13;
+  }
+
+  hitSound(p) {
+    return Math.hypot(p.x - this.soundBtn.x, p.y - this.soundBtn.y) < 10;
   }
 
   hitBomb(p) {
@@ -60,24 +73,25 @@ export class Hud {
   panel(lines) {
     this.closePanel();
     this.overlay.setVisible(true).setSize(W, this.H);
-    const total = lines.length * 12;
+    const height = (l) => (!l ? LINE / 2 : Array.isArray(l) ? LINE * (l[2] ?? 1) : LINE);
+    const total = lines.reduce((sum, l) => sum + height(l), 0);
     let y = Math.round(this.H / 2 - total / 2);
     for (const line of lines) {
       if (line && line.sprite) {
         // legend row: icon + left-aligned label
-        this.overlayItems.push(this.scene.add.image(line.x, y + 6, 'sprites', line.sprite).setDepth(DEPTH.overlay + 1));
-        const t = this.text(line.x + 9, y + 1, line.text, 0).setDepth(DEPTH.overlay + 1).setTint(line.tint ?? 0xffffff);
+        this.overlayItems.push(this.scene.add.image(line.x, y + 7, 'sprites', line.sprite).setDepth(DEPTH.overlay + 1));
+        const t = this.text(line.x + 9, y, line.text, 0).setDepth(DEPTH.overlay + 1).setTint(line.tint ?? 0xffffff);
         this.overlayItems.push(t);
-        y += 12;
+        y += LINE;
         continue;
       }
       const [str, tint = 0xffffff, scale = 1, blink = false] = Array.isArray(line) ? line : [line];
       if (str) {
-        const t = this.text(W / 2, y + 6 * scale, str).setDepth(DEPTH.overlay + 1).setTint(tint).setScale(scale);
+        const t = this.text(W / 2, y + 7 * scale, str).setDepth(DEPTH.overlay + 1).setTint(tint).setScale(scale);
         t.blink = blink;
         this.overlayItems.push(t);
       }
-      y += 12 * scale;
+      y += height(line);
     }
   }
 
@@ -99,6 +113,7 @@ export class Hud {
     this.weapon.setFrame(WEAPON_ICON[p.weapon]);
     this.pips.forEach((pip, i) => pip.setFrame(i < p.level ? 'pip_on' : 'pip_off'));
     this.bombBtn.setAlpha(p.bombs > 0 ? 0.8 : 0.22);
+    this.soundBtn.setFrame(s.music.enabled ? 'btn_sound_on' : 'btn_sound_off');
 
     this.boss.clear();
     const hv = s.enemies.heavy;

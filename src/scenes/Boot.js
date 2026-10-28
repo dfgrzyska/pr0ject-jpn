@@ -29,6 +29,7 @@ export class Boot extends Phaser.Scene {
       height: meta.cellH,
       chars: meta.chars,
       charsPerRow: meta.perRow,
+      spacing: { x: meta.gap, y: meta.gap },
     });
     this.cache.bitmapFont.add(FONT, entry);
 

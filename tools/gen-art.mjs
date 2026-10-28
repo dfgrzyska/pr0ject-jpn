@@ -51,7 +51,9 @@ console.log('icons');
 console.log('font');
 const font = buildFont();
 write('font.png', font.raster.toPNG());
-write('font.json', Buffer.from(JSON.stringify({ ...FONT, chars: font.chars })));
+// non-ASCII escaped, so the glyph list survives any charset handling on the way to the browser
+const asciiJson = (o) => JSON.stringify(o).replace(/[\u0080-￿]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
+write('font.json', Buffer.from(asciiJson({ ...FONT, chars: font.chars })));
 if (preview) writeFileSync(join(previewDir, 'font_x4.png'), font.raster.scaled(4, 0x30304a).toPNG());
 
 console.log('backgrounds');

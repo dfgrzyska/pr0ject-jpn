@@ -20,8 +20,8 @@ Parametry do testów w adresie: `?t=120` (start od 120 s etapu), `?god` (nieśmi
 
 ## Sterowanie
 
-- Telefon: statek podąża za ruchem palca względem miejsca dotknięcia; bomba — przycisk w prawym dolnym rogu; pauza — prawy górny róg.
-- Klawiatura: strzałki / WASD — ruch, Z — bomba, Esc / P — pauza, Enter — start.
+- Telefon: statek podąża za ruchem palca względem miejsca dotknięcia; bomba — przycisk w prawym dolnym rogu; pauza i głośnik — prawy górny róg.
+- Klawiatura: strzałki / WASD — ruch, Z — bomba, Esc / P — pauza, M — muzyka, Enter — start.
 - Strzał jest automatyczny.
 
 ## Etap 1
@@ -46,6 +46,15 @@ Wrogowie (roboty w stylu Fushimi Inari):
 | Nośnik | dron z klejnotem hōju (czerwony/niebieski/zielony) | zygzak, po ~4,6 s ucieka, zawsze zostawia znajdźkę |
 
 Znajdźki: czerwona — rozrzut, niebieska — laser, zielona — naprowadzane „lisie ognie”.
+
+## Muzyka
+
+Oryginalna ścieżka „Senbon” grana na żywo przez Web Audio (`src/audio/`) — bez plików audio.
+Skala *in* (miyako-bushi) na A, instrumenty: koto, flet w stylu shakuhachi, chiptune'owy bas, taiko,
+kołatka i shaker. Muzyka rośnie z etapem: spokojne miasto → rozkręcenie przy świątyni → pełny utwór na grzbiecie
+→ osobny motyw minibossa → finał na szczycie; do tego dżingle końca etapu i końca gry.
+Nuty są tekstem w `src/audio/score.js` (16 kroków na takt, np. `'A4 - - E5 - - F5 - ...'`).
+iOS: dźwięk startuje po pierwszym dotknięciu; przełącznik wyciszenia telefonu wycisza też grę.
 
 ## Fale
 

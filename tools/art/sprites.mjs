@@ -370,6 +370,25 @@ function sakura(m, cx, cy, petalR, dist) {
   m.rect(9, 4, 2, 7, 'W');
   add('btn_pause', renderMask(m, { outline: false }));
 }
+for (const on of [true, false]) {
+  const m = new Mask(15, 15);
+  m.disc(7.5, 7.5, 7, 'S');
+  m.disc(7.5, 7.5, 5.8, 'K');
+  m.rect(3, 6, 2, 3, 'W');
+  m.rect(5, 5, 1, 5, 'W');
+  m.rect(6, 4, 1, 7, 'W');
+  if (on) {
+    m.set(8, 6, 'W');
+    m.set(8, 8, 'W');
+    m.line(10, 4, 11, 6, 'W');
+    m.line(11, 7, 11, 8, 'W');
+    m.line(11, 9, 10, 11, 'W');
+  } else {
+    m.line(8, 5, 11, 9, 'M');
+    m.line(11, 5, 8, 9, 'M');
+  }
+  add(on ? 'btn_sound_on' : 'btn_sound_off', renderMask(m, { outline: false }));
+}
 add('icon_life', renderMask(fromRows(['...W', '..WC', '..WW', '.RWW', 'RSSW', 'R..W'], true)));
 add('wpn_basic', renderMask(fromRows(['.W.W.', '.W.W.', '.W.W.', '.W.W.', '.W.W.'])));
 add('wpn_spread', renderMask(fromRows(['R.R.R', 'R.R.R', '.RRR.', '.RRR.', '..R..'])));
