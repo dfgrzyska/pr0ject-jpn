@@ -1,0 +1,100 @@
+import { DEPTH, VIEW } from '../config.js';
+import { Pool } from './Pool.js';
+
+// Three layers seen from above:
+//   far  - the valley far below (seamless loop, slowest)
+//   mid  - the stage strip in 512px chunks (ridge, shrines, torii); ground turrets ride on it
+//   near - sakura petals and mist (fastest, semi-transparent)
+export class Parallax {
+  constructor(scene, stage, meta) {
+    this.scene = scene;
+    this.speed = stage.scroll;
+    this.anchor = stage.scroll.anchor;
+    this.length = meta.length;
+    this.chunkH = meta.chunkHeight;
+    this.maxTime = (meta.length - this.anchor) / this.speed.mid;
+    this.time = 0;
+    this.uTop = this.anchor;
+
+    this.far = scene.add
+      .tileSprite(0, 0, VIEW.width, VIEW.maxHeight, 'far')
+      .setOrigin(0, 0)
+      .setDepth(DEPTH.far);
+    this.farH = scene.textures.get('far').getSourceImage().height;
+    this.chunks = [];
+    for (let i = 0; i < meta.chunks; i++)
+      this.chunks.push(scene.add.image(0, 0, `mid_${i}`).setOrigin(0, 0).setDepth(DEPTH.mid).setVisible(false));
+
+    this.near = new Pool(scene, DEPTH.near);
+    this.petalTimer = 0;
+    this.mistTimer = 1;
+  }
+
+  /** Jump to a point in the stage (debug / restart). */
+  setTime(t) {
+    this.time = Math.min(t, this.maxTime);
+  }
+
+  /** Screen y of a strip position u (distance from the start of the strip). */
+  screenY(u) {
+    return this.uTop - u;
+  }
+
+  /** Strip position under a screen y. */
+  stripU(y) {
+    return this.uTop - y;
+  }
+
+  update(dt, scrolling, H) {
+    if (scrolling) this.time = Math.min(this.time + dt, this.maxTime);
+    this.uTop = Math.round(this.anchor + this.time * this.speed.mid);
+
+    const top = this.length - this.uTop; // strip y at the top of the screen
+    for (let i = 0; i < this.chunks.length; i++) {
+      const y = i * this.chunkH - top;
+      const img = this.chunks[i];
+      const vis = y < H && y + this.chunkH > 0;
+      img.setVisible(vis);
+      if (vis) img.y = y;
+    }
+    this.far.tilePositionY = -(Math.round(this.time * this.speed.far) % this.farH);
+
+    this.updateNear(dt, scrolling, H);
+  }
+
+  updateNear(dt, scrolling, H) {
+    const fall = scrolling ? this.speed.near : 18;
+    this.petalTimer -= dt;
+    if (this.petalTimer <= 0) {
+      this.petalTimer = 0.25 + Math.random() * 0.4;
+      const p = this.near.spawn(`petal_${Math.floor(Math.random() * 4)}`, Math.random() * 196 - 8, -6, {
+        vy: fall * (0.75 + Math.random() * 0.5),
+        vx: -8 + Math.random() * 16,
+        sway: Math.random() * 6,
+        age: 0,
+        flipT: 0.15 + Math.random() * 0.3,
+      });
+      p.setAlpha(0.65);
+    }
+    this.mistTimer -= dt;
+    if (this.mistTimer <= 0 && scrolling) {
+      this.mistTimer = 3 + Math.random() * 4;
+      const m = this.near.spawn(`mist_${Math.floor(Math.random() * 2)}`, Math.random() * 180, -16, {
+        vy: fall * 1.1,
+        vx: -3 + Math.random() * 6,
+        sway: 0,
+        age: 0,
+        flipT: 0,
+      });
+      m.setAlpha(0.22);
+    }
+    for (const p of this.near.live) {
+      p.age += dt;
+      p.y += p.vy * dt;
+      p.x += (p.vx + Math.sin(p.age * 3) * p.sway) * dt;
+      if (p.flipT && p.age % (p.flipT * 2) < dt) p.setFlipX(!p.flipX);
+      if (p.y > H + 20) this.near.kill(p);
+    }
+    this.near.sweep();
+  }
+}

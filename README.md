@@ -1,0 +1,80 @@
+# Shmup Japonia — etap 1: Kioto, Fushimi Inari
+
+Pionowy shmup w przeglądarce (Phaser 4.2.1, WebGL), rozdzielczość wewnętrzna 180×320–420,
+skalowanie całkowitą wielokrotnością pikseli urządzenia.
+
+## Uruchomienie
+
+```bash
+npm install
+npm run dev        # http://localhost:5173 (także w sieci lokalnej — do testów na telefonie)
+npm run build      # statyczna wersja w dist/
+npm run art        # przegenerowanie grafik do public/assets/
+```
+
+Parametry do testów w adresie: `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
+`?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5).
+
+## Sterowanie
+
+- Telefon: statek podąża za ruchem palca względem miejsca dotknięcia; bomba — przycisk w prawym dolnym rogu; pauza — prawy górny róg.
+- Klawiatura: strzałki / WASD — ruch, Z — bomba, Esc / P — pauza, Enter — start.
+- Strzał jest automatyczny.
+
+## Etap 1
+
+Pas tła (warstwa środkowa) ~7 tys. px, ok. 3,5 min: miasteczko Fushimi → rzeka z mostem i sakurami →
+sandō z wielką bramą torii → kompleks świątyni (brama Rōmon, Honden) → tunele Senbon Torii na grzbiecie
+góry (z rozwidleniem na dwa tunele) → Okusha → las cedrów i bambusów ze stawem Shin-ike i kopcami otsuka →
+wspinaczka Yotsutsuji z punktem widokowym → szczyt Ichinomine.
+
+Paralaksa: daleka warstwa to dolina pod grzbietem (zapętlona), środkowa — grzbiet z torii, świątyniami
+i drzewami (wieżyczki są do niej przyczepione), bliska — płatki sakury i mgła.
+
+Wrogowie (roboty w stylu Fushimi Inari):
+
+| Archetyp | Wygląd | Zachowanie |
+| --- | --- | --- |
+| Popcorn | dron-maska kitsune | formacje: `line`, `sine`, `arc`, `row` |
+| Strzelec | kanonierka podwieszona pod belką torii | wlatuje, staje, strzela celowanymi seriami (`aimed`/`fan`), odlatuje |
+| Wieżyczka | kamienna latarnia tōrō z działem | na warstwie terenu, wachlarz (`fan`) lub pierścień (`ring`) |
+| Nurek | dron kruk-tengu | zawisa, celuje i pikuje w gracza |
+| Ciężki | latające mikoshi z czterema wirnikami | miniboss w połowie etapu, pierścienie / wachlarze / spirala |
+| Nośnik | dron z klejnotem hōju (czerwony/niebieski/zielony) | zygzak, po ~4,6 s ucieka, zawsze zostawia znajdźkę |
+
+Znajdźki: czerwona — rozrzut, niebieska — laser, zielona — naprowadzane „lisie ognie”.
+
+## Fale
+
+`src/data/stage1.json` — harmonogram etapu, edytowalny bez zmian w kodzie:
+
+```json
+{ "t": 4.0, "type": "popcorn", "x": 40, "path": "sine", "count": 6 }
+{ "t": 9.5, "type": "carrier", "x": 120, "path": "zigzag", "color": "red" }
+{ "t": 25.2, "type": "turret", "x": 64, "pattern": "fan" }
+```
+
+Opcjonalne pola: `gap` (odstęp w serii), `spacing` (dla `row`), `y` (wysokość zatrzymania), `hp`, `dir`.
+Pod każdą wieżyczką generator tła rysuje kamienną platformę i wycina drzewa — po zmianie wieżyczek
+uruchom `npm run art`. Mnożnik: N = suma wag wrogów w etapie / 9 (liczone automatycznie, `src/config.js`).
+
+## Grafika
+
+Cała grafika jest generowana kodem (`tools/`) do zwykłych plików PNG w `public/assets/`:
+atlas sprite'ów (`sprites.png` + `sprites.json`), font pikselowy z polskimi znakami, `bg/far.png`
+i 14 kawałków warstwy środkowej `bg/mid_XX.png` (180×512). Każdy plik można podmienić ręcznie
+rysowaną grafiką o tych samych wymiarach/nazwach ramek. `node tools/gen-art.mjs --preview` zapisuje
+powiększone podglądy do `tools/preview/`.
+
+Statki i wrogowie to maski znaków (`tools/art/sprites.mjs`) z automatycznym cieniowaniem i obrysem.
+
+## Struktura
+
+```
+src/main.js            konfiguracja Phaser, skalowanie całkowite, safe-area
+src/config.js          parametry rozgrywki (bronie, wrogowie, mnożnik, fair play)
+src/scenes/Boot.js     ładowanie, font, animacje
+src/scenes/Stage.js    pętla etapu, kolizje, stany (tytuł / gra / pauza / koniec)
+src/game/*.js          paralaksa, gracz i bronie, wrogowie, pociski, fale, wynik, HUD, efekty
+tools/                 generator grafiki
+```
