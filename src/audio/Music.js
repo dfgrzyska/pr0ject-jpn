@@ -3,6 +3,7 @@
 import { PERCUSSION, SONGS, parseSong } from './score.js';
 import { Sfx } from './Sfx.js';
 import { Synth } from './synth.js';
+import { installAudioUnlock } from './unlock.js';
 
 const VOLUME = 0.6;
 const LOOKAHEAD = 0.12; // s
@@ -48,6 +49,7 @@ export class Music {
     this.next = 0;
     this.paused = false;
     this.timer = setInterval(() => this.tick(), 25);
+    installAudioUnlock(ctx);
   }
 
   /** Switch song on the next bar line (or right away with now / when nothing plays). */
@@ -80,7 +82,7 @@ export class Music {
 
   /** Called from a user gesture: browsers (iOS especially) only start audio after one. */
   unlock() {
-    if (this.ctx.state !== 'running') this.ctx.resume?.();
+    if (this.ctx.state !== 'running') this.ctx.resume?.().catch(() => {});
   }
 
   setPaused(p) {
