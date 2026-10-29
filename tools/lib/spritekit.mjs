@@ -24,6 +24,13 @@ export const MATERIALS = {
   N: [0x3b2416, 0x6b4428, 0xa0703f], // wood
   M: [0x9a0018, 0xff2a3a, 0xffb8bf], // red glow
   Q: [0x8a3a10, 0xf07a20, 0xffc070], // orange
+  // player ship liveries (Japanese konbini colour schemes)
+  O: [0xa84e08, 0xf58220, 0xffb868], // convenience-store orange
+  J: [0x004a38, 0x008061, 0x3cb894], // deep green
+  T: [0x98101a, 0xee2526, 0xff7a72], // signal red
+  L: [0x003a7c, 0x0068b7, 0x5cacf2], // blue
+  A: [0x00682a, 0x00a73c, 0x6ae486], // bright green
+  U: [0x00305e, 0x00589e, 0x4a90dc], // mid blue
 };
 
 export const EXPLICIT = {

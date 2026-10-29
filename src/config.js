@@ -23,16 +23,68 @@ export const DEPTH = {
 };
 
 export const PLAYER = {
-  speed: 100, // px/s with keyboard
-  touchGain: 1.15, // ship moves this many px per px of finger travel
-  hitRadius: 1.5, // the visible dot in the middle of the ship
+  hitRadius: 1.5, // the visible dot in the middle of the ship (same for every ship)
   pickupRadius: 11,
-  lives: 3,
   invulnerable: 2.5, // s after respawn
   respawnDelay: 1.0,
   deathPowerLoss: 1, // power levels lost on death (dropped as a pickup)
   maxPower: 5,
 };
+
+// Selectable ships (liveries after Japanese convenience-store colour schemes).
+//   speed      keyboard speed, px/s
+//   touchGain  px of ship travel per px of finger travel
+//   dragSpeed  how fast the ship can chase the finger, px/s (the heavy ship lags behind)
+//   damage     multiplier for every shot
+//   flameY     engine flame offset below the sprite centre
+//   stats      [speed, power] shown as pips (out of 3) on the selection screen
+export const SHIPS = [
+  {
+    id: 'oni',
+    name: 'ONI',
+    role: 'CIĘŻKI',
+    color: 0x6ae486,
+    frame: 'ship_oni',
+    life: 'icon_life_oni',
+    speed: 76,
+    touchGain: 1.0,
+    dragSpeed: 230,
+    damage: 1.4,
+    lives: 3,
+    flameY: 8,
+    stats: [1, 3],
+  },
+  {
+    id: 'kitsune',
+    name: 'KITSUNE',
+    role: 'STANDARD',
+    color: 0xffb868,
+    frame: 'ship',
+    life: 'icon_life',
+    speed: 100,
+    touchGain: 1.15,
+    dragSpeed: 950,
+    damage: 1,
+    lives: 3,
+    flameY: 8.5,
+    stats: [2, 2],
+  },
+  {
+    id: 'tsubame',
+    name: 'TSUBAME',
+    role: 'SZYBKI',
+    color: 0x5cacf2,
+    frame: 'ship_tsubame',
+    life: 'icon_life_tsubame',
+    speed: 132,
+    touchGain: 1.35,
+    dragSpeed: 1500,
+    damage: 1,
+    lives: 2,
+    flameY: 6,
+    stats: [3, 2],
+  },
+];
 
 // Weapons: basic -> pickups switch type (keep level) or raise level (same colour).
 export const WEAPONS = {

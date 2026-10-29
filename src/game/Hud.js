@@ -6,6 +6,17 @@ const W = VIEW.width;
 const LINE = 14;
 const WEAPON_ICON = { basic: 'wpn_basic', spread: 'wpn_spread', laser: 'wpn_laser', homing: 'wpn_homing' };
 
+/** Bitmap text snapped to whole pixels (see setVertexRoundMode note below). */
+export function pixelText(scene, x, y, str, origin = 0.5) {
+  // 'full' snaps glyph quads to whole pixels even when centred on a half pixel or scaled x2,
+  // otherwise some GPUs (iPhone) sample the font texture at texel edges and mangle thin accents
+  return scene.add
+    .bitmapText(x, y, FONT, str)
+    .setOrigin(origin, origin === 0 ? 0 : 0.5)
+    .setLetterSpacing(-1)
+    .setVertexRoundMode('full');
+}
+
 export class Hud {
   constructor(scene) {
     this.scene = scene;
@@ -32,13 +43,7 @@ export class Hud {
   }
 
   text(x, y, str, origin = 0.5) {
-    // 'full' snaps glyph quads to whole pixels even when centred on a half pixel or scaled x2,
-    // otherwise some GPUs (iPhone) sample the font texture at texel edges and mangle thin accents
-    return this.scene.add
-      .bitmapText(x, y, FONT, str)
-      .setOrigin(origin, origin === 0 ? 0 : 0.5)
-      .setLetterSpacing(-1)
-      .setVertexRoundMode('full');
+    return pixelText(this.scene, x, y, str, origin);
   }
 
   layout(H) {
@@ -109,7 +114,7 @@ export class Hud {
     this.bar.clear();
     this.bar.fillStyle(0x120e1a, 1).fillRect(57, 13, 22, 3);
     this.bar.fillStyle(s.score.mult >= SCORE.multiplierMax ? 0xffd060 : 0xf08bb0, 1).fillRect(58, 14, Math.round(20 * s.score.fraction), 1);
-    this.lives.forEach((img, i) => img.setVisible(i < p.lives));
+    this.lives.forEach((img, i) => img.setVisible(i < p.lives).setFrame(p.ship.life));
     this.weapon.setFrame(WEAPON_ICON[p.weapon]);
     this.pips.forEach((pip, i) => pip.setFrame(i < p.level ? 'pip_on' : 'pip_off'));
     this.bombBtn.setAlpha(p.bombs > 0 ? 0.8 : 0.22);

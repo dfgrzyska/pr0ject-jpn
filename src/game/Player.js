@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BOMB, DEPTH, PLAYER, VIEW, WEAPONS } from '../config.js';
+import { BOMB, DEPTH, PLAYER, SHIPS, VIEW, WEAPONS } from '../config.js';
 import { Pool } from './Pool.js';
 
 const WEAPON_NAMES = { basic: 'PODSTAWOWA', spread: 'ROZRZUT', laser: 'LASER', homing: 'NAPROWADZANE' };
@@ -13,7 +13,7 @@ export class Player {
     this.dot = scene.add.image(0, 0, 'sprites', 'hitbox').setDepth(DEPTH.player + 0.1);
     this.shots = new Pool(scene, DEPTH.playerShot);
 
-    this.lives = PLAYER.lives;
+    this.setShip(SHIPS[1]);
     this.bombs = 1;
     this.weapon = 'basic';
     this.level = 1;
@@ -29,6 +29,12 @@ export class Player {
     this.x = VIEW.width / 2;
     this.y = scene.H + 30;
     this.setVisible(false);
+  }
+
+  setShip(ship) {
+    this.ship = ship;
+    this.lives = ship.lives;
+    this.sprite.setFrame(ship.frame);
   }
 
   setVisible(v) {
@@ -53,18 +59,21 @@ export class Player {
   beginDrag(p) {
     if (this.drag) return;
     this.drag = { id: p.id, lx: p.x, ly: p.y };
+    this.tx = this.x;
+    this.ty = this.y;
   }
 
   dragMove(p) {
     if (!this.drag || this.drag.id !== p.id) return;
-    const dx = (p.x - this.drag.lx) * PLAYER.touchGain;
-    const dy = (p.y - this.drag.ly) * PLAYER.touchGain;
+    const gain = this.ship.touchGain;
+    const dx = (p.x - this.drag.lx) * gain;
+    const dy = (p.y - this.drag.ly) * gain;
     this.drag.lx = p.x;
     this.drag.ly = p.y;
     if (this.alive && !this.entering) {
-      this.x += dx;
-      this.y += dy;
-      this.clamp();
+      // the finger moves a target; the ship chases it at its own top speed (see update)
+      this.tx = Phaser.Math.Clamp(this.tx + dx, 6, VIEW.width - 6);
+      this.ty = Phaser.Math.Clamp(this.ty + dy, 14, this.scene.H - 10);
     }
   }
 
@@ -89,6 +98,8 @@ export class Player {
         this.entering = Math.max(0, this.entering - dt);
         const target = this.scene.H - 44;
         this.y += (target - this.y) * Math.min(1, dt * 6);
+        this.tx = this.x;
+        this.ty = this.y;
       } else if (keys) {
         let ax = 0;
         let ay = 0;
@@ -97,12 +108,23 @@ export class Player {
         if (keys.UP.isDown || keys.W.isDown) ay -= 1;
         if (keys.DOWN.isDown || keys.S.isDown) ay += 1;
         const len = Math.hypot(ax, ay) || 1;
-        this.x += (ax / len) * PLAYER.speed * dt;
-        this.y += (ay / len) * PLAYER.speed * dt;
+        this.x += (ax / len) * this.ship.speed * dt;
+        this.y += (ay / len) * this.ship.speed * dt;
         bank = ax;
         this.clamp();
       }
-      if (this.drag) {
+      if (this.drag && this.entering <= 0) {
+        const dx = this.tx - this.x;
+        const dy = this.ty - this.y;
+        const d = Math.hypot(dx, dy);
+        const step = this.ship.dragSpeed * dt;
+        if (d <= step) {
+          this.x = this.tx;
+          this.y = this.ty;
+        } else {
+          this.x += (dx / d) * step;
+          this.y += (dy / d) * step;
+        }
         // bank from recent horizontal finger motion
         const vx = this.x - (this.prevX ?? this.x);
         bank = Math.abs(vx) > 0.3 ? Math.sign(vx) : 0;
@@ -111,9 +133,10 @@ export class Player {
       if (this.invulnerable > 0) this.invulnerable -= dt;
       if (firing && this.entering <= 0) this.fire(dt);
     }
-    this.sprite.setFrame(bank < 0 ? 'ship_l' : bank > 0 ? 'ship_r' : 'ship');
+    const f = this.ship.frame;
+    this.sprite.setFrame(bank < 0 ? `${f}_l` : bank > 0 ? `${f}_r` : f);
     this.sprite.setPosition(this.x, this.y);
-    this.flame.setPosition(this.x, this.y + 8.5);
+    this.flame.setPosition(this.x, this.y + this.ship.flameY);
     this.dot.setPosition(this.x, this.y);
     const blink = this.invulnerable > 0 && Math.floor(this.invulnerable * 16) % 2 === 0;
     this.sprite.setAlpha(blink ? 0.35 : 1);
@@ -139,7 +162,7 @@ export class Player {
   }
 
   shot(frame, x, y, vx, vy, damage, radius, extra) {
-    return this.shots.spawn(frame, x, y, { vx, vy, damage, radius, homing: false, life: 2, ...extra });
+    return this.shots.spawn(frame, x, y, { vx, vy, damage: damage * this.ship.damage, radius, homing: false, life: 2, ...extra });
   }
 
   volley() {

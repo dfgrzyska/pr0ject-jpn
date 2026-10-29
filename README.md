@@ -16,7 +16,20 @@ Wersja online: https://dfgrzyska.github.io/pr0ject-jpn/ — budowana automatyczn
 (`.github/workflows/pages.yml`; w Settings → Pages źródło musi być ustawione na „GitHub Actions”).
 
 Parametry do testów w adresie: `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
-`?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5).
+`?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5), `?ship=oni|kitsune|tsubame`.
+
+## Statki
+
+Po starcie wybiera się jeden z trzech statków (malowania w kolorach japońskich sieci konbini).
+Parametry są w `SHIPS` w `src/config.js`.
+
+| Statek | Malowanie | Prędkość | Siła ognia | Życia |
+| --- | --- | --- | --- | --- |
+| ONI (ciężki) | biel, zielony dziób, niebieska rufa | wolny, ociężale goni palec | ×1,4 | 3 |
+| KITSUNE (standard) | biel z pasami pomarańczowym, zielonym, czerwonym | standard | ×1 | 3 |
+| TSUBAME (szybki) | niebiesko-biała jaskółka | szybki | ×1 | 2 |
+
+Wybór jest zapamiętywany; „jeszcze raz” wraca do ekranu wyboru z ostatnim statkiem.
 
 ## Sterowanie
 

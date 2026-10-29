@@ -11,7 +11,9 @@ const fromRows = (rows, mirror, remap) => {
 };
 
 // ---------------------------------------------------------------- player
-// "Kitsune-1": white interceptor with vermilion leading edges. Rows are left halves (mirrored).
+// Three selectable ships, painted in Japanese convenience-store liveries. Rows are left halves (mirrored).
+// All engines sit 5px apart so they share the flame sprite.
+// KITSUNE (standard): white with orange / green / red bands.
 const SHIP = [
   '.......W',
   '......WW',
@@ -21,19 +23,57 @@ const SHIP = [
   '.....WCC',
   '.....WWC',
   '.....WWW',
-  '....RWWW',
-  '...RSWWR',
-  '..RSSWWR',
-  '.RSSSWWR',
-  'RSSSSWWW',
-  'RSSSDDWW',
-  'RRS.DDWW',
+  '....OWWW',
+  '...OJWWT',
+  '..OJTWWT',
+  '.OJTWWWT',
+  'OJTWWWWW',
+  'OJTWDDWW',
+  'OOJ.DDWW',
   '....DD.W',
   '....DD..',
 ];
+// ONI (heavy): armoured white hull, green bow, blue stern, gold horns.
+const SHIP_ONI = [
+  '...Y....A',
+  '...YY..AA',
+  '....Y.AWA',
+  '....YAWCC',
+  '.....AWCc',
+  '.....AWCC',
+  '....AAWWW',
+  '...AAWWWW',
+  '..AAWWWWW',
+  '.AAWWWWWU',
+  'AAWWWWWWU',
+  'AWWWWUUWU',
+  'AUUUUDDWU',
+  '.UUU.DDWU',
+  '.....DD.U',
+  '.....DD..',
+];
+// TSUBAME (fast): slim blue swallow with white wing stripes and a forked tail.
+const SHIP_TSUBAME = [
+  '.......L',
+  '.......L',
+  '......LW',
+  '......LC',
+  '......LC',
+  '......WC',
+  '......LW',
+  '.....LLW',
+  '....LLWL',
+  '..LLWWLL',
+  'LLWWLLLL',
+  'LW..DDLL',
+  'L...DDLW',
+  '....DD.L',
+  '......L.',
+  '.....L..',
+];
 // Banked frames: lean the silhouette by shortening one wing.
-function shipFrame(bank) {
-  const m = fromRows(SHIP, true);
+function shipFrame(bank, rows = SHIP) {
+  const m = fromRows(rows, true);
   if (bank) {
     // bank < 0: rolling left -> left wing foreshortened, right wing shows its underside.
     const side = bank < 0 ? 0 : 1;
@@ -51,9 +91,11 @@ function shipFrame(bank) {
   }
   return renderMask(m);
 }
-add('ship', shipFrame(0));
-add('ship_l', shipFrame(-1));
-add('ship_r', shipFrame(1));
+for (const [name, rows] of [['ship', SHIP], ['ship_oni', SHIP_ONI], ['ship_tsubame', SHIP_TSUBAME]]) {
+  add(name, shipFrame(0, rows));
+  add(`${name}_l`, shipFrame(-1, rows));
+  add(`${name}_r`, shipFrame(1, rows));
+}
 
 // Engine flames (no outline), drawn under the ship's two nozzles.
 const FLAMES = [
@@ -389,7 +431,11 @@ for (const on of [true, false]) {
   }
   add(on ? 'btn_sound_on' : 'btn_sound_off', renderMask(m, { outline: false }));
 }
-add('icon_life', renderMask(fromRows(['...W', '..WC', '..WW', '.RWW', 'RSSW', 'R..W'], true)));
+// life icons in each ship's livery
+const LIFE = ['...W', '..WC', '..WW', '.RWW', 'RSSW', 'R..W'];
+add('icon_life', renderMask(fromRows(LIFE, true, { R: 'O', S: 'J' })));
+add('icon_life_oni', renderMask(fromRows(LIFE, true, { R: 'A', S: 'U' })));
+add('icon_life_tsubame', renderMask(fromRows(LIFE, true, { W: 'L', R: 'L', S: 'W' })));
 add('wpn_basic', renderMask(fromRows(['.W.W.', '.W.W.', '.W.W.', '.W.W.', '.W.W.'])));
 add('wpn_spread', renderMask(fromRows(['R.R.R', 'R.R.R', '.RRR.', '.RRR.', '..R..'])));
 add('wpn_laser', renderMask(fromRows(['.BBB.', '.BwB.', '.BwB.', '.BwB.', '.BBB.'])));

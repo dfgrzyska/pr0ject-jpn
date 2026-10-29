@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import stage1 from '../data/stage1.json';
 import { getMusic } from '../audio/Music.js';
-import { DEPTH, PLAYER, SCORE, VIEW, WEAPONS } from '../config.js';
+import { DEPTH, PLAYER, SCORE, SHIPS, VIEW, WEAPONS } from '../config.js';
 import { Bullets } from '../game/Bullets.js';
 import { Enemies } from '../game/Enemies.js';
 import { Fx } from '../game/Fx.js';
@@ -10,9 +10,20 @@ import { Parallax } from '../game/Parallax.js';
 import { Player } from '../game/Player.js';
 import { Pool } from '../game/Pool.js';
 import { Score } from '../game/Score.js';
+import { ShipSelect } from '../game/ShipSelect.js';
 import { Waves } from '../game/Waves.js';
 
 const HI_KEY = 'shmupjp.hiscore';
+const SHIP_KEY = 'shmupjp.ship';
+
+function loadShipIndex() {
+  try {
+    const i = SHIPS.findIndex((s) => s.id === localStorage.getItem(SHIP_KEY));
+    return i >= 0 ? i : 1;
+  } catch {
+    return 1;
+  }
+}
 
 function loadHi() {
   try {
@@ -62,8 +73,11 @@ export class Stage extends Phaser.Scene {
     this.sfx = this.music.sfx;
     this.hud = new Hud(this);
 
-    // debug: ?t=120 starts at 120 s, ?god makes the ship invulnerable, ?weapon=laser&power=5
+    // debug: ?t=120 starts at 120 s, ?god makes the ship invulnerable, ?weapon=laser&power=5, ?ship=oni
     const q = new URLSearchParams(window.location.search);
+    const qShip = SHIPS.findIndex((sh) => sh.id === q.get('ship'));
+    this.shipIndex = qShip >= 0 ? qShip : loadShipIndex();
+    this.select = null;
     this.debugStart = Number(q.get('t')) || 0;
     this.player.god = q.has('god');
     if (WEAPONS[q.get('weapon')]) this.player.weapon = q.get('weapon');
@@ -81,11 +95,9 @@ export class Stage extends Phaser.Scene {
       this.game.events.off('hidden', this.onHidden, this);
     });
 
-    if (data.autostart) this.startGame();
-    else {
-      this.showTitle();
-      this.music.play('title'); // audible once the browser allows audio (first tap / key)
-    }
+    this.music.play('title'); // audible once the browser allows audio (first tap / key)
+    if (data.select) this.openSelect();
+    else this.showTitle();
   }
 
   // ---------------------------------------------------------------- flow
@@ -110,10 +122,25 @@ export class Stage extends Phaser.Scene {
     ]);
   }
 
+  openSelect() {
+    this.hud.closePanel();
+    this.state = 'select';
+    this.select = new ShipSelect(this, this.shipIndex);
+  }
+
   startGame() {
     this.music.unlock();
     this.music.play('intro', true);
     this.hud.closePanel();
+    this.shipIndex = this.select.index;
+    try {
+      localStorage.setItem(SHIP_KEY, this.select.ship.id);
+    } catch {
+      /* ignore */
+    }
+    this.player.setShip(this.select.ship);
+    this.select.destroy();
+    this.select = null;
     this.state = 'play';
     if (this.debugStart) {
       this.t = this.debugStart;
@@ -125,7 +152,7 @@ export class Stage extends Phaser.Scene {
   }
 
   restart() {
-    this.scene.restart({ autostart: true });
+    this.scene.restart({ select: true });
   }
 
   gameOver() {
@@ -204,7 +231,13 @@ export class Stage extends Phaser.Scene {
       this.music.toggle();
       return;
     }
-    if (this.state === 'title') return this.startGame();
+    if (this.state === 'title') return this.openSelect();
+    if (this.state === 'select') {
+      const i = this.select.hit(p);
+      if (i === null || i === this.select.index) this.startGame();
+      else this.select.select(i);
+      return;
+    }
     if (this.state === 'over' || this.state === 'clear') {
       if (this.endTimer <= 0) this.restart();
       return;
@@ -222,6 +255,10 @@ export class Stage extends Phaser.Scene {
     if (down(k.ESC) || down(k.P)) this.togglePause();
     if (down(k.M)) this.music.toggle();
     if (this.state === 'title') {
+      if (confirm || bomb) this.openSelect();
+    } else if (this.state === 'select') {
+      if (down(k.LEFT) || down(k.A)) this.select.select(this.select.index - 1);
+      if (down(k.RIGHT) || down(k.D)) this.select.select(this.select.index + 1);
       if (confirm || bomb) this.startGame();
     } else if (this.state === 'over' || this.state === 'clear') {
       if (confirm && this.endTimer <= 0) this.restart();
@@ -234,6 +271,7 @@ export class Stage extends Phaser.Scene {
     this.H = size.height;
     this.cameras.resize(VIEW.width, this.H);
     this.hud.layout(this.H);
+    this.select?.layout(this.H);
     this.player.clamp();
   }
 
@@ -250,7 +288,8 @@ export class Stage extends Phaser.Scene {
     if (this.endTimer > 0) this.endTimer -= dt;
 
     const playing = this.state === 'play';
-    this.parallax.update(dt, this.state !== 'title', this.H);
+    this.parallax.update(dt, this.state !== 'title' && this.state !== 'select', this.H);
+    this.select?.update(dt);
     if (playing) {
       this.t += dt;
       this.waves.update(this.t, (w) => this.enemies.spawn(w));
