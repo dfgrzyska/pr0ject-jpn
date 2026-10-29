@@ -296,7 +296,7 @@ export class Stage extends Phaser.Scene {
       const hv = this.waves.upcoming('heavy', this.t, 3);
       if (hv && !this.warned.has(hv)) {
         this.warned.add(hv);
-        this.hud.show('UWAGA!', 'CIĘŻKI CEL', 2.6, true);
+        this.hud.show('UWAGA!', 'KYUBI NADCHODZI', 2.6, true);
       }
       this.music.play(this.stageSong(hv));
     }

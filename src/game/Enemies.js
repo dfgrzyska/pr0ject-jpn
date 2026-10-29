@@ -74,8 +74,8 @@ export class Enemies {
         e.zig = Math.random() < 0.5 ? -1 : 1;
         break;
       case 'heavy':
-        e = this.pool.spawn('heavy_0', w.x, -26, base);
-        e.play('heavy');
+        e = this.pool.spawn('kyubi_0', w.x, -30, base);
+        e.play('kyubi');
         this.heavy = e;
         e.patternIndex = 0;
         break;

@@ -39,7 +39,7 @@ export class Boot extends Phaser.Scene {
     anim('popcorn', ['popcorn_0', 'popcorn_1'], 3);
     anim('shooter', ['shooter_0', 'shooter_1'], 4);
     anim('diver', ['diver_0', 'diver_1'], 8);
-    anim('heavy', ['heavy_0', 'heavy_1'], 14);
+    anim('kyubi', ['kyubi_0', 'kyubi_1', 'kyubi_2', 'kyubi_3'], 7);
     for (const c of ['red', 'blue', 'green']) anim(`carrier_${c}`, [`carrier_${c}_0`, `carrier_${c}_1`], 10);
     anim('homing', ['ps_homing_0', 'ps_homing_1'], 10);
     anim('expl_s', [0, 1, 2, 3, 4].map((i) => `expl_s_${i}`), 16, 0);

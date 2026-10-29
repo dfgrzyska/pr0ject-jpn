@@ -230,74 +230,108 @@ const TURRET_HEAD = fromRows([
 ]);
 for (let i = 0; i < 16; i++) add(`turret_head_${i}`, renderMask(TURRET_HEAD.rotated((i / 16) * Math.PI * 2, 13)));
 
-// Heavy: flying mikoshi (portable shrine) gunship with four rotor pods.
-function heavyFrame(f) {
-  const W = 39;
-  const H = 37;
-  const m = new Mask(W, H);
-  const cx = 19;
-  // carrying poles
-  m.rect(7, 2, 2, 33, 'N');
-  m.rect(30, 2, 2, 33, 'N');
-  m.rect(7, 0, 2, 2, 'Y');
-  m.rect(30, 0, 2, 2, 'Y');
-  m.rect(7, 35, 2, 2, 'Y');
-  m.rect(30, 35, 2, 2, 'Y');
-  // crossbars
-  m.rect(9, 9, 2, 2, 'N');
-  m.rect(28, 9, 2, 2, 'N');
-  m.rect(9, 26, 2, 2, 'N');
-  m.rect(28, 26, 2, 2, 'N');
-  // rotor pods
-  for (const [px, py] of [[3, 7], [35, 7], [3, 29], [35, 29]]) {
-    m.line(px, py, px < cx ? 7 : 31, py, 'S');
-    m.disc(px + 0.5, py + 0.5, 3.6, 'S');
-    m.disc(px + 0.5, py + 0.5, 1.6, 'D');
-    if (f === 0) m.line(px - 3, py, px + 3, py, 'w');
-    else m.line(px, py - 3, px, py + 3, 'w');
-    m.set(px, py, 'M');
-  }
-  // roof (pyramid, hōgyō-zukuri) with gold ridges
-  m.rect(11, 5, 17, 20, 'K');
-  for (let x = 11; x < 28; x++) {
-    m.set(x, 5, 'Y');
-    m.set(x, 24, 'Y');
-  }
-  for (let y = 5; y < 25; y++) {
-    m.set(11, y, 'Y');
-    m.set(27, y, 'Y');
-  }
-  m.line(11, 5, cx, 14, 'Y');
-  m.line(27, 5, cx, 14, 'Y');
-  m.line(11, 24, cx, 15, 'Y');
-  m.line(27, 24, cx, 15, 'Y');
-  // gold phoenix (hō-ō) finial
-  m.line(14, 12, cx, 15, 'Y');
-  m.line(24, 12, cx, 15, 'Y');
-  m.line(13, 11, 15, 11, 'Y');
-  m.line(23, 11, 25, 11, 'Y');
-  m.rect(cx, 10, 1, 9, 'Y');
-  m.set(cx, 9, 'y');
-  m.set(cx - 1, 19, 'Y');
-  m.set(cx + 1, 19, 'Y');
-  m.set(cx, 13, 'M');
-  // front facade (seen in 3/4): vermilion walls, gold doors
-  m.rect(12, 25, 15, 5, 'R');
-  m.rect(16, 25, 7, 5, 'Y');
-  m.rect(19, 25, 1, 5, 'K');
-  m.rect(12, 25, 1, 5, 'K');
-  m.rect(26, 25, 1, 5, 'K');
-  // cannons
-  m.rect(13, 30, 3, 4, 'D');
-  m.rect(23, 30, 3, 4, 'D');
-  m.set(14, 33, 'k');
-  m.set(24, 33, 'k');
-  // lanterns at the roof corners
-  for (const [x, y] of [[12, 6], [26, 6], [12, 23], [26, 23]]) m.set(x, y, 'M');
-  return renderMask(m);
+// Heavy (stage 1 miniboss): Kyūbi — a red nine-tailed fox spirit (Fushimi Inari is the fox shrine).
+// Faces the player; nine tails fan out behind it and sway; a glowing hōju jewel on the chest;
+// two wisps of fox-fire (kitsune-bi) float at its sides.
+function ellipse(m, cx, cy, rx, ry, c) {
+  for (let y = Math.floor(cy - ry - 1); y <= cy + ry + 1; y++)
+    for (let x = Math.floor(cx - rx - 1); x <= cx + rx + 1; x++)
+      if (((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1) m.set(x, y, c);
 }
-add('heavy_0', heavyFrame(0));
-add('heavy_1', heavyFrame(1));
+function triangle(m, a, b, c, ch) {
+  const side = (p, q, r) => (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]);
+  for (let y = Math.floor(Math.min(a[1], b[1], c[1])); y <= Math.max(a[1], b[1], c[1]); y++)
+    for (let x = Math.floor(Math.min(a[0], b[0], c[0])); x <= Math.max(a[0], b[0], c[0]); x++) {
+      const pt = [x + 0.5, y + 0.5];
+      const d1 = side(a, b, pt);
+      const d2 = side(b, c, pt);
+      const d3 = side(c, a, pt);
+      if (!((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0))) m.set(x, y, ch);
+    }
+}
+const KYUBI_FRAMES = 4;
+function kyubiFrame(f) {
+  const W = 57;
+  const H = 50;
+  const C = 28; // centre pixel column
+  const cx = C + 0.5;
+  const m = new Mask(W, H);
+  const phase = (f / KYUBI_FRAMES) * Math.PI * 2;
+
+  // nine fluffy tails, drawn outer to centre, each with a dark rim so overlaps stay readable
+  const order = [0, 8, 1, 7, 2, 6, 3, 5, 4];
+  for (const i of order) {
+    const a = -Math.PI + (i + 0.5) * (Math.PI / 9) + Math.sin(phase + i * 0.8) * 0.07;
+    const len = 21 - Math.abs(i - 4) * 0.7;
+    const nx = -Math.sin(a);
+    const ny = Math.cos(a);
+    const pts = [];
+    for (let k = 0; k <= 40; k++) {
+      const t = k / 40;
+      const curl = Math.sin(phase + i * 0.8) * 2.4 * t * t;
+      const d = 6 + t * len;
+      const r = Math.max(0.8, 3.6 * Math.sin(Math.PI * Math.min(1, 0.2 + t * 0.86)));
+      pts.push([cx + Math.cos(a) * d + nx * curl, 30 + Math.sin(a) * d + ny * curl, r, t]);
+    }
+    for (const [x, y, r] of pts) m.disc(x, y, r + 1, 'k');
+    for (const [x, y, r, t] of pts) m.disc(x, y, r, t > 0.76 ? 'F' : 'R');
+  }
+
+  // body, white chest ruff, front paws
+  m.disc(cx, 34, 9.5, 'k');
+  m.disc(cx, 34, 8.5, 'R');
+  ellipse(m, cx, 37, 5, 6, 'F');
+  for (const dx of [-4.5, 4.5]) {
+    m.disc(cx + dx, 43, 3.2, 'k');
+    m.disc(cx + dx, 43, 2.3, 'F');
+  }
+
+  // tall ears: red outside, pale fluff inside, black tips
+  for (const sx of [-1, 1]) {
+    const P = (dx, y) => [cx + sx * dx, y];
+    triangle(m, P(-12.5, 0.5), P(-11.5, 19), P(-1.5, 14.5), 'k');
+    triangle(m, P(-11.5, 2), P(-10.5, 18), P(-2.5, 15), 'R');
+    triangle(m, P(-9.5, 7), P(-9, 17), P(-4.5, 15.5), 'F');
+    triangle(m, P(-11.5, 2), P(-11, 6.5), P(-8.5, 5.5), 'K');
+  }
+  // head
+  ellipse(m, cx, 22.5, 10.5, 9, 'k');
+  ellipse(m, cx, 22.5, 9.5, 8, 'R');
+  ellipse(m, cx - 6, 26, 3, 2.2, 'F');
+  ellipse(m, cx + 6, 26, 3, 2.2, 'F');
+  ellipse(m, cx, 27.5, 3.8, 3.2, 'F');
+  m.rect(C - 1, 28, 3, 1, 'k');
+  m.set(C, 29, 'k');
+  m.set(C - 2, 30, 'k');
+  m.set(C + 2, 30, 'k');
+  // narrow glowing eyes under slanted dark brows
+  for (const sx of [-1, 1]) {
+    const X = (dx) => C + sx * dx;
+    for (const [dx, y] of [[-8, 21], [-7, 21], [-6, 20], [-5, 20], [-4, 20]]) m.set(X(dx), y, 'k');
+    for (const [dx, y] of [[-7, 22], [-6, 22], [-5, 21], [-4, 21]]) m.set(X(dx), y, 'y');
+    m.set(X(-5), 22, 'k');
+  }
+  // gold flame mark on the forehead
+  m.rect(C, 15, 1, 3, 'Y');
+  m.set(C - 1, 17, 'Y');
+  m.set(C + 1, 17, 'Y');
+  // hōju jewel on the chest
+  m.disc(cx, 37.5, 2.6, 'k');
+  m.disc(cx, 37.5, 2, 'M');
+  m.set(C - 1, 36, 'w');
+  m.rect(C - 1, 40, 3, 1, 'Y');
+
+  // fox-fire wisps (no outline), bobbing
+  for (const sx of [-1, 1]) {
+    const fx = cx + sx * 25;
+    const fy = 31 + Math.sin(phase + (sx > 0 ? Math.PI : 0)) * 1.5;
+    m.disc(fx, fy, 2.4, 'b');
+    m.set(Math.floor(fx), Math.floor(fy) - 3, 'b');
+    m.disc(fx, fy + 0.3, 1.2, 'c');
+  }
+  return renderMask(m, { glow: 'bc' });
+}
+for (let f = 0; f < KYUBI_FRAMES; f++) add(`kyubi_${f}`, kyubiFrame(f));
 
 // ---------------------------------------------------------------- pickups
 const PICKUP = [

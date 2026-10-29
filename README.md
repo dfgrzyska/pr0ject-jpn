@@ -55,7 +55,7 @@ Wrogowie (roboty w stylu Fushimi Inari):
 | Strzelec | kanonierka podwieszona pod belką torii | wlatuje, staje, strzela celowanymi seriami (`aimed`/`fan`), odlatuje |
 | Wieżyczka | kamienna latarnia tōrō z działem | na warstwie terenu, wachlarz (`fan`) lub pierścień (`ring`) |
 | Nurek | dron kruk-tengu | zawisa, celuje i pikuje w gracza |
-| Ciężki | latające mikoshi z czterema wirnikami | miniboss w połowie etapu, pierścienie / wachlarze / spirala |
+| Ciężki | Kyūbi — czerwony lis o dziewięciu ogonach z klejnotem hōju i lisim ogniem | miniboss w połowie etapu, pierścienie / wachlarze / spirala |
 | Nośnik | dron z klejnotem hōju (czerwony/niebieski/zielony) | zygzak, po ~4,6 s ucieka, zawsze zostawia znajdźkę |
 
 Znajdźki: czerwona — rozrzut, niebieska — laser, zielona — naprowadzane „lisie ognie”.
