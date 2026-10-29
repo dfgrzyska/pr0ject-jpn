@@ -178,6 +178,73 @@ export class Synth {
     o.connect(g).connect(this.out);
   }
 
+  /** Shamisen: thin, bright pluck with the plectrum's click and the buzzing "sawari" of the low string. */
+  shamisen(t, m, dur, v = 1) {
+    const f = mtof(m);
+    const end = t + 0.6;
+    const o = this.osc('sawtooth', f * 1.02, t, end);
+    o.frequency.exponentialRampToValueAtTime(f, t + 0.015);
+    const buzz = this.osc('square', f * 2.006, t, end);
+    const hp = this.filter('highpass', 260, 0.7);
+    const lp = this.filter('lowpass', 6500, 4);
+    lp.frequency.setValueAtTime(6500, t);
+    lp.frequency.exponentialRampToValueAtTime(1400, t + 0.22);
+    const g = this.gain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.09 * v, t + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + Math.min(0.55, 0.2 + dur));
+    const gb = this.gain(0.0001);
+    gb.gain.setValueAtTime(0.18, t);
+    gb.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    o.connect(hp);
+    buzz.connect(gb).connect(hp);
+    hp.connect(lp).connect(g).connect(this.out);
+    this.noiseBurst(t, 0.018, 'bandpass', 3800, 3, 0.07 * v);
+  }
+
+  /** Music box (Otaru's orgel shops): sine tine with a metallic, slightly inharmonic overtone. */
+  orgel(t, m, dur, v = 1) {
+    const f = mtof(m);
+    const end = t + 1.3;
+    const a = this.osc('sine', f, t, end);
+    const b = this.osc('sine', f * 4.02, t, end);
+    const g = this.gain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.07 * v, t + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+    const gb = this.gain(0.0001);
+    gb.gain.setValueAtTime(0.3, t);
+    gb.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    a.connect(g);
+    b.connect(gb).connect(g);
+    g.connect(this.out);
+  }
+
+  /** Naruko: the wooden clappers Yosakoi dancers shake, a quick double clack. */
+  naruko(t, v = 1) {
+    for (const [dt, f] of [[0, 2300], [0.022, 1900]]) {
+      this.noiseBurst(t + dt, 0.02, 'bandpass', f, 6, 0.2 * v);
+      const o = this.osc('square', f * 0.55, t + dt, t + dt + 0.015);
+      const g = this.gain();
+      g.gain.setValueAtTime(0.03 * v, t + dt);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.012);
+      o.connect(g).connect(this.out);
+    }
+  }
+
+  /** Sleigh bells: a little cluster of high, ringing jingles. */
+  suzu(t, v = 1) {
+    for (let i = 0; i < 3; i++) {
+      const tt = t + i * 0.011;
+      this.noiseBurst(tt, 0.06, 'highpass', 8500, 0.8, 0.045 * v);
+      const o = this.osc('sine', 5200 + i * 430, tt, tt + 0.12);
+      const g = this.gain();
+      g.gain.setValueAtTime(0.012 * v, tt);
+      g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.1);
+      o.connect(g).connect(this.out);
+    }
+  }
+
   shaker(t, accent, v = 1) {
     this.noiseBurst(t, accent ? 0.05 : 0.03, 'highpass', 7200, 0.7, (accent ? 0.07 : 0.04) * v);
   }

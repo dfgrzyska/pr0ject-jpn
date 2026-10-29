@@ -41,14 +41,16 @@ export class Waves {
 
   expand(w) {
     const count = w.count ?? 1;
+    // birds of one wave form a flock: shared by every bird, so the last one down can pay the bonus
+    const flock = w.type === 'popcorn' && count > 1 ? { n: count, hit: 0, lost: false } : null;
     for (let k = 0; k < count; k++) {
       if (w.path === 'row') {
         const x = w.x + (k - (count - 1) / 2) * (w.spacing ?? 22);
-        this.queue.push({ at: w.t, wave: { ...w, x } });
+        this.queue.push({ at: w.t, wave: { ...w, x, flock } });
       } else {
         const gap = w.gap ?? GAP[w.type] ?? 0.8;
         const x = w.type === 'diver' && k > 0 ? w.x + (k % 2 ? 14 : -14) * Math.ceil(k / 2) : w.x;
-        this.queue.push({ at: w.t + k * gap, wave: { ...w, x } });
+        this.queue.push({ at: w.t + k * gap, wave: { ...w, x, flock } });
       }
     }
   }

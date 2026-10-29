@@ -4,7 +4,8 @@ import { Pool } from './Pool.js';
 // Three layers seen from above:
 //   far  - the valley / open ocean far below (seamless loop, slowest; keeps moving during a boss)
 //   mid  - the stage strip in 512px chunks; ground turrets ride on it
-//   near - fastest, semi-transparent: sakura petals and mist (Kyoto) or clouds and gulls (Okinawa)
+//   near - fastest, semi-transparent: sakura petals and mist (Kyoto), clouds and gulls (Okinawa),
+//          falling snow blown by the wind, blizzard streaks and diamond dust (Sapporo)
 export class Parallax {
   constructor(scene, stage, meta) {
     this.scene = scene;
@@ -31,6 +32,9 @@ export class Parallax {
     this.near = new Pool(scene, DEPTH.near);
     this.petalTimer = 0;
     this.mistTimer = 1;
+    this.snow = 0.3; // snowfall intensity 0..1 (set by the stage); 1 = blizzard
+    this.wind = 0;
+    this.windTarget = 0; // sideways push the miniboss's blizzard sets
   }
 
   /** Jump to a point in the stage (debug / restart). */
@@ -72,11 +76,13 @@ export class Parallax {
   updateNear(dt, scrolling, H) {
     const fall = scrolling ? this.speed.near : 18;
     if (this.nearKind === 'tropic') this.spawnTropic(dt, fall, scrolling);
+    else if (this.nearKind === 'snow') this.spawnSnow(dt, fall);
     else this.spawnSakura(dt, fall, scrolling);
     for (const p of this.near.live) {
       p.age += dt;
       p.y += p.vy * dt;
-      p.x += (p.vx + Math.sin(p.age * 3) * p.sway) * dt;
+      // snow drifts with the current wind (wf = how strongly, by flake size)
+      p.x += ((p.wf ? this.wind * p.wf : p.vx) + Math.sin(p.age * 3) * p.sway) * dt;
       if (p.flipT && p.age % (p.flipT * 2) < dt) p.setFlipX(!p.flipX);
       if (p.y > H + 40 || p.x < -60 || p.x > VIEW.width + 60) this.near.kill(p);
     }
@@ -109,6 +115,37 @@ export class Parallax {
         flipT: 0,
       });
       g.setFlipX(!left).setAlpha(0.85).play('gull');
+    }
+  }
+
+  /** Sapporo: snowflakes in three sizes, wind gusts; streaks in a blizzard, sparkling diamond dust in calm air. */
+  spawnSnow(dt, fall) {
+    const s = this.snow;
+    const gust = Math.sin(this.farTime * 0.37) * 10 + Math.sin(this.farTime * 1.3) * 4 * s;
+    this.wind += (this.windTarget + gust * (0.4 + s) - this.wind) * Math.min(1, dt * 1.5);
+    this.petalTimer -= dt;
+    while (this.petalTimer <= 0) {
+      this.petalTimer += 1 / (10 + 80 * s * s);
+      const r = Math.random();
+      const size = r < 0.55 ? 0 : r < 0.88 ? 1 : 2;
+      const wf = [0.7, 1, 1.4][size];
+      const p = this.near.spawn(`flake_${size}`, Math.random() * 240 - 30, -4, { vy: (fall * 0.5 + 16) * wf * (0.8 + Math.random() * 0.4), vx: 0, wf, sway: 3 + Math.random() * 6, age: Math.random() * 6, flipT: 0 });
+      p.setAlpha(0.45 + wf * 0.3);
+    }
+    this.mistTimer -= dt;
+    if (this.mistTimer <= 0) {
+      if (s > 0.8) {
+        // blizzard streaks along the wind
+        this.mistTimer = 0.03;
+        const vy = 170 + Math.random() * 60;
+        const p = this.near.spawn('streak', Math.random() * 260 - 40, -6, { vy, vx: 0, wf: 2.6, sway: 0, age: 0, flipT: 0 });
+        p.setAlpha(0.35).setRotation(-Math.atan2(this.wind * 2.6, vy));
+      } else if (s < 0.5) {
+        // diamond dust: tiny ice crystals sparkling in still, cold air
+        this.mistTimer = 0.35 + Math.random() * 0.5;
+        const p = this.near.spawn('dust_0', Math.random() * 180, Math.random() * 200, { vy: fall * 0.3, vx: 0, wf: 0.3, sway: 2, age: 0, flipT: 0 });
+        p.setAlpha(0.7).play('dust');
+      } else this.mistTimer = 0.2;
     }
   }
 

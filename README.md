@@ -1,4 +1,4 @@
-# Shmup Japonia — etap 1: Kioto, etap 2: Okinawa
+# Shmup Japonia — etap 1: Kioto, etap 2: Okinawa, etap 3: Sapporo
 
 Pionowy shmup w przeglądarce (Phaser 4.2.1, WebGL), rozdzielczość wewnętrzna 180×320–420,
 skalowanie całkowitą wielokrotnością pikseli urządzenia.
@@ -15,7 +15,7 @@ npm run art        # przegenerowanie grafik do public/assets/
 Wersja online: https://dfgrzyska.github.io/pr0ject-jpn/ — budowana automatycznie przy każdym pushu na `main`
 (`.github/workflows/pages.yml`; w Settings → Pages źródło musi być ustawione na „GitHub Actions”).
 
-Parametry do testów w adresie: `?stage=2` (start od etapu 2), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
+Parametry do testów w adresie: `?stage=2` / `?stage=3` (start od danego etapu), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
 `?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5), `?ship=oni|kitsune|tsubame`.
 
 ## Statki
@@ -84,7 +84,42 @@ Boss: para shisa — „A” (otwarty pysk, złota kula) i „Un” (zamknięty 
 Strzelają na zmianę wachlarzami, krzyżowymi pierścieniami, strumieniem i dużymi kulami;
 gdy jedna padnie, druga wpada w szał (szybsza, gęstsze serie). Po pokonaniu etap się kończy, bomba się odnawia.
 
-Po ukończeniu etapu 1 gra przechodzi do etapu 2 z tym samym statkiem, wynikiem, mnożnikiem, bronią i życiami.
+## Etap 3
+
+Sapporo zimą, ok. 3,5 min, od zachodu słońca do nocy: skocznia Ōkurayama (rozbieg, zeskok z liniami, stadion,
+wyciąg krzesełkowy) → przedmieścia z kolorowymi blaszanymi dachami pod śniegiem, zbiornikami na naftę,
+zasypanymi autami i strzałkami yabane nad drogami → centrum: wieża zegarowa Tokeidai, ceglany Akarenga
+z ośmiokątną kopułą i czerwonymi gwiazdami, ruch na alei → neony Susukino i zaułek ramen z lampionami →
+zamarznięta rzeka Toyohira z mostami → park Nakajima (staw, Hōheikan, sala koncertowa; zamieć i miniboss) →
+Festiwal Śniegu w parku Ōdōri (lodowe rzeźby, śnieżny zamek, zjeżdżalnia, kamakura, żuraw tanchō, rampa big air,
+stragany, podświetlone drzewa) → plac pod wieżą telewizyjną z cokołem rzeźby niedźwiedzia.
+
+Pora dnia przechodzi płynnie przez cały pas tła (gradacja kolorów w generatorze); okna, latarnie i neony są
+dorysowywane po gradacji, więc świecą w ciemności. Daleka warstwa to ośnieżony las w dolinie, bliska — padający
+śnieg z wiatrem (zamieć z smugami w czasie walki z minibossem, diamentowy pył przy spokojnej pogodzie);
+natężenie opadów to pole `weather` w `stage3.json`.
+
+Wrogowie mają nowe mechaniki:
+
+| Archetyp | Wygląd | Mechanika |
+| --- | --- | --- |
+| Popcorn | raniuszki shima-enaga | **stado**: zestrzelenie całej grupy daje bonus „STADO!” (200 × liczba ptaków × mnożnik) |
+| Strzelec | lodowa latarnia (świeca w bryle lodu) | **lodowy pancerz**: lód pęka w 3 etapach; potem płomień strzela 2× szybciej, ale ma mało życia; bomba kruszy lód od razu |
+| Wieżyczka | bałwan (marchewka wskazuje cel) | **śnieżki**: rzut łukiem w miejsce gracza, pierścień na ziemi pokazuje miejsce upadku; w środku trafia, potem rozprysk wolnych pocisków |
+| Nurek | polatucha | **skoki z drzew**: przyczepia się do krawędzi ekranu, mruga i szybuje łukiem w stronę wysokości gracza, dwa razy |
+| Nośnik | miska miso ramen | bez zmian |
+| Pług (nowy, naziemny) | pług wirnikowy | **jeździ ulicami** tła (w dół alei albo w poprzek) i omiata ekran strumieniem śniegu; wyrzutnik pokazuje kierunek |
+
+Miniboss: Yuki-onna, śnieżna kobieta — znika we mgle i pojawia się gdzie indziej (wtedy strzały przez nią
+przelatują). Wzory: zamarzające płatki (pociski zatrzymują się w kształt śnieżynki i ruszają ze skrętem),
+zamieć (serie znoszone wiatrem — śnieg pokazuje, w którą stronę wieje), sople (mrugają u góry, potem spadają).
+
+Boss: niedźwiedź z Festiwalu Śniegu. Rzeźba wjeżdża na cokole i budzi się, gdy tło się zatrzyma.
+Faza 1: lód przepuszcza strzały, cele to dwie łapy (wachlarze, rzuty śnieżkami) i lodowe serce (pierścienie,
+zamarzające płatki); serce rozbija całą rzeźbę. Faza 2: brunatny niedźwiedź higuma — ryk z pierścieniami,
+zamachy łapami, łososie wijące się w locie i spadające sople; poniżej 35% życia wpada w szał.
+
+Po ukończeniu etapu gra przechodzi do następnego z tym samym statkiem, wynikiem, mnożnikiem, bronią i życiami.
 „Jeszcze raz” po przegranej zaczyna od nowa bieżący etap.
 
 ## Muzyka
@@ -96,13 +131,16 @@ kołatka i shaker. Muzyka rośnie z etapem: spokojne miasto → rozkręcenie prz
 Nuty są tekstem w `src/audio/score.js` (16 kroków na takt, np. `'A4 - - E5 - - F5 - ...'`).
 Etap 2 ma własną ścieżkę „Churaumi” (`src/audio/score2.js`): skala ryukyu (C E F G B), sanshin, flet,
 bębny eisa (duży bęben i paranku), kołatki sanba i bujający rytm kachāshī; osobne motywy manty i shisa.
+Etap 3 gra „Kita no Yoru” (`src/audio/score3.js`) w stylu festiwalu Yosakoi Sōran: skala min'yō (D F G A C),
+shamisen, pozytywka (Otaru), flet, taiko, drewniane kołatki naruko i dzwonki sań; rozstrojona pozytywka
+dla Yuki-onny i szybki, ciężki motyw niedźwiedzia.
 Efekty (`src/audio/Sfx.js`): ciche, syntetyzowane strzały każdej broni (z limitem częstotliwości) i eksplozje
 w trzech rozmiarach. Głośnik / M wycisza muzykę i efekty razem.
 iOS: dźwięk startuje po pierwszym dotknięciu; przełącznik wyciszenia telefonu wycisza też grę.
 
 ## Fale
 
-`src/data/stage1.json`, `src/data/stage2.json` — dane etapu (wygląd, muzyka, ostrzeżenia) i harmonogram fal,
+`src/data/stage1.json` … `stage3.json` — dane etapu (wygląd, muzyka, ostrzeżenia) i harmonogram fal,
 edytowalne bez zmian w kodzie:
 
 ```json
@@ -112,6 +150,8 @@ edytowalne bez zmian w kodzie:
 ```
 
 Opcjonalne pola: `gap` (odstęp w serii), `spacing` (dla `row`), `y` (wysokość zatrzymania), `hp`, `dir`.
+Sapporo: `{ "type": "plow", "x": 90, "dir": "down" }` (pług w dół alei) albo `{ "type": "plow", "y": 36, "dir": 1 }`
+(w poprzek, od lewej; `-1` od prawej) — generator rysuje pod nim ulicę; nurek `{ "x": 0, "y": 50 }` startuje z lewej krawędzi.
 Pod każdą wieżyczką generator tła rysuje kamienną platformę i wycina drzewa — po zmianie wieżyczek
 uruchom `npm run art`. Mnożnik: N = suma wag wrogów w etapie / 9 (liczone automatycznie, `src/config.js`).
 
@@ -120,7 +160,7 @@ uruchom `npm run art`. Mnożnik: N = suma wag wrogów w etapie / 9 (liczone auto
 Cała grafika jest generowana kodem (`tools/`) do zwykłych plików PNG w `public/assets/`:
 atlas sprite'ów (`sprites.png` + `sprites.json`), font pikselowy z polskimi znakami, a dla każdego etapu
 `bg/stageN/far.png` i 14 kawałków warstwy środkowej `bg/stageN/mid_XX.png` (180×512).
-Generatory teł: `tools/art/kyoto/`, `tools/art/okinawa/` (`node tools/gen-art.mjs --only=stage2` buduje jeden etap). Każdy plik można podmienić ręcznie
+Generatory teł: `tools/art/kyoto/`, `tools/art/okinawa/`, `tools/art/sapporo/` (`node tools/gen-art.mjs --only=stage3` buduje jeden etap). Każdy plik można podmienić ręcznie
 rysowaną grafiką o tych samych wymiarach/nazwach ramek. `node tools/gen-art.mjs --preview` zapisuje
 powiększone podglądy do `tools/preview/`.
 

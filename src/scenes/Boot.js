@@ -53,6 +53,16 @@ export class Boot extends Phaser.Scene {
     anim('shisa_un', ['shisa_un_0', 'shisa_un_1'], 3);
     anim('gull', ['gull_0', 'gull_1'], 6);
     for (const c of ['red', 'blue', 'green']) anim(`glass_${c}`, [`glass_${c}_0`, `glass_${c}_1`], 10);
+    // stage 3 (Sapporo)
+    anim('enaga', ['enaga_0', 'enaga_1'], 9);
+    anim('momonga', ['momonga_0', 'momonga_1'], 5);
+    anim('wisp', ['wisp_0', 'wisp_1'], 10);
+    anim('yukionna', [0, 1, 2, 3].map((i) => `yukionna_${i}`), 6);
+    anim('kuma_heart', ['kuma_heart_0', 'kuma_heart_1'], 3);
+    anim('plow_d', ['plow_d_0', 'plow_d_1'], 6);
+    anim('plow_r', ['plow_r_0', 'plow_r_1'], 6);
+    anim('dust', ['dust_0', 'dust_1'], 5);
+    for (const c of ['red', 'blue', 'green']) anim(`ramen_${c}`, [`ramen_${c}_0`, `ramen_${c}_1`], 4);
     anim('homing', ['ps_homing_0', 'ps_homing_1'], 10);
     anim('expl_s', [0, 1, 2, 3, 4].map((i) => `expl_s_${i}`), 16, 0);
     anim('expl_m', [0, 1, 2, 3, 4, 5].map((i) => `expl_m_${i}`), 14, 0);

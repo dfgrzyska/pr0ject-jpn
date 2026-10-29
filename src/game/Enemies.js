@@ -53,22 +53,50 @@ export class Enemies {
       ground: !!def.ground,
       head: null,
       u: 0,
+      // per-skin extras, listed so a pooled sprite never keeps a previous enemy's state
+      armor: 0,
+      maxArmor: 0,
+      lantern: false,
+      flock: null,
+      ghost: false, // faded out: shots pass through, no contact
+      invuln: false, // shots are absorbed without damage
+      pass: false, // shots fly through (still solid to touch)
+      group: null,
+      role: null,
+      wreck: null,
+      kind: null,
     };
     base.maxHp = base.hp;
     const look = this.skin[w.type];
+    if (!look && w.type !== 'boss') return; // e.g. snowploughs exist only in Sapporo
+    if (w.type === 'turret' && !w.pattern && look.pattern) base.pattern = look.pattern;
     let e;
     switch (w.type) {
       case 'popcorn':
         e = this.pool.spawn(look.frame, w.x, -8, base);
         e.play({ key: look.anim, startFrame: Math.floor(Math.random() * 2) });
         e.fireAt = Math.random() < FAIR.popcornFireChance ? 0.9 + Math.random() * 1.4 : Infinity;
+        if (look.flock && w.flock) e.flock = w.flock;
         break;
       case 'shooter':
         e = this.pool.spawn(look.frame, w.x, -12, base);
-        e.play(look.anim);
+        if (look.armor) {
+          // ice lantern: the shell soaks up damage first, the flame inside is weak
+          e.lantern = true;
+          e.armor = e.maxArmor = look.armor;
+          e.hp = e.maxHp = look.hp;
+        } else e.play(look.anim);
         e.stopY = w.y ?? 50 + Math.random() * 24;
         break;
       case 'diver':
+        if ((w.path ?? look.path) === 'glide') {
+          // flying squirrel: clings to the trees at a screen edge, then glides across
+          const side = w.x < VIEW.width / 2 ? -1 : 1;
+          e = this.pool.spawn(look.frame, side < 0 ? -8 : VIEW.width + 8, w.y ?? 50, { ...base, path: 'glide', dir: -side, leaps: 0 });
+          e.y0 = e.y;
+          e.timer = 0.35;
+          break;
+        }
         e = this.pool.spawn(look.frame, w.x, -10, base);
         e.play(look.anim);
         e.stopY = w.y ?? 30 + Math.random() * 18;
@@ -79,7 +107,7 @@ export class Enemies {
         e.zig = Math.random() < 0.5 ? -1 : 1;
         break;
       case 'heavy':
-        e = this.pool.spawn(look.frame, w.x, -30, base);
+        e = this.pool.spawn(look.frame, w.x, -30, { ...base, kind: look.kind ?? null });
         e.play(look.anim);
         this.heavy = e;
         e.patternIndex = 0;
@@ -92,8 +120,23 @@ export class Enemies {
         e.head = this.heads.spawn(`${look.head}0`, w.x, -10);
         break;
       }
+      case 'plow': {
+        // drives along a street of the mid layer: down an avenue, or across from a screen edge
+        const horiz = typeof w.dir === 'number';
+        const x = horiz ? (w.dir > 0 ? -14 : VIEW.width + 14) : w.x;
+        const y = horiz ? w.y : -16;
+        e = this.pool.spawn(horiz ? look.side : look.frame, x, y, { ...base, horiz, dir: horiz ? w.dir : 1, wreck: look.wreck });
+        e.play(horiz ? look.sideAnim : look.anim);
+        e.setFlipX(horiz && w.dir < 0);
+        e.u = s.parallax.stripU(y);
+        e.head = this.heads.spawn(`${look.chute}0`, x, y);
+        e.timer = 1.2;
+        e.spray = 0;
+        e.cool = 0;
+        break;
+      }
       case 'boss':
-        return this.spawnBoss(w, base);
+        return w.boss === 'kuma' ? this.spawnKuma(w, base) : this.spawnBoss(w, base);
       default:
         return;
     }
@@ -105,7 +148,7 @@ export class Enemies {
     let best = null;
     let bd = Infinity;
     for (const e of this.pool.live) {
-      if (e.y < 0 || e.hp <= 0) continue;
+      if (e.y < 0 || e.hp <= 0 || e.ghost || e.invuln) continue;
       const d = (e.x - x) ** 2 + (e.y - y) ** 2 + (e.ground ? 900 : 0);
       if (d < bd) {
         bd = d;
@@ -126,14 +169,37 @@ export class Enemies {
   }
 
   damage(e, amount, byBomb = false) {
-    if (e.dead || e.hp <= 0) return;
-    e.hp -= amount;
+    if (e.dead || e.hp <= 0 || e.ghost || e.invuln) return;
     // brief brighten, rate-limited so constant fire blinks instead of whiting the sprite out
     if (e.flashCool <= 0) {
       e.flash = 0.035;
       e.flashCool = 0.12;
     }
+    if (e.armor > 0) {
+      // ice shell first (a bomb shatters it outright), the rest goes through to the flame
+      e.armor -= byBomb ? Infinity : amount;
+      if (e.armor > 0) return;
+      amount = byBomb ? amount : -e.armor;
+      this.shatter(e);
+    }
+    e.hp -= amount;
     if (e.hp <= 0) this.destroy(e, byBomb);
+  }
+
+  /** The ice lantern's shell breaks: the bare flame flares up and fires faster. */
+  shatter(e) {
+    const s = this.scene;
+    e.armor = 0;
+    e.radius = 6;
+    e.play('wisp');
+    s.fx.shards(e.x, e.y, 12);
+    s.sfx.explode('s');
+    if (e.state === 'leave') {
+      e.state = 'attack';
+      e.shots = 0;
+    }
+    e.shots += 2;
+    e.timer = Math.max(e.timer, 0.45);
   }
 
   damageAll(amount) {
@@ -142,10 +208,21 @@ export class Enemies {
 
   destroy(e) {
     const s = this.scene;
+    if (e.group?.kind === 'kuma' && e.role !== 'body') {
+      this.kumaPartDown(e);
+      return;
+    }
     s.score.kill(e.def);
+    if (e.flock && !e.flock.lost && ++e.flock.hit >= e.flock.n) {
+      // the whole flock shot down: bonus
+      const pts = 200 * e.flock.n * s.score.mult;
+      s.score.add(pts);
+      s.fx.text(e.x, e.y - 12, `STADO! +${pts}`, 1.5, 0xd8f0ff);
+    }
     if (e.ground) {
       s.fx.explode(e.x, e.y, e.def.explosion, e.u);
-      this.wrecks.spawn(this.skin.turret.wreck, e.x, e.y, { u: e.u });
+      const wr = this.wrecks.spawn(e.wreck ?? this.skin.turret.wreck, e.x, e.y, { u: e.u });
+      if (e.horiz) wr.setRotation(-e.dir * Math.PI / 2);
     } else s.fx.explode(e.x, e.y, e.def.explosion);
     if (e.type === 'carrier') s.spawnPickup(e.color, e.x, e.y, -40);
     if (e.type === 'heavy' || e.type === 'boss') {
@@ -185,7 +262,7 @@ export class Enemies {
   /** HP shown in the top bar: the mid-stage heavy or the whole boss pair. */
   bossBar() {
     const g = this.bossGroup;
-    if (g && !g.defeated && g.parts.some((p) => !p.dead && p.y > 0)) {
+    if (g && !g.defeated && (g.kind === 'kuma' ? g.awake : g.parts.some((p) => !p.dead && p.y > 0))) {
       let hp = 0;
       let max = 0;
       for (const p of g.parts) {
@@ -201,6 +278,7 @@ export class Enemies {
   updateBossGroup(dt) {
     const g = this.bossGroup;
     if (!g || g.defeated) return;
+    if (g.kind === 'kuma') return this.updateKuma(g, dt);
     const alive = g.parts.filter((p) => !p.dead && p.hp > 0);
     if (!alive.length) return;
     g.t += dt;
@@ -258,9 +336,211 @@ export class Enemies {
     }
   }
 
+  // ---------------------------------------------------------------- boss: the Snow Festival bear
+  /**
+   * Phase 1: an ice sculpture of a rearing bear rides in on its pedestal and wakes when the scroll stops.
+   * Both paws and the ice heart are separate targets; the sculpture's body is solid ice. Breaking the
+   * heart shatters the sculpture: phase 2 is the brown higuma that was inside.
+   */
+  spawnKuma(w, base) {
+    const s = this.scene;
+    const y = -36;
+    const u = s.parallax.stripU(y);
+    const g = { kind: 'kuma', state: 'dormant', t: 0, phase: 0, step: 0, timer: 1, parts: [], enraged: false, defeated: false };
+    Object.assign(g, { awake: false, stage: 1, home: w.x, homeY: 76, restY: 0, roar: 0, body: null });
+    const part = (frame, role, dx, dy, hp, radius, pts) => {
+      const e = this.pool.spawn(frame, w.x + dx, y + dy, { ...base, role, dx, dy, u, hp, maxHp: hp, radius, pts, group: g, invuln: true, ground: true });
+      e.setDepth(DEPTH.ground + (role === 'body' ? 0.3 : 0.35));
+      g.parts.push(e);
+      return e;
+    };
+    // parts before the body, so shots reach them first
+    part('kuma_heart_0', 'heart', 0, 4, 300, 6, 6000).play('kuma_heart');
+    part('kuma_paw', 'paw', -22, -13, 150, 7, 3000).setFlipX(true);
+    part('kuma_paw', 'paw', 22, -13, 150, 7, 3000);
+    g.body = part('kuma_ice', 'body', 0, 0, 700, 20, 0);
+    g.body.pass = true; // shots go through the ice to reach the paws and the heart
+    this.bossGroup = g;
+    return g.body;
+  }
+
+  updateKuma(g, dt) {
+    const s = this.scene;
+    const alive = g.parts.filter((p) => !p.dead && p.hp > 0);
+    const body = g.body;
+    const place = (x, y) => {
+      for (const p of alive) {
+        p.x = x + p.dx;
+        p.y = y + p.dy;
+      }
+    };
+    if (g.state === 'dormant') {
+      place(g.home, s.parallax.screenY(body.u));
+      if (s.parallax.time >= s.parallax.maxTime - 1e-3) {
+        g.state = 'wake';
+        g.t = 0;
+        g.restY = body.y;
+        s.cameras.main.shake(1300, 0.005);
+      }
+      return;
+    }
+    g.t += dt;
+    g.roar -= dt;
+    if (g.stage === 2) body.setFrame(g.roar > 0 ? 'kuma_1' : 'kuma_0');
+    if (g.state === 'wake') {
+      // shakes off the snow, then rises from the pedestal into the air
+      const k = Math.max(0, Math.min(1, (g.t - 1.3) / 1.2));
+      place(g.home + (g.t < 1.3 ? Math.round(Math.random() * 2 - 1) : 0), g.restY + (g.homeY - g.restY) * k * k * (3 - 2 * k));
+      if (Math.random() < dt * 14) s.fx.shards(body.x + (Math.random() - 0.5) * 50, body.y + (Math.random() - 0.5) * 44, 2, true);
+      if (g.t >= 1.3 && body.ground)
+        for (const p of alive) {
+          p.ground = false;
+          p.setDepth(DEPTH.air - (p.role === 'body' ? 0.2 : 0.1));
+        }
+      if (g.t >= 2.5) {
+        g.state = 'fight';
+        g.awake = true;
+        g.t = 0;
+        g.timer = 0.6;
+        for (const p of alive) if (p.role !== 'body') p.invuln = false;
+      }
+      return;
+    }
+    if (g.state === 'break') {
+      // the ice falls away and the real bear roars
+      place(g.home + Math.round(Math.random() * 2 - 1), g.homeY);
+      if (g.t >= 1.4) {
+        g.state = 'fight';
+        g.t = 0;
+        g.timer = 0.5;
+        body.invuln = false;
+        body.pass = false;
+      }
+      return;
+    }
+    const sp = g.enraged ? 1.5 : 1;
+    place(g.home + (g.stage === 1 ? 12 : 26) * Math.sin(g.t * 0.5 * sp), g.homeY + 4 * Math.sin(g.t * 0.9 * sp));
+    if (g.stage === 2 && !g.enraged && body.hp < body.maxHp * 0.35) {
+      g.enraged = true;
+      g.timer = 0.5;
+      g.roar = 1;
+      s.hud.show('', 'NIEDŹWIEDŹ WPADA W SZAŁ!', 1.6, true);
+    }
+    g.timer -= dt * (g.enraged ? 1.4 : 1);
+    if (g.timer > 0) return;
+    if (g.stage === 1) this.kumaIce(g, alive);
+    else this.kumaBear(g, body);
+  }
+
+  /** Phase 1: paw swipes, heart pulses, a frozen snowflake from the heart while the paws lob snowballs. */
+  kumaIce(g, alive) {
+    const b = this.scene.bullets;
+    const pl = this.scene.player;
+    const heart = alive.find((e) => e.role === 'heart');
+    const paws = alive.filter((e) => e.role === 'paw');
+    const can = (e) => e && this.canFire(e);
+    const next = () => {
+      g.phase++;
+      g.step = 0;
+      g.timer = 1;
+    };
+    switch (g.phase % 3) {
+      case 0: {
+        const paw = paws[g.step % Math.max(1, paws.length)];
+        if (can(paw)) b.fan(paw.x, paw.y + 5, this.aimAt(paw, 0, 5), 7, 1.0, normal);
+        else if (can(heart)) b.fan(heart.x, heart.y, this.aimAt(heart), 5, 0.7, normal);
+        g.timer = 0.6;
+        if (++g.step >= 6) next();
+        break;
+      }
+      case 1:
+        if (can(heart)) b.ring(heart.x, heart.y, 14, g.step * 0.22, slow, g.step % 2 === 1);
+        g.timer = 0.85;
+        if (++g.step >= 4) next();
+        break;
+      default:
+        if (can(heart))
+          for (let arm = 0; arm < 6; arm++)
+            for (let k = 0; k < 3; k++)
+              b.shot('eb_s', heart.x, heart.y, g.step * 0.5 + (arm / 6) * TAU, 34 + k * 22, 1.8, { frz: { at: 0.55, hold: 0.6, turn: 0.4, speed: slow } });
+        for (const paw of paws) if (can(paw)) b.lob(paw.x, paw.y, Phaser.Math.Clamp(pl.x + (Math.random() - 0.5) * 40, 10, VIEW.width - 10), pl.y, 1.1);
+        g.timer = 1.3;
+        if (++g.step >= 3) next();
+    }
+  }
+
+  /** Phase 2: roaring rings, alternating paw swipes, thrown salmon with icicles falling from above. */
+  kumaBear(g, body) {
+    const s = this.scene;
+    const b = s.bullets;
+    if (!this.canFire(body)) {
+      g.timer = 0.2;
+      return;
+    }
+    const next = () => {
+      g.phase++;
+      g.step = 0;
+      g.timer = 0.9;
+    };
+    switch (g.phase % 3) {
+      case 0:
+        if (g.step === 0) {
+          g.roar = 1.4;
+          s.cameras.main.shake(500, 0.004);
+        }
+        b.ring(body.x, body.y + 14, g.enraged ? 22 : 18, g.step * 0.17, g.step % 2 ? normal : slow, g.step === 1);
+        g.timer = 0.45;
+        if (++g.step >= 3) next();
+        break;
+      case 1: {
+        const side = g.step % 2 ? 1 : -1;
+        b.fan(body.x + side * 24, body.y - 15, this.aimAt(body, side * 24, -15), g.enraged ? 13 : 11, 1.4, normal);
+        g.timer = 0.5;
+        if (++g.step >= 6) next();
+        break;
+      }
+      default: {
+        const a = this.aimAt(body, 0, 14);
+        const n = g.enraged ? 5 : 3;
+        for (let i = 0; i < n; i++) b.shot('salmon', body.x, body.y + 14, a + (i / (n - 1) - 0.5) * 0.7, 64, 2.2, { wig: 5, wf: 8, spin: true });
+        for (let k = 0; k < 4; k++) b.shot('icicle', 12 + Math.random() * (VIEW.width - 24), 8, DOWN, 0, 1.8, { ay: 150, maxV: 150, safe: 0.7 });
+        g.timer = 0.85;
+        if (++g.step >= 4) next();
+      }
+    }
+  }
+
+  /** A paw or the heart of the sculpture breaks off. The heart takes the whole sculpture with it. */
+  kumaPartDown(e) {
+    const s = this.scene;
+    const g = e.group;
+    const pts = e.pts * s.score.mult;
+    s.score.add(pts);
+    s.fx.explode(e.x, e.y, 'm');
+    s.fx.shards(e.x, e.y, 16);
+    s.fx.text(e.x, e.y - 12, `${pts}`, 1.2, 0xffe080);
+    this.remove(e);
+    if (e.role !== 'heart') return;
+    for (const p of g.parts)
+      if (!p.dead && p.role === 'paw') {
+        s.fx.explode(p.x, p.y, 's');
+        s.fx.shards(p.x, p.y, 10);
+        p.hp = 0;
+        this.remove(p);
+      }
+    Object.assign(g, { stage: 2, state: 'break', t: 0, phase: 0, step: 0, roar: 1.6 });
+    g.body.radius = 20;
+    s.bullets.cancelAll(s.fx);
+    s.fx.flash(0.7, 0.5);
+    s.fx.shards(g.body.x, g.body.y, 40);
+    s.cameras.main.shake(700, 0.006);
+    s.hud.show('LÓD PĘKA!', 'TO PRAWDZIWY NIEDŹWIEDŹ!', 2.2);
+  }
+
 
   remove(e) {
     if (e.head) this.heads.kill(e.head);
+    if (e.kind === 'yukionna') this.scene.parallax.windTarget = 0; // her blizzard dies down with her
     if (e === this.heavy) this.heavy = null;
     this.pool.kill(e);
   }
@@ -282,18 +562,24 @@ export class Enemies {
           this.shooter(e, dt, b);
           break;
         case 'diver':
-          this.diver(e, dt);
+          if (e.path === 'glide') this.glide(e, dt);
+          else this.diver(e, dt);
           break;
         case 'carrier':
           this.carrier(e, dt);
           break;
         case 'heavy':
-          this.heavyUpdate(e, dt, b);
+          if (e.kind === 'yukionna') this.yukiOnna(e, dt, b);
+          else this.heavyUpdate(e, dt, b);
           break;
         case 'turret':
           this.turret(e, dt, b);
           break;
+        case 'plow':
+          this.plow(e, dt, b);
+          break;
       }
+      if (e.dead) continue;
       e.flashCool -= dt;
       if (e.flash > 0) {
         e.flash -= dt;
@@ -306,7 +592,10 @@ export class Enemies {
         e.head?.clearTint();
       }
       const off = e.y > H + 40 || e.y < -70 || e.x < -50 || e.x > VIEW.width + 50;
-      if (off && e.type !== 'boss' && (e.age > 2 || e.y > H)) this.remove(e);
+      if (off && e.type !== 'boss' && (e.age > 2 || e.y > H)) {
+        if (e.flock) e.flock.lost = true; // a bird got away: no flock bonus
+        this.remove(e);
+      }
     }
     this.pool.sweep();
     this.heads.sweep();
@@ -343,6 +632,11 @@ export class Enemies {
   }
 
   shooter(e, dt, b) {
+    if (e.lantern && e.armor > 0) {
+      // the ice cracks as it takes hits, the candle flickers inside
+      const crack = e.armor > e.maxArmor * 0.6 ? 0 : e.armor > e.maxArmor * 0.25 ? 1 : 2;
+      e.setFrame(`tourou_${crack}_${Math.floor(e.age * 7) % 2}`);
+    }
     if (e.state === 'enter') {
       e.y += Math.max(8, (e.stopY - e.y) * 2.2) * dt;
       if (e.y >= e.stopY - 1) {
@@ -359,7 +653,7 @@ export class Enemies {
           else b.fan(e.x, e.y + 8, this.aimAt(e, 0, 8), 3, 0.42, normal);
         }
         e.shots--;
-        e.timer = 1.1;
+        e.timer = e.lantern && e.armor <= 0 ? 0.55 : 1.1; // a bare flame fires twice as fast
         if (e.shots <= 0) {
           e.state = 'leave';
           e.timer = 0.5;
@@ -400,6 +694,59 @@ export class Enemies {
     }
   }
 
+  /**
+   * Flying squirrel: hops in from the trees at a screen edge, blinks, then glides across in a swoop
+   * that dips towards the player's height (never into the bottom quarter), and does it once more.
+   */
+  glide(e, dt) {
+    const W = VIEW.width;
+    const s = this.scene;
+    if (e.state === 'enter') {
+      const edge = e.dir > 0 ? 8 : W - 8;
+      e.x += (edge - e.x) * Math.min(1, dt * 8);
+      e.setFlipX(e.dir < 0);
+      e.timer -= dt;
+      if (e.timer <= 0) {
+        e.state = 'cling';
+        e.timer = 0.45;
+      }
+    } else if (e.state === 'cling') {
+      e.timer -= dt;
+      e.flash = Math.floor(e.timer * 20) % 2 ? 0.02 : 0;
+      if (e.timer <= 0) {
+        e.state = 'leap';
+        e.k = 0;
+        e.xs = e.x;
+        e.ys = e.y;
+        e.yt = Phaser.Math.Clamp(s.player.y, e.ys + 30, s.H * 0.72);
+        e.play('momonga');
+      }
+    } else if (e.state === 'leap') {
+      e.k += dt / 1.7;
+      const k = Math.min(1, e.k);
+      const xe = e.dir > 0 ? W - 8 : 8;
+      e.x = e.xs + (xe - e.xs) * k;
+      e.y = e.ys + (e.yt - e.ys) * Math.sin(Math.PI * k) + 16 * k;
+      if (k >= 1) {
+        e.leaps++;
+        e.dir = -e.dir;
+        if (e.leaps >= 2) {
+          e.state = 'leave';
+          e.vy = 30;
+        } else {
+          e.state = 'cling';
+          e.timer = 0.5;
+          e.anims.stop();
+          e.setFrame('momonga_2').setFlipX(e.dir < 0);
+        }
+      }
+    } else {
+      // last glide: off the far side and down
+      e.x += -e.dir * 90 * dt;
+      e.y += e.vy * dt;
+    }
+  }
+
   carrier(e, dt) {
     if (e.state === 'enter') {
       if (e.path === 'zigzag') {
@@ -431,14 +778,122 @@ export class Enemies {
     if (this.canFire(e)) {
       e.timer -= dt;
       if (e.timer <= 0) {
-        e.timer = 2.2;
+        e.timer = e.pattern === 'lob' ? 2.5 : 2.2;
         const mx = e.x + Math.cos(ang) * 6;
         const my = e.y + Math.sin(ang) * 6;
-        if (e.pattern === 'ring') {
+        if (e.pattern === 'lob') b.lob(e.x, e.y - 3, p.x, p.y); // snowman: a snowball where you are now
+        else if (e.pattern === 'ring') {
           e.shots++;
           b.ring(mx, my, 10, e.shots * 0.31, slow);
         } else b.fan(mx, my, ang, 5, 0.84, slow);
       }
+    }
+  }
+
+  /**
+   * Rotary snowplough: drives along its street (down an avenue faster than the scroll, or across)
+   * and sweeps its chute back and forth, throwing a stream of snow pellets. The chute shows the aim.
+   */
+  plow(e, dt, b) {
+    const s = this.scene;
+    if (e.horiz) e.x += e.dir * 22 * dt;
+    else e.u -= 16 * dt;
+    e.y = s.parallax.screenY(e.u);
+    const ang = DOWN + Math.sin(e.age * 1.3) * 1.0;
+    const th = Math.atan2(-Math.cos(ang), Math.sin(ang));
+    const i = ((Math.round(th / (TAU / 16)) % 16) + 16) % 16;
+    const hx = e.horiz ? e.x + e.dir * 5 : e.x;
+    const hy = e.horiz ? e.y : e.y + 4;
+    e.head.setFrame(`${this.skin.plow.chute}${i}`).setPosition(hx, hy);
+    if (!this.canFire(e)) return;
+    if (e.spray > 0) {
+      e.spray -= dt;
+      e.cool -= dt;
+      if (e.cool <= 0) {
+        e.cool = 0.11;
+        b.fire(hx + Math.cos(ang) * 4, hy + Math.sin(ang) * 4, ang, slow);
+      }
+    } else if ((e.timer -= dt) <= 0) {
+      e.spray = 1.6;
+      e.timer = 1.4;
+    }
+  }
+
+  /**
+   * Yuki-onna: appears in the blizzard, fades out and back in somewhere else between attacks
+   * (shots pass through her while she is mist). Freezing snowflakes, wind-blown fans, falling icicles.
+   */
+  yukiOnna(e, dt, b) {
+    const s = this.scene;
+    if (e.state === 'enter') {
+      e.y += Math.max(6, (70 - e.y) * 0.8) * dt;
+      if (e.y >= 69) Object.assign(e, { state: 'fight', fight: 0, timer: 0.8, patternIndex: 0, step: 0, homeX: e.x, blink: null });
+      return;
+    }
+    if (e.state === 'leave') {
+      e.setAlpha(Math.max(0, e.alpha - dt * 0.8));
+      e.ghost = e.alpha < 0.5;
+      s.parallax.windTarget = 0;
+      if (e.alpha <= 0) this.remove(e);
+      return;
+    }
+    e.fight += dt;
+    if (e.fight > 34) {
+      e.state = 'leave';
+      return;
+    }
+    if (e.blink) {
+      const k = (e.blink.t += dt);
+      if (k < 0.35) e.setAlpha(1 - k / 0.35);
+      else if (k < 0.7) {
+        e.x = e.homeX = e.blink.x;
+        e.y = e.blink.y;
+        e.setAlpha((k - 0.35) / 0.35);
+      } else {
+        e.setAlpha(1);
+        e.blink = null;
+      }
+      e.ghost = !!e.blink && e.alpha < 0.6;
+      return;
+    }
+    e.x = e.homeX + 6 * Math.sin(e.fight * 1.1);
+    e.timer -= dt;
+    if (e.timer > 0 || !this.canFire(e)) return;
+    const next = (n) => {
+      if (++e.step < n) return;
+      e.patternIndex++;
+      e.step = 0;
+      e.timer = 1.1;
+      s.parallax.windTarget = 0;
+      e.blink = { t: 0, x: 40 + Math.random() * 100, y: 58 + Math.random() * 30 };
+    };
+    switch (e.patternIndex % 3) {
+      case 0: {
+        // six arms of bullets stop into a snowflake, hang, then drift on with a twist
+        const rot = e.step * 0.3 + Math.random() * 0.3;
+        for (let arm = 0; arm < 6; arm++)
+          for (let k = 0; k < 4; k++)
+            b.shot('eb_s', e.x, e.y + 6, rot + (arm / 6) * TAU, 40 + k * 22, 1.8, { frz: { at: 0.55, hold: 0.7, turn: e.step % 2 ? -0.45 : 0.45, speed: slow } });
+        e.timer = 1.6;
+        next(3);
+        break;
+      }
+      case 1: {
+        // blizzard: aimed bursts blown sideways by the wind (the snow shows which way it blows)
+        const wind = Math.floor(e.step / 6) % 2 ? 36 : -36;
+        s.parallax.windTarget = wind * 1.4;
+        const a = this.aimAt(e, 0, 8);
+        for (const d of [-0.25, 0, 0.25]) b.shot('eb_s', e.x, e.y + 8, a + d - wind * 0.006, normal, 1.8, { ax: wind, maxV: 95 });
+        e.timer = 0.24;
+        next(12);
+        break;
+      }
+      default:
+        // icicles appear along the top, blink, then fall
+        for (let k = 0; k < 5; k++) b.shot('icicle', 10 + ((k + Math.random() * 0.8) / 5) * (VIEW.width - 20), 8, DOWN, 0, 1.8, { ay: 150, maxV: 150, safe: 0.7 });
+        b.ring(e.x, e.y + 4, 10, e.step * 0.3, slow);
+        e.timer = 0.8;
+        next(4);
     }
   }
 

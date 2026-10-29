@@ -142,6 +142,8 @@ export class Music {
         else if (e.hit === 's' || e.hit === 'S') s.shaker(t, e.hit === 'S', v);
         else if (e.hit === 'p') s.paranku(t, v);
         else if (e.hit === 'c') s.sanba(t, v);
+        else if (e.hit === 'n') s.naruko(t, v);
+        else if (e.hit === 'j') s.suzu(t, v);
       } else for (const m of e.notes) s[e.track](t, m, e.len * stepDur, v);
     }
   }

@@ -15,6 +15,8 @@ export const RAMPS = {
   banana: [0x2c5a22, 0x4f8c2c, 0x7cba3c, 0xbce070],
   hibiscus: [0x1a4422, 0x2c6a2c, 0x4a8e36, 0x76b44a],
   palm: [0x1e4a1e, 0x337a2a, 0x58a83a, 0x9cd65c],
+  // winter (Sapporo): Todo fir and Ezo spruce, dark under the snow
+  fir: [0x0c1f1c, 0x15302a, 0x22463a, 0x34604c],
 };
 
 const LIGHT = (() => {
@@ -36,7 +38,7 @@ export function rampColor(ramp, v, x, y) {
  */
 export function crownPixels(kind, cx, cy, r, rand, seed) {
   const clumps = [];
-  const spiky = kind === 'cedar' || kind === 'fern';
+  const spiky = kind === 'cedar' || kind === 'fern' || kind === 'fir';
   if (spiky) {
     clumps.push([0, 0, r]);
   } else if (kind === 'bamboo') {

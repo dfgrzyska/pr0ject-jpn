@@ -2,6 +2,7 @@
 import { Mask, renderMask } from '../lib/spritekit.mjs';
 import { Raster, fbm, bayer } from '../lib/raster.mjs';
 import { okinawaSprites } from './okinawa/sprites.mjs';
+import { sapporoSprites } from './sapporo/sprites.mjs';
 
 const out = [];
 const add = (name, raster) => out.push({ name, raster });
@@ -334,8 +335,9 @@ function kyubiFrame(f) {
 }
 for (let f = 0; f < KYUBI_FRAMES; f++) add(`kyubi_${f}`, kyubiFrame(f));
 
-// ---------------------------------------------------------------- stage 2 skins
+// ---------------------------------------------------------------- stage 2 and 3 skins
 okinawaSprites(add);
+sapporoSprites(add);
 
 // ---------------------------------------------------------------- pickups
 const PICKUP = [

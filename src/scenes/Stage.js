@@ -343,6 +343,7 @@ export class Stage extends Phaser.Scene {
         }
       }
       this.music.play(this.stageSong());
+      this.parallax.snow = this.weather();
     }
     if (this.bombClear > 0) {
       this.bombClear -= dt;
@@ -364,6 +365,16 @@ export class Stage extends Phaser.Scene {
       if (this.bossDown && (this.bossClearT -= dt) <= 0) this.stageClear();
     } else if (playing && this.t >= this.stage.end && this.waves.done && (this.enemies.count() === 0 || this.t > this.stage.end + 12))
       this.stageClear();
+  }
+
+  /** Snowfall intensity 0..1 from the stage's weather schedule; a blizzard while Yuki-onna is here. */
+  weather() {
+    const w = this.stage.weather;
+    if (!w) return 0;
+    if (this.enemies.heavy?.kind === 'yukionna' && this.enemies.heavy.state !== 'leave') return 1;
+    let v = w[0][1];
+    for (const [t, s] of w) if (this.t >= t) v = s;
+    return v;
   }
 
   /** Music follows the stage: its time schedule, switching to the heavy / boss themes when they come. */
@@ -401,7 +412,7 @@ export class Stage extends Phaser.Scene {
     for (const s of p.shots.live) {
       if (s.dead) continue;
       for (const e of enemies) {
-        if (e.dead || e.hp <= 0 || e.y < -e.radius + 2) continue;
+        if (e.dead || e.hp <= 0 || e.ghost || e.pass || e.y < -e.radius + 2) continue;
         const r = e.radius + s.radius;
         const dx = e.x - s.x;
         const dy = e.y - s.y;
@@ -428,6 +439,7 @@ export class Stage extends Phaser.Scene {
     if (p.invulnerable > 0 || p.entering > 0 || p.god) return;
     const hr = PLAYER.hitRadius;
     for (const b of this.bullets.pool.live) {
+      if (b.safe > 0) continue; // icicles blinking before they fall
       const r = b.radius + hr;
       if ((b.x - p.x) ** 2 + (b.y - p.y) ** 2 < r * r) {
         this.bullets.pool.kill(b);
@@ -436,7 +448,7 @@ export class Stage extends Phaser.Scene {
       }
     }
     for (const e of enemies) {
-      if (e.ground || e.dead) continue;
+      if (e.ground || e.dead || e.ghost) continue;
       const r = e.radius * 0.7 + hr;
       if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < r * r) {
         p.hit();

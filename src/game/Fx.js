@@ -60,6 +60,15 @@ export class Fx {
     }
   }
 
+  /** Ice shards / snow bits bursting out (shattered ice, snowball impact). */
+  shards(x, y, n, small = false) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const v = (small ? 30 : 60) + Math.random() * (small ? 60 : 150);
+      this.petals.spawn(`shard_${i % 3}`, x, y, { vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.4 + Math.random() * (small ? 0.3 : 0.7) });
+    }
+  }
+
   text(x, y, str, life = 1.2, tint = 0xffffff) {
     const t = this.scene.add.bitmapText(Math.round(x), Math.round(y), FONT, str).setOrigin(0.5).setDepth(DEPTH.fx + 2);
     t.setLetterSpacing(-1).setTint(tint).setVertexRoundMode('full');
