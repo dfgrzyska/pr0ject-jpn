@@ -121,12 +121,12 @@ export class Hud {
     this.soundBtn.setFrame(s.music.enabled ? 'btn_sound_on' : 'btn_sound_off');
 
     this.boss.clear();
-    const hv = s.enemies.heavy;
-    if (hv && hv.y > 0) {
+    const bar = s.enemies.bossBar();
+    if (bar) {
       const w = 100;
       const x = Math.round(W / 2 - w / 2);
       this.boss.fillStyle(0x120e1a, 1).fillRect(x - 1, 27, w + 2, 4);
-      this.boss.fillStyle(0xe2421f, 1).fillRect(x, 28, Math.max(0, Math.round((w * hv.hp) / hv.def.hp)), 2);
+      this.boss.fillStyle(0xe2421f, 1).fillRect(x, 28, Math.max(0, Math.round((w * bar.hp) / bar.max)), 2);
     }
 
     if (this.bannerT > 0) {

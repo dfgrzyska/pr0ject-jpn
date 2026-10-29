@@ -10,7 +10,7 @@ export class Pool {
   spawn(frame, x, y, props) {
     let s = this.free.pop();
     if (!s) s = this.scene.add.sprite(0, 0, 'sprites', frame);
-    s.setFrame(frame).setPosition(x, y).setDepth(this.depth).setAlpha(1).setVisible(true).setActive(true).setFlipX(false);
+    s.setFrame(frame).setPosition(x, y).setDepth(this.depth).setAlpha(1).setScale(1).setVisible(true).setActive(true).setFlipX(false);
     s.clearTint();
     s.dead = false;
     if (props) Object.assign(s, props);

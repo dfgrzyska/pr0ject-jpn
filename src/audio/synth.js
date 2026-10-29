@@ -137,6 +137,47 @@ export class Synth {
     o.connect(g).connect(this.out);
   }
 
+  /** Sanshin: Okinawan three-string lute; square + octave saw through a resonant, closing filter. */
+  sanshin(t, m, dur, v = 1) {
+    const f = mtof(m);
+    const end = t + 0.75;
+    const o = this.osc('square', f * 1.012, t, end);
+    o.frequency.exponentialRampToValueAtTime(f, t + 0.025);
+    const o2 = this.osc('sawtooth', f * 2, t, end);
+    const lp = this.filter('lowpass', 4200, 3.2);
+    lp.frequency.setValueAtTime(4200, t);
+    lp.frequency.exponentialRampToValueAtTime(1100, t + 0.28);
+    const g = this.gain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.085 * v, t + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + Math.min(0.7, 0.28 + dur));
+    const g2 = this.gain(0.3);
+    o.connect(lp);
+    o2.connect(g2).connect(lp);
+    lp.connect(g).connect(this.out);
+  }
+
+  /** Paranku: small single-headed hand drum of eisa dancers. */
+  paranku(t, v = 1) {
+    const o = this.osc('sine', 430, t, t + 0.15);
+    o.frequency.exponentialRampToValueAtTime(250, t + 0.08);
+    const g = this.gain();
+    g.gain.setValueAtTime(0.32 * v, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+    o.connect(g).connect(this.out);
+    this.noiseBurst(t, 0.03, 'bandpass', 2100, 1.5, 0.12 * v);
+  }
+
+  /** Sanba: wooden castanet clack. */
+  sanba(t, v = 1) {
+    this.noiseBurst(t, 0.022, 'bandpass', 5200, 6, 0.24 * v);
+    const o = this.osc('square', 2600, t, t + 0.015);
+    const g = this.gain();
+    g.gain.setValueAtTime(0.025 * v, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.012);
+    o.connect(g).connect(this.out);
+  }
+
   shaker(t, accent, v = 1) {
     this.noiseBurst(t, accent ? 0.05 : 0.03, 'highpass', 7200, 0.7, (accent ? 0.07 : 0.04) * v);
   }

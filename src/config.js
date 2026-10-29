@@ -117,7 +117,9 @@ export const ENEMIES = {
   shooter: { hp: 22, weight: 2, score: 300, radius: 9, explosion: 'm' },
   turret: { hp: 26, weight: 3, score: 400, radius: 7, explosion: 'm', ground: true },
   diver: { hp: 5, weight: 1, score: 150, radius: 6, explosion: 's' },
-  heavy: { hp: 600, weight: 5, score: 8000, radius: 19, explosion: 'l' }, // stage 1: Kyūbi, the red nine-tailed fox
+  heavy: { hp: 600, weight: 5, score: 8000, radius: 19, explosion: 'l' }, // Kyūbi (Kyoto), manta (Okinawa)
+  // stage boss, one entry per part (Okinawa: two shisa sharing one HP bar)
+  boss: { hp: 520, weight: 6, score: 15000, radius: 15, explosion: 'l' },
   carrier: { hp: 12, weight: 2, score: 500, radius: 7, explosion: 's' },
 };
 

@@ -110,7 +110,9 @@ export class Music {
       if (this.step === 0 && this.pending) this.begin(this.pending, false);
       const song = this.current;
       const stepDur = 60 / song.bpm / 4;
-      this.playStep(song, this.songBar * 16 + this.step, this.next, stepDur);
+      // swing: every second 16th lands late (shuffle feel for the Okinawan songs)
+      const late = this.step % 2 ? (song.swing ?? 0) * stepDur : 0;
+      this.playStep(song, this.songBar * 16 + this.step, this.next + late, stepDur);
       this.next += stepDur;
       if (++this.step === 16) {
         this.step = 0;
@@ -138,6 +140,8 @@ export class Music {
         else if (e.hit === 'k') s.taiko(t, false, v);
         else if (e.hit === 'x') s.ka(t, v);
         else if (e.hit === 's' || e.hit === 'S') s.shaker(t, e.hit === 'S', v);
+        else if (e.hit === 'p') s.paranku(t, v);
+        else if (e.hit === 'c') s.sanba(t, v);
       } else for (const m of e.notes) s[e.track](t, m, e.len * stepDur, v);
     }
   }

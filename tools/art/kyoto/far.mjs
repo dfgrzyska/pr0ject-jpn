@@ -1,6 +1,6 @@
 // Far layer: the forested valley far below the ridge. Seamless vertical loop.
-import { Raster, fbm, rng, bayer } from '../lib/raster.mjs';
-import { crownPixels, grade, rampColor } from './nature.mjs';
+import { Raster, fbm, rng, bayer } from '../../lib/raster.mjs';
+import { crownPixels, grade, rampColor } from '../nature.mjs';
 
 export const FAR_W = 180;
 export const FAR_H = 384;

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { STAGES } from '../data/stages.js';
 
 export const FONT = 'pixel';
 
@@ -12,12 +13,14 @@ export class Boot extends Phaser.Scene {
     this.load.atlas('sprites', 'sprites.png', 'sprites.json');
     this.load.image('font', 'font.png');
     this.load.json('fontMeta', 'font.json');
-    this.load.json('bgMeta', 'bg/stage1.json');
-    this.load.image('far', 'bg/far.png');
-    // mid chunks are listed in bg/stage1.json, queue them once it arrives
-    this.load.once('filecomplete-json-bgMeta', (key, type, meta) => {
-      for (let i = 0; i < meta.chunks; i++) this.load.image(`mid_${i}`, `bg/mid_${String(i).padStart(2, '0')}.png`);
-    });
+    // per-stage backgrounds: far loop + mid chunks listed in bg/<id>/meta.json
+    for (const { id } of STAGES) {
+      this.load.image(`far_${id}`, `bg/${id}/far.png`);
+      this.load.json(`bg_${id}`, `bg/${id}/meta.json`);
+      this.load.once(`filecomplete-json-bg_${id}`, (key, type, meta) => {
+        for (let i = 0; i < meta.chunks; i++) this.load.image(`mid_${id}_${i}`, `bg/${id}/mid_${String(i).padStart(2, '0')}.png`);
+      });
+    }
   }
 
   create() {
@@ -41,6 +44,15 @@ export class Boot extends Phaser.Scene {
     anim('diver', ['diver_0', 'diver_1'], 8);
     anim('kyubi', ['kyubi_0', 'kyubi_1', 'kyubi_2', 'kyubi_3'], 7);
     for (const c of ['red', 'blue', 'green']) anim(`carrier_${c}`, [`carrier_${c}_0`, `carrier_${c}_1`], 10);
+    // stage 2 (Okinawa)
+    anim('tobiuo', ['tobiuo_0', 'tobiuo_1'], 8);
+    anim('hari', ['hari_0', 'hari_1'], 4);
+    anim('habu', ['habu_0', 'habu_1'], 5);
+    anim('manta', ['manta_0', 'manta_1', 'manta_2', 'manta_3'], 5);
+    anim('shisa_a', ['shisa_a_0', 'shisa_a_1'], 3);
+    anim('shisa_un', ['shisa_un_0', 'shisa_un_1'], 3);
+    anim('gull', ['gull_0', 'gull_1'], 6);
+    for (const c of ['red', 'blue', 'green']) anim(`glass_${c}`, [`glass_${c}_0`, `glass_${c}_1`], 10);
     anim('homing', ['ps_homing_0', 'ps_homing_1'], 10);
     anim('expl_s', [0, 1, 2, 3, 4].map((i) => `expl_s_${i}`), 16, 0);
     anim('expl_m', [0, 1, 2, 3, 4, 5].map((i) => `expl_m_${i}`), 14, 0);

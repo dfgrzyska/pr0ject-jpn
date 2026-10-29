@@ -1,6 +1,7 @@
 // Sprite definitions: player ship, enemies (Fushimi Inari robot designs), bullets, pickups, FX, UI.
 import { Mask, renderMask } from '../lib/spritekit.mjs';
 import { Raster, fbm, bayer } from '../lib/raster.mjs';
+import { okinawaSprites } from './okinawa/sprites.mjs';
 
 const out = [];
 const add = (name, raster) => out.push({ name, raster });
@@ -332,6 +333,9 @@ function kyubiFrame(f) {
   return renderMask(m, { glow: 'bc' });
 }
 for (let f = 0; f < KYUBI_FRAMES; f++) add(`kyubi_${f}`, kyubiFrame(f));
+
+// ---------------------------------------------------------------- stage 2 skins
+okinawaSprites(add);
 
 // ---------------------------------------------------------------- pickups
 const PICKUP = [

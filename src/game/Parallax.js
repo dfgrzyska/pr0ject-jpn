@@ -2,9 +2,9 @@ import { DEPTH, VIEW } from '../config.js';
 import { Pool } from './Pool.js';
 
 // Three layers seen from above:
-//   far  - the valley far below (seamless loop, slowest)
-//   mid  - the stage strip in 512px chunks (ridge, shrines, torii); ground turrets ride on it
-//   near - sakura petals and mist (fastest, semi-transparent)
+//   far  - the valley / open ocean far below (seamless loop, slowest; keeps moving during a boss)
+//   mid  - the stage strip in 512px chunks; ground turrets ride on it
+//   near - fastest, semi-transparent: sakura petals and mist (Kyoto) or clouds and gulls (Okinawa)
 export class Parallax {
   constructor(scene, stage, meta) {
     this.scene = scene;
@@ -14,16 +14,19 @@ export class Parallax {
     this.chunkH = meta.chunkHeight;
     this.maxTime = (meta.length - this.anchor) / this.speed.mid;
     this.time = 0;
+    this.farTime = 0;
     this.uTop = this.anchor;
+    this.nearKind = stage.near ?? 'sakura';
+    const farKey = `far_${stage.id}`;
 
     this.far = scene.add
-      .tileSprite(0, 0, VIEW.width, VIEW.maxHeight, 'far')
+      .tileSprite(0, 0, VIEW.width, VIEW.maxHeight, farKey)
       .setOrigin(0, 0)
       .setDepth(DEPTH.far);
-    this.farH = scene.textures.get('far').getSourceImage().height;
+    this.farH = scene.textures.get(farKey).getSourceImage().height;
     this.chunks = [];
     for (let i = 0; i < meta.chunks; i++)
-      this.chunks.push(scene.add.image(0, 0, `mid_${i}`).setOrigin(0, 0).setDepth(DEPTH.mid).setVisible(false));
+      this.chunks.push(scene.add.image(0, 0, `mid_${stage.id}_${i}`).setOrigin(0, 0).setDepth(DEPTH.mid).setVisible(false));
 
     this.near = new Pool(scene, DEPTH.near);
     this.petalTimer = 0;
@@ -33,6 +36,7 @@ export class Parallax {
   /** Jump to a point in the stage (debug / restart). */
   setTime(t) {
     this.time = Math.min(t, this.maxTime);
+    this.farTime = t;
   }
 
   /** Screen y of a strip position u (distance from the start of the strip). */
@@ -46,7 +50,10 @@ export class Parallax {
   }
 
   update(dt, scrolling, H) {
-    if (scrolling) this.time = Math.min(this.time + dt, this.maxTime);
+    if (scrolling) {
+      this.time = Math.min(this.time + dt, this.maxTime);
+      this.farTime += dt;
+    }
     this.uTop = Math.round(this.anchor + this.time * this.speed.mid);
 
     const top = this.length - this.uTop; // strip y at the top of the screen
@@ -57,13 +64,55 @@ export class Parallax {
       img.setVisible(vis);
       if (vis) img.y = y;
     }
-    this.far.tilePositionY = -(Math.round(this.time * this.speed.far) % this.farH);
+    this.far.tilePositionY = -(Math.round(this.farTime * this.speed.far) % this.farH);
 
     this.updateNear(dt, scrolling, H);
   }
 
   updateNear(dt, scrolling, H) {
     const fall = scrolling ? this.speed.near : 18;
+    if (this.nearKind === 'tropic') this.spawnTropic(dt, fall, scrolling);
+    else this.spawnSakura(dt, fall, scrolling);
+    for (const p of this.near.live) {
+      p.age += dt;
+      p.y += p.vy * dt;
+      p.x += (p.vx + Math.sin(p.age * 3) * p.sway) * dt;
+      if (p.flipT && p.age % (p.flipT * 2) < dt) p.setFlipX(!p.flipX);
+      if (p.y > H + 40 || p.x < -60 || p.x > VIEW.width + 60) this.near.kill(p);
+    }
+    this.near.sweep();
+  }
+
+  /** Okinawa: big soft clouds drifting past and the odd seagull. */
+  spawnTropic(dt, fall, scrolling) {
+    this.mistTimer -= dt;
+    if (this.mistTimer <= 0) {
+      this.mistTimer = 2.2 + Math.random() * 3;
+      const c = this.near.spawn(`cloud_${Math.floor(Math.random() * 2)}`, Math.random() * 180, -30, {
+        vy: fall * 1.15,
+        vx: -4 + Math.random() * 8,
+        sway: 0,
+        age: 0,
+        flipT: 0,
+      });
+      c.setAlpha(0.3);
+    }
+    this.petalTimer -= dt;
+    if (this.petalTimer <= 0 && scrolling) {
+      this.petalTimer = 5 + Math.random() * 6;
+      const left = Math.random() < 0.5;
+      const g = this.near.spawn('gull_0', left ? -8 : VIEW.width + 8, -10 + Math.random() * 60, {
+        vy: fall * 0.55,
+        vx: (left ? 1 : -1) * (26 + Math.random() * 14),
+        sway: 4,
+        age: 0,
+        flipT: 0,
+      });
+      g.setFlipX(!left).setAlpha(0.85).play('gull');
+    }
+  }
+
+  spawnSakura(dt, fall, scrolling) {
     this.petalTimer -= dt;
     if (this.petalTimer <= 0) {
       this.petalTimer = 0.25 + Math.random() * 0.4;
@@ -88,13 +137,5 @@ export class Parallax {
       });
       m.setAlpha(0.22);
     }
-    for (const p of this.near.live) {
-      p.age += dt;
-      p.y += p.vy * dt;
-      p.x += (p.vx + Math.sin(p.age * 3) * p.sway) * dt;
-      if (p.flipT && p.age % (p.flipT * 2) < dt) p.setFlipX(!p.flipX);
-      if (p.y > H + 20) this.near.kill(p);
-    }
-    this.near.sweep();
   }
 }

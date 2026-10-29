@@ -1,6 +1,7 @@
 // Generates all pixel art into public/assets.
 //   node tools/gen-art.mjs            -> assets
 //   node tools/gen-art.mjs --preview  -> also writes upscaled previews to tools/preview/
+//   node tools/gen-art.mjs --only=stage2  -> sprites + font + only that stage's backgrounds
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,14 +9,20 @@ import { packAtlas } from './lib/spritekit.mjs';
 import { Raster } from './lib/raster.mjs';
 import { buildSprites } from './art/sprites.mjs';
 import { buildFont, FONT } from './art/font.mjs';
-import { buildFar } from './art/far.mjs';
-import { buildMid } from './art/mid.mjs';
+import * as kyoto from './art/kyoto/index.mjs';
+import * as okinawa from './art/okinawa/index.mjs';
+
+// background generators per stage (id = folder under public/assets/bg/)
+const STAGES = [
+  { id: 'stage1', art: kyoto },
+  { id: 'stage2', art: okinawa },
+];
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const assets = join(root, 'public', 'assets');
 const previewDir = join(root, 'tools', 'preview');
 const preview = process.argv.includes('--preview');
-mkdirSync(join(assets, 'bg'), { recursive: true });
+const only = process.argv.find((a) => a.startsWith('--only='))?.slice(7);
 if (preview) mkdirSync(previewDir, { recursive: true });
 
 const write = (rel, buf) => {
@@ -56,16 +63,20 @@ const asciiJson = (o) => JSON.stringify(o).replace(/[\u0080-￿]/g, (c) => `\\u$
 write('font.json', Buffer.from(asciiJson({ ...FONT, chars: font.chars })));
 if (preview) writeFileSync(join(previewDir, 'font_x4.png'), font.raster.scaled(4, 0x30304a).toPNG());
 
-console.log('backgrounds');
-const far = buildFar();
-write('bg/far.png', far.toPNG());
-const mid = buildMid();
-mid.chunks.forEach((c, i) => write(`bg/mid_${String(i).padStart(2, '0')}.png`, c.toPNG()));
-write('bg/stage1.json', Buffer.from(JSON.stringify(mid.meta, null, 2)));
-if (preview) {
-  writeFileSync(join(previewDir, 'far_x2.png'), far.scaled(2).toPNG());
-  // full mid strip composited over the far layer, split in a few columns for viewing
-  const { composite } = await import('./art/preview.mjs');
-  composite(mid, far, previewDir);
+for (const { id, art } of STAGES) {
+  if (only && only !== id) continue;
+  console.log(`backgrounds ${id}`);
+  mkdirSync(join(assets, 'bg', id), { recursive: true });
+  const far = art.buildFar();
+  write(`bg/${id}/far.png`, far.toPNG());
+  const mid = art.buildMid();
+  mid.chunks.forEach((c, i) => write(`bg/${id}/mid_${String(i).padStart(2, '0')}.png`, c.toPNG()));
+  write(`bg/${id}/meta.json`, Buffer.from(JSON.stringify(mid.meta, null, 2)));
+  if (preview) {
+    writeFileSync(join(previewDir, `${id}_far_x2.png`), far.scaled(2).toPNG());
+    // full mid strip composited over the far layer, split in a few columns for viewing
+    const { composite } = await import('./art/preview.mjs');
+    composite(mid, far, previewDir, id);
+  }
 }
 console.log('done');

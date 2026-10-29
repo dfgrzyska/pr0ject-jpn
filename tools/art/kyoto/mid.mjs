@@ -5,10 +5,10 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Raster, fbm, rng, bayer, scaleColor, mix } from '../lib/raster.mjs';
-import { crownPixels, grade, rampColor } from './nature.mjs';
+import { Raster, fbm, rng, bayer, scaleColor, mix } from '../../lib/raster.mjs';
+import { crownPixels, grade, rampColor } from '../nature.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
 export const W = 180;
 export const CHUNK = 512;

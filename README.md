@@ -1,4 +1,4 @@
-# Shmup Japonia — etap 1: Kioto, Fushimi Inari
+# Shmup Japonia — etap 1: Kioto, etap 2: Okinawa
 
 Pionowy shmup w przeglądarce (Phaser 4.2.1, WebGL), rozdzielczość wewnętrzna 180×320–420,
 skalowanie całkowitą wielokrotnością pikseli urządzenia.
@@ -15,7 +15,7 @@ npm run art        # przegenerowanie grafik do public/assets/
 Wersja online: https://dfgrzyska.github.io/pr0ject-jpn/ — budowana automatycznie przy każdym pushu na `main`
 (`.github/workflows/pages.yml`; w Settings → Pages źródło musi być ustawione na „GitHub Actions”).
 
-Parametry do testów w adresie: `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
+Parametry do testów w adresie: `?stage=2` (start od etapu 2), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
 `?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5), `?ship=oni|kitsune|tsubame`.
 
 ## Statki
@@ -60,6 +60,33 @@ Wrogowie (roboty w stylu Fushimi Inari):
 
 Znajdźki: czerwona — rozrzut, niebieska — laser, zielona — naprowadzane „lisie ognie”.
 
+## Etap 2
+
+Okinawa, ok. 3,5 min: otwarte morze z wysepkami, rafami i łodziami sabani → plaża kurortu (parasole, hotel,
+basen) → wioska z czerwonymi dachami z białą zaprawą, koralowymi murkami, drzewami fukugi i betonowymi domami
+ze zbiornikami na wodę → pola trzciny cukrowej i ananasów, ruiny gusuku → zamek Shuri (Shureimon,
+pasiasty dziedziniec, hala Seiden) → dżungla z klifami → morze z rafami (miniboss) → wyspa z latarnią →
+otwarte morze z bossem.
+
+Daleka warstwa to głęboki ocean (płynie dalej podczas walki z bossem), bliska — chmury i mewy.
+Wrogowie mają skórki wyspiarskie (`src/game/skins.js`), zachowania są te same co w Kioto:
+
+| Archetyp | Wygląd |
+| --- | --- |
+| Popcorn | latająca ryba tobiuo |
+| Strzelec | smocza łódź wyścigowa hārī |
+| Wieżyczka | koralowy bunkier z dachem z czerwonej dachówki |
+| Nurek | wąż habu |
+| Ciężki | robo-manta (miniboss nad morzem) |
+| Nośnik | szklana boja z ryukyuańskiego szkła w siatce |
+
+Boss: para shisa — „A” (otwarty pysk, złota kula) i „Un” (zamknięty pysk), wspólny pasek życia.
+Strzelają na zmianę wachlarzami, krzyżowymi pierścieniami, strumieniem i dużymi kulami;
+gdy jedna padnie, druga wpada w szał (szybsza, gęstsze serie). Po pokonaniu etap się kończy, bomba się odnawia.
+
+Po ukończeniu etapu 1 gra przechodzi do etapu 2 z tym samym statkiem, wynikiem, mnożnikiem, bronią i życiami.
+„Jeszcze raz” po przegranej zaczyna od nowa bieżący etap.
+
 ## Muzyka
 
 Oryginalna ścieżka „Senbon” grana na żywo przez Web Audio (`src/audio/`) — bez plików audio.
@@ -67,13 +94,16 @@ Skala *in* (miyako-bushi) na A, instrumenty: koto, flet w stylu shakuhachi, chip
 kołatka i shaker. Muzyka rośnie z etapem: spokojne miasto → rozkręcenie przy świątyni → pełny utwór na grzbiecie
 → osobny motyw minibossa → finał na szczycie; do tego dżingle końca etapu i końca gry.
 Nuty są tekstem w `src/audio/score.js` (16 kroków na takt, np. `'A4 - - E5 - - F5 - ...'`).
+Etap 2 ma własną ścieżkę „Churaumi” (`src/audio/score2.js`): skala ryukyu (C E F G B), sanshin, flet,
+bębny eisa (duży bęben i paranku), kołatki sanba i bujający rytm kachāshī; osobne motywy manty i shisa.
 Efekty (`src/audio/Sfx.js`): ciche, syntetyzowane strzały każdej broni (z limitem częstotliwości) i eksplozje
 w trzech rozmiarach. Głośnik / M wycisza muzykę i efekty razem.
 iOS: dźwięk startuje po pierwszym dotknięciu; przełącznik wyciszenia telefonu wycisza też grę.
 
 ## Fale
 
-`src/data/stage1.json` — harmonogram etapu, edytowalny bez zmian w kodzie:
+`src/data/stage1.json`, `src/data/stage2.json` — dane etapu (wygląd, muzyka, ostrzeżenia) i harmonogram fal,
+edytowalne bez zmian w kodzie:
 
 ```json
 { "t": 4.0, "type": "popcorn", "x": 40, "path": "sine", "count": 6 }
@@ -88,8 +118,9 @@ uruchom `npm run art`. Mnożnik: N = suma wag wrogów w etapie / 9 (liczone auto
 ## Grafika
 
 Cała grafika jest generowana kodem (`tools/`) do zwykłych plików PNG w `public/assets/`:
-atlas sprite'ów (`sprites.png` + `sprites.json`), font pikselowy z polskimi znakami, `bg/far.png`
-i 14 kawałków warstwy środkowej `bg/mid_XX.png` (180×512). Każdy plik można podmienić ręcznie
+atlas sprite'ów (`sprites.png` + `sprites.json`), font pikselowy z polskimi znakami, a dla każdego etapu
+`bg/stageN/far.png` i 14 kawałków warstwy środkowej `bg/stageN/mid_XX.png` (180×512).
+Generatory teł: `tools/art/kyoto/`, `tools/art/okinawa/` (`node tools/gen-art.mjs --only=stage2` buduje jeden etap). Każdy plik można podmienić ręcznie
 rysowaną grafiką o tych samych wymiarach/nazwach ramek. `node tools/gen-art.mjs --preview` zapisuje
 powiększone podglądy do `tools/preview/`.
 
@@ -102,6 +133,7 @@ src/main.js            konfiguracja Phaser, skalowanie całkowite, safe-area
 src/config.js          parametry rozgrywki (bronie, wrogowie, mnożnik, fair play)
 src/scenes/Boot.js     ładowanie, font, animacje
 src/scenes/Stage.js    pętla etapu, kolizje, stany (tytuł / gra / pauza / koniec)
-src/game/*.js          paralaksa, gracz i bronie, wrogowie, pociski, fale, wynik, HUD, efekty
+src/data/              etapy (stages.js + stageN.json)
+src/game/*.js          paralaksa, gracz i bronie, wrogowie i bossowie, skórki, pociski, fale, wynik, HUD, efekty
 tools/                 generator grafiki
 ```

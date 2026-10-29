@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import stage1 from '../data/stage1.json';
 import { getMusic } from '../audio/Music.js';
 import { DEPTH, PLAYER, SCORE, SHIPS, VIEW, WEAPONS } from '../config.js';
+import { STAGES } from '../data/stages.js';
 import { Bullets } from '../game/Bullets.js';
 import { Enemies } from '../game/Enemies.js';
 import { Fx } from '../game/Fx.js';
@@ -47,8 +47,15 @@ export class Stage extends Phaser.Scene {
   }
 
   create(data = {}) {
+    // debug: ?stage=2 starts at stage 2, ?t=120 at 120 s, ?god = invulnerable, ?weapon=laser&power=5, ?ship=oni
+    const q = new URLSearchParams(window.location.search);
+    const qStage = Number(q.get('stage')) - 1;
+    this.stageIndex = data.stage ?? (qStage >= 0 && qStage < STAGES.length ? qStage : 0);
+    this.stage = STAGES[this.stageIndex];
+    this.carry = data.carry ?? null;
+    this.bossDown = false;
+    this.bossClearT = 0;
     this.H = this.scale.height;
-    this.stage = stage1;
     this.state = 'title';
     this.paused = false;
     this.bombClear = 0;
@@ -57,24 +64,23 @@ export class Stage extends Phaser.Scene {
     this.clearT = 0;
     this.warned = new Set();
 
-    this.parallax = new Parallax(this, stage1, this.cache.json.get('bgMeta'));
+    this.parallax = new Parallax(this, this.stage, this.cache.json.get(`bg_${this.stage.id}`));
     this.fx = new Fx(this);
     this.bullets = new Bullets(this);
-    this.enemies = new Enemies(this);
+    this.enemies = new Enemies(this, this.stage.skin);
     this.pickups = new Pool(this, DEPTH.pickup);
     this.player = new Player(this);
+    // N comes from stage 1 (x10 by the end of stage 1 without dying); the multiplier carries over
     const step =
       SCORE.multiplierStep === 'auto'
-        ? Math.max(1, Math.round(Waves.totalWeight(stage1.waves) / 9)) || SCORE.multiplierStepFallback
+        ? Math.max(1, Math.round(Waves.totalWeight(STAGES[0].waves) / 9)) || SCORE.multiplierStepFallback
         : SCORE.multiplierStep;
     this.score = new Score(step);
-    this.waves = new Waves(stage1.waves);
+    this.waves = new Waves(this.stage.waves);
     this.music = getMusic(this);
     this.sfx = this.music.sfx;
     this.hud = new Hud(this);
 
-    // debug: ?t=120 starts at 120 s, ?god makes the ship invulnerable, ?weapon=laser&power=5, ?ship=oni
-    const q = new URLSearchParams(window.location.search);
     const qShip = SHIPS.findIndex((sh) => sh.id === q.get('ship'));
     this.shipIndex = qShip >= 0 ? qShip : loadShipIndex();
     this.select = null;
@@ -95,6 +101,10 @@ export class Stage extends Phaser.Scene {
       this.game.events.off('hidden', this.onHidden, this);
     });
 
+    if (this.carry) {
+      this.startGame(); // straight on from the previous stage
+      return;
+    }
     this.music.play('title'); // audible once the browser allows audio (first tap / key)
     if (data.select) this.openSelect();
     else this.showTitle();
@@ -107,8 +117,8 @@ export class Stage extends Phaser.Scene {
       ['SHMUP', 0xffd6e5, 2],
       ['JAPONIA', 0xffd6e5, 2],
       '',
-      ['ETAP 1', 0xffffff],
-      ['KIOTO - FUSHIMI INARI', 0xf08bb0],
+      [this.stage.title, 0xffffff],
+      [this.stage.subtitle, 0xf08bb0],
       '',
       { sprite: 'pickup_red', x: 52, text: 'ROZRZUT', tint: 0xff8a6a },
       { sprite: 'pickup_blue', x: 52, text: 'LASER', tint: 0x8ac8ff },
@@ -130,29 +140,59 @@ export class Stage extends Phaser.Scene {
 
   startGame() {
     this.music.unlock();
-    this.music.play('intro', true);
     this.hud.closePanel();
-    this.shipIndex = this.select.index;
-    try {
-      localStorage.setItem(SHIP_KEY, this.select.ship.id);
-    } catch {
-      /* ignore */
+    if (this.select) {
+      this.shipIndex = this.select.index;
+      try {
+        localStorage.setItem(SHIP_KEY, this.select.ship.id);
+      } catch {
+        /* ignore */
+      }
+      this.select.destroy();
+      this.select = null;
+    } else if (this.carry) this.shipIndex = this.carry.ship;
+    this.player.setShip(SHIPS[this.shipIndex]);
+    if (this.carry) {
+      const c = this.carry;
+      Object.assign(this.score, { score: c.score, mult: c.mult, progress: c.progress });
+      Object.assign(this.player, { lives: c.lives, weapon: c.weapon, level: c.level });
     }
-    this.player.setShip(this.select.ship);
-    this.select.destroy();
-    this.select = null;
     this.state = 'play';
-    if (this.debugStart) {
+    if (this.debugStart && !this.carry) {
       this.t = this.debugStart;
       this.parallax.setTime(this.debugStart);
       this.waves.skipTo(this.debugStart);
     }
     this.player.spawn();
-    this.hud.show('ETAP 1', 'KIOTO - FUSHIMI INARI', 2.6);
+    this.music.play(this.stageSong(), true);
+    this.hud.show(this.stage.title, this.stage.subtitle, 2.6);
   }
 
+  /** Retry: the same stage from the ship selection, fresh lives and score. */
   restart() {
-    this.scene.restart({ select: true });
+    this.scene.restart({ select: true, stage: this.stageIndex });
+  }
+
+  /** After a cleared stage: carry everything into the next one, or start over after the last. */
+  advance() {
+    const next = this.stageIndex + 1;
+    if (next >= STAGES.length) return this.scene.restart({ select: true, stage: 0 });
+    const p = this.player;
+    const s = this.score;
+    this.scene.restart({
+      stage: next,
+      carry: { ship: this.shipIndex, lives: p.lives, weapon: p.weapon, level: p.level, score: s.score, mult: s.mult, progress: s.progress },
+    });
+  }
+
+  /** Called by Enemies when every part of the stage boss is destroyed. */
+  onBossDefeated() {
+    this.bossDown = true;
+    this.bossClearT = 3;
+    this.player.bombs = 1; // the bomb refills after a boss
+    this.bullets.cancelAll(this.fx);
+    this.fx.flash(0.6, 0.6);
+    if (this.stage.warnings?.bossDown) this.hud.show(this.stage.warnings.bossDown, '', 2.4);
   }
 
   gameOver() {
@@ -178,13 +218,14 @@ export class Stage extends Phaser.Scene {
     this.music.play('clear', true);
     this.clearT = 0;
     this.endTimer = 3;
-    this.player.bombs = 1; // no bosses yet: the bomb refills at the end of the stage
+    this.player.bombs = 1; // stages without a boss refill the bomb at the end
     this.player.drag = null;
+    const next = STAGES[this.stageIndex + 1];
     this.bullets.cancelAll(this.fx);
     const hi = this.recordHi();
     this.time.delayedCall(2000, () =>
       this.hud.panel([
-        ['ETAP 1', 0xffd6e5, 2],
+        [this.stage.title, 0xffd6e5, 2],
         ['UKOŃCZONY', 0xffd6e5, 2],
         '',
         ['WYNIK', 0xb0aec0],
@@ -193,7 +234,8 @@ export class Stage extends Phaser.Scene {
         hi.isNew ? ['NOWY REKORD!', 0xffe080, 1, true] : [`REKORD ${String(hi.value).padStart(8, '0')}`, 0xb0aec0],
         ['BOMBA UZUPEŁNIONA', 0xb0aec0],
         '',
-        ['DOTKNIJ / ENTER - JESZCZE RAZ', 0xffe080, 1, true],
+        next ? [`DALEJ: ${next.title} - ${next.name}`, 0xffffff] : ['GRATULACJE!', 0xffe080],
+        [next ? 'DOTKNIJ / ENTER' : 'DOTKNIJ / ENTER - JESZCZE RAZ', 0xffe080, 1, true],
       ]),
     );
   }
@@ -239,7 +281,7 @@ export class Stage extends Phaser.Scene {
       return;
     }
     if (this.state === 'over' || this.state === 'clear') {
-      if (this.endTimer <= 0) this.restart();
+      if (this.endTimer <= 0) (this.state === 'clear' ? this.advance() : this.restart());
       return;
     }
     if (this.paused || this.hud.hitPause(p)) return this.togglePause();
@@ -261,7 +303,7 @@ export class Stage extends Phaser.Scene {
       if (down(k.RIGHT) || down(k.D)) this.select.select(this.select.index + 1);
       if (confirm || bomb) this.startGame();
     } else if (this.state === 'over' || this.state === 'clear') {
-      if (confirm && this.endTimer <= 0) this.restart();
+      if (confirm && this.endTimer <= 0) (this.state === 'clear' ? this.advance() : this.restart());
     } else if (this.paused) {
       if (confirm) this.togglePause();
     } else if (bomb) this.player.bomb();
@@ -293,12 +335,14 @@ export class Stage extends Phaser.Scene {
     if (playing) {
       this.t += dt;
       this.waves.update(this.t, (w) => this.enemies.spawn(w));
-      const hv = this.waves.upcoming('heavy', this.t, 3);
-      if (hv && !this.warned.has(hv)) {
-        this.warned.add(hv);
-        this.hud.show('UWAGA!', 'KYUBI NADCHODZI', 2.6, true);
+      for (const type of ['heavy', 'boss']) {
+        const w = this.waves.upcoming(type, this.t, 3);
+        if (w && !this.warned.has(w)) {
+          this.warned.add(w);
+          this.hud.show('UWAGA!', this.stage.warnings?.[type] ?? 'CIĘŻKI CEL', 2.6, true);
+        }
       }
-      this.music.play(this.stageSong(hv));
+      this.music.play(this.stageSong());
     }
     if (this.bombClear > 0) {
       this.bombClear -= dt;
@@ -316,17 +360,21 @@ export class Stage extends Phaser.Scene {
     this.fx.update(dt, this.parallax);
     if (playing) this.collide();
 
-    if (playing && this.t >= this.stage.end && this.waves.done && (this.enemies.count() === 0 || this.t > this.stage.end + 12))
+    if (playing && this.stage.boss) {
+      if (this.bossDown && (this.bossClearT -= dt) <= 0) this.stageClear();
+    } else if (playing && this.t >= this.stage.end && this.waves.done && (this.enemies.count() === 0 || this.t > this.stage.end + 12))
       this.stageClear();
   }
 
-  /** Music follows the stage: calm town, shrine build-up, full drive on the ridge, miniboss, summit. */
-  stageSong(heavyIncoming) {
-    if (heavyIncoming || this.enemies.heavy) return 'boss';
-    if (this.t < 24) return 'intro';
-    if (this.t < 47) return 'build';
-    if (this.t >= 196) return 'final';
-    return 'full';
+  /** Music follows the stage: its time schedule, switching to the heavy / boss themes when they come. */
+  stageSong() {
+    const m = this.stage.music;
+    const g = this.enemies.bossGroup;
+    if ((g && !g.defeated) || this.waves.upcoming('boss', this.t, 3)) return m.boss ?? m.heavy;
+    if (this.enemies.heavy || this.waves.upcoming('heavy', this.t, 3)) return m.heavy;
+    let song = m.schedule[0][1];
+    for (const [t, name] of m.schedule) if (this.t >= t) song = name;
+    return song;
   }
 
   spawnPickup(color, x, y, vy) {
@@ -392,7 +440,7 @@ export class Stage extends Phaser.Scene {
       const r = e.radius * 0.7 + hr;
       if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < r * r) {
         p.hit();
-        if (e.type !== 'heavy') this.enemies.damage(e, 999);
+        if (e.type !== 'heavy' && e.type !== 'boss') this.enemies.damage(e, 999);
         return;
       }
     }
