@@ -29,4 +29,13 @@ export const SKINS = {
     turret: { base: 'yuki_base', head: 'yuki_head_', wreck: 'yuki_wreck', pattern: 'lob' },
     plow: { frame: 'plow_d_0', anim: 'plow_d', side: 'plow_r_0', sideAnim: 'plow_r', chute: 'plow_chute_', wreck: 'plow_wreck' },
   },
+  // Kagoshima: bombs that split, aim-line snipers, lidded jars, surfacing kappa, melting shirokuma
+  kagoshima: {
+    popcorn: { frame: 'kazan_0', anim: 'kazan', split: true },
+    shooter: { frame: 'teppo_0', anim: 'teppo', sniper: true },
+    diver: { frame: 'kappa_0', anim: 'kappa', path: 'submerge' },
+    carrier: { frame: 'shirokuma_{c}_0', melt: 5.5 },
+    heavy: { frame: 'raiju_0', anim: 'raiju', kind: 'raiju' },
+    turret: { base: 'tsubo_base', head: 'tsubo_lid_', wreck: 'tsubo_wreck', lid: true },
+  },
 };

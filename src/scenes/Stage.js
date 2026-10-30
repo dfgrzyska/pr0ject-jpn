@@ -367,11 +367,14 @@ export class Stage extends Phaser.Scene {
       this.stageClear();
   }
 
-  /** Snowfall intensity 0..1 from the stage's weather schedule; a blizzard while Yuki-onna is here. */
+  /** Snowfall / ashfall intensity 0..1 from the stage's weather schedule; a storm while Yuki-onna or Raijū is here. */
   weather() {
     const w = this.stage.weather;
+    const h = this.enemies.heavy;
+    const storm = (h?.kind === 'yukionna' || h?.kind === 'raiju') && h.state !== 'leave';
+    this.parallax.storm = storm && h.kind === 'raiju' ? 1 : 0;
     if (!w) return 0;
-    if (this.enemies.heavy?.kind === 'yukionna' && this.enemies.heavy.state !== 'leave') return 1;
+    if (storm) return 1;
     let v = w[0][1];
     for (const [t, s] of w) if (this.t >= t) v = s;
     return v;
@@ -450,6 +453,11 @@ export class Stage extends Phaser.Scene {
         p.hit();
         return;
       }
+    }
+    // lightning and steam columns, the arcs between Raijū's orbs
+    if (this.bullets.hazardAt(p.x, p.y, hr)) {
+      p.hit();
+      return;
     }
     for (const e of enemies) {
       if (e.ground || e.dead || e.ghost) continue;

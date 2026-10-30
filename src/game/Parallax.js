@@ -5,7 +5,8 @@ import { Pool } from './Pool.js';
 //   far  - the valley / open ocean far below (seamless loop, slowest; keeps moving during a boss)
 //   mid  - the stage strip in 512px chunks; ground turrets ride on it
 //   near - fastest, semi-transparent: sakura petals and mist (Kyoto), clouds and gulls (Okinawa),
-//          falling snow blown by the wind, blizzard streaks and diamond dust (Sapporo)
+//          falling snow blown by the wind, blizzard streaks and diamond dust (Sapporo),
+//          volcanic ash, embers rising near the volcano, an ash storm with lightning (Kagoshima)
 export class Parallax {
   constructor(scene, stage, meta) {
     this.scene = scene;
@@ -35,6 +36,12 @@ export class Parallax {
     this.snow = 0.3; // snowfall intensity 0..1 (set by the stage); 1 = blizzard
     this.wind = 0;
     this.windTarget = 0; // sideways push the miniboss's blizzard sets
+    this.storm = 0; // ash storm (set by the stage while Raijū is here): darker sky, lightning flashes
+    this.stormLevel = 0;
+    this.flashT = 0;
+    this.embersFrom = stage.embersFrom ?? Infinity; // stage time from which embers rise
+    if (this.nearKind === 'ash')
+      this.stormRect = scene.add.rectangle(0, 0, VIEW.width, VIEW.maxHeight, 0x14141e, 1).setOrigin(0, 0).setDepth(DEPTH.near - 0.05).setAlpha(0);
   }
 
   /** Jump to a point in the stage (debug / restart). */
@@ -77,6 +84,7 @@ export class Parallax {
     const fall = scrolling ? this.speed.near : 18;
     if (this.nearKind === 'tropic') this.spawnTropic(dt, fall, scrolling);
     else if (this.nearKind === 'snow') this.spawnSnow(dt, fall);
+    else if (this.nearKind === 'ash') this.spawnAsh(dt, fall, H);
     else this.spawnSakura(dt, fall, scrolling);
     for (const p of this.near.live) {
       p.age += dt;
@@ -84,9 +92,38 @@ export class Parallax {
       // snow drifts with the current wind (wf = how strongly, by flake size)
       p.x += ((p.wf ? this.wind * p.wf : p.vx) + Math.sin(p.age * 3) * p.sway) * dt;
       if (p.flipT && p.age % (p.flipT * 2) < dt) p.setFlipX(!p.flipX);
-      if (p.y > H + 40 || p.x < -60 || p.x > VIEW.width + 60) this.near.kill(p);
+      if (p.y > H + 40 || p.y < -60 || p.x < -60 || p.x > VIEW.width + 60) this.near.kill(p);
     }
     this.near.sweep();
+  }
+
+  /** Kagoshima: ash drifting down, embers rising on the volcano, and Raijū's ash storm with lightning. */
+  spawnAsh(dt, fall, H) {
+    const s = this.snow;
+    this.wind += (Math.sin(this.farTime * 0.3) * 8 + this.windTarget - this.wind) * Math.min(1, dt);
+    this.petalTimer -= dt;
+    while (this.petalTimer <= 0) {
+      this.petalTimer += 1 / (8 + 50 * s);
+      const size = Math.random() < 0.6 ? 0 : Math.random() < 0.75 ? 1 : 2;
+      const wf = [0.6, 0.9, 1.2][size];
+      const p = this.near.spawn(`ashf_${size}`, Math.random() * 240 - 30, -4, { vy: (fall * 0.4 + 12) * wf * (0.8 + Math.random() * 0.4), vx: 0, wf, sway: 4 + Math.random() * 5, age: Math.random() * 6, flipT: 0 });
+      p.setAlpha(0.45 + wf * 0.25);
+    }
+    if (this.time >= this.embersFrom) {
+      this.mistTimer -= dt;
+      while (this.mistTimer <= 0) {
+        this.mistTimer += 0.09;
+        const p = this.near.spawn(Math.random() < 0.6 ? 'ember_0' : 'ember_1', Math.random() * 180, H + 4, { vy: -(30 + Math.random() * 50), vx: 0, wf: 0.5, sway: 8, age: Math.random() * 6, flipT: 0 });
+        p.setAlpha(0.85);
+      }
+    }
+    // the storm darkens the sky; lightning lights it up now and then
+    this.stormLevel += (this.storm - this.stormLevel) * Math.min(1, dt * 1.5);
+    if (this.stormLevel > 0.5 && this.flashT <= 0 && Math.random() < dt * 0.5) this.flashT = 0.18;
+    if (this.flashT > 0) {
+      this.flashT -= dt;
+      this.stormRect.setFillStyle(0xd8e8ff).setAlpha(Math.max(0, this.flashT / 0.18) * 0.22);
+    } else this.stormRect.setFillStyle(0x14141e).setAlpha(this.stormLevel * 0.3);
   }
 
   /** Okinawa: big soft clouds drifting past and the odd seagull. */

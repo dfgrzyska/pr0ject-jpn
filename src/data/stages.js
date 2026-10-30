@@ -3,5 +3,6 @@
 import stage1 from './stage1.json';
 import stage2 from './stage2.json';
 import stage3 from './stage3.json';
+import stage4 from './stage4.json';
 
-export const STAGES = [stage1, stage2, stage3];
+export const STAGES = [stage1, stage2, stage3, stage4];

@@ -60,6 +60,11 @@ export class Fx {
     }
   }
 
+  /** A single sprite that fades out where it stands (a kappa's splash). */
+  puff(frame, x, y, life = 0.3) {
+    this.petals.spawn(frame, x, y, { vx: 0, vy: 0, life });
+  }
+
   /** Leaves scattering in a puff (the tanuki's shapeshifting). */
   leaves(x, y, n) {
     for (let i = 0; i < n; i++) {

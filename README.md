@@ -1,4 +1,4 @@
-# Shmup Japonia — etap 1: Kioto, etap 2: Okinawa, etap 3: Sapporo
+# Shmup Japonia — etap 1: Kioto, etap 2: Okinawa, etap 3: Sapporo, etap 4: Kagoshima
 
 Pionowy shmup w przeglądarce (Phaser 4.2.1, WebGL), rozdzielczość wewnętrzna 180×320–420,
 skalowanie całkowitą wielokrotnością pikseli urządzenia.
@@ -15,7 +15,7 @@ npm run art        # przegenerowanie grafik do public/assets/
 Wersja online: https://dfgrzyska.github.io/pr0ject-jpn/ — budowana automatycznie przy każdym pushu na `main`
 (`.github/workflows/pages.yml`; w Settings → Pages źródło musi być ustawione na „GitHub Actions”).
 
-Parametry do testów w adresie: `?stage=2` / `?stage=3` (start od danego etapu), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
+Parametry do testów w adresie: `?stage=2` … `?stage=4` (start od danego etapu), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
 `?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5), `?ship=oni|kitsune|tsubame`.
 
 ## Statki
@@ -120,6 +120,37 @@ Faza 1: lód przepuszcza strzały, cele to dwie łapy (wachlarze, rzuty śnieżk
 zamarzające płatki); serce rozbija całą rzeźbę. Faza 2: brunatny niedźwiedź higuma — ryk z pierścieniami,
 zamachy łapami, łososie wijące się w locie i spadające sople; poniżej 35% życia wpada w szał.
 
+## Etap 4
+
+Kagoshima i wulkan Sakurajima, ok. 3,5 min, od przymglonego popiołem przedpołudnia po czerwoną łunę krateru:
+miasto (dworzec Chūō z diabelskim młynem na dachu, tramwaj po torach porośniętych trawą, aleja palm, pasaż
+Tenmonkan, żółte worki na popiół na rogach ulic, wzgórze Shiroyama) → rzeka Kōtsuki z kamiennymi mostami →
+ogród Sengan-en nad morzem (rezydencja Shimadzu, kamienny Shūseikan, replika armaty, kolej wzdłuż brzegu) →
+pola tysięcy czarnych dzbanów z octem kurozu → zatoka Kinkō (prom, sadze hodowlane, łodzie, delfiny; burza
+popiołowa i miniboss) → Sakurajima (przystań, wioska pod popiołem, schrony przed bombami wulkanicznymi, pola
+olbrzymiej rzodkwi daikon, sady komikan, zasypana brama torii w Kurokami) → pola lawy z 1914 r. → krater.
+
+Daleka warstwa to zatoka w szarej mgiełce, bliska — opadający popiół, od zboczy wulkanu żar unoszący się w górę,
+w czasie burzy przyciemnione niebo i błyski. Pole `embersFrom` w `stage4.json` mówi, od której sekundy leci żar.
+
+| Archetyp | Wygląd | Mechanika |
+| --- | --- | --- |
+| Popcorn | bomby wulkaniczne | **rozpad**: trafiona bomba pęka na dwie mniejsze, które rozlatują się na boki (bomba gracza niszczy je w całości); tor `toss` — rzucone przez wulkan, spadają coraz szybciej |
+| Strzelec | dron z arkebuzem tanegashima | **celownik**: czerwona linia podąża za graczem, blokuje się i miga, potem jeden szybki strzał wzdłuż niej |
+| Wieżyczka | dzban kurozu (w środku świecą oczy) | **pokrywka**: zamknięty jest odporny (strzały odbijają się), pokrywka grzechocze, unosi się, dzban strzela i zamyka; bomba zrywa pokrywkę |
+| Nurek | kappa (garappa) | **zanurzenie**: najpierw tylko kręgi na wodzie (strzały przelatują), podpływa do gracza, wynurza się z pluskiem, mruga i skacze |
+| Nośnik | shirokuma (lody z mordką niedźwiadka) | **topnienie**: w ~5,5 s rozpływa się razem ze znajdźką („ROZTOPIONA”) |
+
+Miniboss: Raijū, bestia piorunów z legend — nadciąga w burzy popiołowej nad zatoką. Słupy piorunów (najpierw miga
+linia ostrzegawcza), pary kul połączone łukiem prądu (przelot między nimi rani), szarża wzdłuż pokazanej linii
+z pasmem iskier.
+
+Boss: Sakurajima — wulkan stoi w miejscu, to szczyt etapu (pozycje krateru i kominów są w fali bossa w `stage4.json`,
+generator tła czyta te same liczby). Faza 1: dwa boczne kominy — bomby lawy rzucane łukiem z celownikiem na ziemi,
+słupy pary w dół zbocza, strumienie żaru. Faza 2: krater się otwiera — pierścienie erupcji, rzeki lawy (rzędy
+pocisków z jedną luką, która przesuwa się z każdym rzędem), wulkaniczne pioruny. Poniżej 30% wybucha na dobre.
+Po pokonaniu krater stygnie i zostaje w tle.
+
 Po ukończeniu etapu gra przechodzi do następnego z tym samym statkiem, wynikiem, mnożnikiem, bronią i życiami.
 „Jeszcze raz” po przegranej zaczyna nową grę od etapu 1.
 
@@ -135,13 +166,16 @@ bębny eisa (duży bęben i paranku), kołatki sanba i bujający rytm kachāshī
 Etap 3 gra „Kita no Yoru” (`src/audio/score3.js`) w stylu festiwalu Yosakoi Sōran: skala min'yō (D F G A C),
 shamisen, pozytywka (Otaru), flet, taiko, drewniane kołatki naruko i dzwonki sań; rozstrojona pozytywka
 dla Yuki-onny i szybki, ciężki motyw niedźwiedzia.
+Etap 4 gra „Hi no Shima” (`src/audio/score4.js`): festiwalowo w skali yo (D E G A B) jak orkiestry Ohara-matsuri —
+shamisen, flet, taiko, gong kane — z satsuma-biwą (głęboka lutnia uderzana dużą kostką); trzeszczący motyw Raijū
+i powolny, ciężki motyw wulkanu w skali in na E.
 Efekty (`src/audio/Sfx.js`): ciche, syntetyzowane strzały każdej broni (z limitem częstotliwości) i eksplozje
 w trzech rozmiarach. Głośnik / M wycisza muzykę i efekty razem.
 iOS: dźwięk startuje po pierwszym dotknięciu; przełącznik wyciszenia telefonu wycisza też grę.
 
 ## Fale
 
-`src/data/stage1.json` … `stage3.json` — dane etapu (wygląd, muzyka, ostrzeżenia) i harmonogram fal,
+`src/data/stage1.json` … `stage4.json` — dane etapu (wygląd, muzyka, ostrzeżenia) i harmonogram fal,
 edytowalne bez zmian w kodzie:
 
 ```json
@@ -161,7 +195,7 @@ uruchom `npm run art`. Mnożnik: N = suma wag wrogów w etapie / 9 (liczone auto
 Cała grafika jest generowana kodem (`tools/`) do zwykłych plików PNG w `public/assets/`:
 atlas sprite'ów (`sprites.png` + `sprites.json`), font pikselowy z polskimi znakami, a dla każdego etapu
 `bg/stageN/far.png` i 14 kawałków warstwy środkowej `bg/stageN/mid_XX.png` (180×512).
-Generatory teł: `tools/art/kyoto/`, `tools/art/okinawa/`, `tools/art/sapporo/` (`node tools/gen-art.mjs --only=stage3` buduje jeden etap). Każdy plik można podmienić ręcznie
+Generatory teł: `tools/art/kyoto/`, `tools/art/okinawa/`, `tools/art/sapporo/`, `tools/art/kagoshima/` (`node tools/gen-art.mjs --only=stage4` buduje jeden etap). Każdy plik można podmienić ręcznie
 rysowaną grafiką o tych samych wymiarach/nazwach ramek. `node tools/gen-art.mjs --preview` zapisuje
 powiększone podglądy do `tools/preview/`.
 

@@ -4,6 +4,7 @@ import { Raster, fbm, bayer } from '../lib/raster.mjs';
 import { okinawaSprites } from './okinawa/sprites.mjs';
 import { sapporoSprites } from './sapporo/sprites.mjs';
 import { tanukiSprites } from './kyoto/tanuki.mjs';
+import { kagoshimaSprites } from './kagoshima/sprites.mjs';
 
 const out = [];
 const add = (name, raster) => out.push({ name, raster });
@@ -340,6 +341,7 @@ tanukiSprites(add);
 // ---------------------------------------------------------------- stage 2 and 3 skins
 okinawaSprites(add);
 sapporoSprites(add);
+kagoshimaSprites(add);
 
 // ---------------------------------------------------------------- pickups
 const PICKUP = [

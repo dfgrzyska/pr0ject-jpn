@@ -4,7 +4,7 @@ import { writeFileSync } from 'node:fs';
 import { Raster } from '../lib/raster.mjs';
 
 const [stage = 'stage1', uArg = '2000', sArg = '4', hArg = '160'] = process.argv.slice(2);
-const art = await import({ stage2: './okinawa/index.mjs', stage3: './sapporo/index.mjs' }[stage] ?? './kyoto/index.mjs');
+const art = await import({ stage2: './okinawa/index.mjs', stage3: './sapporo/index.mjs', stage4: './kagoshima/index.mjs' }[stage] ?? './kyoto/index.mjs');
 const u = Number(uArg);
 const s = Number(sArg);
 const h = Number(hArg);

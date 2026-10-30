@@ -202,6 +202,39 @@ export class Synth {
     this.noiseBurst(t, 0.018, 'bandpass', 3800, 3, 0.07 * v);
   }
 
+  /** Satsuma-biwa: a deep lute struck hard with a big plectrum — the slap, then a buzzing, bending tone. */
+  biwa(t, m, dur, v = 1) {
+    const f = mtof(m);
+    const end = t + 1.2;
+    const o = this.osc('sawtooth', f, t, end);
+    o.frequency.linearRampToValueAtTime(f * 1.02, t + 0.18); // pressed string bends up a little
+    const buzz = this.osc('square', f * 1.005, t, end);
+    const lp = this.filter('lowpass', 3200, 6);
+    lp.frequency.setValueAtTime(3200, t);
+    lp.frequency.exponentialRampToValueAtTime(700, t + 0.5);
+    const g = this.gain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.11 * v, t + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + Math.min(1.1, 0.5 + dur));
+    const gb = this.gain(0.25);
+    o.connect(lp);
+    buzz.connect(gb).connect(lp);
+    lp.connect(g).connect(this.out);
+    this.noiseBurst(t, 0.03, 'bandpass', 1400, 2, 0.18 * v);
+  }
+
+  /** Kane: the small hand gong of festival bands (Ohara matsuri). */
+  kane(t, v = 1) {
+    for (const [f, a] of [[1240, 0.05], [1867, 0.03], [2690, 0.02]]) {
+      const o = this.osc('sine', f, t, t + 0.6);
+      const g = this.gain();
+      g.gain.setValueAtTime(a * v, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      o.connect(g).connect(this.out);
+    }
+    this.noiseBurst(t, 0.02, 'highpass', 5000, 1, 0.05 * v);
+  }
+
   /** Music box (Otaru's orgel shops): sine tine with a metallic, slightly inharmonic overtone. */
   orgel(t, m, dur, v = 1) {
     const f = mtof(m);
