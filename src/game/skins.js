@@ -48,4 +48,16 @@ export const SKINS = {
     heavy: { frame: 'ningyo_0', kind: 'bunraku' },
     turret: { base: 'neko_base', head: 'neko_paw_', wreck: 'neko_wreck', beckon: true },
   },
+  // Beppu: eggs that hatch into little oni, pots whose shots bounce off the walls, monkeys that steal
+  // power, steam nozzles puffing clouds that swell, plus geysers and steam clouds as the environment
+  beppu: {
+    popcorn: { frame: 'tamago_0', hatch: 2.1 },
+    shooter: { frame: 'kamado_0', anim: 'kamado', bounce: true },
+    diver: { frame: 'saru_0', anim: 'saru', thief: true },
+    carrier: { frame: 'oke_{c}_0', anim: 'oke_{c}' },
+    heavy: { frame: 'wani_0', kind: 'wani' },
+    turret: { base: 'yuzutsu_base', head: 'nozzle_', wreck: 'yuzutsu_wreck', pattern: 'puff' },
+    geyser: { frame: 'boil_0', anim: 'boil', mud: 'mudboil_0', mudAnim: 'mudboil' },
+    steam: { frame: 'steam_0' },
+  },
 };

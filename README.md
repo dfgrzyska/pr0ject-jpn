@@ -1,4 +1,4 @@
-# Shmup Japonia — Kioto, Okinawa, Sapporo, Kagoshima, Osaka
+# Shmup Japonia — Kioto, Okinawa, Sapporo, Kagoshima, Osaka, Beppu
 
 Pionowy shmup w przeglądarce (Phaser 4.2.1, WebGL), rozdzielczość wewnętrzna 180×320–420,
 skalowanie całkowitą wielokrotnością pikseli urządzenia.
@@ -15,7 +15,7 @@ npm run art        # przegenerowanie grafik do public/assets/
 Wersja online: https://dfgrzyska.github.io/pr0ject-jpn/ — budowana automatycznie przy każdym pushu na `main`
 (`.github/workflows/pages.yml`; w Settings → Pages źródło musi być ustawione na „GitHub Actions”).
 
-Parametry do testów w adresie: `?stage=1` … `?stage=5` (ten etap pierwszy, reszta losowo — 1 Kioto, 2 Okinawa, 3 Sapporo, 4 Kagoshima, 5 Osaka), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
+Parametry do testów w adresie: `?stage=1` … `?stage=6` (ten etap pierwszy, reszta losowo — 1 Kioto, 2 Okinawa, 3 Sapporo, 4 Kagoshima, 5 Osaka, 6 Beppu), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
 `?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5), `?ship=oni|kitsune|tsubame`.
 
 ## Statki
@@ -183,11 +183,44 @@ plują pierścieniami z końcówek, uderzają w dół (najpierw migająca linia)
 trafienie w dowolny segment rani mackę. Po odcięciu wszystkich macek łeb staje się celem: spirale i kule tuszu,
 grad takoyaki; poniżej 35% wpada w szał.
 
+## Beppu
+
+Ok. 3,5 min od mglistego poranka do czerwonego zmierzchu w mieście gorących źródeł: zatoka i plaża z czarnym
+piaskiem (zakopani kąpiący się, parasole, prom) → miasto z łaźnią Takegawara → Kannawa z kominami pary →
+„piekła” (jigoku): kobaltowy Umi Jigoku z czerwoną kapliczką, bulgoczące błoto Oniishibozu, kolorowe
+stawy Kamado z kucharzem-oni na kotle, mleczny Shiraike → zagrody krokodyli Oniyama z figurą czerwonego oni →
+lasy Takasakiyamy z makakami → kamienna niecka gejzeru Tatsumaki → krwistoczerwony staw Chinoike.
+
+Otoczenie atakuje: **gejzery** (fala `geyser`) siedzą w tle i co kilka sekund wybuchają — najpierw na ziemi
+wypełnia się pierścień, potem bije słup wrzątku i rozpryskują się krople (`"kind": "mud"` — szerszy, dłuższy
+wybuch błota z ciężkimi grudami). **Chmury pary** (fala `steam`) dryfują po ekranie i zasłaniają wrogów;
+lot w parze rozgrzewa działa: od znacznika na pasku przy broni strzały są gorące (×1,5 obrażeń, pomarańczowe),
+ale przy pełnym pasku działa się zacinają na ~2 s — trzeba wlatywać i wylatywać.
+
+| Archetyp | Wygląd | Mechanika |
+| --- | --- | --- |
+| Popcorn | jajka gotowane w źródłach (jigoku-mushi) | **wykluwanie**: jajko chwieje się coraz mocniej i po ~2 s na ekranie pęka — wylatuje mały oni, który goni gracza i strzela |
+| Strzelec | żelazny kocioł Kamado z kucharzem-oni | **rykoszety**: szeroki wachlarz, który raz odbija się od krawędzi ekranu |
+| Wieżyczka | dysza pary na kamiennym postumencie | **kłęby**: pociski-obłoki rosną, zwalniają i wiszą w powietrzu |
+| Nurek | makak z Takasakiyamy | **kradzież**: zamiast taranować kradnie poziom mocy (albo bombę) i ucieka zygzakiem z łupem; zestrzel go, a łup wraca |
+| Nośnik | drewniane wiaderko kąpielowe z ręcznikiem | — |
+
+Miniboss: krokodyl z Oniyamy (piekło krokodyli działa od 1923 roku). Zanurza się (widać tylko oczy i kręgi
+na wodzie, strzały przelatują) i płynie pod gracza, wynurza się z pierścieniem; kłapie szczękami — dwa rzędy
+„zębów” zamykają się na pozycji gracza; robi „obrót śmierci” — spirala i wybuchy wrzątku wokół gracza.
+
+Boss: czerwony oni z kolczastą maczugą kanabō, jak figury z Oniyamy. Śpi w stawie Chinoike i wynurza się
+z krwi, gdy przewijanie stanie. Zwykłe strzały ledwie go drapią — działają **fasolki Setsubun** („Oni wa soto,
+fuku wa uchi”): co kilka sekund przez ekran przelatuje drewniane pudełko masu, zestrzel je i złap fasolki —
+przez 9 s co druga salwa dorzuca parę fasolek (pasek nad paskiem temperatury). Ataki: cios kanabō (zaznaczone
+miejsce uderzenia i szczelina z wybuchów biegnąca do gracza), krew ze stawu rzucana łukiem, tupnięcia
+budzące gejzery w całym ekranie, ryk z wachlarzami; poniżej 35% wpada w szał i kręci maczugą (spirala).
+
 ## Kolejność etapów
 
-Każda nowa gra losuje kolejność miast; „ETAP 1…4” to miejsce w tej kolejności, nie stałe miasto.
+Każda nowa gra losuje kolejność miast; „ETAP n” to miejsce w tej kolejności, nie stałe miasto.
 Po ukończeniu etapu gra przechodzi do następnego z tym samym statkiem, wynikiem, mnożnikiem, bronią i życiami;
-po czwartym — „GRATULACJE!”. „Jeszcze raz” po przegranej zaczyna nową grę z nową kolejnością.
+po ostatnim — „GRATULACJE!”. „Jeszcze raz” po przegranej zaczyna nową grę z nową kolejnością.
 
 ## Muzyka
 
@@ -207,13 +240,16 @@ i powolny, ciężki motyw wulkanu w skali in na E.
 Osaka gra „Naniwa Chindon” (`src/audio/score5.js`): orkiestra chindon-ya — klarnet w skali yonanuki (C D E G A)
 na bujającym rytmie pyonko, gong kane i taiko, shamisen; teatralny motyw bunraku z niskim shamisenem
 i trzaskiem kołatek hyōshigi; ośmiornica — orkiestra w pełnym pędzie.
+Beppu gra „Yukemuri” (`src/audio/score6.js`): pieśń min'yō uzdrowisk — oddechowe shakuhachi w skali min'yō
+(D F G A C), koto, shamisen i bębenek tsuzumi („pon” i „ta”, tokeny `z` / `Z`); leniwie jak w kąpieli,
+potem coraz gęściej. Krokodyl ma pełzające półtonowe ostinato, oni — taiko i krzyczące shakuhachi w skali in na D.
 Efekty (`src/audio/Sfx.js`): ciche, syntetyzowane strzały każdej broni (z limitem częstotliwości) i eksplozje
 w trzech rozmiarach. Głośnik / M wycisza muzykę i efekty razem.
 iOS: dźwięk startuje po pierwszym dotknięciu; przełącznik wyciszenia telefonu wycisza też grę.
 
 ## Fale
 
-`src/data/stage1.json` … `stage5.json` — dane etapu (wygląd, muzyka, ostrzeżenia) i harmonogram fal,
+`src/data/stage1.json` … `stage6.json` — dane etapu (wygląd, muzyka, ostrzeżenia) i harmonogram fal,
 edytowalne bez zmian w kodzie:
 
 ```json
@@ -225,6 +261,8 @@ edytowalne bez zmian w kodzie:
 Opcjonalne pola: `gap` (odstęp w serii), `look` (inna skórka z `skins.js`, np. `tanuki`), `warning` i `music` (własne ostrzeżenie i motyw dla ciężkiego), `spacing` (dla `row`), `y` (wysokość zatrzymania), `hp`, `dir`.
 Sapporo: `{ "type": "plow", "x": 90, "dir": "down" }` (pług w dół alei) albo `{ "type": "plow", "y": 36, "dir": 1 }`
 (w poprzek, od lewej; `-1` od prawej) — generator rysuje pod nim ulicę; nurek `{ "x": 0, "y": 50 }` startuje z lewej krawędzi.
+Beppu: `{ "type": "geyser", "x": 50, "every": 3, "delay": 1, "kind": "mud" }` (wybuch co `every` s, pierwszy po `delay` s;
+otwór rysuje generator tła) i `{ "type": "steam", "x": 60 }` (chmura pary); boss `"pond": [x, u]` — pozycja stawu na pasie tła.
 Pod każdą wieżyczką generator tła rysuje kamienną platformę i wycina drzewa — po zmianie wieżyczek
 uruchom `npm run art`. Mnożnik: N = suma wag wrogów w etapie / 9 (liczone automatycznie, `src/config.js`).
 
@@ -233,7 +271,7 @@ uruchom `npm run art`. Mnożnik: N = suma wag wrogów w etapie / 9 (liczone auto
 Cała grafika jest generowana kodem (`tools/`) do zwykłych plików PNG w `public/assets/`:
 atlas sprite'ów (`sprites.png` + `sprites.json`), font pikselowy z polskimi znakami, a dla każdego etapu
 `bg/stageN/far.png` i 14 kawałków warstwy środkowej `bg/stageN/mid_XX.png` (180×512).
-Generatory teł: `tools/art/kyoto/`, `tools/art/okinawa/`, `tools/art/sapporo/`, `tools/art/kagoshima/`, `tools/art/osaka/` (`node tools/gen-art.mjs --only=stage5` buduje jeden etap). Każdy plik można podmienić ręcznie
+Generatory teł: `tools/art/kyoto/`, `tools/art/okinawa/`, `tools/art/sapporo/`, `tools/art/kagoshima/`, `tools/art/osaka/`, `tools/art/beppu/` (`node tools/gen-art.mjs --only=stage6` buduje jeden etap). Każdy plik można podmienić ręcznie
 rysowaną grafiką o tych samych wymiarach/nazwach ramek. `node tools/gen-art.mjs --preview` zapisuje
 powiększone podglądy do `tools/preview/`.
 

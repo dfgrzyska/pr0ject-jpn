@@ -6,7 +6,8 @@ import { Pool } from './Pool.js';
 //   mid  - the stage strip in 512px chunks; ground turrets ride on it
 //   near - fastest, semi-transparent: sakura petals and mist (Kyoto), clouds and gulls (Okinawa),
 //          falling snow blown by the wind, blizzard streaks and diamond dust (Sapporo),
-//          volcanic ash, embers rising near the volcano, an ash storm with lightning (Kagoshima)
+//          volcanic ash, embers rising near the volcano, an ash storm with lightning (Kagoshima),
+//          wisps of hot-spring steam (Beppu)
 export class Parallax {
   constructor(scene, stage, meta) {
     this.scene = scene;
@@ -86,6 +87,7 @@ export class Parallax {
     if (this.nearKind === 'tropic') this.spawnTropic(dt, fall, scrolling);
     else if (this.nearKind === 'snow') this.spawnSnow(dt, fall);
     else if (this.nearKind === 'ash') this.spawnAsh(dt, fall, H);
+    else if (this.nearKind === 'steam') this.spawnSteam(dt, fall);
     else if (this.nearKind === 'osaka') {
       if (this.time < this.nightFrom) this.spawnTropic(dt, fall, scrolling);
     }
@@ -128,6 +130,17 @@ export class Parallax {
       this.flashT -= dt;
       this.stormRect.setFillStyle(0xd8e8ff).setAlpha(Math.max(0, this.flashT / 0.18) * 0.22);
     } else this.stormRect.setFillStyle(0x14141e).setAlpha(this.stormLevel * 0.3);
+  }
+
+  /** Beppu: wisps and banks of hot-spring steam drifting past (faint, so bullets stay readable). */
+  spawnSteam(dt, fall) {
+    this.mistTimer -= dt;
+    if (this.mistTimer > 0) return;
+    this.mistTimer = 1.1 + Math.random() * 1.6;
+    const big = Math.random() < 0.35;
+    const frame = big ? `steam_${Math.floor(Math.random() * 2)}` : `wisp_s_${Math.floor(Math.random() * 2)}`;
+    const m = this.near.spawn(frame, Math.random() * 180, -24, { vy: fall * (big ? 1.05 : 0.9), vx: -4 + Math.random() * 8, sway: 2, age: 0, flipT: 0 });
+    m.setAlpha(big ? 0.14 : 0.22).setScale(big ? 1.6 : 1);
   }
 
   /** Okinawa: big soft clouds drifting past and the odd seagull. */

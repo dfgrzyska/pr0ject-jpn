@@ -327,4 +327,61 @@ export class Synth {
     b.connect(lp);
     lp.connect(g).connect(this.out);
   }
+
+  /** Shakuhachi: breathy bamboo flute; each note bends up into pitch (meri-kari), vibrato grows on long notes. */
+  shakuhachi(t, m, dur, v = 1) {
+    const f = mtof(m);
+    const end = t + dur + 0.16;
+    const o = this.osc('triangle', f * 0.94, t, end);
+    o.frequency.exponentialRampToValueAtTime(f, t + 0.09);
+    const lfo = this.osc('sine', 5.5, t, end);
+    const depth = this.gain();
+    depth.gain.setValueAtTime(0, t);
+    depth.gain.linearRampToValueAtTime(f * 0.012, t + Math.min(0.45, dur * 0.7));
+    lfo.connect(depth).connect(o.frequency);
+    const lp = this.filter('lowpass', 1900, 0.7);
+    const g = this.gain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.12 * v, t + 0.07);
+    g.gain.setValueAtTime(0.12 * v, t + Math.max(0.07, dur - 0.05));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.15);
+    o.connect(lp).connect(g).connect(this.out);
+    // breath noise around the pitch, strongest at the attack (muraiki)
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noise;
+    src.loop = true;
+    const bp = this.filter('bandpass', f * 2, 5);
+    const ng = this.gain();
+    ng.gain.setValueAtTime(0.0001, t);
+    ng.gain.exponentialRampToValueAtTime(0.07 * v, t + 0.04);
+    ng.gain.exponentialRampToValueAtTime(0.014 * v, t + 0.2);
+    ng.gain.setValueAtTime(0.014 * v, t + Math.max(0.2, dur));
+    ng.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.2, dur) + 0.15);
+    src.connect(bp).connect(ng).connect(this.out);
+    src.start(t, Math.random() * 0.5);
+    src.stop(end + 0.2);
+  }
+
+  /** Tsuzumi, the hourglass drum of noh: "pon" (z) slides up as the cords are squeezed, "ta" (Z) is a dry crack. */
+  tsuzumi(t, sharp, v = 1) {
+    if (sharp) {
+      this.noiseBurst(t, 0.05, 'bandpass', 1700, 3, 0.28 * v);
+      const o = this.osc('triangle', 720, t, t + 0.08);
+      o.frequency.exponentialRampToValueAtTime(520, t + 0.06);
+      const g = this.gain();
+      g.gain.setValueAtTime(0.12 * v, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+      o.connect(g).connect(this.out);
+      return;
+    }
+    const o = this.osc('sine', 260, t, t + 0.42);
+    o.frequency.linearRampToValueAtTime(390, t + 0.03);
+    o.frequency.exponentialRampToValueAtTime(300, t + 0.36);
+    const g = this.gain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.32 * v, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.36);
+    o.connect(g).connect(this.out);
+    this.noiseBurst(t, 0.02, 'bandpass', 1200, 2, 0.1 * v);
+  }
 }

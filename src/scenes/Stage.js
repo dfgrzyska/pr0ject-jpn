@@ -205,7 +205,7 @@ export class Stage extends Phaser.Scene {
     this.player.bombs = 1; // the bomb refills after a boss
     this.bullets.cancelAll(this.fx);
     this.fx.flash(0.6, 0.6);
-    if (this.stage.warnings?.bossDown) this.hud.show(this.stage.warnings.bossDown, '', 2.4);
+    if (this.stage.warnings?.bossDown) this.hud.show(this.stage.warnings.bossDown, this.stage.warnings.bossDownSub ?? '', 2.4);
   }
 
   gameOver() {
@@ -367,6 +367,8 @@ export class Stage extends Phaser.Scene {
       this.clearT += dt;
       if (this.clearT > 0.8 && this.player.alive && this.player.y > -40) this.player.y -= Math.min(220, (this.clearT - 0.8) * 260) * dt;
     }
+    // Beppu: steam clouds heat the guns
+    if (playing && this.stage.near === 'steam') this.player.heatUpdate(dt, this.player.alive && this.enemies.steamAt(this.player.x, this.player.y));
     this.player.update(dt, playing ? this.keys : null, playing);
     this.enemies.update(dt);
     this.bullets.update(dt, this.H);
@@ -437,7 +439,7 @@ export class Stage extends Phaser.Scene {
         const dx = e.x - s.x;
         const dy = e.y - s.y;
         if (dx * dx + dy * dy < r * r || (e.segs && e.segs.some((sg) => (sg.x - s.x) ** 2 + (sg.y - s.y) ** 2 < (sg.r + s.radius) ** 2))) {
-          this.enemies.damage(e, s.damage);
+          this.enemies.damage(e, s.damage, false, s.bean);
           if (Math.random() < 0.5) this.fx.spark(s.x, s.y - 2);
           p.shots.kill(s);
           break;
@@ -473,10 +475,16 @@ export class Stage extends Phaser.Scene {
       return;
     }
     for (const e of enemies) {
-      if (e.ground || e.dead || e.ghost) continue;
-      const r = e.radius * 0.7 + hr;
+      if (e.ground || e.dead || e.ghost || e.harmless || e.loot) continue;
+      // a macaque reaches out further: it grabs rather than rams
+      const r = (e.thief ? e.radius + 3 : e.radius * 0.7) + hr;
       const touch = (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < r * r || (e.segs && e.segs.some((sg) => (sg.x - p.x) ** 2 + (sg.y - p.y) ** 2 < (sg.r * 0.8 + hr) ** 2));
       if (touch) {
+        const loot = e.thief && p.steal();
+        if (loot) {
+          this.enemies.thieve(e, loot);
+          return;
+        }
         p.hit();
         // ramming kills small fry, not bosses or the puppeteers
         if (e.type !== 'heavy' && e.type !== 'boss' && e.type !== 'kuroko') this.enemies.damage(e, 999);

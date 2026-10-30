@@ -86,6 +86,9 @@ export class Fx {
   text(x, y, str, life = 1.2, tint = 0xffffff) {
     const t = this.scene.add.bitmapText(Math.round(x), Math.round(y), FONT, str).setOrigin(0.5).setDepth(DEPTH.fx + 2);
     t.setLetterSpacing(-1).setTint(tint).setVertexRoundMode('full');
+    // keep long labels on screen near the edges
+    const half = Math.ceil(t.width / 2) + 2;
+    t.x = Math.round(Math.min(Math.max(t.x, half), VIEW.width - half));
     this.texts.push({ t, life, max: life });
   }
 

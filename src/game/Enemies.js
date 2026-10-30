@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DEPTH, ENEMIES, FAIR, VIEW } from '../config.js';
+import { BEANS, DEPTH, ENEMIES, FAIR, PLAYER, VIEW } from '../config.js';
 import { Pool } from './Pool.js';
 import { SKINS } from './skins.js';
 
@@ -12,6 +12,10 @@ const DECOY = { hp: 1, weight: 0, score: 300, radius: 13, explosion: 's' };
 const FRAG = { hp: 1, weight: 0, score: 50, radius: 3, explosion: 's' };
 // the bunraku puppet's three black-clad puppeteers
 const KUROKO = { hp: 140, weight: 0, score: 2000, radius: 7, explosion: 'm' };
+// a little oni hatched from a hot-spring egg
+const IMP = { hp: 4, weight: 1, score: 200, radius: 5, explosion: 's' };
+// a wooden masu of Setsubun beans flying across the oni fight
+const MASU = { hp: 5, weight: 0, score: 300, radius: 7, explosion: 's' };
 // per-skin extras, listed so a pooled sprite never keeps a previous enemy's state
 const EXTRAS = {
   armor: 0,
@@ -36,6 +40,13 @@ const EXTRAS = {
   segs: null, // tentacle segments (extra hit circles)
   kuroko: null, // the puppet's puppeteers
   master: null,
+  hatch: 0, // hot-spring egg: seconds on screen before it hatches
+  hatched: false,
+  bounce: false, // Kamado pot: its shots ricochet off the walls
+  thief: false, // macaque: grabs power instead of ramming
+  loot: null, // what the macaque is running away with: 'power' | 'bomb'
+  harmless: false, // no contact damage (bean boxes)
+  oni: false, // only Setsubun beans really hurt it
 };
 
 // Six archetypes shared by every city (each stage picks a skin), plus stage bosses.
@@ -101,6 +112,8 @@ export class Enemies {
         e.fireAt = Math.random() < FAIR.popcornFireChance ? 0.9 + Math.random() * 1.4 : Infinity;
         if (look.flock && w.flock) e.flock = w.flock;
         e.split = !!look.split;
+        e.hatch = look.hatch ?? 0;
+        if (e.hatch) e.fireAt = Infinity; // eggs never shoot; what hatches does
         e.tossV = (w.x < VIEW.width / 2 ? 1 : -1) * (26 + Math.random() * 18);
         break;
       case 'shooter':
@@ -112,6 +125,7 @@ export class Enemies {
           e.hp = e.maxHp = look.hp;
         } else e.play(look.anim);
         e.sniper = !!look.sniper;
+        e.bounce = !!look.bounce;
         e.aimT = 0;
         e.stopY = w.y ?? 50 + Math.random() * 24;
         break;
@@ -134,6 +148,7 @@ export class Enemies {
         e = this.pool.spawn(look.frame, w.x, -10, base);
         e.play(look.anim);
         e.stopY = w.y ?? 30 + Math.random() * 18;
+        e.thief = !!look.thief;
         break;
       case 'carrier':
         e = this.pool.spawn(look.frame.replace('{c}', w.color ?? 'red'), w.x, -10, { ...base, color: w.color ?? 'red', path: w.path ?? (look.melt ? 'drift' : 'zigzag'), melt: look.melt ?? 0 });
@@ -146,6 +161,7 @@ export class Enemies {
         this.heavy = e;
         e.patternIndex = 0;
         if (look.kind === 'bunraku') this.spawnKuroko(e, base);
+        if (look.kind === 'wani') Object.assign(e, { y: -40, radius: 11, segs: [{ x: 0, y: 0, r: 9 }, { x: 0, y: 0, r: 8 }] });
         break;
       case 'turret': {
         // spawns just above the screen and stays glued to the mid layer
@@ -171,7 +187,19 @@ export class Enemies {
         e.cool = 0;
         break;
       }
+      case 'geyser':
+        // a hot-spring vent on the mid layer (the background draws the hole); only seen while it boils
+        e = this.pool.spawn(w.kind === 'mud' ? look.mud : look.frame, w.x, -10, { ...base, ghost: true, mud: w.kind === 'mud', every: w.every ?? 3, timer: w.delay ?? 1, erupt: 0, showT: 0 });
+        e.u = s.parallax.stripU(-10);
+        e.setAlpha(0);
+        break;
+      case 'steam':
+        // a cloud of hot-spring steam drifting down the screen: hides what is under it, heats the guns
+        e = this.pool.spawn(look.frame, w.x, -24, { ...base, ghost: true });
+        e.setScale(1.3).setAlpha(0.72);
+        break;
       case 'boss':
+        if (w.boss === 'oni') return this.spawnOni(w, base);
         if (w.boss === 'volcano') return this.spawnVolcano(w, base);
         if (w.boss === 'tako') return this.spawnTako(w, base);
         return w.boss === 'kuma' ? this.spawnKuma(w, base) : this.spawnBoss(w, base);
@@ -179,6 +207,7 @@ export class Enemies {
         return;
     }
     e.setDepth(e.ground ? DEPTH.ground : DEPTH.air + (w.type === 'heavy' ? -0.1 : 0));
+    if (w.type === 'steam') e.setDepth(DEPTH.player - 0.2); // over enemies and shots, under the ship and bullets
     if (this.skin.duos && w.duo) {
       e.duo = w.duo;
       w.duo.members.push(e);
@@ -210,9 +239,16 @@ export class Enemies {
     return Math.atan2(p.y - (e.y + oy), p.x - (e.x + ox));
   }
 
-  damage(e, amount, byBomb = false) {
+  damage(e, amount, byBomb = false, bean = false) {
     // a bomb blows the lid off a vinegar jar; otherwise invulnerable things shrug it off
     if (e.dead || e.hp <= 0 || e.ghost || (e.invuln && !(byBomb && e.lidded))) return;
+    if (e.oni && !bean) {
+      // the oni's hide: normal shots barely chip it (no flash), a bomb does half
+      e.hp -= amount * (byBomb ? 0.5 : BEANS.armor);
+      if (e.hp <= 0) this.destroy(e, byBomb);
+      return;
+    }
+    if (e.oni) this.oniHurt(e);
     // brief brighten, rate-limited so constant fire blinks instead of whiting the sprite out
     if (e.flashCool <= 0) {
       e.flash = 0.035;
@@ -264,6 +300,7 @@ export class Enemies {
       return;
     }
     if (e.duo) this.duoDown(e);
+    if (e.loot) this.returnLoot(e);
     if (e.split && !byBomb) {
       // a volcanic bomb bursts into two smaller halves flying apart
       for (const side of [-1, 1]) {
@@ -292,6 +329,7 @@ export class Enemies {
       if (e.horiz) wr.setRotation(-e.dir * Math.PI / 2);
     } else s.fx.explode(e.x, e.y, e.def.explosion);
     if (e.type === 'carrier') s.spawnPickup(e.color, e.x, e.y, -40);
+    if (e.type === 'masu') s.spawnPickup('mame', e.x, e.y, -40);
     if (e.type === 'heavy' || e.type === 'boss') {
       const { x, y } = e;
       for (let i = 0; i < 9; i++)
@@ -330,7 +368,7 @@ export class Enemies {
   /** HP shown in the top bar: the mid-stage heavy or the whole boss pair. */
   bossBar() {
     const g = this.bossGroup;
-    if (g && !g.defeated && (g.kind === 'kuma' || g.kind === 'volcano' || g.kind === 'tako' ? g.awake : g.parts.some((p) => !p.dead && p.group === g && p.y > 0))) {
+    if (g && !g.defeated && (g.kind === 'kuma' || g.kind === 'volcano' || g.kind === 'tako' || g.kind === 'oni' ? g.awake : g.parts.some((p) => !p.dead && p.group === g && p.y > 0))) {
       // parts are pooled sprites: once dead they may come back as other enemies, so check the group
       let hp = 0;
       for (const p of g.parts) if (!p.dead && p.group === g) hp += Math.max(0, p.hp);
@@ -346,6 +384,7 @@ export class Enemies {
     if (g.kind === 'kuma') return this.updateKuma(g, dt);
     if (g.kind === 'volcano') return this.updateVolcano(g, dt);
     if (g.kind === 'tako') return this.updateTako(g, dt);
+    if (g.kind === 'oni') return this.updateOni(g, dt);
     const alive = g.parts.filter((p) => !p.dead && p.group === g && p.hp > 0);
     if (!alive.length) return;
     g.t += dt;
@@ -612,7 +651,14 @@ export class Enemies {
     if (e.decoys) this.dropDecoys(e);
     if (e.kind === 'yukionna') this.scene.parallax.windTarget = 0; // her blizzard dies down with her
     if (e === this.heavy) this.heavy = null;
+    if (e.oni) e.setCrop(); // pooled: the next enemy must not come out cropped
     this.pool.kill(e);
+  }
+
+  /** Beppu: is (x, y) inside a steam cloud? */
+  steamAt(x, y) {
+    for (const e of this.pool.live) if (e.type === 'steam' && !e.dead && ((x - e.x) / 26) ** 2 + ((y - e.y) / 17) ** 2 < 1) return true;
+    return false;
   }
 
   update(dt) {
@@ -645,6 +691,7 @@ export class Enemies {
           else if (e.kind === 'tanuki') this.tanuki(e, dt, b);
           else if (e.kind === 'raiju') this.raiju(e, dt, b);
           else if (e.kind === 'bunraku') this.bunraku(e, dt, b);
+          else if (e.kind === 'wani') this.wani(e, dt, b);
           else this.heavyUpdate(e, dt, b);
           break;
         case 'turret':
@@ -661,6 +708,19 @@ export class Enemies {
           e.x += e.vx * dt;
           e.y += e.vy * dt;
           break;
+        case 'geyser':
+          this.geyser(e, dt, b);
+          break;
+        case 'steam':
+          e.y += 22 * dt;
+          e.x += Math.sin(e.age * 0.7 + e.x0) * 7 * dt;
+          e.setFrame(Math.floor(e.age * 1.2) % 2 ? 'steam_1' : 'steam_0');
+          break;
+        case 'masu':
+          e.x += e.dir * 40 * dt;
+          e.y = e.y0 + Math.sin(e.age * 3) * 6;
+          e.setRotation(Math.sin(e.age * 5) * 0.2);
+          break;
       }
       if (e.dead) continue;
       e.flashCool -= dt;
@@ -668,18 +728,19 @@ export class Enemies {
         e.flash -= dt;
         e.setTint(0x808080).setTintMode(Phaser.TintModes.ADD);
         e.head?.setTint(0x808080).setTintMode(Phaser.TintModes.ADD);
-        if (e.segs) for (const sg of e.segs) sg.setTint(0x808080).setTintMode(Phaser.TintModes.ADD);
+        if (e.segs) for (const sg of e.segs) sg.setTint?.(0x808080).setTintMode(Phaser.TintModes.ADD);
       } else if ((e.type === 'boss' && e.group.enraged) || e.rage) {
         e.setTint(0xffa8a0).setTintMode(Phaser.TintModes.MULTIPLY);
-        if (e.segs) for (const sg of e.segs) sg.setTint(0xffa8a0).setTintMode(Phaser.TintModes.MULTIPLY);
+        if (e.segs) for (const sg of e.segs) sg.setTint?.(0xffa8a0).setTintMode(Phaser.TintModes.MULTIPLY);
       } else if (e.tintMode !== Phaser.TintModes.MULTIPLY) {
         e.clearTint();
         e.head?.clearTint();
-        if (e.segs) for (const sg of e.segs) sg.clearTint();
+        if (e.segs) for (const sg of e.segs) sg.clearTint?.();
       }
       const off = e.y > H + 40 || e.y < -70 || e.x < -50 || e.x > VIEW.width + 50;
       if (off && e.type !== 'boss' && (e.age > 2 || e.y > H)) {
         if (e.flock) e.flock.lost = true; // a bird got away: no flock bonus
+        if (e.loot) s.fx.text(Phaser.Math.Clamp(e.x, 40, VIEW.width - 40), 40, 'UKRADZIONE!', 1.4, 0xff8a6a);
         this.remove(e);
       }
     }
@@ -715,13 +776,31 @@ export class Enemies {
         e.x += e.tossV * dt;
         e.y += (30 + e.age * 28) * dt;
         break;
+      case 'imp':
+        // hatched: edges towards the player while dropping
+        e.y += 36 * dt;
+        e.x += Phaser.Math.Clamp(this.scene.player.x - e.x, -28 * dt, 28 * dt);
+        break;
       default:
         e.y += 58 * dt;
     }
+    if (e.hatch && !e.hatched) {
+      // a boiled egg: wobbles harder and harder, cracks, and a little oni pops out
+      const k = e.seen / e.hatch;
+      e.setRotation(Math.sin(e.age * (8 + k * 16)) * 0.3 * k);
+      if (k > 0.75) e.setFrame('tamago_1');
+      if (k >= 1) this.hatchEgg(e);
+    }
     if (e.age >= e.fireAt && this.canFire(e)) {
-      e.fireAt = Infinity;
+      e.fireAt = e.hatched ? e.age + 1.8 : Infinity;
       this.scene.bullets.fire(e.x, e.y + 4, this.aimAt(e), slow);
     }
+  }
+
+  hatchEgg(e) {
+    Object.assign(e, { hatched: true, def: IMP, hp: IMP.hp, maxHp: IMP.hp, radius: IMP.radius, path: 'imp', fireAt: e.age + 0.45 });
+    e.setRotation(0).play('imp');
+    this.scene.fx.shards(e.x, e.y, 6, true);
   }
 
   shooter(e, dt, b) {
@@ -742,7 +821,13 @@ export class Enemies {
       if (e.sniper) return this.snipe(e, dt, b);
       e.timer -= dt;
       if (e.timer <= 0) {
-        if (this.canFire(e)) {
+        if (this.canFire(e) && e.bounce) {
+          // the Kamado pot boils over: a wide spray that ricochets off the screen edges
+          const n = e.pattern === 'fan' ? 5 : 3;
+          const arc = e.pattern === 'fan' ? 1.7 : 1.2;
+          const a = this.aimAt(e, 0, 8);
+          for (let i = 0; i < n; i++) b.shot('eb_s', e.x, e.y + 8, a + (i / (n - 1) - 0.5) * arc, normal * 0.9, 1.8, { bounce: 1 });
+        } else if (this.canFire(e)) {
           if (e.pattern === 'fan') b.fan(e.x, e.y + 8, this.aimAt(e, 0, 8), 5, 0.9, slow);
           else b.fan(e.x, e.y + 8, this.aimAt(e, 0, 8), 3, 0.42, normal);
         }
@@ -782,11 +867,42 @@ export class Enemies {
         e.v = 70;
         if (this.skin.diver.spin) e.setRotation(e.ang - DOWN);
       }
+    } else if (e.loot) {
+      // off up and away with the loot, zigzagging
+      e.vy = Math.max(-150, e.vy - 220 * dt);
+      e.y += e.vy * dt;
+      e.x = Phaser.Math.Clamp(e.x + Math.sin(e.age * 8) * 70 * dt, 8, VIEW.width - 8);
+      e.head?.setPosition(e.x, e.y + 8);
     } else {
-      e.v = Math.min(240, e.v + 280 * dt);
+      if (e.thief) {
+        // the macaque keeps its eyes on the player and swerves after them, but runs slower
+        const p = this.scene.player;
+        if (p.alive && e.y < p.y - 8) e.ang += Phaser.Math.Clamp(Phaser.Math.Angle.Wrap(this.aimAt(e) - e.ang), -1.8 * dt, 1.8 * dt);
+        e.v = Math.min(150, e.v + 200 * dt);
+        e.setFlipX(Math.cos(e.ang) < 0);
+      } else e.v = Math.min(240, e.v + 280 * dt);
       e.x += Math.cos(e.ang) * e.v * dt;
       e.y += Math.sin(e.ang) * e.v * dt;
     }
+  }
+
+  /** A macaque got its paws on the player's power (or bomb): it runs off with it; shoot it to get it back. */
+  thieve(e, loot) {
+    const s = this.scene;
+    Object.assign(e, { loot, state: 'flee', vy: 30 });
+    e.head = this.heads.spawn(loot === 'bomb' ? 'icon_bomb' : `wpn_${s.player.weapon}`, e.x, e.y + 8);
+    e.head.setDepth(DEPTH.air + 0.05);
+    s.fx.text(e.x, e.y - 12, loot === 'bomb' ? 'KRADZIEŻ BOMBY!' : 'KRADZIEŻ MOCY!', 1.2, 0xff8a6a);
+    s.sfx.explode('s');
+  }
+
+  returnLoot(e) {
+    const s = this.scene;
+    const p = s.player;
+    if (e.loot === 'bomb') p.bombs = 1;
+    else p.level = Math.min(PLAYER.maxPower, p.level + 1);
+    s.fx.text(e.x, e.y - 12, e.loot === 'bomb' ? 'BOMBA ODZYSKANA' : 'MOC ODZYSKANA', 1.2, 0x9cf09a);
+    e.loot = null;
   }
 
   /**
@@ -897,7 +1013,11 @@ export class Enemies {
         const mx = e.x + Math.cos(ang) * 6;
         const my = e.y + Math.sin(ang) * 6;
         if (e.pattern === 'lob') b.lob(e.x, e.y - 3, p.x, p.y); // snowman: a snowball where you are now
-        else if (e.pattern === 'ring') {
+        else if (e.pattern === 'puff') {
+          // steam nozzle: puffs that swell, slow down and hang in the air for a while
+          for (const d of [-0.38, 0, 0.38]) b.shot('wisp_s_1', mx, my, ang + d, 90, 2, { grow: { r0: 2, r1: 5.5, t: 1.3, drag: 0.7 }, life: 2.8 });
+          e.timer = 2.6;
+        } else if (e.pattern === 'ring') {
           e.shots++;
           b.ring(mx, my, 10, e.shots * 0.31, slow);
         } else b.fan(mx, my, ang, 5, 0.84, slow);
@@ -1759,6 +1879,352 @@ export class Enemies {
     );
     e.segs = null;
     this.remove(e);
+  }
+
+  // ---------------------------------------------------------------- Beppu: geysers
+  /**
+   * A hot-spring vent riding on the mid layer, erupting every few seconds: it boils while a ring on the
+   * ground fills up (the warning), then a scalding column bursts out and throws droplets around.
+   * Mud vents (Oniishibozu Jigoku) erupt wider and longer and throw heavy blobs instead.
+   */
+  geyser(e, dt, b) {
+    const s = this.scene;
+    e.y = s.parallax.screenY(e.u);
+    if (e.erupt > 0 && (e.erupt -= dt) <= 0) {
+      s.fx.puff('wisp_s_0', e.x, e.y - 6, 0.6);
+      if (e.y > 4 && e.y < s.H * 0.75 && s.bombClear <= 0) {
+        const off = Math.random() * TAU;
+        if (e.mud) for (let i = 0; i < 5; i++) b.fire(e.x, e.y, off + (i / 5) * TAU, slow * 0.7, true);
+        else for (let i = 0; i < 8; i++) b.fire(e.x, e.y, off + (i / 8) * TAU, slow * 0.9);
+      }
+    }
+    if (e.showT > 0 && (e.showT -= dt) <= 0) {
+      e.anims.stop();
+      e.setAlpha(0);
+    }
+    e.timer -= dt;
+    if (e.timer > 0 || e.y < -4) return;
+    e.timer = e.every;
+    const warn = 0.9;
+    const live = e.mud ? 1.1 : 0.55;
+    b.zone(e.x, e.y, e.mud ? 16 : 12, { warn, live, kind: e.mud ? 'mud' : 'water', u: e.u });
+    e.erupt = warn;
+    e.showT = warn + live;
+    e.setAlpha(1).play(e.mud ? this.skin.geyser.mudAnim : this.skin.geyser.anim);
+  }
+
+  // ---------------------------------------------------------------- Beppu miniboss: the Oniyama crocodile
+  /**
+   * A crocodile from the Oniyama hot pools. It sinks (only its eyes and ripples show, shots pass) and
+   * swims under the player, then surfaces with a spray; it snaps its jaws, firing two rows of teeth that
+   * close on the player; and it death-rolls, spinning out a spiral while the pool erupts around the player.
+   */
+  wani(e, dt, b) {
+    const s = this.scene;
+    const pl = s.player;
+    if (e.state === 'enter') {
+      e.y += Math.max(8, (78 - e.y) * 0.9) * dt;
+      if (e.y >= 77) Object.assign(e, { state: 'fight', fight: 0, timer: 0.8, patternIndex: 0, step: 0, sub: null, roll: 0, snapT: 0 });
+      return this.waniSegs(e);
+    }
+    if (e.state === 'leave') {
+      e.vy = (e.vy ?? 0) - 40 * dt;
+      e.y += e.vy * dt;
+      return this.waniSegs(e);
+    }
+    e.fight += dt;
+    if (e.snapT > 0 && (e.snapT -= dt) <= 0 && !e.sub) e.setFrame('wani_0');
+    if (e.sub) return this.waniDive(e, dt, b);
+    if (e.roll > 0) {
+      // death roll: the whole body spins, a spiral of scalding water flies out of the jaws
+      e.roll -= dt;
+      e.setRotation(e.rotation + dt * TAU / 1.2);
+      if ((e.spin -= dt) <= 0 && this.canFire(e)) {
+        e.spin = 0.07;
+        for (let k = 0; k < 2; k++) b.fire(e.x, e.y, e.rotation + DOWN + k * Math.PI, slow);
+      }
+      if (e.roll <= 0) e.setRotation(0);
+      return this.waniSegs(e);
+    }
+    if (e.fight > 38) {
+      e.state = 'leave';
+      return;
+    }
+    e.x += (90 + 34 * Math.sin(e.fight * 0.6) - e.x) * Math.min(1, dt * 2);
+    e.y += (78 + 5 * Math.sin(e.fight * 1.3) - e.y) * Math.min(1, dt * 3);
+    this.waniSegs(e);
+    e.timer -= dt;
+    if (e.timer > 0 || !this.canFire(e)) return;
+    const mouth = { x: e.x, y: e.y + 30 };
+    switch (e.patternIndex % 3) {
+      case 0:
+        // sink and swim under the player
+        e.sub = { phase: 'swim', t: 0, ripple: 0 };
+        e.anims.stop();
+        e.setFrame('wani_sub');
+        e.ghost = true;
+        s.fx.puff('splash', e.x, e.y + 10, 0.4);
+        break;
+      case 1: {
+        // the jaws: two rows of teeth closing on where the player is now
+        const a = this.aimAt(e, 0, 30);
+        const d = Math.max(60, Math.hypot(pl.x - mouth.x, pl.y - mouth.y));
+        for (const side of [-1, 1])
+          for (let i = 0; i < 6; i++) {
+            const th = 0.42 + i * 0.07;
+            const v = 88;
+            const t = d / (v * Math.cos(th));
+            const acc = (2 * v * Math.sin(th)) / t;
+            const n = a - side * DOWN; // across the aim line, towards it
+            b.shot('eb_s', mouth.x, mouth.y, a + side * th, v, 1.8, { ax: Math.cos(n) * acc, ay: Math.sin(n) * acc });
+          }
+        e.setFrame('wani_1');
+        e.snapT = 0.3;
+        s.sfx.explode('s');
+        e.timer = 0.95;
+        if (++e.step >= 3) this.nextPattern(e);
+        break;
+      }
+      default:
+        // death roll, and the pool erupts under and around the player
+        e.roll = 1.2;
+        e.spin = 0;
+        b.zone(pl.x, pl.y, 12, { warn: 1.0, live: 0.5 });
+        for (const [dx, dy] of [[-34, -14], [34, -14], [0, 30]]) b.zone(Phaser.Math.Clamp(pl.x + dx, 12, VIEW.width - 12), Phaser.Math.Clamp(pl.y + dy, 30, s.H - 16), 11, { warn: 1.2, live: 0.5 });
+        e.timer = 0.6;
+        if (++e.step >= 2) this.nextPattern(e);
+    }
+  }
+
+  /** Under the surface: ripples heading for the player, then it bursts out with a spray. */
+  waniDive(e, dt, b) {
+    const s = this.scene;
+    const d = e.sub;
+    d.t += dt;
+    if (d.phase === 'swim') {
+      const tx = Phaser.Math.Clamp(s.player.x, 24, VIEW.width - 24);
+      e.x += Phaser.Math.Clamp(tx - e.x, -60 * dt, 60 * dt);
+      e.y += (96 - e.y) * Math.min(1, dt * 1.5);
+      if ((d.ripple -= dt) <= 0) {
+        d.ripple = 0.18;
+        s.fx.puff('splash', e.x + (Math.random() - 0.5) * 8, e.y - 6, 0.3);
+      }
+      if (d.t > 1.4) Object.assign(d, { phase: 'rise', t: 0 });
+    } else if (d.phase === 'rise') {
+      e.flash = Math.floor(d.t * 20) % 2 ? 0.02 : 0;
+      if (d.t > 0.35) {
+        e.ghost = false;
+        e.setFrame('wani_1');
+        e.snapT = 0.5;
+        s.fx.puff('splash', e.x, e.y + 20, 0.4);
+        s.fx.puff('splash', e.x, e.y - 10, 0.4);
+        if (this.canFire(e)) {
+          b.ring(e.x, e.y + 10, 14, Math.random() * TAU, slow);
+          b.fan(e.x, e.y + 30, this.aimAt(e, 0, 30), 5, 0.7, normal);
+        }
+        e.sub = null;
+        e.timer = 0.8;
+        this.nextPattern(e);
+      }
+    }
+    this.waniSegs(e);
+  }
+
+  /** Hit circles for the long body: the snout and the tail, following the rotation. */
+  waniSegs(e) {
+    const [head, tail] = e.segs;
+    const sn = Math.sin(e.rotation);
+    const cs = Math.cos(e.rotation);
+    Object.assign(head, { x: e.x - sn * 22, y: e.y + cs * 22 });
+    Object.assign(tail, { x: e.x + sn * 21, y: e.y - cs * 21 });
+  }
+
+  // ---------------------------------------------------------------- Beppu boss: the red oni of Chinoike
+  /**
+   * The oni sleeps in the blood pond and rises when the scroll stops. Normal shots barely chip his hide:
+   * Setsubun beans do the damage ("Oni wa soto!"). Masu boxes of beans fly across the screen; shoot one
+   * and catch the beans. Attacks: the kanabō smash (a marked spot, then a fissure of eruptions running
+   * at the player), blood lobbed from the pond, stomps that set off geysers, roaring fans; enraged
+   * below 35% he also swings the club round in a spiral. The pond position comes from the boss wave.
+   */
+  spawnOni(w, base) {
+    const s = this.scene;
+    const [x, u] = w.pond;
+    const g = { kind: 'oni', state: 'dormant', t: 0, phase: 0, step: 0, timer: 1, parts: [], enraged: false, defeated: false, awake: false };
+    Object.assign(g, { home: x, u, sway: 0, masuT: 0, masuSide: 1, act: null, poseT: 0 });
+    const e = this.pool.spawn('oni_0', x, s.parallax.screenY(u), { ...base, role: 'body', hp: 1000, maxHp: 1000, radius: 18, group: g, invuln: true, oni: true, pose: 0, hurtT: 0, shoutT: 0 });
+    e.segs = [{ x, y: 0, r: 12 }]; // the head
+    e.setDepth(DEPTH.air - 0.1).setAlpha(0);
+    g.body = e;
+    g.parts.push(e);
+    g.maxTotal = e.maxHp;
+    this.bossGroup = g;
+    return e;
+  }
+
+  /** Stand in the pond with `vh` px of the sprite above the surface (rising from the blood). */
+  oniStand(e, surf, vh) {
+    e.setCrop(0, 0, 63, vh);
+    e.y = surf + 42 - vh;
+    Object.assign(e.segs[0], { x: e.x, y: e.y - 20 });
+  }
+
+  oniHurt(e) {
+    e.hurtT = 0.12;
+    if (e.shoutT > 0) return;
+    e.shoutT = 2.6;
+    this.scene.fx.text(e.x, e.y - 42, 'ONI WA SOTO!', 0.9, 0xffe080);
+  }
+
+  spawnMasu(g) {
+    const s = this.scene;
+    g.masuSide = -g.masuSide;
+    const y = 130 + Math.random() * Math.max(10, s.H * 0.58 - 130);
+    const x = g.masuSide < 0 ? -10 : VIEW.width + 10;
+    this.pool.spawn('masu', x, y, { ...EXTRAS, type: 'masu', def: MASU, hp: MASU.hp, maxHp: MASU.hp, radius: MASU.radius, age: 0, seen: 0, state: 'fly', flash: 0, flashCool: 0, ground: false, head: null, dir: -g.masuSide, y0: y, harmless: true });
+  }
+
+  updateOni(g, dt) {
+    const s = this.scene;
+    const e = g.body;
+    if (e.dead || e.group !== g) return;
+    const surf = s.parallax.screenY(g.u);
+    g.t += dt;
+    if (g.state === 'dormant') {
+      e.setPosition(g.home, surf);
+      // bubbles rising in the blood pond
+      if (surf > 0 && surf < s.H && Math.random() < dt * 4) s.fx.puff('bloodball_1', g.home + (Math.random() - 0.5) * 50, surf + (Math.random() - 0.5) * 14, 0.4);
+      if (s.parallax.time >= s.parallax.maxTime - 1e-3) {
+        Object.assign(g, { state: 'rise', t: 0 });
+        e.setAlpha(1);
+        s.cameras.main.shake(2400, 0.005);
+      }
+      return;
+    }
+    if (g.state === 'rise') {
+      const k = Math.min(1, g.t / 2.4);
+      this.oniStand(e, surf, Math.max(1, Math.round(60 * k)));
+      if (Math.random() < dt * 14) s.fx.puff('bloodball_1', e.x + (Math.random() - 0.5) * 50, surf + 6, 0.3);
+      if (k >= 1) {
+        Object.assign(g, { state: 'fight', awake: true, t: 0, timer: 1.4, masuT: 0.3 });
+        e.invuln = false;
+        s.hud.show('RZUCAJ FASOLKI!', 'ZESTRZEL MASU I ZŁAP FASOLKI', 2.8);
+      }
+      return;
+    }
+    e.hurtT -= dt;
+    e.shoutT -= dt;
+    if (g.poseT > 0 && (g.poseT -= dt) <= 0) e.pose = 0;
+    if (!g.act) g.sway += dt * (g.enraged ? 0.7 : 0.45);
+    e.x = g.home + 22 * Math.sin(g.sway);
+    this.oniStand(e, surf, 60);
+    e.setFrame(e.hurtT > 0 && e.pose === 0 ? 'oni_hurt' : `oni_${e.pose}`);
+    // a fresh masu of beans every few seconds (at most two in the air)
+    if ((g.masuT -= dt) <= 0) {
+      g.masuT = g.enraged ? 5 : 6.5;
+      if (this.pool.live.filter((m) => m.type === 'masu' && !m.dead).length < 2) this.spawnMasu(g);
+    }
+    if (!g.enraged && e.hp < e.maxHp * 0.35) {
+      Object.assign(g, { enraged: true, timer: 0.8, phase: 0, step: 0 });
+      s.hud.show('', 'ONI WPADA W SZAŁ!', 1.6, true);
+    }
+    if (g.act) return this.oniSmash(g, e, dt);
+    g.timer -= dt * (g.enraged ? 1.35 : 1);
+    if (g.timer > 0 || !this.canFire(e)) return;
+    this.oniAttack(g, e);
+  }
+
+  oniAttack(g, e) {
+    const s = this.scene;
+    const b = s.bullets;
+    const pl = s.player;
+    const list = g.enraged ? ['smash', 'spin', 'blood', 'stomp', 'spin', 'roar'] : ['smash', 'blood', 'stomp', 'roar'];
+    const next = () => {
+      g.phase++;
+      g.step = 0;
+      g.timer = 1.0;
+    };
+    switch (list[g.phase % list.length]) {
+      case 'smash': {
+        // raise the kanabō on the player's side; the impact spot and the fissure towards the player are marked
+        const side = pl.x > e.x ? 1 : -1;
+        e.setFlipX(side > 0);
+        const ix = e.x + side * 26;
+        const iy = e.y + 30;
+        const dx = pl.x - ix;
+        const dy = pl.y - iy;
+        const d = Math.hypot(dx, dy) || 1;
+        const warn = 0.8;
+        b.zone(ix, iy, 14, { warn, live: 0.3, kind: 'blood' });
+        const n = Math.min(14, Math.ceil(d / 17) + 1);
+        for (let i = 1; i <= n; i++) b.zone(ix + (dx / d) * 17 * i, iy + (dy / d) * 17 * i, 8, { warn: warn + 0.06 * i, live: 0.3, kind: 'blood' });
+        g.act = { t: 0, warn, ix, iy };
+        e.pose = 1;
+        if (++g.step >= (g.enraged ? 3 : 2)) next();
+        break;
+      }
+      case 'blood': {
+        // scoops the pond and throws blood at the player and around
+        const n = g.enraged ? 4 : 3;
+        for (let i = 0; i < n; i++) {
+          const tx = i === 0 ? pl.x : 14 + Math.random() * (VIEW.width - 28);
+          const ty = i === 0 ? pl.y : pl.y + (Math.random() - 0.5) * 70;
+          b.lob(e.x, e.y + 22, Phaser.Math.Clamp(tx, 10, VIEW.width - 10), Phaser.Math.Clamp(ty, 40, s.H - 14), 1.1 + i * 0.1, 'blood');
+        }
+        e.pose = 2;
+        g.poseT = 0.35;
+        g.timer = 0.9;
+        if (++g.step >= 3) next();
+        break;
+      }
+      case 'stomp': {
+        // a stomp sets off the hot springs: eruptions all over, one under the player
+        s.cameras.main.shake(300, 0.005);
+        b.zone(pl.x, pl.y, 13, { warn: 1.0, live: 0.5 });
+        for (let i = 0; i < 4; i++) b.zone(16 + Math.random() * (VIEW.width - 32), s.H * 0.4 + Math.random() * (s.H * 0.6 - 24), 13, { warn: 1.0, live: 0.5 });
+        b.ring(e.x, e.y + 28, g.enraged ? 14 : 10, g.step * 0.3, slow);
+        g.timer = 1.4;
+        if (++g.step >= 3) next();
+        break;
+      }
+      case 'spin': {
+        // the club swung round and round: a three-armed spiral
+        e.pose = g.step % 4 < 2 ? 1 : 2;
+        e.setFlipX(g.step % 8 < 4);
+        g.poseT = 0.2;
+        for (let k = 0; k < 3; k++) b.fire(e.x, e.y + 6, g.step * 0.23 + (k * TAU) / 3, normal);
+        g.timer = 0.07;
+        if (++g.step >= 44) next();
+        break;
+      }
+      default: {
+        // a roar: wide aimed fans, then heavy shots
+        const a = this.aimAt(e, 0, 10);
+        if (g.step % 2 === 0) b.fan(e.x, e.y + 10, a, g.enraged ? 9 : 7, 1.1, slow);
+        else b.fan(e.x, e.y + 10, a, 3, 0.4, normal, true);
+        g.timer = 0.5;
+        if (++g.step >= 6) next();
+      }
+    }
+  }
+
+  /** The kanabō comes down: impact, a burst of shards, then the club goes back up. */
+  oniSmash(g, e, dt) {
+    const s = this.scene;
+    const a = g.act;
+    a.t += dt;
+    if (e.pose === 1 && a.t >= a.warn) {
+      e.pose = 2;
+      s.cameras.main.shake(350, 0.008);
+      s.sfx.explode('m');
+      s.fx.shards(a.ix, a.iy, 10, true);
+      if (s.bombClear <= 0) s.bullets.ring(a.ix, a.iy, 12, Math.random() * TAU, slow);
+    }
+    if (a.t >= a.warn + 0.55) {
+      e.pose = 0;
+      g.act = null;
+      g.timer = 0.35;
+    }
   }
 
   heavyUpdate(e, dt, b) {

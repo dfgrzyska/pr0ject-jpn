@@ -1,4 +1,4 @@
-import { DEPTH, PLAYER, SCORE, VIEW } from '../config.js';
+import { BEANS, DEPTH, HEAT, PLAYER, SCORE, VIEW } from '../config.js';
 import { FONT } from '../scenes/Boot.js';
 
 const W = VIEW.width;
@@ -114,6 +114,20 @@ export class Hud {
     this.bar.clear();
     this.bar.fillStyle(0x120e1a, 1).fillRect(57, 13, 22, 3);
     this.bar.fillStyle(s.score.mult >= SCORE.multiplierMax ? 0xffd060 : 0xf08bb0, 1).fillRect(58, 14, Math.round(20 * s.score.fraction), 1);
+    if (p.heatOn) {
+      // Beppu gun heat: grey, orange from the hot mark on (tick), blinking red while jammed
+      const y = this.H - 10;
+      const c = p.jam > 0 ? (Math.floor(p.jam * 8) % 2 ? 0xff4a3a : 0x6a1a14) : p.heat >= HEAT.boostAt ? 0xffa040 : 0x9ab4c4;
+      this.bar.fillStyle(0x120e1a, 1).fillRect(44, y, 24, 4);
+      this.bar.fillStyle(c, 1).fillRect(45, y + 1, Math.round(22 * p.heat), 2);
+      this.bar.fillStyle(0xffffff, 0.55).fillRect(45 + Math.round(22 * HEAT.boostAt), y, 1, 4);
+    }
+    if (p.beanT > 0) {
+      // Setsubun beans left
+      const y = this.H - 16;
+      this.bar.fillStyle(0x120e1a, 1).fillRect(44, y, 24, 4);
+      this.bar.fillStyle(0xf0c878, 1).fillRect(45, y + 1, Math.round((22 * p.beanT) / BEANS.time), 2);
+    }
     this.lives.forEach((img, i) => img.setVisible(i < p.lives).setFrame(p.ship.life));
     this.weapon.setFrame(WEAPON_ICON[p.weapon]);
     this.pips.forEach((pip, i) => pip.setFrame(i < p.level ? 'pip_on' : 'pip_off'));

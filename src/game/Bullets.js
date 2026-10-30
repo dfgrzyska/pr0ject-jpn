@@ -12,19 +12,30 @@ const TAU = Math.PI * 2;
 //   spin     rotate the sprite to its flight direction
 //   orb      { cx, cy, vx, vy, r, a, w }: circles a drifting centre (Raijū's orbs); link = the partner orb,
 //            the electric arc between the two hurts as well
+//   bounce   wall bounces left (Kamado pot: shots ricochet off the screen edges)
+//   grow     { r0, r1, t, drag }: a steam puff swelling from radius r0 to r1 over t s while it slows down
 // lobbed projectile looks: sprite low / high in the arc; spin = turns in flight; burst = ring bullet
 const LOBS = {
   snowball: { low: 'snowball_0', high: 'snowball_1', spin: 0, burst: 'eb_s' },
   tokkuri: { low: 'tokkuri_0', high: 'tokkuri_1', spin: 9, burst: 'eb_s' },
   lava: { low: 'lavaball_0', high: 'lavaball_1', spin: 0, burst: 'eb_lava' },
   takoyaki: { low: 'tako_ball_0', high: 'tako_ball_1', spin: 5, burst: 'eb_s' },
+  blood: { low: 'bloodball_0', high: 'bloodball_1', spin: 0, burst: 'bloodball_0' },
 };
 
-const PLAIN = { ax: 0, ay: 0, maxV: Infinity, life: Infinity, safe: 0, frz: null, wig: 0, wf: 0, spin: false, age: 0, orb: null, link: null, lead: false };
+// scalding ground zones (geysers, mud, the blood pond): warning ring colour, then the eruption
+const ZONES = {
+  water: { warn: 0xbfe8ff, fill: 0xd8f0ff, core: 0xffffff },
+  mud: { warn: 0xd8a870, fill: 0x7a5232, core: 0xb08458 },
+  blood: { warn: 0xff6a58, fill: 0xa8141e, core: 0xf04a3a },
+};
+
+const PLAIN = { ax: 0, ay: 0, maxV: Infinity, life: Infinity, safe: 0, frz: null, wig: 0, wf: 0, spin: false, age: 0, orb: null, link: null, lead: false, bounce: 0, grow: null };
 
 // Enemy bullets: bright core, dark outline, slow. Angle: radians, 0 = right, PI/2 = down.
 // Lobbed snowballs fly above everything, harmless, with a ring marking where they land.
 // Beams (lightning, steam) are columns that blink as a warning first and hurt only while they last.
+// Zones (Beppu geysers) are circles on the ground: a tightening ring first, then a scalding eruption.
 export class Bullets {
   constructor(scene) {
     this.scene = scene;
@@ -32,6 +43,7 @@ export class Bullets {
     this.lobs = new Pool(scene, DEPTH.enemyBullet + 0.5);
     this.marks = new Pool(scene, DEPTH.ground + 0.4);
     this.beams = [];
+    this.zones = [];
     this.gfx = scene.add.graphics().setDepth(DEPTH.enemyBullet - 0.1);
   }
 
@@ -74,6 +86,15 @@ export class Bullets {
     this.beams.push({ x, warn, live, w, kind, y0, t: 0 });
   }
 
+  /**
+   * A scalding circle at (x, y): the ring fills as a warning for `warn` s, then it erupts for `live` s.
+   * u = strip position: the zone rides on the mid layer (a geyser vent); null keeps it on the screen.
+   */
+  zone(x, y, r, { warn = 0.9, live = 0.45, kind = 'water', u = null } = {}) {
+    if (this.scene.bombClear > 0) return;
+    this.zones.push({ x, y, r, warn, live, kind, u, t: 0 });
+  }
+
   /** Two orbs circling a centre that drifts along (vx, vy), joined by a hurting arc. */
   pair(cx, cy, vx, vy, r = 15, w = 1.8) {
     if (this.scene.bombClear > 0) return;
@@ -88,6 +109,7 @@ export class Bullets {
   /** Is a circle at (x, y) touching a striking beam or an electric arc? */
   hazardAt(x, y, r) {
     for (const bm of this.beams) if (bm.t > bm.warn && y >= bm.y0 && Math.abs(x - bm.x) < bm.w / 2 + r) return true;
+    for (const z of this.zones) if (z.t > z.warn && Math.hypot(x - z.x, y - z.y) < z.r + r) return true;
     for (const b of this.pool.live) {
       const o = b.link;
       if (!b.lead || !o || o.dead || o.link !== b) continue;
@@ -111,6 +133,7 @@ export class Bullets {
       this.lobs.kill(l);
     }
     this.beams.length = 0;
+    this.zones.length = 0;
     this.pool.sweep();
     this.lobs.sweep();
     this.marks.sweep();
@@ -150,8 +173,23 @@ export class Bullets {
         b.x = b.bx - (b.vy / v) * o;
         b.y = b.by + (b.vx / v) * o;
       } else {
+        if (b.grow) {
+          // a steam puff: swells and slows, fading out at the end
+          const g = b.grow;
+          const k = Math.min(1, b.age / g.t);
+          b.radius = g.r0 + (g.r1 - g.r0) * k;
+          b.setScale(0.45 + 0.55 * k);
+          b.vx *= 1 - Math.min(1, g.drag * dt);
+          b.vy *= 1 - Math.min(1, g.drag * dt);
+          if (b.life < 0.4) b.setAlpha(b.life / 0.4);
+        }
         b.x += b.vx * dt;
         b.y += b.vy * dt;
+        if (b.bounce > 0 && (b.x < 3 || b.x > 177)) {
+          b.bounce--;
+          b.vx = -b.vx;
+          b.x = b.x < 3 ? 3 : 177;
+        }
       }
       const margin = b.orb ? 30 : 8;
       if ((b.life -= dt) <= 0 || b.x < -margin || b.x > 180 + margin || b.y < -12 - margin || b.y > H + margin) this.pool.kill(b);
@@ -181,13 +219,45 @@ export class Bullets {
 
     for (const bm of this.beams) bm.t += dt;
     this.beams = this.beams.filter((bm) => bm.t < bm.warn + bm.live);
+    for (const z of this.zones) {
+      z.t += dt;
+      if (z.u !== null) z.y = this.scene.parallax.screenY(z.u);
+    }
+    this.zones = this.zones.filter((z) => z.t < z.warn + z.live);
     this.draw(H);
   }
 
-  /** Beams (warning line, then the strike) and the arcs between linked orbs. */
+  /** Beams (warning line, then the strike), geyser zones and the arcs between linked orbs. */
   draw(H) {
     const g = this.gfx;
     g.clear();
+    for (const z of this.zones) {
+      const c = ZONES[z.kind];
+      if (z.t < z.warn) {
+        // the ring fills up towards the eruption, blinking faster at the end
+        const k = z.t / z.warn;
+        g.fillStyle(c.warn, 0.12 + 0.18 * k);
+        g.fillCircle(z.x, z.y, z.r * k);
+        if (k < 0.7 || Math.floor(z.t * 20) % 2) {
+          g.lineStyle(1, c.warn, 0.75);
+          g.strokeCircle(z.x, z.y, z.r);
+        }
+      } else {
+        // the eruption: a boiling column seen from above, with spray around it
+        const k = (z.t - z.warn) / z.live;
+        const fade = k > 0.75 ? (1 - k) / 0.25 : 1;
+        g.fillStyle(c.fill, 0.6 * fade);
+        g.fillCircle(z.x, z.y, z.r + 1);
+        g.fillStyle(c.core, 0.85 * fade);
+        g.fillCircle(z.x + (Math.random() - 0.5) * 2, z.y + (Math.random() - 0.5) * 2, z.r * 0.6);
+        g.fillStyle(c.core, fade);
+        for (let i = 0; i < 6; i++) {
+          const a = Math.random() * TAU;
+          const d = z.r * (0.8 + Math.random() * 0.6);
+          g.fillRect(Math.round(z.x + Math.cos(a) * d), Math.round(z.y + Math.sin(a) * d), 1, 1);
+        }
+      }
+    }
     for (const bm of this.beams) {
       if (bm.t < bm.warn) {
         // blinking warning line, faster towards the strike

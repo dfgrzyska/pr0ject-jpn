@@ -123,6 +123,26 @@ export const ENEMIES = {
   carrier: { hp: 12, weight: 2, score: 500, radius: 7, explosion: 's' },
   // Sapporo: rotary snowplough driving along the streets, sweeping a stream of snow
   plow: { hp: 30, weight: 3, score: 600, radius: 8, explosion: 'm', ground: true },
+  // Beppu environment (no score, no multiplier): a hot-spring vent that erupts, a drifting steam cloud
+  geyser: { hp: 1, weight: 0, score: 0, radius: 8, explosion: 's', ground: true },
+  steam: { hp: 1, weight: 0, score: 0, radius: 17, explosion: 's' },
+};
+
+// Beppu: flying through steam heats the guns (stronger shots); too long and they jam until they cool
+export const HEAT = {
+  rise: 0.34, // per second inside a steam cloud
+  cool: 0.1, // per second outside
+  boostAt: 0.4, // from this heat on, shots are hot
+  boost: 1.5, // damage multiplier of hot shots
+  jam: 1.8, // s without firing after overheating
+};
+
+// Beppu boss: Setsubun beans thrown alongside the normal weapon (only beans really hurt the oni)
+export const BEANS = {
+  time: 9, // s of beans per masu box
+  damage: 2,
+  speed: 260,
+  armor: 0.12, // fraction of normal damage the oni takes
 };
 
 export const FAIR = {

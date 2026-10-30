@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BOMB, DEPTH, PLAYER, SHIPS, VIEW, WEAPONS } from '../config.js';
+import { BEANS, BOMB, DEPTH, HEAT, PLAYER, SHIPS, VIEW, WEAPONS } from '../config.js';
 import { Pool } from './Pool.js';
 
 const WEAPON_NAMES = { basic: 'PODSTAWOWA', spread: 'ROZRZUT', laser: 'LASER', homing: 'NAPROWADZANE' };
@@ -24,6 +24,10 @@ export class Player {
     this.fireTimer = 0;
     this.orbTimer = 0;
     this.volleys = 0;
+    this.heat = 0; // Beppu: steam heats the guns (see HEAT)
+    this.jam = 0; // s left with overheated, silent guns
+    this.heatOn = false; // the stage has steam: the HUD shows the heat gauge
+    this.beanT = 0; // s left of Setsubun beans
     this.drag = null;
     this.god = false;
     this.x = VIEW.width / 2;
@@ -51,6 +55,8 @@ export class Player {
     this.y = this.scene.H + 20;
     this.invulnerable = PLAYER.invulnerable;
     this.bombs = 1;
+    this.heat = 0;
+    this.jam = 0;
     this.drag = null;
     this.setVisible(true);
   }
@@ -131,7 +137,8 @@ export class Player {
       }
       this.prevX = this.x;
       if (this.invulnerable > 0) this.invulnerable -= dt;
-      if (firing && this.entering <= 0) this.fire(dt);
+      if (this.beanT > 0) this.beanT -= dt;
+      if (firing && this.entering <= 0 && this.jam <= 0) this.fire(dt);
     }
     const f = this.ship.frame;
     this.sprite.setFrame(bank < 0 ? `${f}_l` : bank > 0 ? `${f}_r` : f);
@@ -141,6 +148,10 @@ export class Player {
     const blink = this.invulnerable > 0 && Math.floor(this.invulnerable * 16) % 2 === 0;
     this.sprite.setAlpha(blink ? 0.35 : 1);
     this.flame.setAlpha(blink ? 0.35 : 1);
+    // hot guns glow orange; jammed ones blink grey
+    if (this.jam > 0) this.sprite.setTint(Math.floor(this.jam * 10) % 2 ? 0x9a9a9a : 0xffffff);
+    else if (this.heat >= HEAT.boostAt) this.sprite.setTint(0xffc8a0);
+    else this.sprite.clearTint();
     this.updateShots(dt);
   }
 
@@ -162,7 +173,10 @@ export class Player {
   }
 
   shot(frame, x, y, vx, vy, damage, radius, extra) {
-    return this.shots.spawn(frame, x, y, { vx, vy, damage: damage * this.ship.damage, radius, homing: false, life: 2, ...extra });
+    const hot = this.heat >= HEAT.boostAt;
+    const s = this.shots.spawn(frame, x, y, { vx, vy, damage: damage * this.ship.damage * (hot ? HEAT.boost : 1), radius, homing: false, life: 2, bean: false, ...extra });
+    if (hot) s.setTint(0xffb070);
+    return s;
   }
 
   volley() {
@@ -205,6 +219,45 @@ export class Player {
         break;
       }
     }
+    // Setsubun: a pair of roasted beans thrown with every other volley
+    if (this.beanT > 0 && this.volleys % 2 === 0) {
+      const { damage, speed } = BEANS;
+      for (const side of [-1, 1]) this.shot('ps_bean', x + side * 4, y - 6, side * 30, -speed, damage, 2, { bean: true });
+    }
+  }
+
+  /** Beppu: steam clouds heat the guns; full heat jams them until they cool down. */
+  heatUpdate(dt, inSteam) {
+    this.heatOn = true;
+    const fx = this.scene.fx;
+    if (this.jam > 0) {
+      this.jam -= dt;
+      this.heat = Math.max(0, this.jam / HEAT.jam);
+      if (Math.random() < dt * 14) fx.puff('wisp_s_1', this.x + (Math.random() - 0.5) * 10, this.y - 4, 0.35);
+      return;
+    }
+    if (!this.alive) return;
+    const was = this.heat;
+    this.heat = Phaser.Math.Clamp(this.heat + (inSteam ? HEAT.rise : -HEAT.cool) * dt, 0, 1);
+    if (was < HEAT.boostAt && this.heat >= HEAT.boostAt) fx.text(this.x, this.y - 18, 'GORĄCE DZIAŁA', 1, 0xffb070);
+    if (this.heat >= 1) {
+      this.jam = HEAT.jam;
+      fx.text(this.x, this.y - 18, 'PRZEGRZANIE!', 1.4, 0xff6a50);
+      this.scene.sfx.explode('s');
+    }
+  }
+
+  /** A macaque grabs something: a power level, else the bomb. Nothing to take: null (it bites instead). */
+  steal() {
+    if (this.level > 1) {
+      this.level--;
+      return 'power';
+    }
+    if (this.bombs > 0) {
+      this.bombs = 0;
+      return 'bomb';
+    }
+    return null;
   }
 
   launchOrbs() {
@@ -249,8 +302,13 @@ export class Player {
 
   // ---------------------------------------------------------------- power, bomb, death
   collect(color) {
-    const type = WEAPONS.colorToType[color];
     const fx = this.scene.fx;
+    if (color === 'mame') {
+      this.beanT = BEANS.time;
+      fx.text(this.x, this.y - 18, 'FASOLKI!', 1.2, 0xffe080);
+      return;
+    }
+    const type = WEAPONS.colorToType[color];
     if (this.weapon === type) {
       if (this.level < PLAYER.maxPower) {
         this.level++;
@@ -291,6 +349,7 @@ export class Player {
     s.fx.explode(this.x - 4, this.y + 3, 's');
     s.fx.flash(0.35, 0.3);
     s.score.death();
+    this.beanT = 0;
     // lose power; the lost level drops as a pickup that can be caught again
     const lost = Math.min(PLAYER.deathPowerLoss, this.level - 1);
     if (lost > 0) {

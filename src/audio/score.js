@@ -2,7 +2,7 @@
 //
 // Every bar is 16 steps (16th notes). Melodic tokens: note name (A4, Bb3, ...) or a chord "A3+E4";
 // '-' holds the previous note, '.' is a rest. Percussion tokens: K = big taiko, k = small taiko,
-// x = "ka" (rim), s / S = shaker / accented shaker; Okinawa: p = paranku, c = sanba; Sapporo: n = naruko, j = sleigh bells; Kagoshima: g = kane (hand gong); Osaka: h = hyōshigi (clappers).
+// x = "ka" (rim), s / S = shaker / accented shaker; Okinawa: p = paranku, c = sanba; Sapporo: n = naruko, j = sleigh bells; Kagoshima: g = kane (hand gong); Osaka: h = hyōshigi (clappers); Beppu: z / Z = tsuzumi "pon" / "ta".
 //
 // Stage songs share one 8-bar progression (A A F F D D Bb E) and are switched on bar lines,
 // so the music can grow with the stage without losing its place in the harmony.
@@ -11,6 +11,7 @@ import { SONGS2 } from './score2.js';
 import { SONGS3 } from './score3.js';
 import { SONGS4 } from './score4.js';
 import { SONGS5 } from './score5.js';
+import { SONGS6 } from './score6.js';
 
 const bar = (s) => s;
 
@@ -220,7 +221,7 @@ export const SONGS = {
 };
 
 // stage 2 (Okinawa) songs live in score2.js
-Object.assign(SONGS, SONGS2, SONGS3, SONGS4, SONGS5);
+Object.assign(SONGS, SONGS2, SONGS3, SONGS4, SONGS5, SONGS6);
 
 // ---------------------------------------------------------------- parsing
 const SEMI = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
