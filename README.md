@@ -1,4 +1,4 @@
-# Shmup Japonia — etap 1: Kioto, etap 2: Okinawa, etap 3: Sapporo, etap 4: Kagoshima
+# Shmup Japonia — Kioto, Okinawa, Sapporo, Kagoshima, Osaka
 
 Pionowy shmup w przeglądarce (Phaser 4.2.1, WebGL), rozdzielczość wewnętrzna 180×320–420,
 skalowanie całkowitą wielokrotnością pikseli urządzenia.
@@ -15,7 +15,7 @@ npm run art        # przegenerowanie grafik do public/assets/
 Wersja online: https://dfgrzyska.github.io/pr0ject-jpn/ — budowana automatycznie przy każdym pushu na `main`
 (`.github/workflows/pages.yml`; w Settings → Pages źródło musi być ustawione na „GitHub Actions”).
 
-Parametry do testów w adresie: `?stage=1` … `?stage=4` (ten etap pierwszy, reszta losowo — 1 Kioto, 2 Okinawa, 3 Sapporo, 4 Kagoshima), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
+Parametry do testów w adresie: `?stage=1` … `?stage=5` (ten etap pierwszy, reszta losowo — 1 Kioto, 2 Okinawa, 3 Sapporo, 4 Kagoshima, 5 Osaka), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
 `?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5), `?ship=oni|kitsune|tsubame`.
 
 ## Statki
@@ -151,6 +151,38 @@ słupy pary w dół zbocza, strumienie żaru. Faza 2: krater się otwiera — pi
 pocisków z jedną luką, która przesuwa się z każdym rzędem), wulkaniczne pioruny. Poniżej 30% wybucha na dobre.
 Po pokonaniu krater stygnie i zostaje w tle.
 
+## Osaka
+
+Ok. 3,5 min od popołudnia do nocy: zamek Osaka w fosach z kamiennymi murami (zielone dachy, złote ryby
+shachihoko) → Nakanoshima między dwiema rzekami (ceglana hala Central Public Hall, biblioteka z kopułą, ogród
+róż, statki wycieczkowe) → wieżowce Umedy ze Sky Building i torowiskiem stacji → Shinsekai z Tsūtenkaku,
+zaułkiem Janjan z lampionami i neonami barów kushikatsu → kanał Dōtonbori nocą (neony, wielkie szyldy
+z ośmiornicą, takoyaki, gyoza, sushi i ramenem, most Ebisu, stateczek) → port Tempozan (diabelski młyn
+w kolorowych światłach, akwarium, żaglowiec, dźwigi i kontenery) → otwarta zatoka.
+
+Zwrot dla zwykłych wrogów — **pary manzai** (boke i tsukkomi, osakańska komedia w duecie): każdy wróg ma
+partnera (łączy ich cienka linia). Zestrzel jednego, a drugi wpada we wściekłość („!?”, czerwienieje) i od razu
+strzela; zestrzel oba w ciągu 1,2 s, a dostaniesz bonus „NANDE YANEN!”. Pary to dwa kolejne egzemplarze tej
+samej fali albo fale z tym samym polem `duo` w `stage5.json`.
+
+| Archetyp | Wygląd |
+| --- | --- |
+| Popcorn | latające takoyaki z tańczącymi płatkami bonito |
+| Strzelec | papierowy lampion-rozdymka (fugu) |
+| Wieżyczka | maneki-neko na stoisku — łapka macha coraz szybciej przed strzałem |
+| Nurek | kushikatsu — szaszłyk pikujący jak włócznia |
+| Nośnik | zawinięty cukierek ame (chindon-ya zaczęło się podobno od osakańskiego sprzedawcy cukierków) |
+
+Miniboss: lalka bunraku (Osaka to dom teatru bunraku) — samuraj prowadzony przez trzech lalkarzy w czerni.
+Lalki nie da się trafić (strzały przez nią przelatują); każdy lalkarz prowadzi jeden atak: omozukai — głowa
+i prawa ręka (miecz, szeroki wachlarz), hidarizukai — lewa ręka (strumień), ashizukai — nogi (tupnięcia
+i taniec). Zestrzelony lalkarz = bezwładna część; bez wszystkich trzech lalka upada.
+
+Boss: olbrzymia ośmiornica w opasce sprzedawcy takoyaki. Cztery macki z segmentów kołyszą się i podwijają,
+plują pierścieniami z końcówek, uderzają w dół (najpierw migająca linia), głowa rzuca takoyaki z celownikiem;
+trafienie w dowolny segment rani mackę. Po odcięciu wszystkich macek łeb staje się celem: spirale i kule tuszu,
+grad takoyaki; poniżej 35% wpada w szał.
+
 ## Kolejność etapów
 
 Każda nowa gra losuje kolejność miast; „ETAP 1…4” to miejsce w tej kolejności, nie stałe miasto.
@@ -172,13 +204,16 @@ dla Yuki-onny i szybki, ciężki motyw niedźwiedzia.
 Etap 4 gra „Hi no Shima” (`src/audio/score4.js`): festiwalowo w skali yo (D E G A B) jak orkiestry Ohara-matsuri —
 shamisen, flet, taiko, gong kane — z satsuma-biwą (głęboka lutnia uderzana dużą kostką); trzeszczący motyw Raijū
 i powolny, ciężki motyw wulkanu w skali in na E.
+Osaka gra „Naniwa Chindon” (`src/audio/score5.js`): orkiestra chindon-ya — klarnet w skali yonanuki (C D E G A)
+na bujającym rytmie pyonko, gong kane i taiko, shamisen; teatralny motyw bunraku z niskim shamisenem
+i trzaskiem kołatek hyōshigi; ośmiornica — orkiestra w pełnym pędzie.
 Efekty (`src/audio/Sfx.js`): ciche, syntetyzowane strzały każdej broni (z limitem częstotliwości) i eksplozje
 w trzech rozmiarach. Głośnik / M wycisza muzykę i efekty razem.
 iOS: dźwięk startuje po pierwszym dotknięciu; przełącznik wyciszenia telefonu wycisza też grę.
 
 ## Fale
 
-`src/data/stage1.json` … `stage4.json` — dane etapu (wygląd, muzyka, ostrzeżenia) i harmonogram fal,
+`src/data/stage1.json` … `stage5.json` — dane etapu (wygląd, muzyka, ostrzeżenia) i harmonogram fal,
 edytowalne bez zmian w kodzie:
 
 ```json
@@ -198,7 +233,7 @@ uruchom `npm run art`. Mnożnik: N = suma wag wrogów w etapie / 9 (liczone auto
 Cała grafika jest generowana kodem (`tools/`) do zwykłych plików PNG w `public/assets/`:
 atlas sprite'ów (`sprites.png` + `sprites.json`), font pikselowy z polskimi znakami, a dla każdego etapu
 `bg/stageN/far.png` i 14 kawałków warstwy środkowej `bg/stageN/mid_XX.png` (180×512).
-Generatory teł: `tools/art/kyoto/`, `tools/art/okinawa/`, `tools/art/sapporo/`, `tools/art/kagoshima/` (`node tools/gen-art.mjs --only=stage4` buduje jeden etap). Każdy plik można podmienić ręcznie
+Generatory teł: `tools/art/kyoto/`, `tools/art/okinawa/`, `tools/art/sapporo/`, `tools/art/kagoshima/`, `tools/art/osaka/` (`node tools/gen-art.mjs --only=stage5` buduje jeden etap). Każdy plik można podmienić ręcznie
 rysowaną grafiką o tych samych wymiarach/nazwach ramek. `node tools/gen-art.mjs --preview` zapisuje
 powiększone podglądy do `tools/preview/`.
 

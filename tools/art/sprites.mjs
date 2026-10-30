@@ -5,6 +5,7 @@ import { okinawaSprites } from './okinawa/sprites.mjs';
 import { sapporoSprites } from './sapporo/sprites.mjs';
 import { tanukiSprites } from './kyoto/tanuki.mjs';
 import { kagoshimaSprites } from './kagoshima/sprites.mjs';
+import { osakaSprites } from './osaka/sprites.mjs';
 
 const out = [];
 const add = (name, raster) => out.push({ name, raster });
@@ -342,6 +343,7 @@ tanukiSprites(add);
 okinawaSprites(add);
 sapporoSprites(add);
 kagoshimaSprites(add);
+osakaSprites(add);
 
 // ---------------------------------------------------------------- pickups
 const PICKUP = [

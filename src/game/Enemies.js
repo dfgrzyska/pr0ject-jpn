@@ -10,6 +10,33 @@ const TAU = Math.PI * 2;
 const DECOY = { hp: 1, weight: 0, score: 300, radius: 13, explosion: 's' };
 // the two halves of a burst volcanic bomb
 const FRAG = { hp: 1, weight: 0, score: 50, radius: 3, explosion: 's' };
+// the bunraku puppet's three black-clad puppeteers
+const KUROKO = { hp: 140, weight: 0, score: 2000, radius: 7, explosion: 'm' };
+// per-skin extras, listed so a pooled sprite never keeps a previous enemy's state
+const EXTRAS = {
+  armor: 0,
+  maxArmor: 0,
+  lantern: false,
+  flock: null,
+  ghost: false, // faded out: shots pass through, no contact
+  invuln: false, // shots are absorbed without damage
+  pass: false, // shots fly through (still solid to touch)
+  group: null,
+  role: null,
+  wreck: null,
+  kind: null,
+  song: null, // heavy with its own theme
+  decoys: null,
+  split: false, // volcanic bomb: bursts into two fragments
+  sniper: false, // matchlock: aims a line, then one fast shot
+  lidded: false, // vinegar jar: armoured while the lid is on
+  melt: 0, // shirokuma: seconds until it melts away with its pickup
+  duo: null, // Osaka manzai pair
+  rage: false, // its partner fell: furious
+  segs: null, // tentacle segments (extra hit circles)
+  kuroko: null, // the puppet's puppeteers
+  master: null,
+};
 
 // Six archetypes shared by every city (each stage picks a skin), plus stage bosses.
 export class Enemies {
@@ -19,6 +46,7 @@ export class Enemies {
     this.pool = new Pool(scene, DEPTH.air);
     this.heads = new Pool(scene, DEPTH.ground + 0.2);
     this.wrecks = new Pool(scene, DEPTH.ground);
+    this.segPool = new Pool(scene, DEPTH.air - 0.12); // the octopus's tentacle segments
     this.heavy = null;
     this.bossGroup = null;
     // telegraph lines (matchlock aim, Raijū's charge), redrawn every frame
@@ -59,24 +87,7 @@ export class Enemies {
       ground: !!def.ground,
       head: null,
       u: 0,
-      // per-skin extras, listed so a pooled sprite never keeps a previous enemy's state
-      armor: 0,
-      maxArmor: 0,
-      lantern: false,
-      flock: null,
-      ghost: false, // faded out: shots pass through, no contact
-      invuln: false, // shots are absorbed without damage
-      pass: false, // shots fly through (still solid to touch)
-      group: null,
-      role: null,
-      wreck: null,
-      kind: null,
-      song: null, // heavy with its own theme
-      decoys: null,
-      split: false, // volcanic bomb: bursts into two fragments
-      sniper: false, // matchlock: aims a line, then one fast shot
-      lidded: false, // vinegar jar: armoured while the lid is on
-      melt: 0, // shirokuma: seconds until it melts away with its pickup
+      ...EXTRAS,
     };
     base.maxHp = base.hp;
     const look = this.skin[w.look ?? w.type]; // look: an alternative skin entry, e.g. the Kyoto tanuki
@@ -131,9 +142,10 @@ export class Enemies {
         break;
       case 'heavy':
         e = this.pool.spawn(look.frame, w.x, -30, { ...base, kind: look.kind ?? null, song: w.music ?? null });
-        e.play(look.anim);
+        if (look.anim) e.play(look.anim);
         this.heavy = e;
         e.patternIndex = 0;
+        if (look.kind === 'bunraku') this.spawnKuroko(e, base);
         break;
       case 'turret': {
         // spawns just above the screen and stays glued to the mid layer
@@ -161,11 +173,16 @@ export class Enemies {
       }
       case 'boss':
         if (w.boss === 'volcano') return this.spawnVolcano(w, base);
+        if (w.boss === 'tako') return this.spawnTako(w, base);
         return w.boss === 'kuma' ? this.spawnKuma(w, base) : this.spawnBoss(w, base);
       default:
         return;
     }
     e.setDepth(e.ground ? DEPTH.ground : DEPTH.air + (w.type === 'heavy' ? -0.1 : 0));
+    if (this.skin.duos && w.duo) {
+      e.duo = w.duo;
+      w.duo.members.push(e);
+    }
     return e;
   }
 
@@ -242,10 +259,15 @@ export class Enemies {
       this.ventDown(e);
       return;
     }
+    if (e.group?.kind === 'tako' && e.role === 'tentacle') {
+      this.tentacleDown(e);
+      return;
+    }
+    if (e.duo) this.duoDown(e);
     if (e.split && !byBomb) {
       // a volcanic bomb bursts into two smaller halves flying apart
       for (const side of [-1, 1]) {
-        const f = this.pool.spawn('kazan_s_0', e.x, e.y, { type: 'frag', def: FRAG, hp: 1, maxHp: 1, radius: FRAG.radius, age: 0, seen: 1, state: 'fly', flash: 0, flashCool: 0, ground: false, head: null, armor: 0, flock: null, ghost: false, invuln: false, pass: false, group: null, role: null, wreck: null, kind: null, decoys: null, split: false, sniper: false, lidded: false, melt: 0, vx: side * (40 + Math.random() * 20), vy: -30 });
+        const f = this.pool.spawn('kazan_s_0', e.x, e.y, { ...EXTRAS, type: 'frag', def: FRAG, hp: 1, maxHp: 1, radius: FRAG.radius, age: 0, seen: 1, state: 'fly', flash: 0, flashCool: 0, ground: false, head: null, vx: side * (40 + Math.random() * 20), vy: -30 });
         f.play('kazan_s');
       }
     }
@@ -284,7 +306,7 @@ export class Enemies {
     }
     this.remove(e);
     const g = this.bossGroup;
-    if (e.type === 'boss' && g && !g.defeated && g.parts.every((p) => p.dead || p.hp <= 0)) {
+    if (e.type === 'boss' && g && !g.defeated && g.parts.every((p) => p.dead || p.hp <= 0 || p.group !== g)) {
       g.defeated = true;
       s.onBossDefeated();
     }
@@ -300,6 +322,7 @@ export class Enemies {
       e.setDepth(DEPTH.air - 0.1);
       g.parts.push(e);
     }
+    g.maxTotal = g.parts.reduce((sum, p) => sum + p.maxHp, 0);
     this.bossGroup = g;
     return g.parts[0];
   }
@@ -307,14 +330,11 @@ export class Enemies {
   /** HP shown in the top bar: the mid-stage heavy or the whole boss pair. */
   bossBar() {
     const g = this.bossGroup;
-    if (g && !g.defeated && (g.kind === 'kuma' || g.kind === 'volcano' ? g.awake : g.parts.some((p) => !p.dead && p.y > 0))) {
+    if (g && !g.defeated && (g.kind === 'kuma' || g.kind === 'volcano' || g.kind === 'tako' ? g.awake : g.parts.some((p) => !p.dead && p.group === g && p.y > 0))) {
+      // parts are pooled sprites: once dead they may come back as other enemies, so check the group
       let hp = 0;
-      let max = 0;
-      for (const p of g.parts) {
-        hp += p.dead ? 0 : Math.max(0, p.hp);
-        max += p.maxHp;
-      }
-      return { hp, max };
+      for (const p of g.parts) if (!p.dead && p.group === g) hp += Math.max(0, p.hp);
+      return { hp, max: g.maxTotal };
     }
     const hv = this.heavy;
     return hv && hv.y > 0 ? { hp: hv.hp, max: hv.maxHp } : null;
@@ -325,7 +345,8 @@ export class Enemies {
     if (!g || g.defeated) return;
     if (g.kind === 'kuma') return this.updateKuma(g, dt);
     if (g.kind === 'volcano') return this.updateVolcano(g, dt);
-    const alive = g.parts.filter((p) => !p.dead && p.hp > 0);
+    if (g.kind === 'tako') return this.updateTako(g, dt);
+    const alive = g.parts.filter((p) => !p.dead && p.group === g && p.hp > 0);
     if (!alive.length) return;
     g.t += dt;
     const sp = g.enraged ? 1.6 : 1;
@@ -406,13 +427,14 @@ export class Enemies {
     part('kuma_paw', 'paw', 22, -13, 150, 7, 3000);
     g.body = part('kuma_ice', 'body', 0, 0, 700, 20, 0);
     g.body.pass = true; // shots go through the ice to reach the paws and the heart
+    g.maxTotal = g.parts.reduce((sum, p) => sum + p.maxHp, 0);
     this.bossGroup = g;
     return g.body;
   }
 
   updateKuma(g, dt) {
     const s = this.scene;
-    const alive = g.parts.filter((p) => !p.dead && p.hp > 0);
+    const alive = g.parts.filter((p) => !p.dead && p.group === g && p.hp > 0);
     const body = g.body;
     const place = (x, y) => {
       for (const p of alive) {
@@ -568,7 +590,7 @@ export class Enemies {
     this.remove(e);
     if (e.role !== 'heart') return;
     for (const p of g.parts)
-      if (!p.dead && p.role === 'paw') {
+      if (!p.dead && p.group === g && p.role === 'paw') {
         s.fx.explode(p.x, p.y, 's');
         s.fx.shards(p.x, p.y, 10);
         p.hp = 0;
@@ -586,6 +608,7 @@ export class Enemies {
 
   remove(e) {
     if (e.head) this.heads.kill(e.head);
+    if (e.kuroko) for (const k of e.kuroko) if (!k.dead && k.master === e) this.pool.kill(k);
     if (e.decoys) this.dropDecoys(e);
     if (e.kind === 'yukionna') this.scene.parallax.windTarget = 0; // her blizzard dies down with her
     if (e === this.heavy) this.heavy = null;
@@ -621,6 +644,7 @@ export class Enemies {
           if (e.kind === 'yukionna') this.yukiOnna(e, dt, b);
           else if (e.kind === 'tanuki') this.tanuki(e, dt, b);
           else if (e.kind === 'raiju') this.raiju(e, dt, b);
+          else if (e.kind === 'bunraku') this.bunraku(e, dt, b);
           else this.heavyUpdate(e, dt, b);
           break;
         case 'turret':
@@ -644,11 +668,14 @@ export class Enemies {
         e.flash -= dt;
         e.setTint(0x808080).setTintMode(Phaser.TintModes.ADD);
         e.head?.setTint(0x808080).setTintMode(Phaser.TintModes.ADD);
-      } else if (e.type === 'boss' && e.group.enraged) {
+        if (e.segs) for (const sg of e.segs) sg.setTint(0x808080).setTintMode(Phaser.TintModes.ADD);
+      } else if ((e.type === 'boss' && e.group.enraged) || e.rage) {
         e.setTint(0xffa8a0).setTintMode(Phaser.TintModes.MULTIPLY);
+        if (e.segs) for (const sg of e.segs) sg.setTint(0xffa8a0).setTintMode(Phaser.TintModes.MULTIPLY);
       } else if (e.tintMode !== Phaser.TintModes.MULTIPLY) {
         e.clearTint();
         e.head?.clearTint();
+        if (e.segs) for (const sg of e.segs) sg.clearTint();
       }
       const off = e.y > H + 40 || e.y < -70 || e.x < -50 || e.x > VIEW.width + 50;
       if (off && e.type !== 'boss' && (e.age > 2 || e.y > H)) {
@@ -658,6 +685,8 @@ export class Enemies {
     }
     this.pool.sweep();
     this.heads.sweep();
+    this.segPool.sweep();
+    if (this.skin.duos) this.drawDuos();
     for (const w of this.wrecks.live) {
       w.y = s.parallax.screenY(w.u);
       if (w.y > H + 20) this.wrecks.kill(w);
@@ -751,6 +780,7 @@ export class Enemies {
         // never dive upwards
         if (Math.sin(e.ang) < 0.35) e.ang = e.ang < -DOWN || e.ang > DOWN ? Math.PI - 0.36 : 0.36;
         e.v = 70;
+        if (this.skin.diver.spin) e.setRotation(e.ang - DOWN);
       }
     } else {
       e.v = Math.min(240, e.v + 280 * dt);
@@ -850,10 +880,16 @@ export class Enemies {
     if (e.lidded) return this.jar(e, dt, b);
     const p = s.player;
     const ang = Math.atan2(p.y - e.y, p.x - e.x);
-    // head frame i points along (-sin, cos) of i * 22.5deg
-    const th = Math.atan2(-(p.x - e.x), p.y - e.y);
-    const i = ((Math.round(th / (TAU / 16)) % 16) + 16) % 16;
-    e.head.setFrame(`${this.skin.turret.head}${i}`).setPosition(e.x, e.y - 1);
+    if (this.skin.turret.beckon) {
+      // maneki-neko: the raised paw beckons, faster and faster as the shot comes
+      const rate = this.canFire(e) && e.timer < 0.7 ? 12 : 3;
+      e.head.setFrame(`${this.skin.turret.head}${Math.floor(e.age * rate) % 2}`).setPosition(e.x - 5, e.y - 7);
+    } else {
+      // head frame i points along (-sin, cos) of i * 22.5deg
+      const th = Math.atan2(-(p.x - e.x), p.y - e.y);
+      const i = ((Math.round(th / (TAU / 16)) % 16) + 16) % 16;
+      e.head.setFrame(`${this.skin.turret.head}${i}`).setPosition(e.x, e.y - 1);
+    }
     if (this.canFire(e)) {
       e.timer -= dt;
       if (e.timer <= 0) {
@@ -1053,9 +1089,8 @@ export class Enemies {
       e.play('tanuki');
       for (let i = 0; i < 2; i++) {
         const d = this.pool.spawn('tanuki_leaf_0', e.x, e.y, {
-          type: 'decoy', def: DECOY, hp: 1, maxHp: 1, radius: DECOY.radius, age: 0, seen: 1, state: 'fight', timer: 1.1 + i * 0.5, flash: 0, flashCool: 0,
-          ground: false, head: null, armor: 0, maxArmor: 0, lantern: false, flock: null, ghost: false, invuln: false, pass: false,
-          group: null, role: null, wreck: null, kind: null, song: null, decoys: null, master: e, tx: e.x,
+          ...EXTRAS, type: 'decoy', def: DECOY, hp: 1, maxHp: 1, radius: DECOY.radius, age: 0, seen: 1, state: 'fight', timer: 1.1 + i * 0.5, flash: 0, flashCool: 0,
+          ground: false, head: null, master: e, tx: e.x,
         });
         d.play('tanuki_leaf').setDepth(DEPTH.air - 0.1);
         e.decoys.push(d);
@@ -1064,7 +1099,7 @@ export class Enemies {
       e.timer = 0.9;
     } else if (e.step < 9) {
       // shuffle once halfway, like the cup game; the real one fires a fan meanwhile
-      e.decoys = e.decoys.filter((d) => !d.dead);
+      e.decoys = e.decoys.filter((d) => !d.dead && d.master === e);
       if (e.step === 5) lineup();
       b.fan(e.x, e.y + 12, this.aimAt(e, 0, 12), 5, 0.8, slow);
       e.timer = 1.0;
@@ -1090,7 +1125,7 @@ export class Enemies {
   /** The copies turn back into leaves (trick over, or the tanuki is gone). */
   dropDecoys(e) {
     for (const d of e.decoys ?? []) {
-      if (d.dead) continue;
+      if (d.dead || d.master !== e) continue;
       this.scene.fx.leaves(d.x, d.y, 10);
       this.pool.kill(d);
     }
@@ -1287,13 +1322,14 @@ export class Enemies {
     };
     for (const v of w.vents) part('vent_0', 'vent', v, 260, 9, 5000).play('vent');
     g.crater = part('crater_shut', 'crater', w.crater, 900, 15, 0);
+    g.maxTotal = g.parts.reduce((sum, p) => sum + p.maxHp, 0);
     this.bossGroup = g;
     return g.crater;
   }
 
   updateVolcano(g, dt) {
     const s = this.scene;
-    const alive = g.parts.filter((p) => !p.dead && p.hp > 0);
+    const alive = g.parts.filter((p) => !p.dead && p.group === g && p.hp > 0);
     for (const p of alive) p.y = s.parallax.screenY(p.u);
     if (g.state === 'dormant') {
       if (s.parallax.time >= s.parallax.maxTime - 1e-3) {
@@ -1412,7 +1448,7 @@ export class Enemies {
     s.fx.text(e.x, e.y - 12, `${pts}`, 1.2, 0xffe080);
     this.wrecks.spawn('vent_dead', e.x, e.y, { u: e.u });
     this.remove(e);
-    if (g.parts.some((p) => p.role === 'vent' && !p.dead)) return;
+    if (g.parts.some((p) => p.role === 'vent' && !p.dead && p.group === g)) return;
     Object.assign(g, { stage: 2, phase: 0, step: 0, timer: 1.4 });
     g.crater.invuln = false;
     g.crater.play('crater');
@@ -1420,6 +1456,309 @@ export class Enemies {
     s.fx.flash(0.5, 0.4);
     s.cameras.main.shake(700, 0.006);
     s.hud.show('KRATER SIĘ OTWIERA!', '', 2);
+  }
+
+  // ---------------------------------------------------------------- Osaka: manzai duos
+  /**
+   * Every regular enemy in Osaka comes as a comedy pair (boke and tsukkomi). Shoot one and the other
+   * flies into a rage and fires back at once; take both within 1.2 s for the "NANDE YANEN!" bonus.
+   */
+  duoDown(e) {
+    const s = this.scene;
+    const d = e.duo;
+    const partner = d.members.find((m) => m !== e && !m.dead && m.duo === d && m.hp > 0);
+    if (d.t < 0) {
+      d.t = s.t;
+      if (!partner) return;
+      partner.rage = true;
+      s.fx.text(partner.x, partner.y - 12, '!?', 0.7, 0xff7060);
+      if (this.canFire(partner)) s.bullets.fan(partner.x, partner.y + 4, this.aimAt(partner, 0, 4), 3, 0.5, normal);
+    } else if (s.t - d.t <= 1.2) {
+      s.score.add(400 * s.score.mult);
+      s.fx.text(e.x, e.y - 14, 'NANDE YANEN!', 1.0, 0xffe080);
+    }
+  }
+
+  /** A faint line ties the two halves of each duo together. */
+  drawDuos() {
+    this.tele.lineStyle(1, 0xffe0a0, 0.25);
+    for (const e of this.pool.live) {
+      const d = e.duo;
+      if (!d || e.dead || e.y < -6) continue;
+      const o = d.members.find((m) => m !== e && !m.dead && m.duo === d);
+      if (o && d.members.indexOf(e) < d.members.indexOf(o) && o.y > -6) this.tele.lineBetween(e.x, e.y, o.x, o.y);
+    }
+  }
+
+  // ---------------------------------------------------------------- Osaka miniboss: the bunraku puppet
+  /**
+   * A samurai puppet worked by three black-clad puppeteers, as in Osaka's bunraku theatre. The puppet
+   * itself can't be hurt (shots pass through it); each puppeteer drives one attack — the head and right
+   * arm (the sword), the left arm (a sweeping stream), the legs (stamps and the dance). Shoot a
+   * puppeteer and that part goes limp; with all three down the puppet collapses.
+   */
+  spawnKuroko(e, base) {
+    Object.assign(e, { invuln: true, pass: true, kuroko: [] });
+    for (const [role, dx, dy] of [['omo', -17, -18], ['hidari', 23, -2], ['ashi', -9, 27]]) {
+      const k = this.pool.spawn('kuroko_0', e.x + dx, e.y + dy, { ...base, ...EXTRAS, type: 'kuroko', def: KUROKO, hp: KUROKO.hp, maxHp: KUROKO.hp, radius: KUROKO.radius, role, dx, dy, master: e, state: 'fight' });
+      k.play('kuroko');
+      k.setDepth(DEPTH.air - 0.05);
+      e.kuroko.push(k);
+    }
+    e.hp = e.maxHp = KUROKO.hp * 3;
+  }
+
+  bunraku(e, dt, b) {
+    const s = this.scene;
+    const alive = e.kuroko.filter((k) => !k.dead && k.master === e && k.hp > 0);
+    const has = (role) => alive.some((k) => k.role === role);
+    e.hp = alive.reduce((sum, k) => sum + k.hp, 0);
+    if (e.state === 'enter') {
+      e.y += Math.max(6, (70 - e.y) * 0.8) * dt;
+      if (e.y >= 69) Object.assign(e, { state: 'fight', fight: 0, tOmo: 1.2, tHidari: 2.2, tAshi: 1.6, stream: 0, streamT: 0 });
+    } else if (e.state === 'leave') {
+      e.vy = (e.vy ?? 0) - 40 * dt;
+      e.y += e.vy * dt;
+    } else {
+      e.fight += dt;
+      if (e.fight > 34) e.state = 'leave';
+      // the foot puppeteer makes it dance; without him it just stands there
+      if (has('ashi')) e.x += (90 + 36 * Math.sin(e.fight * 0.8) - e.x) * Math.min(1, dt * 2);
+      e.setRotation((has('omo') ? 0 : 0.12) + (has('hidari') ? 0 : -0.1)); // limp parts tilt it
+      if (this.canFire(e)) {
+        if (has('omo') && (e.tOmo -= dt) <= 0) {
+          // head and right arm: the sword comes down, a wide aimed fan
+          e.setFrame('ningyo_1');
+          s.time.delayedCall(350, () => !e.dead && e.setFrame('ningyo_0'));
+          b.fan(e.x - 8, e.y - 4, this.aimAt(e, -8, -4), 7, 1.1, normal);
+          e.tOmo = 1.5;
+        }
+        if (has('hidari') && e.stream <= 0 && (e.tHidari -= dt) <= 0) {
+          e.stream = 14;
+          e.streamT = 0;
+        }
+        if (e.stream > 0 && has('hidari') && (e.streamT -= dt) <= 0) {
+          // left arm: an iron fan flicks a stream of shots across the stage
+          b.fire(e.x + 14, e.y + 2, DOWN + (e.stream - 7) * 0.13, normal);
+          e.streamT = 0.07;
+          if (--e.stream <= 0) e.tHidari = 2.6;
+        }
+        if (has('ashi') && (e.tAshi -= dt) <= 0) {
+          // the feet stamp: a ring from the floor of the stage
+          b.ring(e.x, e.y + 22, 14, Math.random() * TAU, slow, true);
+          s.cameras.main.shake(150, 0.003);
+          e.tAshi = 2.4;
+        }
+      }
+    }
+    // the puppeteers keep to their posts, half-seen in the dark
+    for (const k of alive) {
+      k.x = e.x + k.dx + Math.sin(e.age * 2 + k.dx) * 1.5;
+      k.y = e.y + k.dy;
+      k.setAlpha(0.75 + 0.15 * Math.sin(e.age * 3 + k.dy));
+    }
+    if (e.state !== 'enter' && !alive.length && !e.dead) this.destroy(e);
+  }
+
+  // ---------------------------------------------------------------- Osaka boss: the octopus
+  /**
+   * A giant octopus with a takoyaki vendor's headband rises from Osaka Bay. Four tentacles (chains of
+   * segments that sway and curl) shoot rings from their tips, slam straight down after a warning, and
+   * the head lobs takoyaki. Cut every tentacle and the head can be hit: ink spirals, ink blobs,
+   * takoyaki barrages; below 35% it goes into a rage.
+   */
+  spawnTako(w, base) {
+    const g = { kind: 'tako', state: 'enter', t: 0, phase: 0, step: 0, timer: 1.2, parts: [], enraged: false, defeated: false, awake: false, head: null, home: w.x, homeY: 62, slam: null };
+    for (const [dx, dy, rest, phase] of [[-24, 14, 2.35, 0], [-9, 20, 1.95, 1.7], [9, 20, 1.19, 3.1], [24, 14, 0.79, 4.6]]) {
+      const t = this.pool.spawn('ttip', w.x + dx, -60, { ...base, role: 'tentacle', group: g, dx, dy, rest, phase, hp: 170, maxHp: 170, radius: 3.5, pts: 3000, segs: [] });
+      for (let i = 0; i < 8; i++) t.segs.push(this.segPool.spawn(`tseg_${i < 3 ? 0 : i < 6 ? 1 : 2}`, t.x, t.y, { r: i < 3 ? 5 : i < 6 ? 4 : 3 }));
+      t.setDepth(DEPTH.air - 0.11);
+      g.parts.push(t);
+    }
+    g.head = this.pool.spawn('tako_0', w.x, -60, { ...base, role: 'head', group: g, hp: 800, maxHp: 800, radius: 18, invuln: true });
+    g.head.play('tako');
+    g.head.setDepth(DEPTH.air - 0.1);
+    g.parts.push(g.head);
+    g.maxTotal = g.parts.reduce((sum, p) => sum + p.maxHp, 0);
+    this.bossGroup = g;
+    return g.head;
+  }
+
+  updateTako(g, dt) {
+    const s = this.scene;
+    const h = g.head;
+    g.t += dt;
+    if (g.state === 'enter') {
+      h.y += Math.max(10, (g.homeY - h.y) * 1.2) * dt;
+      if (h.y >= g.homeY - 1) Object.assign(g, { state: 'fight', awake: true, timer: 0.8 });
+    } else {
+      h.x = g.home + 16 * Math.sin(g.t * 0.5 * (g.enraged ? 1.5 : 1));
+      h.y = g.homeY + 4 * Math.sin(g.t * 1.1);
+    }
+    const arms = g.parts.filter((p) => p.role === 'tentacle' && !p.dead && p.group === g);
+    if (g.slam) this.slamStep(g, dt);
+    for (const t of arms) this.layTentacle(g, t);
+    if (g.state !== 'fight') return;
+    if (!arms.length && h.invuln) {
+      h.invuln = false;
+      Object.assign(g, { phase: 0, step: 0, timer: 1.4, slam: null });
+      s.bullets.cancelAll(s.fx);
+      s.fx.flash(0.4, 0.3);
+      s.hud.show('MACKI ODCIĘTE!', '', 2);
+    }
+    if (!h.invuln && !g.enraged && h.hp < h.maxHp * 0.35) {
+      g.enraged = true;
+      g.timer = 0.5;
+      s.hud.show('', 'OŚMIORNICA WŚCIEKŁA!', 1.6, true);
+    }
+    g.timer -= dt * (g.enraged ? 1.4 : 1);
+    if (g.timer > 0) return;
+    if (arms.length) this.takoArms(g, arms);
+    else this.takoHead(g, h);
+  }
+
+  /** Chain a tentacle's segments out from the head: a resting angle, a sway, a curl towards the tip. */
+  layTentacle(g, t) {
+    const h = g.head;
+    const k = g.slam?.arm === t ? g.slam.k : 0; // 0..1 straighten and stretch straight down
+    const len = 8.5 + k * 4.5;
+    const sway = Math.sin(g.t * 1.2 + t.phase);
+    let x = h.x + t.dx;
+    let y = h.y + t.dy;
+    const n = t.segs.length;
+    for (let i = 0; i <= n; i++) {
+      const f = (i + 1) / (n + 1);
+      let a = t.rest + sway * 0.45 * f + Math.sin(g.t * 2.3 + t.phase + i * 0.6) * 0.18 * f;
+      a += (DOWN - a) * k;
+      x += Math.cos(a) * len;
+      y += Math.sin(a) * len;
+      if (i < n) t.segs[i].setPosition(x, y);
+    }
+    t.setPosition(x, y);
+  }
+
+  takoArms(g, arms) {
+    const s = this.scene;
+    const b = s.bullets;
+    const pl = s.player;
+    const h = g.head;
+    const next = () => {
+      g.phase++;
+      g.step = 0;
+      g.timer = 1;
+    };
+    switch (g.phase % 3) {
+      case 0: {
+        // the tips spit small rings, one arm after another
+        const t = arms[g.step % arms.length];
+        if (this.canFire(t)) b.ring(t.x, t.y, 8, g.step * 0.4, slow);
+        g.timer = 0.45;
+        if (++g.step >= arms.length * 2) next();
+        break;
+      }
+      case 1:
+        // slams run in slamStep; three in a row
+        if (!g.slam) {
+          if (g.step >= 3) next();
+          else g.slam = { arm: arms[Math.floor(Math.random() * arms.length)], t: 0, k: 0, burst: false };
+        }
+        g.timer = 0.1;
+        break;
+      default:
+        // takoyaki thrown where the player is
+        b.lob(h.x - 12 + Math.random() * 24, h.y + 10, Phaser.Math.Clamp(pl.x + (Math.random() - 0.5) * 40, 10, VIEW.width - 10), pl.y, 1.15, 'takoyaki');
+        g.timer = 0.55;
+        if (++g.step >= 5) next();
+    }
+  }
+
+  /** A slam: the arm rears and blinks (a line shows where), whips straight down, bursts, pulls back. */
+  slamStep(g, dt) {
+    const s = this.scene;
+    const sl = g.slam;
+    if (sl.arm.dead) {
+      g.slam = null;
+      g.step++;
+      return;
+    }
+    sl.t += dt;
+    const h = g.head;
+    const bx = h.x + sl.arm.dx;
+    if (sl.t < 0.7) {
+      sl.k = 0;
+      sl.arm.flash = Math.floor(sl.t * 20) % 2 ? 0.02 : 0;
+      if (Math.floor(sl.t * 14) % 2) {
+        this.tele.lineStyle(2, 0xff7050, 0.55);
+        this.tele.lineBetween(bx, h.y + sl.arm.dy, bx, h.y + sl.arm.dy + 120);
+      }
+    } else if (sl.t < 0.95) sl.k = (sl.t - 0.7) / 0.25;
+    else if (sl.t < 1.45) {
+      sl.k = 1;
+      if (!sl.burst) {
+        sl.burst = true;
+        s.bullets.ring(sl.arm.x, sl.arm.y, 10, Math.random() * TAU, normal);
+        s.cameras.main.shake(200, 0.004);
+      }
+    } else if (sl.t < 1.85) sl.k = 1 - (sl.t - 1.45) / 0.4;
+    else {
+      g.slam = null;
+      g.step++;
+    }
+  }
+
+  takoHead(g, h) {
+    const b = this.scene.bullets;
+    const pl = this.scene.player;
+    if (!this.canFire(h)) {
+      g.timer = 0.2;
+      return;
+    }
+    const next = () => {
+      g.phase++;
+      g.step = 0;
+      g.timer = 1;
+    };
+    switch (g.phase % 3) {
+      case 0: {
+        // ink spiral from the siphon
+        const a = g.step * 0.33;
+        for (let k = 0; k < (g.enraged ? 3 : 2); k++) b.shot('eb_ink', h.x, h.y + 16, a + (k * TAU) / (g.enraged ? 3 : 2), slow, 2);
+        g.timer = 0.1;
+        if (++g.step >= 34) next();
+        break;
+      }
+      case 1: {
+        // big ink blobs at the player, a ring behind them
+        const a = this.aimAt(h, 0, 16);
+        for (let i = 0; i < 5; i++) b.shot('eb_ink_m', h.x, h.y + 16, a + (i / 4 - 0.5) * 0.9, normal, 3);
+        b.ring(h.x, h.y + 16, 14, g.step * 0.3, slow);
+        g.timer = 0.9;
+        if (++g.step >= 4) next();
+        break;
+      }
+      default:
+        for (let i = 0; i < (g.enraged ? 3 : 2); i++) b.lob(h.x - 16 + i * 16, h.y + 10, Phaser.Math.Clamp(pl.x + (Math.random() - 0.5) * 50, 10, VIEW.width - 10), pl.y + (Math.random() - 0.5) * 20, 1.15, 'takoyaki');
+        g.timer = 0.6;
+        if (++g.step >= 5) next();
+    }
+  }
+
+  /** A tentacle is cut off: a chain of explosions runs along it. */
+  tentacleDown(e) {
+    const s = this.scene;
+    const pts = e.pts * s.score.mult;
+    s.score.add(pts);
+    s.fx.text(e.x, e.y - 10, `${pts}`, 1.2, 0xffe080);
+    s.fx.explode(e.x, e.y, 'm');
+    const segs = e.segs;
+    segs.forEach((sg, i) =>
+      s.time.delayedCall((segs.length - i) * 60, () => {
+        s.fx.explode(sg.x, sg.y, 's');
+        this.segPool.kill(sg);
+      }),
+    );
+    e.segs = null;
+    this.remove(e);
   }
 
   heavyUpdate(e, dt, b) {

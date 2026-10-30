@@ -17,6 +17,7 @@ const LOBS = {
   snowball: { low: 'snowball_0', high: 'snowball_1', spin: 0, burst: 'eb_s' },
   tokkuri: { low: 'tokkuri_0', high: 'tokkuri_1', spin: 9, burst: 'eb_s' },
   lava: { low: 'lavaball_0', high: 'lavaball_1', spin: 0, burst: 'eb_lava' },
+  takoyaki: { low: 'tako_ball_0', high: 'tako_ball_1', spin: 5, burst: 'eb_s' },
 };
 
 const PLAIN = { ax: 0, ay: 0, maxV: Infinity, life: Infinity, safe: 0, frz: null, wig: 0, wf: 0, spin: false, age: 0, orb: null, link: null, lead: false };

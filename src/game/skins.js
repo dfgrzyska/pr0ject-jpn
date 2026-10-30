@@ -38,4 +38,14 @@ export const SKINS = {
     heavy: { frame: 'raiju_0', anim: 'raiju', kind: 'raiju' },
     turret: { base: 'tsubo_base', head: 'tsubo_lid_', wreck: 'tsubo_wreck', lid: true },
   },
+  // Osaka: every regular enemy comes as a manzai duo (see Enemies.duoDown)
+  osaka: {
+    duos: true,
+    popcorn: { frame: 'takoyaki_0', anim: 'takoyaki' },
+    shooter: { frame: 'fugu_0', anim: 'fugu' },
+    diver: { frame: 'kushi_0', anim: 'kushi', spin: true },
+    carrier: { frame: 'ame_{c}_0', anim: 'ame_{c}' },
+    heavy: { frame: 'ningyo_0', kind: 'bunraku' },
+    turret: { base: 'neko_base', head: 'neko_paw_', wreck: 'neko_wreck', beckon: true },
+  },
 };

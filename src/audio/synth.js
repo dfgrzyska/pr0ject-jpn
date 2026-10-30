@@ -223,6 +223,36 @@ export class Synth {
     this.noiseBurst(t, 0.03, 'bandpass', 1400, 2, 0.18 * v);
   }
 
+  /** Clarinet of the chindon-ya street bands: hollow square tone, soft attack, breath and a little vibrato. */
+  clarinet(t, m, dur, v = 1) {
+    const f = mtof(m);
+    const end = t + dur + 0.12;
+    const o = this.osc('square', f, t, end);
+    const lfo = this.osc('sine', 5, t, end);
+    const depth = this.gain();
+    depth.gain.setValueAtTime(0, t);
+    depth.gain.linearRampToValueAtTime(f * 0.006, t + Math.min(0.25, dur * 0.5));
+    lfo.connect(depth).connect(o.frequency);
+    const lp = this.filter('lowpass', 2400, 1.2);
+    const g = this.gain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.07 * v, t + 0.04);
+    g.gain.setValueAtTime(0.07 * v, t + Math.max(0.04, dur - 0.04));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.1);
+    o.connect(lp).connect(g).connect(this.out);
+    this.noiseBurst(t, 0.05, 'bandpass', 2600, 1.5, 0.02 * v);
+  }
+
+  /** Hyōshigi: two wooden clappers struck once, the crack that opens a scene in the theatre. */
+  hyoshigi(t, v = 1) {
+    this.noiseBurst(t, 0.03, 'bandpass', 2800, 8, 0.3 * v);
+    const o = this.osc('sine', 1850, t, t + 0.05);
+    const g = this.gain();
+    g.gain.setValueAtTime(0.08 * v, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+    o.connect(g).connect(this.out);
+  }
+
   /** Kane: the small hand gong of festival bands (Ohara matsuri). */
   kane(t, v = 1) {
     for (const [f, a] of [[1240, 0.05], [1867, 0.03], [2690, 0.02]]) {

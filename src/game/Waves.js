@@ -8,6 +8,7 @@ export class Waves {
     this.list = [...list].sort((a, b) => a.t - b.t);
     this.next = 0;
     this.queue = [];
+    this.duos = {}; // named pairs across single-enemy waves ("duo": "s1")
   }
 
   /** Sum of multiplier contributions if every enemy in the stage is destroyed. */
@@ -43,14 +44,18 @@ export class Waves {
     const count = w.count ?? 1;
     // birds of one wave form a flock: shared by every bird, so the last one down can pay the bonus
     const flock = w.type === 'popcorn' && count > 1 ? { n: count, hit: 0, lost: false } : null;
+    // manzai duos (Osaka): a named pair across two waves, or consecutive members of one wave in twos
+    const named = w.duo ? (this.duos[w.duo] ??= { members: [], t: -1 }) : null;
+    let duo = named;
     for (let k = 0; k < count; k++) {
+      if (!named && count > 1) duo = k % 2 === 0 ? (k + 1 < count ? { members: [], t: -1 } : null) : duo;
       if (w.path === 'row') {
         const x = w.x + (k - (count - 1) / 2) * (w.spacing ?? 22);
-        this.queue.push({ at: w.t, wave: { ...w, x, flock } });
+        this.queue.push({ at: w.t, wave: { ...w, x, flock, duo } });
       } else {
         const gap = w.gap ?? GAP[w.type] ?? 0.8;
         const x = w.type === 'diver' && k > 0 ? w.x + (k % 2 ? 14 : -14) * Math.ceil(k / 2) : w.x;
-        this.queue.push({ at: w.t + k * gap, wave: { ...w, x, flock } });
+        this.queue.push({ at: w.t + k * gap, wave: { ...w, x, flock, duo } });
       }
     }
   }

@@ -40,6 +40,7 @@ export class Parallax {
     this.stormLevel = 0;
     this.flashT = 0;
     this.embersFrom = stage.embersFrom ?? Infinity; // stage time from which embers rise
+    this.nightFrom = stage.nightFrom ?? Infinity; // Osaka: clouds and gulls by day, a clear night sky after
     if (this.nearKind === 'ash')
       this.stormRect = scene.add.rectangle(0, 0, VIEW.width, VIEW.maxHeight, 0x14141e, 1).setOrigin(0, 0).setDepth(DEPTH.near - 0.05).setAlpha(0);
   }
@@ -85,6 +86,9 @@ export class Parallax {
     if (this.nearKind === 'tropic') this.spawnTropic(dt, fall, scrolling);
     else if (this.nearKind === 'snow') this.spawnSnow(dt, fall);
     else if (this.nearKind === 'ash') this.spawnAsh(dt, fall, H);
+    else if (this.nearKind === 'osaka') {
+      if (this.time < this.nightFrom) this.spawnTropic(dt, fall, scrolling);
+    }
     else this.spawnSakura(dt, fall, scrolling);
     for (const p of this.near.live) {
       p.age += dt;

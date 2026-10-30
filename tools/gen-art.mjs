@@ -13,6 +13,7 @@ import * as kyoto from './art/kyoto/index.mjs';
 import * as okinawa from './art/okinawa/index.mjs';
 import * as sapporo from './art/sapporo/index.mjs';
 import * as kagoshima from './art/kagoshima/index.mjs';
+import * as osaka from './art/osaka/index.mjs';
 
 // background generators per stage (id = folder under public/assets/bg/)
 const STAGES = [
@@ -20,6 +21,7 @@ const STAGES = [
   { id: 'stage2', art: okinawa },
   { id: 'stage3', art: sapporo },
   { id: 'stage4', art: kagoshima },
+  { id: 'stage5', art: osaka },
 ];
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');

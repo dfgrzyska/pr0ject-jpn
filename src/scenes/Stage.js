@@ -436,7 +436,7 @@ export class Stage extends Phaser.Scene {
         const r = e.radius + s.radius;
         const dx = e.x - s.x;
         const dy = e.y - s.y;
-        if (dx * dx + dy * dy < r * r) {
+        if (dx * dx + dy * dy < r * r || (e.segs && e.segs.some((sg) => (sg.x - s.x) ** 2 + (sg.y - s.y) ** 2 < (sg.r + s.radius) ** 2))) {
           this.enemies.damage(e, s.damage);
           if (Math.random() < 0.5) this.fx.spark(s.x, s.y - 2);
           p.shots.kill(s);
@@ -475,9 +475,11 @@ export class Stage extends Phaser.Scene {
     for (const e of enemies) {
       if (e.ground || e.dead || e.ghost) continue;
       const r = e.radius * 0.7 + hr;
-      if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < r * r) {
+      const touch = (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < r * r || (e.segs && e.segs.some((sg) => (sg.x - p.x) ** 2 + (sg.y - p.y) ** 2 < (sg.r * 0.8 + hr) ** 2));
+      if (touch) {
         p.hit();
-        if (e.type !== 'heavy' && e.type !== 'boss') this.enemies.damage(e, 999);
+        // ramming kills small fry, not bosses or the puppeteers
+        if (e.type !== 'heavy' && e.type !== 'boss' && e.type !== 'kuroko') this.enemies.damage(e, 999);
         return;
       }
     }
