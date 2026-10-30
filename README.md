@@ -15,7 +15,7 @@ npm run art        # przegenerowanie grafik do public/assets/
 Wersja online: https://dfgrzyska.github.io/pr0ject-jpn/ — budowana automatycznie przy każdym pushu na `main`
 (`.github/workflows/pages.yml`; w Settings → Pages źródło musi być ustawione na „GitHub Actions”).
 
-Parametry do testów w adresie: `?stage=2` … `?stage=4` (start od danego etapu), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
+Parametry do testów w adresie: `?stage=1` … `?stage=4` (ten etap pierwszy, reszta losowo — 1 Kioto, 2 Okinawa, 3 Sapporo, 4 Kagoshima), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
 `?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5), `?ship=oni|kitsune|tsubame`.
 
 ## Statki
@@ -151,8 +151,11 @@ słupy pary w dół zbocza, strumienie żaru. Faza 2: krater się otwiera — pi
 pocisków z jedną luką, która przesuwa się z każdym rzędem), wulkaniczne pioruny. Poniżej 30% wybucha na dobre.
 Po pokonaniu krater stygnie i zostaje w tle.
 
-Po ukończeniu etapu gra przechodzi do następnego z tym samym statkiem, wynikiem, mnożnikiem, bronią i życiami.
-„Jeszcze raz” po przegranej zaczyna nową grę od etapu 1.
+## Kolejność etapów
+
+Każda nowa gra losuje kolejność miast; „ETAP 1…4” to miejsce w tej kolejności, nie stałe miasto.
+Po ukończeniu etapu gra przechodzi do następnego z tym samym statkiem, wynikiem, mnożnikiem, bronią i życiami;
+po czwartym — „GRATULACJE!”. „Jeszcze raz” po przegranej zaczyna nową grę z nową kolejnością.
 
 ## Muzyka
 

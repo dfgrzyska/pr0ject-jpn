@@ -25,6 +25,13 @@ function loadShipIndex() {
   }
 }
 
+/** All stage indices shuffled; `first` (debug ?stage=) goes to the front. */
+function randomOrder(first) {
+  const order = Phaser.Utils.Array.Shuffle(STAGES.map((_, i) => i));
+  if (first !== null) order.unshift(...order.splice(order.indexOf(first), 1));
+  return order;
+}
+
 function loadHi() {
   try {
     return Number(localStorage.getItem(HI_KEY)) || 0;
@@ -47,11 +54,16 @@ export class Stage extends Phaser.Scene {
   }
 
   create(data = {}) {
-    // debug: ?stage=2 starts at stage 2, ?t=120 at 120 s, ?god = invulnerable, ?weapon=laser&power=5, ?ship=oni
+    // debug: ?stage=2 puts stage 2 (Okinawa) first, ?t=120 starts at 120 s, ?god = invulnerable,
+    // ?weapon=laser&power=5, ?ship=oni
     const q = new URLSearchParams(window.location.search);
     const qStage = Number(q.get('stage')) - 1;
-    this.stageIndex = data.stage ?? (qStage >= 0 && qStage < STAGES.length ? qStage : 0);
+    // every new game plays all the cities in a fresh random order; "ETAP n" is the place in that order
+    this.order = data.order ?? randomOrder(qStage >= 0 && qStage < STAGES.length ? qStage : null);
+    this.pos = data.pos ?? 0;
+    this.stageIndex = this.order[this.pos];
     this.stage = STAGES[this.stageIndex];
+    this.stageTitle = `ETAP ${this.pos + 1}`;
     this.carry = data.carry ?? null;
     this.bossDown = false;
     this.bossClearT = 0;
@@ -117,7 +129,7 @@ export class Stage extends Phaser.Scene {
       ['SHMUP', 0xffd6e5, 2],
       ['JAPONIA', 0xffd6e5, 2],
       '',
-      [this.stage.title, 0xffffff],
+      [this.stageTitle, 0xffffff],
       [this.stage.subtitle, 0xf08bb0],
       '',
       { sprite: 'pickup_red', x: 52, text: 'ROZRZUT', tint: 0xff8a6a },
@@ -165,22 +177,23 @@ export class Stage extends Phaser.Scene {
     }
     this.player.spawn();
     this.music.play(this.stageSong(), true);
-    this.hud.show(this.stage.title, this.stage.subtitle, 2.6);
+    this.hud.show(this.stageTitle, this.stage.subtitle, 2.6);
   }
 
-  /** After game over: a new game from stage 1 (ship selection, fresh lives and score). */
+  /** After game over: a new game in a new random order (ship selection, fresh lives and score). */
   restart() {
-    this.scene.restart({ select: true, stage: 0 });
+    this.scene.restart({ select: true });
   }
 
-  /** After a cleared stage: carry everything into the next one, or start over after the last. */
+  /** After a cleared stage: carry everything into the next city of this game's order, or start a new game. */
   advance() {
-    const next = this.stageIndex + 1;
-    if (next >= STAGES.length) return this.scene.restart({ select: true, stage: 0 });
+    const pos = this.pos + 1;
+    if (pos >= this.order.length) return this.scene.restart({ select: true });
     const p = this.player;
     const s = this.score;
     this.scene.restart({
-      stage: next,
+      order: this.order,
+      pos,
       carry: { ship: this.shipIndex, lives: p.lives, weapon: p.weapon, level: p.level, score: s.score, mult: s.mult, progress: s.progress },
     });
   }
@@ -220,12 +233,12 @@ export class Stage extends Phaser.Scene {
     this.endTimer = 3;
     this.player.bombs = 1; // stages without a boss refill the bomb at the end
     this.player.drag = null;
-    const next = STAGES[this.stageIndex + 1];
+    const next = STAGES[this.order[this.pos + 1]];
     this.bullets.cancelAll(this.fx);
     const hi = this.recordHi();
     this.time.delayedCall(2000, () =>
       this.hud.panel([
-        [this.stage.title, 0xffd6e5, 2],
+        [this.stageTitle, 0xffd6e5, 2],
         ['UKOŃCZONY', 0xffd6e5, 2],
         '',
         ['WYNIK', 0xb0aec0],
@@ -234,7 +247,7 @@ export class Stage extends Phaser.Scene {
         hi.isNew ? ['NOWY REKORD!', 0xffe080, 1, true] : [`REKORD ${String(hi.value).padStart(8, '0')}`, 0xb0aec0],
         ['BOMBA UZUPEŁNIONA', 0xb0aec0],
         '',
-        next ? [`DALEJ: ${next.title} - ${next.name}`, 0xffffff] : ['GRATULACJE!', 0xffe080],
+        next ? [`DALEJ: ETAP ${this.pos + 2} - ${next.name}`, 0xffffff] : ['GRATULACJE!', 0xffe080],
         [next ? 'DOTKNIJ / ENTER' : 'DOTKNIJ / ENTER - JESZCZE RAZ', 0xffe080, 1, true],
       ]),
     );
