@@ -43,6 +43,8 @@ export class Boot extends Phaser.Scene {
     anim('shooter', ['shooter_0', 'shooter_1'], 4);
     anim('diver', ['diver_0', 'diver_1'], 8);
     anim('kyubi', ['kyubi_0', 'kyubi_1', 'kyubi_2', 'kyubi_3'], 7);
+    anim('tanuki', ['tanuki_0', 'tanuki_1'], 3);
+    anim('tanuki_leaf', ['tanuki_leaf_0', 'tanuki_leaf_1'], 3);
     for (const c of ['red', 'blue', 'green']) anim(`carrier_${c}`, [`carrier_${c}_0`, `carrier_${c}_1`], 10);
     // stage 2 (Okinawa)
     anim('tobiuo', ['tobiuo_0', 'tobiuo_1'], 8);

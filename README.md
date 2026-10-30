@@ -55,7 +55,8 @@ Wrogowie (roboty w stylu Fushimi Inari):
 | Strzelec | kanonierka podwieszona pod belką torii | wlatuje, staje, strzela celowanymi seriami (`aimed`/`fan`), odlatuje |
 | Wieżyczka | kamienna latarnia tōrō z działem | na warstwie terenu, wachlarz (`fan`) lub pierścień (`ring`) |
 | Nurek | dron kruk-tengu | zawisa, celuje i pikuje w gracza |
-| Ciężki | Kyūbi — czerwony lis o dziewięciu ogonach z klejnotem hōju i lisim ogniem | miniboss w połowie etapu, pierścienie / wachlarze / spirala |
+| Ciężki | tanuki — figurka z Shigaraki (kapelusz, butelka sake, zeszyt rachunków) | pierwszy miniboss (ok. 70 s): bębni w brzuch (pierścień na każde „pon”), rzuca butelkami sake z celownikiem na ziemi, zmienia się listkiem w trzy tanuki — kopie mają listek na kapeluszu i pękają od jednego trafienia |
+| Ciężki | Kyūbi — czerwony lis o dziewięciu ogonach z klejnotem hōju i lisim ogniem | drugi miniboss (ok. 150 s, pod szczytem), pierścienie / wachlarze / spirala |
 | Nośnik | dron z klejnotem hōju (czerwony/niebieski/zielony) | zygzak, po ~4,6 s ucieka, zawsze zostawia znajdźkę |
 
 Znajdźki: czerwona — rozrzut, niebieska — laser, zielona — naprowadzane „lisie ognie”.
@@ -120,14 +121,14 @@ zamarzające płatki); serce rozbija całą rzeźbę. Faza 2: brunatny niedźwie
 zamachy łapami, łososie wijące się w locie i spadające sople; poniżej 35% życia wpada w szał.
 
 Po ukończeniu etapu gra przechodzi do następnego z tym samym statkiem, wynikiem, mnożnikiem, bronią i życiami.
-„Jeszcze raz” po przegranej zaczyna od nowa bieżący etap.
+„Jeszcze raz” po przegranej zaczyna nową grę od etapu 1.
 
 ## Muzyka
 
 Oryginalna ścieżka „Senbon” grana na żywo przez Web Audio (`src/audio/`) — bez plików audio.
 Skala *in* (miyako-bushi) na A, instrumenty: koto, flet w stylu shakuhachi, chiptune'owy bas, taiko,
 kołatka i shaker. Muzyka rośnie z etapem: spokojne miasto → rozkręcenie przy świątyni → pełny utwór na grzbiecie
-→ osobny motyw minibossa → finał na szczycie; do tego dżingle końca etapu i końca gry.
+→ skoczny motyw tanuki (pon-poko na taiko, shamisen) i osobny motyw Kyūbiego → finał na szczycie; do tego dżingle końca etapu i końca gry.
 Nuty są tekstem w `src/audio/score.js` (16 kroków na takt, np. `'A4 - - E5 - - F5 - ...'`).
 Etap 2 ma własną ścieżkę „Churaumi” (`src/audio/score2.js`): skala ryukyu (C E F G B), sanshin, flet,
 bębny eisa (duży bęben i paranku), kołatki sanba i bujający rytm kachāshī; osobne motywy manty i shisa.
@@ -149,7 +150,7 @@ edytowalne bez zmian w kodzie:
 { "t": 25.2, "type": "turret", "x": 64, "pattern": "fan" }
 ```
 
-Opcjonalne pola: `gap` (odstęp w serii), `spacing` (dla `row`), `y` (wysokość zatrzymania), `hp`, `dir`.
+Opcjonalne pola: `gap` (odstęp w serii), `look` (inna skórka z `skins.js`, np. `tanuki`), `warning` i `music` (własne ostrzeżenie i motyw dla ciężkiego), `spacing` (dla `row`), `y` (wysokość zatrzymania), `hp`, `dir`.
 Sapporo: `{ "type": "plow", "x": 90, "dir": "down" }` (pług w dół alei) albo `{ "type": "plow", "y": 36, "dir": 1 }`
 (w poprzek, od lewej; `-1` od prawej) — generator rysuje pod nim ulicę; nurek `{ "x": 0, "y": 50 }` startuje z lewej krawędzi.
 Pod każdą wieżyczką generator tła rysuje kamienną platformę i wycina drzewa — po zmianie wieżyczek

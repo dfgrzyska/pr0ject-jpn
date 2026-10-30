@@ -10,6 +10,12 @@ const TAU = Math.PI * 2;
 //   frz      { at, hold, turn, speed }: stop at `at` s, hang frozen for `hold` s, fly on turned by `turn`
 //   wig, wf  sideways wiggle amplitude (px) and frequency (salmon)
 //   spin     rotate the sprite to its flight direction
+// lobbed projectile looks: sprite low / high in the arc; spin = turns in flight
+const LOBS = {
+  snowball: { low: 'snowball_0', high: 'snowball_1', spin: 0 },
+  tokkuri: { low: 'tokkuri_0', high: 'tokkuri_1', spin: 9 },
+};
+
 const PLAIN = { ax: 0, ay: 0, maxV: Infinity, life: Infinity, safe: 0, frz: null, wig: 0, wf: 0, spin: false, age: 0 };
 
 // Enemy bullets: bright core, dark outline, slow. Angle: radians, 0 = right, PI/2 = down.
@@ -47,11 +53,12 @@ export class Bullets {
     for (let i = 0; i < n; i++) this.fire(x, y, offset + (i / n) * Math.PI * 2, speed, big);
   }
 
-  /** Snowball thrown in an arc from (x, y) to (tx, ty); bursts into a small ring where it lands. */
-  lob(x, y, tx, ty, time = 1.15) {
+  /** Snowball (or sake flask) thrown in an arc from (x, y) to (tx, ty); bursts into a small ring where it lands. */
+  lob(x, y, tx, ty, time = 1.15, kind = 'snowball') {
     if (this.scene.bombClear > 0) return;
     const mark = this.marks.spawn('lob_mark_0', tx, ty);
-    this.lobs.spawn('snowball_0', x, y, { x0: x, y0: y, tx, ty, t: 0, time, mark });
+    const look = LOBS[kind];
+    this.lobs.spawn(look.low, x, y, { x0: x, y0: y, tx, ty, t: 0, time, mark, look });
   }
 
   /** Cancel every bullet on screen (bomb, heavy destroyed). */
@@ -109,7 +116,8 @@ export class Bullets {
       const h = Math.sin(k * Math.PI) * 28;
       l.x = l.x0 + (l.tx - l.x0) * k;
       l.y = l.y0 + (l.ty - l.y0) * k - h;
-      l.setFrame(h > 15 ? 'snowball_1' : 'snowball_0');
+      l.setFrame(h > 15 ? l.look.high : l.look.low);
+      if (l.look.spin) l.rotation += l.look.spin * dt;
       l.mark.setFrame(`lob_mark_${k < 0.45 ? 0 : k < 0.8 ? 1 : 2}`).setAlpha(Math.floor(l.t * 10) % 2 ? 0.55 : 1);
       if (k < 1) continue;
       // impact: the splat itself hits inside the ring, then a few slow pellets spread out

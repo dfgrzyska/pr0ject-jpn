@@ -6,6 +6,8 @@ import { SKINS } from './skins.js';
 const { slow, normal, fast } = FAIR.bulletSpeed;
 const DOWN = Math.PI / 2;
 const TAU = Math.PI * 2;
+// the tanuki's shapeshifted copies: one hit and they turn back into leaves
+const DECOY = { hp: 1, weight: 0, score: 300, radius: 13, explosion: 's' };
 
 // Six archetypes shared by every city (each stage picks a skin), plus stage bosses.
 export class Enemies {
@@ -65,9 +67,11 @@ export class Enemies {
       role: null,
       wreck: null,
       kind: null,
+      song: null, // heavy with its own theme
+      decoys: null,
     };
     base.maxHp = base.hp;
-    const look = this.skin[w.type];
+    const look = this.skin[w.look ?? w.type]; // look: an alternative skin entry, e.g. the Kyoto tanuki
     if (!look && w.type !== 'boss') return; // e.g. snowploughs exist only in Sapporo
     if (w.type === 'turret' && !w.pattern && look.pattern) base.pattern = look.pattern;
     let e;
@@ -107,7 +111,7 @@ export class Enemies {
         e.zig = Math.random() < 0.5 ? -1 : 1;
         break;
       case 'heavy':
-        e = this.pool.spawn(look.frame, w.x, -30, { ...base, kind: look.kind ?? null });
+        e = this.pool.spawn(look.frame, w.x, -30, { ...base, kind: look.kind ?? null, song: w.music ?? null });
         e.play(look.anim);
         this.heavy = e;
         e.patternIndex = 0;
@@ -213,6 +217,14 @@ export class Enemies {
       return;
     }
     s.score.kill(e.def);
+    if (e.type === 'decoy') {
+      // a fake tanuki turns back into leaves
+      s.fx.leaves(e.x, e.y, 16);
+      s.sfx.explode('s');
+      s.fx.text(e.x, e.y - 14, `${e.def.score * s.score.mult}`, 0.9, 0x9cf09a);
+      this.remove(e);
+      return;
+    }
     if (e.flock && !e.flock.lost && ++e.flock.hit >= e.flock.n) {
       // the whole flock shot down: bonus
       const pts = 200 * e.flock.n * s.score.mult;
@@ -540,6 +552,7 @@ export class Enemies {
 
   remove(e) {
     if (e.head) this.heads.kill(e.head);
+    if (e.decoys) this.dropDecoys(e);
     if (e.kind === 'yukionna') this.scene.parallax.windTarget = 0; // her blizzard dies down with her
     if (e === this.heavy) this.heavy = null;
     this.pool.kill(e);
@@ -570,6 +583,7 @@ export class Enemies {
           break;
         case 'heavy':
           if (e.kind === 'yukionna') this.yukiOnna(e, dt, b);
+          else if (e.kind === 'tanuki') this.tanuki(e, dt, b);
           else this.heavyUpdate(e, dt, b);
           break;
         case 'turret':
@@ -577,6 +591,9 @@ export class Enemies {
           break;
         case 'plow':
           this.plow(e, dt, b);
+          break;
+        case 'decoy':
+          this.decoy(e, dt, b);
           break;
       }
       if (e.dead) continue;
@@ -895,6 +912,127 @@ export class Enemies {
         e.timer = 0.8;
         next(4);
     }
+  }
+
+  /**
+   * Tanuki (Shigaraki figurine): waddles about, drums its belly (a ring of bullets on every "pon"),
+   * lobs sake flasks at the player, and shapeshifts — a leaf on its hat, a puff of leaves, and two
+   * copies that keep the leaf on. The real one has no leaf. Copies burst into leaves at one hit.
+   */
+  tanuki(e, dt, b) {
+    const s = this.scene;
+    if (e.state === 'enter') {
+      e.y += Math.max(6, (72 - e.y) * 0.8) * dt;
+      if (e.y >= 71) Object.assign(e, { state: 'fight', fight: 0, timer: 0.8, patternIndex: 0, step: 0, tx: null, decoys: [] });
+      return;
+    }
+    if (e.state === 'leave') {
+      e.vy = (e.vy ?? 0) - 40 * dt;
+      e.y += e.vy * dt;
+      return;
+    }
+    e.fight += dt;
+    if (e.fight > 34) {
+      this.dropDecoys(e);
+      e.play('tanuki');
+      e.state = 'leave';
+      return;
+    }
+    // waddle; while shapeshifted, walk to its place in the line-up instead
+    const goal = e.tx ?? 90 + 30 * Math.sin(e.fight * 0.6);
+    e.x += (goal - e.x) * Math.min(1, dt * (e.tx === null ? 2 : 4));
+    e.timer -= dt;
+    if (e.timer > 0 || !this.canFire(e)) return;
+    switch (e.patternIndex % 3) {
+      case 0:
+        // hara-tsuzumi: paws up, paws down on the belly — pon, poko
+        e.anims.stop();
+        e.setFrame(e.step % 2 ? 'tanuki_drum_1' : 'tanuki_drum_0');
+        if (e.step % 2) {
+          const pon = e.step % 4 === 1;
+          b.ring(e.x, e.y + 8, pon ? 14 : 10, e.step * 0.21, pon ? slow : normal, !pon);
+          s.fx.text(e.x + (pon ? -14 : 14), e.y + 4, pon ? 'PON' : 'POKO', 0.5, 0xffe0b0);
+        }
+        e.timer = 0.24;
+        if (++e.step >= 16) {
+          e.play('tanuki');
+          this.nextPattern(e);
+        }
+        break;
+      case 1: {
+        // sake flasks thrown where the player is (and to both sides), plus a small aimed fan
+        const pl = s.player;
+        for (const dx of e.step % 2 ? [-36, 36] : [0]) b.lob(e.x + (dx > 0 ? 18 : -20), e.y + 12, Phaser.Math.Clamp(pl.x + dx, 10, VIEW.width - 10), pl.y, 1.2, 'tokkuri');
+        b.fan(e.x, e.y + 12, this.aimAt(e, 0, 12), 3, 0.5, slow);
+        e.timer = 0.95;
+        if (++e.step >= 5) this.nextPattern(e);
+        break;
+      }
+      default:
+        this.tanukiTrick(e, b);
+    }
+  }
+
+  tanukiTrick(e, b) {
+    const s = this.scene;
+    const lineup = () => {
+      const slots = Phaser.Utils.Array.Shuffle([40, 90, 140]);
+      e.tx = slots[0];
+      e.decoys.forEach((d, i) => (d.tx = slots[i + 1]));
+    };
+    if (e.step === 0) {
+      // the tell: a leaf on its hat
+      e.play('tanuki_leaf');
+      e.timer = 0.9;
+    } else if (e.step === 1) {
+      s.fx.leaves(e.x, e.y, 24);
+      s.fx.flash(0.25, 0.25);
+      s.sfx.explode('s');
+      e.play('tanuki');
+      for (let i = 0; i < 2; i++) {
+        const d = this.pool.spawn('tanuki_leaf_0', e.x, e.y, {
+          type: 'decoy', def: DECOY, hp: 1, maxHp: 1, radius: DECOY.radius, age: 0, seen: 1, state: 'fight', timer: 1.1 + i * 0.5, flash: 0, flashCool: 0,
+          ground: false, head: null, armor: 0, maxArmor: 0, lantern: false, flock: null, ghost: false, invuln: false, pass: false,
+          group: null, role: null, wreck: null, kind: null, song: null, decoys: null, master: e, tx: e.x,
+        });
+        d.play('tanuki_leaf').setDepth(DEPTH.air - 0.1);
+        e.decoys.push(d);
+      }
+      lineup();
+      e.timer = 0.9;
+    } else if (e.step < 9) {
+      // shuffle once halfway, like the cup game; the real one fires a fan meanwhile
+      e.decoys = e.decoys.filter((d) => !d.dead);
+      if (e.step === 5) lineup();
+      b.fan(e.x, e.y + 12, this.aimAt(e, 0, 12), 5, 0.8, slow);
+      e.timer = 1.0;
+    } else {
+      this.dropDecoys(e);
+      e.tx = null;
+      this.nextPattern(e);
+      return;
+    }
+    e.step++;
+  }
+
+  decoy(e, dt, b) {
+    const m = e.master;
+    e.x += (e.tx - e.x) * Math.min(1, dt * 4);
+    e.y = m.y;
+    if ((e.timer -= dt) <= 0) {
+      e.timer = 1.4;
+      if (this.canFire(e)) b.fire(e.x, e.y + 12, this.aimAt(e, 0, 12), slow);
+    }
+  }
+
+  /** The copies turn back into leaves (trick over, or the tanuki is gone). */
+  dropDecoys(e) {
+    for (const d of e.decoys ?? []) {
+      if (d.dead) continue;
+      this.scene.fx.leaves(d.x, d.y, 10);
+      this.pool.kill(d);
+    }
+    e.decoys = [];
   }
 
   heavyUpdate(e, dt, b) {

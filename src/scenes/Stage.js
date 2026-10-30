@@ -168,9 +168,9 @@ export class Stage extends Phaser.Scene {
     this.hud.show(this.stage.title, this.stage.subtitle, 2.6);
   }
 
-  /** Retry: the same stage from the ship selection, fresh lives and score. */
+  /** After game over: a new game from stage 1 (ship selection, fresh lives and score). */
   restart() {
-    this.scene.restart({ select: true, stage: this.stageIndex });
+    this.scene.restart({ select: true, stage: 0 });
   }
 
   /** After a cleared stage: carry everything into the next one, or start over after the last. */
@@ -339,7 +339,7 @@ export class Stage extends Phaser.Scene {
         const w = this.waves.upcoming(type, this.t, 3);
         if (w && !this.warned.has(w)) {
           this.warned.add(w);
-          this.hud.show('UWAGA!', this.stage.warnings?.[type] ?? 'CIĘŻKI CEL', 2.6, true);
+          this.hud.show('UWAGA!', w.warning ?? this.stage.warnings?.[type] ?? 'CIĘŻKI CEL', 2.6, true);
         }
       }
       this.music.play(this.stageSong());
@@ -382,7 +382,11 @@ export class Stage extends Phaser.Scene {
     const m = this.stage.music;
     const g = this.enemies.bossGroup;
     if ((g && !g.defeated) || this.waves.upcoming('boss', this.t, 3)) return m.boss ?? m.heavy;
-    if (this.enemies.heavy || this.waves.upcoming('heavy', this.t, 3)) return m.heavy;
+    // a heavy may bring its own theme (wave field music), otherwise the stage's heavy theme
+    const h = this.enemies.heavy;
+    if (h) return h.song ?? m.heavy;
+    const hw = this.waves.upcoming('heavy', this.t, 3);
+    if (hw) return hw.music ?? m.heavy;
     let song = m.schedule[0][1];
     for (const [t, name] of m.schedule) if (this.t >= t) song = name;
     return song;

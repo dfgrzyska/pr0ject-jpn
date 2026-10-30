@@ -60,6 +60,15 @@ export class Fx {
     }
   }
 
+  /** Leaves scattering in a puff (the tanuki's shapeshifting). */
+  leaves(x, y, n) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const v = 30 + Math.random() * 90;
+      this.petals.spawn(`leaf_${i % 2}`, x, y, { vx: Math.cos(a) * v, vy: Math.sin(a) * v - 20, life: 0.6 + Math.random() * 0.6 });
+    }
+  }
+
   /** Ice shards / snow bits bursting out (shattered ice, snowball impact). */
   shards(x, y, n, small = false) {
     for (let i = 0; i < n; i++) {

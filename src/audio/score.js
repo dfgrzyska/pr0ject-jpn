@@ -99,6 +99,27 @@ const BOSS_LEAD = [
 ];
 const BOSS_DRUMS = repeat('K . K x K . K x K . K x K K x x', 4, 'K K x K K x K K x K K x K K K K');
 
+// ---- the tanuki: a cheeky "tanuki-bayashi" — pon-poko belly drum, oom-pah bass, plucked shamisen tune
+const TANUKI_BASS = [
+  'A2 . E3 . A2 . E3 . A2 . E3 . A2 . E3 .',
+  'F2 . D3 . F2 . D3 . D2 . A2 . D2 . A2 .',
+  'A2 . E3 . A2 . E3 . Bb2 . F3 . Bb2 . F3 .',
+  'E2 . Bb2 . E2 . Bb2 . E2 . . . E2 E2 E2 .',
+];
+const TANUKI_KOTO = [
+  'A4 . A4 . E5 . . . A4 . A4 . F5 . E5 .',
+  'D5 . D5 . A4 . . . D5 . F5 . E5 . D5 .',
+  'A4 . A4 . E5 . A5 . Bb5 . A5 . F5 . E5 .',
+  'E5 . D5 . Bb4 . A4 . E4 . . . E5 . E5 .',
+];
+const TANUKI_TUNE = [
+  'E5 - . E5 F5 - E5 - D5 - . . A4 - . .',
+  'D5 - . D5 E5 - D5 - Bb4 - . . A4 - . .',
+  'A5 - . A5 Bb5 - A5 - F5 - E5 - D5 - E5 -',
+  'A4 - - - - - . . E5 . . E5 A5 . . .',
+];
+const TANUKI_DRUMS = repeat('K . k k K . k . K . k k K k K .', 4, 'K k K k K k K k K . K . K K K K');
+
 const REST = '. . . . . . . . . . . . . . . .';
 
 export const SONGS = {
@@ -140,6 +161,20 @@ export const SONGS = {
     sync: true,
     mix: { koto: 0.8, pad: 0.8 },
     tracks: { koto: KOTO, bass: BASS, drums: DRUMS_FULL, shaker: SHAKE_16, lead: LEAD_B, pad: PAD },
+  },
+  tanuki: {
+    bpm: 138,
+    bars: 4,
+    loop: true,
+    sync: true,
+    mix: { koto: 0.7 },
+    tracks: {
+      bass: TANUKI_BASS,
+      koto: TANUKI_KOTO,
+      shamisen: TANUKI_TUNE,
+      drums: TANUKI_DRUMS,
+      shaker: ['. . x . . . x . . . x . . . x .'],
+    },
   },
   boss: {
     bpm: 138,
