@@ -30,7 +30,7 @@ export class Props {
     this.calmTarget = 0;
     this.fade = 1;
     this.wind = 0; // px/s the steam and smoke lean with
-    this.free = [];
+    this.free = new Map(); // spare images by depth (a changed depth re-sorts the whole scene)
     this.parts = []; // puffs, wakes and one-shot spots
   }
 
@@ -75,9 +75,9 @@ export class Props {
     return (ch(16) << 16) | (ch(8) << 8) | ch(0);
   }
 
-  img(p, frame, ox = 0.5, oy = 0.5) {
-    const o = this.free.pop() ?? this.scene.add.image(0, 0, this.key, frame);
-    o.setTexture(this.key, frame).setOrigin(ox, oy).setDepth(p.depth).setAlpha(1).setRotation(0).setFlipX(false).setVisible(true);
+  img(p, frame, ox = 0.5, oy = 0.5, depth = p.depth) {
+    const o = this.free.get(depth)?.pop() ?? this.scene.add.image(0, 0, this.key, frame).setDepth(depth);
+    o.setTexture(this.key, frame).setOrigin(ox, oy).setAlpha(1).setRotation(0).setFlipX(false).setVisible(true);
     if (p.tint && this.tints) o.setTint(this.tintAt(p.u ?? p.pts?.[0][1] ?? 0));
     else o.clearTint();
     return o;
@@ -85,7 +85,8 @@ export class Props {
 
   release(o) {
     o.setVisible(false);
-    this.free.push(o);
+    if (!this.free.has(o.depth)) this.free.set(o.depth, []);
+    this.free.get(o.depth).push(o);
   }
 
   update(dt, H) {
@@ -197,8 +198,7 @@ export class Props {
         if (Math.hypot(x - tr.x, u - tr.u) >= p.wake.every) {
           tr.x = x;
           tr.u = u;
-          const w = this.img(p, p.wake.f[0]);
-          w.setDepth(p.depth - 0.01).setRotation(Math.atan2(-du, dx));
+          const w = this.img(p, p.wake.f[0], 0.5, 0.5, p.depth - 0.01).setRotation(Math.atan2(-du, dx));
           this.parts.push({ o: w, kind: 'once', p, f: p.wake.f, x: Math.round(x), u: Math.round(u), t: 0, dur: p.wake.life ?? 1.5, a: 0.8 });
         }
       }
@@ -303,7 +303,7 @@ export class Props {
         const stage = p.f[Math.min(p.f.length - 1, Math.floor(k * p.f.length * 1.2))];
         this.setFrame(o, stage[q.v % stage.length]);
         const a = Math.min(1, k * 8) * (k < 0.5 ? 1 : 1 - (k - 0.5) / 0.5) * p.a * this.fade;
-        o.setPosition(Math.round(q.x + q.dx), Math.round(y - q.rise)).setAlpha(a).setDepth(p.depth + k * 0.01);
+        o.setPosition(Math.round(q.x + q.dx), Math.round(y - q.rise)).setAlpha(a);
       } else {
         // a wake or a one-shot animation, fixed to the ground
         const i = Math.min(q.f.length - 1, Math.floor(k * q.f.length));

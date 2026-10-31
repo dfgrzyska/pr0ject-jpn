@@ -376,13 +376,17 @@ zastępują fragment tła (młyny, pojazdy, zwierzęta), zostają bez zmian. `?n
 
 Cała grafika jest generowana kodem (`tools/`) do zwykłych plików PNG w `public/assets/`:
 atlas sprite'ów (`sprites.png` + `sprites.json`), font pikselowy z polskimi znakami, a dla każdego etapu
-`bg/stageN/far.png`, 14 kawałków warstwy środkowej `bg/stageN/mid_XX.png` (180×512) i atlas ruchomych
+`bg/stageN/far.png`, 4 kawałki warstwy środkowej `bg/stageN/mid_XX.png` (180×1792) i atlas ruchomych
 części tła `bg/stageN/props.png` (+ `props.json`; ich lista jest w `meta.json`).
 Generatory teł: `tools/art/kyoto/`, `tools/art/okinawa/`, `tools/art/sapporo/`, `tools/art/kagoshima/`, `tools/art/osaka/`, `tools/art/beppu/` (`node tools/gen-art.mjs --only=stage6` buduje jeden etap). Każdy plik można podmienić ręcznie
 rysowaną grafiką o tych samych wymiarach/nazwach ramek. `node tools/gen-art.mjs --preview` zapisuje
 powiększone podglądy do `tools/preview/`.
 
 Statki i wrogowie to maski znaków (`tools/art/sprites.mjs`) z automatycznym cieniowaniem i obrysem.
+
+Gra wczytuje na starcie tylko to, co wspólne (sprite'y, font, mapa) i tło pierwszego miasta; tła pozostałych
+miast scena `Boot` doczytuje w tle (następne miasto pierwsze), gdy widać już ekran tytułowy. Gdyby miasto nie
+zdążyło się wczytać, etap czeka z napisem „WCZYTYWANIE...”.
 
 ## Struktura
 

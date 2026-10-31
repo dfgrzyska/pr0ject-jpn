@@ -10,7 +10,9 @@ export class Pool {
   spawn(frame, x, y, props) {
     let s = this.free.pop();
     if (!s) s = this.scene.add.sprite(0, 0, 'sprites', frame);
-    s.setFrame(frame).setPosition(x, y).setDepth(this.depth).setAlpha(1).setScale(1).setRotation(0).setVisible(true).setActive(true).setFlipX(false);
+    // (setting the depth makes Phaser re-sort the whole scene, even to the same value: only when it differs)
+    if (s.depth !== this.depth) s.setDepth(this.depth);
+    s.setFrame(frame).setPosition(x, y).setAlpha(1).setScale(1).setRotation(0).setVisible(true).setActive(true).setFlipX(false);
     s.clearTint();
     s.dead = false;
     if (props) Object.assign(s, props);

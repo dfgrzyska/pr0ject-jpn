@@ -176,36 +176,42 @@ export class Hud {
     const s = this.scene;
     const p = s.player;
     this.score.setText(String(Math.min(99999999, s.score.score)).padStart(8, '0'));
-    this.mult.setText(`×${s.score.mult}`).setTint(s.score.mult >= SCORE.multiplierMax ? 0xffd060 : 0xffffff);
-    this.bar.clear();
-    this.bar.fillStyle(0x120e1a, 1).fillRect(57, 13, 22, 3);
-    this.bar.fillStyle(s.score.mult >= SCORE.multiplierMax ? 0xffd060 : 0xf08bb0, 1).fillRect(58, 14, Math.round(20 * s.score.fraction), 1);
-    if (p.heatOn) {
-      // Beppu gun heat: grey, orange from the hot mark on (tick), blinking red while jammed
-      const y = this.H - 10;
-      const c = p.jam > 0 ? (Math.floor(p.jam * 8) % 2 ? 0xff4a3a : 0x6a1a14) : p.heat >= HEAT.boostAt ? 0xffa040 : 0x9ab4c4;
-      this.bar.fillStyle(0x120e1a, 1).fillRect(44, y, 24, 4);
-      this.bar.fillStyle(c, 1).fillRect(45, y + 1, Math.round(22 * p.heat), 2);
-      this.bar.fillStyle(0xffffff, 0.55).fillRect(45 + Math.round(22 * HEAT.boostAt), y, 1, 4);
-    }
-    if (p.beanT > 0) {
-      // Setsubun beans left
-      const y = this.H - 16;
-      this.bar.fillStyle(0x120e1a, 1).fillRect(44, y, 24, 4);
-      this.bar.fillStyle(0xf0c878, 1).fillRect(45, y + 1, Math.round((22 * p.beanT) / BEANS.time), 2);
+    const maxed = s.score.mult >= SCORE.multiplierMax;
+    this.mult.setText(`×${s.score.mult}`).setTint(maxed ? 0xffd060 : 0xffffff);
+    // the bars are drawn again only when something on them changes
+    const heatC = p.heatOn ? (p.jam > 0 ? (Math.floor(p.jam * 8) % 2 ? 0xff4a3a : 0x6a1a14) : p.heat >= HEAT.boostAt ? 0xffa040 : 0x9ab4c4) : 0;
+    const key = [Math.round(20 * s.score.fraction), maxed, heatC, p.heatOn ? Math.round(22 * p.heat) : -1, p.beanT > 0 ? Math.round((22 * p.beanT) / BEANS.time) : -1, p.bombs === 0 ? p.grazeCharge : 0, this.H].join();
+    if (key !== this.barKey) {
+      this.barKey = key;
+      this.bar.clear();
+      this.bar.fillStyle(0x120e1a, 1).fillRect(57, 13, 22, 3);
+      this.bar.fillStyle(maxed ? 0xffd060 : 0xf08bb0, 1).fillRect(58, 14, Math.round(20 * s.score.fraction), 1);
+      if (p.heatOn) {
+        // Beppu gun heat: grey, orange from the hot mark on (tick), blinking red while jammed
+        const y = this.H - 10;
+        this.bar.fillStyle(0x120e1a, 1).fillRect(44, y, 24, 4);
+        this.bar.fillStyle(heatC, 1).fillRect(45, y + 1, Math.round(22 * p.heat), 2);
+        this.bar.fillStyle(0xffffff, 0.55).fillRect(45 + Math.round(22 * HEAT.boostAt), y, 1, 4);
+      }
+      if (p.beanT > 0) {
+        // Setsubun beans left
+        const y = this.H - 16;
+        this.bar.fillStyle(0x120e1a, 1).fillRect(44, y, 24, 4);
+        this.bar.fillStyle(0xf0c878, 1).fillRect(45, y + 1, Math.round((22 * p.beanT) / BEANS.time), 2);
+      }
+      if (p.bombs === 0 && p.grazeCharge > 0) {
+        // the ring round the bomb button fills with every graze
+        const a = -Math.PI / 2;
+        this.bar.lineStyle(2, 0xffe080, 0.85);
+        this.bar.beginPath();
+        this.bar.arc(this.bombBtn.x, this.bombBtn.y, 15, a, a + (Math.PI * 2 * p.grazeCharge) / GRAZE.perBomb);
+        this.bar.strokePath();
+      }
     }
     this.lives.forEach((img, i) => img.setVisible(i < p.lives).setFrame(p.ship.life));
     this.weapon.setFrame(WEAPON_ICON[p.weapon]);
     this.pips.forEach((pip, i) => pip.setFrame(i < p.level ? 'pip_on' : 'pip_off'));
     this.bombBtn.setAlpha(p.bombs > 0 ? 0.8 : 0.22);
-    if (p.bombs === 0 && p.grazeCharge > 0) {
-      // the ring round the bomb button fills with every graze
-      const a = -Math.PI / 2;
-      this.bar.lineStyle(2, 0xffe080, 0.85);
-      this.bar.beginPath();
-      this.bar.arc(this.bombBtn.x, this.bombBtn.y, 15, a, a + (Math.PI * 2 * p.grazeCharge) / GRAZE.perBomb);
-      this.bar.strokePath();
-    }
     this.soundBtn.setFrame(s.music.enabled ? 'btn_sound_on' : 'btn_sound_off');
     this.bookBtn.setVisible(s.state === 'title');
     this.installBtn.setVisible(s.state === 'title' && canInstall());
@@ -221,13 +227,16 @@ export class Hud {
       this.stampIcon.setVisible(true).setTint(0x8a8aa8).setAlpha((this.stampFade / 1.2) * 0.8).setX(7 + (Math.floor(this.stampFade * 24) % 2));
     } else this.stampIcon.setVisible(false);
 
-    this.boss.clear();
     const bar = s.enemies.bossBar();
-    if (bar) {
-      const w = 100;
-      const x = Math.round(W / 2 - w / 2);
-      this.boss.fillStyle(0x120e1a, 1).fillRect(x - 1, 27, w + 2, 4);
-      this.boss.fillStyle(0xe2421f, 1).fillRect(x, 28, Math.max(0, Math.round((w * bar.hp) / bar.max)), 2);
+    const fill = bar ? Math.max(0, Math.round((100 * bar.hp) / bar.max)) : -1;
+    if (fill !== this.bossFill) {
+      this.bossFill = fill;
+      this.boss.clear();
+      if (bar) {
+        const x = Math.round(W / 2 - 50);
+        this.boss.fillStyle(0x120e1a, 1).fillRect(x - 1, 27, 102, 4);
+        this.boss.fillStyle(0xe2421f, 1).fillRect(x, 28, fill, 2);
+      }
     }
 
     this.updateCard(dt);

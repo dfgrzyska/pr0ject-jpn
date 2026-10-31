@@ -1,6 +1,6 @@
 // Offline play: every file the game fetches is kept in a cache as it comes in. While online the network
 // always goes first (so a new version arrives as soon as it's published); offline, the cached copy is used.
-const CACHE = 'shmupjp-v1'; // src/pwa.js fills it too
+const CACHE = 'shmupjp-v2'; // src/pwa.js fills it too
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {

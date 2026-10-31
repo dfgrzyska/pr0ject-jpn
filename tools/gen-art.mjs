@@ -2,7 +2,7 @@
 //   node tools/gen-art.mjs            -> assets
 //   node tools/gen-art.mjs --preview  -> also writes upscaled previews to tools/preview/
 //   node tools/gen-art.mjs --only=stage2  -> sprites + font + only that stage's backgrounds
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { packAtlas } from './lib/spritekit.mjs';
@@ -28,6 +28,7 @@ const STAGES = [
 ];
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const MID_PIECE = 1792; // height of each middle-layer image the game loads (the strip is 7168 = 4 x 1792)
 const assets = join(root, 'public', 'assets');
 const previewDir = join(root, 'tools', 'preview');
 const preview = process.argv.includes('--preview');
@@ -84,7 +85,11 @@ for (const { id, art } of STAGES) {
   const far = art.buildFar();
   write(`bg/${id}/far.png`, far.toPNG());
   const mid = art.buildMid();
-  mid.chunks.forEach((c, i) => write(`bg/${id}/mid_${String(i).padStart(2, '0')}.png`, c.toPNG()));
+  // the strip goes out in four tall pieces: fewer files to fetch and fewer textures than the 512 px chunks
+  const pieces = Math.ceil(mid.strip.h / MID_PIECE);
+  for (let i = 0; i < pieces; i++) write(`bg/${id}/mid_${String(i).padStart(2, '0')}.png`, mid.strip.crop(0, i * MID_PIECE, mid.strip.w, MID_PIECE).toPNG());
+  for (const f of readdirSync(join(assets, 'bg', id))) if (/^mid_\d+\.png$/.test(f) && Number(f.slice(4, 6)) >= pieces) rmSync(join(assets, 'bg', id, f));
+  Object.assign(mid.meta, { chunkHeight: MID_PIECE, chunks: pieces });
   if (mid.props) {
     // the moving parts: their frames, and where they go and how they move (in meta.json)
     write(`bg/${id}/props.png`, mid.props.raster.toPNG());

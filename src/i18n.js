@@ -70,6 +70,7 @@ const EN = {
   'DOTKNIJ, ABY WRÓCIĆ': 'TAP TO RESUME',
   'ESC - POWRÓT': 'ESC - RESUME',
   'UWAGA!': 'WARNING!',
+  'WCZYTYWANIE...': 'LOADING...',
   'CIĘŻKI CEL': 'HEAVY TARGET',
   // the map
   'PODRÓŻ PO JAPONII': 'JOURNEY ACROSS JAPAN',

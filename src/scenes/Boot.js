@@ -1,8 +1,37 @@
 import Phaser from 'phaser';
-import { STAGES } from '../data/stages.js';
 import { keepForOffline } from '../pwa.js';
 
 export const FONT = 'pixel';
+
+/**
+ * Queue a city's backgrounds unless they are in already: the far loop, the middle layer's pieces and the
+ * moving parts, all listed in bg/<id>/meta.json (fetched first if need be). Boot loads only what every
+ * city shares, then stays on with its loader to bring the cities in one at a time (fetch), so a stage
+ * starting over never cuts a download short.
+ */
+function queueStage(scene, id) {
+  const load = scene.load;
+  const tex = scene.textures;
+  load.setPath('assets/');
+  if (!tex.exists(`far_${id}`)) load.image(`far_${id}`, `bg/${id}/far.png`);
+  const rest = (meta) => {
+    for (let i = 0; i < meta.chunks; i++) if (!tex.exists(`mid_${id}_${i}`)) load.image(`mid_${id}_${i}`, `bg/${id}/mid_${String(i).padStart(2, '0')}.png`);
+    if (meta.props && !tex.exists(`props_${id}`)) load.atlas(`props_${id}`, `bg/${id}/props.png`, `bg/${id}/props.json`);
+  };
+  const meta = scene.cache.json.get(`bg_${id}`);
+  if (meta) rest(meta);
+  else {
+    load.json(`bg_${id}`, `bg/${id}/meta.json`);
+    load.once(`filecomplete-json-bg_${id}`, (key, type, m) => rest(m));
+  }
+}
+
+/** Whether a city's backgrounds are all in. */
+export function stageReady(scene, id) {
+  const meta = scene.cache.json.get(`bg_${id}`);
+  const tex = scene.textures;
+  return Boolean(meta) && tex.exists(`far_${id}`) && (!meta.props || tex.exists(`props_${id}`)) && [...Array(meta.chunks).keys()].every((i) => tex.exists(`mid_${id}_${i}`));
+}
 
 export class Boot extends Phaser.Scene {
   constructor() {
@@ -15,19 +44,11 @@ export class Boot extends Phaser.Scene {
     this.load.image('font', 'font.png');
     this.load.json('fontMeta', 'font.json');
     this.load.image('japan', 'japan.png'); // the map between stages
-    // per-stage backgrounds: far loop + mid chunks (and the moving parts) listed in bg/<id>/meta.json
-    for (const { id } of STAGES) {
-      this.load.image(`far_${id}`, `bg/${id}/far.png`);
-      this.load.json(`bg_${id}`, `bg/${id}/meta.json`);
-      this.load.once(`filecomplete-json-bg_${id}`, (key, type, meta) => {
-        for (let i = 0; i < meta.chunks; i++) this.load.image(`mid_${id}_${i}`, `bg/${id}/mid_${String(i).padStart(2, '0')}.png`);
-        if (meta.props) this.load.atlas(`props_${id}`, `bg/${id}/props.png`, `bg/${id}/props.json`); // the moving parts
-      });
-    }
+    // the cities' backgrounds come later, one city at a time (queueStage)
   }
 
   create() {
-    keepForOffline(); // everything is loaded now
+    keepForOffline(); // what every city shares is in now
     const meta = this.cache.json.get('fontMeta');
     // Phaser 4: Parse returns the whole cache entry ({ data, texture, frame })
     const entry = Phaser.GameObjects.RetroFont.Parse(this, {
@@ -98,6 +119,15 @@ export class Boot extends Phaser.Scene {
     anim('expl_l', [0, 1, 2, 3, 4, 5, 6, 7].map((i) => `expl_l_${i}`), 12, 0);
     anim('spark', ['spark_0', 'spark_1', 'spark_2'], 24, 0);
 
-    this.scene.start('Stage');
+    this.scene.launch('Stage'); // Boot stays, its loader keeps fetching (see fetch)
+  }
+
+  /** Bring in these cities' backgrounds, in this order (whatever isn't in or on its way already). */
+  fetch(ids) {
+    for (const id of ids) queueStage(this, id);
+    if (!this.load.isLoading() && this.load.list.size) {
+      this.load.once('complete', keepForOffline);
+      this.load.start();
+    }
   }
 }

@@ -1,4 +1,5 @@
 import { DEPTH, VIEW } from '../config.js';
+import { tr } from '../i18n.js';
 import { pixelText } from './Hud.js';
 import { Pool } from './Pool.js';
 
@@ -10,6 +11,7 @@ export class Fx {
     this.sparks = new Pool(scene, DEPTH.fx);
     this.petals = new Pool(scene, DEPTH.fx);
     this.texts = [];
+    this.textFree = []; // floating texts are reused, not made and destroyed
     this.flashRect = scene.add
       .rectangle(0, 0, VIEW.width, VIEW.maxHeight, 0xffffff, 1)
       .setOrigin(0, 0)
@@ -84,7 +86,10 @@ export class Fx {
   }
 
   text(x, y, str, life = 1.2, tint = 0xffffff) {
-    const t = pixelText(this.scene, x, y, str).setDepth(DEPTH.fx + 2).setTint(tint);
+    let t = this.textFree.pop();
+    if (t) t.setText(tr(str)).setPosition(Math.round(x), Math.round(y)).setAlpha(1).setVisible(true);
+    else t = pixelText(this.scene, x, y, str).setDepth(DEPTH.fx + 2);
+    t.setTint(tint);
     // keep long labels on screen near the edges
     const half = Math.ceil(t.width / 2) + 2;
     t.x = Math.round(Math.min(Math.max(t.x, half), VIEW.width - half));
@@ -112,7 +117,9 @@ export class Fx {
     }
 
     this.ring.clear();
-    this.rings = this.rings.filter((r) => (r.life -= dt) > 0);
+    let n = 0;
+    for (const r of this.rings) if ((r.life -= dt) > 0) this.rings[n++] = r;
+    this.rings.length = n;
     for (const r of this.rings) {
       r.r += 420 * dt;
       this.ring.lineStyle(3, 0xffd6e5, Math.min(1, r.life * 2.5));
@@ -121,13 +128,15 @@ export class Fx {
       this.ring.strokeCircle(r.x, r.y, r.r * 0.8);
     }
 
-    this.texts = this.texts.filter(({ t, life, max }) => {
-      if (life <= 0) {
-        t.destroy();
-        return false;
+    n = 0;
+    for (const tx of this.texts) {
+      if (tx.life > 0) this.texts[n++] = tx;
+      else {
+        tx.t.setVisible(false);
+        this.textFree.push(tx.t);
       }
-      return true;
-    });
+    }
+    this.texts.length = n;
     for (const tx of this.texts) {
       tx.life -= dt;
       tx.fy -= 14 * dt;

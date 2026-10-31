@@ -5,7 +5,7 @@ import { STAGES } from '../data/stages.js';
 import { Bullets } from '../game/Bullets.js';
 import { Enemies } from '../game/Enemies.js';
 import { Fx } from '../game/Fx.js';
-import { Hud } from '../game/Hud.js';
+import { Hud, pixelText } from '../game/Hud.js';
 import { JapanMap } from '../game/JapanMap.js';
 import { Parallax } from '../game/Parallax.js';
 import { Player } from '../game/Player.js';
@@ -16,6 +16,7 @@ import { INK, StampBook, hasStamp, pressStamp, stampFrame } from '../game/Stamps
 import { Waves } from '../game/Waves.js';
 import { getLang, setLang, t } from '../i18n.js';
 import { canInstall, install, iosHint } from '../pwa.js';
+import { stageReady } from './Boot.js';
 
 const HI_KEY = 'shmupjp.hiscore';
 const SHIP_KEY = 'shmupjp.ship';
@@ -57,16 +58,27 @@ export class Stage extends Phaser.Scene {
     super('Stage');
   }
 
-  create(data = {}) {
-    // debug: ?stage=2 puts stage 2 (Okinawa) first, ?t=120 starts at 120 s, ?god = invulnerable,
-    // ?weapon=laser&power=5, ?ship=oni
-    const q = new URLSearchParams(window.location.search);
-    const qStage = Number(q.get('stage')) - 1;
+  init(data = {}) {
     // every new game plays all the cities in a fresh random order; "ETAP n" is the place in that order
+    // (debug: ?stage=2 puts stage 2, Okinawa, first)
+    const qStage = Number(new URLSearchParams(window.location.search).get('stage')) - 1;
     this.order = data.order ?? randomOrder(qStage >= 0 && qStage < STAGES.length ? qStage : null);
     this.pos = data.pos ?? 0;
     this.stageIndex = this.order[this.pos];
     this.stage = STAGES[this.stageIndex];
+  }
+
+  create(data = {}) {
+    if (!stageReady(this, this.stage.id)) {
+      // this city's backgrounds are still on their way: wait for them (update), then begin again
+      this.state = 'loading';
+      this.loadingData = data;
+      this.scene.get('Boot').fetch([this.stage.id]);
+      pixelText(this, VIEW.width / 2, Math.round(this.scale.height / 2), 'WCZYTYWANIE...').setTint(0xb0aec0);
+      return;
+    }
+    // debug: ?t=120 starts at 120 s, ?god = invulnerable, ?weapon=laser&power=5, ?ship=oni
+    const q = new URLSearchParams(window.location.search);
     this.stageTitle = `ETAP ${this.pos + 1}`;
     this.carry = data.carry ?? null;
     this.bossDown = false;
@@ -126,6 +138,7 @@ export class Stage extends Phaser.Scene {
       this.game.events.off('hidden', this.onHidden, this);
     });
 
+    this.loadAhead();
     if (this.carry) {
       this.startGame(); // straight on from the previous stage
       return;
@@ -133,6 +146,11 @@ export class Stage extends Phaser.Scene {
     this.music.play('title'); // audible once the browser allows audio (first tap / key)
     if (data.select) this.openSelect();
     else this.showTitle();
+  }
+
+  /** Bring in the other cities' backgrounds while this one is played, the next city first. */
+  loadAhead() {
+    this.scene.get('Boot').fetch([...this.order.slice(this.pos + 1), ...this.order.slice(0, this.pos)].map((i) => STAGES[i].id));
   }
 
   // ---------------------------------------------------------------- flow
@@ -434,6 +452,10 @@ export class Stage extends Phaser.Scene {
 
   // ---------------------------------------------------------------- loop
   update(time, delta) {
+    if (this.state === 'loading') {
+      if (stageReady(this, this.stage.id)) this.scene.restart(this.loadingData);
+      return;
+    }
     const dt = Math.min(delta / 1000, 1 / 20);
     this.handleKeys();
     this.hud.update(dt);

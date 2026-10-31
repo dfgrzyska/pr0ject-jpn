@@ -23,14 +23,17 @@ export function keepForOffline() {
   if (!import.meta.env.PROD || !('caches' in window)) return;
   const urls = [location.href.split('#')[0], ...performance.getEntriesByType('resource').map((e) => e.name)].filter((u) => u.startsWith(location.origin));
   caches
-    .open('shmupjp-v1') // the service worker's cache (public/sw.js)
+    .open('shmupjp-v2') // the service worker's cache (public/sw.js)
     .then((c) => Promise.all([...new Set(urls)].map((u) => c.match(u).then((hit) => hit || c.add(u).catch(() => {})))))
     .catch(() => {});
 }
 
+// running as an installed app (from the home screen): asked once, it doesn't change while the game runs
+const standalone = window.matchMedia?.('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone === true;
+
 /** Running as an installed app (from the home screen). */
 export function installed() {
-  return window.matchMedia?.('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone === true;
+  return standalone;
 }
 
 /** The browser has an install prompt ready (Chrome on Android, desktop Chrome / Edge). */
