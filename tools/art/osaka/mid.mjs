@@ -5,8 +5,10 @@
 // balcony, stone steps and entrance keep), Nakanoshima between
 // two rivers (the red-brick Central Public Hall, the domed library, City Hall, the rose garden), the
 // towers of Umeda (the Sky Building, a red Ferris wheel on a rooftop, the station under its great glass
-// roof), Shinsekai with Tsūtenkaku, lanterns and neon, Dōtonbori canal lined with giant food signs, the
-// port at Tempozan (the Ferris wheel, the aquarium, a sailing ship, cranes and containers) and the bay.
+// roof), Shinsekai with Tsūtenkaku, lanterns and neon, Dōtonbori canal lined with giant food signs, then
+// Osaka by night: the lantern-lit Hōzen-ji Yokochō, Namba Yasaka's giant lion head, the Kuromon market,
+// Shitennō-ji's pagoda and cloisters, Sumiyoshi Taisha's arched bridge and lantern rows, the Tempozan
+// waterfront (the Ferris wheel, the aquarium, a fountain) and the bay with its red bridge and fishing boats.
 // Graded from afternoon to night; windows, neon and lamps glow after the grade. River water is
 // transparent (the far layer shows through); the castle moats are painted.
 //
@@ -31,7 +33,7 @@ const DOJIMA = [1910, 1970];
 const UMEDA = [1970, 2950];
 const SHINSEKAI = [2950, 3750];
 const DOTONBORI = [3750, 4950];
-const PORT = [4950, 6430];
+const PORT = [4950, 6430]; // Osaka by night, ending at the Tempozan waterfront
 
 const C = {
   grass: [0x3e6a34, 0x4c7c3c, 0x5e8c48, 0x749c58],
@@ -108,11 +110,9 @@ export function buildMid() {
 
   // ------------------------------------------------------------ 1. ground and water
   const isWater = (x, u) => {
-    // rivers across, the canal down the middle, the harbour basins and the open bay
+    // rivers across, the canal down the middle and the open bay
     if ((u >= TOSABORI[0] && u < TOSABORI[1]) || (u >= DOJIMA[0] && u < DOJIMA[1])) return true;
     if (u >= DOTONBORI[0] + 30 && u < DOTONBORI[1] - 30 && x >= 64 && x < 116) return true;
-    if (u >= PORT[0] + 260 && u < PORT[0] + 420 && x > 96) return true; // basin by the aquarium
-    if (u >= PORT[0] + 560 && u < PORT[0] + 640) return true; // channel before the container quay
     if (u >= PORT[1] + (fbm(x, 3, { seed: 51, scale: 20 }) - 0.5) * 30) return true;
     return false;
   };
@@ -1424,74 +1424,794 @@ export function buildMid() {
       });
   }
 
-  // ------------------------------------------------------------ F. the port: the Ferris wheel, the aquarium, cranes and containers
+  // ------------------------------------------------------------ F. Osaka by night: alleys, shrines, a market, two great temples, the harbour
   {
     const [p0, p1] = PORT;
-    vRoad(40, 5, p0, p0 + 260);
-    for (let u = p0 + 10; u < p0 + 260; u += 30) if (rand() < 0.6) car(rand() < 0.5 ? 36 : 41, Y(u), true);
-    // Tempozan Ferris wheel: a giant ring of coloured lights
-    {
-      const cx = 46;
-      const cy = Y(p0 + 300);
+    const HOZEN = [p0, 5160];
+    const YASAKA = [5160, 5370];
+    const KUROMON = [5370, 5610];
+    const SHITEN = [5610, 5910];
+    const SUMI = [5910, 6210];
+    const WOOD = [0x2e2018, 0x46301f, 0x5e4229, 0x7a5835];
+    const TILE = [0x2a303c, 0x3c4452, 0x515b6c, 0x6a7588];
+    const BARK = [0x2b2224, 0x3d3033, 0x544246, 0x6e5a5c];
+    const VERM = [0xe2421f, 0xb83018, 0x7e2014];
+    const STONE = [0x4e4b50, 0x6c6870, 0x8a8790, 0xaaa7ae];
+    /** Stone paving (ishidatami): rows of fitted slabs with dark joints. */
+    const ishidatami = (x0, x1, u0, u1) => {
+      for (let u = u0; u < u1; u++)
+        for (let x = x0; x < x1; x++) {
+          if (isRes(x, Y(u)) || W_(x, Y(u))) continue;
+          const row = Math.floor(u / 5);
+          const joint = u % 5 === 0 || (x + row * 7) % 9 === 0;
+          img.set(x, Y(u), joint ? STONE[0] : rampColor(STONE, 0.35 + fbm(x, u, { seed: 61, scale: 3 }) * 0.5, x, Y(u)));
+        }
+    };
+    const gravelGround = (x0, x1, u0, u1, seed = 62) => {
+      for (let u = u0; u < u1; u++) for (let x = x0; x < x1; x++) if (!isRes(x, Y(u))) img.set(x, Y(u), rampColor(C.gravel, 0.2 + fbm(x, u, { seed, scale: 4 }) * 0.6, x, Y(u)));
+    };
+    /** Red and white paper lanterns hanging under eaves: the light of old Osaka streets. */
+    const chochin = (x, y, c = 0xff5a30) => {
+      img.set(x, y, c);
+      img.set(x, y + 1, scaleColor(c, 0.7));
+      glow(x, y, c, 0.9);
+      glow(x, y + 1, 0xffd080, 0.6);
+      pool(x, y + 2, 6, c, 0.22);
+    };
+    /** A traditional two-storey house with a tiled hip roof, a lattice front, noren, lanterns and a lit sign. */
+    const oldHouse = (x, y, w, roofH, faceH, opt = {}) => {
+      const ramp = opt.ramp ?? TILE;
+      const ridge = y + Math.round(roofH * 0.4);
+      const hi = Math.min(Math.round(roofH * 0.42), Math.floor(w / 3));
+      const noren = rand.pick([0x2b3c78, 0x7a1a2a, 0x2a5a3a, 0xe8e0d0, 0x5a2a6a]);
+      const nx = x + 3 + Math.floor(rand() * Math.max(1, w - 11));
+      const sign = rand() < 0.6;
+      const lamp = rand.pick([0xff5a30, 0xff5a30, 0xfff0d0, 0xffb040]);
       objects.push({
-        y: cy + 36,
-        shadow: () => shadowRect(cx - 4, cy + 30, 30, 6, 0.5),
+        y: y + roofH + faceH,
+        shadow: () => shadowRect(x + 3, y + 3, w, roofH + faceH, 0.55),
         draw: () => {
-          img.rect(cx - 6, cy + 28, 12, 8, 0x8a8a90);
-          img.line(cx - 10, cy + 34, cx, cy, 0x7a7a84);
-          img.line(cx + 10, cy + 34, cx, cy, 0x7a7a84);
-          for (let k = 0; k < 24; k++) {
-            const a = (k / 24) * Math.PI * 2;
-            img.line(cx, cy, Math.round(cx + Math.cos(a) * 28), Math.round(cy + Math.sin(a) * 28), 0x6a6a74);
+          for (let yy = y; yy < y + roofH; yy++) {
+            const north = yy <= ridge;
+            const t = north ? (ridge - yy) / Math.max(1, ridge - y) : (yy - ridge) / Math.max(1, y + roofH - 1 - ridge);
+            const inset = hi * (1 - t);
+            for (let xx = x; xx < x + w; xx++) {
+              const lx = xx - x;
+              const rx = x + w - 1 - xx;
+              let c = lx < inset ? ramp[3] : rx < inset ? ramp[0] : north ? ramp[2] : ramp[1];
+              if (lx < inset || rx < inset ? (yy - y) % 2 === 0 : (xx - x) % 2 === 0) c = scaleColor(c, 0.86);
+              img.set(xx, yy, c);
+            }
           }
-          for (let a = 0; a < Math.PI * 2; a += 0.025) {
-            const px = Math.round(cx + Math.cos(a) * 29);
-            const py = Math.round(cy + Math.sin(a) * 29);
-            glow(px, py, NEON[Math.floor((a / (Math.PI * 2)) * 14) % NEON.length]);
+          for (let xx = x + hi; xx < x + w - hi; xx++) img.set(xx, ridge, scaleColor(ramp[3], 1.15));
+          for (let xx = x; xx < x + w; xx++) img.set(xx, y + roofH - 1, ramp[0]);
+          img.clear(x, y);
+          img.clear(x + w - 1, y);
+          const fy = y + roofH;
+          for (let yy = fy; yy < fy + faceH; yy++)
+            for (let xx = x + 1; xx < x + w - 1; xx++) {
+              const upper = yy - fy < Math.ceil(faceH / 2);
+              let c = (xx - x) % 2 === 0 ? WOOD[0] : upper ? WOOD[2] : WOOD[1];
+              if (yy === fy) c = 0x15100c;
+              img.set(xx, yy, c);
+            }
+          // warm light through the lattice, the noren in the doorway, lanterns either side
+          for (let xx = x + 2; xx < x + w - 2; xx += 2) glow(xx, fy + 1, C.warm, 0.35);
+          img.rect(nx, fy + 1, 6, Math.max(1, faceH - 2), noren);
+          img.rect(nx, fy + 1, 6, 1, scaleColor(noren, 1.3));
+          chochin(nx - 2, fy + 1, lamp);
+          chochin(nx + 7, fy + 1, lamp);
+          if (sign) {
+            // a vertical signboard, lit from inside
+            const sx = x + w - 3;
+            for (let j = 0; j < Math.max(3, faceH + 2); j++) glow(sx, fy - 1 + j, j % 2 ? 0xfff4d8 : 0xffe0a0, 0.85);
           }
-          for (let k = 0; k < 16; k++) {
-            const a = (k / 16) * Math.PI * 2;
-            img.rect(Math.round(cx + Math.cos(a) * 30) - 1, Math.round(cy + Math.sin(a) * 30), 3, 3, 0xd8dce4);
-          }
-          img.disc(cx + 0.5, cy + 0.5, 3, 0xe8e4dc);
-          pool(cx, cy, 36, 0xff70c0, 0.3);
         },
       });
-      reserveRect(cx - 32, cy - 32, 64, 70);
-    }
-    // the aquarium: a block faced with red, blue and glass, across the basin
-    {
-      const x = 104;
-      const y = Y(p0 + 200);
+      reserveRect(x - 1, y - 1, w + 2, roofH + faceH + 3);
+    };
+    /** Rows of old houses along a band, leaving the reserved spots alone. */
+    const oldRows = (x0, x1, u0, u1, rh = [10, 13]) => {
+      let u = u0;
+      while (u < u1 - 12) {
+        const roofH = rh[0] + Math.floor(rand() * (rh[1] - rh[0] + 1));
+        const bh = roofH + 4;
+        let x = x0;
+        while (x < x1 - 6) {
+          let w = Math.min(x1 - x, 12 + Math.floor(rand() * 12));
+          while (w >= 8 && anyRes(x - 1, Y(u + bh) - 1, w + 2, bh + 3)) w -= 3;
+          if (w >= 8) {
+            oldHouse(x, Y(u + bh), w, roofH, 4);
+            x += w + 1;
+          } else x += 3;
+        }
+        u += bh + 4;
+      }
+    };
+    /** A temple or shrine hall: hip-and-gable roof of dark tiles (or bark), vermilion posts, white walls, floodlit. */
+    const templeHall = (x, y, w, roofH, faceH, opt = {}) => {
+      const ramp = opt.ramp ?? TILE;
+      const ridge = y + Math.round(roofH * 0.34);
+      const hi = Math.round(roofH * 0.42);
       objects.push({
-        y: y + 36,
-        shadow: () => shadowRect(x + 4, y + 4, 60, 36, 0.5),
+        y: y + roofH + faceH,
+        shadow: () => shadowRect(x + 5, y + 5, w, roofH + faceH, 0.5),
         draw: () => {
-          img.rect(x, y, 60, 24, 0x3a4a6a);
-          img.rect(x, y, 60, 1, 0x5a6a8a);
-          for (let yy = y + 24; yy < y + 36; yy++) for (let xx = x; xx < x + 60; xx++) img.set(xx, yy, Math.floor((xx - x) / 6 + (yy - y) / 4) % 3 === 0 ? 0xd8402a : Math.floor((xx - x) / 6) % 2 ? 0x2a5aa0 : 0x7ab8e0);
-          img.rect(x + 8, y + 6, 44, 10, 0x5a7aa0);
-          for (let xx = x + 10; xx < x + 50; xx += 3) glow(xx, y + 10, 0x9ad8ff);
-          // a whale shark painted on the glass
-          img.ellipse(x + 30, y + 30, 10, 3, 0x2a4a7a);
-          for (let k = 0; k < 6; k++) img.set(x + 24 + k * 2, y + 30, 0xd8e8f8);
-          pool(x + 30, y + 30, 30, 0x60a0ff, 0.3);
+          for (let yy = y; yy < y + roofH; yy++) {
+            const north = yy <= ridge;
+            const t = north ? (ridge - yy) / Math.max(1, ridge - y) : (yy - ridge) / Math.max(1, y + roofH - 1 - ridge);
+            const inset = hi * (1 - t);
+            for (let xx = x; xx < x + w; xx++) {
+              const lx = xx - x;
+              const rx = x + w - 1 - xx;
+              let c = lx < inset ? ramp[3] : rx < inset ? ramp[0] : north ? ramp[2] : ramp[1];
+              if (lx < inset || rx < inset ? (yy - y) % 2 === 0 : (xx - x) % 3 === 0) c = scaleColor(c, 0.85);
+              img.set(xx, yy, c);
+            }
+          }
+          for (let xx = x; xx < x + w; xx++) {
+            img.set(xx, y + roofH - 2, ramp[3]);
+            img.set(xx, y + roofH - 1, ramp[0]);
+          }
+          img.clear(x, y);
+          img.clear(x + w - 1, y);
+          for (let xx = x + hi; xx < x + w - hi; xx++) img.set(xx, ridge, 0x1c1418);
+          for (const gx of [x + hi, x + w - hi - 1]) {
+            img.set(gx, ridge, C.gold);
+            img.set(gx, ridge - 1, C.goldHi);
+          }
+          const fy = y + roofH;
+          for (let yy = fy; yy < fy + faceH; yy++)
+            for (let xx = x + 1; xx < x + w - 1; xx++) {
+              const k = (xx - x - 1) % 8;
+              const upper = yy - fy < Math.ceil(faceH / 2);
+              let c = k < 2 ? (k === 0 ? VERM[0] : VERM[1]) : opt.gold ? (upper ? C.gold : 0xa87a22) : upper ? 0xe9e2d0 : VERM[1];
+              if (yy === fy) c = 0x1a1210;
+              img.set(xx, yy, c);
+            }
+          if (opt.door !== false) img.rect(x + Math.floor(w / 2) - 3, fy + 1, 6, faceH - 1, opt.gate ? 0x140c0a : 0x3a2418);
+          // floodlights: the eave line and the posts catch the light
+          for (let xx = x + 1; xx < x + w - 1; xx += 2) glow(xx, y + roofH - 2, 0xffd8a0, 0.35);
+          for (let xx = x + 1; xx < x + w - 1; xx += 8) glow(xx, fy + 2, 0xffb070, 0.6);
+          pool(x + w / 2, fy + faceH + 2, w * 0.5, 0xffc080, 0.22);
         },
       });
-      reserveRect(x - 2, y - 2, 64, 40);
-    }
-    // red-brick warehouses and a car park on the quays
-    for (let u = p0 + 30; u < p0 + 260; u += 50)
-      for (let x = 54; x < 176; x += 40)
-        if (!anyRes(x, Y(u + 40), 36, 44)) building(x, Y(u + 40), 34, 26, 12, { style: rand() < 0.5 ? 'brick' : 'warehouse', roof: rand.pick([0x8a4a3a, 0x6a6a72, 0x7a5a4a]), neon: rand() < 0.4 });
-    for (let u = p0 + 440; u < p0 + 550; u += 10) for (let x = 10; x < 90; x += 8) if (!isRes(x, Y(u))) {
-      for (let k = 0; k < 7; k++) img.set(x - 1, Y(u) + k, 0xd8d8d0);
-      if (rand() < 0.65) car(x, Y(u), true);
-    }
+      reserveRect(x - 2, y - 2, w + 4, roofH + faceH + 4);
+    };
+    /** A pagoda: square storeys under wide tiled roofs, vermilion walls, the bronze finial; floodlit at night. */
+    const pagoda = (cx, uBase, tiers, w0, floorH = 8, roofH = 7) => {
+      const y0 = Y(uBase);
+      const parts = [];
+      let y = y0;
+      for (let i = 0; i < tiers; i++) {
+        const ww = w0 - i * Math.round(w0 * 0.13);
+        parts.push({ ww, wallTop: y - floorH, wallBot: y });
+        y = y - floorH - roofH + 2;
+      }
+      const top = y;
+      objects.push({
+        y: y0 + 4,
+        shadow: () => {
+          for (const p of parts) shadowRect(Math.round(cx - p.ww / 2) + 12, p.wallTop + 10, p.ww + 10, p.wallBot - p.wallTop + roofH, 0.55);
+        },
+        draw: () => {
+          img.rect(Math.round(cx - w0 / 2) - 5, y0, w0 + 10, 5, STONE[2]);
+          img.rect(Math.round(cx - w0 / 2) - 5, y0, w0 + 10, 1, STONE[3]);
+          for (let k = parts.length - 1; k >= 0; k--) {
+            const { ww, wallTop, wallBot } = parts[k];
+            const x0 = Math.round(cx - ww / 2);
+            for (let yy = wallTop; yy < wallBot; yy++)
+              for (let xx = x0; xx < x0 + ww; xx++) {
+                const lx = xx - x0;
+                let c = lx % 5 === 0 ? VERM[1] : (yy - wallTop) % 4 === 1 && lx % 5 === 2 ? 0xe9e2d0 : lx < 2 ? VERM[0] : VERM[1];
+                if (lx === ww - 1) c = VERM[2];
+                img.set(xx, yy, c);
+              }
+            for (let xx = x0; xx < x0 + ww; xx += 3) glow(xx, wallBot - 2, 0xffb070, 0.45);
+          }
+          for (let k = parts.length - 1; k >= 0; k--) {
+            const { ww, wallTop } = parts[k];
+            const above = parts[k + 1];
+            const eave = wallTop + 1;
+            const botW = ww + 14;
+            const topW = above ? above.ww : 6;
+            for (let xx = Math.round(cx - ww / 2); xx < Math.round(cx + ww / 2); xx++) img.tint(xx, eave + 1, 0.7);
+            for (let j = 0; j < roofH; j++) {
+              const t = j / Math.max(1, roofH - 1);
+              const hw = (botW / 2) * (1 - t) ** 0.55 + (topW / 2) * (1 - (1 - t) ** 0.55);
+              for (let xx = Math.round(cx - hw); xx < Math.round(cx + hw); xx++) {
+                const lx = xx - (cx - hw);
+                const rx = cx + hw - xx;
+                img.set(xx, eave - j, lx < 3 ? TILE[3] : rx < 3 ? TILE[0] : j === 0 ? TILE[3] : (xx & 1) ? TILE[1] : TILE[2]);
+              }
+              if (j === 0) {
+                img.set(Math.round(cx - hw) - 1, eave - 1, TILE[3]);
+                img.set(Math.round(cx + hw), eave - 1, TILE[1]);
+                glow(Math.round(cx - hw) - 1, eave - 2, C.gold, 0.8); // bells on the corners
+                glow(Math.round(cx + hw), eave - 2, C.gold, 0.8);
+              }
+            }
+          }
+          for (let j = 0; j < 18; j++) img.set(Math.round(cx), top + 2 - j, j % 2 ? 0x8a6a3a : C.gold);
+          for (let j = 1; j < 18; j += 2) {
+            img.set(Math.round(cx) - 1, top + 2 - j, 0x6a4a2a);
+            img.set(Math.round(cx) + 1, top + 2 - j, 0x6a4a2a);
+          }
+          glow(Math.round(cx), top - 16, C.goldHi);
+          pool(cx, y0 - (y0 - top) / 2, w0, 0xffb878, 0.25);
+        },
+      });
+      reserveRect(cx - w0 / 2 - 9, top - 18, w0 + 18, y0 - top + 26);
+    };
+    /** A pond at night: dark still water with ripples, a stone rim; lights reflect in it. */
+    const pondAtNight = (cx, cu, rx, ry) => {
+      const cy = Y(cu);
+      for (let y = Math.floor(cy - ry - 3); y <= cy + ry + 3; y++)
+        for (let x = Math.floor(cx - rx - 3); x <= cx + rx + 3; x++) {
+          if (x < 0 || x >= W || isRes(x, y)) continue;
+          const e = ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 + (fbm(x, y, { seed: 69, scale: 10 }) - 0.5) * 0.3;
+          if (e >= 1.16) continue;
+          if (e > 1) img.set(x, y, rampColor(STONE, 0.3 + fbm(x, y, { seed: 70, scale: 2 }) * 0.6, x, y));
+          else {
+            const n = fbm(x * 0.7, y * 1.5, { seed: 71, scale: 8, octaves: 2 });
+            img.set(x, y, n > 0.7 && (x + y) % 2 ? 0x4a7a8a : rampColor([0x0e2028, 0x14303a, 0x1c3e4a, 0x2a5060], 0.1 + n * 0.5, x, y));
+            water[y * W + x] = 1;
+          }
+          reserved[y * W + x] = 1;
+        }
+    };
+    /** A string of paper lanterns between two points, sagging a little. */
+    const lanternString = (x0, y0, x1, y1) => {
+      const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0) / 3));
+      for (let k = 0; k <= n; k++) {
+        const t = k / n;
+        const x = Math.round(x0 + (x1 - x0) * t);
+        const y = Math.round(y0 + (y1 - y0) * t + Math.sin(t * Math.PI) * 3);
+        img.set(x, y - 1, 0x2a2224, 0.6);
+        if (k % 2 === 0) chochin(x, y, (k >> 1) % 3 === 0 ? 0xfff0d0 : 0xff5a30);
+      }
+    };
+    /** A bronze incense burner with its curl of smoke and the glow of the sticks. */
+    const incense = (x, y) => {
+      objects.push({
+        y: y + 6,
+        shadow: () => shadowRect(x + 1, y + 3, 7, 4, 0.55),
+        draw: () => {
+          img.rect(x, y + 2, 7, 4, 0x4a3a2a);
+          img.rect(x, y + 2, 7, 1, 0x8a6a3a);
+          img.rect(x + 1, y, 5, 2, 0x5a4a32);
+          for (let j = 1; j < 12; j++) img.set(x + 3 + Math.round(Math.sin(j * 0.7) * 1.5), y - j, 0xb8b0c0, 0.35 * (1 - j / 12));
+          glow(x + 3, y + 1, 0xff8a40, 0.8);
+        },
+      });
+    };
+    const stoneLantern = (x, y, lit = true) => {
+      objects.push({
+        y: y + 5,
+        shadow: () => shadowRect(x + 1, y + 2, 4, 4, 0.55),
+        draw: () => {
+          img.rect(x, y + 2, 3, 3, STONE[1]);
+          img.rect(x, y + 2, 3, 1, STONE[2]);
+          img.rect(x - 1, y, 5, 2, STONE[0]);
+          img.rect(x, y, 3, 1, STONE[2]);
+          img.set(x + 1, y - 1, STONE[2]);
+          if (lit) {
+            img.set(x + 1, y + 3, 0xffd27a);
+            glow(x + 1, y + 3, 0xffd27a);
+            pool(x + 1, y + 4, 6, 0xffc070, 0.25);
+          }
+        },
+      });
+    };
+
+    // ---- 1. Hōzen-ji Yokochō: a lantern-lit stone alley, the little temple and the moss-covered Fudō
     {
-      // the sightseeing sailing ship in the basin
+      const [h0, h1] = HOZEN;
+      ishidatami(0, W, h0, h1);
+      for (let u = h0; u < h1; u++) {
+        img.set(83, Y(u), STONE[3]);
+        img.set(97, Y(u), STONE[3]);
+      }
+      reserveRect(84, Y(h1), 13, h1 - h0);
+      reserveRect(0, Y(5066), W, 10); // the cross alley
+      // Hōzen-ji: the courtyard, the hall, the Mizukake Fudō covered in moss, walls of offering lanterns
+      const tx = 104;
+      const tu = 5004;
+      ishidatami(tx, 178, tu, tu + 52);
+      reserveRect(tx, Y(tu + 52), 74, 52);
+      templeHall(tx + 34, Y(tu + 50), 38, 16, 7);
+      {
+        const fx = tx + 16;
+        const fy = Y(tu + 20);
+        img.rect(fx - 6, fy + 6, 13, 4, STONE[1]);
+        img.rect(fx - 6, fy + 6, 13, 1, STONE[2]);
+        for (let y = fy - 8; y <= fy + 6; y++)
+          for (let x = fx - 5; x <= fx + 5; x++) {
+            const e = ((x - fx) / 4.5) ** 2 + ((y - fy + 1) / 7) ** 2;
+            if (e > 1) continue;
+            img.set(x, y, rampColor([0x1e4a22, 0x2a6a2c, 0x3a8a38, 0x5aa848], 0.3 + (1 - e) * 0.3 + fbm(x, y, { seed: 63, scale: 1.5 }) * 0.4, x, y));
+          }
+        img.set(fx - 1, fy - 5, 0x8ad070);
+        for (let k = 0; k < 6; k++) img.set(fx - 3 + k, fy + 9, 0x6ab0d0); // water splashed at its feet
+        crowd(fx - 8, fy + 11, 16, 3, 6, true);
+      }
+      for (let r = 0; r < 3; r++)
+        for (let k = 0; k < 12; k++) {
+          const lx = tx + 4 + k * 3;
+          const ly = Y(tu + 46) + r * 3;
+          const c = (k + r) % 3 ? 0xffd040 : 0xff5a30;
+          img.set(lx, ly, c);
+          glow(lx, ly, c, 0.9);
+        }
+      pool(tx + 20, Y(tu + 44), 18, 0xffa040, 0.3);
+      oldRows(0, 83, h0 + 4, 5062);
+      oldRows(98, W, h0 + 4, tu - 4);
+      oldRows(0, 83, 5078, h1 - 4);
+      oldRows(98, W, 5078, h1 - 4);
+      // lanterns strung across the alley, people wandering between the restaurants
+      for (let u = h0 + 10; u < h1; u += 14) {
+        for (let x = 85; x < 96; x += 3) img.set(x, Y(u), 0x2a2224);
+        chochin(87, Y(u) + 1, 0xff5a30);
+        chochin(93, Y(u) + 1, 0xfff0d0);
+      }
+      crowd(85, Y(h1), 11, h1 - h0, 70, true);
+      crowd(0, Y(5066), W, 8, 30, true);
+      lanternString(2, Y(5064), 82, Y(5064));
+      lanternString(98, Y(5064), 178, Y(5064));
+      incense(tx + 4, Y(tu + 30));
+      for (const [lx, lu] of [[tx + 2, tu + 6], [tx + 28, tu + 6], [tx + 66, tu + 8]]) stoneLantern(lx, Y(lu));
+      crowd(tx + 2, Y(tu + 40), 30, 34, 24, true);
+    }
+
+    // ---- 2. Namba Yasaka: the shrine whose hall is a giant lion's head with a stage in its mouth
+    {
+      const [y0u, y1u] = YASAKA;
+      gravelGround(0, W, y0u, y1u, 64);
+      // the stone torii at the entrance, lanterns along the approach
+      {
+        const cx = 90;
+        const y = Y(5186);
+        for (const px of [cx - 14, cx + 14]) img.rect(px - 1, y + 3, 3, 10, STONE[2]);
+        img.rect(cx - 19, y, 38, 2, STONE[1]);
+        img.rect(cx - 19, y, 38, 1, STONE[3]);
+        img.rect(cx - 16, y + 5, 32, 2, STONE[1]);
+        reserveRect(cx - 20, y - 1, 40, 14);
+      }
+      for (let u = 5192; u < 5240; u += 10) {
+        stoneLantern(74, Y(u));
+        stoneLantern(104, Y(u));
+      }
+      // the lion's head (Shishi-den): green face, great white eyes, a red mouth open wide around the stage
+      {
+        const cx = 90;
+        const yb = Y(5244);
+        const top = yb - 54;
+        objects.push({
+          y: yb + 4,
+          shadow: () => {
+            for (let y = top + 6; y < yb + 8; y++) for (let x = cx - 26; x < cx + 40; x++) if (((x - cx - 8) / 34) ** 2 + ((y - (top + yb) / 2 - 6) / 30) ** 2 < 1) img.tint(x, y, 0.55);
+          },
+          draw: () => {
+            img.rect(cx - 30, yb - 4, 60, 8, STONE[1]);
+            img.rect(cx - 30, yb - 4, 60, 1, STONE[3]);
+            const midY = top + 28;
+            // the curly mane
+            for (let y = top; y < yb - 2; y++)
+              for (let x = cx - 32; x <= cx + 32; x++) {
+                const e = ((x - cx) / 32) ** 2 + ((y - midY) / 26) ** 2;
+                if (e > 1) continue;
+                const curl = fbm(x, y, { seed: 65, scale: 2.2 });
+                let c = e > 0.62 ? (curl > 0.55 ? 0x2a6a34 : curl > 0.4 ? 0x1e4a26 : 0x14341a) : x < cx - 4 ? 0x4a9a52 : 0x3a8444;
+                if (e > 0.62 && curl > 0.72) c = C.gold;
+                img.set(x, y, c);
+              }
+            // the brows, the eyes, the nose
+            for (const s of [-1, 1]) {
+              const ex = cx + s * 11;
+              const ey = top + 18;
+              for (let k = -6; k <= 6; k++) img.set(ex + k, ey - 5 - Math.round(Math.abs(k) * 0.3) + (s * k > 0 ? 0 : 1), C.gold);
+              img.ellipse(ex, ey, 6, 4.5, C.gold);
+              img.ellipse(ex, ey, 5, 3.5, 0xf8f4ec);
+              img.disc(ex + s, ey, 2, 0x1a1418);
+              img.set(ex + s - 1, ey - 1, 0xffffff);
+              glow(ex, ey, 0xfff8e0, 0.5);
+            }
+            img.ellipse(cx, top + 27, 6, 4, 0x2e7238);
+            img.ellipse(cx - 1, top + 26, 3, 2, 0x5aaa62);
+            img.set(cx - 3, top + 29, 0x14341a);
+            img.set(cx + 3, top + 29, 0x14341a);
+            // the mouth, open wide, with the stage inside it
+            for (let y = top + 33; y < yb - 4; y++)
+              for (let x = cx - 22; x <= cx + 22; x++) {
+                const e = ((x - cx) / 22) ** 2 + ((y - (top + 43)) / 10) ** 2;
+                if (e > 1) continue;
+                img.set(x, y, y > yb - 10 ? (x & 1 ? 0xb8925e : 0xa07c50) : e > 0.7 ? 0x8a1a1a : 0x4a0a10);
+              }
+            for (let x = cx - 20; x <= cx + 20; x++) {
+              img.set(x, top + 33 + (x % 3 === 0 ? 1 : 0), 0xf8f4ec);
+              img.set(x, top + 34 + (x % 3 === 0 ? 1 : 0), x % 3 === 0 ? 0xf8f4ec : 0x8a1a1a);
+              img.set(x, yb - 11 - (x % 3 === 1 ? 1 : 0), 0xf8f4ec);
+            }
+            for (const s of [-1, 1]) {
+              img.rect(cx + s * 17 - (s > 0 ? 1 : 0), top + 34, 2, 4, C.gold);
+              img.rect(cx + s * 17 - (s > 0 ? 1 : 0), yb - 15, 2, 4, C.gold);
+            }
+            for (let x = cx - 14; x <= cx + 14; x += 4) glow(x, yb - 12, 0xffd8a0, 0.7);
+            pool(cx, yb - 12, 26, 0xffc070, 0.4);
+            // the little tiled roof over the head
+            for (let j = 0; j < 5; j++) img.rect(cx - 16 + j * 2, top - 1 - j, 32 - j * 4, 1, j === 0 ? TILE[3] : TILE[1 + (j & 1)]);
+            glow(cx - 16, top - 1, C.gold, 0.8);
+            glow(cx + 15, top - 1, C.gold, 0.8);
+          },
+        });
+        reserveRect(cx - 34, top - 8, 68, yb - top + 14);
+        for (const s of [-1, 1]) {
+          chochin(cx + s * 36, yb - 30, 0xff5a30);
+          chochin(cx + s * 36, yb - 20, 0xfff0d0);
+          chochin(cx + s * 36, yb - 10, 0xff5a30);
+        }
+      }
+      templeHall(66, Y(5352), 48, 16, 7, { ramp: BARK });
+      crowd(30, Y(5246), 120, 60, 70, false);
+      crowd(40, Y(5244), 100, 40, 60, true);
+      // lanterns strung across the precinct for the festival, an ema rack, a hand-washing basin
+      lanternString(32, Y(5320), 148, Y(5320));
+      lanternString(32, Y(5296), 52, Y(5250));
+      lanternString(148, Y(5296), 128, Y(5250));
+      objects.push({
+        y: Y(5330) + 6,
+        draw: () => {
+          const x = 124;
+          const y = Y(5330);
+          img.rect(x, y, 22, 1, WOOD[1]);
+          for (let i = 0; i < 7; i++) img.rect(x + 1 + i * 3, y + 1, 2, 3, i % 3 ? 0xd8c49a : 0xc8b080);
+          img.rect(x, y + 4, 22, 1, WOOD[0]);
+          img.rect(34, y + 2, 12, 4, STONE[2]);
+          img.rect(35, y + 3, 10, 2, 0x2a5060);
+          glow(40, y + 2, 0xd8e8ff, 0.4);
+        },
+      });
+      // the neighbourhood around the shrine
+      oldRows(0, 30, y0u + 6, y1u - 6);
+      oldRows(152, W, y0u + 6, y1u - 6);
+      for (let k = 0; k < 14; k++) {
+        const x = 34 + rand() * 112;
+        const u = 5250 + rand() * 110;
+        if (!anyRes(x - 4, Y(u) - 4, 8, 8)) tree(rand() < 0.5 ? 'broadleaf' : 'pine', x, Y(u), 4 + rand() * 2);
+      }
+    }
+
+    // ---- 3. Kuromon Ichiba: the covered market, "Osaka's kitchen"
+    {
+      const [k0, k1] = KUROMON;
+      ishidatami(0, W, k0, k1);
+      const ax0 = 64;
+      const ax1 = 116;
+      const m1 = 5560;
+      // the stalls on both sides of the walk under the arcade
+      for (let u = k0 + 6; u < m1; u += 12)
+        for (const [sx0, sx1] of [[ax0 + 1, ax0 + 15], [ax1 - 15, ax1 - 1]]) {
+          const kind = rand.pick(['fish', 'crab', 'tuna', 'uni', 'fruit', 'grill', 'fish', 'veg']);
+          const y = Y(u + 10);
+          img.rect(sx0, y, sx1 - sx0, 10, 0x6a4a30);
+          img.rect(sx0, y, sx1 - sx0, 1, 0x8a6a48);
+          for (let yy = y + 1; yy < y + 9; yy++)
+            for (let xx = sx0 + 1; xx < sx1 - 1; xx++) {
+              let c;
+              if (kind === 'fish') c = (xx + yy) % 3 === 0 ? 0xc8d8e0 : (xx + yy * 2) % 5 === 0 ? 0x5a7a9a : 0xe8f0f4; // fish on ice
+              else if (kind === 'crab') c = (xx + yy) % 4 < 2 ? 0xd83a2a : 0xf06a4a;
+              else if (kind === 'tuna') c = (yy - y) % 3 === 0 ? 0xf0e0d8 : 0xb82a3a;
+              else if (kind === 'uni') c = (xx - sx0) % 4 === 0 ? 0x8a6a40 : 0xf0a030;
+              else if (kind === 'fruit') c = rand.pick([0xe83a3a, 0x6aaa3a, 0xf0b030, 0xf0e070, 0xd85a8a]);
+              else if (kind === 'veg') c = rand.pick([0x4a8a3a, 0x6aaa4a, 0xe8e0c8, 0xd86a2a]);
+              else c = (xx + yy) % 2 ? 0x2a2420 : 0x3a302a; // the grill
+              img.set(xx, yy, c);
+            }
+          if (kind === 'grill') {
+            for (let xx = sx0 + 2; xx < sx1 - 2; xx += 2) glow(xx, y + 5, 0xff7a20, 0.8);
+            for (let j = 0; j < 6; j++) img.set(sx0 + 4 + (j % 3), y - j, 0x9a9aa8, 0.3);
+          }
+          glow(Math.round((sx0 + sx1) / 2), y + 1, 0xfff4d8, 0.8);
+          pool((sx0 + sx1) / 2, y + 5, 8, 0xfff0d0, 0.25);
+          reserveRect(sx0, y, sx1 - sx0, 10);
+        }
+      crowd(ax0 + 16, Y(m1), ax1 - ax0 - 32, m1 - k0, 140, true);
+      // the arcade roof: a frame of arches and glass, the market's name in lights at the gate
+      objects.push({
+        y: Y(k0),
+        draw: () => {
+          for (let u = k0; u < m1; u++)
+            for (let x = ax0; x < ax1; x++) {
+              const rib = (u - k0) % 10 === 0;
+              const edge = x === ax0 || x === ax1 - 1;
+              const spine = x === Math.floor((ax0 + ax1) / 2);
+              if (edge || rib || spine) img.set(x, Y(u), edge ? 0x8a8e96 : 0xb8c0c8, edge ? 1 : 0.7);
+              else img.set(x, Y(u), 0xd8e4ee, 0.12);
+            }
+          for (let x = ax0 + 2; x < ax1 - 2; x++) glow(x, Y(k0 + 2), (x >> 2) % 2 ? 0xff5a30 : 0xffe060, 0.9);
+          for (let x = ax0 + 2; x < ax1 - 2; x++) glow(x, Y(m1 - 2), (x >> 2) % 2 ? 0xff5a30 : 0xffe060, 0.9);
+        },
+      });
+      reserveRect(ax0, Y(m1), ax1 - ax0, m1 - k0);
+      // side streets: small shops and eateries with neon
+      district(0, ax0 - 2, k0 + 4, m1, 'shop');
+      district(ax1 + 2, W, k0 + 4, m1, 'shop');
+      // the plaza at the north end: benches, a food truck, people eating
+      for (const [bx, bu] of [[20, 5580], [146, 5598], [84, 5600]]) {
+        img.rect(bx, Y(bu), 10, 2, WOOD[2]);
+        img.rect(bx, Y(bu) + 2, 10, 1, WOOD[0]);
+      }
+      img.rect(80, Y(5576), 20, 9, 0xe8e0d0);
+      img.rect(80, Y(5576), 20, 2, 0xd83a2a);
+      img.rect(84, Y(5576) + 4, 8, 3, 0x3a5a7a);
+      glow(83, Y(5576) + 5, 0xfff0c0);
+      glow(96, Y(5576) + 5, 0xfff0c0);
+      crowd(4, Y(k1 - 2), 172, 44, 50, false);
+      for (const x of [10, 40, 140, 170]) chochin(x, Y(5606), 0xff5a30);
+    }
+
+    // ---- 4. Shitennō-ji: the oldest temple, its pagoda and golden hall inside vermilion cloisters
+    {
+      const [s0, s1] = SHITEN;
+      gravelGround(0, W, s0, s1, 66);
+      // the stone torii at the gate, the great south gate
+      {
+        const cx = 90;
+        const y = Y(5622);
+        for (const px of [cx - 16, cx + 16]) img.rect(px - 1, y + 3, 3, 9, STONE[2]);
+        img.rect(cx - 21, y, 42, 2, STONE[1]);
+        img.rect(cx - 21, y, 42, 1, STONE[3]);
+        img.rect(cx - 17, y + 5, 34, 2, STONE[1]);
+        reserveRect(cx - 22, y - 1, 44, 13);
+      }
+      templeHall(64, Y(5650), 52, 14, 8, { gate: true });
+      // the cloisters: a covered vermilion corridor all the way round the inner precinct
+      const cx0 = 22;
+      const cx1 = 158;
+      const cu0 = 5664;
+      const cu1 = 5886;
+      for (let u = cu0; u < cu1; u++)
+        for (let x = cx0; x < cx1; x++) {
+          const d = Math.min(x - cx0, cx1 - 1 - x, u - cu0, cu1 - 1 - u);
+          if (d >= 7) continue;
+          const southSide = u - cu0 < 7;
+          let c;
+          const northSide = cu1 - 1 - u < 7;
+          if (southSide && d < 7 && u - cu0 >= 4) c = (x - cx0) % 4 === 0 ? VERM[0] : (x - cx0) % 4 === 1 ? VERM[1] : 0x1a1210; // the corridor's posts seen from the front
+          else if (northSide && cu1 - 1 - u < 4 && x - cx0 >= 7 && cx1 - 1 - x >= 7) c = (x - cx0) % 4 === 0 ? VERM[0] : (x - cx0) % 4 === 1 ? VERM[1] : 0x2a1a14; // and along the north side, facing the courtyard
+          else c = d < 1 || d === 6 ? TILE[0] : (x + u) % 2 ? TILE[1] : TILE[2];
+          img.set(x, Y(u), c);
+        }
+      for (let x = cx0; x < cx1; x += 4) glow(x, Y(cu0 + 5), 0xffb070, 0.5);
+      reserveRect(cx0, Y(cu1), cx1 - cx0, 7);
+      reserveRect(cx0, Y(cu0 + 7), cx1 - cx0, 7);
+      reserveRect(cx0, Y(cu1), 7, cu1 - cu0);
+      reserveRect(cx1 - 7, Y(cu1), 7, cu1 - cu0);
+      gravelGround(cx0 + 7, cx1 - 7, cu0 + 7, cu1 - 7, 67);
+      // raked lines in the gravel, a stone path from gate to gate
+      for (let u = cu0 + 8; u < cu1 - 8; u += 3) for (let x = cx0 + 8; x < cx1 - 8; x++) if (Math.abs(x - 90) > 7 && !isRes(x, Y(u))) img.tint(x, Y(u), 0.88);
+      ishidatami(84, 97, cu0 + 7, cu1 - 7);
+      for (let x = cx0 + 7; x < cx1 - 7; x += 4) glow(x, Y(cu1 - 10), 0xffb070, 0.5);
+      incense(86, Y(5800));
+      // the middle gate, the five-storey pagoda, the golden hall and the lecture hall in one line
+      templeHall(70, Y(cu0 + 16), 40, 12, 6, { gate: true });
+      pagoda(90, 5742, 5, 30, 8, 7);
+      templeHall(54, Y(5856), 72, 26, 10, { gold: true });
+      templeHall(cx0 + 10, Y(cu1 - 8), cx1 - cx0 - 20, 14, 6);
+      for (let u = cu0 + 26; u < 5740; u += 12) {
+        stoneLantern(74, Y(u));
+        stoneLantern(104, Y(u));
+      }
+      crowd(cx0 + 10, Y(5760), cx1 - cx0 - 20, 70, 50, false);
+      // outside the cloisters: the turtle pond, trees, lanterns
+      pondAtNight(11, 5760, 8, 36);
+      pondAtNight(169, 5760, 8, 36);
+      for (const [px, pu] of [[11, 5750], [10, 5772], [169, 5744], [168, 5768]]) {
+        // turtles sunning on the rocks of the turtle pond
+        img.disc(px, Y(pu), 1.8, STONE[1]);
+        img.rect(px - 1, Y(pu) - 1, 2, 2, 0x4a5a3a);
+      }
+      for (let k = 0; k < 20; k++) {
+        const x = rand() < 0.5 ? 2 + rand() * 16 : 162 + rand() * 16;
+        const u = 5640 + rand() * 260;
+        if (!anyRes(x - 3, Y(u) - 3, 6, 6)) tree(rand() < 0.5 ? 'pine' : 'broadleaf', x, Y(u), 3 + rand() * 2);
+      }
+    }
+
+    // ---- 5. Sumiyoshi Taisha: lantern-lined approach, the arched Sorihashi bridge, the straight-roofed halls
+    {
+      const [m0, m1] = SUMI;
+      gravelGround(0, W, m0, m1, 68);
+      ishidatami(82, 98, m0, 5998);
+      // the great stone torii at the entrance
+      {
+        const cx = 90;
+        const y = Y(5926);
+        for (const px of [cx - 18, cx + 18]) img.rect(px - 2, y + 3, 4, 11, STONE[2]);
+        img.rect(cx - 24, y, 48, 3, STONE[1]);
+        img.rect(cx - 24, y, 48, 1, STONE[3]);
+        img.rect(cx - 20, y + 6, 40, 2, STONE[1]);
+        reserveRect(cx - 25, y - 1, 50, 16);
+      }
+      for (let u = m0 + 6; u < 5994; u += 8) {
+        stoneLantern(70, Y(u));
+        stoneLantern(108, Y(u));
+        stoneLantern(61, Y(u + 4));
+        stoneLantern(116, Y(u + 4));
+      }
+      // the pond, and the Sorihashi arching over it with its reflection
+      pondAtNight(90, 6035, 68, 34);
+      {
+        const bx0 = 40;
+        const bx1 = 140;
+        const yw = Y(6030);
+        objects.push({
+          y: yw + 2,
+          draw: () => {
+            for (let x = bx0; x <= bx1; x++) {
+              const t = (x - bx0) / (bx1 - bx0);
+              const h = Math.round(Math.sin(t * Math.PI) * 16);
+              const yt = yw - h;
+              for (let j = 0; j < 4; j++) img.set(x, yt - j, j === 3 ? 0xf06a40 : j === 2 ? VERM[0] : VERM[1]);
+              img.set(x, yt + 1, VERM[2]);
+              if (x % 8 === 0) for (let j = 1; j < h + 2; j++) img.set(x, yt + j, VERM[2]); // the posts under the deck
+              // the reflection: the arch mirrored in the still pond, closing the circle
+              for (let j = 0; j < 3; j++) img.set(x, yw + h + j, VERM[1], 0.45);
+              if (x % 6 === 0) glow(x, yt - 4, 0xffd8a0, 0.6);
+            }
+          },
+        });
+        crowd(bx0 + 10, Y(6050), bx1 - bx0 - 20, 6, 20, true);
+      }
+      // the four main halls in Sumiyoshi style: straight gable roofs, crossed chigi and katsuogi logs on the ridge
+      const sumiHall = (x, y, w, h) => {
+        objects.push({
+          y: y + h + 7,
+          shadow: () => shadowRect(x + 4, y + 4, w, h + 7, 0.5),
+          draw: () => {
+            const mid = x + Math.floor(w / 2);
+            for (let yy = y; yy < y + h; yy++)
+              for (let xx = x; xx < x + w; xx++) img.set(xx, yy, xx < mid ? (yy & 1 ? BARK[3] : BARK[2]) : yy & 1 ? BARK[1] : BARK[0]);
+            img.rect(mid, y, 1, h, 0x1a1418);
+            for (let yy = y + 2; yy < y + h - 1; yy += 5) img.rect(mid - 2, yy, 5, 2, C.gold);
+            for (const yy of [y - 1, y + h]) {
+              img.line(mid - 4, yy - 3, mid, yy, 0x3a2a24);
+              img.line(mid + 4, yy - 3, mid, yy, 0x3a2a24);
+              img.set(mid - 4, yy - 3, C.gold);
+              img.set(mid + 4, yy - 3, C.gold);
+            }
+            for (let yy = y + h; yy < y + h + 7; yy++)
+              for (let xx = x + 1; xx < x + w - 1; xx++) img.set(xx, yy, (xx - x) % 6 < 2 ? VERM[(xx - x) % 6] : yy - y - h < 3 ? 0xe9e2d0 : VERM[1]);
+            img.rect(mid - 2, y + h + 2, 4, 5, 0x2a1810);
+            glow(mid - 3, y + h + 2, 0xffd8a0);
+            glow(mid + 3, y + h + 2, 0xffd8a0);
+            pool(mid, y + h + 8, 14, 0xffc080, 0.25);
+          },
+        });
+        reserveRect(x - 2, y - 5, w + 4, h + 14);
+      };
+      sumiHall(38, Y(6118), 22, 26);
+      sumiHall(38, Y(6162), 22, 26);
+      sumiHall(38, Y(6206), 22, 26);
+      sumiHall(110, Y(6206), 22, 26);
+      // the vermilion fences round the halls
+      for (const [fx0, fx1, fu0, fu1] of [[30, 68, 6080, 6210], [102, 140, 6168, 6210]]) {
+        for (let u = fu0; u < fu1; u++) {
+          img.set(fx0, Y(u), u % 4 ? VERM[0] : 0x1a1418);
+          img.set(fx1, Y(u), u % 4 ? VERM[1] : 0x1a1418);
+        }
+        for (let x = fx0; x <= fx1; x++) if (Math.abs(x - (fx0 + fx1) / 2) > 3) img.set(x, Y(fu0), x % 4 ? VERM[0] : 0x1a1418);
+      }
+      for (let k = 0; k < 24; k++) {
+        const x = rand() * W;
+        const u = 6076 + rand() * 130;
+        if (!anyRes(x - 4, Y(u) - 4, 8, 8)) tree(rand() < 0.6 ? 'broadleaf' : 'pine', x, Y(u), 4 + rand() * 3);
+      }
+      crowd(70, Y(6200), 30, 120, 30, false);
+    }
+
+    // ---- 6. the Tempozan waterfront: the Ferris wheel, the aquarium, the harbour village, the quay
+    {
+      ishidatami(0, W, SUMI[1], p1);
+      // a fountain plaza between the turret stands, its jets lit from below
+      {
+        const fx = 90;
+        const fy = Y(6316);
+        img.disc(fx, fy, 12, STONE[3]);
+        img.disc(fx, fy, 10, 0x1c3e4a);
+        img.disc(fx, fy, 3, STONE[2]);
+        for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+          const jx = Math.round(fx + Math.cos(a) * 6);
+          const jy = Math.round(fy + Math.sin(a) * 6);
+          glow(jx, jy, 0x9ad8ff);
+          glow(jx, jy - 1, 0xe8f8ff, 0.7);
+        }
+        glow(fx, fy - 2, 0xffffff);
+        pool(fx, fy, 16, 0x60b0ff, 0.35);
+        reserveRect(fx - 13, fy - 13, 26, 26);
+      }
+      // rows of trees wound with fairy lights along the promenade, flower beds, benches
+      for (const u of [6340, 6408])
+        for (let x = 8; x < W; x += 16) {
+          if (anyRes(x - 4, Y(u) - 4, 8, 8)) continue;
+          tree('broadleaf', x, Y(u), 4.5);
+          for (let k = 0; k < 7; k++) glow(Math.round(x + (rand() - 0.5) * 8), Math.round(Y(u) + (rand() - 0.5) * 7), rand() < 0.5 ? 0xfff0c0 : 0xa8d8ff, 0.75);
+        }
+      for (const [bx, bu] of [[64, 6352], [104, 6352], [20, 6300], [150, 6300]]) {
+        for (let k = 0; k < 14; k++) img.set(bx + (k % 7) * 2, Y(bu) + Math.floor(k / 7) * 2, rand.pick([0xe86a9a, 0xf0d040, 0xffffff, 0xe84a3a]));
+        img.rect(bx, Y(bu) + 4, 13, 1, WOOD[2]);
+      }
+      crowd(80, Y(6300), 20, 12, 10, true); // a street performer's audience
+      img.set(90, Y(6293), 0xffe060);
+      glow(90, Y(6293), 0xffe060, 0.6);
+      // Tempozan Ferris wheel: a giant ring of coloured lights
+      {
+        const cx = 40;
+        const cy = Y(6262);
+        objects.push({
+          y: cy + 36,
+          shadow: () => shadowRect(cx - 4, cy + 30, 30, 6, 0.5),
+          draw: () => {
+            img.rect(cx - 6, cy + 28, 12, 8, 0x8a8a90);
+            img.line(cx - 10, cy + 34, cx, cy, 0x7a7a84);
+            img.line(cx + 10, cy + 34, cx, cy, 0x7a7a84);
+            for (let k = 0; k < 24; k++) {
+              const a = (k / 24) * Math.PI * 2;
+              img.line(cx, cy, Math.round(cx + Math.cos(a) * 28), Math.round(cy + Math.sin(a) * 28), 0x6a6a74);
+            }
+            for (let a = 0; a < Math.PI * 2; a += 0.025) glow(Math.round(cx + Math.cos(a) * 29), Math.round(cy + Math.sin(a) * 29), NEON[Math.floor((a / (Math.PI * 2)) * 14) % NEON.length]);
+            for (let k = 0; k < 16; k++) {
+              const a = (k / 16) * Math.PI * 2;
+              img.rect(Math.round(cx + Math.cos(a) * 30) - 1, Math.round(cy + Math.sin(a) * 30), 3, 3, 0xd8dce4);
+              glow(Math.round(cx + Math.cos(a) * 30), Math.round(cy + Math.sin(a) * 30) + 1, 0xfff0d0, 0.6);
+            }
+            img.disc(cx + 0.5, cy + 0.5, 3, 0xe8e4dc);
+            pool(cx, cy, 36, 0xff70c0, 0.3);
+          },
+        });
+        reserveRect(cx - 32, cy - 32, 64, 70);
+      }
+      // Kaiyūkan: the aquarium faced with red, blue and glass, a whale shark on its front
+      {
+        const x = 100;
+        const y = Y(6268);
+        objects.push({
+          y: y + 36,
+          shadow: () => shadowRect(x + 5, y + 5, 64, 36, 0.5),
+          draw: () => {
+            img.rect(x, y, 64, 24, 0x3a4a6a);
+            img.rect(x, y, 64, 1, 0x5a6a8a);
+            img.rect(x + 6, y + 4, 52, 4, 0x2a5aa0);
+            for (let yy = y + 24; yy < y + 36; yy++) for (let xx = x; xx < x + 64; xx++) img.set(xx, yy, Math.floor((xx - x) / 6 + (yy - y) / 4) % 3 === 0 ? 0xd8402a : Math.floor((xx - x) / 6) % 2 ? 0x2a5aa0 : 0x7ab8e0);
+            img.rect(x + 8, y + 10, 48, 10, 0x5a7aa0);
+            for (let xx = x + 10; xx < x + 54; xx += 3) glow(xx, y + 14, 0x9ad8ff);
+            img.ellipse(x + 32, y + 30, 11, 3, 0x2a4a7a);
+            for (let k = 0; k < 7; k++) img.set(x + 25 + k * 2, y + 30, 0xd8e8f8);
+            pool(x + 32, y + 30, 30, 0x60a0ff, 0.3);
+          },
+        });
+        reserveRect(x - 2, y - 2, 68, 40);
+      }
+      // the harbour village: a long low hall of shops, lit
+      building(8, Y(6392), 164, 14, 9, { style: 'shop', roof: 0x7a6a5a, wall: 0xe8d8c0, awning: true, neon: true, items: ['ac', 'hut'] });
+      // the promenade and the quay rail, lamps, strolling people
+      for (let x = 0; x < W; x++) {
+        img.set(x, Y(p1 - 4), x % 4 ? 0xb8bcc0 : 0x6a6e74);
+        img.set(x, Y(p1 - 3), 0x4a4e54);
+      }
+      for (let x = 6; x < W; x += 18) {
+        img.set(x, Y(p1 - 6), 0x3a3a40);
+        glow(x, Y(p1 - 7), 0xfff0c8);
+        pool(x, Y(p1 - 6), 12, C.lamp, 0.35);
+      }
+      crowd(4, Y(p1 - 8), 172, 26, 60, false);
+      crowd(4, Y(6330), 172, 40, 40, false);
+    }
+
+    // ---- the bay: the sailing ship at the quay, fishing boats with lamps, the lit harbour bridge
+    {
       const x = 130;
-      const y = Y(p0 + 300);
+      const y = Y(p1 + 44);
       objects.push({
         y: y + 34,
         draw: () => {
@@ -1505,60 +2225,58 @@ export function buildMid() {
             glow(x + 7, y + my - 1, 0xffe0a0);
           }
           img.line(x + 7, y - 4, x + 7, y + 33, 0x4a3020);
-          pool(x + 7, y + 17, 18, 0xffc070, 0.3);
+          for (let k = 0; k < 14; k++) glow(x + k, y + 4 + Math.round(Math.sin(k / 2) * 2), k % 2 ? 0xffe0a0 : 0xff6a40, 0.8); // the string of lights on its rigging
+          pool(x + 7, y + 17, 20, 0xffc070, 0.35);
         },
       });
     }
-    // container quay: rows of coloured boxes, gantry cranes reaching out over the water, a container ship
-    for (let u = p0 + 660; u < p1 - 40; u += 34)
-      for (let x = 8; x < 140; x += 20) {
-        const top = Y(u + 26);
-        if (anyRes(x, top, 18, 26)) continue;
-        for (let k = 0; k < 3; k++) {
-          const c = rand.pick([0xc0402a, 0x2a6aa8, 0x3a8a4a, 0xe0a020, 0x8a8a90, 0xd8d4cc]);
-          img.rect(x + 1, top + k * 8 + 1, 16, 7, scaleColor(c, 0.6));
-          img.rect(x, top + k * 8, 16, 7, c);
-          img.rect(x, top + k * 8, 16, 1, scaleColor(c, 1.25));
-          for (let xx = x + 2; xx < x + 15; xx += 2) img.set(xx, top + k * 8 + 3, scaleColor(c, 0.82));
+    // Minato Ōhashi: the red truss bridge across the harbour mouth, a chain of lights along it
+    objects.push({
+      y: Y(6560) + 8,
+      shadow: () => shadowRect(0, Y(6560) + 9, W, 4, 0.5),
+      draw: () => {
+        const y = Y(6560);
+        for (let x = 0; x < W; x++) {
+          img.set(x, y, 0xe8504a);
+          img.set(x, y + 7, 0xa8302a);
+          for (let j = 1; j < 7; j++) img.set(x, y + j, (x + j) % 8 === 0 || (x - j) % 8 === 0 ? 0xc83a30 : j === 3 || j === 4 ? 0x3a3a42 : 0x5a1a18);
+          if (x % 5 === 0) {
+            glow(x, y, 0xfff0d0, 0.8);
+            glow(x, y + 7, 0xffc070, 0.6);
+          }
         }
+        for (const tx of [40, 140]) {
+          img.rect(tx - 2, y - 10, 5, 18, 0xc83a30);
+          glow(tx, y - 11, 0xff3a2a);
+        }
+      },
+    });
+    for (const [x, u] of [[30, 6700], [150, 6820], [70, 7000], [130, 7080]]) {
+      img.disc(x, Y(u), 2, 0xd8402a);
+      glow(x, Y(u) - 1, 0xff6040);
+      pool(x, Y(u), 8, 0xff6040, 0.3);
+    }
+    // fishing boats under bright lamps, a pleasure boat hung with red lanterns
+    for (const [x, u, kind] of [[24, 6480], [160, 6620], [40, 6900], [146, 6960], [100, 7120], [70, 6650, 'yakata']]) {
+      const y = Y(u);
+      for (let k = 0; k < 12; k++) img.set(x + 2 + (k & 1) * 2, y + 10 + k, 0xd8e8f0, 0.4 * (1 - k / 12));
+      if (kind === 'yakata') {
+        img.rect(x - 6, y, 18, 8, 0x5a3a24);
+        img.rect(x - 5, y - 1, 16, 5, 0x3c3e46);
+        img.rect(x - 4, y + 4, 14, 2, 0xffe0a0);
+        for (let k = 0; k < 16; k += 3) {
+          img.set(x - 5 + k, y + 3, 0xff5a30);
+          glow(x - 5 + k, y + 3, 0xff5a30);
+        }
+        pool(x + 3, y + 4, 16, 0xff8040, 0.35);
+      } else {
+        img.rect(x, y, 5, 10, 0xe8e4dc);
+        img.rect(x + 1, y + 3, 3, 3, 0x3a4a5a);
+        glow(x + 2, y + 1, 0xfff8d0);
+        glow(x + 2, y + 2, 0xfff0c0, 0.8);
+        pool(x + 2, y + 2, 14, 0xfff0c0, 0.35);
       }
-    for (let u = p0 + 660; u < p1 - 40; u += 120) {
-      // trucks on the quay road
-      img.rect(142, Y(u), 6, 14, 0xe8e8ec);
-      img.rect(142, Y(u) + 10, 6, 4, 0x2a5aa8);
     }
-    for (const u of [p0 + 800, p0 + 1080, p0 + 1320])
-      objects.push({
-        y: Y(u) + 8,
-        shadow: () => shadowRect(150, Y(u) + 6, 30, 3, 0.5),
-        draw: () => {
-          img.rect(140, Y(u) - 4, 40, 4, 0xd83a2a);
-          img.rect(140, Y(u) + 4, 40, 4, 0xd83a2a);
-          for (let x = 140; x < 180; x += 5) img.line(x, Y(u) - 4, x + 5, Y(u) + 4, 0xf0ece4);
-          img.rect(150, Y(u) - 8, 6, 20, 0xb83020);
-          glow(178, Y(u), 0xff3a2a);
-        },
-      });
-    // lamps along the quays
-    for (let u = p0 + 40; u < p1; u += 40)
-      for (const x of [6, 174])
-        if (!W_(x, Y(u))) {
-          glow(x, Y(u), 0xfff0c8);
-          pool(x, Y(u), 12, C.lamp, 0.35);
-        }
-  }
-
-  // ------------------------------------------------------------ the open bay: buoys, a ferry and fishing boats with lights
-  for (const [x, u] of [[30, 6700], [150, 6820], [70, 7000], [130, 7080]]) {
-    img.disc(x, Y(u), 2, 0xd8402a);
-    glow(x, Y(u) - 1, 0xff6040);
-    pool(x, Y(u), 8, 0xff6040, 0.3);
-  }
-  for (const [x, u] of [[150, 6560], [24, 6620]]) {
-    img.rect(x, Y(u), 6, 12, 0x3a4a5a);
-    img.rect(x + 1, Y(u) + 2, 4, 5, 0xe8e4dc);
-    glow(x + 3, Y(u) + 1, 0xfff0c0);
-    pool(x + 3, Y(u) + 4, 10, 0xfff0c0, 0.3);
   }
 
   // ------------------------------------------------------------ compose

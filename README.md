@@ -178,8 +178,14 @@ biblioteka z kopułą, ogród różany, promenady z lampami, statki i tramwaj wo
 fasady, lądowiska na dachach, Sky Building z ogrodem na moście, czerwony diabelski młyn na dachu, dworzec
 pod wielkim szklanym dachem, aleja Midōsuji z drzewami i ruchem) → Shinsekai z Tsūtenkaku, zaułkiem Janjan,
 lampionem-rozdymką i neonami, Abeno Harukas → kanał Dōtonbori nocą (neony, wielkie szyldy z ośmiornicą, krabem,
-takoyaki, gyoza, sushi i ramenem, tłumy na moście Ebisu, stateczki) → port Tempozan (diabelski młyn
-w kolorowych światłach, akwarium, żaglowiec, dźwigi, kontenery i ciężarówki) → otwarta zatoka.
+takoyaki, gyoza, sushi i ramenem, tłumy na moście Ebisu, stateczki) → Osaka nocą: Hōzen-ji Yokochō (brukowana
+uliczka z lampionami, omszały posąg Mizukake Fudō, ściany lampionów wotywnych, kadzielnica) → chram Namba Yasaka
+z ogromną głową lwa ze sceną w pysku i girlandami lampionów → targ Kuromon Ichiba pod szklanym dachem (stragany
+z rybami, krabami, tuńczykiem, jeżowcami, owocami i grillami) → Shitennō-ji (pięciopiętrowa pagoda, złota hala,
+cynobrowe krużganki, staw z żółwiami) → Sumiyoshi Taisha (aleja kamiennych latarni, łukowy most Sorihashi
+z odbiciem w stawie, hale ze skrzyżowanymi belkami chigi) → nabrzeże Tempozan (diabelski młyn, akwarium
+Kaiyūkan, fontanna, drzewa z iluminacją) → zatoka z czerwonym mostem Minato Ōhashi, żaglowcem i łodziami
+rybackimi pod lampami — tu wynurza się ośmiornica.
 
 Zwrot dla zwykłych wrogów — **pary manzai** (boke i tsukkomi, osakańska komedia w duecie): każdy wróg ma
 partnera (łączy ich cienka linia). Zestrzel jednego, a drugi wpada we wściekłość („!?”, czerwienieje) i od razu
