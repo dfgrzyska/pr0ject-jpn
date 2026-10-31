@@ -1,6 +1,8 @@
 // Middle layer (Osaka), seen from above in 3/4 view: Osaka Castle in spring (hanami crowds under the
-// cherries, food stalls, the plum grove, wide green moats, towering ishigaki walls with white tamon
-// walls, corner turrets and gates, and the five-roofed keep in green copper and gold), Nakanoshima between
+// cherries, food stalls, the plum grove, the Nishinomaru koi pond with its red bridge and tea house, wide
+// green moats with petal rafts, swans and weeping cherries, mossy ishigaki walls with two-storey tamon
+// walls, three-tier turrets and studded gates, and the five-roofed keep in green copper and gold with its
+// balcony, stone steps and entrance keep), Nakanoshima between
 // two rivers (the red-brick Central Public Hall, the domed library, City Hall, the rose garden), the
 // towers of Umeda (the Sky Building, a red Ferris wheel on a rooftop, the station under its great glass
 // roof), Shinsekai with Tsūtenkaku, lanterns and neon, Dōtonbori canal lined with giant food signs, the
@@ -427,6 +429,10 @@ export function buildMid() {
           let c = rampColor(C.moat, 0.25 + fbm(x, u * 2, { seed: 24, scale: 9, octaves: 2 }) * 0.55, x, y);
           if (u > u1 - 6) c = scaleColor(c, 0.75); // the wall's reflection under the far bank
           if (fbm(x * 2, u, { seed: 25, scale: 3 }) > 0.8 && (x + u) % 2) c = scaleColor(c, 1.25);
+          // the white walls mirrored under the far bank, rafts of fallen petals drifting
+          if (u === u1 - 3 && fbm(x, u, { seed: 30, scale: 2 }) > 0.35) c = scaleColor(c, 1.6);
+          const raft = fbm(x * 0.7, u * 1.4, { seed: 29, scale: 7, octaves: 2 });
+          if (raft > 0.66 && raft - 0.66 > bayer(x, y) * 0.2) c = raft > 0.72 && (x + y) % 2 ? 0xffe4ee : 0xf2b8cc;
           img.set(x, y, c);
         }
       reserveRect(x0, Y(u1), x1 - x0, u1 - u0);
@@ -448,6 +454,9 @@ export function buildMid() {
               let cc = c;
               if (i === sw - 1 || j === rh - 1) cc = C.ishi[0];
               else if (j === 0 || i === 0) cc = scaleColor(c, 1.12);
+              // the face darkens towards the water, moss in the joints
+              cc = scaleColor(cc, 1.05 - ((row * 3 + j) / Math.max(1, h)) * 0.25);
+              if ((i === sw - 1 || j === rh - 1) && r() < 0.18) cc = r() < 0.5 ? 0x4a6a3a : 0x5a7a44;
               img.set(xx, yTop + row * 3 + j, cc);
             }
           x += sw;
@@ -473,8 +482,17 @@ export function buildMid() {
         img.set(xx, y + 5, C.plaster[0]);
       }
     };
-    /** A turret (yagura) in two or three tiers: white walls, grey tiled roofs with lifted corners. */
+    /** A long two-storey tamon-yagura along the wall top: tiled roof, rows of windows. */
+    const tamon2 = (x0, x1, y) => {
+      for (let xx = x0; xx < x1; xx++) {
+        for (let j = 0; j < 4; j++) img.set(xx, y + j, j === 0 ? C.tileRoof[3] : j === 3 ? C.tileRoof[0] : (xx + j) & 1 ? C.tileRoof[1] : C.tileRoof[2]);
+        for (let j = 4; j < 9; j++) img.set(xx, y + j, j === 4 ? 0x2a2a30 : (xx - x0) % 5 === 2 && (j === 6 || j === 7) ? 0x22222a : j === 8 ? C.plaster[0] : C.plaster[2]);
+      }
+      img.rect(x0, y + 4, x1 - x0, 1, scaleColor(C.plaster[0], 0.7));
+    };
+    /** A turret (yagura): white walls, grey tiled roofs with lifted corners; the big ones get three tiers and a gable. */
     const yagura = (cx, yBase, w, tiers = 2, roofRamp = C.tileRoof) => {
+      if (w >= 20) tiers = 3;
       objects.push({
         y: yBase,
         shadow: () => shadowRect(cx - w / 2 + 5, yBase - tiers * 9 + 5, w, tiers * 9, 0.5),
@@ -494,6 +512,13 @@ export function buildMid() {
             }
             img.set(x0 - 2, ry - 2, roofRamp[3]);
             img.set(x0 + ww + 1, ry - 2, roofRamp[0]);
+            if (t === 0) {
+              // a triangular gable with a gold crest on the lowest roof, gold tips on the corners
+              for (let j = 0; j < 4; j++) for (let xx = Math.round(cx) - 3 + j; xx <= Math.round(cx) + 3 - j; xx++) img.set(xx, ry - 1 - j, Math.abs(xx - cx) >= 3 - j ? roofRamp[3] : C.plaster[2]);
+              img.set(Math.round(cx), ry - 2, C.gold);
+              img.set(x0 - 2, ry - 3, C.gold);
+              img.set(x0 + ww + 1, ry - 3, C.gold);
+            }
             y = ry - 4;
           }
           img.set(Math.round(cx) - 2, y, C.gold);
@@ -534,6 +559,14 @@ export function buildMid() {
           for (let yy = y0 - 12; yy < y0; yy++) for (let xx = cx - 46; xx < cx + 46; xx++) img.set(xx, yy, rampColor(C.gravel, 0.5 + fbm(xx, yy, { seed: 26, scale: 2 }) * 0.4, xx, yy));
           stoneFace(cx - 46, cx + 46, uBase, 18);
           img.rect(cx - 46, y0 - 12, 92, 1, C.ishi[4]);
+          // stone steps up the face to the entrance, and the small entrance keep beside the main one
+          for (let j = 0; j < 18; j++) img.rect(cx - 5, y0 + j, 10, 1, j % 2 ? C.ishi[3] : C.ishi[1]);
+          for (let yy = y0 - 12; yy < y0; yy++) for (let xx = cx + 40; xx < cx + 58; xx++) img.set(xx, yy, rampColor(C.gravel, 0.5, xx, yy));
+          stoneFace(cx + 40, cx + 58, uBase, 12);
+          for (let yy = y0 - 10; yy < y0 - 2; yy++) for (let xx = cx + 42; xx < cx + 56; xx++) img.set(xx, yy, xx > cx + 53 ? C.plaster[0] : (xx - cx) % 4 === 0 && yy === y0 - 6 ? 0x22222a : C.plaster[1]);
+          for (let j = 0; j < 6; j++) for (let xx = cx + 40 + j; xx < cx + 58 - j; xx++) img.set(xx, y0 - 10 - j, xx - cx - 40 < j + 2 ? C.copper[3] : cx + 58 - xx < j + 3 ? C.copper[0] : j === 0 ? C.copper[4] : C.copper[1 + (xx & 1)]);
+          img.set(cx + 41, y0 - 11, C.gold);
+          img.set(cx + 56, y0 - 11, C.gold);
           // tiers from the bottom up; each roof is drawn over the foot of the wall above it
           let y = y0 - 2;
           const parts = [];
@@ -554,12 +587,20 @@ export function buildMid() {
                 let c = lx < 2 ? C.plaster[2] : lx > ww - 4 ? C.plaster[0] : C.plaster[1];
                 if (top) {
                   // the top floor: black lacquer with gold tigers and cranes, a balcony rail
-                  c = (lx + yy) % 5 === 0 || (lx % 6 === 3 && (yy - wallTop) % 4 === 1) ? C.gold : 0x1e1c22;
+                  c = (lx % 7 === 3 && (yy - wallTop) % 5 < 3) || (lx % 7 === 2 && (yy - wallTop) % 5 === 1) || (lx % 7 === 4 && (yy - wallTop) % 5 === 1) ? C.gold : (lx % 7 === 0 ? 0x2a2630 : 0x1a181e);
                   if (yy === wallBot - 2) c = (lx & 1) ? C.gold : 0x8a2a20;
                 } else if ((yy - wallTop) % 4 === 2 && lx % 4 === 2 && lx > 1 && lx < ww - 2) c = 0x22222a; // windows
                 else if ((yy - wallTop) % 4 === 3 && lx % 4 === 2 && lx > 1 && lx < ww - 2) c = 0x5a5a62;
+                else if ((yy - wallTop) % 4 === 1 && lx % 4 === 2 && lx > 1 && lx < ww - 2) c = 0xb89040; // brass window heads
                 img.set(xx, yy, c);
               }
+            if (top) {
+              // the balcony runs right round the top floor, red rail on gold posts
+              for (let xx = Math.round(x0) - 3; xx < Math.round(x0 + ww) + 3; xx++) {
+                img.set(xx, wallBot - 1, (xx & 1) ? 0x9a2a20 : C.gold);
+                img.set(xx, wallBot - 3, 0xb8382a);
+              }
+            }
           }
           for (let k = parts.length - 1; k >= 0; k--) {
             const { i, ww, wallTop } = parts[k];
@@ -586,6 +627,13 @@ export function buildMid() {
                 // lifted corners
                 img.set(Math.round(cx - hw) - 1, yy - 1, C.copper[4]);
                 img.set(Math.round(cx + hw), yy - 1, C.copper[2]);
+                img.set(Math.round(cx - hw) - 1, yy - 2, C.gold);
+                img.set(Math.round(cx + hw), yy - 2, C.gold);
+              }
+              if (j > 0) {
+                // the hip ridges running up from the corners
+                img.set(Math.round(cx - hw) + 1, yy, C.copper[4]);
+                img.set(Math.round(cx + hw) - 2, yy, C.copper[1]);
               }
             }
             // gables on the south face: a curved kara-hafu low down, triangular chidori-hafu above
@@ -626,6 +674,7 @@ export function buildMid() {
         },
       });
       reserveRect(cx - 48, y0 - 116, 96, 136);
+      reserveRect(cx + 38, y0 - 18, 22, 32);
     };
     const yatai = (x, y, n) => {
       // a row of food stalls with striped awnings and paper lanterns
@@ -676,6 +725,28 @@ export function buildMid() {
           img.rect(x + 1, y + 9, 4, 1, C.gold);
         },
       });
+    /** A swan gliding on the moat with its little V of a wake. */
+    const swan = (x, y) => {
+      for (let k = 1; k < 7; k++) {
+        img.set(x - k, y + 1 + k, 0xd8e8e0, 0.45 * (1 - k / 7));
+        img.set(x + 2 + k, y + 1 + k, 0xd8e8e0, 0.45 * (1 - k / 7));
+      }
+      img.rect(x, y, 3, 2, 0xf8f8f4);
+      img.set(x + 1, y - 1, 0xf8f8f4);
+      img.set(x + 1, y - 2, 0xe89030);
+    };
+    /** Weeping cherries along a bank, their petals and reflection spilling onto the water. */
+    const weepers = (u, dir, x0 = 4, x1 = 176) => {
+      for (let x = x0; x < x1; x += 11 + Math.floor(rand() * 5)) {
+        if (Math.abs(x - 90) < 10) continue;
+        tree('sakura', x, Y(u), 5 + rand() * 1.5);
+        for (let k = 0; k < 26; k++) {
+          const px = Math.round(x + (rand() - 0.5) * 12);
+          const py = Math.round(Y(u) - dir * (5 + rand() * 9));
+          img.set(px, py, rand() < 0.5 ? 0xf6c8d8 : 0xffe4ee, 0.7);
+        }
+      }
+    };
 
     // south park: the gravel avenue, a fountain plaza, groves full of hanami parties and food stalls
     gravelPath(84, 96, 0, 186);
@@ -710,11 +781,26 @@ export function buildMid() {
     crowd(84, Y(230), 12, 40, 20, true);
     boat(40, Y(222));
     boat(140, Y(214));
+    weepers(183, -1);
+    boat(64, Y(226));
+    swan(116, Y(204));
+    swan(124, Y(208));
+    swan(20, Y(200));
+    // water lilies in the moat's corners
+    for (const [lx, lu] of [[8, 196], [168, 194], [150, 226]])
+      for (let k = 0; k < 10; k++) {
+        const px = lx + (rand() - 0.5) * 14;
+        const py = Y(lu) + (rand() - 0.5) * 8;
+        img.disc(px, py, 1.6, 0x4a8a3a);
+        img.set(Math.round(px), Math.round(py), k % 3 ? 0x6aaa48 : 0xf8b8d0);
+      }
     // the Ninomaru wall rising from the moat, tamon walls and turrets on top
     stoneFace(0, W, 247, 15);
     for (let u = 232; u < 247; u++) for (let x = 82; x < 98; x++) img.set(x, Y(u), 0x1e1a18); // the gate passage
-    tamon(0, 80, Y(253));
-    tamon(100, W, Y(253));
+    tamon2(0, 80, Y(256));
+    tamon2(100, W, Y(256));
+    // the gate's iron-studded doors in the passage
+    for (let u = 234; u < 245; u++) for (let x = 84; x < 96; x++) img.set(x, Y(u), x === 89 || x === 90 ? 0x1a1410 : (x + u) % 3 === 0 ? C.gold : 0x3a2418);
     yagura(18, Y(252), 26, 2);
     yagura(162, Y(252), 26, 2);
     yagura(90, Y(252), 30, 2); // the gate tower over the passage
@@ -724,6 +810,46 @@ export function buildMid() {
     gravelPath(4, 176, 400, 410);
     yatai(10, Y(290), 7);
     yatai(108, Y(290), 7);
+    // the Nishinomaru garden: a koi pond with an island pine, a red arched bridge, stone lanterns, a tea house
+    const cx = 42;
+    const cu = 340;
+    for (let u = cu - 34; u < cu + 34; u++)
+      for (let x = 4; x < 80; x++) {
+        const e = ((x - cx) / 36) ** 2 + ((u - cu) / 30) ** 2 + (fbm(x, u, { seed: 41, scale: 8 }) - 0.5) * 0.4;
+        if (e >= 1.12 || isRes(x, Y(u))) continue;
+        img.set(x, Y(u), e > 1 ? rampColor(C.ishi, 0.3 + fbm(x, u, { seed: 42, scale: 2 }) * 0.6, x, Y(u)) : rampColor([0x2a5a62, 0x346a70, 0x40787c, 0x5a9090], 0.3 + (1 - e) * 0.4 + fbm(x, u, { seed: 43, scale: 4 }) * 0.3, x, Y(u)));
+      }
+    reserveRect(4, Y(cu + 34), 76, 68);
+    img.disc(30, Y(cu + 10), 6, C.ishi[2]);
+    tree('pine', 30, Y(cu + 12), 5);
+    for (let k = 0; k < 18; k++) {
+      const kx = cx + (rand() - 0.5) * 50;
+      const ky = Y(cu) + (rand() - 0.5) * 36;
+      if (((kx - cx) / 34) ** 2 + ((ky - Y(cu)) / 28) ** 2 > 0.8) continue;
+      img.rect(Math.round(kx), Math.round(ky), 2, 1, rand.pick([0xf06a20, 0xf8f4f0, 0xe83a2a, 0xf0b030]));
+    }
+    for (let j = 0; j < 22; j++) {
+      // the taikobashi arching over the pond
+      const yy = Y(cu - 8) - Math.round(Math.sin((j / 21) * Math.PI) * 3);
+      img.rect(48 + j, yy, 1, 4, j % 3 ? 0xc8382a : 0xa82a20);
+      img.set(48 + j, yy - 1, 0xe85a4a);
+    }
+    for (let k = 0; k < 7; k++) img.disc(62 + k * 2, Y(cu + 12 - k * 4), 1.2, C.stone[3]); // stepping stones
+    for (const [lx, lu] of [[12, cu - 26], [72, cu + 24], [58, cu - 28]]) {
+      img.rect(lx, Y(lu), 3, 4, C.stone[2]);
+      img.rect(lx - 1, Y(lu), 5, 1, C.stone[3]);
+    }
+    objects.push({
+      y: Y(cu + 20) + 10,
+      shadow: () => shadowRect(64, Y(cu + 30) + 3, 14, 10, 0.55),
+      draw: () => {
+        const x = 62;
+        const y = Y(cu + 30);
+        for (let j = 0; j < 5; j++) img.rect(x + Math.max(0, 2 - j), y + j, 14 - 2 * Math.max(0, 2 - j), 1, j < 2 ? 0x8a7a5a : 0x6a5a42); // thatched roof
+        img.rect(x + 1, y + 5, 12, 4, 0x6a4a30);
+        img.rect(x + 3, y + 6, 4, 2, 0xe8e0c8);
+      },
+    });
     {
       // Hōkoku shrine: a stone torii and the hall with its copper roof
       const x = 14;
@@ -770,6 +896,7 @@ export function buildMid() {
     hanami(4, Y(400), 76, 120, 26);
     crowd(84, Y(560), 12, 300, 80, true);
     crowd(4, Y(410), 172, 10, 40, true);
+    weepers(556, -1);
 
     // the inner moat around the Honmaru, the great stone walls, the Sakura gate
     moat(0, W, 560, 600);
@@ -777,6 +904,14 @@ export function buildMid() {
     moat(158, 174, 600, 1010);
     moat(6, 174, 990, 1010);
     boat(120, Y(590));
+    boat(40, Y(594));
+    swan(150, Y(572));
+    swan(60, Y(578));
+    swan(66, Y(582));
+    for (const u of [700, 820, 940]) {
+      swan(10 + (u % 3), Y(u));
+      swan(163, Y(u + 40));
+    }
     for (let u = 560; u < 600; u++) for (let x = 82; x < 98; x++) img.set(x, Y(u), x < 84 || x > 95 ? C.ishi[x < 84 ? 3 : 1] : rampColor(C.gravel, 0.5, x, Y(u)));
     crowd(84, Y(598), 12, 38, 20, true);
     stoneFace(22, 158, 626, 26); // the Honmaru's south face, the tallest stone walls in Japan
@@ -794,8 +929,9 @@ export function buildMid() {
       img.rect(75, y, 1, 18, C.ishi[0]);
       img.rect(56, y + 17, 20, 1, C.ishi[0]);
     }
-    tamon(22, 80, Y(632));
-    tamon(100, 158, Y(632));
+    tamon2(22, 80, Y(635));
+    tamon2(100, 158, Y(635));
+    for (let u = 602; u < 624; u++) for (let x = 84; x < 96; x++) img.set(x, Y(u), x === 89 || x === 90 ? 0x1a1410 : (x + u) % 3 === 0 ? C.gold : 0x3a2418);
     yagura(32, Y(631), 22, 2);
     yagura(148, Y(631), 22, 2);
     yagura(90, Y(631), 28, 2); // Sakuramon
@@ -855,6 +991,7 @@ export function buildMid() {
       if (!anyRes(x - 4, Y(u) - 4, 8, 8)) tree(rand.pick(['sakura', 'broadleaf', 'pine']), x, Y(u), 3.5 + rand() * 3);
     }
     hanami(4, Y(1140), 172, 120, 22);
+    weepers(1146, -1);
     moat(0, W, 1150, 1172);
     for (let u = 1150; u < 1172; u++) for (let x = 82; x < 98; x++) img.set(x, Y(u), x < 84 || x > 95 ? C.ishi[x < 84 ? 3 : 1] : rampColor(C.gravel, 0.5, x, Y(u)));
     stoneFace(0, W, 1176, 4);
