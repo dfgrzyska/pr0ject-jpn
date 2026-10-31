@@ -146,7 +146,7 @@ export class PropKit {
   maxSize(names) {
     let w = 0;
     let h = 0;
-    for (const n of names.flat()) {
+    for (const n of names.flat(Infinity)) {
       const [fw, fh] = this.size(n);
       w = Math.max(w, fw);
       h = Math.max(h, fh);
@@ -179,7 +179,8 @@ export class PropKit {
    * mode 'wrap' (start over) or 'pp' (there and back, waiting `hold` s at the ends).
    * turn 'rot' (frames face right, turned to the heading), 'flip' (mirrored when going left), 'none'.
    * fu / fd: frames for going up / down the screen (3/4 view vehicles). wake: { f, every, life }.
-   * cars: 1 = mover i always shows frame i (the coaches of a train) instead of cycling the frames.
+   * cars: 1 = mover i always shows frame i (the coaches of a train) instead of cycling the frames; a
+   * list in place of frame i is cycled for that mover alone (the dancers of a parade).
    */
   path(pts, f, { sp = 10, n = 1, gap = 20, mode = 'wrap', hold = 0, turn = 'flip', fps = 4, fu, fd, wake, cars, s0 = this.rand(), a, d, tint, fx } = {}) {
     const [w, h] = this.maxSize([f, fu ?? [], fd ?? [], wake?.f ?? []]);

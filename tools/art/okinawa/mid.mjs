@@ -1,5 +1,8 @@
-// Middle layer (Okinawa): islets and reefs, a resort beach, a red-roofed village, cane fields,
-// Shuri castle, jungle cliffs, the open sea and a lighthouse island. Water away from the coast is
+// Middle layer (Okinawa): islets and reefs, a resort beach, a red-roofed village, cane and pineapple
+// fields, then Naha on the way up to Shuri: a hillside of turtle-back tombs (one family holding its
+// Shīmī picnic in front of theirs), the potters' lane of Tsuboya with its old climbing kiln, the Makishi
+// market under its glass roof and the Heiwa-dōri arcade, and Kokusai-dōri with an eisa parade marching up
+// it; then Shuri castle, jungle cliffs, the open sea and a lighthouse island. Water away from the coast is
 // left transparent so the deep ocean of the far layer shows through.
 //
 // Live (see ../props.mjs): waves roll in onto every beach and break white over the reefs, the lagoons
@@ -50,7 +53,8 @@ const smooth = (a, b, x) => {
 const MAIN_S = 760; // south coast of the main island
 const MAIN_N = 4650; // north coast
 const VILLAGE = [1350, 2350];
-const FIELDS = [2350, 3200];
+const FIELDS = [2350, 3200]; // laid out in full (see D.), but Naha is built over the part from NAHA[0]
+const NAHA = [2560, 3200];
 const SHURI = [3200, 3850];
 const JUNGLE = [3850, 4650];
 
@@ -236,9 +240,9 @@ export function buildMid() {
     reserveRect(x - 2, y - 2, w + 4, h + faceH + 4);
   };
   /** Modern Okinawan concrete house: flat roof, black water tanks, sometimes a solar panel. */
-  const flatHouse = (x, y, w, h) => {
-    const tanks = 1 + Math.floor(rand() * 2);
-    const solar = rand() < 0.4;
+  const flatHouse = (x, y, w, h, R = rand) => {
+    const tanks = 1 + Math.floor(R() * 2);
+    const solar = R() < 0.4;
     objects.push({
       y: y + h + 3,
       shadow: () => shadowRect(x + 3, y + 4, w, h + 3, 0.5),
@@ -279,8 +283,8 @@ export function buildMid() {
       }
     }
   };
-  const tree = (kind, x, y, r) => {
-    const seed = Math.floor(rand() * 1e9);
+  const tree = (kind, x, y, r, R = rand) => {
+    const seed = Math.floor(R() * 1e9);
     const cx = Math.round(x);
     const cy = Math.round(y);
     const px = () => (kind === 'palm' ? palmPixels(cx, cy, r, rng(seed)) : crownPixels(kind, cx, cy, r, rng(seed), seed & 1023));
@@ -470,6 +474,8 @@ export function buildMid() {
   }
 
   // ------------------------------------------------------------ D. fields
+  const objectsBeforeFields = objects.length;
+  let fieldsRes = null; // what the fields reserved where Naha now stands (the vegetation pass still asks it)
   {
     let u = FIELDS[0] + 6;
     while (u < FIELDS[1] - 20) {
@@ -518,6 +524,757 @@ export function buildMid() {
     arc(52, 30, 0, -3.0, -0.15, 4);
     arc(32, 18, -10, -2.8, -0.35, 3);
     for (let i = 0; i < 7; i++) tree('fukugi', gx - 56 + i * 18 + rand() * 4, gy + 10 + rand() * 4, 4 + rand());
+  }
+
+  // ------------------------------------------------------------ D2. Naha, on the way up to Shuri
+  // The fields above are still laid out in full, so every random number after them comes out the same (Shuri,
+  // the jungle and the northern islets look as they did); what they left above NAHA[0] is cleared away and
+  // Naha is built there with random numbers of its own.
+  {
+    for (let i = objects.length - 1; i >= objectsBeforeFields; i--) if (objects[i].y < Y(NAHA[0])) objects.splice(i, 1);
+    fieldsRes = reserved.slice(Y(NAHA[1]) * W, Y(NAHA[0]) * W);
+    for (let y = Y(NAHA[1]); y < Y(NAHA[0]); y++)
+      for (let x = 0; x < W; x++) {
+        reserved[y * W + x] = 0;
+        cane[y * W + x] = 0;
+      }
+    const nr = rng(1899);
+    const pick = (a) => a[Math.floor(nr() * a.length)];
+    const [n0, n1] = NAHA;
+    const TOMBS = [n0, 2690];
+    const TSUBOYA = [2690, 2860];
+    const MARKET = [2860, 2990];
+    const KOKUSAI = [2990, n1];
+    const anyRes = (x0, y0, w, h) => {
+      for (let y = Math.floor(y0); y < y0 + h; y++) for (let x = Math.max(0, Math.floor(x0)); x < Math.min(W, x0 + w); x++) if (isRes(x, y)) return true;
+      return false;
+    };
+    // the turret stands from the wave file stay clear
+    const padsHere = stage.waves.filter((w) => w.type === 'turret').map((w) => [w.x, anchor + V * w.t + 10]).filter(([, u]) => u > n0 - 14 && u < n1 + 14);
+    for (const [x, u] of padsHere) reserveRect(x - 13, Y(u) - 13, 26, 26);
+    const LIME = [0x8a8470, 0xa8a28a, 0xc6c0a6, 0xe0dac4];
+    const PAVE = [0x8e8676, 0xa69e8c, 0xbcb4a0, 0xd0c8b4];
+    const GLAZE = [0x2a4a8a, 0x3a6a3a, 0x7a4a26, 0x4a3226, 0xe8e0cc, 0xa8542a, 0x2a7a8a];
+    const SKIN = [0xe8c8a8, 0xd8b090, 0xc89a78];
+    const CLOTHES = [0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0x6a9a5a, 0xf0a0b0, 0x3a3a4a, 0x2a8ac8, 0xe86a2a];
+    /** People seen from above: a head and shoulders, a shadow. */
+    const people = (x0, y0, w, h, n, any = false) => {
+      for (let i = 0; i < n; i++) {
+        const x = Math.round(x0 + nr() * w);
+        const y = Math.round(y0 + nr() * h);
+        if (!any && isRes(x, y)) continue;
+        img.set(x + 1, y + 1, 0x1e1e26, 0.45);
+        img.set(x, y, pick(CLOTHES));
+        img.set(x, y - 1, nr() < 0.8 ? 0x2a2026 : 0xd8d0c8);
+      }
+    };
+    /** Ishidatami: courses of fitted limestone slabs, each a shade of its own, with dark joints. */
+    const pavePx = (x, y) => {
+      const yy = y + Math.round(fbm(x, 0, { seed: 501, scale: 9 }) * 2);
+      const row = Math.floor(yy / 4);
+      const col = Math.floor((x + row * 5 + (row % 3) * 2) / 7);
+      if (yy % 4 === 0 || (x + row * 5 + (row % 3) * 2) % 7 === 0) return 0x6e685a;
+      return rampColor(PAVE, 0.32 + ((row * 13 + col * 7) % 5) * 0.09 + fbm(x, y, { seed: 503, scale: 2 }) * 0.12, x, y);
+    };
+    /** A pot, a jar or a stack of plates set out for sale. */
+    const pot = (x, y, size = nr() < 0.25 ? 2 : 1) => {
+      const c = pick(GLAZE);
+      img.set(x + 1, y + 1, 0x1e1a16, 0.4);
+      if (size === 2) {
+        img.rect(x - 1, y - 1, 3, 3, c);
+        img.set(x - 1, y - 1, scaleColor(c, 1.35));
+        img.set(x, y - 1, 0x1e1a16); // the mouth of a jar
+        img.set(x + 1, y + 1, scaleColor(c, 0.7));
+      } else {
+        img.rect(x, y, 2, 2, c);
+        img.set(x, y, scaleColor(c, 1.4));
+      }
+    };
+    /** A shisa on its gatepost: one of each pair has its mouth open (to let good luck in), one closed. */
+    const shisa = (x, y, open) => {
+      img.rect(x, y + 1, 3, 2, C.stone[2]);
+      img.rect(x, y - 1, 3, 2, 0xc8642e);
+      img.set(x + (open ? 2 : 0), y - 1, 0x8a3a1a);
+      img.set(x + 1, y - 2, 0xa84a22);
+      if (open) img.set(x + 1, y, 0x3a1a10);
+    };
+
+    // ---- the ground: a grassy limestone hillside, the potters' quarter, then the city
+    for (let u = n0; u < n1; u++) {
+      const y = Y(u);
+      for (let x = 0; x < W; x++) {
+        if (K(x, y) !== 2) continue;
+        let c;
+        if (u < TOMBS[1]) {
+          const n = fbm(x, y, { seed: 511, scale: 7, octaves: 3 });
+          c = n > 0.66 ? rampColor(LIME, 0.3 + (n - 0.66) * 2 + fbm(x, y, { seed: 512, scale: 2 }) * 0.3, x, y) : rampColor(C.grass, 0.2 + n * 0.8, x, y);
+        } else if (u < TSUBOYA[1]) c = rampColor(C.lane, 0.25 + fbm(x, y, { seed: 513, scale: 4 }) * 0.6, x, y);
+        else c = rampColor([0x6a6862, 0x7a7872, 0x8a8880], 0.3 + fbm(x, y, { seed: 514, scale: 3 }) * 0.5, x, y);
+        img.set(x, y, c);
+      }
+    }
+    // a farm road and a coral wall where the fields end
+    for (let u = n0; u < n0 + 6; u++) for (let x = 0; x < W; x++) if (K(x, Y(u)) === 2) img.set(x, Y(u), rampColor(C.lane, 0.4 + fbm(x, u, { seed: 515, scale: 3 }) * 0.4, x, Y(u)));
+    wall([[0, Y(n0 + 7)], [W, Y(n0 + 7)]], 2);
+
+    // ---- 1. the hillside of turtle-back tombs (kamekōbaka)
+    /**
+     * A turtle-back tomb facing down the slope: the shell (a low dome of stone courses over the family vault,
+     * the turtle's back) behind a facade of cut stone with the sealed door, and the two wing walls curving
+     * out round a paved forecourt. by = strip y of the forecourt's front edge. Old ones are dark and lichened.
+     */
+    const tomb = (cx, by, w, opt = {}) => {
+      const st = opt.old ? [0x55524a, 0x726e62, 0x928c7e, 0xb0aa98] : [0x948e80, 0xb4ae9e, 0xd0caba, 0xe6e0d0];
+      const rx = Math.round(w * 0.42);
+      const ry = Math.max(5, Math.round(rx * 0.55));
+      const fy = by - 11; // bottom row of the facade
+      const ftop = fy - 5; // its top row, where the shell sits
+      const seed = Math.floor(nr() * 1000);
+      const fam = opt.shiimi ? Array.from({ length: 7 }, () => [pick(CLOTHES), pick(SKIN), nr()]) : null;
+      objects.push({
+        y: by,
+        shadow: () => {
+          shadowRect(cx - rx + 4, ftop - ry + 3, rx * 2 + 3, ry + 4, 0.6);
+          shadowRect(cx + rx + 2, ftop + 1, 4, by - ftop, 0.6);
+        },
+        draw: () => {
+          // the forecourt between the wing walls, widening to the front, laid with flat stones
+          for (let yy = fy + 1; yy <= by; yy++) {
+            const t = (yy - fy) / (by - fy);
+            const hw = rx + 1 + Math.pow(t, 0.6) * (w / 2 - rx - 1);
+            for (let xx = Math.round(cx - hw) + 2; xx < cx + hw - 1; xx++) {
+              const joint = (yy - fy) % 4 === 0 || (xx + ((yy - fy) >> 2) * 3) % 6 === 0;
+              img.set(xx, yy, joint ? st[1] : rampColor(st, 0.42 + fbm(xx, yy, { seed: 520 + seed, scale: 2 }) * 0.3, xx, yy));
+            }
+            for (const s of [-1, 1]) {
+              const ex = Math.round(cx + s * hw);
+              img.set(ex, yy, st[3]);
+              img.set(ex + s, yy, st[2]);
+              img.set(ex + 2 * s, yy, st[0]);
+            }
+          }
+          for (const s of [-1, 1]) img.rect(Math.round(cx + s * (w / 2)) - (s > 0 ? 2 : 0), by - 1, 3, 2, st[3]); // the posts at their ends
+          // the facade: courses of cut stone, the door sealed with a slab under its lintel
+          for (let yy = ftop; yy <= fy; yy++)
+            for (let xx = cx - rx - 2; xx <= cx + rx + 2; xx++) {
+              const r = yy - ftop;
+              const joint = r === 3 || (xx + (r > 3 ? 3 : 0)) % 6 === 0;
+              img.set(xx, yy, r === 0 ? st[3] : joint ? st[1] : xx === cx + rx + 2 ? st[1] : st[2]);
+            }
+          img.rect(cx - 3, fy - 4, 7, 1, st[3]);
+          img.rect(cx - 2, fy - 3, 5, 4, st[0]);
+          img.rect(cx - 1, fy - 2, 3, 3, st[1]);
+          // the shell: a low dome of stone courses, lit from the top left, spotted with lichen
+          for (let yy = ftop - ry; yy < ftop; yy++)
+            for (let xx = cx - rx; xx <= cx + rx; xx++) {
+              const nx = (xx + 0.5 - cx) / rx;
+              const ny = (yy + 0.5 - ftop) / ry;
+              const d = nx * nx + ny * ny;
+              if (d > 1) continue;
+              const rd = Math.sqrt(d);
+              let v = 0.5 - nx * 0.3 - ny * 0.15 + Math.sqrt(1 - d) * 0.25 + (fbm(xx, yy, { seed: 530 + seed, scale: 3 }) - 0.5) * 0.25;
+              if (Math.abs(rd - 0.42) < 0.07 || Math.abs(rd - 0.76) < 0.06) v -= 0.2; // the courses
+              let c = rampColor(st, v, xx, yy);
+              if (fbm(xx, yy, { seed: 540 + seed, scale: 2 }) > (opt.old ? 0.64 : 0.78)) c = opt.old ? 0x4a5636 : 0x8a9478;
+              if ((xx * 7 + seed) % 13 === 0 && ny > -0.5) c = scaleColor(c, 0.85); // rain streaks
+              img.set(xx, yy, c);
+            }
+          if (opt.flowers || opt.shiimi) {
+            // chrysanthemums in vases at the corners of the forecourt, the incense burner before the door
+            for (const s of [-1, 1]) {
+              const vx = Math.round(cx + s * (rx - 2));
+              img.set(vx, fy + 3, st[0]);
+              img.set(vx, fy + 2, 0xf0e8b8);
+              img.set(vx + s, fy + 2, 0x3a7a2a);
+            }
+            img.rect(cx - 1, fy + 2, 3, 2, 0x4a3a2a);
+            img.set(cx, fy + 2, 0x9a8a78);
+          }
+          if (fam) {
+            // Shīmī: the family picnicking on a mat in the forecourt, lacquered boxes of food between them
+            const my = fy + 5;
+            for (let yy = my; yy < my + 5; yy++) for (let xx = cx - 8; xx < cx + 8; xx++) img.set(xx, yy, ((xx >> 1) + (yy >> 1)) % 2 ? 0xc83a3a : 0x3a5aa8);
+            for (const [bx, by2] of [[cx - 5, my + 1], [cx - 1, my + 1], [cx + 3, my + 1]]) {
+              img.rect(bx, by2, 3, 3, 0x1a1214);
+              img.set(bx + 1, by2 + 1, pick([0xe8c040, 0xe86a2a, 0x5ab040, 0xf0e8e0]));
+              img.set(bx, by2, 0xb8302a);
+            }
+            fam.forEach(([cloth, skin, r], i) => {
+              const a = (i / fam.length) * Math.PI * 2 + r * 0.4;
+              const px = Math.round(cx + Math.cos(a) * 10);
+              const py = Math.round(my + 2 + Math.sin(a) * 4);
+              img.set(px + 1, py + 1, 0x1e1e26, 0.4);
+              img.set(px, py, cloth);
+              img.set(px, py - 1, i % 3 ? 0x2a2026 : skin);
+            });
+          }
+        },
+      });
+      reserveRect(cx - w / 2 - 3, ftop - ry - 2, w + 7, by - (ftop - ry) + 4);
+    };
+    // a stone path zigzagging up the hill between the terraces
+    const stair = (u) => 66 + 7 * Math.sin((u - n0) / 16);
+    for (let u = n0 + 8; u < TOMBS[1] + 2; u++) {
+      const c = stair(u);
+      for (let x = Math.floor(c - 2); x <= c + 2; x++) img.set(x, Y(u), u % 4 === 0 ? LIME[0] : Math.abs(x + 0.5 - c) > 1.6 ? LIME[1] : LIME[2]);
+      reserveRect(c - 3, Y(u), 6, 1);
+    }
+    // two terraces of tombs, a retaining wall below each
+    for (const [tu, list] of [
+      [2604, [[28, 34, { old: true }], [112, 30, { flowers: true }], [158, 32, { shiimi: true }]]],
+      [2658, [[34, 30, { flowers: true }], [100, 36, { old: true }], [150, 28, {}]]],
+    ]) {
+      wall([[0, Y(tu - 3)], [56, Y(tu - 3)]], 2);
+      wall([[76, Y(tu - 3)], [W, Y(tu - 3)]], 2);
+      for (const [x, w, opt] of list) if (!anyRes(x - w / 2, Y(tu) - 26, w, 26)) tomb(x, Y(tu), w, opt);
+    }
+    // cycads, banyans and hibiscus on the slope (the rest is filled by the vegetation pass)
+    for (let k = 0; k < 26; k++) {
+      const x = 4 + nr() * 172;
+      const u = n0 + 12 + nr() * (TOMBS[1] - n0 - 16);
+      if (anyRes(x - 4, Y(u) - 4, 8, 8)) continue;
+      const kind = nr() < 0.4 ? 'palm' : nr() < 0.5 ? 'hibiscus' : 'tropic';
+      tree(kind, x, Y(u), kind === 'palm' ? 3.5 : kind === 'hibiscus' ? 3 : 6 + nr() * 3, nr);
+    }
+
+    // ---- 2. Tsuboya: the potters' lane (Yachimun-dōri) and the old climbing kiln
+    const lane = (u) => 96 + 8 * Math.sin((u - TSUBOYA[0]) / 40);
+    for (let u = TSUBOYA[0] - 2; u < TSUBOYA[1] + 6; u++) {
+      const c = lane(u);
+      for (let x = Math.floor(c - 7); x <= c + 7; x++) img.set(x, Y(u), Math.abs(x + 0.5 - c) > 6.2 ? 0x7a7466 : pavePx(x, Y(u)));
+      reserveRect(c - 8, Y(u), 16, 1);
+    }
+    // where the turret stands, the lane opens into a little paved square
+    for (const [px, pu] of padsHere)
+      if (pu > TSUBOYA[0] && pu < TSUBOYA[1])
+        for (let y = Y(pu) - 15; y <= Y(pu) + 15; y++) for (let x = px - 15; x <= px + 15; x++) if (Math.hypot(x + 0.5 - px, y + 0.5 - Y(pu)) < 15) img.set(x, y, pavePx(x, y));
+    // the old climbing kiln up the slope west of the lane: a sandy work yard, the vaulted chambers stepping
+    // up the hill one above another with a stoking port in each side, the shelter's posts, the firebox at
+    // the bottom and the flue at the top; firewood stacked beside it, unfired pots drying on boards
+    {
+      const kx = 32;
+      const ku0 = 2790;
+      const n = 7;
+      const step = 8;
+      for (let u = ku0 - 18; u < ku0 + n * step + 10; u++)
+        for (let x = 2; x < 76; x++) {
+          const e = ((x - 38) / 37) ** 2 + ((u - (ku0 + (n * step) / 2 - 4)) / ((n * step + 28) / 2)) ** 2 + (fbm(x, u, { seed: 523, scale: 6 }) - 0.5) * 0.3;
+          if (e < 1 && !isRes(x, Y(u))) img.set(x, Y(u), rampColor(C.lane, 0.15 + fbm(x, u, { seed: 524, scale: 3 }) * 0.5 - (e > 0.85 ? 0.1 : 0), x, Y(u)));
+        }
+      const BRICK = [0x5a3020, 0x7a4228, 0x9a5634, 0xb46c42];
+      objects.push({
+        y: Y(ku0 - 8),
+        shadow: () => shadowRect(kx - 8, Y(ku0 + n * step) - 2, 24, n * step + 6, 0.6),
+        draw: () => {
+          for (let k = n - 1; k >= 0; k--) {
+            const cy = Y(ku0 + k * step);
+            for (let yy = cy - 5; yy <= cy + 4; yy++)
+              for (let xx = kx - 11; xx <= kx + 11; xx++) {
+                const nx = (xx + 0.5 - kx) / 11;
+                const ny = (yy + 0.5 - cy) / 5;
+                if (nx * nx + ny * ny > 1) continue;
+                const brick = yy % 2 === 0 || (xx + ((yy >> 1) % 2) * 2) % 4 === 0;
+                const c = rampColor(BRICK, 0.62 - nx * 0.3 - ny * 0.32, xx, yy);
+                img.set(xx, yy, brick ? scaleColor(c, 0.84) : c);
+              }
+            img.rect(kx - 1, cy + 3, 3, 1, BRICK[0]); // the step down to the chamber below
+            for (const s of [-1, 1]) {
+              img.rect(kx + s * 10 - (s > 0 ? 1 : 0), cy - 1, 2, 2, 0x140c0a); // stoking ports
+              img.set(kx + s * 10, cy - 2, BRICK[3]);
+            }
+            if (k % 2 === 0) for (const s of [-1, 1]) img.rect(kx + s * 14 - (s > 0 ? 1 : 0), cy - 4, 2, 6, 0x4a3424); // the shelter's posts
+          }
+          // the firebox: an arched mouth black with soot, ash raked out in front
+          const fyy = Y(ku0 - 7);
+          img.rect(kx - 6, fyy - 3, 13, 6, BRICK[1]);
+          img.rect(kx - 6, fyy - 3, 13, 1, BRICK[3]);
+          img.rect(kx - 2, fyy - 1, 5, 4, 0x120c0a);
+          img.set(kx - 2, fyy - 1, BRICK[1]);
+          img.set(kx + 2, fyy - 1, BRICK[1]);
+          for (let i = -5; i < 6; i++) if ((i + 7) % 3) img.set(kx + i, fyy + 4, 0x8a8478);
+          // the flue
+          const ty = Y(ku0 + n * step) - 3;
+          img.rect(kx - 3, ty - 5, 7, 6, BRICK[0]);
+          img.rect(kx - 3, ty - 5, 7, 1, BRICK[3]);
+          img.rect(kx - 1, ty - 4, 3, 2, 0x120c0a);
+          // stacks of firewood: rows of log ends
+          for (const [wx, wu] of [[4, 2800], [4, 2822]])
+            for (let j = 0; j < 3; j++)
+              for (let i = 0; i < 10 - j * 2; i++) {
+                img.set(wx + i + j, Y(wu + j * 2), (i + j) % 2 ? 0xa87a4a : 0x8a5a32);
+                img.set(wx + i + j, Y(wu + j * 2) + 1, 0x5a3a22);
+              }
+          // boards of unfired pots drying in the sun
+          for (const bu of [2808, 2820, 2832])
+            for (let i = 0; i < 18; i++) {
+              img.set(52 + i, Y(bu), 0x8a6a4a);
+              img.set(52 + i, Y(bu) + 1, 0x5a4432);
+              if (i % 3 === 1) {
+                img.rect(52 + i, Y(bu) - 2, 2, 2, 0xd8c8a8);
+                img.set(52 + i, Y(bu) - 2, 0xece0c4);
+              }
+            }
+        },
+      });
+      reserveRect(2, Y(ku0 + n * step + 8), 72, n * step + 30);
+      house(50, Y(2796), 22, 12, { faceH: 4 }); // the potter's workshop
+      tree('banana', 66, Y(2844), 4, nr);
+      tree('tropic', 10, Y(2850), 6, nr);
+    }
+    // workshops, galleries and shops either side of the lane: red-tile houses behind coral walls with a
+    // shisa on each gatepost, small white galleries with pottery on the shelves behind their windows, pots
+    // and jars set out in the yards; noren flutter in the doorways (live)
+    const noren = [0, 1].map((f) => {
+      const r = new Raster(4, 3);
+      for (let i = 0; i < 4; i++) {
+        r.set(i, 0, 0x2a3a6a);
+        r.set(i, 1, i === 1 || i === 2 ? 0xf0ece0 : 0x2a3a6a);
+        if (!f || i % 2) r.set(i, 2, 0x22305a);
+      }
+      return gradeF(r);
+    });
+    const gallery = (x, y, w, h) => {
+      const shelf = Array.from({ length: w * 2 }, () => pick(GLAZE));
+      objects.push({
+        y: y + h + 5,
+        shadow: () => shadowRect(x + 3, y + 3, w, h + 5, 0.5),
+        draw: () => {
+          img.rect(x, y, w, h, 0xe8e6de);
+          img.rect(x, y, w, 1, 0xf6f4ee);
+          img.rect(x + w - 1, y, 1, h, 0xb8b6ae);
+          img.rect(x + 3, y + 3, Math.min(6, w - 6), 3, 0xa8c8d8); // a skylight
+          const fy = y + h;
+          img.rect(x, fy, w, 5, 0xdedcd4);
+          img.rect(x, fy, w, 1, 0x8a887f);
+          img.rect(x + 2, fy + 1, w - 4, 3, 0x4a5a66);
+          for (let i = 0; i < w - 4; i++) if (i % 2 === 0) img.set(x + 2 + i, fy + 2, shelf[i]); // pots on the shelves
+          img.rect(x + w - 5, fy - 2, 3, 2, 0x2a3a6a); // a hanging sign
+        },
+      });
+      reserveRect(x - 1, y - 1, w + 2, h + 7);
+    };
+    for (const side of [-1, 1]) {
+      let u = TSUBOYA[0] + 6;
+      while (u < TSUBOYA[1] - 16) {
+        const big = nr() < 0.65;
+        const w = big ? 18 + Math.floor(nr() * 10) : 13 + Math.floor(nr() * 7);
+        const h = big ? 12 + Math.floor(nr() * 4) : 9 + Math.floor(nr() * 3);
+        const yard = 3 + Math.floor(nr() * 4);
+        if (side < 0 && u + h + 6 > 2768) break; // the kiln's yard
+        let edge = side < 0 ? Math.min(lane(u), lane(u + h + 4)) - 9 - yard : Math.max(lane(u), lane(u + h + 4)) + 9 + yard;
+        for (const [px, pu] of padsHere) if (Math.abs(pu - (u + h / 2)) < h / 2 + 16) edge = side < 0 ? Math.min(edge, px - 16) : Math.max(edge, px + 16);
+        const x = Math.round(side < 0 ? edge - w : edge);
+        const y = Y(u + h + 4 + (big ? 0 : 1));
+        if (x >= 0 && x + w <= W && !anyRes(x - 1, y - 1, w + 2, h + 7)) {
+          if (big) {
+            house(x, y, w, h, { faceH: 4 });
+            if (nr() < 0.75) kit.loop(x + 3 + Math.floor(nr() * (w - 8)), u + 3, noren, { seq: [0, 0, 1, 0, 1, 1], fps: 2 });
+          } else gallery(x, y, w, h);
+          // the yard in front: pots and jars set out for sale, sometimes a shisa or two
+          for (let i = 1; i < w - 2; i += 3) if (nr() < 0.65) pot(x + i, Y(u - 1));
+          if (nr() < 0.4) shisa(x + w - 5, Y(u - 2), nr() < 0.5);
+        }
+        // the coral wall along the lane, with a gate and a shisa on each gatepost
+        const gu = u + Math.floor(h / 2);
+        for (let uu = u - 2; uu < u + h + 6; uu++) {
+          if (Math.abs(uu - gu) < 3 || padsHere.some(([px, pu]) => Math.hypot(px - lane(uu), pu - uu) < 22)) continue;
+          const wx = Math.round(side < 0 ? lane(uu) - 8 : lane(uu) + 8);
+          img.set(wx, Y(uu), uu % 4 ? C.stone[3] : C.stone[1]);
+          img.set(wx + side, Y(uu), C.stone[0]);
+          img.tint(wx + side * 2, Y(uu) + 1, 0.7);
+        }
+        if (!padsHere.some(([px, pu]) => Math.hypot(px - lane(gu), pu - gu) < 22)) {
+          const wx = Math.round(side < 0 ? lane(gu) - 9 : lane(gu) + 7);
+          shisa(wx, Y(gu + 3), side > 0);
+          shisa(wx, Y(gu - 3) + 2, side < 0);
+        }
+        u += h + 9 + Math.floor(nr() * 4);
+      }
+    }
+    // pots and jars along the edges of the paving, a few people browsing, banyans with hanging roots
+    for (let u = TSUBOYA[0] + 4; u < TSUBOYA[1] - 2; u += 5) {
+      const c = lane(u);
+      if (padsHere.some(([px, pu]) => Math.hypot(px - c, pu - u) < 18)) continue;
+      if (nr() < 0.55) pot(Math.round(c - 6), Y(u));
+      if (nr() < 0.55) pot(Math.round(c + 4), Y(u + 2));
+    }
+    for (let k = 0; k < 12; k++) {
+      const u = TSUBOYA[0] + 6 + nr() * (TSUBOYA[1] - TSUBOYA[0] - 12);
+      people(Math.round(lane(u) - 3), Y(u), 6, 1, 1, true);
+    }
+    for (const [x, u] of [[156, 2730], [140, 2846], [30, 2722]]) if (!anyRes(x - 6, Y(u) - 6, 12, 12)) tree('tropic', x, Y(u), 10, nr);
+    // cats asleep on the warm paving or padding about the lane (live)
+    for (const [fur, patch] of [[0xf0ece4, 0xe08a3a], [0x8a8478, 0x5a564e], [0x2a2622, 0xf0ece4]]) {
+      const cat = (f) => {
+        const r = new Raster(4, 3);
+        r.rect(0, 1, 3, 1, fur);
+        r.set(1, 1, patch);
+        r.set(3, f ? 0 : 1, fur); // the head
+        r.set(0, f ? 0 : 2, patch); // the tail
+        r.set(1, 2, 0x1e1a16, 0.35);
+        return gradeF(r);
+      };
+      kit.wander(lane(2800), 2800, 4, 54, [cat(0), cat(1)], { n: 1, sp: 4, idle: 0.6, turn: 'flip', fps: 4 });
+    }
+
+    /**
+     * A city building on Okinawa: a flat concrete roof with its black and steel water tanks, units and
+     * sometimes a billboard or a strip of red tiles along the eaves; below, floors of windows over the shop,
+     * its sign and its front: kariyushi shirts on racks, sanshin on the wall, trays of sata andagi, a
+     * restaurant's noren and red lanterns, or plain glass.
+     */
+    const shop = (x, y, w, h, faceH, opt = {}) => {
+      const kind = opt.kind ?? pick(['city', 'city', 'souvenir', 'restaurant', 'souvenir', 'andagi']);
+      const wallC = pick([0xece6d6, 0xe8dcc0, 0xd8e8d8, 0xf0e0c8, 0xd8dce8, 0xe8d0c8, 0xf4f0e4]);
+      const roofC = pick([0xd0cec6, 0xc4c2ba, 0xdcd6c8, 0xbcc0c4]);
+      const sign = pick([0xd8302a, 0x2a6ac8, 0xe8a020, 0x2a9a5a, 0xc83a8a, 0x1a1a22, 0xe86a2a]);
+      const awn = pick([0xc83a2a, 0x2a6a3a, 0x2a4a8a, 0xd8a020, 0x8a2a5a]);
+      const tanks = Array.from({ length: 1 + Math.floor(nr() * 3) }, () => nr() < 0.6);
+      const eave = nr() < 0.3;
+      const board = !eave && w >= 18 && nr() < 0.45 ? [pick([0xd8302a, 0x2a6ac8, 0xe8c030, 0x2a9a5a]), nr()] : null;
+      const vertical = faceH >= 12 && nr() < 0.5 ? pick([0xd8302a, 0xe8c030, 0x2a6ac8]) : null;
+      const goods = Array.from({ length: 40 }, () => pick([0xe86a9a, 0xf0d040, 0x3ab0e0, 0xe84a3a, 0x6ac06a, 0xf0ece0]));
+      const lit = Array.from({ length: 60 }, () => nr() < 0.3);
+      const guard = nr() < 0.3;
+      objects.push({
+        y: y + h + faceH,
+        shadow: () => shadowRect(x + 4, y + 4, w, h + faceH, 0.5),
+        draw: () => {
+          // the roof
+          img.rect(x, y, w, h, roofC);
+          img.rect(x, y, w, 1, scaleColor(roofC, 1.12));
+          img.rect(x, y, 1, h, scaleColor(roofC, 1.08));
+          img.rect(x + w - 1, y, 1, h, scaleColor(roofC, 0.78));
+          img.rect(x, y + h - 1, w, 1, scaleColor(roofC, 0.72));
+          tanks.forEach((black, i) => {
+            const tx = x + 3 + i * 5;
+            if (tx > x + w - 5) return;
+            img.disc(tx + 1.5, y + 3.5, 2, black ? 0x1e1e24 : 0xc8ccd0);
+            img.set(tx + 1, y + 2, black ? 0x5a5a66 : 0xf0f2f4);
+            img.set(tx + 2, y + 5, black ? 0x101014 : 0x8a8e94);
+          });
+          if (w > 18) for (let k = 0; k < 2; k++) {
+            img.rect(x + w - 8, y + h - 8 + k * 3, 5, 2, 0xb8bcc0);
+            img.set(x + w - 7, y + h - 8 + k * 3, 0x6a6e74);
+          }
+          if (board) {
+            // a billboard on its frame along the back of the roof
+            const bw = w - 6;
+            img.rect(x + 3, y + 1, bw, 3, board[0]);
+            for (let i = 1; i < bw - 1; i++) if ((i * 7 + Math.floor(board[1] * 9)) % 3) img.set(x + 3 + i, y + 2, 0xf8f4e8);
+            img.rect(x + 4, y + 4, 1, 1, 0x4a4a52);
+            img.rect(x + bw + 1, y + 4, 1, 1, 0x4a4a52);
+          }
+          if (eave) {
+            // a strip of red tiles along the eaves, Ryūkyū style
+            for (let yy = y + h - 3; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) img.set(xx, yy, (xx - x) % 3 === 2 ? C.roof[3] : yy === y + h - 3 ? C.roof[2] : C.roof[1]);
+            img.rect(x, y + h - 4, w, 1, C.mortar);
+          }
+          // the front: floors of windows over the shop
+          const fy = y + h;
+          for (let yy = fy; yy < fy + faceH; yy++)
+            for (let xx = x; xx < x + w; xx++) {
+              const r = yy - fy;
+              let c = wallC;
+              if (r === 0) c = scaleColor(wallC, 0.6);
+              else if (r % 3 === 2 && r < faceH - 6 && (xx - x) % 4 !== 0 && xx > x && xx < x + w - 1) c = lit[(r * 7 + xx - x) % 60] ? 0xe8e0b0 : 0x3a4a5a;
+              if (xx === x + w - 1) c = scaleColor(c, 0.78);
+              img.set(xx, yy, c);
+            }
+          const sy = fy + faceH - 6;
+          img.rect(x + 1, sy, w - 2, 2, sign);
+          for (let xx = x + 2; xx < x + w - 2; xx++) if ((xx * 5 + fy) % 3) img.set(xx, sy + ((xx >> 1) % 2), 0xf8f4e8);
+          if (vertical) {
+            img.rect(x + w - 3, fy + 1, 2, faceH - 7, vertical);
+            for (let yy = fy + 2; yy < fy + faceH - 7; yy += 2) img.set(x + w - 3, yy, 0xf8f4e8);
+          }
+          // the shop front itself
+          const gy = fy + faceH - 4;
+          for (let xx = x + 1; xx < x + w - 1; xx++) for (let yy = gy; yy < gy + 4; yy++) img.set(xx, yy, 0x3a3a40);
+          if (kind === 'souvenir') {
+            for (let xx = x + 2, i = 0; xx < x + w - 2; xx += 2, i++) {
+              img.set(xx, gy + 1, goods[i % 40]);
+              img.set(xx, gy + 2, goods[(i + 7) % 40]);
+            }
+          } else if (kind === 'sanshin') {
+            img.rect(x + 1, gy, w - 2, 4, 0x5a3a24);
+            for (let xx = x + 2; xx < x + w - 2; xx += 3) {
+              img.set(xx, gy, 0x1a1214); // the neck
+              img.rect(xx, gy + 1, 2, 2, 0x1a1214); // the body
+              img.set(xx + 1, gy + 1, 0xf0ece0); // its snakeskin
+            }
+          } else if (kind === 'andagi') {
+            for (let xx = x + 2; xx < x + w - 2; xx++) img.set(xx, gy + 2, 0xc8c4bc);
+            for (let xx = x + 2; xx < x + w - 2; xx += 2) img.set(xx, gy + 1, (xx >> 1) % 3 ? 0xb87a3a : 0x8a5a2a);
+          } else if (kind === 'restaurant') {
+            for (let xx = x + 2; xx < x + w - 2; xx++) img.set(xx, gy, (xx - x) % 4 === 0 ? 0x22305a : 0x2a3a6a);
+            img.set(x + 2, gy + 1, 0xd8302a);
+            img.set(x + w - 3, gy + 1, 0xd8302a);
+          } else for (let xx = x + 2; xx < x + w - 2; xx++) img.set(xx, gy + 1, (xx + gy) % 3 ? 0x5a7a8a : 0x8aaab8);
+          for (let xx = x + 1; xx < x + w - 1; xx++) {
+            img.set(xx, gy + 3, (xx >> 1) % 2 ? awn : 0xf0ece0);
+          }
+          if (guard) {
+            // a pair of shisa guarding the door
+            for (const sx of [x + 1, x + w - 3]) {
+              img.rect(sx, gy + 4, 2, 2, 0xc8642e);
+              img.set(sx + (sx > x + 1 ? 1 : 0), gy + 4, 0x8a3a1a);
+            }
+          }
+        },
+      });
+      reserveRect(x - 1, y - 1, w + 2, h + faceH + 3);
+    };
+
+    // ---- 3. the Makishi public market and the Heiwa-dōri arcade
+    // the lane bends into the arcade; a small square where the turret stands
+    for (let u = TSUBOYA[1] - 6; u < MARKET[0] + 8; u++)
+      for (let x = 78; x < 104; x++) img.set(x, Y(u), pavePx(x, Y(u)));
+    reserveRect(78, Y(MARKET[0] + 8), 26, 14);
+    const AX = [87, 104]; // the arcade's lane
+    for (let u = MARKET[0] + 6; u < MARKET[1]; u++) for (let x = AX[0]; x < AX[1]; x++) img.set(x, Y(u), (x + u) % 5 ? 0x8c8a84 : 0x7c7a74);
+    // shops opening onto the arcade: colourful goods on both sides, people everywhere
+    const goods = [
+      () => [0xe86a9a, 0xf0d040, 0x3ab0e0, 0xe84a3a, 0x6ac06a], // kariyushi shirts
+      () => [0xe8c040, 0xd8a030, 0xf0e0a0], // chinsukō and sata andagi
+      () => [0x1a1a1e, 0xf0ece0, 0x8a5a2a], // sanshin
+      () => [0x7a3a8a, 0xa85ab0, 0xe8d0f0], // beni-imo sweets
+      () => [0x2a6aa8, 0x3ab0c8, 0xe8f0f0], // Ryūkyū glass
+    ];
+    for (let u = MARKET[0] + 10; u < MARKET[1] - 6; u += 9)
+      for (const x of [AX[0] - 6, AX[1] + 1]) {
+        if (isRes(x, Y(u + 4))) continue;
+        const cols = pick(goods)();
+        img.rect(x, Y(u + 8), 5, 8, 0x4a4440);
+        for (let j = 0; j < 7; j += 2) for (let i = 0; i < 5; i += 2) img.set(x + i, Y(u + 7) + j, pick(cols));
+      }
+    people(AX[0] + 1, Y(MARKET[1] - 4), AX[1] - AX[0] - 2, MARKET[1] - MARKET[0] - 12, 70, true);
+    // the arcade's roof: translucent panels on ribs, so the shoppers show through (live, above the wanderers)
+    {
+      const ry0 = Y(MARKET[1] - 2);
+      const roof = new Window(AX[0] - 5, ry0, AX[1] - AX[0] + 10, MARKET[1] - MARKET[0] - 6);
+      for (let y = roof.y0; y < roof.y0 + roof.h; y++)
+        for (let x = roof.x0; x < roof.x0 + roof.w; x++) {
+          const edge = x === roof.x0 || x === roof.x0 + roof.w - 1;
+          const rib = (y - roof.y0) % 8 === 0;
+          const ridge = x === Math.round((AX[0] + AX[1]) / 2);
+          roof.set(x, y, edge ? 0x9aa4ac : rib || ridge ? 0xd8e0e4 : 0xc8dce4, edge || rib ? 0.9 : ridge ? 0.6 : 0.3);
+        }
+      kit.loop(roof.x0, U(roof.y0), [gradeF(roof)], { d: 0.1 });
+      reserveRect(AX[0] - 6, ry0, AX[1] - AX[0] + 12, roof.h + 2);
+      const shopper = (c, f) => {
+        const r = new Raster(2, 4);
+        r.set(0, 0, 0x2a2026);
+        r.set(0, 1, c);
+        r.set(0, 2, f ? scaleColor(c, 0.8) : c);
+        r.set(1, 3, 0x1e1e26, 0.4);
+        return gradeF(r);
+      };
+      for (const c of [0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0])
+        kit.wander((AX[0] + AX[1]) / 2, (MARKET[0] + MARKET[1]) / 2, 5, 52, [shopper(c, 0), shopper(c, 1)], { n: 2, sp: 6, idle: 0.6, turn: 'flip', fps: 3 });
+    }
+    // the market hall east of the arcade: stalls of tropical fish on ice, lobsters, giant clams and sea
+    // grapes, fruit and vegetables round the edge, all under a glass roof (live, over the stalls)
+    {
+      const hx0 = 113;
+      const hx1 = 176;
+      const hu0 = MARKET[0] + 14;
+      const hu1 = MARKET[1] - 8;
+      for (let u = hu0; u < hu1; u++) for (let x = hx0; x < hx1; x++) img.set(x, Y(u), (x + u) % 6 ? 0x9a968e : 0x8a8680);
+      const FISH = [
+        [0x2a7ad8, 0x5ab8e8], // irabuchā, the blue parrotfish
+        [0xe03a3a, 0xf06a5a], // akamachi, the red snapper
+        [0x3a7ac8, 0xf0d040], // gurukun, yellow-striped
+        [0xc84a4a, 0xe8a0a0], // tuna, cut
+        [0x6a9a4a, 0x9ac060], // a green wrasse
+      ];
+      const stall = (x, y, w, kind) => {
+        img.rect(x, y, w, 7, 0x3a5a9a); // the counter
+        img.rect(x, y + 6, w, 1, 0x24386a);
+        img.rect(x + 1, y + 1, w - 2, 4, kind === 'fish' ? 0xdfeaf0 : 0x6a4a2a);
+        for (let i = x + 1; i < x + w - 2; i += 3)
+          for (const j of [y + 1, y + 3]) {
+            if (kind === 'fish') {
+              const [a, b] = pick(FISH);
+              img.rect(i, j, 2, 1, a);
+              img.set(i + 2, j, b);
+              if (nr() < 0.2) {
+                img.rect(i, j, 3, 2, 0xd84a2a); // a lobster
+                img.set(i + 2, j - 1, 0xd84a2a);
+              } else if (nr() < 0.15) {
+                img.rect(i, j, 2, 2, 0xf0ece0); // a giant clam, its blue mantle
+                img.set(i, j, 0x3aa0c8);
+              } else if (nr() < 0.15) img.rect(i, j, 2, 2, 0x5ab040); // sea grapes
+            } else {
+              const fruit = pick([[0xe8c030, 0x3a7a2a], [0xf08a2a, 0xe86a2a], [0xd8307a, 0x6ac04a], [0x5aa03a, 0x3a8a2a], [0x7a3a8a, 0x5a2a6a]]);
+              img.rect(i, j, 2, 2, fruit[0]);
+              img.set(i, j, fruit[1]);
+            }
+          }
+        img.set(x + 1, y + 5, 0xf0f0f0); // price tags
+        img.set(x + w - 3, y + 5, 0xf0f0f0);
+        people(x + 1, y - 1, w - 2, 1, Math.floor(w / 4), true); // the stallholders behind the counter
+      };
+      people(hx0 + 2, Y(hu1 - 2), hx1 - hx0 - 4, hu1 - hu0 - 4, 70, true); // shoppers in the aisles
+      for (let u = hu0 + 6, row = 0; u < hu1 - 8; u += 16, row++)
+        for (let x = hx0 + 3; x < hx1 - 14; x += 21) stall(x, Y(u + 8), 18, x > hx1 - 30 || row === 0 ? 'fruit' : 'fish');
+      const roof = new Window(hx0 - 2, Y(hu1 + 2), hx1 - hx0 + 4, hu1 - hu0 + 6);
+      for (let y = roof.y0; y < roof.y0 + roof.h; y++)
+        for (let x = roof.x0; x < roof.x0 + roof.w; x++) {
+          const edge = x - roof.x0 < 2 || roof.x0 + roof.w - 1 - x < 2 || y - roof.y0 < 2 || roof.y0 + roof.h - 1 - y < 2;
+          const frame = (x - roof.x0) % 11 === 0 || (y - roof.y0) % 13 === 0;
+          roof.set(x, y, edge ? (y - roof.y0 < 2 || x - roof.x0 < 2 ? 0xe8e6e0 : 0xa8a49c) : frame ? 0xc8ccd0 : 0xb8d8e4, edge ? 1 : frame ? 0.85 : 0.22);
+        }
+      kit.loop(roof.x0, U(roof.y0), [gradeF(roof)], { d: 0.1 });
+      reserveRect(hx0 - 3, roof.y0 - 1, hx1 - hx0 + 6, roof.h + 2);
+      img.rect(hx0 + 26, Y(hu0 - 1), 14, 4, 0xc8302a); // the entrance with its red awning
+      img.rect(hx0 + 26, Y(hu0 - 1), 14, 1, 0xe85a4a);
+    }
+    // west of the arcade: souvenir shops, a sanshin maker, a sata andagi stall, palms on the little square
+    for (const [x, u, w, kind] of [[4, 2872, 28, 'souvenir'], [34, 2872, 24, 'sanshin'], [4, 2914, 24, 'andagi'], [30, 2914, 26, 'souvenir'], [4, 2954, 26, 'restaurant']])
+      if (!anyRes(x, Y(u + 24), w, 24)) shop(x, Y(u + 22), w, 11, 10, { kind });
+    people(4, Y(MARKET[1] - 2), 60, MARKET[1] - MARKET[0] - 6, 26);
+    for (const [x, u] of [[66, 2880], [66, 2932]]) tree('palm', x, Y(u), 5.5, nr);
+
+    // ---- 4. Kokusai-dōri: the main street, closed for an eisa parade
+    const RD = [76, 104]; // the road; pavements either side
+    for (let u = KOKUSAI[0]; u < n1; u++) {
+      const y = Y(u);
+      for (let x = RD[0] - 8; x < RD[1] + 8; x++) {
+        const road = x >= RD[0] && x < RD[1];
+        img.set(x, y, road ? (x === 90 && u % 8 < 4 ? 0xe8e0c0 : rampColor(C.asphalt, fbm(x, y, { seed: 531, scale: 3 }), x, y)) : (x + u) % 4 ? 0xb8a890 : 0xa89880);
+      }
+      reserveRect(RD[0] - 9, y, RD[1] - RD[0] + 18, 1);
+    }
+    for (const cu of [KOKUSAI[0] + 6, 3094, n1 - 8])
+      for (let u = cu - 5; u < cu + 5; u++)
+        for (let x = 0; x < W; x++) {
+          if (x >= RD[0] && x < RD[1]) continue;
+          img.set(x, Y(u), Math.abs(u - cu) > 4 ? 0xa89880 : rampColor(C.asphalt, fbm(x, u, { seed: 532, scale: 3 }), x, Y(u)));
+          reserved[Y(u) * W + x] = 1;
+        }
+    // a Ryūkyū-style restaurant: a big red-tile house round a courtyard garden with a stone lantern
+    {
+      const [x, u] = [6, 3104];
+      for (let yy = Y(u + 40); yy < Y(u); yy++) for (let xx = x; xx < x + 60; xx++) img.set(xx, yy, rampColor(C.grass, 0.3 + fbm(xx, yy, { seed: 541, scale: 4 }) * 0.5, xx, yy));
+      wall([[x, Y(u + 40)], [x + 60, Y(u + 40)], [x + 60, Y(u)], [x, Y(u)], [x, Y(u + 40)]], 2);
+      house(x + 4, Y(u + 36), 36, 16, { faceH: 5 });
+      house(x + 42, Y(u + 30), 14, 12, { faceH: 4 });
+      for (const [sx, su] of [[x + 10, u + 10], [x + 30, u + 8]]) {
+        img.rect(sx, Y(su), 3, 3, C.stone[1]);
+        img.rect(sx - 1, Y(su) - 1, 5, 1, C.stone[3]);
+      }
+      tree('hibiscus', x + 48, Y(u + 8), 3.5, nr);
+      tree('palm', x + 20, Y(u + 6), 4, nr);
+      shisa(x + 26, Y(u + 1), false);
+      shisa(x + 32, Y(u + 1), true);
+      reserveRect(x - 1, Y(u + 41), 63, 43);
+    }
+    // an event square across the street: a little stage, a crowd watching a sanshin band
+    {
+      const [x, u] = [114, 3104];
+      for (let yy = Y(u + 34); yy < Y(u); yy++) for (let xx = x; xx < x + 62; xx++) img.set(xx, yy, ((xx >> 2) + (yy >> 2)) % 2 ? 0xc8b8a0 : 0xb8a890);
+      img.rect(x + 20, Y(u + 32), 22, 8, 0x5a3a24);
+      img.rect(x + 20, Y(u + 32), 22, 1, 0x8a6a4a);
+      for (let i = 0; i < 4; i++) {
+        img.set(x + 24 + i * 5, Y(u + 29), 0xf0ece0);
+        img.set(x + 24 + i * 5, Y(u + 30), 0x2a2026);
+        img.set(x + 25 + i * 5, Y(u + 29), 0x1a1214); // the sanshin
+      }
+      people(x + 4, Y(u + 22), 54, 18, 70, true);
+      tree('palm', x + 6, Y(u + 30), 4.5, nr);
+      tree('palm', x + 56, Y(u + 30), 4.5, nr);
+      reserveRect(x - 1, Y(u + 35), 64, 37);
+    }
+    for (const [x0, x1] of [[0, RD[0] - 9], [RD[1] + 9, W]])
+      for (const [u0, u1] of [[KOKUSAI[0] + 12, 3088], [3100, n1 - 14]]) {
+        let u = u0;
+        while (u < u1 - 18) {
+          const h = 11 + Math.floor(nr() * 6);
+          const faceH = 10 + Math.floor(nr() * 7);
+          let x = x0 + Math.floor(nr() * 3);
+          while (x < x1 - 12) {
+            const w = Math.min(x1 - x, 14 + Math.floor(nr() * 13));
+            if (w >= 12 && !anyRes(x, Y(u + h + faceH), w, h + faceH + 2)) shop(x, Y(u + h + faceH), w, h, faceH);
+            x += w + 1;
+          }
+          u += h + faceH + 3;
+        }
+      }
+    // palms along the pavements, crowds lining the street to watch the parade
+    for (let u = KOKUSAI[0] + 16; u < n1 - 12; u += 22) {
+      if (Math.abs(u - 3094) < 10) continue;
+      for (const x of [RD[0] - 5, RD[1] + 4]) tree('palm', x, Y(u), 5, nr);
+    }
+    people(RD[0] - 8, Y(n1 - 12), 7, n1 - KOKUSAI[0] - 24, 120, true);
+    people(RD[1] + 1, Y(n1 - 12), 7, n1 - KOKUSAI[0] - 24, 120, true);
+    // strings of festival flags across the street, fluttering (live)
+    {
+      const flags = [0, 1].map((f) => {
+        const r = new Raster(RD[1] - RD[0] + 16, 5);
+        for (let i = 0; i < r.w; i++) {
+          const sag = Math.round(Math.sin((i / (r.w - 1)) * Math.PI) * 2);
+          r.set(i, sag, 0x3a3a40);
+          if (i % 4 === 1) {
+            const c = [0xd8302a, 0xf0d040, 0x2a6ac8, 0xf0ece0, 0x2a9a5a][(i >> 2) % 5];
+            r.set(i, sag + 1, c);
+            r.set(i + (f ? 1 : 0), sag + 2, c);
+            r.set(i + 1, sag + 1, c);
+          }
+        }
+        return gradeF(r);
+      });
+      for (const u of [3036, 3070, 3130, 3166]) kit.loop(RD[0] - 8, u, flags, { fps: 2.5 });
+    }
+    // the eisa parade (live): a banner bearer, rows of drummers with big ōdaiko and small shime-daiko striking
+    // as they dance, then dancers and a white-faced chondārā clowning at the back, in two columns coming in
+    // along the cross street, marching up Kokusai-dōri and turning off at the top
+    {
+      const figure = (shirt, sash, head, extra) =>
+        [0, 1].map((f) => {
+          const r = new Raster(7, 9);
+          r.set(4, 8, 0x1e1e26, 0.35);
+          r.rect(2, 4, 3, 3, shirt);
+          r.set(3, 5, 0x1a1a22); // the black vest
+          r.rect(2, 6, 3, 1, sash);
+          r.set(3, 3, head);
+          r.set(3, 2, 0x6a3a9a); // the purple hachimaki
+          r.set(2, 7, 0x1a1a22);
+          r.set(4, 7, 0x1a1a22);
+          extra(r, f);
+          return gradeF(r);
+        });
+      const banner = figure(0xf0eee8, 0xe8c030, 0xe8c8a8, (r) => {
+        r.rect(5, 0, 1, 8, 0x5a3a22);
+        r.rect(5, 0, 2, 4, 0xd8302a);
+        r.set(6, 1, 0xf0ece0);
+      });
+      const odaiko = figure(0xf0eee8, 0xd8302a, 0xe8c8a8, (r, f) => {
+        r.rect(0, 4, 2, 3, 0xb03a2a);
+        r.set(0, 4, 0xe8dcc0);
+        r.set(f ? 1 : 5, f ? 2 : 3, 0x8a5a2a); // the stick, up and down
+        r.set(f ? 1 : 5, f ? 3 : 4, 0x8a5a2a);
+      });
+      const shime = figure(0xf0eee8, 0xe8c030, 0xe8c8a8, (r, f) => {
+        r.rect(5, 4, 2, 2, 0xe8dcc0);
+        r.set(6, 5, 0x6a3a1a);
+        r.set(f ? 1 : 2, f ? 3 : 4, 0x8a5a2a);
+      });
+      const dancer = figure(0x8a3a9a, 0xe86a9a, 0xe8c8a8, (r, f) => {
+        r.set(f ? 1 : 5, 4, 0xe8c8a8); // a sleeve flung out
+        r.set(f ? 5 : 1, 5, 0x8a3a9a);
+      });
+      const chondara = figure(0x3a5aa8, 0xe8c030, 0xf8f8f4, (r, f) => {
+        r.set(3, 2, 0x1a1a22);
+        r.set(f ? 1 : 5, f ? 4 : 6, 0xf8f8f4);
+      });
+      const order = [banner, odaiko, odaiko, odaiko, shime, shime, shime, dancer, dancer, chondara];
+      const sp = 7;
+      const total = 392;
+      const at = (s) => passing(3094, sp, s, total);
+      kit.path([[-12, 3000], [86, 3000], [86, 3188], [192, 3188]], order, { sp, n: 10, gap: 9, turn: 'none', cars: 1, fps: 3, s0: at(192) });
+      kit.path([[-12, 2996], [94, 2996], [94, 3192], [184, 3192]], order, { sp, n: 10, gap: 9, turn: 'none', cars: 1, fps: 3, s0: at(192) });
+    }
   }
 
   // ------------------------------------------------------------ E. Shuri castle
@@ -652,6 +1409,7 @@ export function buildMid() {
         img.set(xx, yy, dd > 8.5 ? C.stone[0] : rampColor(C.stone, 0.4 + fbm(xx, yy, { seed: 2, scale: 3 }) * 0.4, xx, yy));
       }
     reserveRect(x - 13, y - 13, 26, 26);
+    for (let yy = Math.max(Y(NAHA[1]), y - 13); yy < Math.min(Y(NAHA[0]), y + 13); yy++) for (let xx = Math.max(0, x - 13); xx < Math.min(W, x + 13); xx++) fieldsRes[(yy - Y(NAHA[1])) * W + xx] = 1;
   }
 
   // ------------------------------------------------------------ vegetation
@@ -664,6 +1422,14 @@ export function buildMid() {
     return [['palm', 0.7], ['tropic', 1]];
   };
   const RADIUS = { palm: [5.5, 7.5], tropic: [5, 8], fukugi: [4, 5.5], fern: [4, 6], banana: [3.5, 5], hibiscus: [3, 4.5] };
+  // Over Naha the pass still decides as it did over the fields (so it takes the same random numbers and every
+  // tree below comes out where it was), but plants nothing there; Naha's gaps get trees of their own after.
+  const nahaRow = (y) => y >= Y(NAHA[1]) && y < Y(NAHA[0]);
+  const wasRes = (x, y) => {
+    x = Math.floor(x);
+    y = Math.floor(y);
+    return nahaRow(y) ? x >= 0 && x < W && fieldsRes[(y - Y(NAHA[1])) * W + x] : isRes(x, y);
+  };
   for (let gy = 0; gy < L; gy += 7)
     for (let gx = -2; gx < W + 2; gx += 7) {
       const x = gx + rand() * 7;
@@ -680,10 +1446,31 @@ export function buildMid() {
       const [r0, r1] = RADIUS[kind];
       const r = r0 + rand() * (r1 - r0);
       const k = r * 0.6;
-      if (isRes(ix, iy) || isRes(ix - k, iy) || isRes(ix + k, iy) || isRes(ix, iy - k) || isRes(ix, iy + k)) continue;
+      if (wasRes(ix, iy) || wasRes(ix - k, iy) || wasRes(ix + k, iy) || wasRes(ix, iy - k) || wasRes(ix, iy + k)) continue;
       if (rand() < (u > JUNGLE[0] ? 0.05 : 0.3)) continue;
-      tree(kind, x, y, r);
+      if (nahaRow(iy)) rand(); // the seed its tree took
+      else tree(kind, x, y, r);
     }
+  {
+    const nr = rng(1907);
+    const kinds = (u) => (u < 2690 ? [['tropic', 0.45], ['fukugi', 0.75], ['hibiscus', 1]] : u < 2860 ? [['tropic', 0.5], ['banana', 0.75], ['fukugi', 1]] : [['tropic', 0.6], ['palm', 1]]);
+    for (let gy = Y(NAHA[1]); gy < Y(NAHA[0]); gy += 7)
+      for (let gx = -2; gx < W + 2; gx += 7) {
+        const x = gx + nr() * 7;
+        const y = gy + nr() * 7;
+        const ix = Math.round(x);
+        const iy = Math.round(y);
+        if (ix < 0 || ix >= W || !nahaRow(iy) || K(ix, iy) !== 2 || D(ix, iy) < 10) continue;
+        const roll = nr();
+        const kind = kinds(U(iy)).find(([, p]) => roll < p)[0];
+        const [r0, r1] = RADIUS[kind];
+        const r = r0 + nr() * (r1 - r0);
+        const k = r * 0.6;
+        if (isRes(ix, iy) || isRes(ix - k, iy) || isRes(ix + k, iy) || isRes(ix, iy - k) || isRes(ix, iy + k)) continue;
+        if (nr() < 0.3) continue;
+        tree(kind, x, y, r, nr);
+      }
+  }
 
   // ------------------------------------------------------------ compose
   for (const o of objects) o.shadow?.();
@@ -779,7 +1566,7 @@ export function buildMid() {
     kit.wander(60, 5960, 30, 60, tf, { n: 1, sp: 4, idle: 0.1, fps: 1.5, a: 0.45, d: -0.4 });
   }
   // gusts over the cane fields: the long leaves flash pale, a patch at a time, in waves across the farm
-  for (let y0 = Y(FIELDS[1]); y0 < Y(FIELDS[0]); y0 += 16)
+  for (let y0 = Y(NAHA[0]); y0 < Y(FIELDS[0]); y0 += 16)
     for (let x0 = 0; x0 < W; x0 += 16) {
       let n = 0;
       const tile = new Window(x0, y0, 16, 16);

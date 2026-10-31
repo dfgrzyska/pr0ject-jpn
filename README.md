@@ -91,9 +91,15 @@ Znajdźki: czerwona — rozrzut, niebieska — laser, zielona — naprowadzane �
 
 Okinawa, ok. 3,5 min: otwarte morze z wysepkami, rafami i łodziami sabani → plaża kurortu (parasole, hotel,
 basen) → wioska z czerwonymi dachami z białą zaprawą, koralowymi murkami, drzewami fukugi i betonowymi domami
-ze zbiornikami na wodę → pola trzciny cukrowej i ananasów, ruiny gusuku → zamek Shuri (Shureimon,
-pasiasty dziedziniec, hala Seiden) → dżungla z klifami → morze z rafami (miniboss) → wyspa z latarnią →
-otwarte morze z bossem.
+ze zbiornikami na wodę → pola trzciny cukrowej i ananasów → Naha w drodze na Shuri: zbocze z grobami-żółwiami
+kamekōbaka (przed jednym rodzina świętuje Shīmī na kocu z pudełkami jedzenia), ulica garncarzy Tsuboya
+Yachimun-dōri (bruk z płyt wapienia, warsztaty pod czerwoną dachówką, galerie, shisa na słupkach bram, garnki
+i dzbany, stary piec schodkowy noborigama z drewnem na opał i deskami suszących się naczyń, koty), rynek
+Makishi pod szklanym dachem (stragany z kolorowymi rybami, homarami, małżami olbrzymimi, winogronami morskimi
+i owocami) z pasażem Heiwa-dōri, sklepy z koszulami kariyushi, sanshinami i sata andagi → Kokusai-dōri
+zamknięta dla parady eisa (chorąży, bębniarze z ōdaiko i shime-daiko, tancerki, klaun chondārā), restauracja
+w stylu Ryūkyū z dziedzińcem, plac z zespołem sanshin → zamek Shuri (Shureimon, pasiasty dziedziniec, hala
+Seiden) → dżungla z klifami → morze z rafami (miniboss) → wyspa z latarnią → otwarte morze z bossem.
 
 Daleka warstwa to głęboki ocean (płynie dalej podczas walki z bossem), bliska — chmury i mewy.
 Wrogowie mają skórki wyspiarskie (`src/game/skins.js`), zachowania są te same co w Kioto:
@@ -330,7 +336,7 @@ i zapisuje w `meta.json`, gdzie co stoi i jak się porusza — `tools/art/props.
 | Mapa | Co żyje |
 |---|---|
 | Kioto | płynące Kamo i Katsura, łódki pod Togetsukyō, podmuchy wiatru w gaju bambusowym, falujące odbicie Złotego Pawilonu i karpie w stawie, trzy strumienie Otowa, riksze w Gion i w bambusach, łopoczące chorągwie nobori w Fushimi, migoczące ognie 大 z dymem |
-| Okinawa | fale napływające na każdą plażę i biała piana na rafach, błyski na lagunach, łodzie sabani i prom z kilwaterem, cienie żółwi morskich, podmuchy wiatru nad trzciną cukrową, chorągwie na dziedzińcu Shuri, błyskająca latarnia morska |
+| Okinawa | fale napływające na każdą plażę i biała piana na rafach, błyski na lagunach, łodzie sabani i prom z kilwaterem, cienie żółwi morskich, podmuchy wiatru nad trzciną cukrową, parada eisa na Kokusai-dōri, flagi nad ulicą, noren w drzwiach warsztatów Tsuboya i koty na bruku, kupujący pod dachem pasażu, chorągwie na dziedzińcu Shuri, błyskająca latarnia morska |
 | Sapporo | wyciąg krzesełkowy, skoczek na skoczni Ōkurayama, samochody w centrum, dym z kominów, para nad nurtem zamarzniętej rzeki, migające neony Susukino, para z ramenowni, łyżwiarze na stawie w parku Nakajima, zegar na TV Tower odliczający czas etapu |
 | Kagoshima | diabelski młyn na dworcu Chūō, tramwaje na trawiastych torach, promy na Sakurajimę, wyskakujące delfiny, kolumna popiołu z krateru, para z otworów i szczelin, pulsująca lawa |
 | Osaka | oba diabelskie młyny (na Tempozan kolory przebiegają po obręczy), statki na rzekach i kanale Dōtonbori, pociągi pod szklanym dachem Umedy, łabędzie w fosach i karpie w stawie, neony zapalające się litera po literze i biegające światła na billboardach, krab machający szczypcami i ośmiornica, kołyszące się girlandy lampionów, fontanna, drgające odbicia neonów w wodzie, dryfujące łodzie rybackie |

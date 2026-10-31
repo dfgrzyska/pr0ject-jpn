@@ -108,7 +108,10 @@ export class Props {
     p.on = true;
     const n = { loop: 1, wave: p.parts?.length, path: p.n, orbit: p.n, wander: p.n }[p.k] ?? 0;
     const corner = p.k === 'loop' || p.k === 'wave';
-    for (let i = 0; i < n; i++) p.objs.push(this.img(p, p.f[p.k === 'wave' ? p.parts[i][0] : i % p.f.length], corner ? 0 : 0.5, corner ? 0 : 0.5));
+    for (let i = 0; i < n; i++) {
+      const f = p.f[p.k === 'wave' ? p.parts[i][0] : i % p.f.length];
+      p.objs.push(this.img(p, Array.isArray(f) ? f[0] : f, corner ? 0 : 0.5, corner ? 0 : 0.5));
+    }
   }
 
   leave(p) {
@@ -182,7 +185,12 @@ export class Props {
       if (p.turn === 'rot') o.setRotation(Math.atan2(-du, dx));
       else if (Math.abs(du) > Math.abs(dx) && (p.fu || p.fd)) frames = du > 0 ? p.fu ?? p.f : p.fd ?? p.f;
       else if (p.turn === 'flip') o.setFlipX(dx < 0);
-      this.setFrame(o, frames[p.cars ? i % frames.length : moving ? Math.floor(this.time * p.fps + i) % frames.length : 0]);
+      const step = moving ? Math.floor(this.time * p.fps + i) : 0;
+      if (p.cars) {
+        // mover i has its own frame, or its own frames to cycle through (a dancer in a parade)
+        const own = frames[i % frames.length];
+        this.setFrame(o, Array.isArray(own) ? own[step % own.length] : own);
+      } else this.setFrame(o, frames[step % frames.length]);
       o.setPosition(Math.round(x), this.px.screenY(Math.round(u))).setAlpha(this.alphaOf(p));
       if (p.wake && moving) {
         const tr = (p.trail[i] ??= { x, u });
