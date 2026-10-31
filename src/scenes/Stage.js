@@ -298,7 +298,8 @@ export class Stage extends Phaser.Scene {
       return;
     }
     if (this.paused || this.hud.hitPause(p)) return this.togglePause();
-    if (this.hud.hitBomb(p)) return this.player.bomb();
+    // the bomb corner only takes the touch when a bomb actually goes off; otherwise it steers like anywhere else
+    if (this.hud.hitBomb(p) && this.player.bomb()) return;
     this.player.beginDrag(p);
   }
 

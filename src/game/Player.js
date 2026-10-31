@@ -70,6 +70,8 @@ export class Player {
   }
 
   dragMove(p) {
+    // a finger still held down (through a death, a pause, a bomb tap) takes the ship over when it moves
+    if (!this.drag && p.isDown && this.alive) this.beginDrag(p);
     if (!this.drag || this.drag.id !== p.id) return;
     const gain = this.ship.touchGain;
     const dx = (p.x - this.drag.lx) * gain;
