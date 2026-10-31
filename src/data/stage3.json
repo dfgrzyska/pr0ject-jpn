@@ -2,6 +2,7 @@
   "id": "stage3",
   "name": "SAPPORO",
   "subtitle": "SAPPORO - ŚNIEŻNA NOC",
+  "map": [141.35, 43.06, -26, 0],
   "skin": "sapporo",
   "near": "snow",
   "scroll": { "far": 12, "mid": 30, "near": 64, "anchor": 420 },
@@ -107,7 +108,7 @@
     { "t": 119, "type": "popcorn", "x": 90, "path": "row", "count": 7, "spacing": 11 },
     { "t": 121, "type": "carrier", "x": 40, "path": "zigzag", "color": "red" },
 
-    { "t": 126, "type": "heavy", "x": 90 },
+    { "t": 126, "type": "heavy", "card": ["YUKI-ONNA", "ŚNIEŻNA ZJAWA"], "x": 90 },
     { "t": 138, "type": "popcorn", "x": 20, "path": "arc", "count": 5 },
     { "t": 146, "type": "popcorn", "x": 160, "path": "arc", "count": 5 },
     { "t": 152, "type": "diver", "x": 0, "y": 50, "count": 2 },
@@ -153,6 +154,6 @@
     { "t": 205, "type": "popcorn", "x": 90, "path": "row", "count": 7, "spacing": 11 },
     { "t": 207, "type": "shooter", "x": 90, "pattern": "fan" },
     { "t": 209, "type": "carrier", "x": 90, "path": "zigzag", "color": "blue" },
-    { "t": 219.4, "type": "boss", "x": 90, "boss": "kuma" }
+    { "t": 219.4, "type": "boss", "card": ["HIGUMA", "NIEDŹWIEDŹ Z FESTIWALU ŚNIEGU"], "x": 90, "boss": "kuma" }
   ]
 }

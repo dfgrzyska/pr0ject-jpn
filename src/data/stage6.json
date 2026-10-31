@@ -2,6 +2,7 @@
   "id": "stage6",
   "name": "BEPPU",
   "subtitle": "BEPPU - GORĄCE ŹRÓDŁA",
+  "map": [131.49, 33.28, -6, -10],
   "skin": "beppu",
   "near": "steam",
   "scroll": { "far": 12, "mid": 30, "near": 64, "anchor": 420 },
@@ -132,7 +133,7 @@
     { "t": 144.5, "type": "popcorn", "x": 156, "path": "arc", "count": 6 },
     { "t": 146, "type": "carrier", "x": 90, "path": "zigzag", "color": "blue" },
 
-    { "t": 150, "type": "heavy", "x": 90 },
+    { "t": 150, "type": "heavy", "card": ["WANI", "KROKODYL Z ONIYAMY"], "x": 90 },
     { "t": 160, "type": "popcorn", "x": 20, "path": "arc", "count": 4 },
     { "t": 168, "type": "popcorn", "x": 160, "path": "arc", "count": 4 },
     { "t": 176, "type": "diver", "x": 60, "count": 2 },
@@ -159,6 +160,6 @@
     { "t": 206, "type": "popcorn", "x": 20, "path": "arc", "count": 6 },
     { "t": 207.5, "type": "popcorn", "x": 160, "path": "arc", "count": 6 },
     { "t": 210, "type": "carrier", "x": 90, "path": "zigzag", "color": "red" },
-    { "t": 219.5, "type": "boss", "x": 90, "boss": "oni", "pond": [90, 7050] }
+    { "t": 219.5, "type": "boss", "card": ["ONI", "CZERWONY DEMON Z CHINOIKE"], "x": 90, "boss": "oni", "pond": [90, 7050] }
   ]
 }

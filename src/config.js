@@ -96,6 +96,14 @@ export const WEAPONS = {
   homing: { interval: 1 / 6, damage: 1.4, speed: 210, turn: 6, life: 1.6, orbs: [2, 2, 3, 3, 4] },
 };
 
+// Grazing: a bullet passing within `radius` px of the hit dot (without hitting) scores and, while the bomb
+// is spent, charges a new one
+export const GRAZE = {
+  radius: 8,
+  points: 30, // x multiplier
+  perBomb: 40, // grazes to earn the bomb back
+};
+
 export const BOMB = {
   damage: 45,
   invulnerable: 2.2,

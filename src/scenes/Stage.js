@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
 import { getMusic } from '../audio/Music.js';
-import { DEPTH, PLAYER, SCORE, SHIPS, VIEW, WEAPONS } from '../config.js';
+import { DEPTH, GRAZE, PLAYER, SCORE, SHIPS, VIEW, WEAPONS } from '../config.js';
 import { STAGES } from '../data/stages.js';
 import { Bullets } from '../game/Bullets.js';
 import { Enemies } from '../game/Enemies.js';
 import { Fx } from '../game/Fx.js';
 import { Hud } from '../game/Hud.js';
+import { JapanMap } from '../game/JapanMap.js';
 import { Parallax } from '../game/Parallax.js';
 import { Player } from '../game/Player.js';
 import { Pool } from '../game/Pool.js';
@@ -96,6 +97,8 @@ export class Stage extends Phaser.Scene {
     const qShip = SHIPS.findIndex((sh) => sh.id === q.get('ship'));
     this.shipIndex = qShip >= 0 ? qShip : loadShipIndex();
     this.select = null;
+    this.map = null; // the map of Japan between stages
+    this.freezeT = 0; // hit-stop
     this.debugStart = Number(q.get('t')) || 0;
     this.player.god = q.has('god');
     if (WEAPONS[q.get('weapon')]) this.player.weapon = q.get('weapon');
@@ -185,6 +188,26 @@ export class Stage extends Phaser.Scene {
     this.scene.restart({ select: true });
   }
 
+  /** After the results of a cleared stage: the map of Japan, the ship flying on to the next city. */
+  openMap() {
+    this.hud.closePanel();
+    this.state = 'map';
+    this.map = new JapanMap(this, STAGES, this.order, this.pos);
+    this.music.play('title', true);
+  }
+
+  /** Tap / Enter on the results: on to the map, or (after the last city) a new game. */
+  leaveClear() {
+    if (this.order[this.pos + 1] === undefined) this.advance();
+    else this.openMap();
+  }
+
+  /** Tap / Enter on the map: skip the flight, or once landed, go. */
+  leaveMap() {
+    if (this.map.ready) this.advance();
+    else this.map.finish();
+  }
+
   /** After a cleared stage: carry everything into the next city of this game's order, or start a new game. */
   advance() {
     const pos = this.pos + 1;
@@ -198,8 +221,18 @@ export class Stage extends Phaser.Scene {
     });
   }
 
+  /** A moment's hit-stop when a boss or miniboss goes down: everything holds still, then the explosions. */
+  freeze(sec) {
+    if (this.freezeT > 0) return;
+    this.freezeT = sec;
+    this.anims.pauseAll();
+    this.time.paused = true;
+    this.fx.flash(0.55, sec + 0.15);
+  }
+
   /** Called by Enemies when every part of the stage boss is destroyed. */
   onBossDefeated() {
+    this.freeze(0.45);
     this.bossDown = true;
     this.bossClearT = 3;
     this.player.bombs = 1; // the bomb refills after a boss
@@ -293,8 +326,9 @@ export class Stage extends Phaser.Scene {
       else this.select.select(i);
       return;
     }
+    if (this.state === 'map') return this.leaveMap();
     if (this.state === 'over' || this.state === 'clear') {
-      if (this.endTimer <= 0) (this.state === 'clear' ? this.advance() : this.restart());
+      if (this.endTimer <= 0) (this.state === 'clear' ? this.leaveClear() : this.restart());
       return;
     }
     if (this.paused || this.hud.hitPause(p)) return this.togglePause();
@@ -316,8 +350,10 @@ export class Stage extends Phaser.Scene {
       if (down(k.LEFT) || down(k.A)) this.select.select(this.select.index - 1);
       if (down(k.RIGHT) || down(k.D)) this.select.select(this.select.index + 1);
       if (confirm || bomb) this.startGame();
+    } else if (this.state === 'map') {
+      if (confirm) this.leaveMap();
     } else if (this.state === 'over' || this.state === 'clear') {
-      if (confirm && this.endTimer <= 0) (this.state === 'clear' ? this.advance() : this.restart());
+      if (confirm && this.endTimer <= 0) (this.state === 'clear' ? this.leaveClear() : this.restart());
     } else if (this.paused) {
       if (confirm) this.togglePause();
     } else if (bomb) this.player.bomb();
@@ -328,6 +364,7 @@ export class Stage extends Phaser.Scene {
     this.cameras.resize(VIEW.width, this.H);
     this.hud.layout(this.H);
     this.select?.layout(this.H);
+    this.map?.layout(this.H);
     this.player.clamp();
   }
 
@@ -341,6 +378,13 @@ export class Stage extends Phaser.Scene {
     this.handleKeys();
     this.hud.update(dt);
     if (this.paused) return;
+    if (this.freezeT > 0) {
+      if ((this.freezeT -= dt) <= 0) {
+        this.anims.resumeAll();
+        this.time.paused = false;
+      }
+      return;
+    }
     if (this.endTimer > 0) this.endTimer -= dt;
 
     const playing = this.state === 'play';
@@ -353,7 +397,11 @@ export class Stage extends Phaser.Scene {
         const w = this.waves.upcoming(type, this.t, 3);
         if (w && !this.warned.has(w)) {
           this.warned.add(w);
-          this.hud.show('UWAGA!', w.warning ?? this.stage.warnings?.[type] ?? 'CIĘŻKI CEL', 2.6, true);
+          // the boss card: its name sliding across the screen, an alarm, a shout
+          if (w.card) this.hud.card(w.card[0], w.card[1]);
+          else this.hud.show('UWAGA!', w.warning ?? this.stage.warnings?.[type] ?? 'CIĘŻKI CEL', 2.6, true);
+          this.sfx.warning();
+          this.sfx.shout(1.1);
         }
       }
       this.music.play(this.stageSong());
@@ -364,6 +412,7 @@ export class Stage extends Phaser.Scene {
       this.bullets.cancelAll(null);
     }
 
+    if (this.state === 'map') this.map.update(dt);
     if (this.state === 'clear') {
       this.clearT += dt;
       if (this.clearT > 0.8 && this.player.alive && this.player.y > -40) this.player.y -= Math.min(220, (this.clearT - 0.8) * 260) * dt;
@@ -459,17 +508,25 @@ export class Stage extends Phaser.Scene {
       }
     }
 
-    if (p.invulnerable > 0 || p.entering > 0 || p.god) return;
+    if (p.entering > 0) return;
+    const vulnerable = p.invulnerable <= 0 && !p.god;
     const hr = PLAYER.hitRadius;
     for (const b of this.bullets.pool.live) {
-      if (b.safe > 0) continue; // icicles blinking before they fall
+      if (b.safe > 0 || b.dead) continue; // icicles blinking before they fall
       const r = b.radius + hr;
-      if ((b.x - p.x) ** 2 + (b.y - p.y) ** 2 < r * r) {
+      const d2 = (b.x - p.x) ** 2 + (b.y - p.y) ** 2;
+      if (vulnerable && d2 < r * r) {
         this.bullets.pool.kill(b);
         p.hit();
         return;
       }
+      // grazing: close enough to feel the heat (not while blinking after a respawn)
+      if (!b.grazed && p.invulnerable <= 0 && d2 < (r + GRAZE.radius) ** 2) {
+        b.grazed = true;
+        p.graze(b);
+      }
     }
+    if (!vulnerable) return;
     // lightning and steam columns, the arcs between Raijū's orbs
     if (this.bullets.hazardAt(p.x, p.y, hr)) {
       p.hit();

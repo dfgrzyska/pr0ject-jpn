@@ -13,6 +13,7 @@ export class Boot extends Phaser.Scene {
     this.load.atlas('sprites', 'sprites.png', 'sprites.json');
     this.load.image('font', 'font.png');
     this.load.json('fontMeta', 'font.json');
+    this.load.image('japan', 'japan.png'); // the map between stages
     // per-stage backgrounds: far loop + mid chunks listed in bg/<id>/meta.json
     for (const { id } of STAGES) {
       this.load.image(`far_${id}`, `bg/${id}/far.png`);

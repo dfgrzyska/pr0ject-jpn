@@ -30,7 +30,7 @@ const ZONES = {
   blood: { warn: 0xff6a58, fill: 0xa8141e, core: 0xf04a3a },
 };
 
-const PLAIN = { ax: 0, ay: 0, maxV: Infinity, life: Infinity, safe: 0, frz: null, wig: 0, wf: 0, spin: false, age: 0, orb: null, link: null, lead: false, bounce: 0, grow: null };
+const PLAIN = { ax: 0, ay: 0, maxV: Infinity, life: Infinity, safe: 0, frz: null, wig: 0, wf: 0, spin: false, age: 0, orb: null, link: null, lead: false, bounce: 0, grow: null, grazed: false };
 
 // Enemy bullets: bright core, dark outline, slow. Angle: radians, 0 = right, PI/2 = down.
 // Lobbed snowballs fly above everything, harmless, with a ring marking where they land.

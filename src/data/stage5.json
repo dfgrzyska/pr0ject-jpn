@@ -2,6 +2,7 @@
   "id": "stage5",
   "name": "OSAKA",
   "subtitle": "OSAKA - KUIDAORE",
+  "map": [135.5, 34.69, 6, 10],
   "skin": "osaka",
   "near": "osaka",
   "scroll": { "far": 12, "mid": 30, "near": 64, "anchor": 420 },
@@ -99,7 +100,7 @@
     { "t": 107.5, "type": "diver", "x": 140, "count": 2 },
     { "t": 109, "type": "carrier", "x": 120, "path": "zigzag", "color": "green" },
 
-    { "t": 115, "type": "heavy", "x": 90 },
+    { "t": 115, "type": "heavy", "card": ["BUNRAKU", "LALKA I TRZECH LALKARZY"], "x": 90 },
     { "t": 125, "type": "popcorn", "x": 20, "path": "arc", "count": 4 },
     { "t": 133, "type": "popcorn", "x": 160, "path": "arc", "count": 4 },
     { "t": 141, "type": "diver", "x": 60, "count": 2 },
@@ -143,6 +144,6 @@
     { "t": 198, "type": "shooter", "x": 40, "duo": "s15" },
     { "t": 198.6, "type": "shooter", "x": 140, "duo": "s15" },
     { "t": 201, "type": "carrier", "x": 90, "path": "zigzag", "color": "green" },
-    { "t": 206, "type": "boss", "x": 90, "boss": "tako" }
+    { "t": 206, "type": "boss", "card": ["TAKO", "OŚMIORNICA Z DOTONBORI"], "x": 90, "boss": "tako" }
   ]
 }

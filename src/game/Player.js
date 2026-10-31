@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BEANS, BOMB, DEPTH, HEAT, PLAYER, SHIPS, VIEW, WEAPONS } from '../config.js';
+import { BEANS, BOMB, DEPTH, GRAZE, HEAT, PLAYER, SHIPS, VIEW, WEAPONS } from '../config.js';
 import { Pool } from './Pool.js';
 
 const WEAPON_NAMES = { basic: 'PODSTAWOWA', spread: 'ROZRZUT', laser: 'LASER', homing: 'NAPROWADZANE' };
@@ -28,6 +28,7 @@ export class Player {
     this.jam = 0; // s left with overheated, silent guns
     this.heatOn = false; // the stage has steam: the HUD shows the heat gauge
     this.beanT = 0; // s left of Setsubun beans
+    this.grazeCharge = 0; // grazes towards the next bomb (while the bomb is spent)
     this.drag = null;
     this.god = false;
     this.x = VIEW.width / 2;
@@ -249,6 +250,21 @@ export class Player {
     }
   }
 
+  /** A bullet brushed past the hit dot: points, and while the bomb is spent, a step towards a new one. */
+  graze(b) {
+    const s = this.scene;
+    s.score.add(GRAZE.points * s.score.mult);
+    s.fx.spark(b.x, b.y);
+    s.sfx.graze();
+    if (this.bombs > 0) return;
+    if (++this.grazeCharge >= GRAZE.perBomb) {
+      this.grazeCharge = 0;
+      this.bombs = 1;
+      s.fx.text(this.x, this.y - 18, 'BOMBA GOTOWA', 1.2, 0xffe080);
+      s.sfx.powerUp();
+    }
+  }
+
   /** A macaque grabs something: a power level, else the bomb. Nothing to take: null (it bites instead). */
   steal() {
     if (this.level > 1) {
@@ -305,6 +321,7 @@ export class Player {
   // ---------------------------------------------------------------- power, bomb, death
   collect(color) {
     const fx = this.scene.fx;
+    this.scene.sfx.pickup();
     if (color === 'mame') {
       this.beanT = BEANS.time;
       fx.text(this.x, this.y - 18, 'FASOLKI!', 1.2, 0xffe080);
@@ -314,6 +331,7 @@ export class Player {
     if (this.weapon === type) {
       if (this.level < PLAYER.maxPower) {
         this.level++;
+        this.scene.sfx.powerUp();
         fx.text(this.x, this.y - 18, this.level === PLAYER.maxPower ? 'MOC MAX' : 'MOC +1', 1, WEAPON_TINT[type]);
       } else {
         this.scene.score.add(this.scene.score.maxPowerBonus());
@@ -331,6 +349,7 @@ export class Player {
     this.bombs = 0;
     this.invulnerable = Math.max(this.invulnerable, BOMB.invulnerable);
     const s = this.scene;
+    s.sfx.bomb();
     s.bombClear = BOMB.clearTime;
     s.bullets.cancelAll(s.fx);
     s.fx.flash(0.75, 0.45);
@@ -343,6 +362,7 @@ export class Player {
   hit() {
     if (!this.alive || this.invulnerable > 0 || this.entering > 0 || this.god) return;
     const s = this.scene;
+    s.sfx.hit();
     this.alive = false;
     this.lives--;
     this.drag = null;

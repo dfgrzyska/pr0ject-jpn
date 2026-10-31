@@ -242,6 +242,8 @@ export class Enemies {
   damage(e, amount, byBomb = false, bean = false) {
     // a bomb blows the lid off a vinegar jar; otherwise invulnerable things shrug it off
     if (e.dead || e.hp <= 0 || e.ghost || (e.invuln && !(byBomb && e.lidded))) return;
+    const boss = e.type === 'heavy' || e.type === 'boss' || e.type === 'kuroko';
+    if (boss) this.scene.sfx.bossHit(e.oni && !bean);
     if (e.oni && !bean) {
       // the oni's hide: normal shots barely chip it (no flash), a bomb does half
       e.hp -= amount * (byBomb ? 0.5 : BEANS.armor);
@@ -340,7 +342,10 @@ export class Enemies {
       });
       s.bullets.cancelAll(s.fx);
       s.fx.text(x, y - 24, `${e.def.score * s.score.mult}`, 1.6, 0xffe080);
-      if (e.type === 'heavy') this.heavy = null;
+      if (e.type === 'heavy') {
+        this.heavy = null;
+        s.freeze(0.3);
+      }
     }
     this.remove(e);
     const g = this.bossGroup;

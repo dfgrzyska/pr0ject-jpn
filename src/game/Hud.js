@@ -1,4 +1,4 @@
-import { BEANS, DEPTH, HEAT, PLAYER, SCORE, VIEW } from '../config.js';
+import { BEANS, DEPTH, GRAZE, HEAT, PLAYER, SCORE, VIEW } from '../config.js';
 import { FONT } from '../scenes/Boot.js';
 
 const W = VIEW.width;
@@ -37,6 +37,14 @@ export class Hud {
     this.bannerSub = this.text(W / 2, 0, '', 0.5).setDepth(d + 1);
     this.bannerT = 0;
     this.blinkBanner = false;
+    // the boss card: a band sliding across with the boss's name
+    this.cardBand = scene.add.rectangle(0, 0, W, 34, 0x0b0a12, 0.96).setOrigin(0, 0.5).setDepth(d + 2).setVisible(false);
+    this.cardLines = scene.add.graphics().setDepth(d + 2);
+    this.cardWarn = this.text(W / 2, 0, 'UWAGA!', 0.5).setDepth(d + 3).setTint(0xff6a50).setVisible(false);
+    this.cardName = this.text(W / 2, 0, '', 0.5).setDepth(d + 3).setScale(2).setVisible(false);
+    this.cardSub = this.text(W / 2, 0, '', 0.5).setDepth(d + 3).setTint(0xf08bb0).setVisible(false);
+    this.cardT = 0;
+    this.cardMax = 1;
     this.overlay = scene.add.rectangle(0, 0, W, VIEW.maxHeight, 0x0b0a12, 0.6).setOrigin(0, 0).setDepth(DEPTH.overlay).setVisible(false);
     this.overlayItems = [];
     this.layout(scene.H);
@@ -72,6 +80,33 @@ export class Hud {
     this.bannerSub.setText(sub).setVisible(true);
     this.bannerT = time;
     this.blinkBanner = blink;
+  }
+
+  /** The boss card: name and title slide in on a dark band, hold, and slide away. */
+  card(name, sub, time = 2.8) {
+    this.cardName.setText(name);
+    this.cardSub.setText(sub);
+    this.cardT = time;
+    this.cardMax = time;
+  }
+
+  updateCard(dt) {
+    const on = this.cardT > 0;
+    for (const o of [this.cardBand, this.cardWarn, this.cardName, this.cardSub]) o.setVisible(on);
+    this.cardLines.clear();
+    if (!on) return;
+    this.cardT -= dt;
+    const el = this.cardMax - this.cardT;
+    const slide = 0.25;
+    const ox = el < slide ? -W * (1 - el / slide) ** 2 : this.cardT < slide ? W * (1 - this.cardT / slide) ** 2 : 0;
+    const y = Math.round(this.H * 0.34);
+    this.cardBand.setPosition(Math.round(ox), y);
+    this.cardLines.fillStyle(0xe2421f, 1).fillRect(Math.round(ox), y - 18, W, 2);
+    this.cardLines.fillStyle(0xe2421f, 1).fillRect(Math.round(ox), y + 16, W, 2);
+    this.cardLines.fillStyle(0xffe080, 1).fillRect(Math.round(ox), y - 16, W, 1);
+    this.cardWarn.setPosition(Math.round(W / 2 + ox), y - 26).setVisible(Math.floor(el * 6) % 2 === 0);
+    this.cardName.setPosition(Math.round(W / 2 + ox), y - 4);
+    this.cardSub.setPosition(Math.round(W / 2 + ox), y + 10);
   }
 
   /** Full-screen panel (title, pause, results). lines: [text, tint?] or {sprite, x, y}. */
@@ -132,6 +167,14 @@ export class Hud {
     this.weapon.setFrame(WEAPON_ICON[p.weapon]);
     this.pips.forEach((pip, i) => pip.setFrame(i < p.level ? 'pip_on' : 'pip_off'));
     this.bombBtn.setAlpha(p.bombs > 0 ? 0.8 : 0.22);
+    if (p.bombs === 0 && p.grazeCharge > 0) {
+      // the ring round the bomb button fills with every graze
+      const a = -Math.PI / 2;
+      this.bar.lineStyle(2, 0xffe080, 0.85);
+      this.bar.beginPath();
+      this.bar.arc(this.bombBtn.x, this.bombBtn.y, 15, a, a + (Math.PI * 2 * p.grazeCharge) / GRAZE.perBomb);
+      this.bar.strokePath();
+    }
     this.soundBtn.setFrame(s.music.enabled ? 'btn_sound_on' : 'btn_sound_off');
 
     this.boss.clear();
@@ -143,6 +186,7 @@ export class Hud {
       this.boss.fillStyle(0xe2421f, 1).fillRect(x, 28, Math.max(0, Math.round((w * bar.hp) / bar.max)), 2);
     }
 
+    this.updateCard(dt);
     if (this.bannerT > 0) {
       this.bannerT -= dt;
       const vis = this.bannerT > 0 && (!this.blinkBanner || Math.floor(this.bannerT * 6) % 2 === 0);

@@ -36,6 +36,17 @@ Wybór jest zapamiętywany; „jeszcze raz” wraca do ekranu wyboru z ostatnim 
 - Telefon: statek podąża za ruchem palca względem miejsca dotknięcia; bomba — przycisk w prawym dolnym rogu; pauza i głośnik — prawy górny róg.
 - Klawiatura: strzałki / WASD — ruch, Z — bomba, Esc / P — pauza, M — dźwięk, Enter — start.
 - Strzał jest automatyczny.
+- Palec trzymany na ekranie po utracie statku przejmuje nowy statek przy pierwszym ruchu (nie trzeba dotykać od nowa);
+  róg bomby bez bomby steruje jak reszta ekranu.
+
+Punkty i bomba:
+- **Ocieranie się (graze)** — pocisk przelatujący tuż obok kropki statku (do 8 px, `GRAZE` w `src/config.js`)
+  daje 30 × mnożnik punktów i iskrę; gdy bomba jest zużyta, każde otarcie ładuje złoty pierścień wokół przycisku
+  bomby, a 40 otarć oddaje bombę („BOMBA GOTOWA”). Nie liczy się w czasie migania po odrodzeniu.
+- **Karty bossów** — 3 s przed minibossem i bossem przez ekran przejeżdża pasek z jego imieniem i podtytułem
+  (pole `card` fali w `stageN.json`), z alarmem i okrzykiem kakegoe „yoo!”.
+- **Zatrzymanie akcji** — przy zestrzeleniu minibossa (0,3 s) i bossa (0,45 s) gra na chwilę zamiera w błysku,
+  a dopiero potem wybuchają eksplozje.
 
 ## Etap 1
 
@@ -258,6 +269,12 @@ Każda nowa gra losuje kolejność miast; „ETAP n” to miejsce w tej kolejno�
 Po ukończeniu etapu gra przechodzi do następnego z tym samym statkiem, wynikiem, mnożnikiem, bronią i życiami;
 po ostatnim — „GRATULACJE!”. „Jeszcze raz” po przegranej zaczyna nową grę z nową kolejnością.
 
+Między etapami (po ekranie wyniku) pokazuje się **mapa Japonii** (`src/game/JapanMap.js`): miasta tego biegu —
+zaliczone na złoto, następne pulsuje, pozostałe przygaszone — złota kropkowana trasa dotychczasowej podróży
+i statek gracza lecący łukiem do następnego miasta; dotknięcie w trakcie lotu go skraca, po wylądowaniu
+startuje następny etap. Okinawa jest we wstawce (jak na mapach Japonii). Położenie miasta i podpisu to pole
+`map: [lon, lat, dx, dy]` w `stageN.json`; mapę rysuje `tools/art/japan.mjs` (rzut w `src/data/japan.js`).
+
 ## Muzyka
 
 Oryginalna ścieżka „Senbon” grana na żywo przez Web Audio (`src/audio/`) — bez plików audio.
@@ -279,8 +296,9 @@ i trzaskiem kołatek hyōshigi; ośmiornica — orkiestra w pełnym pędzie.
 Beppu gra „Yukemuri” (`src/audio/score6.js`): pieśń min'yō uzdrowisk — oddechowe shakuhachi w skali min'yō
 (D F G A C), koto, shamisen i bębenek tsuzumi („pon” i „ta”, tokeny `z` / `Z`); leniwie jak w kąpieli,
 potem coraz gęściej. Krokodyl ma pełzające półtonowe ostinato, oni — taiko i krzyczące shakuhachi w skali in na D.
-Efekty (`src/audio/Sfx.js`): ciche, syntetyzowane strzały każdej broni (z limitem częstotliwości) i eksplozje
-w trzech rozmiarach. Głośnik / M wycisza muzykę i efekty razem.
+Efekty (`src/audio/Sfx.js`): ciche, syntetyzowane strzały każdej broni (z limitem częstotliwości), eksplozje
+w trzech rozmiarach, znajdźki i wzrost mocy, otarcia (graze), bomba, utrata statku, trafienia w bossa (pancerz oni
+brzmi głucho), alarm przed bossem z okrzykiem kakegoe „yoo!”. Głośnik / M wycisza muzykę i efekty razem.
 iOS: dźwięk startuje po pierwszym dotknięciu; przełącznik wyciszenia telefonu wycisza też grę.
 
 ## Fale

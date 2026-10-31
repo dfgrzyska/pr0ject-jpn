@@ -2,6 +2,7 @@
   "id": "stage2",
   "name": "OKINAWA",
   "subtitle": "OKINAWA - RAJSKIE WYSPY",
+  "map": [127.68, 26.21, -4, -33],
   "skin": "okinawa",
   "near": "tropic",
   "scroll": { "far": 12, "mid": 30, "near": 64, "anchor": 420 },
@@ -93,7 +94,7 @@
     { "t": 139, "type": "diver", "x": 90, "count": 5 },
     { "t": 143, "type": "popcorn", "x": 40, "path": "sine", "count": 6 },
     { "t": 144, "type": "popcorn", "x": 140, "path": "sine", "count": 6 },
-    { "t": 147, "type": "heavy", "x": 90 },
+    { "t": 147, "type": "heavy", "card": ["MANTA", "WŁADCZYNI RAFY"], "x": 90 },
     { "t": 158, "type": "popcorn", "x": 20, "path": "arc", "count": 5 },
     { "t": 166, "type": "popcorn", "x": 160, "path": "arc", "count": 5 },
     { "t": 174, "type": "carrier", "x": 90, "path": "zigzag", "color": "red" },
@@ -109,6 +110,6 @@
     { "t": 195, "type": "popcorn", "x": 40, "path": "line", "count": 6 },
     { "t": 195, "type": "popcorn", "x": 140, "path": "line", "count": 6 },
     { "t": 198, "type": "carrier", "x": 90, "path": "zigzag", "color": "blue" },
-    { "t": 204, "type": "boss", "x": 90, "boss": "shisa" }
+    { "t": 204, "type": "boss", "card": ["SHISA", "PARA STRAŻNIKÓW Z DACHÓW"], "x": 90, "boss": "shisa" }
   ]
 }

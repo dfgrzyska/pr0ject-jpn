@@ -2,6 +2,7 @@
   "id": "stage4",
   "name": "KAGOSHIMA",
   "subtitle": "KAGOSHIMA - SAKURAJIMA",
+  "map": [130.55, 31.6, 26, 6],
   "skin": "kagoshima",
   "near": "ash",
   "scroll": { "far": 12, "mid": 30, "near": 64, "anchor": 420 },
@@ -82,7 +83,7 @@
     { "t": 92.6, "type": "shooter", "x": 120 },
     { "t": 94, "type": "popcorn", "x": 90, "path": "sine", "count": 7 },
     { "t": 95.5, "type": "carrier", "x": 60, "color": "blue" },
-    { "t": 100, "type": "heavy", "x": 90 },
+    { "t": 100, "type": "heavy", "card": ["RAIJU", "BESTIA PIORUNÓW"], "x": 90 },
     { "t": 110, "type": "popcorn", "x": 20, "path": "arc", "count": 5 },
     { "t": 118, "type": "popcorn", "x": 160, "path": "arc", "count": 5 },
     { "t": 126, "type": "diver", "x": 60, "y": 130, "count": 2 },
@@ -143,6 +144,6 @@
     { "t": 202, "type": "popcorn", "x": 20, "path": "arc", "count": 6 },
     { "t": 203, "type": "popcorn", "x": 160, "path": "arc", "count": 6 },
     { "t": 205, "type": "carrier", "x": 90, "color": "green" },
-    { "t": 219, "type": "boss", "x": 90, "boss": "volcano", "crater": [90, 7088], "vents": [[40, 7050], [140, 7050]] }
+    { "t": 219, "type": "boss", "card": ["SAKURAJIMA", "ŻYWY WULKAN"], "x": 90, "boss": "volcano", "crater": [90, 7088], "vents": [[40, 7050], [140, 7050]] }
   ]
 }

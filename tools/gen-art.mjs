@@ -9,6 +9,7 @@ import { packAtlas } from './lib/spritekit.mjs';
 import { Raster } from './lib/raster.mjs';
 import { buildSprites } from './art/sprites.mjs';
 import { buildFont, FONT } from './art/font.mjs';
+import { buildJapanMap } from './art/japan.mjs';
 import * as kyoto from './art/kyoto/index.mjs';
 import * as okinawa from './art/okinawa/index.mjs';
 import * as sapporo from './art/sapporo/index.mjs';
@@ -70,6 +71,11 @@ write('font.png', font.raster.toPNG());
 const asciiJson = (o) => JSON.stringify(o).replace(/[\u0080-￿]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
 write('font.json', Buffer.from(asciiJson({ ...FONT, chars: font.chars })));
 if (preview) writeFileSync(join(previewDir, 'font_x4.png'), font.raster.scaled(4, 0x30304a).toPNG());
+
+console.log('map of Japan');
+const japan = buildJapanMap();
+write('japan.png', japan.toPNG());
+if (preview) writeFileSync(join(previewDir, 'japan_x3.png'), japan.scaled(3).toPNG());
 
 for (const { id, art } of STAGES) {
   if (only && only !== id) continue;
