@@ -6,15 +6,22 @@ const W = VIEW.width;
 const LINE = 14;
 const WEAPON_ICON = { basic: 'wpn_basic', spread: 'wpn_spread', laser: 'wpn_laser', homing: 'wpn_homing' };
 
-/** Bitmap text snapped to whole pixels (see setVertexRoundMode note below). */
+/**
+ * Bitmap text that always lands on whole pixels. Phaser's bitmap text ignores vertex rounding, and an
+ * origin of 0.5 on an odd width (or the 13 px line) puts every glyph on a half pixel; some GPUs (iPhone)
+ * then sample the font a texel off and letters lose their top row (O turns into U, A into H). So the
+ * display origin is floored whenever the text is measured; callers pass whole-pixel positions.
+ */
 export function pixelText(scene, x, y, str, origin = 0.5) {
-  // 'full' snaps glyph quads to whole pixels even when centred on a half pixel or scaled x2,
-  // otherwise some GPUs (iPhone) sample the font texture at texel edges and mangle thin accents
-  return scene.add
-    .bitmapText(x, y, FONT, str)
-    .setOrigin(origin, origin === 0 ? 0 : 0.5)
-    .setLetterSpacing(-1)
-    .setVertexRoundMode('full');
+  const t = scene.add.bitmapText(Math.round(x), Math.round(y), FONT, str).setLetterSpacing(-1);
+  const measure = t.getTextBounds;
+  t.getTextBounds = function (round) {
+    const bounds = measure.call(this, round);
+    this._displayOriginX = Math.floor(this._displayOriginX);
+    this._displayOriginY = Math.floor(this._displayOriginY);
+    return bounds;
+  };
+  return t.setOrigin(origin, origin === 0 ? 0 : 0.5);
 }
 
 export class Hud {

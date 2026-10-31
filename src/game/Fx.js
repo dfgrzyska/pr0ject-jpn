@@ -1,5 +1,5 @@
 import { DEPTH, VIEW } from '../config.js';
-import { FONT } from '../scenes/Boot.js';
+import { pixelText } from './Hud.js';
 import { Pool } from './Pool.js';
 
 export class Fx {
@@ -84,12 +84,11 @@ export class Fx {
   }
 
   text(x, y, str, life = 1.2, tint = 0xffffff) {
-    const t = this.scene.add.bitmapText(Math.round(x), Math.round(y), FONT, str).setOrigin(0.5).setDepth(DEPTH.fx + 2);
-    t.setLetterSpacing(-1).setTint(tint).setVertexRoundMode('full');
+    const t = pixelText(this.scene, x, y, str).setDepth(DEPTH.fx + 2).setTint(tint);
     // keep long labels on screen near the edges
     const half = Math.ceil(t.width / 2) + 2;
     t.x = Math.round(Math.min(Math.max(t.x, half), VIEW.width - half));
-    this.texts.push({ t, life, max: life });
+    this.texts.push({ t, life, max: life, fy: t.y });
   }
 
   update(dt, parallax) {
@@ -131,7 +130,8 @@ export class Fx {
     });
     for (const tx of this.texts) {
       tx.life -= dt;
-      tx.t.y -= 14 * dt;
+      tx.fy -= 14 * dt;
+      tx.t.y = Math.round(tx.fy); // whole pixels only, or the glyphs smear on some phones
       tx.t.setAlpha(Math.min(1, (tx.life / tx.max) * 3));
     }
   }
