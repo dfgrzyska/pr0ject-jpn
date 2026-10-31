@@ -39,13 +39,27 @@ Wybór jest zapamiętywany; „jeszcze raz” wraca do ekranu wyboru z ostatnim 
 
 ## Etap 1
 
-Pas tła (warstwa środkowa) ~7 tys. px, ok. 3,5 min: miasteczko Fushimi → rzeka z mostem i sakurami →
-sandō z wielką bramą torii → kompleks świątyni (brama Rōmon, Honden) → tunele Senbon Torii na grzbiecie
-góry (z rozwidleniem na dwa tunele) → Okusha → las cedrów i bambusów ze stawem Shin-ike i kopcami otsuka →
-wspinaczka Yotsutsuji z punktem widokowym → szczyt Ichinomine.
+Pas tła (warstwa środkowa) ~7 tys. px, ok. 3,5 min — przelot nad Kioto:
+- **Gion** (0–7 s): Hanamikōji — gęste machiya z kratownicami koshi, płotkami inuyarai, doniczkami, rowerami
+  i lampionami pod okapami, czerwona herbaciarnia Ichiriki-tei, maiko i riksze, kanał Shirakawa z wierzbami
+  i mostkiem Tatsumi, pięciopiętrowa pagoda Yasaka, cynobrowa brama chramu Yasaka;
+- **Kamogawa**: kamienie-żółwie w poprzek rzeki, tarasy yuka w Pontochō z lampionami, pary siedzące
+  w równych odstępach na brzegu, czaple, most Shijō;
+- **Fushimi Inari** (8–47 s): aleja ze sklepikami (maski kitsune na straganach), wielka torii, chram (Rōmon,
+  honden, scena kagura, ściany beczek sake, czerwone flagi nobori, święte drzewa z shimenawa, tłumy);
+- **Senbon Torii** (47–76 s): tunele torii na grzbiecie (z rozwidleniem na dwa) i kopce otsuka;
+- **Arashiyama** (76–103 s): gaj bambusowy z płotkami z chrustu i rikszami, czarna torii chramu Nonomiya,
+  rzeka Katsura z mostem Togetsukyō i łodziami;
+- **Kinkaku-ji** (103–133 s): Złoty Pawilon odbity w lustrzanym stawie z wysepkami, wodospad Ryūmon,
+  mchowy ogród, herbaciarnia Sekka-tei;
+- **Ryōan-ji** (133–153 s): ogród kamienny — grabiony żwir, 15 kamieni w omszałych obwódkach, gliniany mur,
+  weranda z siedzącymi gośćmi;
+- **Kiyomizu-dera** (153–196 s): schody Sannenzaka między sklepikami z ceramiką, brama Niōmon z lwami,
+  dzwonnica, trzypiętrowe pagody, wodospad Otowa, wielki drewniany taras na kracie pali nad doliną wiśni;
+- **Daimonji o zmierzchu** (196–216 s): znak 大 z płonących stosów na zboczu (Gozan Okuribi).
 
-Paralaksa: daleka warstwa to dolina pod grzbietem (zapętlona), środkowa — grzbiet z torii, świątyniami
-i drzewami (wieżyczki są do niej przyczepione), bliska — płatki sakury i mgła.
+Paralaksa: na grzbiecie z torii daleka warstwa to dolina pod spodem (zapętlona), środkowa — miasto,
+świątynie i drzewa (wieżyczki są do niej przyczepione), bliska — płatki sakury i mgła.
 
 Wrogowie (roboty w stylu Fushimi Inari):
 
@@ -56,7 +70,7 @@ Wrogowie (roboty w stylu Fushimi Inari):
 | Wieżyczka | kamienna latarnia tōrō z działem | na warstwie terenu, wachlarz (`fan`) lub pierścień (`ring`) |
 | Nurek | dron kruk-tengu | zawisa, celuje i pikuje w gracza |
 | Ciężki | tanuki — figurka z Shigaraki (kapelusz, butelka sake, zeszyt rachunków) | pierwszy miniboss (ok. 70 s): bębni w brzuch (pierścień na każde „pon”), rzuca butelkami sake z celownikiem na ziemi, zmienia się listkiem w trzy tanuki — kopie mają listek na kapeluszu i pękają od jednego trafienia |
-| Ciężki | Kyūbi — czerwony lis o dziewięciu ogonach z klejnotem hōju i lisim ogniem | drugi miniboss (ok. 150 s, pod szczytem), pierścienie / wachlarze / spirala |
+| Ciężki | Kyūbi — czerwony lis o dziewięciu ogonach z klejnotem hōju i lisim ogniem | drugi miniboss (ok. 150 s, nad Ryōan-ji), pierścienie / wachlarze / spirala |
 | Nośnik | dron z klejnotem hōju (czerwony/niebieski/zielony) | zygzak, po ~4,6 s ucieka, zawsze zostawia znajdźkę |
 
 Znajdźki: czerwona — rozrzut, niebieska — laser, zielona — naprowadzane „lisie ognie”.

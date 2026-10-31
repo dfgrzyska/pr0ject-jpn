@@ -1,7 +1,7 @@
 {
   "id": "stage1",
   "name": "KIOTO",
-  "subtitle": "KIOTO - FUSHIMI INARI",
+  "subtitle": "KIOTO - DAWNA STOLICA",
   "skin": "kyoto",
   "near": "sakura",
   "scroll": { "far": 12, "mid": 30, "near": 64, "anchor": 420 },
