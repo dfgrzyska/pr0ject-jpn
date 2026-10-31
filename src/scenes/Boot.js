@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { STAGES } from '../data/stages.js';
+import { keepForOffline } from '../pwa.js';
 
 export const FONT = 'pixel';
 
@@ -26,6 +27,7 @@ export class Boot extends Phaser.Scene {
   }
 
   create() {
+    keepForOffline(); // everything is loaded now
     const meta = this.cache.json.get('fontMeta');
     // Phaser 4: Parse returns the whole cache entry ({ data, texture, frame })
     const entry = Phaser.GameObjects.RetroFont.Parse(this, {

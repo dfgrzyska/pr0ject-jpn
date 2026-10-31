@@ -75,6 +75,9 @@ const DIACRITICS = {
   Ś: ['S', ACUTE],
   Ź: ['Z', ACUTE],
   Ż: ['Z', [[2, -3], [2, -2]]],
+  // long vowels in Japanese words (OMEDETŌ, KYŪSHŪ)
+  Ō: ['O', [[1, -2], [2, -2], [3, -2]]],
+  Ū: ['U', [[1, -2], [2, -2], [3, -2]]],
 };
 
 export const FONT = { cellW: 7, cellH: 13, gap: 1, perRow: 16 };

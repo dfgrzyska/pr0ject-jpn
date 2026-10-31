@@ -1,6 +1,7 @@
 import { DEPTH, VIEW } from '../config.js';
 import { MAP, project } from '../data/japan.js';
 import { pixelText } from './Hud.js';
+import { INK, hasStamp } from './Stamps.js';
 
 const FLIGHT = 2.6; // s for the ship to fly to the next city
 const W = VIEW.width;
@@ -28,6 +29,8 @@ export class JapanMap {
       const text = pixelText(scene, 0, 0, stages[i].name).setDepth(d + 2).setTint(k <= pos ? 0xffe080 : k === pos + 1 ? 0xffffff : 0x8a8aa8);
       return { k, shadow, text };
     });
+    // the cities whose stamp is in the book wear a little seal
+    this.seals = order.map((i) => (hasStamp(stages[i].id) ? scene.add.image(0, 0, 'sprites', 'stamp_icon').setDepth(d + 2).setTint(INK[stages[i].id]) : null));
     const next = stages[order[pos + 1]];
     this.title = pixelText(scene, W / 2, 0, 'PODRÓŻ PO JAPONII').setDepth(d + 2).setTint(0xffd6e5);
     this.count = pixelText(scene, W / 2, 0, `MIASTA: ${pos + 1} / ${order.length}`).setDepth(d + 2).setTint(0xb0aec0);
@@ -71,6 +74,7 @@ export class JapanMap {
       const [, , dx, dy] = this.stages[this.order[l.k]].map;
       l.text.setPosition(x + dx, y + dy);
       l.shadow.setPosition(x + dx + 1, y + dy + 1);
+      this.seals[l.k]?.setPosition(x + (dx < 0 ? 7 : -7), y - 6);
     }
   }
 
@@ -128,5 +132,6 @@ export class JapanMap {
       l.text.destroy();
       l.shadow.destroy();
     }
+    for (const s of this.seals) s?.destroy();
   }
 }

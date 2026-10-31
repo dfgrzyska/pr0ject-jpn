@@ -17,7 +17,30 @@ Wersja online: https://dfgrzyska.github.io/pr0ject-jpn/ — budowana automatyczn
 
 Parametry do testów w adresie: `?stage=1` … `?stage=6` (ten etap pierwszy, reszta losowo — 1 Kioto, 2 Okinawa, 3 Sapporo, 4 Kagoshima, 5 Osaka, 6 Beppu), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
 `?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5), `?ship=oni|kitsune|tsubame`,
-`?noprops` (tło bez animacji).
+`?noprops` (tło bez animacji). Z `?god` albo `?t=` pieczątek nie da się zdobyć.
+
+## Na telefonie, offline, po angielsku
+
+Grę można zainstalować jak aplikację: na Androidzie (i w Chrome / Edge na komputerze) na ekranie tytułowym
+pojawia się strzałka w lewym rogu (albo klawisz I), na iPhonie ekran tytułowy podpowiada „Udostępnij → Do ekranu
+początkowego”. Zainstalowana otwiera się na pełnym ekranie, w pionie. Po pierwszym wejściu działa też bez
+internetu: service worker (`public/sw.js`) trzyma w pamięci wszystkie pliki gry, a online zawsze bierze najnowszą
+wersję (`src/pwa.js`, `public/manifest.webmanifest`).
+
+Przełącznik PL / EN jest w lewym rogu ekranu tytułowego (albo klawisz L); za pierwszym razem język wybiera się
+sam według przeglądarki i zostaje zapamiętany. Gra jest napisana po polsku, a angielskie teksty podstawia
+`src/i18n.js` w miejscu, gdzie napisy są rysowane (rozmówki fraz i wzorców z liczbami).
+
+## Książeczka pieczątek
+
+Za każde miasto można zdobyć pieczątkę w stylu stempli z japońskich dworców (eki sutanpu): trzeba przejść jego
+etap bez utraty życia i bez użycia bomby. Póki się da, pod życiami świeci mała pieczęć w kolorze miasta (po
+śmierci albo bombie szarzeje i znika); po bossie pieczątka spada na ekran wyników z głuchym stuknięciem, a na
+mapie Japonii zdobyte miasta mają znaczek. Książeczkę z sześcioma ramkami (data zdobycia pod każdą pieczątką)
+otwiera ikona w lewym górnym rogu ekranu tytułowego albo klawisz K. Pieczątki zapisują się w przeglądarce
+(`src/game/Stamps.js`), a rysuje je `tools/art/stamps.mjs`: pagoda Yasaka (Kioto), brama Shureimon nad falami
+(Okinawa), wieża telewizyjna w śniegu (Sapporo), wybuchająca Sakurajima (Kagoshima), zamek (Osaka) i znak ♨
+gorących źródeł (Beppu), każda innym tuszem.
 
 ## Statki
 
@@ -35,7 +58,8 @@ Wybór jest zapamiętywany; „jeszcze raz” wraca do ekranu wyboru z ostatnim 
 ## Sterowanie
 
 - Telefon: statek podąża za ruchem palca względem miejsca dotknięcia; bomba — przycisk w prawym dolnym rogu; pauza i głośnik — prawy górny róg.
-- Klawiatura: strzałki / WASD — ruch, Z — bomba, Esc / P — pauza, M — dźwięk, Enter — start.
+- Klawiatura: strzałki / WASD — ruch, Z — bomba, Esc / P — pauza, M — dźwięk, Enter — start; na ekranie tytułowym
+  K — książeczka pieczątek, L — polski / angielski, I — instalacja (gdy przeglądarka na to pozwala).
 - Strzał jest automatyczny.
 - Palec trzymany na ekranie po utracie statku przejmuje nowy statek przy pierwszym ruchu (nie trzeba dotykać od nowa);
   róg bomby bez bomby steruje jak reszta ekranu.
@@ -368,6 +392,9 @@ src/config.js          parametry rozgrywki (bronie, wrogowie, mnożnik, fair pla
 src/scenes/Boot.js     ładowanie, font, animacje
 src/scenes/Stage.js    pętla etapu, kolizje, stany (tytuł / gra / pauza / koniec)
 src/data/              etapy (stages.js + stageN.json)
-src/game/*.js          paralaksa, gracz i bronie, wrogowie i bossowie, skórki, pociski, fale, wynik, HUD, efekty
+src/game/*.js          paralaksa i żywe tło, gracz i bronie, wrogowie i bossowie, skórki, pociski, fale, wynik, HUD,
+                       efekty, mapa Japonii, książeczka pieczątek
+src/i18n.js            język (PL / EN)
+src/pwa.js             instalacja na telefonie, gra offline (z public/sw.js)
 tools/                 generator grafiki
 ```

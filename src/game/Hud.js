@@ -1,5 +1,7 @@
 import { BEANS, DEPTH, GRAZE, HEAT, PLAYER, SCORE, VIEW } from '../config.js';
 import { FONT } from '../scenes/Boot.js';
+import { getLang, tr } from '../i18n.js';
+import { canInstall } from '../pwa.js';
 
 const W = VIEW.width;
 // Line pitch for panels: 7px glyphs + raised Polish accents need 14px to never touch the line above.
@@ -11,9 +13,10 @@ const WEAPON_ICON = { basic: 'wpn_basic', spread: 'wpn_spread', laser: 'wpn_lase
  * origin of 0.5 on an odd width (or the 13 px line) puts every glyph on a half pixel; some GPUs (iPhone)
  * then sample the font a texel off and letters lose their top row (O turns into U, A into H). So the
  * display origin is floored whenever the text is measured; callers pass whole-pixel positions.
+ * The text comes out in the language chosen (see i18n.js).
  */
 export function pixelText(scene, x, y, str, origin = 0.5) {
-  const t = scene.add.bitmapText(Math.round(x), Math.round(y), FONT, str).setLetterSpacing(-1);
+  const t = scene.add.bitmapText(Math.round(x), Math.round(y), FONT, tr(str)).setLetterSpacing(-1);
   const measure = t.getTextBounds;
   t.getTextBounds = function (round) {
     const bounds = measure.call(this, round);
@@ -39,6 +42,14 @@ export class Hud {
     this.bombBtn = scene.add.image(0, 0, 'sprites', 'btn_bomb').setDepth(d);
     this.pauseBtn = scene.add.image(W - 10, 10, 'sprites', 'btn_pause').setDepth(d).setAlpha(0.7);
     this.soundBtn = scene.add.image(W - 28, 10, 'sprites', 'btn_sound_on').setDepth(d).setAlpha(0.7);
+    this.bookBtn = scene.add.image(12, 12, 'sprites', 'btn_book').setDepth(DEPTH.overlay + 3).setVisible(false); // on the title screen
+    // the language switch, under it: PL EN, the one in use lit
+    this.langPl = pixelText(scene, 8, 29, 'PL').setDepth(DEPTH.overlay + 3).setVisible(false);
+    this.langEn = pixelText(scene, 22, 29, 'EN').setDepth(DEPTH.overlay + 3).setVisible(false);
+    this.installBtn = scene.add.image(12, 46, 'sprites', 'btn_install').setDepth(DEPTH.overlay + 3).setAlpha(0.85).setVisible(false);
+    // the stamp still to be won in this city: its seal under the lives, fading away after a death or a bomb
+    this.stampIcon = scene.add.image(7, 30, 'sprites', 'stamp_icon').setDepth(d).setVisible(false);
+    this.stampFade = 0;
     this.boss = scene.add.graphics().setDepth(d);
     this.banner = this.text(W / 2, 0, '', 0.5).setDepth(d + 1);
     this.bannerSub = this.text(W / 2, 0, '', 0.5).setDepth(d + 1);
@@ -78,21 +89,34 @@ export class Hud {
     return Math.hypot(p.x - this.soundBtn.x, p.y - this.soundBtn.y) < 10;
   }
 
+  hitBook(p) {
+    return this.bookBtn.visible && Math.hypot(p.x - this.bookBtn.x, p.y - this.bookBtn.y) < 12;
+  }
+
+  hitInstall(p) {
+    return this.installBtn.visible && Math.hypot(p.x - this.installBtn.x, p.y - this.installBtn.y) < 10;
+  }
+
+  hitLang(p) {
+    return this.langPl.visible && p.x < 34 && p.y > 21 && p.y < 38;
+  }
+
   hitBomb(p) {
     return Math.hypot(p.x - this.bombBtn.x, p.y - this.bombBtn.y) < 20;
   }
 
   show(title, sub = '', time = 2, blink = false) {
-    this.banner.setText(title).setVisible(true);
-    this.bannerSub.setText(sub).setVisible(true);
+    this.banner.setText(tr(title)).setVisible(true);
+    this.bannerSub.setText(tr(sub)).setVisible(true);
     this.bannerT = time;
     this.blinkBanner = blink;
   }
 
   /** The boss card: name and title slide in on a dark band, hold, and slide away. */
   card(name, sub, time = 2.8) {
-    this.cardName.setText(name);
-    this.cardSub.setText(sub);
+    this.cardWarn.setText(tr('UWAGA!'));
+    this.cardName.setText(tr(name));
+    this.cardSub.setText(tr(sub));
     this.cardT = time;
     this.cardMax = time;
   }
@@ -183,6 +207,19 @@ export class Hud {
       this.bar.strokePath();
     }
     this.soundBtn.setFrame(s.music.enabled ? 'btn_sound_on' : 'btn_sound_off');
+    this.bookBtn.setVisible(s.state === 'title');
+    this.installBtn.setVisible(s.state === 'title' && canInstall());
+    const en = getLang() === 'en';
+    this.langPl.setVisible(s.state === 'title').setTint(en ? 0x6a6a80 : 0xffe080);
+    this.langEn.setVisible(s.state === 'title').setTint(en ? 0xffe080 : 0x6a6a80);
+    const seal = s.state === 'play' && s.stampEligible && !s.stampOwned;
+    if (seal && s.stampChance) {
+      this.stampIcon.setVisible(true).setTint(s.stampInk).setAlpha(0.95).setX(7);
+      this.stampFade = 1.2;
+    } else if (seal && this.stampFade > 0) {
+      this.stampFade -= dt;
+      this.stampIcon.setVisible(true).setTint(0x8a8aa8).setAlpha((this.stampFade / 1.2) * 0.8).setX(7 + (Math.floor(this.stampFade * 24) % 2));
+    } else this.stampIcon.setVisible(false);
 
     this.boss.clear();
     const bar = s.enemies.bossBar();

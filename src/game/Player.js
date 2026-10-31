@@ -350,6 +350,7 @@ export class Player {
     this.invulnerable = Math.max(this.invulnerable, BOMB.invulnerable);
     const s = this.scene;
     s.sfx.bomb();
+    s.stampChance = false; // no stamp for this city now
     s.bombClear = BOMB.clearTime;
     s.bullets.cancelAll(s.fx);
     s.fx.flash(0.75, 0.45);
@@ -363,6 +364,7 @@ export class Player {
     if (!this.alive || this.invulnerable > 0 || this.entering > 0 || this.god) return;
     const s = this.scene;
     s.sfx.hit();
+    s.stampChance = false; // no stamp for this city now
     this.alive = false;
     this.lives--;
     this.drag = null;

@@ -82,6 +82,14 @@ export class Sfx {
     this.blip('sine', 2500 + Math.random() * 300, 3400, 0.035, 0.05, t);
   }
 
+  /** A stamp pressed onto paper: a soft thump, the rustle of the page. */
+  stamp() {
+    const t = this.now();
+    this.blip('sine', 150, 45, 0.2, 0.42, t);
+    this.s.noiseBurst(t, 0.07, 'lowpass', 600, 1, 0.35);
+    this.s.noiseBurst(t + 0.03, 0.12, 'highpass', 3200, 1, 0.07);
+  }
+
   /** Two quick notes for a pickup. */
   pickup() {
     if (!this.ready('pickup', 0.08)) return;

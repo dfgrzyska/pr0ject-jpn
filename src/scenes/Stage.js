@@ -12,7 +12,10 @@ import { Player } from '../game/Player.js';
 import { Pool } from '../game/Pool.js';
 import { Score } from '../game/Score.js';
 import { ShipSelect } from '../game/ShipSelect.js';
+import { INK, StampBook, hasStamp, pressStamp, stampFrame } from '../game/Stamps.js';
 import { Waves } from '../game/Waves.js';
+import { getLang, setLang, t } from '../i18n.js';
+import { canInstall, install, iosHint } from '../pwa.js';
 
 const HI_KEY = 'shmupjp.hiscore';
 const SHIP_KEY = 'shmupjp.ship';
@@ -98,13 +101,20 @@ export class Stage extends Phaser.Scene {
     this.shipIndex = qShip >= 0 ? qShip : loadShipIndex();
     this.select = null;
     this.map = null; // the map of Japan between stages
+    this.book = null; // the stamp book
+    this.stampLand = null; // the stamp coming down onto the results
     this.freezeT = 0; // hit-stop
+    // this city's stamp: won by clearing the stage without a death or a bomb (not with debug help)
+    this.stampInk = INK[this.stage.id];
+    this.stampOwned = hasStamp(this.stage.id);
+    this.stampEligible = false;
+    this.stampChance = false;
     this.debugStart = Number(q.get('t')) || 0;
     this.player.god = q.has('god');
     if (WEAPONS[q.get('weapon')]) this.player.weapon = q.get('weapon');
     if (q.get('power')) this.player.level = Phaser.Math.Clamp(Number(q.get('power')), 1, PLAYER.maxPower);
 
-    this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,ESC,P,ENTER,SPACE');
+    this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,K,L,I,ESC,P,ENTER,SPACE');
     this.input.on('pointerdown', this.onPointerDown, this);
     this.input.on('pointermove', (p) => this.state === 'play' && !this.paused && this.player.dragMove(p));
     this.input.on('pointerup', (p) => this.player.endDrag(p));
@@ -142,9 +152,34 @@ export class Stage extends Phaser.Scene {
       [touch ? 'PRZESUWAJ PALCEM' : 'STRZAŁKI / WASD - RUCH', 0xb0aec0],
       [touch ? 'BOMBA - PRZYCISK W ROGU' : 'Z - BOMBA   ESC - PAUZA', 0xb0aec0],
       [touch ? 'DŹWIĘK - GŁOŚNIK U GÓRY' : 'M - DŹWIĘK', 0xb0aec0],
+      [t(touch ? 'book.openTouch' : 'book.openKeys'), 0xe8a080],
+      ...(touch ? [] : [[t('lang.keys'), 0xb0aec0]]),
+      // the game as an app on the phone
+      ...(canInstall() ? [[t(touch ? 'app.touch' : 'app.keys'), 0x9ad8ff]] : []),
+      ...(iosHint() ? [[t('app.ios1'), 0x9ad8ff], [t('app.ios2'), 0x9ad8ff]] : []),
       '',
       [touch ? 'DOTKNIJ, ABY ZACZĄĆ' : 'ENTER - START', 0xffe080, 1, true],
     ]);
+  }
+
+  /** Polish / English, from the title screen. */
+  toggleLang() {
+    setLang(getLang() === 'pl' ? 'en' : 'pl');
+    this.showTitle();
+  }
+
+  /** The stamp book, opened from the title screen. */
+  openBook() {
+    this.hud.closePanel();
+    this.state = 'book';
+    this.book = new StampBook(this, t);
+  }
+
+  closeBook() {
+    this.book.destroy();
+    this.book = null;
+    this.state = 'title';
+    this.showTitle();
   }
 
   openSelect() {
@@ -173,6 +208,8 @@ export class Stage extends Phaser.Scene {
       Object.assign(this.player, { lives: c.lives, weapon: c.weapon, level: c.level });
     }
     this.state = 'play';
+    this.stampEligible = !this.player.god && !(this.debugStart && !this.carry);
+    this.stampChance = this.stampEligible; // lost with a life or a bomb (Player)
     if (this.debugStart && !this.carry) {
       this.t = this.debugStart;
       this.parallax.setTime(this.debugStart);
@@ -270,7 +307,9 @@ export class Stage extends Phaser.Scene {
     const next = STAGES[this.order[this.pos + 1]];
     this.bullets.cancelAll(this.fx);
     const hi = this.recordHi();
-    this.time.delayedCall(2000, () =>
+    const won = this.stampChance && pressStamp(this.stage.id);
+    const stamp = !this.stampEligible ? null : won ? [t('stamp.new'), 0xffe080, 1, true] : [t(this.stampOwned ? 'stamp.have' : 'stamp.missed'), 0x8a8aa8];
+    this.time.delayedCall(2000, () => {
       this.hud.panel([
         [this.stageTitle, 0xffd6e5, 2],
         ['UKOŃCZONY', 0xffd6e5, 2],
@@ -280,11 +319,20 @@ export class Stage extends Phaser.Scene {
         [`MNOŻNIK ×${this.score.mult}`, 0xf08bb0],
         hi.isNew ? ['NOWY REKORD!', 0xffe080, 1, true] : [`REKORD ${String(hi.value).padStart(8, '0')}`, 0xb0aec0],
         ['BOMBA UZUPEŁNIONA', 0xb0aec0],
+        ...(stamp ? [stamp] : []),
         '',
         next ? [`DALEJ: ETAP ${this.pos + 2} - ${next.name}`, 0xffffff] : ['GRATULACJE!', 0xffe080],
         [next ? 'DOTKNIJ / ENTER' : 'DOTKNIJ / ENTER - JESZCZE RAZ', 0xffe080, 1, true],
-      ]),
-    );
+      ]);
+      if (won) this.landStamp();
+    });
+  }
+
+  /** The city's stamp pressed onto the results: it comes down big and lands with a thump (see update). */
+  landStamp() {
+    const img = this.add.image(VIEW.width / 2, this.H - 38, 'sprites', stampFrame(this.stage.id)).setDepth(DEPTH.overlay + 2).setTint(this.stampInk).setScale(2.6).setAlpha(0);
+    this.hud.overlayItems.push(img);
+    this.stampLand = { img, t: -0.35 };
   }
 
   recordHi() {
@@ -320,7 +368,12 @@ export class Stage extends Phaser.Scene {
       this.music.toggle();
       return;
     }
-    if (this.state === 'title') return this.openSelect();
+    if (this.state === 'title') {
+      if (this.hud.hitLang(p)) return this.toggleLang();
+      if (this.hud.hitInstall(p)) return install().then(() => this.state === 'title' && this.showTitle());
+      return this.hud.hitBook(p) ? this.openBook() : this.openSelect();
+    }
+    if (this.state === 'book') return this.closeBook();
     if (this.state === 'select') {
       const i = this.select.hit(p);
       if (i === null || i === this.select.index) this.startGame();
@@ -346,7 +399,12 @@ export class Stage extends Phaser.Scene {
     if (down(k.ESC) || down(k.P)) this.togglePause();
     if (down(k.M)) this.music.toggle();
     if (this.state === 'title') {
-      if (confirm || bomb) this.openSelect();
+      if (down(k.K)) this.openBook();
+      else if (down(k.L)) this.toggleLang();
+      else if (down(k.I) && canInstall()) install().then(() => this.state === 'title' && this.showTitle());
+      else if (confirm || bomb) this.openSelect();
+    } else if (this.state === 'book') {
+      if (confirm || bomb || down(k.K) || down(k.ESC)) this.closeBook();
     } else if (this.state === 'select') {
       if (down(k.LEFT) || down(k.A)) this.select.select(this.select.index - 1);
       if (down(k.RIGHT) || down(k.D)) this.select.select(this.select.index + 1);
@@ -366,6 +424,7 @@ export class Stage extends Phaser.Scene {
     this.hud.layout(this.H);
     this.select?.layout(this.H);
     this.map?.layout(this.H);
+    this.book?.layout(this.H);
     this.player.clamp();
   }
 
@@ -419,6 +478,17 @@ export class Stage extends Phaser.Scene {
     if (this.state === 'clear') {
       this.clearT += dt;
       if (this.clearT > 0.8 && this.player.alive && this.player.y > -40) this.player.y -= Math.min(220, (this.clearT - 0.8) * 260) * dt;
+      const land = this.stampLand;
+      if (land && land.img.active) {
+        land.t += dt;
+        const k = Math.max(0, Math.min(1, land.t / 0.22));
+        land.img.setScale(2.6 - 1.6 * k * k).setAlpha(land.t < 0 ? 0 : 0.95 * Math.min(1, k * 2));
+        if (k >= 1 && !land.done) {
+          land.done = true;
+          this.sfx.stamp();
+          this.cameras.main.shake(140, 0.006);
+        }
+      }
     }
     // Beppu: steam clouds heat the guns
     if (playing && this.stage.near === 'steam') this.player.heatUpdate(dt, this.player.alive && this.enemies.steamAt(this.player.x, this.player.y));

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { VIEW } from './config.js';
 import { Boot } from './scenes/Boot.js';
 import { Stage } from './scenes/Stage.js';
+import './pwa.js';
 
 // Internal resolution is 180 x (320..420). The canvas is shown at the largest whole multiple of
 // device pixels that fits, so every game pixel is an exact NxN block (no blur, no uneven pixels).

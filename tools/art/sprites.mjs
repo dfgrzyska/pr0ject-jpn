@@ -7,6 +7,7 @@ import { tanukiSprites } from './kyoto/tanuki.mjs';
 import { kagoshimaSprites } from './kagoshima/sprites.mjs';
 import { osakaSprites } from './osaka/sprites.mjs';
 import { beppuSprites } from './beppu/sprites.mjs';
+import { stampSprites } from './stamps.mjs';
 
 const out = [];
 const add = (name, raster) => out.push({ name, raster });
@@ -360,6 +361,7 @@ sapporoSprites(add);
 kagoshimaSprites(add);
 osakaSprites(add);
 beppuSprites(add);
+for (const { name, raster } of stampSprites()) add(name, raster); // the stamp book
 
 // ---------------------------------------------------------------- pickups
 const PICKUP = [
@@ -492,6 +494,19 @@ for (const on of [true, false]) {
     m.line(11, 5, 8, 9, 'M');
   }
   add(on ? 'btn_sound_on' : 'btn_sound_off', renderMask(m, { outline: false }));
+}
+{
+  // install the game: an arrow down into a tray
+  const m = new Mask(15, 15);
+  m.disc(7.5, 7.5, 7, 'S');
+  m.disc(7.5, 7.5, 5.8, 'K');
+  m.rect(7, 3, 1, 6, 'W');
+  m.line(5, 6, 7, 8, 'W');
+  m.line(9, 6, 7, 8, 'W');
+  m.rect(4, 10, 7, 1, 'W');
+  m.set(4, 9, 'W');
+  m.set(10, 9, 'W');
+  add('btn_install', renderMask(m, { outline: false }));
 }
 // life icons in each ship's livery
 const LIFE = ['...W', '..WC', '..WW', '.RWW', 'RSSW', 'R..W'];

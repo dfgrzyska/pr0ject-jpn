@@ -1,5 +1,6 @@
 import { DEPTH, SHIPS, VIEW } from '../config.js';
 import { pixelText } from './Hud.js';
+import { tr } from '../i18n.js';
 
 const W = VIEW.width;
 const SLOT_X = [32, 90, 148];
@@ -54,7 +55,7 @@ export class ShipSelect {
     this.ships.forEach((s, k) => s.setAlpha(k === this.index ? 1 : 0.45));
     this.flames.forEach((f, k) => f.setVisible(k === this.index));
     this.names.forEach((n, k) => n.setTint(k === this.index ? ship.color : 0x6a6880));
-    this.role.setText(ship.role).setTint(ship.color);
+    this.role.setText(tr(ship.role)).setTint(ship.color);
     ship.stats.forEach((v, r) => this.pips[r].forEach((p, k) => p.setFrame(k < v ? 'pip_on' : 'pip_off')));
     this.lifeIcons.forEach((ic, k) => ic.setFrame(ship.life).setVisible(k < ship.lives));
     const x = SLOT_X[this.index];
