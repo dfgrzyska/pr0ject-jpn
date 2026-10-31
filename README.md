@@ -153,12 +153,19 @@ Po pokonaniu krater stygnie i zostaje w tle.
 
 ## Osaka
 
-Ok. 3,5 min od popołudnia do nocy: zamek Osaka w fosach z kamiennymi murami (zielone dachy, złote ryby
-shachihoko) → Nakanoshima między dwiema rzekami (ceglana hala Central Public Hall, biblioteka z kopułą, ogród
-róż, statki wycieczkowe) → wieżowce Umedy ze Sky Building i torowiskiem stacji → Shinsekai z Tsūtenkaku,
-zaułkiem Janjan z lampionami i neonami barów kushikatsu → kanał Dōtonbori nocą (neony, wielkie szyldy
-z ośmiornicą, takoyaki, gyoza, sushi i ramenem, most Ebisu, stateczek) → port Tempozan (diabelski młyn
-w kolorowych światłach, akwarium, żaglowiec, dźwigi i kontenery) → otwarta zatoka.
+Ok. 3,5 min od popołudnia do nocy. Zamek Osaka wiosną: hanami pod kwitnącymi wiśniami (niebieskie maty
+z piknikującymi, kramy z pasiastymi markizami i lampionami, fontanna), szerokie zielone fosy z łodziami
+gozabune, wysokie mury ishigaki z widocznym licem z wielkich kamieni i narożnikami sangi-zumi, białe mury tamon
+z narożnymi wieżami yagura i bramami, gaj śliwowy, chram Hōkoku, Miraiza, olbrzymi kamień Takoishi w bramie
+Sakuramon, a w Honmaru pięciodachowy donżon na kamiennym podeście — zielona miedź, białe ściany, szczyty
+chidori- i kara-hafu, czarno-złote najwyższe piętro i złote shachihoko, ze schodkowym cieniem; drewniany most
+Gokuraku-bashi → Nakanoshima między dwiema rzekami (ceglana Central Public Hall z łukowym dachem, ratusz,
+biblioteka z kopułą, ogród różany, promenady z lampami, statki i tramwaj wodny) → wieżowce Umedy (szklane
+fasady, lądowiska na dachach, Sky Building z ogrodem na moście, czerwony diabelski młyn na dachu, dworzec
+pod wielkim szklanym dachem, aleja Midōsuji z drzewami i ruchem) → Shinsekai z Tsūtenkaku, zaułkiem Janjan,
+lampionem-rozdymką i neonami, Abeno Harukas → kanał Dōtonbori nocą (neony, wielkie szyldy z ośmiornicą, krabem,
+takoyaki, gyoza, sushi i ramenem, tłumy na moście Ebisu, stateczki) → port Tempozan (diabelski młyn
+w kolorowych światłach, akwarium, żaglowiec, dźwigi, kontenery i ciężarówki) → otwarta zatoka.
 
 Zwrot dla zwykłych wrogów — **pary manzai** (boke i tsukkomi, osakańska komedia w duecie): każdy wróg ma
 partnera (łączy ich cienka linia). Zestrzel jednego, a drugi wpada we wściekłość („!?”, czerwienieje) i od razu
@@ -185,11 +192,20 @@ grad takoyaki; poniżej 35% wpada w szał.
 
 ## Beppu
 
-Ok. 3,5 min od mglistego poranka do czerwonego zmierzchu w mieście gorących źródeł: zatoka i plaża z czarnym
-piaskiem (zakopani kąpiący się, parasole, prom) → miasto z łaźnią Takegawara → Kannawa z kominami pary →
-„piekła” (jigoku): kobaltowy Umi Jigoku z czerwoną kapliczką, bulgoczące błoto Oniishibozu, kolorowe
-stawy Kamado z kucharzem-oni na kotle, mleczny Shiraike → zagrody krokodyli Oniyama z figurą czerwonego oni →
-lasy Takasakiyamy z makakami → kamienna niecka gejzeru Tatsumaki → krwistoczerwony staw Chinoike.
+Ok. 3,5 min od mglistego poranka do czerwonego zmierzchu w mieście gorących źródeł: zatoka z promem i łodziami,
+plaża z czarnym piaskiem (zakopani kąpiący się, parasole, hala kąpieli piaskowych), promenada z palmami i rząd
+wysokich hoteli z basenami → dworzec z pociągiem, Beppu Tower, zadaszony pasaż handlowy, łaźnia Takegawara
+z zakrzywionym szczytem karahafu, gęsta zabudowa → Kannawa: zbocze ciasno upakowanych dachów, stroma uliczka
+Ideyu-zaka z lampionami, kuchnia parowa jigoku-mushi, kąpiel dla stóp, ryokany z ogrodami i taras widokowy →
+„piekła” (jigoku) na żwirowych dziedzińcach w ogrodach: kobaltowy Umi Jigoku z czerwoną kapliczką i ogromnymi
+liśćmi lilii wiktorii, szare błoto Oniishibozu, kolorowe stawy Kamado z kucharzem-oni na kotle, mleczny Shiraike
+z mostkiem → zagrody krokodyli Oniyama z figurą czerwonego oni → lasy Takasakiyamy z polaną pełną makaków
+i świątynią → kamienna niecka gejzeru Tatsumaki z widownią → krwistoczerwony staw Chinoike.
+
+Znak rozpoznawczy miasta to kolumny pary wychodzące spomiędzy domów: w tle są narysowane jako cieniowane
+chmury, a gra dodatkowo wypuszcza z tych samych miejsc unoszące się kłęby (źródła pary generator zapisuje
+w `bg/stage6/meta.json`, pole `steam`). Para, która grzeje działa, ma ciepły, brzoskwiniowy odcień, żeby nie
+myliła się z białą parą w tle.
 
 Otoczenie atakuje: **gejzery** (fala `geyser`) siedzą w tle i co kilka sekund wybuchają — najpierw na ziemi
 wypełnia się pierścień, potem bije słup wrzątku i rozpryskują się krople (`"kind": "mud"` — szerszy, dłuższy

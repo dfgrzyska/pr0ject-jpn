@@ -1,7 +1,7 @@
 {
   "id": "stage6",
   "name": "BEPPU",
-  "subtitle": "BEPPU - PIEKŁA GORĄCYCH ŹRÓDEŁ",
+  "subtitle": "BEPPU - GORĄCE ŹRÓDŁA",
   "skin": "beppu",
   "near": "steam",
   "scroll": { "far": 12, "mid": 30, "near": 64, "anchor": 420 },

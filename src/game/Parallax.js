@@ -42,6 +42,9 @@ export class Parallax {
     this.flashT = 0;
     this.embersFrom = stage.embersFrom ?? Infinity; // stage time from which embers rise
     this.nightFrom = stage.nightFrom ?? Infinity; // Osaka: clouds and gulls by day, a clear night sky after
+    // Beppu: the steam plumes drawn into the mid layer keep puffing (sources listed in meta.json)
+    this.vents = (meta.steam ?? []).map(([x, u, s]) => ({ x, u, s, t: Math.random() * 1.5 }));
+    this.puffs = this.vents.length ? new Pool(scene, DEPTH.ground + 0.6) : null;
     if (this.nearKind === 'ash')
       this.stormRect = scene.add.rectangle(0, 0, VIEW.width, VIEW.maxHeight, 0x14141e, 1).setOrigin(0, 0).setDepth(DEPTH.near - 0.05).setAlpha(0);
   }
@@ -79,7 +82,33 @@ export class Parallax {
     }
     this.far.tilePositionY = -(Math.round(this.farTime * this.speed.far) % this.farH);
 
+    if (this.puffs) this.updatePuffs(dt, H);
     this.updateNear(dt, scrolling, H);
+  }
+
+  /** Beppu: fresh puffs rising from the steam sources on screen, swelling, drifting with the breeze and fading. */
+  updatePuffs(dt, H) {
+    for (const v of this.vents) {
+      const y = this.screenY(v.u);
+      if (y < -40 || y > H + 10 || (v.t -= dt) > 0) continue;
+      v.t = (0.9 + Math.random() * 0.7) / (0.5 + v.s * 0.45);
+      const frame = v.s > 1.3 && Math.random() < 0.5 ? `steam_${Math.floor(Math.random() * 2)}` : `wisp_s_${Math.floor(Math.random() * 2)}`;
+      this.puffs.spawn(frame, v.x, y, { u: v.u, bx: v.x + (Math.random() - 0.5) * 3, rise: 0, life: 0, max: 2 + v.s * 0.9, s: v.s, vr: 8 + v.s * 6, dx: 0, big: frame.startsWith('steam') });
+    }
+    for (const p of this.puffs.live) {
+      p.life += dt;
+      const k = p.life / p.max;
+      if (k >= 1) {
+        this.puffs.kill(p);
+        continue;
+      }
+      p.rise += p.vr * (1 - k * 0.5) * dt;
+      p.dx += (3 + p.s * 2) * dt;
+      p.setPosition(p.bx + p.dx * k * 2, this.screenY(p.u) - p.rise);
+      p.setScale((0.35 + k * 0.8) * (p.big ? 0.5 + p.s * 0.2 : 0.6 + p.s * 0.3));
+      p.setAlpha(Math.min(1, k * 6) * (1 - k) * 0.6);
+    }
+    this.puffs.sweep();
   }
 
   updateNear(dt, scrolling, H) {

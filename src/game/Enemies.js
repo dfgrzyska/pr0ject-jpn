@@ -196,7 +196,7 @@ export class Enemies {
       case 'steam':
         // a cloud of hot-spring steam drifting down the screen: hides what is under it, heats the guns
         e = this.pool.spawn(look.frame, w.x, -24, { ...base, ghost: true });
-        e.setScale(1.3).setAlpha(0.72);
+        e.setScale(1.3).setAlpha(0.8); // tinted warm every frame: this steam is hot (the background plumes are white)
         break;
       case 'boss':
         if (w.boss === 'oni') return this.spawnOni(w, base);
@@ -715,6 +715,7 @@ export class Enemies {
           e.y += 22 * dt;
           e.x += Math.sin(e.age * 0.7 + e.x0) * 7 * dt;
           e.setFrame(Math.floor(e.age * 1.2) % 2 ? 'steam_1' : 'steam_0');
+          e.setScale(1.3 + Math.sin(e.age * 3) * 0.06).setTint(0xffd2b8).setTintMode(Phaser.TintModes.MULTIPLY);
           break;
         case 'masu':
           e.x += e.dir * 40 * dt;
