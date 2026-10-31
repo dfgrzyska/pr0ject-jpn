@@ -79,7 +79,7 @@ Wrogowie (roboty w stylu Fushimi Inari):
 | Popcorn | dron-maska kitsune | formacje: `line`, `sine`, `arc`, `row` |
 | Strzelec | kanonierka podwieszona pod belką torii | wlatuje, staje, strzela celowanymi seriami (`aimed`/`fan`), odlatuje |
 | Wieżyczka | kamienna latarnia tōrō z działem | na warstwie terenu, wachlarz (`fan`) lub pierścień (`ring`) |
-| Nurek | dron kruk-tengu | zawisa, celuje i pikuje w gracza |
+| Nurek | chōchin-obake — czerwony papierowy lampion-yōkai z parady stu demonów (jedno oko, zęby, wywalony język) | zawisa, celuje i pikuje w gracza |
 | Ciężki | tanuki — figurka z Shigaraki (kapelusz, butelka sake, zeszyt rachunków) | pierwszy miniboss (ok. 70 s): bębni w brzuch (pierścień na każde „pon”), rzuca butelkami sake z celownikiem na ziemi, zmienia się listkiem w trzy tanuki — kopie mają listek na kapeluszu i pękają od jednego trafienia |
 | Ciężki | Kyūbi — czerwony lis o dziewięciu ogonach z klejnotem hōju i lisim ogniem | drugi miniboss (ok. 150 s, nad Ryōan-ji), pierścienie / wachlarze / spirala |
 | Nośnik | dron z klejnotem hōju (czerwony/niebieski/zielony) | zygzak, po ~4,6 s ucieka, zawsze zostawia znajdźkę |

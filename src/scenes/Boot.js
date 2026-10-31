@@ -42,7 +42,7 @@ export class Boot extends Phaser.Scene {
     anim('flame', ['flame_0', 'flame_1', 'flame_2', 'flame_1'], 20);
     anim('popcorn', ['popcorn_0', 'popcorn_1'], 3);
     anim('shooter', ['shooter_0', 'shooter_1'], 4);
-    anim('diver', ['diver_0', 'diver_1'], 8);
+    anim('diver', ['diver_0', 'diver_1'], 3);
     anim('kyubi', ['kyubi_0', 'kyubi_1', 'kyubi_2', 'kyubi_3'], 7);
     anim('tanuki', ['tanuki_0', 'tanuki_1'], 3);
     anim('tanuki_leaf', ['tanuki_leaf_0', 'tanuki_leaf_1'], 3);

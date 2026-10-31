@@ -149,35 +149,49 @@ const SHOOTER = [
 add('shooter_0', renderMask(fromRows(SHOOTER, true)));
 add('shooter_1', renderMask(fromRows(SHOOTER.map((r, i) => (i === 10 ? '..DyD...DMM' : r)), true)));
 
-// Diver: karasu-tengu dive drone.
+// Diver: a chōchin-obake, the paper-lantern yōkai of the night parade of a hundred demons that the
+// legends send down Kyoto's streets: a red Gion lantern torn open into a toothy mouth, one big eye,
+// its tongue lolling out and swinging as it swoops at the player. Full rows (it is not symmetric).
 const DIVER_A = [
-  'D.......',
-  'DD......',
-  'RDD...DD',
-  '.RDD.DDD',
-  '.RDDDDDD',
-  '..RDDDDK',
-  '...DDDKK',
-  '....DDMK',
-  '.....DKK',
-  '......YY',
-  '.......Y',
+  '.....NNN.....',
+  '....KKKKK....',
+  '...KKYYYKK...',
+  '..RRRRRRRRR..',
+  '.RRRWWWRRRRR.',
+  '.RRWWWKWRRRR.',
+  'RRRWWKKWRRRRR',
+  'RRRRWWWRRRRRR',
+  'RRRRRRRRRRRRR',
+  'RKWKWKWKWKRRR',
+  'RRKKKKKKKKRRR',
+  '.RRRKPPKRRRR.',
+  '.RRRRPPRRRRR.',
+  '..KKKPPKKKK..',
+  '...KYPPYKK...',
+  '.....PP......',
+  '.....P.......',
 ];
 const DIVER_B = [
-  '........',
-  '........',
-  '.R....DD',
-  '.RD..DDD',
-  '..RDDDDD',
-  '..RDDDDK',
-  '...DDDKK',
-  '....DDMK',
-  '.....DKK',
-  '......YY',
-  '.......Y',
+  '.....NNN.....',
+  '....KKKKK....',
+  '...KKYYYKK...',
+  '..RRRRRRRRR..',
+  '.RRRRRRRRRRR.',
+  '.RRWWWWWRRRR.',
+  'RRRWWKKWRRRRR',
+  'RRRRRRRRRRRRR',
+  'RKWKWKWKWKRRR',
+  'RKKKKKKKKKRRR',
+  'RRKKKKKKKRRRR',
+  '.RRRKKPPKRRR.',
+  '.RRRRRPPRRRR.',
+  '..KKKKPPKKK..',
+  '...KYYPPYK...',
+  '.......PP....',
+  '........P....',
 ];
-add('diver_0', renderMask(fromRows(DIVER_A, true)));
-add('diver_1', renderMask(fromRows(DIVER_B, true)));
+add('diver_0', renderMask(fromRows(DIVER_A, false)));
+add('diver_1', renderMask(fromRows(DIVER_B, false)));
 
 // Carrier: winged hōju (wish-jewel) drone, three colours = three weapons.
 const CARRIER_A = [
