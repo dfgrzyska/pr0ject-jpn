@@ -178,6 +178,7 @@ export class Stage extends Phaser.Scene {
       this.parallax.setTime(this.debugStart);
       this.waves.skipTo(this.debugStart);
     }
+    this.parallax.props.sync(this.t);
     this.player.spawn();
     this.music.play(this.stageSong(), true);
     this.hud.show(this.stageTitle, this.stage.subtitle, 2.6);
@@ -388,6 +389,8 @@ export class Stage extends Phaser.Scene {
     if (this.endTimer > 0) this.endTimer -= dt;
 
     const playing = this.state === 'play';
+    // the moving background steps back when the screen fills with bullets
+    this.parallax.props.calmTarget = Math.max(0, Math.min(1, (this.bullets.pool.live.length - 10) / 30));
     this.parallax.update(dt, this.state !== 'title' && this.state !== 'select', this.H);
     this.select?.update(dt);
     if (playing) {

@@ -14,12 +14,13 @@ export class Boot extends Phaser.Scene {
     this.load.image('font', 'font.png');
     this.load.json('fontMeta', 'font.json');
     this.load.image('japan', 'japan.png'); // the map between stages
-    // per-stage backgrounds: far loop + mid chunks listed in bg/<id>/meta.json
+    // per-stage backgrounds: far loop + mid chunks (and the moving parts) listed in bg/<id>/meta.json
     for (const { id } of STAGES) {
       this.load.image(`far_${id}`, `bg/${id}/far.png`);
       this.load.json(`bg_${id}`, `bg/${id}/meta.json`);
       this.load.once(`filecomplete-json-bg_${id}`, (key, type, meta) => {
         for (let i = 0; i < meta.chunks; i++) this.load.image(`mid_${id}_${i}`, `bg/${id}/mid_${String(i).padStart(2, '0')}.png`);
+        if (meta.props) this.load.atlas(`props_${id}`, `bg/${id}/props.png`, `bg/${id}/props.json`); // the moving parts
       });
     }
   }

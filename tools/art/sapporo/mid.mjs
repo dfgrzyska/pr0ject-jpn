@@ -6,12 +6,18 @@
 // dusk -> night). Lit windows, lamps and neon are collected separately and painted after the grade,
 // so they glow in the dark. Valleys beside the ski jump stay transparent (far layer shows through).
 //
+// Live (see ../props.mjs): the chairlift runs, a jumper goes down the in-run and flies, cars drive up
+// Ekimae-dōri and across town, chimneys smoke, the open channel of the frozen river steams, Susukino's
+// neon walls flicker, the ramen alley steams, skaters circle the rink on Shōbu pond and the TV Tower's
+// big clock counts the time of the stage.
+//
 // Coordinates: u = distance from the bottom of the strip (stage start), strip y = L - u.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Raster, fbm, rng, bayer, scaleColor, rgb, mix } from '../../lib/raster.mjs';
 import { crownPixels, rampColor } from '../nature.mjs';
+import { PropKit, puff, todGrade, tintTable } from '../props.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -99,6 +105,17 @@ export function buildMid() {
   const pools = []; // additive light pools, after the grade
   const glow = (x, y, c, a = 1) => lights.push([Math.round(x), Math.round(y), c, a]);
   const pool = (x, y, r, c, k = 0.5) => pools.push({ x, y, r, c, k });
+  const kit = new PropKit(3313); // the moving parts
+  const tod = todGrade(TOD, smooth);
+  /** A frame graded for strip position u; `lit` are [x, y, colour, alpha] pixels painted on afterwards. */
+  const frameAt = (r, u, lit = []) => {
+    tod.frame(r, u);
+    for (const [x, y, c, a] of lit) r.set(x, y, c, a);
+    return kit.frame(r);
+  };
+  // puffs for the live smoke and steam: chimneys, the ramen alley, the open channel of the frozen river
+  const smoke = [2, 3, 4].map((r) => [0, 1].map((v) => kit.frame(puff(r, r * 11 + v, [0x707480, 0x9094a0, 0xb4b8c4, 0xd8dce4]))));
+  const steam = [2, 3, 4].map((r) => [0, 1].map((v) => kit.frame(puff(r, r * 17 + v, [0xa8b0c0, 0xc8d0dc, 0xe4e8f0, 0xffffff]))));
   const shadowRect = (x, y, w, h, f = 0.6) => {
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) img.tint(x + i, y + j, f);
   };
@@ -239,6 +256,8 @@ export function buildMid() {
       },
     });
     reserveRect(x - 1, y - 1, w + 2, h + faceH + 2);
+    // the stove's smoke curling from the chimney, blown by the wind (live)
+    if (opt.chimney) kit.emit(x + w - 4, U(y + 2), smoke, { rate: 1.1, life: [2, 3], vy: 5, sx: 0.5, wf: 1, a: 0.5, tint: 1 });
   };
   /** Flat "no-snow-fall" roof (mu-rakusetsu): a snow-filled tray with a parapet and a centre drain. */
   const flatHouse = (x, y, w, h, opt = {}) => {
@@ -501,10 +520,6 @@ export function buildMid() {
           const [x, u] = lift(k / 735);
           img.set(Math.round(x - 2), Y(u), 0x3a3c48);
           img.set(Math.round(x + 2), Y(u), 0x3a3c48);
-          if (k % 11 === 0) {
-            img.set(Math.round(x + (k % 22 ? 2 : -2)), Y(u) + 1, 0x24242c);
-            img.tint(Math.round(x + (k % 22 ? 4 : 0)), Y(u) + 3, 0.6);
-          }
         }
         for (let k = 0; k <= 735; k += 92) {
           const [x, u] = lift(k / 735);
@@ -517,6 +532,31 @@ export function buildMid() {
     for (let k = 0; k <= 735; k += 4) {
       const [x, u] = lift(k / 735);
       reserveRect(x - 3, Y(u) - 1, 7, 3);
+    }
+    // live: the chairs going up one cable and down the other, their shadows on the snow
+    {
+      const chair = new Raster(3, 4);
+      chair.set(0, 1, 0x24242c);
+      chair.set(2, 3, 0x101018, 0.4);
+      const cf = frameAt(chair, 560);
+      const [x0, u0] = lift(0);
+      const [x1, u1] = lift(1);
+      kit.path([[x0 + 3, u0 - 1], [x1 + 3, u1 - 1]], [cf], { sp: 7, n: 33, gap: 22, turn: 'none', s0: 0 });
+      kit.path([[x1 - 1, u1 - 1], [x0 - 1, u0 - 1]], [cf], { sp: 7, n: 33, gap: 22, turn: 'none', s0: 0.5 });
+    }
+    // live: a jumper crouched down the in-run, off the table and gliding down to the landing
+    {
+      const jumper = new Raster(5, 6);
+      jumper.rect(2, 1, 1, 3, 0x2a3a8a);
+      jumper.set(2, 0, 0xe84a3a);
+      jumper.set(1, 2, 0x1a2a6a);
+      jumper.set(3, 2, 0x1a2a6a);
+      jumper.set(1, 4, 0x3a3a48);
+      jumper.set(3, 4, 0x3a3a48);
+      jumper.set(0, 5, 0x3a3a48);
+      jumper.set(4, 5, 0x3a3a48); // skis in a V
+      jumper.set(3, 5, 0x101018, 0.3);
+      kit.path([[cx, 888], [cx, 524], [cx, 300], [cx, 200], [cx, 120]], [frameAt(jumper, 500)], { sp: 30, turn: 'none' });
     }
     // forest edge to the suburbs: a few houses among the trees
     tinHouse(40, Y(1060), 16, 12, { lit: 0.8, chimney: true });
@@ -537,7 +577,30 @@ export function buildMid() {
       if (u > CENTER[0]) streetLamp(x + 9, Y(u - 8), true);
     }
 
-  // traffic in the centre and Susukino: cars with headlights (down lane) and tail lights (up lane)
+  // live traffic: cars driving up Ekimae-dōri (tail lights only, so nothing bright heads down the screen)
+  // and along the cross streets the snowplows don't use
+  {
+    const carUp = (c) => {
+      const r = new Raster(3, 5);
+      r.rect(0, 0, 3, 5, c);
+      r.rect(0, 0, 3, 1, C.snow[3]);
+      return frameAt(r, 2800, [[0, 4, 0xff3020, 0.8], [2, 4, 0xff3020, 0.8]]);
+    };
+    const ups = [0x2a2a30, 0xe0e0e8, 0x8a2a2a, 0xe8c030].map(carUp);
+    for (let k = 0; k < 4; k++) kit.path([[95, CENTER[0] + 20], [95, RIVER[0] - 12]], [ups[k]], { sp: 11 + k * 2, n: 2, gap: 380, turn: 'none' });
+    const carSide = (c) => {
+      const r = new Raster(5, 3);
+      r.rect(0, 0, 5, 3, c);
+      r.rect(1, 0, 3, 1, C.snow[3]);
+      return frameAt(r, 2800, [[4, 0, 0xfff4d0, 0.5], [4, 2, 0xfff4d0, 0.5], [0, 0, 0xff3020, 0.6], [0, 2, 0xff3020, 0.6]]);
+    };
+    const sides = [0xe0e0e8, 0x3a5a9a, 0x2a2a30, 0x8a2a2a].map(carSide);
+    STREETS.filter((s) => s > CENTER[0] && !plowRoads.some((p) => Math.abs(p - s) < 20)).forEach((s, k) => {
+      kit.path([[-8, s - 2], [188, s - 2]], [sides[k % 4]], { sp: 13, n: 1, turn: 'flip' });
+      kit.path([[188, s + 2], [-8, s + 2]], [sides[(k + 2) % 4]], { sp: 10, n: 1, turn: 'flip' });
+    });
+  }
+  // parked and waiting cars in the centre and Susukino: headlights (down lane) and tail lights (up lane)
   for (let u = CENTER[0] + 20; u < RIVER[0] - 12; u += 9) {
     if (rand() < 0.45) continue;
     if ([...STREETS, ...plowRoads].some((s) => Math.abs(u - s) < 12)) continue;
@@ -702,6 +765,14 @@ export function buildMid() {
       const c = rand.pick(NEON);
       for (let k = 0; k < 12; k++) for (let j = 0; j < 4; j++) if ((k + j) % 5 !== 0) glow(x + k, Y(u) + j, j === 0 || j === 3 ? c : rand() < 0.6 ? 0xffffff : rand.pick(NEON));
       pool(x + 6, Y(u) + 2, 14, c, 0.4);
+      // live: the lettering flickers and changes (frames drawn with their own random numbers)
+      const pr = rng(x * 7 + u);
+      const signs = [0, 1, 2].map(() => {
+        const r = new Raster(12, 4);
+        for (let k = 0; k < 12; k++) for (let j = 1; j < 3; j++) r.set(k, j, (k + j + Math.floor(pr() * 3)) % 4 === 0 ? 0x1a1420 : pr() < 0.6 ? 0xffffff : NEON[Math.floor(pr() * NEON.length)]);
+        return kit.frame(r);
+      });
+      kit.loop(x, u, signs, { fps: 3, fx: 1 });
     }
     const ay = Y(ALLEY);
     for (let x = 0; x < W; x++)
@@ -714,7 +785,7 @@ export function buildMid() {
         glow(x, ay + s + (s < 0 ? -1 : 1), 0xffa060, 0.7);
       }
       pool(x, ay, 6, 0xff5a30, 0.25);
-      if (x % 12 === 2) for (let k = 0; k < 6; k++) img.set(x + Math.round(Math.sin(k) * 1.5), ay - 1 - k, 0xffffff, 0.35 - k * 0.05);
+      if (x % 12 === 2) kit.emit(x, ALLEY + 1, steam, { rate: 1.6, life: [1.6, 2.4], vy: 7, sx: 1, wf: 0.5, a: 0.45, tint: 1 });
     }
   }
 
@@ -749,6 +820,8 @@ export function buildMid() {
     for (let x = 0; x < W; x += 2) {
       const ch = (r0 + r1) / 2 + 22 * Math.sin(x / 34 + 1) + 8 * Math.sin(x / 13);
       if (rand() < 0.5) for (let k = 0; k < 4; k++) img.set(x + k, Y(ch) - 2 - Math.floor(rand() * 4), 0xffffff, 0.18);
+      // the warmer water steams in the frosty air (live)
+      if (x % 22 === 6) kit.emit(x, Math.round(ch) + 1, steam, { rate: 0.7, life: [2.2, 3.2], vy: 4, sx: 2, wf: 1.3, a: 0.3, tint: 1 });
     }
     // bridges with railings and lamps
     for (const [bx, hw] of [[90, 10], [30, 6]]) {
@@ -795,8 +868,21 @@ export function buildMid() {
     path([[60, 4250], [20, 4420], [40, 4600], [100, 4700], [150, 4600], [160, 4420], [150, 4180]]);
     path([[100, 4700], [80, 4850], [90, 4990]]);
     for (const [x, u] of [[40, 4000], [30, 4150], [150, 4180], [20, 4420], [40, 4600], [160, 4420], [100, 4700], [80, 4850]]) streetLamp(x + 4, Y(u), true);
-    // Shōbu pond, frozen, with a cleared skating rink
+    // Shōbu pond, frozen, with a cleared skating rink; skaters gliding round it (live)
     const pc = [92, 4400];
+    for (const [coat, scarf] of [[0x2a3a6a, 0xe84a3a], [0x8a2a3a, 0xf0e0c0], [0x3a3a44, 0x3ab0e0], [0xe8e0d0, 0xe8a030]]) {
+      const skater = (f) => {
+        const r = new Raster(3, 5);
+        r.set(1, 0, 0xe8c8a8);
+        r.rect(0, 1, 3, 2, coat);
+        r.set(f ? 2 : 0, 1, scarf);
+        r.set(f ? 0 : 1, 3, 0x2a2a30);
+        r.set(f ? 1 : 2, 4, 0x2a2a30);
+        r.set(2, 4, 0x101018, 0.25);
+        return frameAt(r, 4400);
+      };
+      kit.wander(pc[0], pc[1], 26, 34, [skater(0), skater(1)], { n: 2, sp: 9, idle: 0.15, turn: 'flip', fps: 3 });
+    }
     for (let u = 4300; u < 4500; u++)
       for (let x = 30; x < 150; x++) {
         const e = ((x + 0.5 - pc[0]) / 50) ** 2 + ((u - pc[1]) / 80) ** 2 + (fbm(x, u, { seed: 55, scale: 14 }) - 0.5) * 0.3;
@@ -1012,25 +1098,8 @@ export function buildMid() {
           img.set(bx, yy, 0xc8482a);
           img.set(Math.round(90 + hw - (k / 12) * hw * 2), yy, 0xc8482a);
         }
-        // the clock panel
+        // the clock panel (its digits are live: they show how long the stage has been running, mm:ss)
         img.rect(78, top + 32, 24, 9, 0x101018);
-        const digits = '2148';
-        const SEG = { 2: [1, 0, 1, 1, 1, 0, 1], 1: [0, 0, 1, 0, 0, 1, 0], 4: [0, 1, 1, 1, 0, 1, 0], 8: [1, 1, 1, 1, 1, 1, 1] };
-        digits.split('').forEach((d, i) => {
-          const dx = 80 + i * 5 + (i > 1 ? 2 : 0);
-          const dy = top + 33;
-          const [a, b, c, dd, e, f, g] = SEG[d];
-          const on = (x, y) => glow(x, y, 0xe8fff0);
-          if (a) for (let q = 0; q < 3; q++) on(dx + q, dy);
-          if (b) for (let q = 0; q < 3; q++) on(dx, dy + q);
-          if (c) for (let q = 0; q < 3; q++) on(dx + 2, dy + q);
-          if (dd) for (let q = 0; q < 3; q++) on(dx + q, dy + 3);
-          if (e) for (let q = 0; q < 3; q++) on(dx, dy + 3 + q);
-          if (f) for (let q = 0; q < 3; q++) on(dx + 2, dy + 3 + q);
-          if (g) for (let q = 0; q < 3; q++) on(dx + q, dy + 6);
-        });
-        glow(90, top + 35, 0xe8fff0);
-        glow(90, top + 38, 0xe8fff0);
         pool(90, top + 36, 26, 0xffa040, 0.3);
       },
     });
@@ -1233,6 +1302,42 @@ export function buildMid() {
       }
   }
 
+  // the TV Tower clock's digits: seven-segment frames, each digit turning over at its own rate
+  {
+    const SEG = [
+      [1, 1, 1, 0, 1, 1, 1],
+      [0, 0, 1, 0, 0, 1, 0],
+      [1, 0, 1, 1, 1, 0, 1],
+      [1, 0, 1, 1, 0, 1, 1],
+      [0, 1, 1, 1, 0, 1, 0],
+      [1, 1, 0, 1, 0, 1, 1],
+      [1, 1, 0, 1, 1, 1, 1],
+      [1, 0, 1, 0, 0, 1, 0],
+      [1, 1, 1, 1, 1, 1, 1],
+      [1, 1, 1, 1, 0, 1, 1],
+    ];
+    const digit = SEG.map(([a, b, c, dd, e, f, g]) => {
+      const r = new Raster(3, 7);
+      const on = (x, y) => r.set(x, y, 0xe8fff0);
+      for (let q = 0; q < 3; q++) {
+        if (a) on(q, 0);
+        if (b) on(0, q);
+        if (c) on(2, q);
+        if (dd) on(q, 3);
+        if (e) on(0, 3 + q);
+        if (f) on(2, 3 + q);
+        if (g) on(q, 6);
+      }
+      return kit.frame(r);
+    });
+    // minutes (tens, ones) : seconds (tens, ones)
+    [[1 / 600, 10], [1 / 60, 10], [1 / 10, 6], [1, 10]].forEach(([fps, n], i) => kit.loop(80 + i * 5 + (i > 1 ? 2 : 0), U(33), digit.slice(0, n), { fps, ph: 0 }));
+    const colon = new Raster(1, 4);
+    colon.set(0, 0, 0xe8fff0);
+    colon.set(0, 3, 0xe8fff0);
+    kit.loop(90, U(35), [kit.frame(colon)], { seq: [0, -1], fps: 2, ph: 0 });
+  }
+
   // ------------------------------------------------------------ time of day, then the lights
   const tint = TOD.map(([, , t]) => rgb(t));
   for (let y = 0; y < L; y++) {
@@ -1271,7 +1376,7 @@ export function buildMid() {
 
   const chunks = [];
   for (let i = 0; i < CHUNKS; i++) chunks.push(img.crop(0, i * CHUNK, W, CHUNK));
-  return { strip: img, chunks, meta: { width: W, chunkHeight: CHUNK, chunks: CHUNKS, length: L } };
+  return { strip: img, chunks, props: kit.pack(), meta: { width: W, chunkHeight: CHUNK, chunks: CHUNKS, length: L, tint: tintTable(L, tod.white) } };
 }
 
 export { mix };

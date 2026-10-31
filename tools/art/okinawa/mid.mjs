@@ -2,12 +2,17 @@
 // Shuri castle, jungle cliffs, the open sea and a lighthouse island. Water away from the coast is
 // left transparent so the deep ocean of the far layer shows through.
 //
+// Live (see ../props.mjs): waves roll in onto every beach and break white over the reefs, the lagoons
+// glint, the boats and the ferry sail on with their wakes, sea turtles glide in the open water, gusts
+// sweep the cane fields, banners flutter over Shuri's courtyard and the lighthouse flashes.
+//
 // Coordinates: u = distance from the bottom of the strip (stage start), strip y = L - u.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Raster, fbm, rng, bayer, scaleColor } from '../../lib/raster.mjs';
 import { crownPixels, palmPixels, grade, rampColor } from '../nature.mjs';
+import { PropKit, Window, tintTable } from '../props.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -83,6 +88,20 @@ export function buildMid() {
       for (let x = Math.max(0, Math.floor(x0)); x < Math.min(W, x0 + w); x++) reserved[y * W + x] = 1;
   };
   const objects = [];
+  const kit = new PropKit(1889); // the moving parts
+  const gradeF = (r) => {
+    grade(r, GRADE);
+    return kit.frame(r);
+  };
+  const cane = new Uint8Array(W * L); // sugar cane (the gusts brighten it)
+  /**
+   * Where a mover should start so it passes its painted spot (sAt px along the route) as the screen goes
+   * by there, and never reaches the ends of its route while on screen.
+   */
+  const passing = (u, sp, sAt, total) => {
+    const t = (u - 235) / V;
+    return ((((sAt - sp * t) % total) + total) % total) / total;
+  };
   const shadowRect = (x, y, w, h, f = 0.55) => {
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) img.tint(x + i, y + j, f);
   };
@@ -305,53 +324,48 @@ export function buildMid() {
     img.rect(x, y, 3, 5, col);
     img.rect(x, y + 1, 3, 1, 0xf6f2e6);
   };
-  const boat = (x, u, len, sail) => {
-    const y = Y(u);
-    // wake: two white trails behind (below) the boat, fading
-    for (let k = 0; k < 26; k++) {
-      const a = 0.75 * (1 - k / 26);
-      img.set(x - 1 - Math.floor(k / 5), y + len + k, 0xeaf6fa, a);
-      img.set(x + 2 + Math.floor(k / 5), y + len + k, 0xeaf6fa, a);
-    }
-    objects.push({
-      y: y + len,
-      shadow: () => shadowRect(x + 2, y + 2, 3, len, 0.55),
-      draw: () => {
-        for (let j = 0; j < len; j++) {
-          const w = j < 2 ? 1 : j > len - 2 ? 2 : 3;
-          for (let i = 0; i < w; i++) img.set(x + i + (3 - w > 1 ? 1 : 0), y + j, j % 3 === 0 ? 0x5a3a22 : 0x7a5230);
-        }
-        img.set(x + 1, y + Math.floor(len / 2), 0x3a2a1a);
-        if (sail) {
-          img.rect(x - 2, y + Math.floor(len / 3), 7, 1, 0x6a4a2a);
-          img.rect(x - 1, y + Math.floor(len / 3) + 1, 5, 2, sail);
-        }
-      },
+  // boats and the ferry are live: they sail up the screen with their wakes spreading behind them
+  const wakeF = (spread) =>
+    [0, 1, 2, 3].map((k) => {
+      const s = spread + k * 2;
+      const out = new Raster(1, s * 2 + 1);
+      out.set(0, 0, 0xeaf6fa);
+      out.set(0, s * 2, 0xeaf6fa);
+      if (k < 2) {
+        out.set(0, 1, 0xc8e4ec);
+        out.set(0, s * 2 - 1, 0xc8e4ec);
+      }
+      return gradeF(out);
     });
+  const smallWake = wakeF(2);
+  const boat = (x, u, len, sail) => {
+    const out = new Raster(7, len + 1);
+    for (let j = 0; j < len; j++) {
+      const w = j < 2 ? 1 : j > len - 2 ? 2 : 3;
+      for (let i = 0; i < w; i++) out.set(2 + i + (3 - w > 1 ? 1 : 0), j, j % 3 === 0 ? 0x5a3a22 : 0x7a5230);
+    }
+    out.set(3, Math.floor(len / 2), 0x3a2a1a);
+    for (let j = 2; j <= len; j++) out.set(4 + (j > len - 2 ? 0 : 1), j, 0x0a1a2a, 0.25); // its shadow on the water
+    if (sail) {
+      out.rect(0, Math.floor(len / 3), 7, 1, 0x6a4a2a);
+      out.rect(1, Math.floor(len / 3) + 1, 5, 2, sail);
+    }
+    const sp = 5;
+    kit.path([[x + 3, u - 200], [x + 3, u + 400]], [gradeF(out)], { sp, turn: 'none', wake: { f: smallWake, every: 3, life: 2.2 }, s0: passing(u, sp, 200, 600) });
   };
   const ferry = (x, u) => {
-    const y = Y(u);
-    for (let k = 0; k < 44; k++) {
-      const a = 0.8 * (1 - k / 44);
-      const spread = Math.floor(k / 3);
-      img.set(x - 1 - spread, y + 30 + k, 0xeaf6fa, a);
-      img.set(x + 9 + spread, y + 30 + k, 0xeaf6fa, a);
-      if (k % 2 === 0) img.set(x + 4, y + 30 + k, 0xeaf6fa, a * 0.6);
+    const out = new Raster(12, 33);
+    for (let j = 0; j < 30; j++) {
+      const w = j < 4 ? 3 + j * 2 : 9;
+      const ox = Math.floor((9 - w) / 2);
+      for (let i = 0; i < w; i++) out.set(ox + i, j, i === 0 || i === w - 1 ? 0x2a4a8a : 0xf2f2ee);
     }
-    objects.push({
-      y: y + 30,
-      shadow: () => shadowRect(x + 3, y + 3, 9, 30, 0.5),
-      draw: () => {
-        for (let j = 0; j < 30; j++) {
-          const w = j < 4 ? 3 + j * 2 : 9;
-          const ox = Math.floor((9 - w) / 2);
-          for (let i = 0; i < w; i++) img.set(x + ox + i, y + j, i === 0 || i === w - 1 ? 0x2a4a8a : 0xf2f2ee);
-        }
-        img.rect(x + 2, y + 10, 5, 10, 0xd8dce4);
-        img.rect(x + 3, y + 12, 3, 2, 0x3a5a9a);
-        img.rect(x + 3, y + 22, 3, 3, 0xe04a2a);
-      },
-    });
+    out.rect(2, 10, 5, 10, 0xd8dce4);
+    out.rect(3, 12, 3, 2, 0x3a5a9a);
+    out.rect(3, 22, 3, 3, 0xe04a2a);
+    for (let j = 3; j < 33; j++) for (const i of [9, 10, 11]) if (i - 9 < 3 && j > 2 + (i - 9)) out.set(i, j, 0x0a1a2a, 0.22);
+    const sp = 8;
+    kit.path([[x + 6, u - 300], [x + 6, u + 500]], [gradeF(out)], { sp, turn: 'none', wake: { f: wakeF(5), every: 3, life: 2.6 }, s0: passing(u, sp, 300, 800) });
   };
 
   // ------------------------------------------------------------ A. sea start: islets + boats
@@ -472,6 +486,7 @@ export function buildMid() {
               // sugar cane: dense vertical rows
               const col = (xx - x) % 3;
               img.set(xx, yy, col === 0 ? C.cane[0] : col === 1 ? C.cane[1] : (yy + xx) % 4 === 0 ? C.cane[2] : C.cane[1]);
+              cane[yy * W + xx] = 1;
             } else if (kind < 0.8) {
               // pineapple: spiky dark rosettes in rows on red earth
               if ((xx - x) % 4 < 2 && (yy - top) % 4 < 2) img.set(xx, yy, (xx + yy) % 2 ? 0x2e5a2a : 0x3e7232);
@@ -536,6 +551,22 @@ export function buildMid() {
     for (let yy = cyTop - 4; yy < cyTop + 84; yy++) for (let xx = 46; xx < 134; xx++) img.set(xx, yy, rampColor(C.stone, 0.5 + fbm(xx, yy, { seed: 53, scale: 4 }) * 0.4, xx, yy));
     for (let yy = cyTop; yy < cyTop + 76; yy++) for (let xx = 58; xx < 122; xx++) img.set(xx, yy, Math.floor((xx - 58) / 2) % 2 ? 0xd8cfc0 : 0xb8503a);
     reserveRect(44, cyTop - 6, 92, 92);
+    // festival banners on tall poles at the courtyard's corners, fluttering (live)
+    for (const [bx, c1, c2] of [[50, 0xe8c030, 0xc8302a], [128, 0xc8302a, 0xe8c030]])
+      for (const by of [cyTop + 6, cyTop + 60]) {
+        const flag = [0, 1, 2].map((f) => {
+          const out = new Raster(6, 12);
+          out.rect(0, 0, 1, 12, 0x4a3424);
+          for (let j = 1; j < 9; j++) {
+            const wv = f === 0 ? 0 : Math.round(Math.sin(j * 0.8 + f * 1.7));
+            for (let i = 1; i < 4; i++) out.set(i, j + (i === 3 ? wv : 0), j < 3 ? c2 : c1);
+            if (f) out.set(4, j + wv, scaleColor(c1, 0.8));
+          }
+          out.set(1, 11, 0x0a1010, 0.4);
+          return gradeF(out);
+        });
+        kit.loop(bx, U(by - 10), flag, { seq: [0, 1, 2, 1], fps: 3.5 });
+      }
     const sx = 40;
     const sy = Y(3680);
     objects.push({
@@ -593,6 +624,15 @@ export function buildMid() {
         img.set(lx, ly, 0xfff2a0);
       },
     });
+    // the lamp flashes: a double flash every few seconds (live, painted after the grade: it's light)
+    {
+      const flash = [1, 2].map((r) => {
+        const out = new Raster(7, 7);
+        for (let j = -3; j <= 3; j++) for (let i = -3; i <= 3; i++) if (i * i + j * j <= r * r + 0.5) out.set(3 + i, 3 + j, i || j ? 0xfff2a0 : 0xffffff, i || j ? 0.75 : 1);
+        return kit.frame(out);
+      });
+      kit.loop(lx - 3, U(ly - 3), flash, { seq: [1, 0, -1, 1, 0, ...Array(18).fill(-1)], fps: 8, fx: 1 });
+    }
     reserveRect(lx - 7, ly - 7, 14, 14);
     house(ix - 24, Y(iu - 10), 16, 10);
     for (let i = 0; i < 9; i++) {
@@ -650,10 +690,118 @@ export function buildMid() {
   objects.sort((a, b) => a.y - b.y);
   for (const o of objects) o.draw();
 
-  // readability: keep the islands bright and inviting, but a touch muted under the bullets
-  grade(img, { sat: 0.86, bright: 0.86, tint: 0x102030, tintAmt: 0.05 });
+  grade(img, GRADE);
+
+  // ------------------------------------------------------------ live: the sea
+  // waves rolling in: lines of foam at four distances from every beach, lit one after another towards
+  // the sand (one frame per line per stretch of coast); white water breaking over the reef edges
+  for (let y0 = 0; y0 < L; y0 += 64) {
+    const lines = [];
+    for (let k = 0; k < 4; k++) {
+      const dk = 3 + k * 4;
+      const px = [];
+      for (let y = y0; y < y0 + 64; y++)
+        for (let x = 0; x < W; x++) {
+          const d = D(x, y);
+          if (d < -dk - 1.5 || d > -dk + 0.5 || K(x, y) !== 0) continue;
+          if (fbm(x, y * 0.5 + k * 30, { seed: 91 + k, scale: 7 }) < 0.36 + k * 0.04) continue;
+          px.push([x, y, d > -dk - 0.6]);
+        }
+      if (px.length < 6) continue;
+      const xs = px.map((p) => p[0]);
+      const ys = px.map((p) => p[1]);
+      const out = new Window(Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs) + 1, Math.max(...ys) - Math.min(...ys) + 1);
+      for (const [x, y, crest] of px) {
+        if (crest) out.set(x, y, C.foam);
+        else if (bayer(x, y) < 0.5) out.set(x, y, 0xd8f0f0, 0.7);
+      }
+      lines.push([gradeF(out), out.x0, U(out.y0), k]);
+    }
+    if (lines.length)
+      kit.wave(
+        lines.map((l) => l[0]),
+        lines.map(([, x, u, k], i) => [i, x, u, k * 1.1]),
+        { w: 1.4, a0: 0, a1: 0.9, pw: 3 },
+      );
+  }
+  for (const [ru, rx, R] of REEFS) {
+    const out = new Window(rx - R - 8, Y(ru) - R - 8, R * 2 + 17, R * 2 + 17);
+    for (let y = out.y0; y < out.y0 + out.h; y++)
+      for (let x = out.x0; x < out.x0 + out.w; x++) {
+        const rd = reefD(x, U(y));
+        if (rd < -1.5 || rd > 1 || K(x, y) !== 0) continue;
+        if (fbm(x, y, { seed: 95, scale: 4 }) < 0.4) continue;
+        out.set(x, y, rd > -0.5 ? C.foam : 0xd8f0f0, rd > -0.5 ? 1 : 0.6);
+      }
+    kit.wave([gradeF(out)], [[0, out.x0, U(out.y0), ru * 0.37]], { w: 1.1, a0: 0, a1: 0.85, pw: 4 });
+  }
+  // the lagoons glint: short bright ripples coming and going over the shallows
+  {
+    const glint = [3, 5, 3].map((len, i) => {
+      const out = new Raster(5, 1);
+      for (let x = (5 - len) >> 1; x < ((5 - len) >> 1) + len; x++) out.set(x, 0, i === 1 ? 0xffffff : 0xd8f4f0, i === 1 ? 0.9 : 0.6);
+      return gradeF(out);
+    });
+    // over every patch of shallow water (cells of 12 x 8 px), grouped by stretch of the strip
+    for (let u0 = 0; u0 < L; u0 += 256) {
+      const rects = [];
+      for (let u = u0 + 8; u <= u0 + 256 && u <= L; u += 8)
+        for (let x = 0; x + 12 <= W; x += 12) {
+          const ok = [[0, 0], [11, 0], [0, 7], [11, 7], [6, 4]].every(([dx, dy]) => {
+            const xx = x + dx;
+            const yy = Y(u) + dy;
+            const i = img.idx(xx, yy);
+            const d = D(xx, yy);
+            return K(xx, yy) === 0 && i >= 0 && img.data[i + 3] && ((d < -4 && d > -22) || reefD(xx, U(yy)) > 2);
+          });
+          if (ok) rects.push([x, u, 12, 8]);
+        }
+      if (rects.length) kit.spot(rects, glint, { rate: rects.length * 0.08, fps: 7, a: 0.8 });
+    }
+  }
+  // sea turtles gliding in the open water, half seen through it
+  {
+    const turtle = (f) => {
+      const out = new Raster(9, 9);
+      out.ellipse(4, 4, 3, 2.5, 0x0e2a34);
+      out.disc(7.5, 4, 1.2, 0x0e2a34);
+      for (const s of [-1, 1]) {
+        out.set(5 + (f ? 1 : 0), 4 + s * 3, 0x0e2a34);
+        out.set(4 + (f ? 1 : 0), 4 + s * 4, 0x0e2a34);
+        out.set(2, 4 + s * 3, 0x0e2a34);
+      }
+      out.set(0, 4, 0x0e2a34);
+      return gradeF(out);
+    };
+    const tf = [turtle(0), turtle(1)];
+    kit.wander(92, 320, 34, 76, tf, { n: 2, sp: 4, idle: 0.1, fps: 1.5, a: 0.45, d: -0.4 });
+    kit.wander(70, 5100, 28, 110, tf, { n: 2, sp: 4, idle: 0.1, fps: 1.5, a: 0.45, d: -0.4 });
+    kit.wander(60, 5960, 30, 60, tf, { n: 1, sp: 4, idle: 0.1, fps: 1.5, a: 0.45, d: -0.4 });
+  }
+  // gusts over the cane fields: the long leaves flash pale, a patch at a time, in waves across the farm
+  for (let y0 = Y(FIELDS[1]); y0 < Y(FIELDS[0]); y0 += 16)
+    for (let x0 = 0; x0 < W; x0 += 16) {
+      let n = 0;
+      const tile = new Window(x0, y0, 16, 16);
+      for (let y = y0; y < y0 + 16; y++)
+        for (let x = x0; x < Math.min(W, x0 + 16); x++) {
+          const i = img.idx(x, y);
+          if (!cane[y * W + x] || i < 0) continue;
+          tile.setRGBA(x, y, Math.min(255, img.data[i] * 1.2 + 24), Math.min(255, img.data[i + 1] * 1.18 + 24), Math.min(255, img.data[i + 2] * 1.05 + 10), 255);
+          n++;
+        }
+      if (n < 12) continue;
+      const u = U(y0);
+      kit.wave([kit.frame(tile)], [[0, x0, u, -(x0 * 0.06 + u * 0.01) + fbm(x0, u, { seed: 97, scale: 40 }) * 2]], { w: 1.2, a0: 0, a1: 0.55, pw: 4 });
+    }
 
   const chunks = [];
   for (let i = 0; i < CHUNKS; i++) chunks.push(img.crop(0, i * CHUNK, W, CHUNK));
-  return { strip: img, chunks, meta: { width: W, chunkHeight: CHUNK, chunks: CHUNKS, length: L } };
+  const white = new Raster(1, 1);
+  white.set(0, 0, 0xffffff);
+  grade(white, GRADE);
+  return { strip: img, chunks, props: kit.pack(), meta: { width: W, chunkHeight: CHUNK, chunks: CHUNKS, length: L, tint: tintTable(L, () => [white.data[0], white.data[1], white.data[2]]) } };
 }
+
+// readability: keep the islands bright and inviting, but a touch muted under the bullets
+const GRADE = { sat: 0.86, bright: 0.86, tint: 0x102030, tintAmt: 0.05 };

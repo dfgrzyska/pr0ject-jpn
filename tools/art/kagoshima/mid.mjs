@@ -6,12 +6,17 @@
 // the summit crater. Graded from hazy day to the red glow of the crater; lava and lamps are painted
 // after the grade. Open water stays transparent (the far layer is the bay).
 //
+// Live (see ../props.mjs): the Ferris wheel turns, trams shuttle along the lawn tracks, the Sakurajima
+// ferries cross the bay with their wakes, dolphins leap, ash billows out of the crater and steam off the
+// vents and cracks, and the lava breathes, flaring up and dying down.
+//
 // Coordinates: u = distance from the bottom of the strip (stage start), strip y = L - u.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Raster, fbm, rng, bayer, scaleColor, rgb } from '../../lib/raster.mjs';
 import { crownPixels, palmPixels, rampColor } from '../nature.mjs';
+import { PropKit, Window, puff, todGrade, tintTable } from '../props.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -86,6 +91,24 @@ export function buildMid() {
   const pools = [];
   const glow = (x, y, c, a = 1) => lights.push([Math.round(x), Math.round(y), c, a]);
   const pool = (x, y, r, c, k = 0.5) => pools.push({ x, y, r, c, k });
+  const kit = new PropKit(4414); // the moving parts
+  const tod = todGrade(TOD, smooth);
+  /** A frame graded for strip position u; `lit` are [x, y, colour, alpha] pixels painted on afterwards. */
+  const frameAt = (r, u, lit = []) => {
+    tod.frame(r, u);
+    for (const [x, y, c, a] of lit) r.set(x, y, c, a);
+    return kit.frame(r);
+  };
+  const lavaPx = []; // glowing cracks and the crater's lava (they pulse, live)
+  const vapour = [2, 3, 4, 5].map((r) => [0, 1].map((v) => kit.frame(puff(r, r * 19 + v, [0x9a9696, 0xbcb8b6, 0xdcd8d4, 0xf4f0ec]))));
+  /**
+   * Where a mover should start so it passes its painted spot (sAt px along the route) as the screen goes
+   * by there, and never reaches the ends of its route while on screen.
+   */
+  const passing = (u, sp, sAt, total) => {
+    const t = (u - 235) / V;
+    return ((((sAt - sp * t) % total) + total) % total) / total;
+  };
   const shadowRect = (x, y, w, h, f = 0.6) => {
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) img.tint(x + i, y + j, f);
   };
@@ -230,16 +253,21 @@ export function buildMid() {
       for (let x = 85; x <= 95; x++) img.set(x, y, rampColor(C.lawn, fbm(x, y, { seed: 35, scale: 2 }), x, y));
       for (const x of [86, 88, 92, 94]) img.set(x, y, C.rail);
     }
-    for (const [u, color] of [[180, 0xd84a2a], [700, 0x2a8a5a], [1180, 0xe8e0d0]])
-      objects.push({
-        y: Y(u),
-        shadow: () => shadowRect(89, Y(u + 26) + 2, 6, 26, 0.55),
-        draw: () => {
-          img.rect(86, Y(u + 26), 8, 26, color);
-          img.rect(86, Y(u + 26), 8, 1, 0xf0ece0);
-          for (let k = 2; k < 24; k += 4) img.rect(87, Y(u + 26) + k, 6, 2, 0x8aa8c0);
-        },
-      });
+    // live: trams shuttling along both tracks between the terminus and the river, shadows on the lawn
+    for (const [x, color, s0] of [[87, 0xd84a2a, 0.1], [93, 0x2a8a5a, 0.45], [87, 0xe8e0d0, 0.65], [93, 0xe8a030, 0.9]]) {
+      const tram = (up) => {
+        const r = new Raster(8, 26);
+        r.rect(0, 0, 6, 24, color);
+        r.rect(0, 0, 6, 1, 0xf0ece0);
+        for (let k = 2; k < 22; k += 4) r.rect(1, k, 4, 2, 0x8aa8c0);
+        r.rect(1, up ? 0 : 22, 4, 2, 0x5a7a9a); // the driver's window at the front
+        for (let j = 2; j < 26; j++) r.set(j > 24 ? 6 : 7, j, 0x101418, 0.35);
+        return frameAt(r, 600);
+      };
+      const fu = tram(true);
+      const fd = tram(false);
+      kit.path([[x + 2, 10], [x + 2, RIVER[0] - 24]], [fu], { sp: 9, mode: 'pp', hold: 4, turn: 'none', fu: [fu], fd: [fd], s0 });
+    }
     // palms along the avenue
     for (let u = 20; u < RIVER[0]; u += 26) {
       if (streets.some((s) => Math.abs(u - s) < 12)) continue;
@@ -257,20 +285,31 @@ export function buildMid() {
           img.rect(x, y, 38, 1, 0xc8c4c0);
           img.rect(x + 2, y + 2, 34, 36, 0x9a9690);
           for (let yy = y + 40; yy < y + 50; yy++) for (let xx = x; xx < x + 38; xx++) img.set(xx, yy, yy === y + 40 ? 0x5a5a5e : (xx - x) % 3 === 1 ? 0x5a7a9a : 0xd0ccc4);
-          // the wheel: a red ring with spokes and coloured gondolas
-          const cx = x + 19;
-          const cy = y + 18;
-          for (let a = 0; a < Math.PI * 2; a += 0.02) img.set(Math.round(cx + Math.cos(a) * 15), Math.round(cy + Math.sin(a) * 15), 0xd8302a);
-          for (let k = 0; k < 12; k++) {
-            const a = (k / 12) * Math.PI * 2;
-            img.line(cx, cy, Math.round(cx + Math.cos(a) * 14), Math.round(cy + Math.sin(a) * 14), 0xc8c4bc);
-            img.rect(Math.round(cx + Math.cos(a) * 15) - 1, Math.round(cy + Math.sin(a) * 15), 3, 2, [0xf0c030, 0x40a0e0, 0xe85a8a, 0x5ac05a][k % 4]);
-          }
-          img.rect(cx - 1, cy - 1, 3, 3, 0xe8e4dc);
-          img.rect(cx - 4, cy + 15, 9, 3, 0x7a7a80);
+          img.rect(x + 15, y + 33, 9, 3, 0x7a7a80); // the wheel's stand (the wheel is live)
         },
       });
       reserveRect(x - 2, y - 2, 42, 56);
+      // the wheel turning: spokes and ring in three steps per spoke, the coloured gondolas going round
+      const cx = x + 19;
+      const cy = y + 18;
+      const wheel = [0, 1, 2].map((s) => {
+        const r = new Window(cx - 16, cy - 16, 33, 33);
+        for (let a = 0; a < Math.PI * 2; a += 0.02) r.set(Math.round(cx + Math.cos(a) * 15), Math.round(cy + Math.sin(a) * 15), 0xd8302a);
+        for (let k = 0; k < 12; k++) {
+          const a = (k / 12) * Math.PI * 2 + (s / 3) * ((Math.PI * 2) / 12);
+          r.line(cx, cy, Math.round(cx + Math.cos(a) * 14), Math.round(cy + Math.sin(a) * 14), 0xc8c4bc);
+        }
+        r.rect(cx - 1, cy - 1, 3, 3, 0xe8e4dc);
+        return frameAt(r, 410);
+      });
+      kit.loop(cx - 16, U(cy - 16), wheel, { fps: 1.5, ph: 0 });
+      const gondolas = [0xf0c030, 0x40a0e0, 0xe85a8a, 0x5ac05a].map((c) => {
+        const r = new Raster(3, 2);
+        r.rect(0, 0, 3, 2, c);
+        r.set(2, 1, scaleColor(c, 0.75));
+        return frameAt(r, 410);
+      });
+      kit.orbit(cx, U(cy) - 1, 15, gondolas, { n: 12, w: ((Math.PI * 2) / 12 / 3) * 1.5, d: 0.02 });
     }
     // Tenmonkan: a covered shopping arcade cutting through the blocks
     for (let u = 610; u < 1090; u++) {
@@ -407,30 +446,33 @@ export function buildMid() {
 
   // ------------------------------------------------------------ D. Kinkō Bay
   {
-    const ferry = (x, u, up) => {
-      const y = Y(u);
-      for (let k = 0; k < 50; k++) {
-        const a = 0.8 * (1 - k / 50);
-        const spread = Math.floor(k / 3);
-        const wy = up ? y + 34 + k : y - k;
-        img.set(x - 1 - spread, wy, 0xeaf0f0, a);
-        img.set(x + 11 + spread, wy, 0xeaf0f0, a);
+    // the Sakurajima ferries crossing the bay, wakes spreading behind (live)
+    const wake = [0, 1, 2, 3].map((k) => {
+      const s = 6 + k * 2;
+      const r = new Raster(1, s * 2 + 1);
+      r.set(0, 0, 0xeaf0f0);
+      r.set(0, s * 2, 0xeaf0f0);
+      if (k < 2) {
+        r.set(0, 1, 0xc8d4d8);
+        r.set(0, s * 2 - 1, 0xc8d4d8);
       }
-      objects.push({
-        y: y + 34,
-        shadow: () => shadowRect(x + 4, y + 4, 11, 34, 0.5),
-        draw: () => {
-          for (let j = 0; j < 34; j++) {
-            const w = up ? (j < 5 ? 3 + j * 2 : 11) : j > 28 ? 3 + (33 - j) * 2 : 11;
-            const ox = Math.floor((11 - w) / 2);
-            for (let i = 0; i < w; i++) img.set(x + ox + i, y + j, i === 0 || i === w - 1 ? 0xe0a020 : 0xf2f0ea);
-          }
-          img.rect(x + 2, y + 11, 7, 12, 0xd8dce0);
-          img.rect(x + 3, y + 13, 5, 2, 0x3a5a8a);
-          img.rect(x + 2, y + 23, 7, 1, 0xe0a020);
-          img.rect(x + 4, y + 25, 3, 3, 0x5a5e66);
-        },
-      });
+      return frameAt(r, 3500);
+    });
+    const ferry = (x, u, up) => {
+      const r = new Raster(14, 37);
+      for (let j = 0; j < 34; j++) {
+        const w = up ? (j < 5 ? 3 + j * 2 : 11) : j > 28 ? 3 + (33 - j) * 2 : 11;
+        const ox = Math.floor((11 - w) / 2);
+        for (let i = 0; i < w; i++) r.set(ox + i, j, i === 0 || i === w - 1 ? 0xe0a020 : 0xf2f0ea);
+      }
+      r.rect(2, 11, 7, 12, 0xd8dce0);
+      r.rect(3, 13, 5, 2, 0x3a5a8a);
+      r.rect(2, 23, 7, 1, 0xe0a020);
+      r.rect(4, 25, 3, 3, 0x5a5e66);
+      for (let j = 4; j < 37; j++) for (let i = 11; i < 14; i++) if (i - 11 < Math.min(3, j - 3) && j < 34 + (i - 11)) r.set(i, j, 0x0a1418, 0.25);
+      const [a, b] = up ? [2950, 4280] : [4280, 2950];
+      const sp = 10;
+      kit.path([[x + 7, a], [x + 7, b]], [frameAt(r, u)], { sp, turn: 'none', wake: { f: wake, every: 3, life: 2.6 }, s0: passing(u, sp, Math.abs(u - a), 1330) });
     };
     ferry(56, 3300, true);
     ferry(128, 3880, false);
@@ -452,6 +494,29 @@ export function buildMid() {
       img.rect(x, Y(u), 5, 2, 0x6a7a86);
       img.set(x + 2, Y(u) - 1, 0x4a5a66);
       img.set(x + 5, Y(u) + 1, 0xeaf0f0, 0.7);
+    }
+    // ...and every few seconds one of them leaps: a fin breaks the water, the arc of its back, the splash (live)
+    {
+      const leap = [0, 1, 2, 3, 4, 5].map((f) => {
+        const r = new Raster(11, 7);
+        if (f === 0) r.set(5, 3, 0xd8e4e8);
+        if (f === 1) {
+          r.rect(4, 3, 3, 1, 0x4a5a66);
+          r.set(5, 2, 0x3a4a56);
+          r.set(3, 4, 0xeaf0f0, 0.8);
+        }
+        if (f === 2 || f === 3) {
+          const o = f === 2 ? 0 : 1;
+          r.rect(2 + o, 2, 7, 2, 0x6a7a86);
+          r.rect(2 + o, 2, 7, 1, 0x8a9aa6);
+          r.set(5 + o, 1, 0x4a5a66);
+          r.set(9 + o, 3, 0x4a5a66);
+          r.set(1 + o, 4, 0xeaf0f0, 0.8);
+        }
+        if (f >= 4) for (let a = 0; a < Math.PI * 2; a += 0.6) r.set(Math.round(5 + Math.cos(a) * (f - 1)), Math.round(3 + Math.sin(a) * (f - 2.5)), 0xeaf0f0, f === 4 ? 0.9 : 0.5);
+        return frameAt(r, 3570);
+      });
+      kit.spot([[56, 3640, 70, 120]], leap, { rate: 0.45, fps: 6 });
     }
   }
 
@@ -538,7 +603,10 @@ export function buildMid() {
         if (isRes(px, py)) continue;
         img.set(px, py, C.rock[0]);
         img.set(px + 1, py, C.rock[3]);
-        if (rand() < hot * 0.5) glow(px, py, rand() < 0.6 ? C.lava[0] : C.lava[1]);
+        if (rand() < hot * 0.5) {
+          glow(px, py, rand() < 0.6 ? C.lava[0] : C.lava[1]);
+          lavaPx.push([px, py]);
+        }
       }
       if (rand() < hot * 0.4) pool(x, y, 8, 0xff5a20, 0.3);
     }
@@ -564,6 +632,7 @@ export function buildMid() {
       const x = rand() * W;
       const y = Y(LAVA[0] + 300 + rand() * 1200);
       for (let j = 0; j < 7; j++) img.set(x + Math.round(Math.sin(j) * 1.5), y - j, 0xffffff, 0.3 - j * 0.035);
+      kit.emit(Math.round(x), U(y) + 1, vapour, { rate: 0.8, life: [2.4, 3.4], vy: 6, sx: 1, wf: 1, a: 0.4, tint: 1 }); // steam off the crack (live)
     }
   }
 
@@ -584,16 +653,23 @@ export function buildMid() {
         } else if (e > 0.94) c = C.rock[3]; // rim
         else {
           c = rampColor(C.rock, 0.1 + e * 0.3 + fbm(x, y, { seed: 42, scale: 5 }) * 0.2, x, y);
-          if (e < 0.75 && fbm(x, y, { seed: 43, scale: 6 }) > 0.62) glow(x, y, e < 0.4 ? C.lava[2] : C.lava[0], 0.9);
+          if (e < 0.75 && fbm(x, y, { seed: 43, scale: 6 }) > 0.62) {
+            glow(x, y, e < 0.4 ? C.lava[2] : C.lava[0], 0.9);
+            lavaPx.push([x, y]);
+          }
         }
         img.set(x, y, c);
         reserved[y * W + x] = 1;
       }
     pool(cx, cy, rx * 0.9, 0xff4a10, 0.55);
+    // the eruption column (live): ash billowing up out of the crater, leaning with the wind; steam off the vents
+    const ash = [5, 7, 9, 11, 13, 15].map((r) => [0, 1, 2].map((v) => kit.frame(puff(r, r * 7 + v * 3, [0x4a4246, 0x625a5c, 0x7e7676, 0x9e9692]))));
+    for (const [dx, du] of [[0, 4], [-14, 0], [12, -2]]) kit.emit(cx + dx, cu + du, ash, { rate: 1.3, life: [4.5, 6], vy: 11, sx: 5, wf: 1.2, a: 0.62, burst: 0.06, d: 1.1, tint: 1 });
     for (const [vx, vu] of VENTS) {
       const vy = Y(vu);
       for (let y = vy - 9; y <= vy + 9; y++) for (let x = vx - 9; x <= vx + 9; x++) if (Math.hypot(x + 0.5 - vx, y + 0.5 - vy) < 9) img.set(x, y, Math.hypot(x + 0.5 - vx, y + 0.5 - vy) > 7 ? C.rock[3] : C.rock[0]);
       pool(vx, vy, 14, 0xff6020, 0.45);
+      kit.emit(vx, vu, ash.slice(0, 3), { rate: 1.2, life: [2.5, 3.5], vy: 8, sx: 2, wf: 1, a: 0.45, d: 1.1, tint: 1 });
     }
     // steam drifting off the rim
     for (let k = 0; k < 40; k++) {
@@ -683,7 +759,21 @@ export function buildMid() {
   }
   for (const [x, y, c, a] of lights) img.set(x, y, c, a);
 
+  // the lava breathes (live): every glowing crack and the crater's lava flares up and dies down, stretch by
+  // stretch of the slope, out of step with each other
+  for (let y0 = 0; y0 < L; y0 += 48) {
+    const here = lavaPx.filter(([, y]) => y >= y0 && y < y0 + 48);
+    if (!here.length) continue;
+    const xs = here.map(([x]) => x);
+    const out = new Window(Math.min(...xs) - 1, y0 - 1, Math.max(...xs) - Math.min(...xs) + 3, 50);
+    for (const [x, y] of here) {
+      out.set(x, y, 0xffe8a0);
+      out.set(x, y - 1, 0xff9a30, 0.5);
+    }
+    kit.wave([kit.frame(out)], [[0, out.x0, U(out.y0), y0 * 0.11]], { w: 1.3, a0: 0, a1: 0.75, pw: 2 });
+  }
+
   const chunks = [];
   for (let i = 0; i < CHUNKS; i++) chunks.push(img.crop(0, i * CHUNK, W, CHUNK));
-  return { strip: img, chunks, meta: { width: W, chunkHeight: CHUNK, chunks: CHUNKS, length: L } };
+  return { strip: img, chunks, props: kit.pack(), meta: { width: W, chunkHeight: CHUNK, chunks: CHUNKS, length: L, tint: tintTable(L, tod.white) } };
 }

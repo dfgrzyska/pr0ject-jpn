@@ -16,7 +16,8 @@ Wersja online: https://dfgrzyska.github.io/pr0ject-jpn/ — budowana automatyczn
 (`.github/workflows/pages.yml`; w Settings → Pages źródło musi być ustawione na „GitHub Actions”).
 
 Parametry do testów w adresie: `?stage=1` … `?stage=6` (ten etap pierwszy, reszta losowo — 1 Kioto, 2 Okinawa, 3 Sapporo, 4 Kagoshima, 5 Osaka, 6 Beppu), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
-`?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5), `?ship=oni|kitsune|tsubame`.
+`?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5), `?ship=oni|kitsune|tsubame`,
+`?noprops` (tło bez animacji).
 
 ## Statki
 
@@ -233,10 +234,11 @@ liśćmi lilii wiktorii, szare błoto Oniishibozu, kolorowe stawy Kamado z kucha
 z mostkiem → zagrody krokodyli Oniyama z figurą czerwonego oni → lasy Takasakiyamy z polaną pełną makaków
 i świątynią → kamienna niecka gejzeru Tatsumaki z widownią → krwistoczerwony staw Chinoike.
 
-Znak rozpoznawczy miasta to kolumny pary wychodzące spomiędzy domów: w tle są narysowane jako cieniowane
-chmury, a gra dodatkowo wypuszcza z tych samych miejsc unoszące się kłęby (źródła pary generator zapisuje
-w `bg/stage6/meta.json`, pole `steam`). Para, która grzeje działa, ma ciepły, brzoskwiniowy odcień, żeby nie
-myliła się z białą parą w tle.
+Znak rozpoznawczy miasta to kolumny pary wychodzące spomiędzy domów. Są żywe: w tle jest narysowana tylko
+wilgotna plama i niska mgiełka przy każdym źródle, a samą kolumnę tworzą kłęby, które gra ciągle wypuszcza —
+cieniowane jak chmury, puchną w miarę wznoszenia, przechylają się razem przy podmuchach wiatru, a co jakiś
+czas któreś źródło bucha mocniej (zob. „Żywe tło”). Para, która grzeje działa, ma ciepły, brzoskwiniowy
+odcień, żeby nie myliła się z białą parą w tle.
 
 Otoczenie atakuje: **gejzery** (fala `geyser`) siedzą w tle i co kilka sekund wybuchają — najpierw na ziemi
 wypełnia się pierścień, potem bije słup wrzątku i rozpryskują się krople (`"kind": "mud"` — szerszy, dłuższy
@@ -320,11 +322,32 @@ otwór rysuje generator tła) i `{ "type": "steam", "x": 60 }` (chmura pary); bo
 Pod każdą wieżyczką generator tła rysuje kamienną platformę i wycina drzewa — po zmianie wieżyczek
 uruchom `npm run art`. Mnożnik: N = suma wag wrogów w etapie / 9 (liczone automatycznie, `src/config.js`).
 
+## Żywe tło
+
+Na każdej mapie część tła się rusza (`src/game/Props.js`; generator rysuje klatki do `bg/stageN/props.png`
+i zapisuje w `meta.json`, gdzie co stoi i jak się porusza — `tools/art/props.mjs`):
+
+| Mapa | Co żyje |
+|---|---|
+| Kioto | płynące Kamo i Katsura, łódki pod Togetsukyō, podmuchy wiatru w gaju bambusowym, falujące odbicie Złotego Pawilonu i karpie w stawie, trzy strumienie Otowa, riksze w Gion i w bambusach, łopoczące chorągwie nobori w Fushimi, migoczące ognie 大 z dymem |
+| Okinawa | fale napływające na każdą plażę i biała piana na rafach, błyski na lagunach, łodzie sabani i prom z kilwaterem, cienie żółwi morskich, podmuchy wiatru nad trzciną cukrową, chorągwie na dziedzińcu Shuri, błyskająca latarnia morska |
+| Sapporo | wyciąg krzesełkowy, skoczek na skoczni Ōkurayama, samochody w centrum, dym z kominów, para nad nurtem zamarzniętej rzeki, migające neony Susukino, para z ramenowni, łyżwiarze na stawie w parku Nakajima, zegar na TV Tower odliczający czas etapu |
+| Kagoshima | diabelski młyn na dworcu Chūō, tramwaje na trawiastych torach, promy na Sakurajimę, wyskakujące delfiny, kolumna popiołu z krateru, para z otworów i szczelin, pulsująca lawa |
+| Osaka | oba diabelskie młyny (na Tempozan kolory przebiegają po obręczy), statki na rzekach i kanale Dōtonbori, pociągi pod szklanym dachem Umedy, łabędzie w fosach i karpie w stawie, neony zapalające się litera po literze i biegające światła na billboardach, krab machający szczypcami i ośmiornica, kołyszące się girlandy lampionów, fontanna, drgające odbicia neonów w wodzie, dryfujące łodzie rybackie |
+| Beppu | żywe kolumny pary, bąble w gorących stawach (w szarym błocie Oniishibozu rosną i pękają „głowy mnichów”), fale na czarnej plaży, prom i łodzie, pociągi na stacji, pływające krokodyle, makaki na polanie |
+
+Żeby nie przeszkadzało w czytaniu pocisków: wszystko leży pod wrogami (i daleko pod ich pociskami), rusza się
+wolno albo w miejscu, nic małego i jasnego nie lata po ekranie (światła tylko mrugają, samochody jadące w dół
+nie mają reflektorów, odbłyski wody to krótkie poziome kreski), kolory przechodzą tę samą korektę pory dnia co
+tło, a gdy pocisków robi się dużo, efekty (para, dym, bąble, błyski, neony) przygasają — pełne obiekty, które
+zastępują fragment tła (młyny, pojazdy, zwierzęta), zostają bez zmian. `?noprops` wyłącza żywe tło do porównania.
+
 ## Grafika
 
 Cała grafika jest generowana kodem (`tools/`) do zwykłych plików PNG w `public/assets/`:
 atlas sprite'ów (`sprites.png` + `sprites.json`), font pikselowy z polskimi znakami, a dla każdego etapu
-`bg/stageN/far.png` i 14 kawałków warstwy środkowej `bg/stageN/mid_XX.png` (180×512).
+`bg/stageN/far.png`, 14 kawałków warstwy środkowej `bg/stageN/mid_XX.png` (180×512) i atlas ruchomych
+części tła `bg/stageN/props.png` (+ `props.json`; ich lista jest w `meta.json`).
 Generatory teł: `tools/art/kyoto/`, `tools/art/okinawa/`, `tools/art/sapporo/`, `tools/art/kagoshima/`, `tools/art/osaka/`, `tools/art/beppu/` (`node tools/gen-art.mjs --only=stage6` buduje jeden etap). Każdy plik można podmienić ręcznie
 rysowaną grafiką o tych samych wymiarach/nazwach ramek. `node tools/gen-art.mjs --preview` zapisuje
 powiększone podglądy do `tools/preview/`.

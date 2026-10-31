@@ -7,14 +7,18 @@
 // statue, the monkey woods of Takasakiyama, the stone pit of the Tatsumaki geyser, and the blood-red
 // pond of Chinoike where the boss rises. Misty morning turning into a red dusk.
 //
-// Steam plumes are drawn with volume (lit from the top left) and their sources are exported in
-// meta.steam, so the game can keep fresh puffs rising from the same spots. Vents and turret pads come
-// from the wave file. Coordinates: u = distance from the bottom of the strip (stage start), y = L - u.
+// The steam is live: only a wet patch and a low haze are painted at each source, the plumes themselves
+// are puffs the game keeps sending up (shaded like clouds, lit from the top left), swelling and bending
+// with the breeze. The hot pools bubble (the grey mud in "monks' heads"), waves wash the black sand,
+// boats cross the bay, trains pass the station, crocodiles swim in their pens and the macaques of
+// Takasakiyama wander their clearing (see ../props.mjs). Vents and turret pads come from the wave file.
+// Coordinates: u = distance from the bottom of the strip (stage start), y = L - u.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Raster, fbm, rng, bayer, scaleColor, rgb } from '../../lib/raster.mjs';
 import { crownPixels, palmPixels, rampColor } from '../nature.mjs';
+import { PropKit, Window, puff, todGrade, tintTable } from '../props.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -91,7 +95,7 @@ const smooth = (a, b, x) => {
 export function buildMid() {
   const stage = JSON.parse(readFileSync(join(root, 'src', 'data', 'stage6.json'), 'utf8'));
   const { mid: V, anchor } = stage.scroll;
-  const img = new Raster(W, L);
+  let img = new Raster(W, L);
   const rand = rng(6606);
   const Y = (u) => Math.round(L - u);
   const U = (y) => L - y;
@@ -108,7 +112,17 @@ export function buildMid() {
   };
   const objects = [];
   const lights = [];
-  const sources = []; // steam sources for the game: [x, u, size]
+  const kit = new PropKit(6616); // the moving parts
+  const tod = todGrade(TOD, smooth);
+  /** Draw with the stage's own helpers into a small frame at (x0, y0) (strip pixels), graded for its place. */
+  const capture = (x0, y0, w, h, draw, u = U(y0 + h / 2)) => {
+    const keep = img;
+    img = new Window(x0, y0, w, h);
+    draw();
+    const out = img;
+    img = keep;
+    return kit.frame(tod.frame(out, u));
+  };
   const glow = (x, y, c, a = 1) => lights.push([Math.round(x), Math.round(y), c, a]);
   const shadowRect = (x, y, w, h, f = 0.6) => {
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) img.tint(x + i, y + j, f);
@@ -351,26 +365,10 @@ export function buildMid() {
     reserveRect(x, y, w, h);
   };
   /**
-   * A plume of hot-spring steam rising from (x, y): puffs swelling as they go up and drift with the
-   * breeze, shaded like clouds and thinning out at the top. Recorded as a source for the live puffs.
+   * Shaded clumps of steam (a cloud lit from the top left with a cauliflower outline), drawn into the
+   * strip or into a frame. Returns true for a pixel it painted.
    */
-  const plume = (x, y, size, opt = {}) => {
-    const r = rng(Math.floor(rand() * 1e9));
-    const n = 3 + Math.round(size * 3);
-    const height = 10 + size * 22;
-    const drift = (opt.wind ?? 1) * (3 + size * 9);
-    const clumps = [];
-    for (let i = 0; i < n; i++) {
-      const t = i / Math.max(1, n - 1);
-      clumps.push({ x: x + drift * t * t + (r() - 0.5) * 2 * size, y: y - height * t, r: 2 + size * 1.5 + t * (2.5 + size * 4) * (0.8 + r() * 0.4), a: t < 0.65 ? 1 : 1 - (t - 0.65) * 1.3 });
-    }
-    // extra billows around the column for a cauliflower outline
-    for (let i = 0; i < n * 2; i++) {
-      const c = clumps[1 + Math.floor(r() * (n - 1))];
-      const ang = r() * Math.PI * 2;
-      clumps.push({ x: c.x + Math.cos(ang) * c.r * 0.75, y: c.y + Math.sin(ang) * c.r * 0.6, r: c.r * (0.45 + r() * 0.3), a: c.a });
-    }
-    const seed = Math.floor(r() * 1000);
+  const steamBall = (target, clumps, seed, base, a = 1) => {
     const hit = (xx, yy) => {
       let best = null;
       for (const c of clumps) {
@@ -378,43 +376,120 @@ export function buildMid() {
         const dy = yy + 0.5 - c.y;
         const d2 = (dx * dx + dy * dy) / (c.r * c.r);
         if (d2 > 1) continue;
-        const h = Math.sqrt(1 - d2) * c.r + (c.y < y ? (y - c.y) * 0.05 : 0);
-        if (!best || h > best.h) best = { h, d2, nx: dx / c.r, ny: dy / c.r, nz: Math.sqrt(1 - d2), a: c.a };
+        const h = Math.sqrt(1 - d2) * c.r + (c.y < base ? (base - c.y) * 0.05 : 0);
+        if (!best || h > best.h) best = { h, d2, nx: dx / c.r, ny: dy / c.r, nz: Math.sqrt(1 - d2) };
       }
       return best;
     };
+    let x0 = Infinity;
+    let x1 = -Infinity;
+    let y0 = Infinity;
+    let y1 = -Infinity;
+    for (const c of clumps) {
+      x0 = Math.min(x0, c.x - c.r);
+      x1 = Math.max(x1, c.x + c.r);
+      y0 = Math.min(y0, c.y - c.r);
+      y1 = Math.max(y1, c.y + c.r);
+    }
+    for (let yy = Math.floor(y0); yy <= y1; yy++)
+      for (let xx = Math.floor(x0); xx <= x1; xx++) {
+        const best = hit(xx, yy);
+        if (!best) continue;
+        const nse = fbm(xx, yy, { seed: 140 + seed, scale: 3, octaves: 2 });
+        const v = (best.nx * LIGHT[0] + best.ny * LIGHT[1] + best.nz * LIGHT[2]) * 0.6 + 0.55 + (nse - 0.5) * 0.3;
+        const rim = best.d2 > 0.7 ? 1 - (best.d2 - 0.7) / 0.3 : 1;
+        if (rim < 1 && rim < bayer(xx, yy)) continue;
+        target.set(xx, yy, rampColor(C.steam, v, xx, yy), a);
+      }
+  };
+  // live puffs, shared by every plume: three variants per radius, drawn ungraded (the game tints them)
+  const puffs = new Map();
+  const puffFrames = (r) => {
+    if (!puffs.has(r)) puffs.set(r, [0, 1, 2].map((v) => kit.frame(puff(r, r * 31 + v * 7 + 1, C.steam))));
+    return puffs.get(r);
+  };
+  /**
+   * A plume of hot-spring steam rising from (x, y). Painted: the damp patch it rises from and a low
+   * haze; the column itself is live, puffs swelling as they rise and bending with the breeze.
+   */
+  const plume = (x, y, size, opt = {}) => {
+    const r = rng(Math.floor(rand() * 1e9));
+    const r0 = 2 + size * 1.5;
+    const haze = [{ x, y: y - r0 * 0.3, r: r0 }, { x: x - r0 * 0.6, y: y + 0.5, r: r0 * 0.6 }, { x: x + r0 * 0.6, y: y + 0.5, r: r0 * 0.6 }];
+    const seed = Math.floor(r() * 1000);
     objects.push({
       y: y + (opt.front ? 30 : 0),
       draw: () => {
-        let x0 = Infinity;
-        let x1 = -Infinity;
-        let y0 = Infinity;
-        let y1 = -Infinity;
-        for (const c of clumps) {
-          x0 = Math.min(x0, c.x - c.r);
-          x1 = Math.max(x1, c.x + c.r);
-          y0 = Math.min(y0, c.y - c.r);
-          y1 = Math.max(y1, c.y + c.r);
-        }
-        // its shadow on the roofs behind, then the cloud itself
-        for (let yy = Math.floor(y0) + 4; yy <= y1 + 4; yy++)
-          for (let xx = Math.floor(x0) + 4; xx <= x1 + 4; xx++) if (hit(xx - 4, yy - 4) && !hit(xx, yy)) img.tint(xx, yy, 0.84);
-        for (let yy = Math.floor(y0); yy <= y1; yy++)
-          for (let xx = Math.floor(x0); xx <= x1; xx++) {
-            const best = hit(xx, yy);
-            if (!best) continue;
-            const nse = fbm(xx, yy, { seed: 140 + seed, scale: 3, octaves: 2 });
-            const v = (best.nx * LIGHT[0] + best.ny * LIGHT[1] + best.nz * LIGHT[2]) * 0.6 + 0.55 + (nse - 0.5) * 0.3;
-            const rim = best.d2 > 0.7 ? 1 - (best.d2 - 0.7) / 0.3 : 1;
-            if (rim < 1 && rim < bayer(xx, yy)) continue;
-            img.set(xx, yy, rampColor(C.steam, v, xx, yy), best.a);
-          }
+        for (let yy = Math.floor(y - r0 - 2); yy <= y + r0 + 2; yy++)
+          for (let xx = Math.floor(x - r0 - 3); xx <= x + r0 + 3; xx++) if (Math.hypot(xx + 0.5 - x, (yy + 0.5 - y) * 1.4) < r0 + 3) img.tint(xx, yy, 0.88);
+        steamBall(img, haze, seed, y, 0.7);
       },
     });
-    sources.push([Math.round(x), Math.round(U(y)), Math.round(size * 10) / 10]);
+    const radii = [];
+    const top = Math.round(4.5 + size * 5.5);
+    for (let rr = Math.round(r0); rr <= top; rr += Math.max(1, Math.round((top - r0) / 6))) radii.push(rr);
+    const height = 10 + size * 22;
+    kit.emit(Math.round(x), Math.round(U(y)) + 1, radii.map(puffFrames), {
+      rate: 2.6 + size * 1.3,
+      life: [3, 4.2],
+      vy: height * 0.48,
+      sx: Math.max(1, size),
+      wf: 0.6 * (opt.wind ?? 1) + size * 0.2,
+      a: 0.86,
+      burst: 0.05,
+      d: 1.1,
+      tint: 1,
+    });
   };
-  /** A hot-spring pool: an irregular pond filled from a ramp, a rim of rocks. */
+  // bubbles rising in the hot pools (frames in each pool's colours, ungraded: the game tints them)
+  const bubbleSets = new Map();
+  const bubbleFrames = (ramp) => {
+    const key = ramp.join();
+    if (bubbleSets.has(key)) return bubbleSets.get(key);
+    const names = [];
+    const ring = (out, c, r, col, every = 1) => {
+      for (let a = 0, i = 0; a < Math.PI * 2; a += 0.35, i++) if (i % every === 0) out.set(Math.round(c + Math.cos(a) * r), Math.round(c + Math.sin(a) * r * 0.8), col);
+    };
+    if (ramp === C.mud) {
+      // Oniishibozu: a grey dome swells like a shaven head, bursts, and its ring spreads out
+      for (const r of [1.4, 2.4, 3.4, 4.2, 4.6]) {
+        const out = new Raster(13, 13);
+        for (let y = 0; y < 13; y++)
+          for (let x = 0; x < 13; x++) {
+            const dx = (x - 6) / r;
+            const dy = (y - 6) / (r * 0.85);
+            const d = dx * dx + dy * dy;
+            if (d > 1) continue;
+            out.set(x, y, dx + dy < -0.7 ? 0xd8d4cc : dx + dy < -0.1 ? ramp[3] : dx + dy < 0.8 ? ramp[2] : ramp[0]);
+          }
+        names.push(kit.frame(out));
+      }
+      for (const [r, every] of [[4.6, 1], [5.6, 2]]) {
+        const out = new Raster(13, 13);
+        ring(out, 6, r, ramp[3], every);
+        if (every === 1) out.disc(6, 6, 1.5, ramp[0]);
+        names.push(kit.frame(out));
+      }
+    } else {
+      // a bubble breaking the surface and its ring spreading
+      for (const [r, every, k] of [[0, 1, 3], [1.2, 1, 3], [2.2, 1, 3], [3, 2, 2]]) {
+        const out = new Raster(7, 7);
+        if (!r) out.set(3, 3, ramp[3]);
+        else ring(out, 3, r, ramp[k], every);
+        names.push(kit.frame(out));
+      }
+    }
+    bubbleSets.set(key, names);
+    return names;
+  };
+  /** A hot-spring pool: an irregular pond filled from a ramp, a rim of rocks. It bubbles (live). */
   const hotPool = (cx, cu, rx, ry, ramp, seed, rim = C.rock) => {
+    const mud = ramp === C.mud;
+    kit.spot([[Math.round(cx - rx * 0.6), Math.round(cu + ry * 0.55), Math.round(rx * 1.2), Math.round(ry * 1.1)]], bubbleFrames(ramp), {
+      rate: (rx * ry) / (mud ? 110 : 130),
+      fps: mud ? 5 : 8,
+      tint: 1,
+    });
     const cy = Y(cu);
     for (let y = Math.floor(cy - ry - 3); y <= cy + ry + 3; y++)
       for (let x = Math.floor(cx - rx - 3); x <= cx + rx + 3; x++) {
@@ -476,46 +551,75 @@ export function buildMid() {
 
   // ------------------------------------------------------------ A. the bay, the sand baths, the seafront hotels
   {
-    // a ferry heading in and fishing boats, with their wakes
-    const boat = (x, y, len, hull, cabin) => {
-      for (let k = 0; k < len * 1.2; k++) {
-        img.set(x - 1 - Math.floor(k / 3), y + len + k, 0xeaf0f0, 0.7 * (1 - k / (len * 1.2)));
-        img.set(x + 6 + Math.floor(k / 3), y + len + k, 0xeaf0f0, 0.7 * (1 - k / (len * 1.2)));
+    // live: the ferry from Osaka crossing the bay and two fishing boats, their wakes spreading behind;
+    // seen from above, bow to the right (the game turns them along their course)
+    const hull = (len, w, color, bow, cabin, extra) => {
+      const out = new Raster(len, w);
+      for (let j = 0; j < len; j++) {
+        const t = len - 1 - j; // px from the bow
+        const hw = Math.min(w, (w % 2 ? 3 : 2) + t * 2);
+        for (let i = 0; i < hw; i++) out.set(j, Math.floor((w - hw) / 2) + i, i === hw - 1 ? scaleColor(color, 0.7) : t < 2 ? bow : color);
       }
-      objects.push({
-        y: y + len,
-        draw: () => {
-          for (let j = 0; j < len; j++) {
-            const w = j < 4 ? 2 + j : 6;
-            img.rect(x + Math.floor((6 - w) / 2), y + j, w, 1, j === len - 1 ? scaleColor(hull, 0.7) : hull);
-          }
-          img.rect(x + 1, y + Math.floor(len * 0.4), 4, Math.floor(len * 0.3), cabin);
-        },
-      });
+      cabin(out);
+      extra?.(out);
+      return kit.frame(tod.frame(out, 120));
     };
-    {
-      const x = 120;
-      const y = Y(80);
-      for (let k = 0; k < 40; k++) {
-        img.set(x - 1 - Math.floor(k / 3), y + 36 + k, 0xeaf0f0, 0.7 * (1 - k / 40));
-        img.set(x + 13 + Math.floor(k / 3), y + 36 + k, 0xeaf0f0, 0.7 * (1 - k / 40));
-      }
-      objects.push({
-        y: y + 36,
-        draw: () => {
-          for (let j = 0; j < 36; j++) {
-            const w = j < 6 ? 3 + j * 2 : 13;
-            img.rect(x + Math.floor((13 - w) / 2), y + j, w, 1, j < 3 ? 0x2a5aa8 : 0xf2f0ea);
-          }
-          img.rect(x + 3, y + 10, 7, 16, 0xd8dce4);
-          img.rect(x + 3, y + 26, 7, 1, 0xe8a020);
-          img.rect(x + 4, y + 12, 5, 1, C.glass[0]);
-          img.disc(x + 6.5, y + 30, 1.5, 0xe8a020);
-        },
+    const ferry = hull(36, 13, 0xf2f0ea, 0x2a5aa8, (o) => {
+      o.rect(9, 3, 17, 7, 0xd8dce4);
+      o.rect(9, 3, 17, 1, 0xeef0f4);
+      o.rect(9, 3, 1, 7, 0xe8a020);
+      o.rect(23, 4, 1, 5, C.glass[0]);
+      for (let k = 12; k < 22; k += 3) o.set(k, 9, C.glass[1]);
+      o.disc(5, 6.5, 1.5, 0xe8a020);
+    });
+    const fishing = [
+      hull(12, 6, 0xf0ece4, 0xc8c4bc, (o) => o.rect(4, 1, 4, 4, 0x3a6aa0)),
+      hull(10, 6, 0x3a5a8a, 0x2a4a72, (o) => o.rect(3, 1, 4, 4, 0xf0ece4)),
+    ];
+    const wake = (spread) =>
+      [0, 1, 2].map((k) => {
+        const s = spread + k * 2;
+        const out = new Raster(1, s * 2 + 1);
+        out.set(0, 0, 0xeaf0f0);
+        out.set(0, s * 2, 0xeaf0f0);
+        if (k === 0) {
+          out.set(0, 1, 0xc8d8dc);
+          out.set(0, s * 2 - 1, 0xc8d8dc);
+        }
+        return kit.frame(tod.frame(out, 120));
       });
+    kit.path([[-40, 112], [230, 112]], [ferry], { sp: 9, turn: 'rot', wake: { f: wake(6), every: 3, life: 2.2 }, s0: 0.42 });
+    kit.path([[-20, 158], [210, 158]], [fishing[0]], { sp: 7, turn: 'rot', wake: { f: wake(2), every: 3, life: 1.6 }, s0: 0.25 });
+    kit.path([[210, 181], [-20, 181]], [fishing[1]], { sp: 5, turn: 'rot', wake: { f: wake(2), every: 3, life: 1.6 }, s0: 0.5 });
+    // waves washing up the black sand: lines of foam rolling in towards the beach, one after another
+    {
+      const lines = [];
+      for (let k = 0; k < 4; k++) {
+        const dk = 3 + k * 4;
+        let y0 = Infinity;
+        let y1 = -Infinity;
+        for (let x = 0; x < W; x++) {
+          y0 = Math.min(y0, Y(shore(x) - dk + 1));
+          y1 = Math.max(y1, Y(shore(x) - dk - 2));
+        }
+        const out = new Window(0, y0, W, y1 - y0 + 1);
+        for (let y = y0; y <= y1; y++)
+          for (let x = 0; x < W; x++) {
+            const d = U(y) - shore(x) + dk;
+            if (d > 1 || d < -2) continue;
+            const n = fbm(x, k * 40, { seed: 71 + k, scale: 6 });
+            if (n < 0.32 + k * 0.05) continue;
+            if (d > -0.5) out.set(x, y, 0xf2f6f6, k ? 0.9 : 1);
+            else if (bayer(x, y) < 0.5) out.set(x, y, 0xc8dcdc, 0.7);
+          }
+        lines.push([kit.frame(tod.frame(out, 210)), U(y0)]);
+      }
+      kit.wave(
+        lines.map((l) => l[0]),
+        lines.map(([, u], k) => [k, 0, u, k * 1.1]),
+        { w: 1.5, a0: 0, a1: 0.85, pw: 3 },
+      );
     }
-    boat(40, Y(130), 12, 0xf0ece4, 0x3a6aa0);
-    boat(70, Y(175), 10, 0x3a5a8a, 0xf0ece4);
     // people buried in the warm black sand to the neck, towels on their heads, sunshades over them
     for (let k = 0; k < 18; k++) {
       const x = 10 + (k % 9) * 18 + (rand() - 0.5) * 4;
@@ -574,19 +678,20 @@ export function buildMid() {
       img.rect(0, Y(tu - 2), W, 1, 0xa8a8b0);
     }
     reserveRect(0, Y(r1), W, r1 - r0);
-    objects.push({
-      y: Y(1040),
-      draw: () => {
-        for (let c = 0; c < 4; c++) {
-          const x = 8 + c * 41;
-          const y = Y(1050);
-          img.rect(x, y, 39, 7, 0xeef0f2);
-          img.rect(x, y + 5, 39, 2, 0x2a5aa8);
-          for (let k = 2; k < 37; k += 4) img.rect(x + k, y + 2, 2, 2, C.glass[1]);
-          img.rect(x + 1, y, 37, 1, 0xc8ccd0);
-        }
-      },
-    });
+    // live: a white-and-blue local train through the station, a red limited express the other way
+    const coach = (body, stripe, nose) => {
+      const out = new Raster(39, 7);
+      out.rect(0, 0, 39, 7, body);
+      out.rect(0, 5, 39, 2, stripe);
+      for (let k = 2; k < 37; k += 4) out.rect(k, 2, 2, 2, C.glass[1]);
+      out.rect(1, 0, 37, 1, scaleColor(body, 0.88));
+      if (nose) out.rect(nose > 0 ? 36 : 0, 1, 3, 4, C.glass[0]);
+      return kit.frame(tod.frame(out, 1040));
+    };
+    const local = [coach(0xeef0f2, 0x2a5aa8, 1), coach(0xeef0f2, 0x2a5aa8), coach(0xeef0f2, 0x2a5aa8), coach(0xeef0f2, 0x2a5aa8, -1)];
+    const express = [coach(0xc8302a, 0xf0ece4, -1), coach(0xc8302a, 0xf0ece4), coach(0xc8302a, 0xf0ece4), coach(0xc8302a, 0xf0ece4, 1)];
+    kit.path([[-200, 1046], [400, 1046]], local, { sp: 38, n: 4, gap: 41, turn: 'none', cars: 1, s0: 0.55 });
+    kit.path([[400, 1034], [-200, 1034]], express, { sp: 52, n: 4, gap: 41, turn: 'none', cars: 1, s0: 0.05 });
     // the station and its plaza, a bus or two
     block(56, Y(1092), 68, 16, 12, { roof: 0xb4aea4, wall: 0xe8e2d6, items: ['ac', 'ac', 'hut'] });
     fill(40, Y(1112), 100, 18, C.walk, 82, 3);
@@ -940,6 +1045,8 @@ export function buildMid() {
         if (t > 0.1 && t < 0.14) for (const s of [-1, 1]) img.set(Math.round(px - sa * s * 1.4), Math.round(py + ca * s * 1.4), 0xd8c040);
       }
     };
+    // a crocodile swimming, snout to the right (the game turns it as it goes), only its back above water
+    const swimmer = capture(0, Y(ONIYAMA[0] + 300) - 4, 19, 9, () => croc(9.5, Y(ONIYAMA[0] + 300) + 0.5, Math.PI, 17));
     // the red oni statue on his rock by the entrance, club raised (the boss, before he wakes)
     {
       const x = 152;
@@ -982,7 +1089,9 @@ export function buildMid() {
           img.set(xx, y + 57, 0xc8c8c8);
         }
         for (let k = 0; k < 2; k++) croc(x0 + 14 + k * 26 + rand() * 6, y + 6 + rand() * 2, (rand() - 0.5) * 0.3 + (k ? Math.PI : 0), 18);
-        for (let k = 0; k < 2; k++) croc(x0 + 14 + rand() * 30, y + 22 + k * 14 + rand() * 6, rand() * Math.PI * 2, 16 + rand() * 4);
+        // two more swim about the pool (live): the random draws stay, so the rest of the stage looks the same
+        for (let k = 0; k < 8; k++) rand();
+        kit.wander(x0 + 30, U(y + 31), 18, 11, [swimmer], { n: 2, sp: 3, idle: 0.5, turn: 'rot' });
         reserveRect(x0 - 2, y - 2, 64, 62);
         plume(x0 + 16 + rand() * 28, y + 34, 1.1);
         crowd(x0, y + 59, 60, 2, 10);
@@ -1023,6 +1132,18 @@ export function buildMid() {
         img.set(x, y + 2, 0x6a4a32);
         img.set(x, y, 0xe89a8a);
       }
+      // live: a troop scampering about the clearing, stopping to sit (walking: tail up)
+      const monkey = (tail) => {
+        const out = new Raster(4, 4);
+        out.set(1, 3, 0x1e1a16, 0.5);
+        out.rect(0, 1, 3, 2, 0x8a6a4a);
+        out.set(0, 2, 0x6a4a32);
+        out.set(2, 1, 0xe89a8a);
+        out.set(2, 0, 0x7a5a3e);
+        out.set(0, tail ? 0 : 3, 0x6a4a32);
+        return kit.frame(tod.frame(out, cu));
+      };
+      kit.wander(cx, cu, 46, 28, [monkey(false), monkey(true)], { n: 12, sp: 11, idle: 0.9, turn: 'flip', fps: 6 });
     }
     // the temple hall among the cedars
     house(16, Y(6080), 54, 18, 7, { ramp: ROOF.dark, hip: true, wood: true, noren: 0x7a1a1a });
@@ -1117,7 +1238,8 @@ export function buildMid() {
         if (d > 10) continue;
         img.set(xx, yy, d < 3.5 ? 0x1e1a18 : d < 6 ? (v.mud ? C.mud[1] : 0x7a98a2) : (xx + yy) % 3 ? 0xe8dcc0 : 0xd0c098);
       }
-    sources.push([v.x, Math.round(v.u), 0.6]);
+    // a wisp of steam always rising from the hole
+    kit.emit(v.x, Math.round(v.u), [2, 3, 4, 5].map(puffFrames), { rate: 2.4, life: [2, 2.8], vy: 10, sx: 1, wf: 0.4, a: 0.7, d: 1.1, tint: 1 });
   }
   // turret pads: stone steam stands
   for (const p of pads) {
@@ -1170,6 +1292,5 @@ export function buildMid() {
 
   const chunks = [];
   for (let i = 0; i < CHUNKS; i++) chunks.push(img.crop(0, i * CHUNK, W, CHUNK));
-  sources.sort((a, b) => a[1] - b[1]);
-  return { strip: img, chunks, meta: { width: W, chunkHeight: CHUNK, chunks: CHUNKS, length: L, steam: sources } };
+  return { strip: img, chunks, props: kit.pack(), meta: { width: W, chunkHeight: CHUNK, chunks: CHUNKS, length: L, tint: tintTable(L, tod.white) } };
 }

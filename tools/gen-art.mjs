@@ -85,7 +85,14 @@ for (const { id, art } of STAGES) {
   write(`bg/${id}/far.png`, far.toPNG());
   const mid = art.buildMid();
   mid.chunks.forEach((c, i) => write(`bg/${id}/mid_${String(i).padStart(2, '0')}.png`, c.toPNG()));
-  write(`bg/${id}/meta.json`, Buffer.from(JSON.stringify(mid.meta, null, 2)));
+  if (mid.props) {
+    // the moving parts: their frames, and where they go and how they move (in meta.json)
+    write(`bg/${id}/props.png`, mid.props.raster.toPNG());
+    write(`bg/${id}/props.json`, Buffer.from(JSON.stringify(mid.props.json)));
+    mid.meta.props = mid.props.props;
+    if (preview) writeFileSync(join(previewDir, `${id}_props_x4.png`), mid.props.raster.scaled(4, 0x30304a).toPNG());
+  }
+  write(`bg/${id}/meta.json`, Buffer.from(JSON.stringify(mid.meta)));
   if (preview) {
     writeFileSync(join(previewDir, `${id}_far_x2.png`), far.scaled(2).toPNG());
     // full mid strip composited over the far layer, split in a few columns for viewing

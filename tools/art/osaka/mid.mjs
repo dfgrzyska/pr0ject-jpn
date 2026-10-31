@@ -11,6 +11,10 @@
 // waterfront (the Ferris wheel, the aquarium, a fountain) and the bay with its red bridge and fishing boats.
 // Graded from afternoon to night; windows, neon and lamps glow after the grade. River water is
 // transparent (the far layer shows through); the castle moats are painted.
+// Live (see ../props.mjs): both Ferris wheels turn (Tempozan's ring of lights chasing round), boats
+// cruise the rivers and the canal, trains pull in and out under Umeda's glass roof, swans and koi swim,
+// neon signs light up letter by letter and billboards chase, the giant crab waves its claws, lantern
+// strings sway, the fountain plays, neon reflections shimmer on the water and fishing boats drift.
 //
 // Coordinates: u = distance from the bottom of the strip (stage start), strip y = L - u.
 import { readFileSync } from 'node:fs';
@@ -18,6 +22,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Raster, fbm, rng, bayer, scaleColor, rgb } from '../../lib/raster.mjs';
 import { crownPixels, rampColor } from '../nature.mjs';
+import { PropKit, Window, todGrade, tintTable } from '../props.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -77,7 +82,7 @@ const smooth = (a, b, x) => {
 export function buildMid() {
   const stage = JSON.parse(readFileSync(join(root, 'src', 'data', 'stage5.json'), 'utf8'));
   const { mid: V, anchor } = stage.scroll;
-  const img = new Raster(W, L);
+  let img = new Raster(W, L);
   const rand = rng(5505);
   const Y = (u) => Math.round(L - u);
   const U = (y) => L - y;
@@ -95,8 +100,73 @@ export function buildMid() {
   const objects = [];
   const lights = [];
   const pools = [];
+  const kit = new PropKit(5515); // the moving parts
+  const tod = todGrade(TOD, smooth);
+  /**
+   * Draw with the stage's own helpers into a frame at (x0, y0) (strip pixels): graded for its place, lit
+   * by its own light pools, then its lights painted on. The pools light the strip too only if `pools`.
+   * Never draw anything that takes from `rand` in here: the rest of the strip would change.
+   */
+  const capture = (x0, y0, w, h, draw, opt = {}) => {
+    const keep = img;
+    const nl = lights.length;
+    const np = pools.length;
+    img = new Window(x0, y0, w, h);
+    draw();
+    const out = img;
+    img = keep;
+    const lit = lights.splice(nl);
+    const cast = opt.pools ? pools.slice(np) : pools.splice(np);
+    tod.frame(out, opt.u ?? U(y0 + h / 2));
+    for (const pl of cast) applyPool(out, pl);
+    for (const [x, y, c, a] of lit) out.set(x, y, c, a);
+    return kit.frame(out);
+  };
+  // neon that comes alive at night: tubes lighting letter by letter, billboards chasing (frames shared)
+  const NEON_OFF = [0x2a2430, 0x201a26];
+  const tubes = new Map();
+  const tubeFrames = (h) => {
+    if (!tubes.has(h))
+      tubes.set(
+        h,
+        Array.from({ length: h }, (_, j) => {
+          const out = new Raster(2, h);
+          for (let k = j; k < h; k++) for (const i of [0, 1]) out.set(i, k, NEON_OFF[i]);
+          return kit.frame(out);
+        }),
+      );
+    return tubes.get(h);
+  };
+  const boards = new Map();
+  const boardFrames = (w) => {
+    if (!boards.has(w))
+      boards.set(
+        w,
+        [0, 1, 2].map((p) => {
+          const out = new Raster(w, 6);
+          for (let i = 0; i < w; i++) if ((i + p) % 3 === 0) for (const yy of [0, 5]) out.set(i, yy, NEON_OFF[0]);
+          return kit.frame(out);
+        }),
+      );
+    return boards.get(w);
+  };
   const glow = (x, y, c, a = 1) => lights.push([Math.round(x), Math.round(y), c, a]);
   const pool = (x, y, r, c, k = 0.5) => pools.push({ x, y, r, c, k });
+  /** Add a pool of light (after the grade): brightens the pixels around (x, y). */
+  const applyPool = (target, { x, y, r, c, k }) => {
+    const [cr, cg, cb] = rgb(c);
+    for (let yy = Math.floor(y - r); yy <= y + r; yy++)
+      for (let xx = Math.floor(x - r); xx <= x + r; xx++) {
+        const i = target.idx(xx, yy);
+        if (i < 0 || !target.data[i + 3]) continue;
+        const dd = Math.hypot(xx + 0.5 - x, yy + 0.5 - y) / r;
+        if (dd >= 1) continue;
+        const f = (1 - dd) ** 1.6 * k;
+        target.data[i] += cr * f;
+        target.data[i + 1] += cg * f;
+        target.data[i + 2] += cb * f;
+      }
+  };
   const shadowRect = (x, y, w, h, f = 0.6) => {
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) img.tint(x + i, y + j, f);
   };
@@ -228,6 +298,16 @@ export function buildMid() {
     const ns = opt.neon ? Math.max(1, Math.floor(w / 7)) : 0;
     for (let i = 0; i < ns; i++) signs.push({ x: x + 2 + Math.floor((i + 0.5) * ((w - 4) / ns)), c: rand.pick(NEON), h: Math.max(3, Math.min(faceH - 3, 4 + Math.floor(rand() * 8))) });
     const board = opt.billboard ? { c: rand.pick(NEON), c2: rand.pick(NEON), w: Math.min(w - 4, 10 + Math.floor(rand() * 12)) } : null;
+    if (n > 0.45) {
+      // after dark some tubes light up letter by letter and flash, others flicker; billboards chase
+      for (const s of signs) {
+        if (kit.rand() > 0.5) continue;
+        const f = tubeFrames(s.h);
+        const seq = kit.rand() < 0.6 ? [...f.map((_, j) => j), -1, -1, -1, -1, 0, -1, 0, -1, -1, -1, -1, -1, -1, -1] : [...Array(26).fill(-1), 0, -1, 0, -1];
+        kit.loop(s.x, U(y + h + 1), f, { seq, fps: 6, fx: 1 });
+      }
+      if (board && kit.rand() < 0.7) kit.loop(x + Math.floor((w - board.w) / 2), U(y + 2), boardFrames(board.w), { fps: 5, fx: 1 });
+    }
     const awn = rand.pick([0xc83a2a, 0x2a6a3a, 0x2a4a8a, 0xd8a020, 0x8a2a5a]);
     objects.push({
       y: y + h + faceH,
@@ -725,6 +805,29 @@ export function buildMid() {
           img.rect(x + 1, y + 9, 4, 1, C.gold);
         },
       });
+    // live: swans gliding about the moats, koi in the Nishinomaru pond
+    const swanF = (() => {
+      const out = new Raster(6, 3);
+      out.rect(0, 0, 4, 3, 0xf8f8f4);
+      out.rect(0, 2, 4, 1, 0xd8dcd8);
+      out.set(0, 0, 0xe8ece8);
+      out.set(4, 1, 0xf8f8f4);
+      out.set(5, 1, 0xe8902a);
+      return kit.frame(tod.frame(out, 400));
+    })();
+    kit.wander(90, 209, 84, 13, [swanF], { n: 3, sp: 3, idle: 0.3 });
+    kit.wander(90, 580, 84, 11, [swanF], { n: 2, sp: 3, idle: 0.3 });
+    for (const [body, tail] of [[0xf06a20, 0xc84a18], [0xf8f4f0, 0xe83a2a], [0xf0b030, 0xc88a20]]) {
+      const koi = (flick) => {
+        const out = new Raster(4, 3);
+        out.rect(1, 1, 3, 1, body);
+        out.set(3, 1, scaleColor(body, 1.1));
+        out.set(0, flick ? 0 : 2, tail);
+        out.set(0, 1, tail);
+        return kit.frame(tod.frame(out, 340));
+      };
+      kit.wander(52, 330, 20, 14, [koi(false), koi(true)], { n: 2, sp: 5, idle: 0.25, fps: 3 });
+    }
     /** A swan gliding on the moat with its little V of a wake. */
     const swan = (x, y) => {
       for (let k = 1; k < 7; k++) {
@@ -1087,16 +1190,21 @@ export function buildMid() {
       if (!anyRes(x - 4, Y(u) - 4, 8, 8)) tree(rand() < 0.5 ? 'sakura' : 'broadleaf', x, Y(u), 3.5 + rand() * 2);
     }
     for (let u = NAKANOSHIMA[0] + 10; u < NAKANOSHIMA[1]; u += 40) for (const bx of [40, 100, 150]) if (rand() < 0.5) car(bx + (rand() < 0.5 ? -4 : 1), Y(u), true);
-    // river cruise boats and a water bus
-    for (const [x, u, c] of [[60, 1336, 0xe8e4dc], [120, 1322, 0x3a6aa8], [108, 1942, 0xe8e4dc]]) {
-      for (let k = 0; k < 18; k++) {
-        img.set(x + 20 + k, Y(u) + 1, 0xeaf0f0, 0.5 * (1 - k / 18));
-        img.set(x + 20 + k, Y(u) + 5, 0xeaf0f0, 0.5 * (1 - k / 18));
-      }
-      img.rect(x, Y(u), 20, 7, c);
-      img.rect(x + 3, Y(u) + 2, 14, 3, 0x5a7aa0);
-      img.rect(x + 3, Y(u) + 2, 14, 1, 0xa8c8e0);
-      img.rect(x, Y(u), 2, 7, scaleColor(c, 0.8));
+    // river cruise boats and a water bus going up and down both rivers (live), bow to the right
+    for (const [u, c, sp, right] of [[1338, 0xe8e4dc, 8, true], [1323, 0x3a6aa8, 6, false], [1944, 0xe8e4dc, 7, false], [1930, 0x3a6aa8, 5, true]]) {
+      const out = new Raster(20, 7);
+      out.rect(0, 0, 20, 7, c);
+      out.rect(3, 2, 14, 3, 0x5a7aa0);
+      out.rect(3, 2, 14, 1, 0xa8c8e0);
+      out.rect(18, 0, 2, 7, scaleColor(c, 0.8));
+      const boatF = kit.frame(tod.frame(out, u));
+      const wakeF = [0, 1, 2].map((k) => {
+        const w = new Raster(1, 9 + k * 4);
+        w.set(0, 0, 0xeaf0f0);
+        w.set(0, 8 + k * 4, 0xeaf0f0);
+        return kit.frame(tod.frame(w, u));
+      });
+      kit.path(right ? [[-30, u], [210, u]] : [[210, u], [-30, u]], [boatF], { sp, turn: 'flip', wake: { f: wakeF, every: 3, life: 1.8 } });
     }
   }
 
@@ -1122,21 +1230,22 @@ export function buildMid() {
         img.set(x, Y(u), k === 0 || k === 3 ? 0x8a8a90 : k === 1 || k === 2 ? (x % 3 ? 0x4a3a30 : 0x5a4a3a) : k === 5 ? C.paving[2] : 0x6a645c);
       }
     reserveRect(0, Y(2780), W, 80);
-    for (const [u, c, x0] of [[2716, 0xe8e8e8, 10], [2732, 0xf0a020, 60], [2748, 0x3a8a5a, 4], [2764, 0xe8e8e8, 90]])
-      objects.push({
-        y: Y(u),
-        draw: () => {
-          for (let car_ = 0; car_ < 3; car_++) {
-            const x = x0 + car_ * 26;
-            img.rect(x, Y(u) - 2, 24, 5, c);
-            img.rect(x, Y(u) + 1, 24, 1, scaleColor(c, 0.7));
-            for (let xx = x + 2; xx < x + 22; xx += 3) img.rect(xx, Y(u) - 1, 2, 1, 0x3a5a7a);
-          }
-        },
-      });
-    objects.push({
-      y: Y(2700),
-      draw: () => {
+    // live: trains pulling in under the roof, waiting at the platforms and pulling out again
+    for (const [u, c, from, s0] of [[2716, 0xe8e8e8, -1, 0.2], [2732, 0xf0a020, 1, 0.7], [2748, 0x3a8a5a, -1, 0.95], [2764, 0xe8e8e8, 1, 0.45]]) {
+      const coach = (nose) => {
+        const out = new Raster(24, 5);
+        out.rect(0, 0, 24, 5, c);
+        out.rect(0, 3, 24, 1, scaleColor(c, 0.7));
+        for (let xx = 2; xx < 22; xx += 3) out.rect(xx, 1, 2, 1, 0x3a5a7a);
+        if (nose) out.rect(nose > 0 ? 22 : 0, 1, 2, 2, 0x2a3a4a);
+        return kit.frame(tod.frame(out, u));
+      };
+      const cars = from < 0 ? [coach(1), coach(0), coach(-1)] : [coach(-1), coach(0), coach(1)];
+      kit.path(from < 0 ? [[-90, u], [150, u]] : [[270, u], [30, u]], cars, { sp: 26, n: 3, gap: 26, mode: 'pp', hold: 5, turn: 'none', cars: 1, s0 });
+    }
+    // the great curved glass roof over them (live too, so the trains run underneath it)
+    {
+      const roofF = capture(12, Y(2778), 156, 75, () => {
         for (let u = 2704; u < 2778; u++)
           for (let x = 12; x < 168; x++) {
             const rib = (u - 2704) % 9 === 0 || x % 26 === 12;
@@ -1144,8 +1253,9 @@ export function buildMid() {
             img.set(x, Y(u), edge ? 0xb8c0c8 : rib ? 0xd8e0e8 : 0xc8dae8, edge || rib ? 0.9 : 0.35);
           }
         for (let x = 12; x < 168; x += 26) glow(x, Y(2740), 0xfff0d0, 0.7);
-      },
-    });
+      });
+      kit.loop(12, U(Y(2778)), [roofF], { d: 0.1 });
+    }
     // the Sky Building: two towers joined at the top by the floating garden deck
     {
       const x = 103;
@@ -1178,31 +1288,36 @@ export function buildMid() {
       });
       reserveRect(x - 1, y - 2, 40, 70);
     }
-    // a red Ferris wheel spinning on top of a shopping building
+    // a red Ferris wheel turning on top of a shopping building (live: the wheel in four steps per spoke,
+    // the gondolas going round with it)
     {
       const x = 38;
       const y = Y(2320);
       building(x, y, 40, 26, 14, { style: 'glass', roof: 0x8a8e96, wall: 0xc84a3a, items: ['ac'] });
       const cx = x + 20;
       const cy = y + 6;
-      objects.push({
-        y: y + 41,
-        draw: () => {
+      const wheel = [0, 1, 2, 3].map((s) =>
+        capture(cx - 18, cy - 18, 37, 34, () => {
+          const rot = (s / 4) * ((Math.PI * 2) / 16);
           for (let k = 0; k < 16; k++) {
-            const a = (k / 16) * Math.PI * 2;
+            const a = (k / 16) * Math.PI * 2 + rot;
             img.line(cx, cy, Math.round(cx + Math.cos(a) * 15), Math.round(cy + Math.sin(a) * 15), 0xb83020);
           }
           for (let a = 0; a < Math.PI * 2; a += 0.04) img.set(Math.round(cx + Math.cos(a) * 15), Math.round(cy + Math.sin(a) * 15), 0xe83a2a);
           for (let k = 0; k < 16; k++) {
-            const a = (k / 16) * Math.PI * 2;
-            img.rect(Math.round(cx + Math.cos(a) * 16) - 1, Math.round(cy + Math.sin(a) * 16), 2, 2, 0xf0ece4);
+            const a = (k / 16) * Math.PI * 2 + rot;
             glow(Math.round(cx + Math.cos(a) * 15), Math.round(cy + Math.sin(a) * 15), 0xffd0a0, 0.6);
           }
           img.disc(cx + 0.5, cy + 0.5, 2, 0xf0ece4);
           img.line(cx - 4, cy + 14, cx, cy, 0x8a2a1a);
           img.line(cx + 4, cy + 14, cx, cy, 0x8a2a1a);
-        },
-      });
+        }),
+      );
+      kit.loop(cx - 18, U(cy - 18), wheel, { fps: 2, ph: 0, d: 0.05 });
+      const gondola = new Raster(2, 2);
+      gondola.rect(0, 0, 2, 2, 0xf0ece4);
+      gondola.set(1, 1, 0xc8c4bc);
+      kit.orbit(cx, U(cy) - 1, 16, [kit.frame(tod.frame(gondola, U(cy)))], { n: 16, w: ((Math.PI * 2) / 16 / 4) * 2, d: 0.06 });
     }
     // the rest: towers packed between the avenues
     const rows = [UMEDA[0] + 10, 2100, 2350, 2600, 2700, 2780, 2900, SHINSEKAI[0]];
@@ -1334,21 +1449,27 @@ export function buildMid() {
       }
       crowd(58, Y(u + 4), 64, 8, u === d0 + 640 ? 90 : 30, true);
     }
-    // canal cruise boats with their wakes
-    for (const [x, u] of [[84, d0 + 480], [70, d0 + 820]]) {
-      for (let k = 0; k < 30; k++) {
-        img.set(x - 1 - Math.floor(k / 5), Y(u) + 22 + k, 0xeaf0f0, 0.6 * (1 - k / 30));
-        img.set(x + 13 + Math.floor(k / 5), Y(u) + 22 + k, 0xeaf0f0, 0.6 * (1 - k / 30));
-      }
-      objects.push({
-        y: Y(u) + 22,
-        draw: () => {
-          img.rect(x, Y(u), 12, 22, 0xe8e4dc);
-          img.rect(x + 2, Y(u) + 3, 8, 16, 0x5a8ab0);
-          for (let k = 0; k < 4; k++) glow(x + 3 + k * 2, Y(u) + 10, 0xffe0a0);
-          crowd(x + 2, Y(u) + 4, 8, 14, 10, true);
-        },
+    // canal cruise boats going up and down between the bridges, full of people, their wakes spreading (live)
+    for (const [x, u0, u1, s0] of [[84, d0 + 330, d0 + 620, 0.3], [72, d0 + 660, d0 + 920, 0.8], [96, d0 + 960, d0 + 1150, 0.1]]) {
+      const pr = rng(u0);
+      const boatF = capture(x, Y(u0), 12, 22, () => {
+        img.rect(x, Y(u0), 12, 22, 0xe8e4dc);
+        img.rect(x + 2, Y(u0) + 3, 8, 16, 0x5a8ab0);
+        for (let k = 0; k < 4; k++) glow(x + 3 + k * 2, Y(u0) + 10, 0xffe0a0);
+        for (let k = 0; k < 10; k++) {
+          const px = x + 2 + Math.floor(pr() * 8);
+          const py = Y(u0) + 4 + Math.floor(pr() * 14);
+          img.set(px, py, pr() < 0.5 ? [0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0][Math.floor(pr() * 4)] : 0x3a3a4a);
+          img.set(px, py - 1, 0x2a2026);
+        }
       });
+      const wakeF = [0, 1, 2].map((k) => {
+        const w = new Raster(1, 15 + k * 4);
+        w.set(0, 0, 0xeaf0f0);
+        w.set(0, 14 + k * 4, 0xeaf0f0);
+        return kit.frame(tod.frame(w, u0));
+      });
+      kit.path([[x + 6, u0], [x + 6, u1]], [boatF], { sp: 7, mode: 'pp', hold: 3, turn: 'none', wake: { f: wakeF, every: 3, life: 2 }, s0 });
     }
     // buildings on both banks, lit up, with neon and billboards
     district(0, 55, d0 + 30, d1 - 30, 'canal');
@@ -1364,64 +1485,76 @@ export function buildMid() {
       ['ramen', 14, d0 + 900],
       ['crab', 134, d0 + 1040],
     ];
-    for (const [kind, x, u] of signs)
-      objects.push({
-        y: Y(u) + 40,
-        draw: () => {
-          const y = Y(u);
-          if (kind === 'tako') {
-            img.disc(x + 18, y + 12, 11, 0xd8402a);
-            img.disc(x + 15, y + 9, 5, 0xe86a4a);
-            for (const s of [-1, 1]) {
-              img.disc(x + 18 + s * 5, y + 13, 3, 0xffffff);
-              img.set(x + 18 + s * 5, y + 14, 0x1a1a1a);
-            }
-            img.rect(x + 8, y + 3, 20, 3, 0xf2f0ea);
-            img.rect(x + 8, y + 4, 20, 1, 0xd02a2a);
-            for (let k = 0; k < 6; k++) img.line(x + 8 + k * 4, y + 22, x + 4 + k * 5, y + 32, 0xc8362a);
-            pool(x + 18, y + 14, 20, 0xff6040, 0.4);
-          } else if (kind === 'ball') {
-            for (let k = 0; k < 3; k++) {
-              img.disc(x + 8 + k * 10, y + 12, 5, 0xb87a3a);
-              img.disc(x + 7 + k * 10, y + 11, 2, 0xd8a060);
-              img.line(x + 4 + k * 10, y + 10, x + 12 + k * 10, y + 14, 0xf4f0e0);
-              img.set(x + 8 + k * 10, y + 9, 0x3a8a3a);
-            }
-            pool(x + 18, y + 12, 18, 0xffb040, 0.35);
-          } else if (kind === 'gyoza') {
-            for (let k = 0; k < 3; k++) {
-              img.ellipse(x + 8 + k * 9, y + 12, 5, 7, 0xf0dcb0);
-              img.ellipse(x + 7 + k * 9, y + 11, 2, 4, 0xfff0d0);
-              for (let j = 0; j < 4; j++) img.set(x + 6 + k * 9 + j, y + 6, 0xd8b880);
-            }
-            pool(x + 16, y + 12, 18, 0xffe080, 0.35);
-          } else if (kind === 'sushi') {
-            img.rect(x + 4, y + 10, 26, 8, 0xf8f4ec);
-            img.rect(x + 2, y + 5, 30, 7, 0xff7a4a);
-            for (let k = 0; k < 6; k++) img.set(x + 4 + k * 5, y + 8, 0xffffff);
-            img.rect(x + 14, y + 5, 4, 13, 0x1a2a1a);
-            pool(x + 17, y + 12, 18, 0xff8a60, 0.35);
-          } else if (kind === 'crab') {
-            img.ellipse(x + 20, y + 14, 12, 8, 0xd83a2a);
-            img.ellipse(x + 18, y + 12, 6, 4, 0xf06a4a);
-            for (const s of [-1, 1]) {
-              for (let k = 0; k < 4; k++) img.line(x + 20 + s * 9, y + 12 + k * 2, x + 20 + s * 18, y + 8 + k * 5, 0xc8302a);
-              img.disc(x + 20 + s * 15, y + 2, 4, 0xd83a2a);
-              img.rect(x + 20 + s * 15 - 1, y - 2, 3, 3, 0xd83a2a);
-              img.disc(x + 20 + s * 4, y + 6, 1.5, 0x1a1a1a);
-            }
-            pool(x + 20, y + 12, 22, 0xff5030, 0.4);
-          } else {
-            img.disc(x + 16, y + 12, 12, 0xd8302a);
-            img.disc(x + 16, y + 12, 9, 0xe8c070);
-            for (let k = 0; k < 5; k++) img.line(x + 10, y + 8 + k * 2, x + 22, y + 9 + k * 2, 0xf4e0a0);
-            img.disc(x + 12, y + 12, 2.5, 0xf2ece0);
-            img.rect(x + 18, y + 6, 2, 10, 0x6a3a1a);
-            pool(x + 16, y + 12, 20, 0xff6a40, 0.35);
-          }
-          for (let k = 0; k < 38; k++) glow(x + k, y - 3, NEON[(k >> 2) % NEON.length], 0.9);
-        },
-      });
+    /** Draw a giant sign; frame k moves the crab's claws and legs, the octopus's arms, the neon strip. */
+    const drawSign = (kind, x, u, k = 0) => {
+      const y = Y(u);
+      const wave = k ? 1 : 0;
+      if (kind === 'tako') {
+        img.disc(x + 18, y + 12, 11, 0xd8402a);
+        img.disc(x + 15, y + 9, 5, 0xe86a4a);
+        for (const s of [-1, 1]) {
+          img.disc(x + 18 + s * 5, y + 13, 3, 0xffffff);
+          img.set(x + 18 + s * 5, y + 14, 0x1a1a1a);
+        }
+        img.rect(x + 8, y + 3, 20, 3, 0xf2f0ea);
+        img.rect(x + 8, y + 4, 20, 1, 0xd02a2a);
+        for (let j = 0; j < 6; j++) img.line(x + 8 + j * 4, y + 22, x + 4 + j * 5 + (wave && j % 2 ? 2 : 0) - (wave && !(j % 2) ? 1 : 0), y + 32 - (wave && j % 2 ? 1 : 0), 0xc8362a);
+        pool(x + 18, y + 14, 20, 0xff6040, 0.4);
+      } else if (kind === 'ball') {
+        for (let k = 0; k < 3; k++) {
+          img.disc(x + 8 + k * 10, y + 12, 5, 0xb87a3a);
+          img.disc(x + 7 + k * 10, y + 11, 2, 0xd8a060);
+          img.line(x + 4 + k * 10, y + 10, x + 12 + k * 10, y + 14, 0xf4f0e0);
+          img.set(x + 8 + k * 10, y + 9, 0x3a8a3a);
+        }
+        pool(x + 18, y + 12, 18, 0xffb040, 0.35);
+      } else if (kind === 'gyoza') {
+        for (let k = 0; k < 3; k++) {
+          img.ellipse(x + 8 + k * 9, y + 12, 5, 7, 0xf0dcb0);
+          img.ellipse(x + 7 + k * 9, y + 11, 2, 4, 0xfff0d0);
+          for (let j = 0; j < 4; j++) img.set(x + 6 + k * 9 + j, y + 6, 0xd8b880);
+        }
+        pool(x + 16, y + 12, 18, 0xffe080, 0.35);
+      } else if (kind === 'sushi') {
+        img.rect(x + 4, y + 10, 26, 8, 0xf8f4ec);
+        img.rect(x + 2, y + 5, 30, 7, 0xff7a4a);
+        for (let k = 0; k < 6; k++) img.set(x + 4 + k * 5, y + 8, 0xffffff);
+        img.rect(x + 14, y + 5, 4, 13, 0x1a2a1a);
+        pool(x + 17, y + 12, 18, 0xff8a60, 0.35);
+      } else if (kind === 'crab') {
+        img.ellipse(x + 20, y + 14, 12, 8, 0xd83a2a);
+        img.ellipse(x + 18, y + 12, 6, 4, 0xf06a4a);
+        for (const s of [-1, 1]) {
+          for (let j = 0; j < 4; j++) img.line(x + 20 + s * 9, y + 12 + j * 2, x + 20 + s * 18, y + 8 + j * 5 + (wave && j % 2 ? -1 : 0), 0xc8302a);
+          // the claws go up and snap
+          img.disc(x + 20 + s * (15 + wave), y + 2 - wave * 2, 4, 0xd83a2a);
+          img.rect(x + 20 + s * (15 + wave) - 1, y - 2 - wave * 3, 3, 3, 0xd83a2a);
+          if (wave) img.set(x + 20 + s * (15 + wave), y - 3, 0x1a1a1a);
+          img.disc(x + 20 + s * 4, y + 6, 1.5, 0x1a1a1a);
+        }
+        pool(x + 20, y + 12, 22, 0xff5030, 0.4);
+      } else {
+        img.disc(x + 16, y + 12, 12, 0xd8302a);
+        img.disc(x + 16, y + 12, 9, 0xe8c070);
+        for (let k = 0; k < 5; k++) img.line(x + 10, y + 8 + k * 2, x + 22, y + 9 + k * 2, 0xf4e0a0);
+        img.disc(x + 12, y + 12, 2.5, 0xf2ece0);
+        img.rect(x + 18, y + 6, 2, 10, 0x6a3a1a);
+        pool(x + 16, y + 12, 20, 0xff6a40, 0.35);
+      }
+      for (let j = 0; j < 38; j++) glow(x + j, y - 3, NEON[((j >> 2) + k) % NEON.length], 0.9);
+    };
+    for (const [kind, x, u] of signs) {
+      // the crab and the octopus move (two frames), every neon strip runs (live); the light pools stay painted
+      const live = kind === 'crab' || kind === 'tako';
+      const frames = (live ? [0, 1] : [0, 1, 2, 3, 4, 5, 6]).map((k) =>
+        capture(x - 2, Y(u) - 8, 44, 44, () => (live ? drawSign(kind, x, u, k) : [...Array(38)].forEach((_, j) => glow(x + j, Y(u) - 3, NEON[((j >> 2) + k) % NEON.length], 0.9))), { pools: k === 0 && live }),
+      );
+      if (live) kit.loop(x - 2, U(Y(u) - 8), frames, { fps: 2 });
+      else {
+        objects.push({ y: Y(u) + 40, draw: () => drawSign(kind, x, u) });
+        kit.loop(x - 2, U(Y(u) - 8), frames, { fps: 7, fx: 1 });
+      }
+    }
   }
 
   // ------------------------------------------------------------ F. Osaka by night: alleys, shrines, a market, two great temples, the harbour
@@ -1660,16 +1793,23 @@ export function buildMid() {
           reserved[y * W + x] = 1;
         }
     };
-    /** A string of paper lanterns between two points, sagging a little. */
+    /** A string of paper lanterns between two points, sagging a little and swaying in the breeze (live). */
     const lanternString = (x0, y0, x1, y1) => {
       const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0) / 3));
-      for (let k = 0; k <= n; k++) {
-        const t = k / n;
-        const x = Math.round(x0 + (x1 - x0) * t);
-        const y = Math.round(y0 + (y1 - y0) * t + Math.sin(t * Math.PI) * 3);
-        img.set(x, y - 1, 0x2a2224, 0.6);
-        if (k % 2 === 0) chochin(x, y, (k >> 1) % 3 === 0 ? 0xfff0d0 : 0xff5a30);
-      }
+      const draw = (sag, sway) => () => {
+        for (let k = 0; k <= n; k++) {
+          const t = k / n;
+          const s = Math.sin(t * Math.PI);
+          const x = Math.round(x0 + (x1 - x0) * t + s * sway);
+          const y = Math.round(y0 + (y1 - y0) * t + s * sag);
+          img.set(x, y - 1, 0x2a2224, 0.6);
+          if (k % 2 === 0) chochin(x, y, (k >> 1) % 3 === 0 ? 0xfff0d0 : 0xff5a30);
+        }
+      };
+      const bx = Math.min(x0, x1) - 3;
+      const by = Math.min(y0, y1) - 3;
+      const frames = [[2, -1], [3, 0], [4, 1]].map(([sag, sway], i) => capture(bx, by, Math.abs(x1 - x0) + 7, Math.abs(y1 - y0) + 12, draw(sag, sway), { pools: i === 1 }));
+      kit.loop(bx, U(by), frames, { seq: [0, 1, 2, 1], fps: 1.6 });
     };
     /** A bronze incense burner with its curl of smoke and the glow of the sticks. */
     const incense = (x, y) => {
@@ -2120,13 +2260,22 @@ export function buildMid() {
         img.disc(fx, fy, 12, STONE[3]);
         img.disc(fx, fy, 10, 0x1c3e4a);
         img.disc(fx, fy, 3, STONE[2]);
-        for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
-          const jx = Math.round(fx + Math.cos(a) * 6);
-          const jy = Math.round(fy + Math.sin(a) * 6);
-          glow(jx, jy, 0x9ad8ff);
-          glow(jx, jy - 1, 0xe8f8ff, 0.7);
-        }
-        glow(fx, fy - 2, 0xffffff);
+        // the jets rise and fall in turn (live)
+        const jets = [0, 1, 2, 3].map((k) =>
+          capture(fx - 8, fy - 14, 17, 22, () => {
+            let j = 0;
+            for (let a = 0; a < Math.PI * 2; a += Math.PI / 4, j++) {
+              const jx = Math.round(fx + Math.cos(a) * 6);
+              const jy = Math.round(fy + Math.sin(a) * 6);
+              const h = 1 + ((j + k) % 4);
+              for (let i = 0; i < h; i++) glow(jx, jy - i, i === h - 1 ? 0xe8f8ff : 0x9ad8ff, i === h - 1 ? 0.8 : 1);
+              glow(jx, jy + 1, 0xc8e8ff, 0.4);
+            }
+            const ch = 3 + [0, 2, 4, 2][k];
+            for (let i = 0; i < ch; i++) glow(fx, fy - 1 - i, i > ch - 3 ? 0xffffff : 0xb8e4ff, i > ch - 3 ? 1 : 0.9);
+          }),
+        );
+        kit.loop(fx - 8, U(fy - 14), jets, { fps: 4, fx: 1 });
         pool(fx, fy, 16, 0x60b0ff, 0.35);
         reserveRect(fx - 13, fy - 13, 26, 26);
       }
@@ -2144,7 +2293,8 @@ export function buildMid() {
       crowd(80, Y(6300), 20, 12, 10, true); // a street performer's audience
       img.set(90, Y(6293), 0xffe060);
       glow(90, Y(6293), 0xffe060, 0.6);
-      // Tempozan Ferris wheel: a giant ring of coloured lights
+      // Tempozan Ferris wheel: a giant ring of coloured lights. Live: the spokes turn, the gondolas go round,
+      // the colours chase round the ring
       {
         const cx = 40;
         const cy = Y(6262);
@@ -2155,20 +2305,30 @@ export function buildMid() {
             img.rect(cx - 6, cy + 28, 12, 8, 0x8a8a90);
             img.line(cx - 10, cy + 34, cx, cy, 0x7a7a84);
             img.line(cx + 10, cy + 34, cx, cy, 0x7a7a84);
-            for (let k = 0; k < 24; k++) {
-              const a = (k / 24) * Math.PI * 2;
-              img.line(cx, cy, Math.round(cx + Math.cos(a) * 28), Math.round(cy + Math.sin(a) * 28), 0x6a6a74);
-            }
-            for (let a = 0; a < Math.PI * 2; a += 0.025) glow(Math.round(cx + Math.cos(a) * 29), Math.round(cy + Math.sin(a) * 29), NEON[Math.floor((a / (Math.PI * 2)) * 14) % NEON.length]);
-            for (let k = 0; k < 16; k++) {
-              const a = (k / 16) * Math.PI * 2;
-              img.rect(Math.round(cx + Math.cos(a) * 30) - 1, Math.round(cy + Math.sin(a) * 30), 3, 3, 0xd8dce4);
-              glow(Math.round(cx + Math.cos(a) * 30), Math.round(cy + Math.sin(a) * 30) + 1, 0xfff0d0, 0.6);
-            }
-            img.disc(cx + 0.5, cy + 0.5, 3, 0xe8e4dc);
             pool(cx, cy, 36, 0xff70c0, 0.3);
           },
         });
+        const spokes = [0, 1, 2].map((s) =>
+          capture(cx - 29, cy - 29, 59, 59, () => {
+            for (let k = 0; k < 24; k++) {
+              const a = (k / 24) * Math.PI * 2 + (s / 3) * ((Math.PI * 2) / 24);
+              img.line(cx, cy, Math.round(cx + Math.cos(a) * 28), Math.round(cy + Math.sin(a) * 28), 0x6a6a74);
+            }
+            img.disc(cx + 0.5, cy + 0.5, 3, 0xe8e4dc);
+          }),
+        );
+        kit.loop(cx - 29, U(cy - 29), spokes, { fps: 1.5, ph: 0, d: 0.05 });
+        const ring = [...Array(14)].map((_, s) =>
+          capture(cx - 30, cy - 30, 61, 61, () => {
+            for (let a = 0; a < Math.PI * 2; a += 0.025) glow(Math.round(cx + Math.cos(a) * 29), Math.round(cy + Math.sin(a) * 29), NEON[(Math.floor((a / (Math.PI * 2)) * 14) + s) % NEON.length]);
+          }),
+        );
+        kit.loop(cx - 30, U(cy - 30), ring, { fps: 3, d: 0.06 });
+        const gondola = capture(0, Y(6262), 3, 3, () => {
+          img.rect(0, Y(6262), 3, 3, 0xd8dce4);
+          glow(1, Y(6262) + 1, 0xfff0d0, 0.6);
+        });
+        kit.orbit(cx, U(cy) - 1, 30, [gondola], { n: 16, w: ((Math.PI * 2) / 24 / 3) * 1.5, d: 0.07 });
         reserveRect(cx - 32, cy - 32, 64, 70);
       }
       // Kaiyūkan: the aquarium faced with red, blue and glass, a whale shark on its front
@@ -2256,25 +2416,31 @@ export function buildMid() {
       glow(x, Y(u) - 1, 0xff6040);
       pool(x, Y(u), 8, 0xff6040, 0.3);
     }
-    // fishing boats under bright lamps, a pleasure boat hung with red lanterns
+    // fishing boats under bright lamps drifting on the swell, a pleasure boat hung with red lanterns
+    // gliding along the quay (live; their light pools stay painted on the water)
     for (const [x, u, kind] of [[24, 6480], [160, 6620], [40, 6900], [146, 6960], [100, 7120], [70, 6650, 'yakata']]) {
       const y = Y(u);
-      for (let k = 0; k < 12; k++) img.set(x + 2 + (k & 1) * 2, y + 10 + k, 0xd8e8f0, 0.4 * (1 - k / 12));
       if (kind === 'yakata') {
-        img.rect(x - 6, y, 18, 8, 0x5a3a24);
-        img.rect(x - 5, y - 1, 16, 5, 0x3c3e46);
-        img.rect(x - 4, y + 4, 14, 2, 0xffe0a0);
-        for (let k = 0; k < 16; k += 3) {
-          img.set(x - 5 + k, y + 3, 0xff5a30);
-          glow(x - 5 + k, y + 3, 0xff5a30);
-        }
-        pool(x + 3, y + 4, 16, 0xff8040, 0.35);
+        const f = capture(x - 6, y - 1, 18, 9, () => {
+          img.rect(x - 6, y, 18, 8, 0x5a3a24);
+          img.rect(x - 5, y - 1, 16, 5, 0x3c3e46);
+          img.rect(x - 4, y + 4, 14, 2, 0xffe0a0);
+          for (let k = 0; k < 16; k += 3) {
+            img.set(x - 5 + k, y + 3, 0xff5a30);
+            glow(x - 5 + k, y + 3, 0xff5a30);
+          }
+        });
+        pool(x + 3, y + 4, 16, 0xff8040, 0.25);
+        kit.path([[x - 30, u - 3], [x + 40, u - 3]], [f], { sp: 3, mode: 'pp', hold: 4, turn: 'none' });
       } else {
-        img.rect(x, y, 5, 10, 0xe8e4dc);
-        img.rect(x + 1, y + 3, 3, 3, 0x3a4a5a);
-        glow(x + 2, y + 1, 0xfff8d0);
-        glow(x + 2, y + 2, 0xfff0c0, 0.8);
+        const f = capture(x, y, 5, 10, () => {
+          img.rect(x, y, 5, 10, 0xe8e4dc);
+          img.rect(x + 1, y + 3, 3, 3, 0x3a4a5a);
+          glow(x + 2, y + 1, 0xfff8d0);
+          glow(x + 2, y + 2, 0xfff0c0, 0.8);
+        });
         pool(x + 2, y + 2, 14, 0xfff0c0, 0.35);
+        kit.wander(x + 2, u - 5, 5, 3, [f], { n: 1, sp: 1.2, idle: 0.4, turn: 'none' });
       }
     }
   }
@@ -2315,28 +2481,41 @@ export function buildMid() {
       }
     }
   }
-  for (const { x, y, r, c, k } of pools) {
-    const [cr, cg, cb] = rgb(c);
-    for (let yy = Math.floor(y - r); yy <= y + r; yy++)
-      for (let xx = Math.floor(x - r); xx <= x + r; xx++) {
-        const i = img.idx(xx, yy);
-        if (i < 0 || !img.data[i + 3]) continue;
-        const dd = Math.hypot(xx + 0.5 - x, yy + 0.5 - y) / r;
-        if (dd >= 1) continue;
-        const f = (1 - dd) ** 1.6 * k;
-        img.data[i] += cr * f;
-        img.data[i + 1] += cg * f;
-        img.data[i + 2] += cb * f;
-      }
-  }
+  for (const pl of pools) applyPool(img, pl);
   for (const [x, y, c, a] of lights) img.set(x, y, c, a);
-  // neon reflections dancing on the dark water near lit banks
+  // neon reflections dancing on the dark water near lit banks: the same streaks in two jittered frames
+  // for each stretch of water, alternating (live)
+  const streaks = new Map();
   for (const [x, y, c] of lights) {
     if (!W_(x, y + 3) || bayer(x, y) < 0.6) continue;
-    for (let k = 2; k < 7; k += 2) img.set(x, y + k, c, 0.25);
+    const seg = Math.floor(y / 96);
+    if (!streaks.has(seg)) streaks.set(seg, []);
+    streaks.get(seg).push([x, y, c]);
+  }
+  for (const list of streaks.values()) {
+    let x0 = W;
+    let x1 = 0;
+    let y0 = L;
+    let y1 = 0;
+    for (const [x, y] of list) {
+      x0 = Math.min(x0, x - 1);
+      x1 = Math.max(x1, x + 1);
+      y0 = Math.min(y0, y + 2);
+      y1 = Math.max(y1, y + 7);
+    }
+    const frames = [0, 1].map((f) => {
+      const out = new Window(x0, y0, x1 - x0 + 1, y1 - y0 + 1);
+      for (const [x, y, c] of list)
+        for (let k = 2 + f; k < 7 + f; k += 2) {
+          const xx = x + (f ? ((x * 7 + y * 3 + k) % 3) - 1 : 0);
+          if (W_(xx, y + k)) out.set(xx, y + k, c, 0.25);
+        }
+      return kit.frame(out);
+    });
+    kit.loop(x0, U(y0), frames, { fps: 2.5, fx: 1 });
   }
 
   const chunks = [];
   for (let i = 0; i < CHUNKS; i++) chunks.push(img.crop(0, i * CHUNK, W, CHUNK));
-  return { strip: img, chunks, meta: { width: W, chunkHeight: CHUNK, chunks: CHUNKS, length: L } };
+  return { strip: img, chunks, props: kit.pack(), meta: { width: W, chunkHeight: CHUNK, chunks: CHUNKS, length: L, tint: tintTable(L, tod.white) } };
 }

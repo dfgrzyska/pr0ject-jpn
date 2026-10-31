@@ -10,11 +10,17 @@
 // Coordinates: `u` = distance from the bottom of the strip (stage start), strip y = L - u.
 // At time t the top edge of the screen shows u = anchor + mid * t (see src/data/stage1.json).
 // The ridge sections are transparent beside the ridge: the far layer (the valley) shows through.
+//
+// Live (see ../props.mjs): the Kamo and Katsura flow, boats row below Togetsukyō, gusts of wind sweep the
+// bamboo grove, the Golden Pavilion's reflection ripples and koi swim in its pond, Otowa's three streams
+// run, rickshaws pull through Gion and the bamboo grove, the nobori banners flutter, and the fires of
+// the 大 flicker and smoke.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Raster, fbm, rng, bayer, scaleColor, rgb } from '../../lib/raster.mjs';
 import { crownPixels, grade, rampColor } from '../nature.mjs';
+import { PropKit, Window, puff, tintTable } from '../props.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -71,9 +77,10 @@ const smooth = (a, b, x) => {
 export function buildMid() {
   const stage = JSON.parse(readFileSync(join(root, 'src', 'data', 'stage1.json'), 'utf8'));
   const { mid: V, anchor } = stage.scroll;
-  const img = new Raster(W, L);
+  let img = new Raster(W, L);
   const rand = rng(2026);
   const Y = (u) => L - u;
+  const U = (y) => L - y;
   const reserved = new Uint8Array(W * L);
   const isRes = (x, y) => {
     x = Math.floor(x);
@@ -96,6 +103,22 @@ export function buildMid() {
   const objects = []; // { y: sort key (strip y of the base), draw(), shadow?() }
   const lights = []; // drawn after the grade: lanterns, fires
   const glow = (x, y, c, a = 1) => lights.push([Math.round(x), Math.round(y), c, a]);
+  const kit = new PropKit(2036); // the moving parts
+  const canopy = new Uint8Array(W * L); // bamboo leaves (the gusts brighten them)
+  let ripple = null; // where the Golden Pavilion is mirrored in its pond
+  /** Draw with the stage's own helpers into a frame at (x0, y0), graded like its place on the strip, lights on top. */
+  const capture = (x0, y0, w, h, draw, u = U(y0 + h / 2)) => {
+    const keep = img;
+    const nl = lights.length;
+    img = new Window(x0, y0, w, h);
+    draw();
+    const out = img;
+    img = keep;
+    const lit = lights.splice(nl);
+    gradeAt(out, u);
+    for (const [x, y, c, a] of lit) out.set(x, y, c, a);
+    return kit.frame(out);
+  };
 
   // turret pads come from the wave file: keep them clear of everything
   const pads = stage.waves.filter((w) => w.type === 'turret').map((w) => ({ x: w.x, u: anchor + V * w.t + 10 }));
@@ -346,6 +369,18 @@ export function buildMid() {
       }
     }
   };
+  /** A rickshaw frame on its own (puller at the bottom, or at the top when going up the screen). */
+  const rickshawFrame = (up, u) =>
+    capture(0, Y(u), 5, 8, () => {
+      const y = Y(u);
+      img.rect(0, y + 1, 1, 5, 0x1a1418);
+      img.rect(4, y + 1, 1, 5, 0x1a1418);
+      img.rect(1, y + (up ? 4 : 0), 3, 4, 0x8a1a1a);
+      img.rect(1, y + (up ? 7 : 0), 3, 1, 0x2a2024);
+      img.rect(1, y + (up ? 3 : 4), 3, 1, 0xe8d8b0);
+      img.set(2, y + (up ? 0 : 7), 0x2a2a3a);
+      img.set(2, y + (up ? 1 : 6), 0xd8c8a0);
+    });
   const rickshaw = (x, y) => {
     objects.push({
       y: y + 7,
@@ -591,6 +626,24 @@ export function buildMid() {
   };
   const tree = (kind, x, y, r) => objects.push(treeObj(kind, x, y, r));
 
+  /**
+   * The current: faint streaks of light drifting down a river in lanes between u0 and u1 (dir 1 = to the
+   * right), passing under the bridges in the middle (x 76..104).
+   */
+  function flow(u0, u1, dir, gu) {
+    const streak = (len) => {
+      const out = new Raster(len, 1);
+      for (let i = 0; i < len; i++) out.set(i, 0, i < 2 || i >= len - 2 ? C.river[3] : scaleColor(C.river[3], 1.2));
+      return kit.frame(gradeAt(out, gu));
+    };
+    const f = [streak(6), streak(9), streak(7)];
+    for (let u = u0, k = 0; u <= u1; u += 6, k++) {
+      const sp = 5 + ((k * 7) % 5);
+      for (const [a, b] of [[-12, 76], [104, 192]])
+        kit.path(dir > 0 ? [[a, u], [b, u]] : [[b, u], [a, u]], [f[k % 3]], { sp, n: 2, gap: 44, turn: 'none', a: 0.75, fx: 1 });
+    }
+  }
+
   // ------------------------------------------------------------ A. Gion (u 0..540)
   {
     fillGround(0, Y(GION[1]), W, GION[1], [0x4e4a46, 0x5a5650, 0x66625a], 3, 4);
@@ -603,6 +656,8 @@ export function buildMid() {
       img.set(101, Y(u), u % 3 ? C.stone[0] : 0x2a2626);
     }
     reserveRect(76, Y(GION[1]), 28, GION[1]);
+    // live: rickshaws pulled up and down Hanamikōji
+    for (const [x, s0] of [[85, 0.2], [93, 0.7]]) kit.path([[x, 30], [x, 520]], [rickshawFrame(false, 200)], { sp: 9, mode: 'pp', hold: 2, turn: 'none', fd: [rickshawFrame(false, 200)], fu: [rickshawFrame(true, 200)], s0 });
     // the Shirakawa canal across the district: stone walls, willows, the little Tatsumi bridge and shrine
     const k0 = 172;
     const k1 = 184;
@@ -686,6 +741,7 @@ export function buildMid() {
     }
     for (let i = 0; i < 60; i++) img.set(Math.floor(rand() * W), Y(w0 + 1 + Math.floor(rand() * (w1 - w0 - 2))), rand() < 0.5 ? 0xf0b8c8 : 0xd88aa4);
     reserveRect(0, Y(KAMO[1]), W, KAMO[1] - KAMO[0]);
+    flow(w0 + 4, w1 - 4, 1, 600);
     // the turtle stepping stones across the river
     for (let u = w0 + 3; u < w1 - 2; u += 7) {
       const x = 30 + ((u / 7) % 2 ? 2 : 0);
@@ -855,12 +911,22 @@ export function buildMid() {
       lantern(110, Y(u));
     }
     // red nobori banners lining the walk, foxes with keys and jewels in their mouths
+    // (live) they flutter: the cloth blown out to the side and back
+    const banner = [0, 1, 2].map((f) => {
+      const out = new Raster(3, 5);
+      out.rect(0, 0, 1, 4, C.R1);
+      out.set(0, 1, 0xf4f0e6);
+      if (f) {
+        out.set(1, f === 1 ? 1 : 2, C.R1);
+        out.set(1, f === 1 ? 2 : 3, scaleColor(C.R1, 0.8));
+      }
+      return kit.frame(gradeAt(out, 1360));
+    });
     for (let u = 1222; u < 1500; u += 6)
       for (const x of [79, 100]) {
         if (pads.some((p) => Math.hypot(p.x - x, Y(p.u) - Y(u)) < 14)) continue;
-        img.rect(x, Y(u), 1, 4, C.R1);
-        img.set(x, Y(u) + 1, 0xf4f0e6);
         img.set(x + 1, Y(u) + 4, 0x101418, 0.5);
+        kit.loop(x, u, banner, { seq: [0, 1, 2, 1], fps: 3 });
       }
     for (const [x, u] of [[30, 1250], [146, 1250], [30, 1500], [146, 1520]]) fox(x, Y(u), x > 90);
     // the kagura stage where the shrine maidens dance
@@ -938,7 +1004,13 @@ export function buildMid() {
         img.set(x + s, Y(u), 0x8a6e44);
         reserveRect(x - 1, Y(u), 3, 1);
       }
-    for (const u of [2780, 2990, 3180]) rickshaw(Math.round(bx(u)) - 2, Y(u));
+    for (const u of [2780, 3180]) rickshaw(Math.round(bx(u)) - 2, Y(u));
+    // live: a rickshaw taking its passengers along the winding path
+    {
+      const pts = [];
+      for (let u = a0 + 20; u <= 3240; u += 16) pts.push([Math.round(bx(u)), u]);
+      kit.path(pts, [rickshawFrame(false, 2990)], { sp: 8, mode: 'pp', hold: 3, turn: 'none', fd: [rickshawFrame(false, 2990)], fu: [rickshawFrame(true, 2990)], s0: 0.45 });
+    }
     crowd(84, Y(3260), 12, 560, 90, true, 0.25);
     // Nonomiya shrine: the black torii of unbarked wood, a little hall, a moss garden
     fillGround(126, Y(2990), 50, 70, C.moss, 32, 4);
@@ -958,6 +1030,7 @@ export function buildMid() {
         img.set(x, y, c);
       }
     reserveRect(0, Y(3440), W, 110);
+    flow(3338, 3432, -1, 3390);
     objects.push({
       y: Y(3326),
       shadow: () => shadowRect(84, Y(3440) + 3, 16, 110, 0.55),
@@ -973,20 +1046,29 @@ export function buildMid() {
       },
     });
     crowd(84, Y(3446), 12, 120, 30, true, 0.2);
-    for (const [x, u, roofed] of [[30, 3360, true], [130, 3410, false], [150, 3350, false], [52, 3420, false]]) {
+    // boats on the Katsura (live): a roofed pleasure boat and rowing boats going to and fro, wakes behind
+    for (const [x, u, roofed, x1] of [[30, 3360, true, 60], [130, 3410, false, 158], [110, 3350, false, 158], [8, 3420, false, 62]]) {
       const y = Y(u);
-      for (let k = 0; k < 14; k++) img.set(x + 18 + k, y + 3, 0xd8e8e8, 0.5 * (1 - k / 14));
-      if (roofed) {
-        img.rect(x, y, 18, 7, 0x6a4a30);
-        img.rect(x + 1, y - 1, 16, 5, C.roofTileDark[1]);
-        img.rect(x + 2, y + 4, 14, 2, 0xe8d8b0);
-        chochin(x + 3, y + 5);
-        chochin(x + 14, y + 5);
-      } else {
-        img.rect(x, y + 1, 10, 4, 0x7a5232);
-        img.set(x + 4, y + 2, 0x3a3a4a);
-        img.set(x + 6, y + 2, 0xd04040);
-      }
+      const f = roofed
+        ? capture(x, y - 1, 18, 8, () => {
+            img.rect(x, y, 18, 7, 0x6a4a30);
+            img.rect(x + 1, y - 1, 16, 5, C.roofTileDark[1]);
+            img.rect(x + 2, y + 4, 14, 2, 0xe8d8b0);
+            chochin(x + 3, y + 5);
+            chochin(x + 14, y + 5);
+          })
+        : capture(x, y + 1, 10, 4, () => {
+            img.rect(x, y + 1, 10, 4, 0x7a5232);
+            img.set(x + 4, y + 2, 0x3a3a4a);
+            img.set(x + 6, y + 2, 0xd04040);
+          });
+      const wakeF = [0, 1, 2].map((k) => {
+        const w = new Raster(1, (roofed ? 9 : 5) + k * 4);
+        w.set(0, 0, 0xd8e8e8);
+        w.set(0, w.h - 1, 0xd8e8e8);
+        return kit.frame(gradeAt(w, u));
+      });
+      kit.path([[x + (roofed ? 9 : 5), u - 3], [x1, u - 3]], [f], { sp: roofed ? 3 : 5, mode: 'pp', hold: roofed ? 4 : 2, turn: 'none', wake: { f: wakeF, every: 3, life: 1.6 } });
     }
     // the north bank: cherries, a tea house with red benches and parasols
     fillGround(0, Y(ARASHI[1]), W, 60, C.gravel, 35, 6);
@@ -1040,6 +1122,7 @@ export function buildMid() {
         y = y - fh - roofH[i] + 2;
       }
       const top = y;
+      ripple = { x0: cx - 36, x1: cx + 36, y0: y0 + 6, y1: y0 + (y0 - top) + 3 };
       objects.push({
         y: y0 + 2,
         shadow: () => {
@@ -1115,6 +1198,18 @@ export function buildMid() {
       for (let x = cx - 6; x < cx + 6; x++) for (let j = 1; j < 6; j++) img.set(x, y0 + j, (x & 1) ? C.hinoki[1] : C.hinoki[0]);
     }
     for (const [x, u] of [[16, 3900], [104, 3896], [110, 3720], [10, 3700]]) lantern(x, Y(u));
+    // koi gliding about Kyōko-chi (live)
+    for (const [body, tail] of [[0xf06a20, 0xc84a18], [0xf8f4f0, 0xe83a2a], [0xf0b030, 0xc88a20]]) {
+      const koi = (flick) => {
+        const out = new Raster(4, 3);
+        out.rect(1, 1, 3, 1, body);
+        out.set(3, 1, scaleColor(body, 1.1));
+        out.set(0, flick ? 0 : 2, tail);
+        out.set(0, 1, tail);
+        return kit.frame(gradeAt(out, 3760));
+      };
+      kit.wander(68, 3790, 13, 18, [koi(false), koi(true)], { n: 1, sp: 4, idle: 0.3, fps: 3 });
+    }
     // the Sōmon entrance gate in the clay wall, the bell tower, the approach
     hall(126, Y(3540), 28, 14, 7, 'temple');
     hall(20, Y(3590), 22, 14, 6, 'temple');
@@ -1241,7 +1336,19 @@ export function buildMid() {
       img.rect(x - 6, y - 10, 34, 2, C.stone[1]);
       img.rect(x - 4, y, 30, 6, C.water[2]);
       img.rect(x - 4, y, 30, 1, C.stone[1]);
-      for (const k of [4, 11, 18]) for (let j = -8; j < 2; j++) img.set(x + k, y + j, j % 3 ? 0xe8f4f8 : 0xb8d8e8);
+      // the three streams running (live), rings spreading in the pool where they land
+      const falls = [0, 1, 2].map((f) =>
+        capture(x + 4, y - 8, 15, 10, () => {
+          for (const k of [4, 11, 18]) for (let j = -8; j < 2; j++) img.set(x + k, y + j, (j + 9 - f) % 3 ? 0xe8f4f8 : 0xb8d8e8);
+        }),
+      );
+      kit.loop(x + 4, U(y - 8), falls, { fps: 9 });
+      const ringF = [1, 2, 3].map((r) => {
+        const out = new Raster(7, 3);
+        for (let i = 3 - r; i <= 3 + r; i++) out.set(i, i === 3 - r || i === 3 + r ? 1 : r > 1 ? 0 : 2, C.water[3]);
+        return kit.frame(gradeAt(out, 5612));
+      });
+      kit.spot([[x - 2, U(y + 1), 26, 3]], ringF, { rate: 3, fps: 5, a: 0.8 });
       reserveRect(x - 6, y - 12, 34, 20);
       crowd(x - 4, y + 7, 30, 4, 18, true, 0.2);
     }
@@ -1317,30 +1424,51 @@ export function buildMid() {
           img.set(x, y, rampColor([0x5a4a30, 0x6a5a3a, 0x7a6a44, 0x8a7a50], 0.3 + fbm(x, y, { seed: 45, scale: 3 }) * 0.6, x, y));
         }
     for (const [bx, bu] of beds) reserveDisc(bx, Y(bu), 8);
+    const pyres = [];
     for (const [bx, bu] of beds)
       for (const dx of [-4, 0, 4]) {
         const x = Math.round(bx + dx);
         const y = Y(bu);
         if (!img.alpha(x, y)) continue;
+        pyres.push([x, y]);
         objects.push({
           y: y + 2,
           draw: () => {
-            // a pyre of stacked pine logs burning, sparks and a wisp of smoke
+            // a pyre of stacked pine logs (its flames are live)
             img.rect(x - 1, y, 3, 2, 0x3a2418);
             img.set(x - 1, y, 0x5a3a24);
-            img.set(x, y - 1, 0xff9a30);
-            img.set(x - 1, y - 1, 0xffb040);
-            img.set(x + 1, y - 1, 0xff7a20);
-            img.set(x, y - 2, 0xffe080);
-            img.set(x, y - 3, 0xfff4c0);
-            for (let j = 4; j < 9; j++) img.set(x + Math.round(Math.sin(j + x) * 1.2), y - j, 0x8a8090, 0.35 * (1 - (j - 4) / 5));
-            glow(x, y - 1, 0xff9030, 0.95);
-            glow(x, y - 2, 0xffd060, 0.85);
-            glow(x - 1, y - 1, 0xff7a20, 0.6);
-            glow(x + 1, y - 1, 0xff7a20, 0.6);
+            glow(x, y, 0xff7a20, 0.5);
           },
         });
       }
+    // the fires flicker: every pyre in a stretch of the slope in four frames, each flame different
+    for (let y0 = Y(L); y0 < Y(6300); y0 += 64) {
+      const here = pyres.filter(([, y]) => y >= y0 && y < y0 + 64);
+      if (!here.length) continue;
+      const pr = rng(y0);
+      const fx0 = Math.min(...here.map(([x]) => x)) - 2;
+      const fx1 = Math.max(...here.map(([x]) => x)) + 2;
+      const flames = [0, 1, 2, 3].map(() =>
+        capture(fx0, y0 - 6, fx1 - fx0 + 1, 72, () => {
+          for (const [x, y] of here) {
+            const h = 1 + Math.floor(pr() * 3);
+            const lean = pr() < 0.3 ? -1 : pr() < 0.4 ? 1 : 0;
+            glow(x, y - 1, 0xff9030, 0.95);
+            glow(x - 1, y - 1, pr() < 0.5 ? 0xffb040 : 0xff7a20, 0.7);
+            glow(x + 1, y - 1, pr() < 0.5 ? 0xff7a20 : 0xffb040, 0.7);
+            for (let j = 2; j <= h + 1; j++) glow(x + (j > 2 ? lean : 0), y - j, j === h + 1 ? 0xfff4c0 : 0xffd060, 0.9);
+            if (pr() < 0.2) glow(x + lean, y - h - 3, 0xffe080, 0.6); // a spark
+          }
+        }),
+      );
+      kit.loop(fx0, U(y0 - 6), flames, { fps: 7, fx: 1 });
+    }
+    // smoke drifting up off the strokes (live)
+    const smoke = [2, 3, 4, 5, 6].map((r) => [0, 1].map((v) => kit.frame(puff(r, r * 13 + v + 5, [0x4a4450, 0x5e5864, 0x787280, 0x948e9c]))));
+    for (let i = 0; i < pyres.length; i += 28) {
+      const [x, y] = pyres[i];
+      kit.emit(x, U(y) + 3, smoke, { rate: 0.9, life: [3, 4], vy: 7, sx: 1, wf: 0.8, a: 0.4, tint: 1 });
+    }
     // the little hall at the top of the 大, visitors waiting for dark
     const sc = 90;
     hall(sc - 22, Y(6930), 44, 18, 6, 'temple');
@@ -1394,7 +1522,10 @@ export function buildMid() {
           }
       },
       draw: () => {
-        for (const p of px()) img.set(p.x, p.y, p.c);
+        for (const p of px()) {
+          img.set(p.x, p.y, p.c);
+          if (kind === 'bamboo' && p.x >= 0 && p.x < W && p.y >= 0 && p.y < L) canopy[p.y * W + p.x] = 1;
+        }
       },
     };
   }
@@ -1426,32 +1557,91 @@ export function buildMid() {
   objects.sort((a, b) => a.y - b.y);
   for (const o of objects) o.draw();
 
-  // dusk over the last stretch: warmer, then dark blue, so the Daimonji fires burn bright
   for (let y = 0; y < L; y++) {
-    const u = L - y;
-    const a = smooth(5800, 6500, u);
-    if (a <= 0) continue;
-    const warm = 1 - smooth(6300, 6700, u);
-    const tint = rgb(warm > 0.5 ? 0x8a3a3a : 0x1a1a3a);
+    const d = dusk(L - y);
+    if (!d) continue;
     for (let x = 0; x < W; x++) {
       const i = (y * W + x) * 4;
-      if (!img.data[i + 3]) continue;
-      const m = [1 - (0.12 + 0.3 * (1 - warm)) * a, 1 - (0.28 + 0.2 * (1 - warm)) * a, 1 - (0.36 + 0.05 * (1 - warm)) * a];
-      for (let k = 0; k < 3; k++) {
-        const v = img.data[i + k] * m[k];
-        img.data[i + k] = v + (tint[k] - v) * 0.18 * a;
-      }
+      if (img.data[i + 3]) for (let k = 0; k < 3; k++) img.data[i + k] = d(img.data[i + k], k);
     }
   }
-  // readability: the middle layer is muted so bullets pop
-  grade(img, { sat: 0.78, bright: 0.84, tint: 0x182030, tintAmt: 0.06 });
+  grade(img, GRADE);
   for (const [x, y, c, a] of lights) img.set(x, y, c, a);
+
+  // gusts of wind through the bamboo grove (live): the leaves turn their paler undersides, a patch at a
+  // time, in waves running across the grove
+  for (let y0 = Y(3262); y0 < Y(2700); y0 += 16)
+    for (let x0 = 0; x0 < W; x0 += 16) {
+      let n = 0;
+      const tile = new Window(x0, y0, 16, 16);
+      for (let y = y0; y < y0 + 16; y++)
+        for (let x = x0; x < Math.min(W, x0 + 16); x++) {
+          const i = img.idx(x, y);
+          if (!canopy[y * W + x] || i < 0 || !img.data[i + 3]) continue;
+          const [r, g, b] = [img.data[i], img.data[i + 1], img.data[i + 2]];
+          tile.setRGBA(x, y, Math.min(255, r * 1.25 + 16), Math.min(255, g * 1.3 + 20), Math.min(255, b * 1.05 + 6), 255);
+          n++;
+        }
+      if (n < 12) continue;
+      const u = U(y0);
+      const ph = -(x0 * 0.05 + u * 0.012) + fbm(x0, u, { seed: 77, scale: 40 }) * 2.5;
+      kit.wave([kit.frame(tile)], [[0, x0, u, ph]], { w: 1.1, a0: 0, a1: 0.6, pw: 4 });
+    }
+  // the Golden Pavilion's reflection ripples: rows of the pond nudged sideways, three ways in turn (live)
+  if (ripple) {
+    const islands = [[40, 3770, 9], [84, 3730, 6], [30, 3830, 5], [92, 3820, 4], [58, 3716, 4]];
+    const frames = [0, 1, 2].map((f) => {
+      const out = new Window(ripple.x0, ripple.y0, ripple.x1 - ripple.x0 + 1, ripple.y1 - ripple.y0 + 1);
+      for (let y = ripple.y0; y <= ripple.y1; y++) {
+        const k = y - ripple.y0;
+        const ox = Math.round(Math.sin(k * 0.9 + f * 2.1));
+        if (!ox) continue;
+        for (let x = ripple.x0; x <= ripple.x1; x++) {
+          const sx = x + ox;
+          if (((x - 60) / 52) ** 2 + ((y - Y(3790)) / 96) ** 2 > 0.85 || !isRes(x, y) || !isRes(sx, y)) continue;
+          if (islands.some(([ix, iu, ir]) => Math.hypot(x - ix, y - Y(iu)) < ir + 7)) continue;
+          const i = img.idx(sx, y);
+          if (i >= 0 && img.data[i + 3]) out.setRGBA(x, y, img.data[i], img.data[i + 1], img.data[i + 2], 255);
+        }
+      }
+      return kit.frame(out);
+    });
+    kit.loop(ripple.x0, U(ripple.y0), frames, { fps: 2.5, fx: 1 });
+  }
 
   const chunks = [];
   for (let i = 0; i < CHUNKS; i++) chunks.push(img.crop(0, i * CHUNK, W, CHUNK));
   return {
     strip: img,
     chunks,
-    meta: { width: W, chunkHeight: CHUNK, chunks: CHUNKS, length: L },
+    props: kit.pack(),
+    meta: { width: W, chunkHeight: CHUNK, chunks: CHUNKS, length: L, tint: tintTable(L, (u) => [0, 1, 2].map((k) => Math.round(gradeAt(whitePx(), u).data[k]))) },
   };
+}
+
+// the middle layer is muted so bullets pop
+const GRADE = { sat: 0.78, bright: 0.84, tint: 0x182030, tintAmt: 0.06 };
+
+/** Dusk over the last stretch: warmer, then dark blue, so the Daimonji fires burn bright. (v, channel) -> v */
+function dusk(u) {
+  const a = smooth(5800, 6500, u);
+  if (a <= 0) return null;
+  const warm = 1 - smooth(6300, 6700, u);
+  const tint = rgb(warm > 0.5 ? 0x8a3a3a : 0x1a1a3a);
+  const m = [1 - (0.12 + 0.3 * (1 - warm)) * a, 1 - (0.28 + 0.2 * (1 - warm)) * a, 1 - (0.36 + 0.05 * (1 - warm)) * a];
+  return (v, k) => v * m[k] + (tint[k] - v * m[k]) * 0.18 * a;
+}
+
+/** Grade a frame the way the strip is graded at u. */
+function gradeAt(r, u) {
+  const d = dusk(u);
+  if (d) r.map((R, G, B, A) => (A ? [d(R, 0), d(G, 1), d(B, 2), A] : null));
+  grade(r, GRADE);
+  return r;
+}
+
+function whitePx() {
+  const r = new Raster(1, 1);
+  r.set(0, 0, 0xffffff);
+  return r;
 }
