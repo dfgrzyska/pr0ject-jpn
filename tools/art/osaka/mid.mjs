@@ -257,25 +257,38 @@ export function buildMid() {
       },
     });
   };
-  const bridge = (cx, hw, u0, u1, lamps) =>
+  /**
+   * A bridge carrying a street (centre cx, half width hw, as vRoad) over the water from u0 to u1: the same
+   * carriageway, lane markings and pavements as the road, so it lines up with it exactly, stone parapets
+   * just outside them, lamps on the parapets.
+   */
+  const bridge = (cx, hw, u0, u1, lamps) => {
+    const x0 = Math.floor(cx - hw - 3); // the parapets
+    const x1 = Math.floor(cx + hw + 2);
     objects.push({
       y: Y(u0),
-      shadow: () => shadowRect(cx + hw + 1, Y(u1), 3, u1 - u0, 0.55),
+      shadow: () => shadowRect(x1 + 1, Y(u1), 3, u1 - u0, 0.55),
       draw: () => {
         for (let u = u0; u < u1; u++) {
           const y = Y(u);
-          for (let x = cx - hw; x <= cx + hw; x++) img.set(x, y, Math.abs(x - cx) === hw ? (u % 3 ? C.stone[2] : C.stone[3]) : Math.abs(x - cx) === hw - 1 ? C.paving[1] : rampColor(C.asphalt, 0.5, x, y));
+          for (let x = x0; x <= x1; x++) {
+            if (x === x0 || x === x1) img.set(x, y, u % 3 ? C.stone[2] : C.stone[3]);
+            else roadPx(x, y, x + 0.5 - cx, hw, true);
+          }
           if (lamps && u % 14 === 0)
-            for (const s of [-1, 1]) {
-              img.set(cx + s * hw, y, 0x3a3a40);
-              glow(cx + s * hw, y - 1, 0xfff0c8);
-              pool(cx + s * hw, y, 8, C.lamp, 0.3 * night(u) + 0.05);
+            for (const px of [x0, x1]) {
+              img.set(px, y, 0x3a3a40);
+              glow(px, y - 1, 0xfff0c8);
+              pool(px, y, 8, C.lamp, 0.3 * night(u) + 0.05);
             }
         }
         // the shadow of the deck on the water below
-        for (let x = cx - hw; x <= cx + hw; x++) img.tint(x, Y(u0) + 1, 0.6);
+        for (let x = x0; x <= x1; x++) img.tint(x, Y(u0) + 1, 0.6);
       },
     });
+  };
+  // the streets that cross Nakanoshima and its two rivers, lined up with Umeda's beyond: [x, half width]
+  const NORTH_SOUTH = [[30, 5], [90, 8], [150, 5]]; // (Midōsuji in the middle)
   /**
    * A building in 3/4 view: a flat roof with a parapet and rooftop clutter (units, tanks, machine rooms,
    * antennas, helipads, billboards), and a front face whose style sets the windows: 'glass' curtain walls,
@@ -1105,21 +1118,19 @@ export function buildMid() {
     stoneFace(0, W, 1176, 4);
     hRoad(1186, 5);
     for (let k = 0; k < 6; k++) car(8 + k * 28 + Math.floor(rand() * 8), Y(1186) + (k % 2 ? 1 : -6), false);
-    vRoad(100, 6, 1192, TOSABORI[0]);
-    district(0, 46, 1196, 1298, 'town');
-    district(48, 91, 1196, 1298, 'town');
-    district(109, W, 1196, 1298, 'town');
+    for (const [x, hw] of NORTH_SOUTH) vRoad(x, hw, 1192, TOSABORI[0]);
+    for (const [x0, x1] of [[0, 22], [38, 79], [101, 142], [158, W]]) district(x0, x1, 1196, 1298, 'town');
   }
 
   // ------------------------------------------------------------ B. Nakanoshima between the two rivers
   {
-    for (const bx of [40, 100, 150]) {
-      bridge(bx, 6, TOSABORI[0] - 2, TOSABORI[1] + 2, true);
-      bridge(bx, 6, DOJIMA[0] - 2, DOJIMA[1] + 2, true);
+    for (const [bx, hw] of NORTH_SOUTH) {
+      bridge(bx, hw, TOSABORI[0] - 2, TOSABORI[1] + 2, true);
+      bridge(bx, hw, DOJIMA[0] - 2, DOJIMA[1] + 2, true);
     }
-    for (const bx of [40, 100, 150]) vRoad(bx, 5, NAKANOSHIMA[0], NAKANOSHIMA[1]);
+    for (const [bx, hw] of NORTH_SOUTH) vRoad(bx, hw, NAKANOSHIMA[0], NAKANOSHIMA[1]);
     hRoad(1640, 5);
-    for (const bx of [40, 100, 150]) crossing(bx, 5, 1640, 5);
+    for (const [bx, hw] of NORTH_SOUTH) crossing(bx, hw, 1640, 5);
     // riverside promenades with lamps and willows
     for (const [u0, u1] of [[1362, 1404], [1866, 1908]]) {
       for (let u = u0; u < u1; u++)
@@ -1129,34 +1140,34 @@ export function buildMid() {
     }
     // Central Public Hall: red brick with white stone bands, the great arched copper roof
     {
-      const x = 48;
+      const x = 39;
       const y = Y(1612);
       objects.push({
         y: y + 38,
-        shadow: () => shadowRect(x + 5, y + 5, 42, 38, 0.5),
+        shadow: () => shadowRect(x + 5, y + 5, 40, 38, 0.5),
         draw: () => {
           for (let yy = y; yy < y + 24; yy++)
-            for (let xx = x; xx < x + 42; xx++) {
-              const ax = Math.abs(xx - x - 21);
+            for (let xx = x; xx < x + 40; xx++) {
+              const ax = Math.abs(xx - x - 20);
               const arch = ax < 11 && yy < y + 16 - Math.floor((ax * ax) / 30);
-              let c = arch ? (yy - y < 3 ? C.copper[4] : xx < x + 23 ? C.copper[2] : C.copper[1]) : (xx + yy) % 3 === 0 ? C.brick[0] : C.brick[1];
-              if (!arch && ((yy - y) % 6 === 0 || xx === x || xx === x + 41)) c = 0xe8e0d0;
+              let c = arch ? (yy - y < 3 ? C.copper[4] : xx < x + 22 ? C.copper[2] : C.copper[1]) : (xx + yy) % 3 === 0 ? C.brick[0] : C.brick[1];
+              if (!arch && ((yy - y) % 6 === 0 || xx === x || xx === x + 39)) c = 0xe8e0d0;
               img.set(xx, yy, c);
             }
-          for (const tx of [x + 1, x + 37]) {
+          for (const tx of [x + 1, x + 35]) {
             img.rect(tx, y - 4, 4, 6, C.brick[1]);
             img.disc(tx + 2, y - 4, 2.2, C.copper[2]);
             img.set(tx + 2, y - 7, C.gold);
           }
-          img.rect(x + 11, y + 15, 20, 1, 0xf0e8d8);
+          img.rect(x + 10, y + 15, 20, 1, 0xf0e8d8);
           for (let yy = y + 24; yy < y + 38; yy++)
-            for (let xx = x; xx < x + 42; xx++) img.set(xx, yy, yy === y + 24 ? 0x4a2a20 : (yy - y) % 5 === 0 ? 0xe8e0d0 : (xx - x) % 5 === 2 && (yy - y) % 5 > 1 ? 0x2a2224 : C.brick[2]);
-          img.rect(x + 16, y + 31, 10, 7, 0x2a1e1a);
-          img.rect(x + 16, y + 31, 10, 1, 0xe8e0d0);
-          for (let xx = x + 3; xx < x + 40; xx += 5) glow(xx, y + 28, C.warm, 0.7);
+            for (let xx = x; xx < x + 40; xx++) img.set(xx, yy, yy === y + 24 ? 0x4a2a20 : (yy - y) % 5 === 0 ? 0xe8e0d0 : (xx - x) % 5 === 2 && (yy - y) % 5 > 1 ? 0x2a2224 : C.brick[2]);
+          img.rect(x + 15, y + 31, 10, 7, 0x2a1e1a);
+          img.rect(x + 15, y + 31, 10, 1, 0xe8e0d0);
+          for (let xx = x + 3; xx < x + 38; xx += 5) glow(xx, y + 28, C.warm, 0.7);
         },
       });
-      reserveRect(x - 1, y - 8, 44, 48);
+      reserveRect(x - 1, y - 8, 42, 48);
     }
     // City Hall: a grey granite block
     building(109, Y(1620), 32, 22, 14, { style: 'office', roof: 0x8a8a86, wall: 0xb8b2a6, items: ['hut', 'ac'] });
@@ -1178,23 +1189,23 @@ export function buildMid() {
     }
     {
       // the rose garden: beds of roses between gravel paths, rose arches
-      const x0 = 2;
+      const x0 = 1;
       const u0 = 1408;
       for (let u = u0; u < u0 + 90; u++)
-        for (let x = x0; x < x0 + 30; x++) {
+        for (let x = x0; x < x0 + 21; x++) {
           if (isRes(x, Y(u))) continue;
           const path = (x - x0) % 8 < 2 || (u - u0) % 14 < 2;
           img.set(x, Y(u), path ? rampColor(C.gravel, 0.6, x, Y(u)) : rand() < 0.5 ? rand.pick([0xe83a5a, 0xf08ab0, 0xf4e0a0, 0xd02a3a, 0xffffff, 0xff7a6a]) : 0x2e5a2a);
         }
-      reserveRect(x0, Y(u0 + 90), 30, 90);
+      reserveRect(x0, Y(u0 + 90), 21, 90);
     }
-    for (const [u0, u1] of [[1406, 1631], [1649, 1864]]) for (const [x0, x1] of [[0, 32], [48, 92], [108, 142], [158, W]]) district(x0, x1, u0, u1, 'office');
+    for (const [u0, u1] of [[1406, 1631], [1649, 1864]]) for (const [x0, x1] of [[0, 22], [38, 79], [101, 142], [158, W]]) district(x0, x1, u0, u1, 'office');
     for (let k = 0; k < 60; k++) {
       const x = rand() * W;
       const u = rand() < 0.5 ? 1366 + rand() * 34 : 1870 + rand() * 34;
       if (!anyRes(x - 4, Y(u) - 4, 8, 8)) tree(rand() < 0.5 ? 'sakura' : 'broadleaf', x, Y(u), 3.5 + rand() * 2);
     }
-    for (let u = NAKANOSHIMA[0] + 10; u < NAKANOSHIMA[1]; u += 40) for (const bx of [40, 100, 150]) if (rand() < 0.5) car(bx + (rand() < 0.5 ? -4 : 1), Y(u), true);
+    for (let u = NAKANOSHIMA[0] + 10; u < NAKANOSHIMA[1]; u += 40) for (const [bx, hw] of NORTH_SOUTH) if (rand() < 0.5) car(bx + (rand() < 0.5 ? -hw + 1 : 1 + (hw > 6 ? 2 : 0)), Y(u), true);
     // river cruise boats and a water bus going up and down both rivers (live), bow to the right
     for (const [u, c, sp, right] of [[1338, 0xe8e4dc, 8, true], [1323, 0x3a6aa8, 6, false], [1944, 0xe8e4dc, 7, false], [1930, 0x3a6aa8, 5, true]]) {
       const out = new Raster(20, 7);
