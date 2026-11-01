@@ -416,6 +416,22 @@ powiększone podglądy do `tools/preview/`.
 
 Statki i wrogowie to maski znaków (`tools/art/sprites.mjs`) z automatycznym cieniowaniem i obrysem.
 
+Efekty wspólne dla wszystkich miast (`tools/art/fx.mjs`, `src/game/Fx.js`):
+- **Wybuchy** to kula ognia, a po niej kłęby dymu, odłamki i kawałki zależne od miasta: płatki sakury
+  (Kioto), krople wody (Okinawa), lód (Sapporo), popiół i żar (Kagoshima), kolorowe iskry neonów (Osaka),
+  para (Beppu). Po zestrzelonych działkach na ziemi zostaje ślad spalenizny.
+- **Światło wybuchów:** każdy wybuch na chwilę oświetla ziemię wokół siebie. Siła zależy od pory dnia na
+  trasie (pole `dark` w `stageN.json`), więc w nocnym Sapporo czy Osace widać ją wyraźnie, a w dzień ledwo.
+- **Cienie chmur** powoli przesuwają się po ziemi i znikają, gdy zapada noc.
+- **Bossowie i minibossowie** oddychają (piksel w górę i w dół), przy 2/3 i 1/3 życia pękają, dymią i iskrzą.
+  Zestrzelony nie znika od razu: trzęsie się i błyska w serii wybuchów, a potem odchodzi po swojemu. Oni
+  zapada się w krwawy staw, ośmiornica, krokodyl i manta toną, Yuki-onna pęka jak lód, shisa i lalka bunraku
+  rozpadają się na kawałki, tanuki rozsypuje się w liście, Sakurajima stygnie, reszta wybucha.
+- **Statek** ma błysk przy lufie, iskry z silników i rozpada się na kawałki we własnych kolorach.
+- **Logo** pr0ject-jpn (`tools/art/logo.mjs`) spada na ekran tytułowy jak przybijana pieczątka. Na starcie
+  etapu pieczęć miasta z kanji jego nazwy (京都, 沖縄, 札幌, 鹿児島, 大阪, 別府, w kolorze tuszu miasta)
+  ląduje nad tytułem. Kanji 16×16 pochodzą z japońskiej czcionki bitmapowej (`tools/art/kanji.mjs`).
+
 Gra wczytuje na starcie tylko to, co wspólne (sprite'y, font, mapa) i tło pierwszego miasta; tła pozostałych
 miast scena `Boot` doczytuje w tle (następne miasto pierwsze), gdy widać już ekran tytułowy. Gdyby miasto nie
 zdążyło się wczytać, etap czeka z napisem „WCZYTYWANIE...”.

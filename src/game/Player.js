@@ -12,6 +12,9 @@ export class Player {
     this.sprite = scene.add.sprite(0, 0, 'sprites', 'ship').setDepth(DEPTH.player);
     this.flame = scene.add.sprite(0, 0, 'sprites', 'flame_0').setOrigin(0.5, 0).setDepth(DEPTH.player - 0.1).play('flame');
     this.dot = scene.add.image(0, 0, 'sprites', 'hitbox').setDepth(DEPTH.player + 0.1);
+    this.muzzle = scene.add.image(0, 0, 'sprites', 'muzzle_0').setDepth(DEPTH.player + 0.05).setVisible(false); // flash at the nose
+    this.muzzleT = 0;
+    this.trailT = 0;
     this.shots = new Pool(scene, DEPTH.playerShot);
 
     this.setShip(SHIPS[1]);
@@ -52,6 +55,7 @@ export class Player {
     this.sprite.setVisible(v);
     this.flame.setVisible(v);
     this.dot.setVisible(v);
+    if (!v) this.muzzle.setVisible(false);
   }
 
   /** Fly in from the bottom edge. */
@@ -155,6 +159,16 @@ export class Player {
     this.flame.setPosition(this.x, this.y + this.ship.flameY);
     this.dot.setPosition(this.x, this.y);
     const blink = this.invulnerable > 0 && Math.floor(this.invulnerable * 16) % 2 === 0;
+    // a flash at the nose with each volley, sparks trailing from the engines
+    this.muzzleT -= dt;
+    this.muzzle.setVisible(this.alive && this.muzzleT > 0).setPosition(this.x, this.y - Math.ceil(this.sprite.height / 2) - 1);
+    if (this.alive && (this.trailT -= dt) <= 0) {
+      this.trailT = 0.035;
+      const fx = this.scene.fx;
+      const side = Math.random() < 0.5 ? -2.5 : 2.5;
+      const p = fx.part(fx.parts, 'dot_1', this.x + side, this.y + this.ship.flameY + 3, { vx: (Math.random() - 0.5) * 6, vy: 46 + Math.random() * 20, drag: 0, life: 0.2 + Math.random() * 0.1, a0: blink ? 0.3 : 0.85 });
+      p.setTint(Math.random() < 0.5 ? 0xffb050 : 0xfff0a0);
+    }
     this.sprite.setAlpha(blink ? 0.35 : 1);
     this.flame.setAlpha(blink ? 0.35 : 1);
     // hot guns glow orange; jammed ones blink grey
@@ -192,6 +206,8 @@ export class Player {
     const { x, y } = this;
     const lv = this.level - 1;
     this.volleys++;
+    this.muzzleT = 0.04;
+    this.muzzle.setFrame(this.volleys % 2 ? 'muzzle_0' : 'muzzle_1');
     this.scene.sfx.shot(this.weapon === 'homing' ? 'basic' : this.weapon);
     switch (this.weapon) {
       case 'basic': {
@@ -382,6 +398,9 @@ export class Player {
     this.setVisible(false);
     s.fx.explode(this.x, this.y, 'm');
     s.fx.explode(this.x - 4, this.y + 3, 's');
+    // the ship breaks up: pieces in its own paint, and white
+    s.fx.debris(this.x, this.y, 12, this.ship.color, 1.6);
+    s.fx.debris(this.x, this.y, 6, 0xffffff, 1.3);
     s.fx.flash(0.35, 0.3);
     s.score.death();
     this.beanT = 0;

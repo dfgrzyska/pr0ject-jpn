@@ -65,6 +65,13 @@ export class Hud {
     this.cardSub = this.text(W / 2, 0, '', 0.5).setDepth(d + 3).setTint(0xf08bb0).setVisible(false);
     this.cardT = 0;
     this.cardMax = 1;
+    // the city card at the start of a stage: the city's seal pressed on a slip of paper above its name (the
+    // paper shows through the kanji cut out of it)
+    this.sealPaper = scene.add.rectangle(W / 2, 0, 1, 1, 0xf0e4c8).setDepth(d + 1).setVisible(false);
+    this.seal = scene.add.image(W / 2, 0, 'sprites', 'seal_stage1').setDepth(d + 1).setVisible(false);
+    this.sealT = 0;
+    this.sealMax = 1;
+    this.sealLanded = false;
     this.overlay = scene.add.rectangle(0, 0, W, VIEW.maxHeight, 0x0b0a12, 0.6).setOrigin(0, 0).setDepth(DEPTH.overlay).setVisible(false);
     this.overlayItems = [];
     this.layout(scene.H);
@@ -114,6 +121,37 @@ export class Hud {
     this.blinkBanner = blink;
   }
 
+  /** The city card: its seal (the kanji of its name, in its ink) comes down with a thump over the stage's title. */
+  cityCard(frame, tint, title, sub, time = 2.8) {
+    this.seal.setFrame(frame).setTint(tint).setVisible(true).setAlpha(0);
+    this.sealPaper.setSize(this.seal.width - 2, this.seal.height - 2).setVisible(true).setAlpha(0);
+    this.sealT = time;
+    this.sealMax = time;
+    this.sealLanded = false;
+    this.show(title, sub, time);
+  }
+
+  updateSeal(dt) {
+    if (this.sealT <= 0) return;
+    this.sealT -= dt;
+    const el = this.sealMax - this.sealT;
+    const k = Math.max(0, Math.min(1, (el - 0.1) / 0.2));
+    const y = Math.round(this.H * 0.36) - 34;
+    const scale = 2 + 2.4 * (1 - k) ** 2;
+    const a = el < 0.1 ? 0 : Math.min(1, k * 3, this.sealT / 0.4);
+    this.seal.setY(y).setScale(scale).setAlpha(a);
+    this.sealPaper.setPosition(W / 2, y).setScale(scale).setAlpha(a * 0.95);
+    if (k >= 1 && !this.sealLanded) {
+      this.sealLanded = true;
+      this.scene.sfx.stamp();
+      this.scene.cameras.main.shake(120, 0.005);
+    }
+    if (this.sealT <= 0) {
+      this.seal.setVisible(false);
+      this.sealPaper.setVisible(false);
+    }
+  }
+
   /** The boss card: name and title slide in on a dark band, hold, and slide away. */
   card(name, sub, time = 2.8) {
     this.cardWarn.setText(tr('UWAGA!'));
@@ -142,14 +180,19 @@ export class Hud {
     this.cardSub.setPosition(Math.round(W / 2 + ox), y + 10);
   }
 
-  /** Full-screen panel (title, pause, results). lines: [text, tint?] or {sprite, x, y}. */
+  /** Full-screen panel (title, pause, results). lines: [text, tint?], {sprite, x, text} or {image, h} (centred). */
   panel(lines) {
     this.closePanel();
     this.overlay.setVisible(true).setSize(W, this.H);
-    const height = (l) => (!l ? LINE / 2 : Array.isArray(l) ? LINE * (l[2] ?? 1) : LINE);
+    const height = (l) => (!l ? LINE / 2 : l.image ? l.h : Array.isArray(l) ? LINE * (l[2] ?? 1) : LINE);
     const total = lines.reduce((sum, l) => sum + height(l), 0);
     let y = Math.round(this.H / 2 - total / 2);
     for (const line of lines) {
+      if (line && line.image) {
+        this.overlayItems.push(this.scene.add.image(W / 2, y + line.h / 2, 'sprites', line.image).setDepth(DEPTH.overlay + 1));
+        y += line.h;
+        continue;
+      }
       if (line && line.sprite) {
         // legend row: icon + left-aligned label
         this.overlayItems.push(this.scene.add.image(line.x, y + 7, 'sprites', line.sprite).setDepth(DEPTH.overlay + 1));
@@ -243,6 +286,7 @@ export class Hud {
     }
 
     this.updateCard(dt);
+    this.updateSeal(dt);
     if (this.bannerT > 0) {
       this.bannerT -= dt;
       const vis = this.bannerT > 0 && (!this.blinkBanner || Math.floor(this.bannerT * 6) % 2 === 0);

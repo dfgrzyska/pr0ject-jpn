@@ -20,6 +20,7 @@ import { canInstall, install, iosHint } from '../pwa.js';
 import { stageReady } from './Boot.js';
 
 const HI_KEY = 'shmupjp.hiscore'; // (easy keeps its own record, .easy)
+let logoPressed = false; // the logo comes down like a stamp the first time the title shows
 const SHIP_KEY = 'shmupjp.ship';
 
 function loadShipIndex() {
@@ -165,7 +166,7 @@ export class Stage extends Phaser.Scene {
   showTitle() {
     const touch = this.sys.game.device.input.touch;
     this.hud.panel([
-      ['PR0JECT-JPN', 0xffd6e5, 2], // (the font has capitals only)
+      { image: 'logo', h: 30 },
       '',
       [this.stageTitle, 0xffffff],
       [this.stage.subtitle, 0xf08bb0],
@@ -185,6 +186,11 @@ export class Stage extends Phaser.Scene {
       '',
       [touch ? 'DOTKNIJ, ABY ZACZĄĆ' : 'ENTER - START', 0xffe080, 1, true],
     ]);
+    if (!logoPressed) {
+      logoPressed = true;
+      const img = this.hud.overlayItems.find((o) => o.frame?.name === 'logo');
+      if (img) this.logoLand = { img, t: -0.3, done: false };
+    }
   }
 
   /** Polish / English, from the title screen. */
@@ -243,7 +249,7 @@ export class Stage extends Phaser.Scene {
     this.parallax.props.sync(this.t);
     this.player.spawn();
     this.music.play(this.stageSong(), true);
-    this.hud.show(this.stageTitle, this.stage.subtitle, 2.6);
+    this.hud.cityCard(`seal_${this.stage.id}`, this.stampInk, this.stageTitle, this.stage.subtitle);
   }
 
   /** After game over: a new game in a new random order (ship selection, fresh lives and score). */
@@ -576,6 +582,19 @@ export class Stage extends Phaser.Scene {
       this.bullets.cancelAll(null);
     }
 
+    const logo = this.logoLand;
+    if (logo) {
+      // the logo pressed onto the title screen
+      logo.t += dt;
+      const k = Math.max(0, Math.min(1, logo.t / 0.22));
+      if (logo.img.active) logo.img.setScale(2.6 - 1.6 * k * k).setAlpha(logo.t < 0 ? 0 : Math.min(1, k * 2));
+      if (k >= 1 && !logo.done) {
+        logo.done = true;
+        this.sfx.stamp();
+        this.cameras.main.shake(140, 0.006);
+        this.logoLand = null;
+      }
+    }
     if (this.state === 'map') this.map.update(dt);
     if (this.state === 'clear') {
       this.clearT += dt;

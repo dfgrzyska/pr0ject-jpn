@@ -5,6 +5,7 @@
   "map": [135.77, 35.01, 12, -8],
   "skin": "kyoto",
   "near": "sakura",
+  "dark": [[0, 0.05], [5800, 0.1], [6600, 0.75]],
   "scroll": { "far": 12, "mid": 30, "near": 64, "anchor": 420 },
   "end": 216,
   "music": { "schedule": [[0, "intro"], [24, "build"], [47, "full"], [196, "final"]], "heavy": "boss" },

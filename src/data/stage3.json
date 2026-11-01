@@ -5,6 +5,7 @@
   "map": [141.35, 43.06, -26, 0],
   "skin": "sapporo",
   "near": "snow",
+  "dark": [[0, 0.35], [1500, 0.75], [2400, 1]],
   "scroll": { "far": 12, "mid": 30, "near": 64, "anchor": 420 },
   "boss": true,
   "end": 232,

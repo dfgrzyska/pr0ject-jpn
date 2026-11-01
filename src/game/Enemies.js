@@ -48,7 +48,13 @@ const EXTRAS = {
   loot: null, // what the macaque is running away with: 'power' | 'bomb'
   harmless: false, // no contact damage (bean boxes)
   oni: false, // only Setsubun beans really hurt it
+  wounds: null, // a weakened boss's cracks (sprites riding on it)
 };
+
+// How a boss or heavy goes out once its chain of blasts is over (see goDown), and the colour of what a
+// crumbling one breaks into.
+const CLAY = 0xd8784a; // the shisa's glazed clay
+const WOOD = 0xa8683a; // the bunraku puppet
 
 // Six archetypes shared by every city (each stage picks a skin), plus stage bosses.
 export class Enemies {
@@ -61,6 +67,8 @@ export class Enemies {
     this.segPool = new Pool(scene, DEPTH.air - 0.12); // the octopus's tentacle segments
     this.heavy = null;
     this.bossGroup = null;
+    this.dying = []; // bosses and heavies going down (goDown)
+    this.woundPool = new Pool(scene, DEPTH.air + 0.02);
     // telegraph lines (matchlock aim, Raijū's charge), redrawn every frame
     this.tele = scene.add.graphics().setDepth(DEPTH.airFx);
   }
@@ -332,21 +340,17 @@ export class Enemies {
       s.score.add(pts);
       s.fx.text(e.x, e.y - 12, `STADO! +${pts}`, 1.5, 0xd8f0ff);
     }
+    const big = e.type === 'heavy' || e.type === 'boss';
     if (e.ground) {
       s.fx.explode(e.x, e.y, e.def.explosion, e.u);
       const wr = this.wrecks.spawn(e.wreck ?? this.skin.turret.wreck, e.x, e.y, { u: e.u });
       if (e.horiz) wr.setRotation(-e.dir * Math.PI / 2);
-    } else s.fx.explode(e.x, e.y, e.def.explosion);
+    } else s.fx.explode(e.x, e.y, big ? 'm' : e.def.explosion); // (a boss's body stays a moment: goDown)
     if (e.type === 'carrier') s.spawnPickup(e.color, e.x, e.y, -40);
     if (e.type === 'masu') s.spawnPickup('mame', e.x, e.y, -40);
-    if (e.type === 'heavy' || e.type === 'boss') {
+    if (big) {
       const { x, y } = e;
-      for (let i = 0; i < 9; i++)
-        s.time.delayedCall(i * 110, () => s.fx.explode(x + (Math.random() - 0.5) * 40, y + (Math.random() - 0.5) * 34, i % 3 ? 'm' : 's'));
-      s.time.delayedCall(1000, () => {
-        s.fx.explode(x, y, 'l');
-        s.fx.flash(0.5, 0.4);
-      });
+      this.goDown(e);
       s.bullets.cancelAll(s.fx);
       s.fx.text(x, y - 24, `${e.def.score * s.score.mult}`, 1.6, 0xffe080);
       if (e.type === 'heavy') {
@@ -657,13 +661,163 @@ export class Enemies {
   }
 
 
+  /**
+   * A boss or a heavy going down: its body stays on, shaking and flashing in a chain of blasts, then goes out
+   * its own way: the oni sinks into the blood pond, the octopus into the canal, the crocodile into its pool
+   * and the manta into the sea; Yuki-onna shatters into ice, the clay shisa and the wooden puppet crumble,
+   * the tanuki scatters into leaves, Sakurajima cools down, the rest blow up.
+   */
+  goDown(e) {
+    const s = this.scene;
+    const body = s.add.sprite(e.x, e.y, e.texture.key, e.frame.name).setDepth(e.depth).setFlipX(e.flipX).setRotation(e.rotation).setScale(e.scaleX, e.scaleY);
+    if (e.oni) body.setCrop(0, 0, 63, 60); // standing in the pond
+    const kind = e.group?.kind ?? e.kind;
+    const end =
+      e.oni || kind === 'tako' || kind === 'wani' || e.frame.name.startsWith('manta')
+        ? 'sink'
+        : kind === 'yukionna'
+          ? 'shatter'
+          : kind === 'tanuki'
+            ? 'leaves'
+            : kind === 'bunraku' || (e.type === 'boss' && !kind)
+              ? 'crumble'
+              : kind === 'volcano'
+                ? 'cool'
+                : 'burst';
+    const color = kind === 'bunraku' ? WOOD : CLAY;
+    this.dying.push({ body, t: 0, x: e.x, y: e.y, r: Math.max(10, e.radius), end, color, oni: !!e.oni, liquid: e.oni ? 'bloodball_1' : 'splash', next: 0, ended: false });
+  }
+
+  /** The bodies going down: the chain of blasts (1.1 s), then each one's own end. */
+  updateDying(dt) {
+    const s = this.scene;
+    const fx = s.fx;
+    let n = 0;
+    for (const d of this.dying) {
+      d.t += dt;
+      const b = d.body;
+      let done = false;
+      if (d.t < 1.1) {
+        b.setPosition(d.x + Math.round((Math.random() - 0.5) * 3), d.y + Math.round((Math.random() - 0.5) * 3));
+        b.setTint(Math.floor(d.t * 14) % 2 ? 0x707070 : 0x000000).setTintMode(Phaser.TintModes.ADD);
+        if ((d.next -= dt) <= 0) {
+          d.next = 0.11;
+          fx.explode(d.x + (Math.random() - 0.5) * d.r * 2.2, d.y + (Math.random() - 0.5) * d.r * 1.8, Math.random() < 0.3 ? 'm' : 's', null, (d.n = (d.n ?? 0) + 1) % 3 !== 0);
+        }
+      } else {
+        const k = d.t - 1.1;
+        if (!d.ended) {
+          d.ended = true;
+          b.setPosition(d.x, d.y).clearTint();
+          s.cameras.main.shake(400, 0.007);
+          if (d.end === 'burst' || d.end === 'cool') {
+            fx.explode(d.x, d.y, 'l');
+            fx.debris(d.x, d.y, 16, null, 1.9);
+            fx.flash(0.5, 0.4);
+            fx.shockwave(d.x, d.y);
+          } else if (d.end === 'sink') {
+            fx.explode(d.x, d.y, 'm');
+            fx.flash(0.3, 0.3);
+          } else if (d.end === 'shatter') {
+            fx.shards(d.x, d.y, 44);
+            fx.cityBits(d.x, d.y, 10, 1.6);
+            fx.flash(0.6, 0.4);
+          } else if (d.end === 'crumble') {
+            fx.debris(d.x, d.y, 26, d.color, 1.5);
+            fx.debris(d.x, d.y, 8, null, 1.2);
+            fx.smoke(d.x, d.y, 6, d.r * 0.6);
+            fx.flash(0.35, 0.3);
+          } else if (d.end === 'leaves') {
+            fx.leaves(d.x, d.y, 34);
+            fx.smoke(d.x, d.y, 4, d.r * 0.5);
+            fx.flash(0.3, 0.3);
+          }
+        }
+        if (d.end === 'burst') done = true;
+        else if (d.end === 'sink') {
+          // down into the water, splashing round the edge (the oni the way he rose: his feet stay under the surface)
+          const f = Math.min(1, k / 1.5);
+          if (d.oni) {
+            const vh = Math.max(0, Math.round(60 * (1 - f)));
+            b.setCrop(0, 0, 63, vh).setY(d.y + 60 - vh);
+          } else b.setAlpha(1 - f).setY(d.y + f * 16);
+          if (Math.random() < dt * 18) fx.puff(d.liquid, d.x + (Math.random() - 0.5) * d.r * 2.2, d.y + d.r * 0.5 + f * 10, 0.35);
+          done = f >= 1;
+        } else if (d.end === 'cool') {
+          // the crater goes dark and still, smoke drifting off it
+          const f = Math.min(1, k / 1.8);
+          b.setTint(Phaser.Display.Color.GetColor(255 - 150 * f, 255 - 160 * f, 255 - 160 * f)).setTintMode(Phaser.TintModes.MULTIPLY).setAlpha(1 - f * f);
+          if (Math.random() < dt * 10) fx.smoke(d.x + (Math.random() - 0.5) * d.r * 2, d.y, 1, 2);
+          done = f >= 1;
+        } else {
+          // shatter, crumble, leaves: gone in a blink
+          const f = Math.min(1, k / 0.25);
+          b.setAlpha(1 - f).setY(d.y + f * 3);
+          if (d.end === 'shatter') b.setTint(0xffffff).setTintMode(Phaser.TintModes.ADD);
+          done = f >= 1;
+        }
+      }
+      if (done) b.destroy();
+      else this.dying[n++] = d;
+    }
+    this.dying.length = n;
+  }
+
+  /**
+   * A boss weakening: cracks open on it (two at 2/3 of its life, two more at 1/3), smoke curls from them and,
+   * near the end, sparks; bosses and heavies also breathe (a pixel up and down).
+   */
+  wounds(e, dt) {
+    const s = this.scene;
+    if (e.group?.kind !== 'volcano') e.setOrigin(0.5, Math.floor(e.age * 1.25) % 2 ? 0.5 - 1 / e.height : 0.5);
+    const frac = e.hp / e.maxHp;
+    const lvl = frac < 1 / 3 ? 2 : frac < 2 / 3 ? 1 : 0;
+    if (!lvl && !e.wounds) return;
+    e.wounds ??= [];
+    while (e.wounds.length < lvl * 2) e.wounds.push(this.newWound(e));
+    const sx = e.flipX ? -1 : 1;
+    for (const w of e.wounds) {
+      w.setPosition(Math.round(e.x + w.ox * sx), Math.round(e.y + w.oy)).setFlipX(e.flipX !== w.flip).setVisible(e.visible && e.alpha > 0.5);
+      w.setAlpha(e.alpha);
+    }
+    if (e.visible && Math.random() < dt * lvl * 1.6) {
+      const w = e.wounds[Math.floor(Math.random() * e.wounds.length)];
+      s.fx.smoke(w.x, w.y - 1, 1, 1);
+      if (lvl > 1 && Math.random() < 0.5) s.fx.spark(w.x, w.y);
+    }
+  }
+
+  /** A crack somewhere on the body (a solid spot of the sprite, away from its edge and the other cracks). */
+  newWound(e) {
+    const tex = this.scene.textures;
+    const f = e.frame;
+    const h = e.oni ? Math.min(60, f.height) : f.height; // (the oni stands in the pond up to there)
+    let ox = 0;
+    let oy = 0;
+    for (let i = 0; i < 40; i++) {
+      const x = 4 + Math.floor(Math.random() * (f.width - 8));
+      const y = 4 + Math.floor(Math.random() * (h - 8));
+      const near = e.wounds.some((w) => Math.abs(w.ox - (x - f.width / 2)) + Math.abs(w.oy - (y - f.height / 2)) < 12);
+      if (!near && [[0, 0], [-3, 0], [3, 0], [0, -3], [0, 3]].every(([dx, dy]) => (tex.getPixelAlpha(x + dx, y + dy, e.texture.key, f.name) ?? 0) > 200)) {
+        ox = x - f.width / 2;
+        oy = y - f.height / 2;
+        break;
+      }
+    }
+    const w = this.woundPool.spawn(`crack_${Math.floor(Math.random() * 3)}`, e.x, e.y, { ox, oy, flip: Math.random() < 0.5 });
+    return w;
+  }
+
   remove(e) {
+    if (e.wounds) for (const w of e.wounds) this.woundPool.kill(w);
+    e.wounds = null;
     if (e.head) this.heads.kill(e.head);
     if (e.kuroko) for (const k of e.kuroko) if (!k.dead && k.master === e) this.pool.kill(k);
     if (e.decoys) this.dropDecoys(e);
     if (e.kind === 'yukionna') this.scene.parallax.windTarget = 0; // her blizzard dies down with her
     if (e === this.heavy) this.heavy = null;
     if (e.oni) e.setCrop(); // pooled: the next enemy must not come out cropped
+    e.setOrigin(0.5, 0.5); // (breathing)
     this.pool.kill(e);
   }
 
@@ -679,6 +833,7 @@ export class Enemies {
     const b = s.bullets;
     this.tele.clear();
     this.updateBossGroup(dt);
+    this.updateDying(dt);
     for (const e of this.pool.live) {
       if (e.dead) continue;
       e.age += dt;
@@ -736,6 +891,7 @@ export class Enemies {
           break;
       }
       if (e.dead) continue;
+      if (e.type === 'heavy' || e.type === 'boss') this.wounds(e, dt);
       e.flashCool -= dt;
       if (e.flash > 0) {
         e.flash -= dt;
@@ -751,6 +907,7 @@ export class Enemies {
         if (e.segs) for (const sg of e.segs) sg.clearTint?.();
       }
       const off = e.y > H + 40 || e.y < -70 || e.x < -50 || e.x > VIEW.width + 50;
+      if (e.wounds) for (const w of e.wounds) if (e.flash > 0) w.setVisible(false);
       if (off && e.type !== 'boss' && (e.age > 2 || e.y > H)) {
         if (e.flock) e.flock.lost = true; // a bird got away: no flock bonus
         if (e.loot) s.fx.text(Phaser.Math.Clamp(e.x, 40, VIEW.width - 40), 40, 'UKRADZIONE!', 1.4, 0xff8a6a);
@@ -758,6 +915,7 @@ export class Enemies {
       }
     }
     this.pool.sweep();
+    this.woundPool.sweep();
     this.heads.sweep();
     this.segPool.sweep();
     if (this.skin.duos) this.drawDuos();

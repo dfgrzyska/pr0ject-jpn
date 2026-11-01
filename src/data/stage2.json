@@ -5,6 +5,7 @@
   "map": [127.68, 26.21, -4, -33],
   "skin": "okinawa",
   "near": "tropic",
+  "dark": [[0, 0.05]],
   "scroll": { "far": 12, "mid": 30, "near": 64, "anchor": 420 },
   "boss": true,
   "end": 230,

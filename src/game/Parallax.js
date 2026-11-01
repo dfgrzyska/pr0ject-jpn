@@ -44,6 +44,16 @@ export class Parallax {
     this.flashT = 0;
     this.embersFrom = stage.embersFrom ?? Infinity; // stage time from which embers rise
     this.nightFrom = stage.nightFrom ?? Infinity; // Osaka: clouds and gulls by day, a clear night sky after
+    this.dark = stage.dark ?? [[0, 0]]; // how dark the city is along the strip: [u, 0..1]
+    // the shadows of clouds drifting over the land, fading out as night falls
+    this.clouds = [0, 1].map((i) =>
+      scene.add
+        .image(Math.random() * VIEW.width, -40 - i * 260, 'sprites', `cshadow_${i}`)
+        .setDepth(DEPTH.ground + 0.45)
+        .setAlpha(0)
+        .setFlipX(Math.random() < 0.5),
+    );
+    this.lastTop = null;
     this.props = new Props(scene, stage.id, meta, this);
     if (this.nearKind === 'ash')
       this.stormRect = scene.add.rectangle(0, 0, VIEW.width, VIEW.maxHeight, 0x14141e, 1).setOrigin(0, 0).setDepth(DEPTH.near - 0.05).setAlpha(0);
@@ -84,6 +94,36 @@ export class Parallax {
 
     this.props.update(dt, H);
     this.updateNear(dt, scrolling, H);
+    this.updateClouds(dt, H);
+  }
+
+  /** How dark the city is where the screen is now (0 by day .. 1 at night). */
+  darkness(H) {
+    const u = this.uTop - H / 2;
+    const d = this.dark;
+    if (u <= d[0][0]) return d[0][1];
+    for (let i = 1; i < d.length; i++)
+      if (u < d[i][0]) {
+        const [u0, v0] = d[i - 1];
+        const [u1, v1] = d[i];
+        return v0 + ((v1 - v0) * (u - u0)) / (u1 - u0);
+      }
+    return d[d.length - 1][1];
+  }
+
+  /** Cloud shadows: carried down with the ground and a little faster (the wind), across a little. */
+  updateClouds(dt, H) {
+    const scroll = this.lastTop === null ? 0 : this.uTop - this.lastTop;
+    this.lastTop = this.uTop;
+    const a = 0.13 * (1 - this.darkness(H)) * this.props.fade;
+    for (const c of this.clouds) {
+      c.y += scroll + 6 * dt;
+      c.x += 3 * dt;
+      if (c.y - c.height / 2 > H || c.x - c.width / 2 > VIEW.width) {
+        c.setPosition(-20 + Math.random() * (VIEW.width + 20), -c.height / 2 - Math.random() * 220).setFlipX(Math.random() < 0.5);
+      }
+      c.setAlpha(a);
+    }
   }
 
   updateNear(dt, scrolling, H) {
