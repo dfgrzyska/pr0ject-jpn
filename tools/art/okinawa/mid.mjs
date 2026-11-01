@@ -1,13 +1,16 @@
-// Middle layer (Okinawa): islets and reefs, a resort beach, a red-roofed village, cane and pineapple
+// Middle layer (Okinawa): the Kerama islands, a resort beach, Bise under its fukugi trees, cane and pineapple
 // fields, then Naha on the way up to Shuri: a hillside of turtle-back tombs (one family holding its
 // Shīmī picnic in front of theirs), the potters' lane of Tsuboya with its old climbing kiln, the Makishi
 // market under its glass roof and the Heiwa-dōri arcade, and Kokusai-dōri with an eisa parade marching up
-// it; then Shuri castle, jungle cliffs, the open sea and a lighthouse island. Water away from the coast is
-// left transparent so the deep ocean of the far layer shows through.
+// it; then Shuri castle, the Yanbaru forest with the Hiji falls, the Kōri bridge to Kōri island, the open
+// sea and a lighthouse island. Water away from the coast is left transparent so the deep ocean of the far
+// layer shows through.
 //
 // Live (see ../props.mjs): waves roll in onto every beach and break white over the reefs, the lagoons
-// glint, the boats and the ferry sail on with their wakes, sea turtles glide in the open water, gusts
-// sweep the cane fields, banners flutter over Shuri's courtyard and the lighthouse flashes.
+// glint, the boats and the ferry sail on with their wakes, divers' bubbles rise round the dive boats, sea
+// turtles, fish and mantas glide under the surface, humpbacks breach, cyclists ride Bise's lanes, gusts
+// sweep the cane fields, banners flutter over Shuri's courtyard, the Hiji falls pour, kuina dart across the
+// Yanbaru road, mist drifts over the forest, cars cross the Kōri bridge and the lighthouse flashes.
 //
 // Coordinates: u = distance from the bottom of the strip (stage start), strip y = L - u.
 import { readFileSync } from 'node:fs';
@@ -15,7 +18,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Raster, fbm, rng, bayer, scaleColor } from '../../lib/raster.mjs';
 import { crownPixels, palmPixels, grade, rampColor } from '../nature.mjs';
-import { PropKit, Window, tintTable } from '../props.mjs';
+import { PropKit, Window, puff, tintTable } from '../props.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -41,7 +44,14 @@ const C = {
   asphalt: [0x3a3c40, 0x46484c, 0x52545a],
   shuri: [0x8e1a14, 0xb8261c, 0xd8402a],
   white: 0xece6d6,
+  whiteSand: [0xdcd6c4, 0xebe7d8, 0xf5f2e8, 0xfdfcf6], // the Kerama beaches
   gold: 0xe2aa32,
+};
+
+const CORAL = [0x6a5a48, 0x8a5a62, 0x5a6a4a, 0x9a7a5a]; // brain coral, soft coral, staghorn, sand-dusted
+const mixColor = (a, b, t) => {
+  const ch = (sh) => Math.round(((a >> sh) & 255) * (1 - t) + ((b >> sh) & 255) * t);
+  return (ch(16) << 16) | (ch(8) << 8) | ch(0);
 };
 
 const smooth = (a, b, x) => {
@@ -58,25 +68,34 @@ const NAHA = [2560, 3200];
 const SHURI = [3200, 3850];
 const JUNGLE = [3850, 4650];
 
+// [u, x, r, kind]: islands are unions of these discs. k = the Kerama islands off the start (white beaches,
+// rocky points), l = the lighthouse island, o = Kōri island at the end of its bridge
 const ISLETS = [
-  [210, 40, 15],
-  [400, 142, 12],
-  [600, 58, 10],
-  [5000, 132, 17],
+  [230, 20, 30, 'k'],
+  [272, 6, 28, 'k'],
+  [200, 42, 18, 'k'],
+  [585, 158, 27, 'k'],
+  [618, 172, 23, 'k'],
+  [552, 142, 16, 'k'],
+  [420, 98, 5, 'k'], // a lone rock
   [5420, 38, 14],
   [5790, 124, 12],
-  [6230, 90, 46], // lighthouse island
+  [6230, 90, 46, 'l'],
+  [5082, 112, 38, 'o'],
+  [5114, 140, 32, 'o'],
+  [5046, 90, 20, 'o'],
 ];
 const REEFS = [
   [120, 118, 22],
   [480, 28, 18],
   [660, 150, 16],
-  [4860, 60, 24],
   [5250, 150, 20],
   [5600, 82, 26],
   [6620, 40, 18],
   [6760, 150, 22],
 ];
+// the shallow channel the Kōri bridge crosses, from the north coast to the island: [x, u] along its middle, half-width
+const SHALLOWS = { pts: [[90, 4640], [88, 4760], [94, 4880], [92, 5040]], w: 30 };
 
 export function buildMid() {
   const stage = JSON.parse(readFileSync(join(root, 'src', 'data', 'stage2.json'), 'utf8'));
@@ -124,20 +143,31 @@ export function buildMid() {
       d = Math.min(south, north, east);
       kind = d === south ? 'south' : d === east ? 'cliff' : 'north';
     }
-    for (const [iu, ix, R] of ISLETS) {
+    for (const [iu, ix, R, k] of ISLETS) {
       const dd = R - Math.hypot(x + 0.5 - ix, u - iu) + (fbm(x, u, { seed: 83, scale: 8, octaves: 2 }) - 0.5) * 6;
       if (dd > d) {
         d = dd;
-        kind = 'islet';
+        kind = k === 'k' ? 'kerama' : 'islet';
       }
     }
     return { d, kind };
   }
-  const beachW = (kind) => (kind === 'south' ? 30 : kind === 'cliff' ? 5 : 7);
+  const beachW = (kind) => (kind === 'south' ? 30 : kind === 'cliff' ? 5 : kind === 'kerama' ? 6 : 7);
   function reefD(x, u) {
     let d = -999;
     for (const [ru, rx, R] of REEFS) d = Math.max(d, R - Math.hypot(x + 0.5 - rx, u - ru) + (fbm(x, u, { seed: 85, scale: 10, octaves: 2 }) - 0.5) * 10);
     return d;
+  }
+  function shallowD(x, u) {
+    if (u < SHALLOWS.pts[0][1] - 40 || u > SHALLOWS.pts[SHALLOWS.pts.length - 1][1] + 40) return -999;
+    let best = Infinity;
+    for (let i = 0; i < SHALLOWS.pts.length - 1; i++) {
+      const [ax, au] = SHALLOWS.pts[i];
+      const [bx, bu] = SHALLOWS.pts[i + 1];
+      const t = Math.max(0, Math.min(1, ((x + 0.5 - ax) * (bx - ax) + (u - au) * (bu - au)) / ((bx - ax) ** 2 + (bu - au) ** 2)));
+      best = Math.min(best, Math.hypot(x + 0.5 - (ax + (bx - ax) * t), u - (au + (bu - au) * t)));
+    }
+    return SHALLOWS.w - best + (fbm(x, u, { seed: 86, scale: 14, octaves: 2 }) - 0.5) * 18;
   }
   const land = new Int16Array(W * L).fill(-999); // cached coast distance for later passes
   const kinds = new Uint8Array(W * L); // 0 sea, 1 beach, 2 land
@@ -158,9 +188,12 @@ export function buildMid() {
         if (kind === 'cliff') {
           // limestone cliff: dark rock, lit top edge
           img.set(x, y, rampColor(C.rock, 0.25 + (d / bw) * 0.6 + (fbm(x, y, { seed: 9, scale: 3 }) - 0.5) * 0.4, x, y));
+        } else if (kind === 'kerama' && fbm(x, u, { seed: 89, scale: 9 }) > 0.5) {
+          // a rocky point: weathered limestone instead of sand
+          img.set(x, y, rampColor(C.rock, 0.35 + (d / bw) * 0.5 + (fbm(x, y, { seed: 9, scale: 2 }) - 0.5) * 0.5, x, y));
         } else {
           const n = fbm(x, y, { seed: 11, scale: 5, octaves: 2 });
-          img.set(x, y, d < 2.5 ? C.wetSand : rampColor(C.sand, 0.35 + n * 0.55, x, y));
+          img.set(x, y, d < 2.5 ? (kind === 'kerama' ? 0xd8d4c4 : C.wetSand) : rampColor(kind === 'kerama' ? C.whiteSand : C.sand, 0.35 + n * 0.55, x, y));
         }
         continue;
       }
@@ -168,11 +201,20 @@ export function buildMid() {
       const reach = kind === 'cliff' ? 12 : 26;
       const rd = reefD(x, u);
       let s = Math.max(1 + d / reach, rd > 0 ? 0.42 + Math.min(rd, 14) / 34 : 0);
+      if (kind === 'kerama' && s > 0) s = Math.min(1, s * 1.12 + 0.05); // Kerama blue: clearer, brighter
+      const sd = shallowD(x, u);
+      if (sd > 0) s = Math.max(s, 0.5 + Math.min(sd, 16) / 40); // the emerald shallows under the Kōri bridge
       if (s <= 0) continue;
       if (s < 0.35 && s < bayer(x, y) * 0.35) continue; // dithered drop-off into deep water
       const caust = fbm(x * 1.3, y, { seed: 13, scale: 6, octaves: 2 });
       let c = rampColor(C.lagoon, Math.min(1, s * 0.95 + (caust - 0.5) * 0.18), x, y);
       if (caust > 0.7 && s > 0.45 && (x + y) % 3 === 0) c = scaleColor(c, 1.18);
+      if (rd > 2 && s > 0.45) {
+        // the reef itself through the clear water: clumps of coral, pale sand channels between them
+        const cn = fbm(x, y, { seed: 87, scale: 2.6, octaves: 2 });
+        if (cn > 0.58) c = mixColor(c, CORAL[Math.floor(fbm(x, y, { seed: 88, scale: 5 }) * 7) % 4], cn > 0.68 ? 0.55 : 0.35);
+        else if (cn < 0.3) c = scaleColor(c, 1.12);
+      }
       if (d > -1.6 && d <= 0) c = C.foam; // surf line
       img.set(x, y, c);
     }
@@ -372,7 +414,7 @@ export function buildMid() {
     kit.path([[x + 6, u - 300], [x + 6, u + 500]], [gradeF(out)], { sp, turn: 'none', wake: { f: wakeF(5), every: 3, life: 2.6 }, s0: passing(u, sp, 300, 800) });
   };
 
-  // ------------------------------------------------------------ A. sea start: islets + boats
+  // ------------------------------------------------------------ islet decor (palms, a lava rock)
   const isletDecor = (iu, ix, R, palms) => {
     for (let i = 0; i < palms; i++) {
       const a = rand() * Math.PI * 2;
@@ -387,9 +429,95 @@ export function buildMid() {
     img.disc(rx, ry, 3, C.rock[1]);
     img.disc(rx - 1, ry - 1, 1.5, C.rock[3]);
   };
-  for (const [iu, ix, R] of ISLETS.slice(0, 3)) isletDecor(iu, ix, R, 3);
+  // ------------------------------------------------------------ A. sea start: the Kerama islands
+  // Steep forested islands with white beaches and rocky points in the clearest water around Japan (Kerama
+  // blue); dive boats moored off the beaches with their divers' bubbles breaking the surface, kayaks and a
+  // beach hut on the sand.
+  {
+    const kr = rng(2203);
+    for (const [iu, ix, R] of ISLETS.filter((i) => i[3] === 'k')) {
+      // limestone boulders along the shore
+      for (let i = 0; i < Math.ceil(R / 5); i++) {
+        const a = kr() * Math.PI * 2;
+        const rx = Math.round(ix + Math.cos(a) * (R - 2));
+        const ry = Y(iu + Math.sin(a) * (R - 2));
+        if (K(rx, ry) === 0 || rx < 2 || rx > W - 3) continue;
+        const r = 1.5 + kr() * 1.6;
+        img.disc(rx + 1, ry + 2, r, 0x0a1a2a, 0.3);
+        img.disc(rx, ry, r, C.rock[1]);
+        img.disc(rx - 0.6, ry - 0.6, r * 0.5, C.rock[3]);
+      }
+    }
+    // kayaks pulled up on the sand, a thatched beach hut
+    const onBeach = (x, u) => K(x, Y(u)) === 1 && K(x, Y(u) - 6) >= 1 && K(x + 2, Y(u)) >= 1;
+    let kay = 0;
+    for (const [u0, x0, dx] of [[250, 50, 1], [215, 60, 1], [575, 128, -1], [600, 134, -1]])
+      for (let k = 0; k < 14 && kay < 6; k++) {
+        const x = x0 + dx * k;
+        if (!onBeach(x, u0)) continue;
+        const y = Y(u0);
+        const col = [0xf0c020, 0xe0402a, 0xf08a20][kay % 3];
+        img.rect(x + 1, y + 1, 2, 6, 0x0a1a2a, 0.3);
+        img.rect(x, y, 2, 6, col);
+        img.set(x, y + 2, 0x2a2a30);
+        img.set(x + 1, y + 2, 0x2a2a30);
+        reserveRect(x - 1, y - 1, 4, 8);
+        kay++;
+        break;
+      }
+    {
+      const hx = 30;
+      const hy = Y(212);
+      objects.push({
+        y: hy + 7,
+        shadow: () => shadowRect(hx + 2, hy + 3, 8, 7, 0.55),
+        draw: () => {
+          for (let j = 0; j < 7; j++)
+            for (let i = 0; i < 8; i++) img.set(hx + i, hy + j, (i + j * 2) % 5 === 0 ? 0x8a6a3a : j < 3 ? 0xc8a868 : 0xb0905a);
+          img.rect(hx, hy + 3, 8, 1, 0x7a5a30); // the ridge
+        },
+      });
+      reserveRect(hx - 1, hy - 1, 10, 10);
+    }
+    // dive boats moored off the beaches (white hulls, the dive flag at the stern), divers' bubbles round them
+    const bubbles = [1, 2, 3, 3].map((r, i) => {
+      const out = new Raster(9, 9);
+      for (let j = -4; j <= 4; j++)
+        for (let k = -4; k <= 4; k++) {
+          const d = Math.hypot(k, j);
+          if (Math.abs(d - r) < 0.6) out.set(4 + k, 4 + j, 0xf4fcfc, i === 3 ? 0.4 : 0.85);
+        }
+      if (i < 2) out.set(4, 4, 0xffffff);
+      return gradeF(out);
+    });
+    for (const [bx, bu, flip] of [[74, 262, false], [104, 590, true]]) {
+      const y = Y(bu);
+      objects.push({
+        y: y + 15,
+        shadow: () => {
+          for (let j = 0; j < 15; j++) for (let i = 0; i < 6; i++) img.set(bx + i + 3, y + j + 3, 0x0a1a2a, 0.25);
+        },
+        draw: () => {
+          for (let j = 0; j < 15; j++) {
+            const w = j < 3 ? 2 + j : 5;
+            const ox = Math.floor((5 - w) / 2);
+            for (let i = 0; i < w; i++) img.set(bx + ox + i, y + j, i === 0 || i === w - 1 ? 0x2a5a9a : 0xf2f2ee);
+          }
+          img.rect(bx + 1, y + 5, 3, 4, 0xd8dce4); // the cabin
+          img.rect(bx + 1, y + 5, 3, 1, 0x3a5a8a);
+          img.rect(bx + 1, y + 12, 3, 2, 0x8a8a90); // tanks on the dive deck
+          const fx = flip ? bx - 2 : bx + 5;
+          img.rect(fx, y + 13, 2, 2, 0xe0302a); // the dive flag
+          img.set(flip ? fx + 1 : fx, y + 13, 0xffffff);
+          img.set(flip ? fx : fx + 1, y + 14, 0xffffff);
+          img.set(bx + 2, y - 2, 0xf08a20); // the mooring buoy
+        },
+      });
+      kit.spot([[bx - 14, bu + 22, 34, 34]], bubbles, { rate: 1.1, fps: 5, a: 0.9 });
+    }
+  }
   boat(100, 300, 9, 0xf2eee0);
-  boat(150, 560, 8, null);
+  boat(84, 620, 8, null);
   boat(30, 680, 9, 0x3a6ab0);
 
   // ------------------------------------------------------------ B. resort beach
@@ -435,42 +563,166 @@ export function buildMid() {
     }
   reserveRect(0, Y(ROAD_U + 12), W, 14);
 
-  // ------------------------------------------------------------ C. village
+  // ------------------------------------------------------------ C. Bise: the fukugi village
+  // Sand lanes winding under tight rows of fukugi trees (the Bise fukugi road on the Motobu peninsula); every
+  // homestead hides inside its own ring of fukugi (a windbreak against the typhoons): a coral-stone wall, a
+  // hinpun screen inside the gate, the old house with its red-tile hip roof and a shisa on the ridge, a
+  // smaller annex, a vegetable patch. Cyclists and walkers on the lanes.
   {
-    // main street (sand) and plots enclosed by coral walls
-    for (let u = VILLAGE[0]; u < VILLAGE[1]; u++) reserveRect(82, Y(u), 16, 1);
-    let u = VILLAGE[0] + 10;
-    while (u < VILLAGE[1] - 46) {
-      const rowH = 32 + Math.floor(rand() * 14);
-      for (const [x0, x1] of [[2, 79], [101, 178]]) {
-        let x = x0 + Math.floor(rand() * 5);
-        while (x < x1 - 22) {
-          const pw = Math.min(x1 - x, 26 + Math.floor(rand() * 18));
-          const ph = rowH - Math.floor(rand() * 5);
-          const top = Y(u + ph) + Math.floor(rand() * 3);
-          // garden ground inside the coral walls
-          for (let yy = top + 1; yy < top + ph; yy++)
-            for (let xx = x + 1; xx < x + pw; xx++)
-              if (K(xx, yy) === 2) img.set(xx, yy, rampColor(C.grass, 0.25 + fbm(xx, yy, { seed: 51, scale: 5 }) * 0.6, xx, yy));
-          wall([[x, top], [x + pw, top], [x + pw, top + ph], [x, top + ph], [x, top]]);
-          const r = rand();
-          const hw = Math.min(pw - 8, 16 + Math.floor(rand() * 10));
-          const hx = x + 4 + Math.floor(rand() * Math.max(1, pw - hw - 7));
-          if (r < 0.55) house(hx, top + 5, hw, 11 + Math.floor(rand() * 5));
-          else if (r < 0.88) flatHouse(hx, top + 5, hw, 10 + Math.floor(rand() * 5));
-          else tree('tropic', x + pw / 2, top + ph / 2, 8 + rand() * 3);
-          // fukugi along the walls, hibiscus and banana in the garden
-          tree('fukugi', x + 4, top + 4, 4 + rand() * 1.5);
-          if (rand() < 0.7) tree('fukugi', x + pw - 4, top + 4, 4 + rand() * 1.5);
-          if (rand() < 0.7) tree('hibiscus', x + 5 + rand() * 4, top + ph - 5, 3.5);
-          if (rand() < 0.5) tree('banana', x + pw - 6, top + ph - 6, 4 + rand());
-          x += pw + 2 + Math.floor(rand() * 3);
-        }
-      }
-      u += rowH + 4 + Math.floor(rand() * 4);
+    const br = rng(2201);
+    const pads = stage.waves.filter((w) => w.type === 'turret').map((w) => [w.x, Y(anchor + V * w.t + 10)]);
+    const nearPad = (x0, y0, x1, y1) => pads.some(([px, py]) => px + 13 > x0 && px - 13 < x1 && py + 13 > y0 && py - 13 < y1);
+    // lanes up the village: the straight main lane and two that wind; lanes across, each crossing some of them
+    const laneX = [(u) => 44 + 5 * Math.sin(u / 70 + 1), () => 90, (u) => 136 + 5 * Math.sin(u / 85 + 3)];
+    const halfW = [3, 4, 3];
+    const across = []; // [u, from lane, to lane] (-1 = the left edge, 3 = the right edge)
+    for (let u = VILLAGE[0] + 2; u < VILLAGE[1] - 20; u += 46 + Math.floor(br() * 40)) {
+      const a = br() < 0.4 ? -1 : Math.floor(br() * 2);
+      const b = Math.min(3, a + 1 + Math.floor(br() * 3));
+      across.push([u, a, b]);
     }
-    // village square with a big banyan (gajumaru)
-    tree('tropic', 90, Y(1880), 14);
+    across.push([VILLAGE[1] - 4, -1, 3]);
+    const xOf = (i, u) => (i < 0 ? 0 : i > 2 ? W : laneX[i](u));
+    const laneAt = (x, y) => img.set(x, y, rampColor(C.lane, 0.5 + fbm(x, y, { seed: 52, scale: 3 }) * 0.45, x, y));
+    for (let y = Y(VILLAGE[1]); y < Y(VILLAGE[0]); y++)
+      for (let x = 0; x < W; x++) if (K(x, y) === 2) img.set(x, y, rampColor(C.lane, 0.06 + fbm(x, y, { seed: 53, scale: 4 }) * 0.3, x, y));
+    for (let i = 0; i < 3; i++)
+      for (let y = Y(VILLAGE[1]); y < Y(VILLAGE[0]); y++) {
+        const lx = Math.round(laneX[i](U(y)));
+        for (let x = lx - halfW[i]; x < lx + halfW[i]; x++) if (K(x, y) === 2) laneAt(x, y);
+        reserveRect(lx - halfW[i], y, halfW[i] * 2, 1);
+      }
+    for (const [u, a, b] of across)
+      for (let y = Y(u + 3); y < Y(u - 3); y++) {
+        const x0 = Math.round(xOf(a, U(y)));
+        const x1 = Math.round(xOf(b, U(y)));
+        for (let x = x0; x < x1; x++) if (K(x, y) === 2) laneAt(x, y);
+        reserveRect(x0, y, x1 - x0, 1);
+      }
+    const fukugi = (x, y) => {
+      if (nearPad(x - 4, y - 4, x + 4, y + 4) || K(Math.round(x), Math.round(y)) !== 2 || isRes(x, y)) return;
+      tree('fukugi', x + (br() - 0.5) * 1.2, y + (br() - 0.5) * 1.2, 3.7 + br() * 1.2, br);
+    };
+    const row = (ax, ay, bx, by) => {
+      const n = Math.max(1, Math.round(Math.hypot(bx - ax, by - ay) / 5.5));
+      for (let i = 0; i <= n; i++) fukugi(ax + ((bx - ax) * i) / n, ay + ((by - ay) * i) / n);
+    };
+    /** A homestead in (x0..x1, top..bot): its fukugi ring, wall, gate and hinpun, house, annex, garden. */
+    const homestead = (x0, x1, top, bot) => {
+      const pw = x1 - x0;
+      const ph = bot - top;
+      row(x0 + 2, top + 2, x1 - 2, top + 2);
+      row(x0 + 2, bot - 2, x1 - 2, bot - 2);
+      row(x0 + 2, top + 7, x0 + 2, bot - 7);
+      row(x1 - 2, top + 7, x1 - 2, bot - 7);
+      const wx0 = x0 + 6;
+      const wx1 = x1 - 6;
+      const wt = top + 6;
+      const wb = bot - 6;
+      if (wx1 - wx0 < 16 || wb - wt < 18 || nearPad(x0, top, x1, bot)) return;
+      const r = br();
+      if (r < 0.12) {
+        // a field: rows of vegetables or a patch of sugar cane, no house
+        for (let yy = wt; yy < wb; yy++)
+          for (let xx = wx0; xx < wx1; xx++) img.set(xx, yy, (yy - wt) % 3 === 0 ? C.redEarth[1] : r < 0.06 ? C.cane[(xx + yy) % 3] : C.grass[1 + ((xx >> 1) % 2)]);
+        reserveRect(wx0, wt, wx1 - wx0, wb - wt);
+        return;
+      }
+      for (let yy = wt + 1; yy < wb; yy++)
+        for (let xx = wx0 + 1; xx < wx1; xx++) if (K(xx, yy) === 2) img.set(xx, yy, rampColor(C.grass, 0.25 + fbm(xx, yy, { seed: 51, scale: 5 }) * 0.6, xx, yy));
+      const gateUp = br() < 0.5;
+      const gx = Math.round((wx0 + wx1) / 2 + (br() - 0.5) * (wx1 - wx0 - 10));
+      const gy = gateUp ? wt : wb;
+      const fy = gateUp ? wb : wt;
+      wall([[gx + 3, gy], [wx1, gy], [wx1, fy], [wx0, fy], [wx0, gy], [gx - 3, gy]]);
+      const hinpun = gateUp ? wt + 4 : wb - 4;
+      wall([[gx - 4, hinpun], [gx + 4, hinpun]]); // a free-standing screen wall: spirits only go straight
+      // the house, its face towards the gate; an annex (kitchen, storehouse) beside it if there's room
+      const hw = Math.min(wx1 - wx0 - 4, 15 + Math.floor(br() * 7));
+      const hh = 10 + Math.floor(br() * 3);
+      const hx = wx0 + 2 + Math.floor(br() * Math.max(1, wx1 - wx0 - hw - 3));
+      const hy = gateUp ? wb - hh - 5 : Math.max(wt + 3, hinpun - hh - 9);
+      if (gateUp ? hy > hinpun + 2 : hy + hh + 3 < hinpun - 1) house(hx, hy, hw, hh);
+      const aw = 8 + Math.floor(br() * 3);
+      const ax = hx + hw + 2 + aw <= wx1 - 1 ? hx + hw + 2 : hx - aw - 2 >= wx0 + 1 ? hx - aw - 2 : null;
+      if (ax !== null && br() < 0.8) house(ax, hy + 2, aw, 7, { faceH: 2, shisa: false });
+      else if (br() < 0.5) {
+        // or a water tank on a stand and the laundry pole
+        img.disc(wx1 - 4.5, wt + 4.5, 2, 0x1e1e24);
+        img.set(wx1 - 5, wt + 3, 0x5a5a66);
+      }
+      const gy2 = gateUp ? wt + 2 : wb - 3;
+      if (br() < 0.7) tree('hibiscus', gateUp ? wx0 + 4 : wx1 - 4, gy2 + (gateUp ? 2 : -2), 2.8 + br());
+      if (br() < 0.6) tree('banana', gateUp ? wx1 - 5 : wx0 + 5, gy2 + (gateUp ? 3 : -3), 3.2 + br());
+      if (ph > 46 && br() < 0.7)
+        for (let k = 0; k < 3; k++) img.rect(wx0 + 3 + k * 4, gateUp ? wb - 4 : wt + 2, 2, 2, k % 2 ? C.grass[3] : C.cane[2]); // a herb bed
+    };
+    // the homesteads, column by column between the lanes up, stacked between the lanes across
+    for (let c = 0; c < 4; c++) {
+      const lanesHere = across.filter(([, a, b]) => a < c && b >= c).map(([u]) => u);
+      let u = VILLAGE[0] + 6;
+      while (u < VILLAGE[1] - 30) {
+        const nextLane = lanesHere.find((lu) => lu > u + 20) ?? VILLAGE[1];
+        const h = Math.min(nextLane - 4 - u, 34 + Math.floor(br() * 22));
+        if (h < 26) {
+          u = nextLane + 4;
+          continue;
+        }
+        const top = Y(u + h);
+        const bot = Y(u);
+        const mu = u + h / 2;
+        const x0 = Math.ceil((c === 0 ? 0 : laneX[c - 1](mu) + halfW[c - 1]) + 1);
+        const x1 = Math.floor((c === 3 ? W : laneX[c](mu) - halfW[c]) - 1);
+        // a wide plot holds two homesteads side by side now and then
+        if (x1 - x0 > 46 && br() < 0.5) {
+          const xm = Math.round((x0 + x1) / 2 + (br() - 0.5) * 8);
+          homestead(x0, xm, top, bot);
+          homestead(xm, x1, top, bot);
+        } else homestead(x0, x1, top, bot);
+        u += h + 1;
+      }
+    }
+    // an old gajumaru (banyan) spreading over the lane crossing in the middle of the village
+    tree('tropic', 66, Y(1900), 12, br);
+    // cyclists and walkers on the lanes
+    const rider = (c, f, up) => {
+      const r = new Raster(3, 5);
+      r.set(1, up ? 0 : 4, 0x2a2a30); // front wheel
+      r.set(1, up ? 4 : 0, 0x2a2a30);
+      r.set(1, up ? 1 : 3, 0x2a2026); // head
+      r.set(1, 2, c);
+      r.set(f ? 0 : 2, 2, c);
+      r.set(1, up ? 3 : 1, scaleColor(c, 0.8));
+      r.set(2, up ? 4 : 0, 0x101820, 0.35);
+      return gradeF(r);
+    };
+    const riderSide = (c, f) => {
+      const r = new Raster(5, 4);
+      r.set(0, 3, 0x2a2a30);
+      r.set(4, 3, 0x2a2a30);
+      r.rect(1, 3, 3, 1, 0x6a6a72);
+      r.set(2, 0, 0x2a2026);
+      r.set(2, 1, c);
+      r.set(f ? 1 : 3, 2, scaleColor(c, 0.8));
+      return gradeF(r);
+    };
+    for (const [c, s0] of [[0xe8e8f0, 0.1], [0xe05a4a, 0.55], [0x4a8ad8, 0.85]])
+      kit.path([[90, VILLAGE[0] + 4], [90, VILLAGE[1] - 4]], [rider(c, 0, true), rider(c, 1, true)], { sp: 9, mode: 'pp', hold: 1, turn: 'none', fps: 3, fu: [rider(c, 0, true), rider(c, 1, true)], fd: [rider(c, 0, false), rider(c, 1, false)], s0 });
+    for (const [[u, a, b], c] of across.slice(1, -1).filter((_, i) => i % 2 === 0).map((l, i) => [l, [0xf0c040, 0x5ac0a0, 0xe8e8f0, 0xe86a9a][i % 4]]))
+      kit.path([[xOf(a, u) + 4, u], [xOf(b, u) - 4, u]], [riderSide(c, 0), riderSide(c, 1)], { sp: 8, mode: 'pp', hold: 2, turn: 'flip', fps: 3 });
+    const walker = (c, f) => {
+      const r = new Raster(2, 4);
+      r.set(0, 0, 0x2a2026);
+      r.set(0, 1, c);
+      r.set(0, 2, f ? scaleColor(c, 0.8) : c);
+      r.set(1, 3, 0x1e1e26, 0.4);
+      return gradeF(r);
+    };
+    for (const [i, c] of [[0, 0xd04060], [2, 0xf0f0f0], [0, 0x3a6ad0], [2, 0xf0c040]]) {
+      const pts = [];
+      for (let u = VILLAGE[0] + 4; u <= VILLAGE[1] - 4; u += 20) pts.push([Math.round(laneX[i](u)), u]);
+      kit.path(pts, [walker(c, 0), walker(c, 1)], { sp: 3, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0: br() });
+    }
   }
 
   // ------------------------------------------------------------ D. fields
@@ -1359,14 +1611,280 @@ export function buildMid() {
     house(138, Y(3560), 24, 16, { shisa: false, wall: C.shuri[2] });
   }
 
+  // ------------------------------------------------------------ F. Yanbaru: the northern forest
+  // A narrow road winds through the forest to the Kōri bridge, Yanbaru kuina (flightless rails found only
+  // here) dashing across it by the yellow warning signs; the Hiji falls drop off a rock step into a pool, the
+  // stream runs down to the cliffs under a suspension footbridge and the road; mist drifts over the canopy.
+  const roadX = (u) => 90 + 22 * Math.sin((u - JUNGLE[0]) / 120) * smooth(3860, 3930, u) * (1 - smooth(4560, 4640, u));
+  const ROAD = [3870, 4640];
+  {
+    const yr = rng(2207);
+    // the stream: from the hills off the west edge, over the falls, down to the sea at the cliffs
+    const STREAM = [[-6, 4590], [10, 4566], [22, 4540], [30, 4522], [30, 4504], [40, 4482], [54, 4452], [68, 4426], [86, 4398], [104, 4368], [116, 4344], [128, 4326]];
+    const FALL = [4522, 4506]; // the rock step (u, top to foot)
+    const water = [0x24666e, 0x34848a, 0x4c9e9c, 0x78c0b8];
+    const wet = new Uint8Array(W * L); // the stream's bed (the trail crosses it on the footbridge)
+    // (the banks first all along, then the water, so no bank covers the water beside it)
+    for (const pass of [0, 1])
+    for (let i = 0; i < STREAM.length - 1; i++) {
+      const [ax, au] = STREAM[i];
+      const [bx, bu] = STREAM[i + 1];
+      const n = Math.ceil(Math.hypot(bx - ax, bu - au));
+      for (let k = 0; k <= n; k++) {
+        const x = ax + ((bx - ax) * k) / n;
+        const u = au + ((bu - au) * k) / n;
+        const w = 2.3 + (i / STREAM.length) * 1.6;
+        for (let yy = Math.floor(Y(u) - w - 2); yy <= Y(u) + w + 2; yy++)
+          for (let xx = Math.floor(x - w - 2); xx <= x + w + 2; xx++) {
+            if (K(xx, yy) !== 2) continue;
+            const d = Math.hypot(xx + 0.5 - x, yy + 0.5 - Y(u));
+            const nz = fbm(xx, yy, { seed: 61, scale: 3 });
+            if (pass && d < w) img.set(xx, yy, nz > 0.78 ? 0xe0f2ee : rampColor(water, 0.25 + nz * 0.7, xx, yy)); // riffles catching the light
+            else if (!pass && d < w + 1.6) img.set(xx, yy, fbm(xx, yy, { seed: 62, scale: 2 }) > 0.66 ? rampColor(C.rock, 0.55, xx, yy) : 0x2c3a22); // dark wet banks, a boulder here and there
+          }
+        if (!pass) continue;
+        reserveRect(x - w - 1, Y(u) - w - 1, w * 2 + 2, w * 2 + 2);
+        for (let yy = Math.floor(Y(u) - w); yy <= Y(u) + w; yy++) for (let xx = Math.floor(x - w); xx <= x + w; xx++) if (xx >= 0 && xx < W) wet[yy * W + xx] = 1;
+      }
+    }
+    // the rock step across the gorge: a ragged lip, layers of limestone streaked with moss, darker at its foot;
+    // the pool below, rimmed with rock; the falls themselves are live (below), with their spray
+    for (let x = 8; x <= 52; x++) {
+      const half = 22 - Math.abs(x - 30);
+      if (half < 0) continue;
+      const lip = FALL[0] + Math.round((fbm(x, 0, { seed: 64, scale: 4 }) - 0.5) * 4) + Math.min(4, half * 0.4);
+      const foot = FALL[1] + Math.round((fbm(x, 9, { seed: 64, scale: 3 }) - 0.5) * 3);
+      for (let u = foot; u <= lip; u++) {
+        const y = Y(u);
+        if (K(x, y) !== 2) continue;
+        const t = (u - foot) / Math.max(1, lip - foot); // 0 at the foot, 1 at the lip
+        let c = rampColor(C.rock, 0.1 + t * 0.75 + (fbm(x, y, { seed: 65, scale: 2 }) - 0.5) * 0.35, x, y);
+        if ((u - foot) % 4 === 0 && t < 0.9) c = scaleColor(c, 0.75); // the strata
+        if (fbm(x, y, { seed: 66, scale: 3 }) > 0.64) c = rampColor(C.scrub, 0.3 + t * 0.5, x, y); // moss and ferns
+        if (u === lip) c = scaleColor(c, 1.2);
+        img.set(x, y, c);
+      }
+    }
+    for (let yy = Y(FALL[1] + 1); yy <= Y(FALL[1] - 15); yy++)
+      for (let xx = 16; xx <= 46; xx++) {
+        const n = (fbm(xx, yy, { seed: 67, scale: 4 }) - 0.5) * 0.5;
+        const d = ((xx + 0.5 - 31) / 10.5) ** 2 + ((yy + 0.5 - Y(FALL[1] - 6)) / 7) ** 2 + n;
+        if (d < 1) img.set(xx, yy, d > 0.86 ? rampColor(C.rock, 0.3 + fbm(xx, yy, { seed: 68, scale: 2 }) * 0.4, xx, yy) : rampColor([0x14424e, 0x1e5a66, 0x2c7078, 0x4a9696], 0.1 + (1 - d) * 0.55 + fbm(xx, yy, { seed: 65, scale: 3 }) * 0.25, xx, yy));
+      }
+    for (let k = 0; k < 18; k++) img.set(27 + (k % 7), Y(FALL[1] - 1) + Math.floor(k / 7), 0xe8f6f4, 0.85); // churned white where it lands
+    reserveRect(10, Y(FALL[0] + 6), 42, 36);
+    {
+      const fx0 = 28;
+      const fy0 = Y(FALL[0] + 1);
+      const fh = Y(FALL[1] - 1) - fy0;
+      const frames = [0, 1, 2].map((f) => {
+        const out = new Window(fx0, fy0, 6, fh);
+        for (let j = 0; j < fh; j++)
+          for (let i = 0; i < 6; i++) {
+            const streak = (j + f * 3 + i * 5) % 7;
+            const edge = i === 0 || i === 5;
+            if (edge && (j + i + f) % 3 === 0) continue;
+            out.set(fx0 + i, fy0 + j, streak < 2 ? 0xffffff : edge ? 0xa8d8dc : 0xd8f0f2, edge ? 0.8 : 1);
+          }
+        return gradeF(out);
+      });
+      kit.loop(fx0, U(fy0), frames, { fps: 9 });
+      const spray = [3, 4, 5].map((r) => [0, 1].map((v) => kit.frame(puff(r, r * 7 + v + 31, [0xc8dcdc, 0xdcecec, 0xeef8f8, 0xffffff]))));
+      kit.emit(31, FALL[1] - 3, spray, { rate: 2.2, life: [0.9, 1.6], vy: 5, sx: 4, wf: 0.4, a: 0.55 });
+      const ripple = [3, 5, 7].map((r) => {
+        const out = new Raster(r * 2 + 3, r + 3);
+        for (let a = 0; a < Math.PI * 2; a += 0.08) out.set(Math.round(r + 1 + Math.cos(a) * r), Math.round(r / 2 + 1 + Math.sin(a) * r * 0.5), 0xe8f6f6, 0.6);
+        return gradeF(out);
+      });
+      kit.spot([[25, FALL[1] - 2, 12, 6]], ripple, { rate: 1.6, fps: 5, a: 0.8 });
+    }
+    // the trail from the road to the falls: over the stream on a suspension footbridge, to a viewing deck
+    const trail = [[roadX(4470) - 4, 4470], [60, 4471], [50, 4474], [38, 4476], [24, 4490], [16, 4500]];
+    for (let i = 0; i < trail.length - 1; i++) {
+      const [ax, au] = trail[i];
+      const [bx, bu] = trail[i + 1];
+      const n = Math.ceil(Math.hypot(bx - ax, bu - au));
+      for (let k = 0; k <= n; k++) {
+        const x = Math.round(ax + ((bx - ax) * k) / n);
+        const y = Y(au + ((bu - au) * k) / n);
+        if (x < 0 || x >= W || wet[y * W + x]) continue; // (the stream: the footbridge goes over it below)
+        img.set(x, y, 0x8a6a44);
+        img.set(x, y + 1, 0x6a5034);
+        reserveRect(x - 2, y - 2, 5, 5);
+      }
+    }
+    {
+      // the footbridge: planks between two red-painted cables, its shadow on the water
+      const [x0, y0, x1, y1] = [52, Y(4473), 41, Y(4475)];
+      const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+      for (let k = 0; k <= n; k++) {
+        const x = Math.round(x0 + ((x1 - x0) * k) / n);
+        const y = Math.round(y0 + ((y1 - y0) * k) / n);
+        img.set(x + 1, y + 3, 0x0a1a1a, 0.35);
+        img.set(x, y, k % 2 ? 0xb08a58 : 0x8a6a40);
+        img.set(x, y - 1, 0xc83a2a);
+        img.set(x, y + 1, 0xc83a2a);
+      }
+      // the viewing deck at the end of the trail
+      img.rect(12, Y(4502), 7, 5, 0x9a7a4a);
+      img.rect(12, Y(4502), 7, 1, 0xb89a68);
+      img.rect(12, Y(4502) + 4, 7, 1, 0x6a5034);
+    }
+    // the road: asphalt with white edge lines, a bridge over the stream; kuina warning signs beside it
+    for (let u = ROAD[0]; u <= ROAD[1] + 12; u++) {
+      const y = Y(u);
+      const cx = roadX(u);
+      for (let x = Math.floor(cx - 4); x <= cx + 4; x++) {
+        if (K(x, y) === 0) continue;
+        const dx = x + 0.5 - cx;
+        let c = rampColor(C.asphalt, fbm(x, y, { seed: 66, scale: 3 }), x, y);
+        if (Math.abs(dx) > 3.2) c = rampColor(C.redEarth, 0.5, x, y);
+        else if (Math.abs(Math.abs(dx) - 2.6) < 0.5) c = 0xd8d8d0;
+        else if (Math.abs(dx) < 0.5 && u % 8 < 4) c = 0xe8e4d0;
+        img.set(x, y, c);
+      }
+      reserveRect(cx - 6, y, 12, 1);
+    }
+    {
+      // where the stream passes under it: concrete railings either side
+      const bu = 4419;
+      const bx = roadX(bu);
+      for (const dx of [-5, 5]) img.rect(Math.round(bx + dx), Y(bu + 5), 1, 10, 0xe0ded6);
+    }
+    for (const [u, side] of [[3990, 1], [4250, -1], [4560, 1]]) {
+      const sx = Math.round(roadX(u) + side * 7);
+      const sy = Y(u);
+      img.set(sx + 1, sy + 2, 0x101410, 0.5);
+      img.rect(sx - 1, sy - 1, 3, 3, 0xf0c818);
+      img.set(sx - 1, sy - 1, 0x2a2a20);
+      img.set(sx + 1, sy - 1, 0x2a2a20);
+      img.set(sx - 1, sy + 1, 0x2a2a20);
+      img.set(sx + 1, sy + 1, 0x2a2a20);
+      img.set(sx, sy, 0x1a1a14); // the bird on the sign
+      reserveRect(sx - 2, sy - 2, 5, 5);
+    }
+    // kuina darting across the road now and then
+    const kuina = (f) => {
+      const r = new Raster(5, 4);
+      r.rect(0, 0, 3, 2, 0x4a4434);
+      r.set(1, 0, 0x5e5640);
+      r.set(3, 0, 0xd8302a); // red bill
+      r.set(4, 1, 0xd8302a);
+      r.set(0, 2, 0x2a2a2a);
+      r.set(1, 2, 0xe8e8e8);
+      r.set(2, 2, 0x2a2a2a);
+      r.set(f ? 1 : 0, 3, 0xd8302a); // red legs
+      r.set(f ? 2 : 3, 3, 0xd8302a);
+      return gradeF(r);
+    };
+    for (const u of [4010, 4180, 4290, 4520])
+      kit.path([[roadX(u) - 12, u], [roadX(u) + 12, u + 3]], [kuina(0), kuina(1)], { sp: 7, mode: 'pp', hold: 4 + yr() * 4, turn: 'flip', fps: 8, s0: yr() });
+    // mist drifting over the canopy
+    const mist = [12, 15, 18].map((r, i) => kit.frame(puff(r, 71 + i * 13, [0xc8d4d0, 0xd8e2de, 0xe6eeea, 0xf4f8f6])));
+    for (const [u, s0] of [[3960, 0.2], [4120, 0.7], [4310, 0.4], [4480, 0.9], [4600, 0.1]])
+      kit.path([[-40, u], [220, u + 20]], mist, { sp: 2.5, n: 2, gap: 130, turn: 'none', fps: 0.2, a: 0.32, d: 0.7, fx: 1, s0 });
+  }
+
+  // ------------------------------------------------------------ G. the Kōri bridge and Kōri island
+  // The two-kilometre Kōri Ōhashi runs straight over the emerald shallows from the north coast to the island:
+  // two lanes, lamp posts, its shadow on the water, cars crossing. On the island: red roofs, cane, and on the
+  // north shore Tinu beach with the two Heart Rocks standing in the water.
+  {
+    const kb = rng(2211);
+    const B0 = 4628;
+    const B1 = 5032;
+    for (let u = B0; u <= B1; u++) {
+      const y = Y(u);
+      const wet = K(91, y) === 0;
+      if (wet) for (let x = 97; x <= 99; x++) img.set(x, y + 3, 0x0a1a2a, x === 99 ? 0.15 : 0.3); // its shadow
+      if (wet && u % 34 === 0) img.rect(91, y + 2, 3, 2, 0x0a1a2a, 0.3); // a pier's shadow under the deck
+      for (let x = 86; x <= 96; x++) {
+        let c = x === 86 || x === 96 ? 0xe4e2da : x === 87 || x === 95 ? 0x9a9890 : rampColor(C.asphalt, 0.4 + fbm(x, y, { seed: 67, scale: 3 }) * 0.4, x, y);
+        if (x === 91 && u % 8 < 4) c = 0xe8e4d0;
+        img.set(x, y, c);
+      }
+      if (u % 26 === 0) {
+        img.set(86, y, 0x4a4a52);
+        img.set(96, y, 0x4a4a52);
+        img.set(87, y, 0xfff0c0);
+        img.set(95, y, 0xfff0c0);
+      }
+    }
+    reserveRect(83, Y(B1 + 2), 17, B1 - B0 + 4);
+    // the island road from the bridge round to the parking by Tinu beach
+    const iroad = [[91, B1], [100, 5064], [112, 5092], [124, 5118], [130, 5132]];
+    for (let i = 0; i < iroad.length - 1; i++) {
+      const [ax, au] = iroad[i];
+      const [bx, bu] = iroad[i + 1];
+      const n = Math.ceil(Math.hypot(bx - ax, bu - au));
+      for (let k = 0; k <= n; k++) {
+        const x = ax + ((bx - ax) * k) / n;
+        const y = Y(au + ((bu - au) * k) / n);
+        for (let xx = Math.floor(x - 3); xx <= x + 3; xx++) if (K(xx, Math.round(y)) === 2) img.set(xx, Math.round(y), Math.abs(xx + 0.5 - x) > 2.4 ? 0xb8b4a8 : rampColor(C.asphalt, 0.5, xx, y));
+        reserveRect(x - 5, y - 1, 10, 3);
+      }
+    }
+    img.rect(126, Y(5140), 12, 7, 0x6a6c70); // the parking
+    for (let i = 0; i < 4; i++) img.rect(127 + i * 3, Y(5140) + 1, 1, 5, 0xd8d8d0);
+    reserveRect(124, Y(5142), 16, 11);
+    // houses and cane fields
+    for (let n = 0, tries = 0; n < 7 && tries < 400; tries++) {
+      const hw = 12 + Math.floor(kb() * 5);
+      const hh = 9 + Math.floor(kb() * 3);
+      const hx = 60 + Math.floor(kb() * 110);
+      const hy = Y(5040 + Math.floor(kb() * 110));
+      let ok = true;
+      for (let yy = hy - 2; yy < hy + hh + 6 && ok; yy++) for (let xx = hx - 2; xx < hx + hw + 2 && ok; xx++) if (K(xx, yy) !== 2 || isRes(xx, yy)) ok = false;
+      if (!ok) continue;
+      house(hx, hy, hw, hh);
+      n++;
+    }
+    for (const [fx, fu, fw, fh] of [[118, 5076, 22, 14], [84, 5074, 16, 12]]) {
+      const fy = Y(fu);
+      for (let yy = fy; yy < fy + fh; yy++)
+        for (let xx = fx; xx < fx + fw; xx++) if (K(xx, yy) === 2 && !isRes(xx, yy)) img.set(xx, yy, C.cane[(xx + Math.floor(yy / 2)) % 3]);
+      for (let yy = fy; yy < fy + fh; yy++)
+        for (let xx = fx; xx < fx + fw; xx++)
+          if (K(xx, yy) === 2) {
+            cane[yy * W + xx] = 1;
+            reserved[yy * W + xx] = 1;
+          }
+    }
+    // the Heart Rocks: two limestone stacks with scrub on top, undercut by the waves, in the shallows
+    for (const [rx, ru, r] of [[130, 5153, 4.5], [140, 5157, 5.5]]) {
+      const ry = Y(ru);
+      img.disc(rx + 2, ry + 3, r, 0x0a1a2a, 0.35);
+      img.disc(rx, ry, r, C.rock[1]);
+      img.disc(rx - 0.5, ry - 0.8, r - 1.2, C.rock[2]);
+      img.disc(rx - 0.8, ry - 1.2, r - 2.2, C.scrub[2]);
+      img.set(Math.round(rx - 1), Math.round(ry - 2), C.scrub[3]);
+      for (let a = 0; a < Math.PI * 2; a += 0.35) if (kb() < 0.5) img.set(Math.round(rx + Math.cos(a) * (r + 1)), Math.round(ry + Math.sin(a) * (r + 0.6)), C.foam, 0.8);
+    }
+    // cars crossing: up the Yanbaru road, over the bridge, round the island to the beach and back
+    const car = (c, up) => {
+      const r = new Raster(4, 6);
+      r.rect(1, 1, 3, 5, 0x101820, 0.3);
+      r.rect(0, 0, 3, 5, c);
+      r.rect(0, up ? 1 : 2, 3, 1, 0x2a3a4a); // the windscreen
+      r.rect(0, up ? 4 : 0, 3, 1, scaleColor(c, 0.75));
+      r.set(1, 2 + (up ? 0 : 0), scaleColor(c, 1.15));
+      return gradeF(r);
+    };
+    const route = [];
+    for (let u = ROAD[0]; u < B0; u += 16) route.push([Math.round(roadX(u)) - 2, u]);
+    route.push([89, B0], [89, B1], ...iroad.slice(1).map(([x, u]) => [x - 1, u]));
+    for (const [c, s0] of [[0xf0f0f0, 0.35], [0xd8343a, 0.62], [0x3a6ac8, 0.82], [0x2a2a30, 0.15]])
+      kit.path(route, [car(c, true)], { sp: 16, mode: 'pp', hold: 3, turn: 'none', fu: [car(c, true)], fd: [car(c, false)], s0 });
+  }
+
   // ------------------------------------------------------------ H/I. sea islets, boats, lighthouse island
-  for (const [iu, ix, R] of ISLETS.slice(3, 6)) isletDecor(iu, ix, R, 2 + Math.floor(R / 7));
+  for (const [iu, ix, R] of ISLETS.filter((i) => !i[3])) isletDecor(iu, ix, R, 2 + Math.floor(R / 7));
   boat(70, 4780, 9, 0xf2eee0);
-  ferry(96, 5120);
+  ferry(20, 5650);
   boat(150, 5520, 8, 0xe04a2a);
   boat(40, 5930, 9, null);
   {
-    const [iu, ix] = ISLETS[6];
+    const [iu, ix] = ISLETS.find((i) => i[3] === 'l');
     const lx = ix;
     const ly = Y(iu + 6);
     objects.push({
@@ -1414,6 +1932,7 @@ export function buildMid() {
 
   // ------------------------------------------------------------ vegetation
   const kindsAt = (u) => {
+    if (u < MAIN_S - 30) return [['tropic', 0.55], ['fern', 0.85], ['palm', 1]]; // the Kerama forest
     if (u < MAIN_S + 400) return [['palm', 0.45], ['hibiscus', 0.65], ['tropic', 1]];
     if (u < VILLAGE[1]) return [['fukugi', 0.5], ['tropic', 0.8], ['banana', 1]];
     if (u < FIELDS[1]) return [['fukugi', 0.6], ['tropic', 1]];
@@ -1562,8 +2081,119 @@ export function buildMid() {
     };
     const tf = [turtle(0), turtle(1)];
     kit.wander(92, 320, 34, 76, tf, { n: 2, sp: 4, idle: 0.1, fps: 1.5, a: 0.45, d: -0.4 });
-    kit.wander(70, 5100, 28, 110, tf, { n: 2, sp: 4, idle: 0.1, fps: 1.5, a: 0.45, d: -0.4 });
+    kit.wander(60, 5330, 30, 90, tf, { n: 2, sp: 4, idle: 0.1, fps: 1.5, a: 0.45, d: -0.4 });
     kit.wander(60, 5960, 30, 60, tf, { n: 1, sp: 4, idle: 0.1, fps: 1.5, a: 0.45, d: -0.4 });
+  }
+  // life in the open sea past the Kōri bridge: schools of fish and manta rays gliding under the surface,
+  // humpback whales (they winter round Okinawa) breaching, blowing and showing their flukes
+  {
+    const shade = 0x0e2a34;
+    const school = (f) => {
+      const out = new Raster(14, 10);
+      const fr = rng(400 + f);
+      for (let i = 0; i < 16; i++) {
+        const a = fr() * Math.PI * 2;
+        const d = Math.sqrt(fr()) * 4.2;
+        const x = Math.round(7 + Math.cos(a) * d * 1.4 + (f ? (fr() - 0.5) : 0));
+        const y = Math.round(5 + Math.sin(a) * d * 0.9);
+        out.set(x, y, shade);
+        out.set(x - 1, y, shade, 0.6);
+      }
+      return gradeF(out);
+    };
+    const sf = [school(0), school(1)];
+    for (const [x, u, rx, ry] of [[80, 5300, 50, 90], [110, 5980, 40, 70], [60, 6700, 44, 120]]) kit.wander(x, u, rx, ry, sf, { n: 1, sp: 9, idle: 0, fps: 2, a: 0.4, d: -0.4 });
+    const manta = (f) => {
+      const out = new Raster(13, 13);
+      const span = f ? 5 : 6;
+      for (let j = -span; j <= span; j++) {
+        const w = Math.round(4 - Math.abs(j) * (4 / span) * 0.9);
+        for (let i = -w; i <= Math.max(0, w - 1); i++) out.set(6 + i, 6 + j, shade);
+      }
+      out.set(10, 5, shade); // the horns
+      out.set(10, 7, shade);
+      for (let i = 1; i <= 4; i++) out.set(6 - 4 - i, 6, shade, 0.7); // the tail
+      return gradeF(out);
+    };
+    const mf = [manta(0), manta(1)];
+    kit.path([[-20, 5180], [80, 5240], [190, 5200]], mf, { sp: 6, turn: 'rot', fps: 1.2, a: 0.42, d: -0.4 });
+    kit.path([[200, 5700], [100, 5660], [-20, 5720]], mf, { sp: 5, turn: 'rot', fps: 1, a: 0.42, d: -0.4 });
+    kit.path([[-20, 6500], [90, 6440], [200, 6520]], mf, { sp: 6, turn: 'rot', fps: 1.2, a: 0.42, d: -0.4 });
+    // a humpback breaching: its shape rising, the leap (long white flippers out), the crash and the foam
+    const S = 23;
+    const whale = (k) => {
+      const out = new Raster(S, S);
+      const c = 11;
+      const spray = (r, n, a) => {
+        for (let i = 0; i < n; i++) {
+          const ang = (i / n) * Math.PI * 2;
+          const rr = r + ((i * 7) % 3) - 1;
+          out.set(Math.round(c + Math.cos(ang) * rr), Math.round(c + Math.sin(ang) * rr * 0.8), 0xf4fafa, a);
+        }
+      };
+      const body = (len, wide, fins) => {
+        for (let j = -len; j <= len; j++) {
+          const w = Math.round(wide * Math.sqrt(1 - (j / (len + 1)) ** 2));
+          for (let i = -w; i <= w; i++) out.set(c + i, c + j, i > w - 1 ? 0x8a98a4 : j < -len + 2 ? 0x2a3440 : 0x3a4654);
+        }
+        if (fins)
+          for (let t = 1; t <= 6; t++)
+            for (const s of [-1, 1]) out.set(c + s * (wide + t), c - 2 + Math.round(t * 0.6), t > 4 ? 0xe8eef0 : 0xd0d8dc);
+      };
+      if (k === 0) out.ellipse(c, c, 3, 7, 0x0a1e2a, 0.35);
+      if (k === 1) {
+        out.ellipse(c, c, 3, 7, 0x0a1e2a, 0.4);
+        spray(4, 10, 0.8);
+      }
+      if (k === 2) {
+        body(4, 2, false);
+        spray(6, 14, 0.9);
+      }
+      if (k === 3) {
+        body(8, 3, true);
+        spray(8, 16, 0.7);
+      }
+      if (k === 4) {
+        out.disc(c + 0.5, c + 0.5, 7, 0xf4fafa, 0.9);
+        out.disc(c + 0.5, c + 0.5, 4, 0xffffff);
+        spray(9, 18, 0.8);
+      }
+      if (k === 5) {
+        for (let r = 6; r <= 9; r++) spray(r, 22, r === 9 ? 0.8 : 0.4);
+        out.disc(c + 0.5, c + 0.5, 3, 0xe8f6f6, 0.6);
+      }
+      if (k === 6) spray(10, 24, 0.5);
+      if (k === 7) spray(10.5, 12, 0.3);
+      return gradeF(out);
+    };
+    const breach = [0, 0, 1, 2, 3, 3, 4, 5, 6, 7].map(whale);
+    // a fluke rising out of the water and slipping back under (the dive), and a blow: a puff of spray
+    const fluke = (k) => {
+      const out = new Raster(15, 9);
+      const h = [1, 2, 3, 3, 2, 1, 0][k];
+      if (h) {
+        for (let i = 1; i <= 6; i++)
+          for (const s of [-1, 1]) for (let j = 0; j < Math.min(h, 2); j++) out.set(7 + s * i, 3 + j - Math.round((i / 6) * 1.5) + 1, i > 4 ? 0x2a3440 : 0x3a4654);
+        out.rect(7, 4, 1, h + 1, 0x3a4654);
+        out.set(7, 2, 0xd8e0e4);
+      }
+      for (let i = -4 + (k > 3 ? -2 : 0); i <= 4 + (k > 3 ? 2 : 0); i++) if ((i + k) % 2 === 0) out.set(7 + i, 7, 0xf0f8f8, 0.7);
+      return gradeF(out);
+    };
+    const dive = [0, 1, 2, 3, 3, 4, 5, 6].map(fluke);
+    const blow = [2, 3, 4, 4].map((r, i) => {
+      const out = new Raster(11, 11);
+      for (let n = 0; n < 14; n++) {
+        const a = n * 2.4;
+        const d = (n % 4) * (r / 4) + 0.5;
+        out.set(Math.round(5 + Math.cos(a) * d), Math.round(5 + Math.sin(a) * d), 0xf8fcfc, i === 3 ? 0.4 : 0.85);
+      }
+      return gradeF(out);
+    });
+    const open = [[10, 5640, 160, 140], [30, 6080, 120, 120], [20, 6960, 140, 160]];
+    kit.spot(open, breach, { rate: 0.07, fps: 6, a: 0.95 });
+    kit.spot(open, dive, { rate: 0.08, fps: 4, a: 0.9 });
+    kit.spot(open, blow, { rate: 0.12, fps: 5, a: 0.9 });
   }
   // gusts over the cane fields: the long leaves flash pale, a patch at a time, in waves across the farm
   for (let y0 = Y(NAHA[0]); y0 < Y(FIELDS[0]); y0 += 16)

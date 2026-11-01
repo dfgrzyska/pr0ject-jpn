@@ -11,10 +11,12 @@
 // At time t the top edge of the screen shows u = anchor + mid * t (see src/data/stage1.json).
 // The ridge sections are transparent beside the ridge: the far layer (the valley) shows through.
 //
-// Live (see ../props.mjs): the Kamo and Katsura flow, boats row below Togetsukyō, gusts of wind sweep the
-// bamboo grove, the Golden Pavilion's reflection ripples and koi swim in its pond, Otowa's three streams
-// run, rickshaws pull through Gion and the bamboo grove, the nobori banners flutter, and the fires of
-// the 大 flicker and smoke.
+// Live (see ../props.mjs): the Kamo and Katsura flow with rafts of fallen petals on them, boats row below
+// Togetsukyō, gusts of wind sweep the bamboo grove, the Golden Pavilion's reflection ripples and koi swim in
+// its pond, Otowa's three streams run, rickshaws pull through Gion and the bamboo grove, maiko under red
+// umbrellas and tourists stroll Hanamikōji, pilgrims climb through the torii tunnels, a fox slips between
+// the stone monuments under shafts of sunlight, the nobori banners flutter, and the fires of the 大
+// flicker and smoke. Hanami picnics on blue tarps under the sakura at Arashiyama and below Kiyomizu.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -644,6 +646,27 @@ export function buildMid() {
     }
   }
 
+  /**
+   * Hanaikada, "flower rafts": clumps of fallen sakura petals drifting down a river between u0 and u1 (dir 1 =
+   * to the right), passing under the bridges in the middle.
+   */
+  function petalRafts(u0, u1, dir, gu, seed) {
+    const pr = rng(seed);
+    const raft = () => {
+      const out = new Raster(9, 4);
+      for (let i = 0; i < 18; i++) {
+        const x = Math.floor(pr() * 9);
+        const y = Math.floor(pr() * 4);
+        if (Math.abs(x - 4) / 4.5 + Math.abs(y - 1.5) / 2 < 1.1) out.set(x, y, pr() < 0.6 ? 0xf6c8d4 : 0xffe6ee);
+      }
+      return kit.frame(gradeAt(out, gu));
+    };
+    const f = [raft(), raft(), raft()];
+    for (let u = u0, k = 0; u <= u1; u += 11, k++)
+      for (const [a, b] of [[-12, 76], [104, 192]])
+        kit.path(dir > 0 ? [[a, u], [b, u]] : [[b, u], [a, u]], [f[k % 3]], { sp: 4 + pr() * 3, n: 1, turn: 'none', s0: pr() });
+  }
+
   // ------------------------------------------------------------ A. Gion (u 0..540)
   {
     fillGround(0, Y(GION[1]), W, GION[1], [0x4e4a46, 0x5a5650, 0x66625a], 3, 4);
@@ -658,6 +681,28 @@ export function buildMid() {
     reserveRect(76, Y(GION[1]), 28, GION[1]);
     // live: rickshaws pulled up and down Hanamikōji
     for (const [x, s0] of [[85, 0.2], [93, 0.7]]) kit.path([[x, 30], [x, 520]], [rickshawFrame(false, 200)], { sp: 9, mode: 'pp', hold: 2, turn: 'none', fd: [rickshawFrame(false, 200)], fu: [rickshawFrame(true, 200)], s0 });
+    // live: maiko under their red paper umbrellas and tourists strolling along Hanamikōji
+    {
+      const wagasa = (c) => {
+        const out = new Raster(6, 6);
+        out.disc(3, 3, 2.6, c);
+        for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) out.set(Math.round(2.5 + Math.cos(a) * 2), Math.round(2.5 + Math.sin(a) * 2), scaleColor(c, 0.75));
+        out.set(2, 2, 0xf0e0b0); // the boss of the umbrella
+        out.set(5, 5, 0x101418, 0.4);
+        return kit.frame(gradeAt(out, 260));
+      };
+      const tourist = (c, f) => {
+        const out = new Raster(2, 4);
+        out.set(0, 0, 0x2a2024);
+        out.set(0, 1, c);
+        out.set(0, 2, f ? scaleColor(c, 0.8) : c);
+        out.set(1, 3, 0x101418, 0.4);
+        return kit.frame(gradeAt(out, 260));
+      };
+      for (const [x, c, s0] of [[82, 0xc8302a, 0.15], [97, 0xe0803a, 0.6], [83, 0xb83a6a, 0.85]]) kit.path([[x, 24], [x, 526]], [wagasa(c)], { sp: 2.2, mode: 'pp', hold: 4, turn: 'none', s0 });
+      for (const [x, c, s0] of [[89, 0x3a6ad0, 0.3], [96, 0xe8e8f0, 0.5], [81, 0xe8c040, 0.75], [90, 0x6aaa5a, 0.05]])
+        kit.path([[x, 24], [x, 526]], [tourist(c, 0), tourist(c, 1)], { sp: 3.5, mode: 'pp', hold: 2, turn: 'none', fps: 3, s0 });
+    }
     // the Shirakawa canal across the district: stone walls, willows, the little Tatsumi bridge and shrine
     const k0 = 172;
     const k1 = 184;
@@ -742,6 +787,7 @@ export function buildMid() {
     for (let i = 0; i < 60; i++) img.set(Math.floor(rand() * W), Y(w0 + 1 + Math.floor(rand() * (w1 - w0 - 2))), rand() < 0.5 ? 0xf0b8c8 : 0xd88aa4);
     reserveRect(0, Y(KAMO[1]), W, KAMO[1] - KAMO[0]);
     flow(w0 + 4, w1 - 4, 1, 600);
+    petalRafts(w0 + 8, w1 - 8, 1, 600, 1171);
     // the turtle stepping stones across the river
     for (let u = w0 + 3; u < w1 - 2; u += 7) {
       const x = 30 + ((u / 7) % 2 ? 2 : 0);
@@ -988,6 +1034,52 @@ export function buildMid() {
         otsuka(x, y, 3 + Math.floor(rand() * 3), 4 + Math.floor(rand() * 5));
         if (rand() < 0.6) miniGate(x + 2, y + 6, 2 + Math.floor(rand() * 2));
       }
+    // live: pilgrims climbing and coming down through the tunnels, glimpsed between the gates; a fox slipping
+    // between the stone monuments; shafts of sunlight slanting through the trees on the slopes
+    {
+      const er = rng(1181);
+      const pilgrim = (c) => {
+        const out = new Raster(1, 3);
+        out.set(0, 0, 0x2a2024);
+        out.set(0, 1, c);
+        out.set(0, 2, scaleColor(c, 0.75));
+        return kit.frame(gradeAt(out, 2260));
+      };
+      const along = (u0, u1, fx) => {
+        const pts = [];
+        for (let u = u0; u <= u1; u += 16) pts.push([Math.round(fx(u)), u]);
+        return pts;
+      };
+      const routes = [along(1846, 2134, pathX), along(2150, 2570, (u) => pathX(u) - split(u)), along(2150, 2570, (u) => pathX(u) + split(u)), along(2586, 2684, pathX)];
+      for (const [i, pts] of routes.entries())
+        for (const c of [0xe8e8f0, 0x3a3a4a, 0xd04040].slice(0, i === 3 ? 1 : 2)) kit.path(pts, [pilgrim(c)], { sp: 3, mode: 'pp', hold: 4, turn: 'none', s0: er() });
+      const foxF = (f) => {
+        const out = new Raster(8, 4);
+        out.rect(2, 1, 4, 2, 0xd8783a);
+        out.set(6, 0, 0xd8783a); // the head, ears up
+        out.set(7, 1, 0xd8783a);
+        out.set(6, 1, 0xf0d8b8);
+        out.rect(0, 1, 2, 1, 0xd8783a); // the brush
+        out.set(0, 0, 0xf4f0e8);
+        out.set(f ? 2 : 3, 3, 0x3a2a20);
+        out.set(f ? 5 : 4, 3, 0x3a2a20);
+        return kit.frame(gradeAt(out, 2350));
+      };
+      kit.wander(pathX(2350) - 30, 2350, 10, 160, [foxF(0), foxF(1)], { n: 1, sp: 7, idle: 0.5, turn: 'flip', fps: 6 });
+      const shaft = (len) => {
+        const out = new Raster(len, Math.ceil(len * 0.6) + 4);
+        for (let k = 0; k < len; k++)
+          for (let w = 0; w < 4; w++) out.set(k, Math.round(k * 0.6) + w, 0xfff2d0, (w === 0 || w === 3 ? 0.4 : 0.8) * (1 - k / len) ** 0.5);
+        return kit.frame(out);
+      };
+      const shafts = [shaft(26), shaft(34)];
+      const parts = [];
+      for (let u = 1880; u < 2680; u += 46) {
+        const side = parts.length % 2 ? 1 : -1;
+        parts.push([parts.length % 2, Math.round(pathX(u) + side * 24 - (side < 0 ? 26 : 0)), u, er() * 6]);
+      }
+      kit.wave(shafts, parts, { w: 0.35, a0: 0, a1: 0.32, pw: 2, d: 0.6 });
+    }
   }
 
   // ------------------------------------------------------------ F. Arashiyama (u 2700..3500)
@@ -1031,6 +1123,7 @@ export function buildMid() {
       }
     reserveRect(0, Y(3440), W, 110);
     flow(3338, 3432, -1, 3390);
+    petalRafts(3344, 3426, -1, 3390, 1173);
     objects.push({
       y: Y(3326),
       shadow: () => shadowRect(84, Y(3440) + 3, 16, 110, 0.55),
@@ -1487,6 +1580,38 @@ export function buildMid() {
         if (d > 10) continue;
         img.set(xx, yy, d > 8.5 ? C.stone[0] : rampColor(C.gravel, 0.3 + fbm(xx, yy, { seed: 2, scale: 3 }) * 0.5, xx, yy));
       }
+  }
+
+  // ------------------------------------------------------------ hanami: picnics on blue tarps under the sakura
+  // (Arashiyama's river bank, the valley below Kiyomizu): people sitting round the edge, bento boxes and cups
+  // in the middle, shoes left at the edge, a cherry tree spreading over each
+  {
+    const hr = rng(1191);
+    let n = 0;
+    for (let tries = 0; tries < 600 && n < 9; tries++) {
+      const [ua, ub] = [[3262, 3330], [3440, 3496], [5040, 5300], [5640, 6240]][tries % 4];
+      const x = 10 + Math.floor(hr() * (W - 30));
+      const y = Y(ua + Math.floor(hr() * (ub - ua)));
+      let ok = true;
+      for (let yy = y - 9; yy < y + 17 && ok; yy++) for (let xx = x - 9; xx < x + 20 && ok; xx++) if (isRes(xx, yy) || !img.alpha(xx, yy)) ok = false;
+      if (!ok) continue;
+      for (let yy = 0; yy < 7; yy++) for (let xx = 0; xx < 11; xx++) img.set(x + xx + 1, y + yy + 1, 0x101418, 0.3);
+      for (let yy = 0; yy < 7; yy++)
+        for (let xx = 0; xx < 11; xx++) img.set(x + xx, y + yy, xx === 0 || yy === 0 || xx === 10 || yy === 6 ? 0x2a52b0 : (xx + yy) % 4 === 0 ? 0x5a8ae8 : 0x3a6ad0);
+      for (const [dx, dy] of [[1, 1], [5, 0], [9, 1], [10, 4], [1, 5], [6, 6]].filter(() => hr() < 0.75)) {
+        img.set(x + dx, y + dy, hr.pick([0xd04040, 0xe8e8f0, 0x3a3a4a, 0xe8c040, 0xe86a9a]));
+        img.set(x + dx, y + dy - 1, 0x2a2024);
+      }
+      img.rect(x + 4, y + 3, 2, 2, 0xc02a2a); // the bento
+      img.set(x + 4, y + 3, 0x1c1418);
+      img.set(x + 7, y + 3, 0xf4f4f0); // a sake bottle and cups
+      img.set(x + 7, y + 4, 0xf4f4f0);
+      img.set(x + 3, y + 5, 0xf0e8d0);
+      for (let k = 0; k < 4; k++) img.set(x + 2 + k * 2, y + 8, k % 2 ? 0x2a2024 : 0xe8e8e8); // shoes at the edge
+      reserveRect(x - 9, y - 9, 29, 26); // a clearing, so the crowns round it leave the picnic in sight
+      tree('sakura', x + (hr() < 0.5 ? -2 : 13), y - 4, 6.5 + hr() * 1.5);
+      n++;
+    }
   }
 
   // ------------------------------------------------------------ trees

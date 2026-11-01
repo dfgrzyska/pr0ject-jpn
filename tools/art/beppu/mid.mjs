@@ -5,13 +5,15 @@
 // cobalt Umi Jigoku with its red shrine and giant lily pads, the grey mud of Oniishibozu, Kamado's
 // coloured pools and its oni cook, the milky Shiraike), the crocodile pens of Oniyama with the red oni
 // statue, the monkey woods of Takasakiyama, the stone pit of the Tatsumaki geyser, and the blood-red
-// pond of Chinoike where the boss rises. Misty morning turning into a red dusk.
+// pond of Chinoike where the boss rises. Above Kannawa the thatched yu-no-hana huts of Myōban; the Tsurumi
+// ropeway strung over the monkey woods. Misty morning turning into a red dusk.
 //
 // The steam is live: only a wet patch and a low haze are painted at each source, the plumes themselves
 // are puffs the game keeps sending up (shaded like clouds, lit from the top left), swelling and bending
 // with the breeze. The hot pools bubble (the grey mud in "monks' heads"), waves wash the black sand,
-// boats cross the bay, trains pass the station, crocodiles swim in their pens and the macaques of
-// Takasakiyama wander their clearing (see ../props.mjs). Vents and turret pads come from the wave file.
+// boats cross the bay, trains pass the station, crocodiles swim in their pens, the macaques of
+// Takasakiyama wander their clearing, the ropeway's cabins glide over the woods and steam seeps from the
+// Myōban huts (see ../props.mjs). Vents and turret pads come from the wave file.
 // Coordinates: u = distance from the bottom of the strip (stage start), y = L - u.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -858,6 +860,44 @@ export function buildMid() {
       crowd(x + 16, Y(u + 28), 30, 10, 14, true);
       for (let k = 0; k < 5; k++) tree('broadleaf', x + 6 + rand() * 50, Y(u + 44 - rand() * 8), 4 + rand() * 2);
     }
+    // Myōban: terraces of thatched yu-no-hana huts on the slope above town, where the bath salts grow on beds
+    // of blue clay under the straw in the hot-spring gas; wisps of it seep out under the eaves
+    {
+      const mr = rng(6611);
+      const clay = [0x6a7a80, 0x7e8e94, 0x92a2a6];
+      for (let u = 3128; u < 3292; u++)
+        for (let x = 2; x < 56; x++) {
+          const y = Y(u);
+          if (vents.some((v) => Math.hypot(v.x - x, v.u - u) < 14)) continue;
+          img.set(x, y, (u - 3128) % 42 < 3 ? rampColor(C.stone, 0.5, x, y) : rampColor(clay, fbm(x, y, { seed: 162, scale: 4 }), x, y)); // the terrace walls, the clay
+          reserved[y * W + x] = 1;
+        }
+      for (let row = 0; row < 4; row++)
+        for (let col = 0; col < 3; col++) {
+          const hx = 4 + col * 17 + Math.floor(mr() * 2);
+          const hu = 3134 + row * 42 + 34;
+          const hy = Y(hu);
+          if (vents.some((v) => Math.hypot(v.x - (hx + 6), v.u - (hu - 14)) < 18)) continue;
+          objects.push({
+            y: hy + 30,
+            shadow: () => shadowRect(hx + 3, hy + 3, 13, 30, 0.55),
+            draw: () => {
+              // an A-frame of thatch from above: the lit slope and the shaded one meeting at the ridge
+              for (let yy = hy; yy < hy + 30; yy++)
+                for (let xx = hx; xx < hx + 13; xx++) {
+                  const left = xx < hx + 6;
+                  const straw = (yy * 3 + xx * (left ? 1 : -1)) % 4 === 0;
+                  let c = left ? (straw ? 0xc8a868 : 0xb89858) : straw ? 0x8a6e40 : 0x7a5e34;
+                  if (xx === hx + 6) c = 0x5a4428; // the ridge
+                  if (yy === hy || yy === hy + 29) c = scaleColor(c, 0.8);
+                  img.set(xx, yy, c);
+                }
+              for (const yy of [hy + 2, hy + 27]) img.rect(hx + 5, yy, 3, 1, 0x3a2a1a); // the gable ends
+            },
+          });
+          kit.emit(hx + (mr() < 0.5 ? 1 : 12), hu - 6 - Math.floor(mr() * 18), [2, 3].map(puffFrames), { rate: 0.7, life: [1.4, 2.2], vy: 5, sx: 1, wf: 0.6, a: 0.45, d: 1.1, tint: 1 });
+        }
+    }
     town(KANNAWA[0] + 4, 2376, { roofH: [9, 13], maxW: 20, pBlock: 0.08, pGarden: 0.1, roofs: [ROOF.kawara, ROOF.kawara, ROOF.dark, ROOF.dark, ROOF.brown, ROOF.blue] });
     town(2386, 2696, { roofH: [9, 13], maxW: 20, pBlock: 0.08, pGarden: 0.1, roofs: [ROOF.kawara, ROOF.dark, ROOF.dark, ROOF.brown, ROOF.blue, ROOF.red] });
     town(2706, 3006, { roofH: [9, 12], maxW: 20, pBlock: 0.1, pGarden: 0.12, roofs: [ROOF.kawara, ROOF.dark, ROOF.brown, ROOF.blue] });
@@ -1104,6 +1144,58 @@ export function buildMid() {
   }
 
   // ------------------------------------------------------------ F. Takasakiyama: woods full of monkeys, a temple
+  // (with the Tsurumi ropeway's cables strung high over the woods: pylons, stations at both ends, two red
+  // cabins gliding up and down with their shadows sliding over the trees below)
+  {
+    const R0 = [8, TAKASAKI[0] + 30];
+    const R1 = [168, TAKASAKI[1] - 20];
+    const at = (t) => [R0[0] + (R1[0] - R0[0]) * t, R0[1] + (R1[1] - R0[1]) * t];
+    for (const [x, u] of [R0, R1]) {
+      const y = Y(u);
+      objects.push({ y: y + 10, shadow: () => shadowRect(x - 5, y - 3, 14, 12, 0.55), draw: () => {
+        img.rect(x - 7, y - 5, 14, 10, 0x8a8c92);
+        img.rect(x - 7, y - 5, 14, 1, 0xa8aab0);
+        img.rect(x - 5, y - 2, 10, 4, 0x3a5a7a);
+      } });
+      reserveRect(x - 9, y - 7, 18, 14);
+    }
+    objects.push({
+      y: L + 1, // over everything: the cables run high above the trees
+      draw: () => {
+        const n = Math.ceil(Math.hypot(R1[0] - R0[0], R1[1] - R0[1]));
+        for (let k = 0; k <= n; k++) {
+          const [x, u] = at(k / n);
+          for (const off of [-2, 2]) {
+            img.set(Math.round(x + off), Y(u), 0xc8cad0); // steel catching the light
+            img.set(Math.round(x + off + 4), Y(u) + 6, 0x101410, 0.25); // their shadow far below
+          }
+        }
+        for (const t of [0.25, 0.5, 0.75]) {
+          const [x, u] = at(t);
+          const y = Y(u);
+          img.rect(Math.round(x) + 4, y + 4, 5, 5, 0x101410, 0.35);
+          img.rect(Math.round(x) - 3, y - 3, 7, 7, 0x6a6c72); // a lattice pylon
+          for (let k = -3; k < 4; k += 2) img.line(Math.round(x) - 3, y + k, Math.round(x) + 3, y - k, 0x9a9ca2);
+          img.rect(Math.round(x) - 5, y, 11, 1, 0x4a4a50);
+        }
+      },
+    });
+    const cabin = capture(0, 0, 6, 5, () => {
+      img.rect(0, 0, 6, 5, 0xc83a2a);
+      img.rect(0, 0, 6, 1, 0xe85a4a);
+      img.rect(1, 2, 4, 1, 0x2a3a5a);
+      img.set(2, 0, 0x2a2a30);
+      img.set(3, 0, 0x2a2a30);
+    }, 5900);
+    const shade = new Raster(6, 5);
+    shade.rect(0, 0, 6, 5, 0x101410);
+    const sf = kit.frame(shade);
+    const pts = [at(0.02), at(0.98)];
+    for (const s0 of [0.15, 0.85]) {
+      kit.path(pts, [cabin], { sp: 9, mode: 'pp', hold: 3, turn: 'none', d: 1.2, s0 });
+      kit.path(pts.map(([x, u]) => [x + 8, u - 12]), [sf], { sp: 9, mode: 'pp', hold: 3, turn: 'none', a: 0.3, d: 0.6, s0 });
+    }
+  }
   {
     // a stone stairway up the mountain
     for (let u = TAKASAKI[0]; u < TAKASAKI[1]; u++) {

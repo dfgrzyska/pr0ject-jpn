@@ -1,14 +1,15 @@
 // Middle layer (Sapporo, winter): the Ōkurayama ski jump at sunset, a suburb of tin-roofed houses,
-// the city centre with the Clock Tower and the red-brick Akarenga, Susukino's neon, the frozen
+// the city centre with the Clock Tower, the red-brick Akarenga and Nijō market, Susukino's neon, the frozen
 // Toyohira river, Nakajima park, the Snow Festival along Ōdōri park and the TV Tower plaza at night.
 //
-// Everything is painted in neutral daylight colours and then graded by strip position (sunset ->
-// dusk -> night). Lit windows, lamps and neon are collected separately and painted after the grade,
+// Everything is painted in neutral daylight colours and then graded by strip position (sunset -> pink and
+// violet dusk over the suburb -> the blue hour in the centre -> night from Susukino on). Lit windows, lamps and neon are collected separately and painted after the grade,
 // so they glow in the dark. Valleys beside the ski jump stay transparent (far layer shows through).
 //
 // Live (see ../props.mjs): the chairlift runs, a jumper goes down the in-run and flies, cars drive up
-// Ekimae-dōri and across town, chimneys smoke, the open channel of the frozen river steams, Susukino's
-// neon walls flicker, the ramen alley steams, skaters circle the rink on Shōbu pond and the TV Tower's
+// Ekimae-dōri and across town, the streetcar runs through Susukino, chimneys smoke, snow slides off the
+// tin roofs, manholes steam, office windows go dark and light up, the open channel of the frozen river
+// steams, Susukino's neon walls flicker, the ramen alley and Nijō market's grill steam, shoppers browse, skaters circle the rink on Shōbu pond and the TV Tower's
 // big clock counts the time of the stage.
 //
 // Coordinates: u = distance from the bottom of the strip (stage start), strip y = L - u.
@@ -44,6 +45,7 @@ const AVENUES = [
 ];
 const STREETS = [1200, 1330, 1600, 1740, 2010, 2140, 2240, 2470, 2650, 3000, 3110, 3230, 3350, 3470];
 const ALLEY = 3590; // Susukino ramen alley
+const TRAM_U = 3230; // the streetcar's street in Susukino
 const ODORI_CROSS = [5000, 5200, 5400, 5600, 5800, 6000, 6160, 6380, 6600, 6820];
 const ODORI_SIDE = [14, 166]; // streets along both sides of the park
 
@@ -70,10 +72,11 @@ const NEON = [0xff4aa8, 0x40e8ff, 0xffe040, 0x66ff8a, 0xff8a30, 0xb46cff, 0xff50
 
 // time of day along the strip: [u, multiply rgb, tint colour, tint amount]
 const TOD = [
-  [0, [1.0, 0.93, 0.9], 0xffa070, 0.05],
-  [700, [0.96, 0.86, 0.88], 0xc0607a, 0.06],
-  [1500, [0.68, 0.68, 0.9], 0x30306a, 0.1],
-  [2400, [0.5, 0.55, 0.8], 0x141c44, 0.1],
+  [0, [1.0, 0.93, 0.9], 0xffa070, 0.05], // sunset at the ski jump
+  [900, [0.98, 0.86, 0.86], 0xd0607a, 0.07], // the sun gone: pink
+  [1700, [0.84, 0.74, 0.92], 0x6a4a8a, 0.09], // violet dusk over the suburb
+  [2600, [0.66, 0.66, 0.9], 0x2a2c66, 0.1], // the blue hour in the centre
+  [3500, [0.5, 0.55, 0.8], 0x141c44, 0.1], // night from Susukino on
   [L, [0.5, 0.55, 0.8], 0x141c44, 0.1],
 ];
 
@@ -102,6 +105,7 @@ export function buildMid() {
   };
   const objects = [];
   const lights = []; // emissive pixels, painted after the grade
+  const roofEdges = []; // [x, u, w] of the tin roofs' lower eaves (snow slides off them, live)
   const pools = []; // additive light pools, after the grade
   const glow = (x, y, c, a = 1) => lights.push([Math.round(x), Math.round(y), c, a]);
   const pool = (x, y, r, c, k = 0.5) => pools.push({ x, y, r, c, k });
@@ -257,6 +261,7 @@ export function buildMid() {
       },
     });
     reserveRect(x - 1, y - 1, w + 2, h + faceH + 2);
+    roofEdges.push([x, U(y + h), w]);
     // the stove's smoke curling from the chimney, blown by the wind (live)
     if (opt.chimney) kit.emit(x + w - 4, U(y + 2), smoke, { rate: 1.1, life: [2, 3], vy: 5, sx: 0.5, wf: 1, a: 0.5, tint: 1 });
   };
@@ -596,10 +601,26 @@ export function buildMid() {
       return frameAt(r, 2800, [[4, 0, 0xfff4d0, 0.5], [4, 2, 0xfff4d0, 0.5], [0, 0, 0xff3020, 0.6], [0, 2, 0xff3020, 0.6]]);
     };
     const sides = [0xe0e0e8, 0x3a5a9a, 0x2a2a30, 0x8a2a2a].map(carSide);
-    STREETS.filter((s) => s > CENTER[0] && !plowRoads.some((p) => Math.abs(p - s) < 20)).forEach((s, k) => {
+    STREETS.filter((s) => s > CENTER[0] && s !== TRAM_U && !plowRoads.some((p) => Math.abs(p - s) < 20)).forEach((s, k) => {
       kit.path([[-8, s - 2], [188, s - 2]], [sides[k % 4]], { sp: 13, n: 1, turn: 'flip' });
       kit.path([[188, s + 2], [-8, s + 2]], [sides[(k + 2) % 4]], { sp: 10, n: 1, turn: 'flip' });
     });
+  }
+  // the streetcar along a cross street in Susukino: rails set in the road, a cream-and-green tram running to
+  // and fro, its windows lit (live)
+  {
+    const ty = Y(TRAM_U);
+    for (let x = 0; x < W; x++)
+      for (const dy of [-2, 2]) img.set(x, ty + dy, 0x7a7a82);
+    const tram = new Raster(26, 6);
+    tram.rect(0, 0, 26, 6, 0xe8e4d0);
+    tram.rect(0, 2, 26, 2, 0x2a7a4a);
+    tram.rect(1, 0, 24, 1, 0xc8c4b4);
+    tram.rect(12, 0, 2, 1, 0x3a3a40); // the pantograph
+    tram.rect(0, 5, 26, 1, 0x8a8678);
+    const lit = [];
+    for (let x = 2; x < 24; x += 3) lit.push([x, 1, C.warm, 0.9], [x, 4, C.warm, 0.9]);
+    kit.path([[-30, TRAM_U], [210, TRAM_U]], [frameAt(tram, TRAM_U, lit)], { sp: 10, mode: 'pp', hold: 4, turn: 'flip', s0: 0.3 });
   }
   // parked and waiting cars in the centre and Susukino: headlights (down lane) and tail lights (up lane)
   for (let u = CENTER[0] + 20; u < RIVER[0] - 12; u += 9) {
@@ -749,6 +770,57 @@ export function buildMid() {
       }
     reserveRect(x + 3, py - 11, 32, 22);
     for (let k = 0; k < 5; k++) bare(x + 2 + k * 8, Y(2668), 4);
+  }
+
+  // Nijō market: a long low hall of fishmongers' stalls by the main street, under snowy roofs split by the
+  // covered alley down its middle; red king crabs, hairy crabs, trays of sea urchin and salmon roe, salmon
+  // and ice under the coloured awnings; shoppers along the stalls, steam off the grill stand (live)
+  {
+    const x0 = 105;
+    const x1 = 139;
+    const top = Y(2772);
+    const bot = Y(2660);
+    const stallC = [0x2a5aa8, 0xc83a2a, 0xe8b830, 0x2a8a5a];
+    const goods = [0xd83a2a, 0xe05a3a, 0x8a5a3a, 0xf0a030, 0xf08a90, 0xf4f4f8];
+    objects.push({
+      y: bot,
+      shadow: () => shadowRect(x0 + 4, top + 3, x1 - x0, bot - top, 0.5),
+      draw: () => {
+        for (let yy = top; yy < bot; yy++)
+          for (let xx = x0 + 5; xx < x1 - 5; xx++) {
+            if (Math.abs(xx - 122) < 1.5) {
+              img.set(xx, yy, (yy % 4) < 2 ? 0x5a5258 : 0x4a4248); // the covered alley's glass roof
+              continue;
+            }
+            const right = xx > 122;
+            let c = (yy - top) % 12 === 0 ? C.slate[0] : right ? C.slate[1] : C.slate[2];
+            if (fbm(xx, yy, { seed: 94, scale: 3 }) > 0.45) c = right ? C.snow[2] : C.snow[3];
+            img.set(xx, yy, c);
+          }
+        // stalls along both long sides: awnings in turn, goods laid out in front, lit from inside
+        for (const [ax, gx, dir] of [[x0 + 2, x0, -1], [x1 - 5, x1 - 2, 1]])
+          for (let yy = top + 1, k = 0; yy < bot - 4; yy += 9, k++) {
+            const col = stallC[(k + (dir > 0 ? 2 : 0)) % stallC.length];
+            for (let j = 0; j < 8; j++)
+              for (let i = 0; i < 3; i++) img.set(ax + i, yy + j, j % 2 ? scaleColor(col, 0.85) : col);
+            for (let j = 1; j < 8; j += 2) img.set(gx, yy + j, goods[(j + k * 3) % goods.length]);
+            img.set(gx + (dir < 0 ? -1 : 1), yy + 3, goods[(k * 2) % 3]); // a big crab on the counter
+            glow(ax + 1, yy + 4, C.warm, 0.8);
+            pool(gx, yy + 4, 6, C.warm, 0.3);
+          }
+      },
+    });
+    reserveRect(x0 - 2, top - 2, x1 - x0 + 4, bot - top + 4);
+    const shopper = (c, f) => {
+      const r = new Raster(2, 4);
+      r.set(0, 0, 0x2a2026);
+      r.set(0, 1, c);
+      r.set(0, 2, f ? scaleColor(c, 0.8) : c);
+      r.set(1, 3, 0x101018, 0.4);
+      return frameAt(r, 2716);
+    };
+    for (const c of [0xc83a3a, 0x3a5a9a, 0xe8e8f0, 0x5a3a2a]) kit.wander(102, 2716, 2, 50, [shopper(c, 0), shopper(c, 1)], { n: 1, sp: 4, idle: 0.7, turn: 'flip', fps: 3 });
+    kit.emit(103, 2700, steam, { rate: 1.4, life: [1.4, 2.2], vy: 6, sx: 1, wf: 0.6, a: 0.45, tint: 1 });
   }
 
   // blocks
@@ -1750,6 +1822,46 @@ export function buildMid() {
       ),
     );
     kit.loop(castle.x0, U(castle.y0), frames, { fps: 1.2, fx: 1 });
+  }
+
+  // city life (live): steam rising from the manholes, snow sliding off the suburb's tin roofs, office windows
+  // going dark and lighting up again as people leave or work late
+  for (const [x, u] of [[86, 2380], [96, 2560], [30, 2700], [150, 2862], [92, 2948], [30, 3180], [150, 3292], [86, 3424]])
+    if (!pads.some((p) => Math.abs(p.x - x) < 12 && Math.abs(p.u - u) < 12)) {
+      img.disc(x + 0.5, Y(u) + 0.5, 1.5, 0x2a2a30);
+      kit.emit(x, u, steam, { rate: 0.8, life: [1.6, 2.6], vy: 6, sx: 1, wf: 0.7, a: 0.4, tint: 1 });
+    }
+  {
+    const slide = [0, 1, 2, 3, 4].map((k) => {
+      const r = new Raster(7, 7);
+      const n = [2, 4, 6, 6, 4][k];
+      for (let i = 0; i < n; i++) {
+        const a = i * 2.4 + k;
+        const d = k * 0.7 + (i % 3) * 0.4;
+        r.set(Math.round(3 + Math.cos(a) * d), Math.min(6, Math.round(1 + k + Math.sin(a) * d * 0.5)), 0xf4f6fa, k > 3 ? 0.5 : 0.9);
+      }
+      return frameAt(r, 1700);
+    });
+    const rects = roofEdges.filter(([, u]) => u > SUBURB[0] && u < CENTER[0]).map(([x, u, w]) => [x + 1, u + 1, w - 2, 2]);
+    if (rects.length) kit.spot(rects, slide, { rate: 0.6, fps: 6 });
+  }
+  {
+    const byStretch = new Map();
+    for (const [x, y, c] of lights) {
+      const u = U(y);
+      if (u < CENTER[0] || u > RIVER[0] || (c !== C.warm && c !== C.cool)) continue;
+      const k = Math.floor(u / 256);
+      if (!byStretch.has(k)) byStretch.set(k, []);
+      byStretch.get(k).push([x, u]);
+    }
+    const fr = rng(3391);
+    for (const [k, wins] of byStretch) {
+      const dark = new Raster(1, 1);
+      dark.set(0, 0, C.windowDark);
+      const f = frameAt(dark, k * 256 + 128);
+      const parts = wins.filter(() => fr() < 0.22).map(([x, u]) => [0, x, u, fr() * 20]);
+      if (parts.length) kit.wave([f], parts, { w: 0.12, a0: 0, a1: 1, pw: 7, d: 0.05 });
+    }
   }
 
   const chunks = [];

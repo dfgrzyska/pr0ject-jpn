@@ -1,13 +1,15 @@
 // Middle layer (Kagoshima): the city under a haze of volcanic ash (Chūō station with its rooftop Ferris
 // wheel, trams on lawn-covered tracks, palm avenues, the Tenmonkan arcade, yellow ash bags), the
-// Kōtsuki river with stone arch bridges, Sengan-en garden by the sea, fields of black-vinegar jars on
-// the coast, Kinkō Bay (ferry, fish-farm pens, dolphins), Sakurajima (port, ash-covered village,
+// Kōtsuki river with stone arch bridges, Sengan-en garden by the sea, hot sand baths on a black beach,
+// fields of black-vinegar jars on the coast, Kinkō Bay (a cruise ship at its pier, ferries, a fish farm and
+// more pens, dolphins), Sakurajima (port, ash-covered village,
 // eruption shelters, giant daikon and komikan, the buried torii of Kurokami), the 1914 lava fields and
 // the summit crater. Graded from hazy day to the red glow of the crater; lava and lamps are painted
 // after the grade. Open water stays transparent (the far layer is the bay).
 //
 // Live (see ../props.mjs): the Ferris wheel turns, trams shuttle along the lawn tracks, the Sakurajima
-// ferries cross the bay with their wakes, dolphins leap, ash billows out of the crater and steam off the
+// ferries cross the bay with their wakes, the feeding boat circles the fish farm, the shadow of an ash plume
+// drifts over the water, steam seeps from the sand baths, dolphins leap, ash billows out of the crater and steam off the
 // vents and cracks, and the lava breathes, flaring up and dying down.
 //
 // Coordinates: u = distance from the bottom of the strip (stage start), strip y = L - u.
@@ -125,8 +127,10 @@ export function buildMid() {
     return 112 - smooth(BAY[0], BAY[0] + 110, u) * 140 + n;
   };
   const shoreU = (x) => ISLAND[0] + 18 + 22 * Math.sin(x / 26 + 1) + (fbm(x, 3, { seed: 92, scale: 12 }) - 0.5) * 16;
+  // the black beach of the sand baths pushes out into the sea past the coast road
+  const sandBeach = (u) => 26 * smooth(2230, 2270, u) * (1 - smooth(2386, 2426, u));
   const landD = (x, u) => {
-    let d = seaX(u) - x;
+    let d = seaX(u) + sandBeach(u) - x;
     if (u > BAY[0] + 900) d = Math.max(d, u - shoreU(x));
     return d;
   };
@@ -422,6 +426,81 @@ export function buildMid() {
     }
   }
 
+  // ------------------------------------------------------------ C0. hot sand baths on the black beach
+  // As at Ibusuki: bathers in yukata lie in rows buried to the neck in black volcanic sand heated by the hot
+  // springs underneath, towels round their heads, some under reed shades; attendants shovel sand over them,
+  // steam seeps out of the beach; the bathhouse stands behind.
+  {
+    const sr = rng(4421);
+    const S0 = 2236;
+    const S1 = 2420;
+    const shoreX = (u) => {
+      let x = W - 1;
+      while (x > 0 && D(x, Y(u)) <= 0) x--;
+      return x;
+    };
+    for (let u = S0 - 10; u < S1 + 10; u++) {
+      const y = Y(u);
+      for (let x = Math.ceil(seaX(u) - 14 + 6); x < W; x++) {
+        const d = D(x, y);
+        if (d <= 0) continue;
+        img.set(x, y, d < 3 ? 0x2a2624 : rampColor(C.sand, 0.12 + fbm(x, y, { seed: 81, scale: 3 }) * 0.35 - (u % 4 === 0 ? 0.08 : 0), x, y));
+        reserved[y * W + x] = 1;
+      }
+    }
+    // two rows of bathers lying across the beach, heads towards the land
+    const shades = [[2300, 2324], [2356, 2380]];
+    for (const dd of [6, 16])
+      for (let u = S0 + 14; u < S1 - 10; u += 5) {
+        if (sr() < 0.18) continue;
+        const sx = shoreX(u);
+        const x1 = sx - dd;
+        const x0 = x1 - 7;
+        const y = Y(u);
+        if (seaX(u) + sandBeach(u) - x1 < 4 || x0 - 2 < seaX(u) - 8) continue;
+        for (let x = x0; x <= x1; x++) {
+          img.set(x, y - 1, 0x8a8680); // the mound of sand over the body, its top catching the light
+          img.set(x, y, 0x6a6662);
+          img.set(x, y + 1, 0x1a1816);
+        }
+        img.set(x0, y, [0x3a5a9a, 0xe8e8f0, 0x9a3a4a][Math.floor(sr() * 3)]); // the yukata at the neck
+        img.rect(x0 - 2, y - 1, 2, 2, 0xf4f0e6); // the towel round the head
+        img.set(x0 - 1, y, 0xd8a888); // the face
+      }
+    // reed shades on poles over part of the rows
+    for (const [a, b] of shades) {
+      const x0 = Math.round(seaX((a + b) / 2) - 2);
+      objects.push({
+        y: Y(a),
+        shadow: () => shadowRect(x0 + 3, Y(b) + 4, 14, b - a, 0.6),
+        draw: () => {
+          for (let y = Y(b); y < Y(a); y++)
+            for (let x = x0; x < x0 + 14; x++) img.set(x, y, (y - Y(b)) % 3 === 0 ? 0x8a6e44 : (x + y) % 5 === 0 ? 0xa88a58 : 0xc0a470);
+          img.rect(x0, Y(b), 14, 1, 0x6a5232);
+        },
+      });
+    }
+    // the bathhouse behind the beach, a path down to the sand
+    building(60, Y(2272), 28, 13, 4, { roof: 0x5a4a3e, tiles: true });
+    // steam seeping out of the sand (live) and the attendants with their shovels
+    for (let k = 0; k < 7; k++) {
+      const u = S0 + 20 + Math.floor(sr() * (S1 - S0 - 40));
+      kit.emit(Math.round(seaX(u) + 2 + sr() * 16), u, vapour.slice(0, 2), { rate: 0.5, life: [1.4, 2.2], vy: 5, sx: 3, wf: 1, a: 0.3, tint: 1 });
+    }
+    const attendant = (f) => {
+      const r = new Raster(4, 5);
+      r.set(1, 0, 0x2a2026);
+      r.set(1, 1, 0x2a3a6a);
+      r.set(1, 2, 0x2a3a6a);
+      r.set(f ? 0 : 2, 1, 0x2a3a6a);
+      r.set(3, f ? 1 : 2, 0x8a6a44); // the shovel
+      r.set(3, f ? 2 : 3, 0x9a9aa0);
+      r.set(2, 4, 0x0a0a0c, 0.4);
+      return frameAt(r, 2330);
+    };
+    kit.wander(seaX(2330) + 10, 2330, 5, 70, [attendant(0), attendant(1)], { n: 2, sp: 4, idle: 0.7, turn: 'flip', fps: 2 });
+  }
+
   // ------------------------------------------------------------ C. black-vinegar jar fields on the coast
   {
     for (let u = COAST[0] + 10; u < BAY[0] + 20; u += 64) {
@@ -476,6 +555,117 @@ export function buildMid() {
     };
     ferry(56, 3300, true);
     ferry(128, 3880, false);
+    // a cruise ship moored at a pier at the head of the bay, bow out towards Sakurajima: balconies down both
+    // sides, lifeboats slung along them, pools and loungers, a water slide, a sports court on the bow, the
+    // funnel aft; its shadow on the water
+    {
+      const qx = 84;
+      const [q0, q1] = [2872, 3006];
+      for (let u = q0; u <= q1; u++) {
+        const y = Y(u);
+        if (D(qx + 3, y) <= 0) for (let x = qx + 7; x < qx + 10; x++) img.set(x, y + 2, 0x0a1418, 0.25);
+        for (let x = qx; x < qx + 7; x++) img.set(x, y, x === qx || x === qx + 6 ? 0x7a7670 : rampColor(C.walk, 0.5 + fbm(x, y, { seed: 82, scale: 3 }) * 0.3, x, y));
+        if (u % 14 === 0) img.set(qx + 6, y, 0x2a2a2e); // bollards
+      }
+      reserveRect(qx - 1, Y(q1), 9, q1 - q0);
+      const sx = 92;
+      const [s0, s1] = [2896, 2994];
+      const len = s1 - s0;
+      const yTop = Y(s1);
+      const half = (j) => (j < 20 ? 1.5 + (j / 20) ** 0.6 * 7 : j > len - 4 ? 8.5 - (j - (len - 4)) * 0.4 : 8.5); // bow to stern
+      for (let j = 0; j <= len; j++)
+        for (let i = -9; i <= 9; i++) {
+          const h = half(j);
+          if (Math.abs(i + 0.5) > h + 4) continue;
+          img.set(sx + 9 + i + 4, yTop + j + 5, 0x0a1418, Math.abs(i + 0.5) <= h ? 0.3 : 0); // the shadow
+        }
+      for (let j = 0; j <= len; j++)
+        for (let i = -9; i <= 9; i++) {
+          const h = half(j);
+          const a = Math.abs(i + 0.5);
+          if (a > h) continue;
+          const x = sx + 9 + i;
+          const y = yTop + j;
+          let c = 0xf2f2ee;
+          if (a > h - 1) c = 0x22304a; // the dark hull showing at the waterline
+          else if (a > h - 2 && j > 22 && j < len - 6) c = j % 2 ? 0x6a8aa8 : 0xd8dce0; // balconies
+          img.set(x, y, c);
+        }
+      const cx = sx + 9;
+      // the bridge across the bow, with its windows; the sports court in front of it
+      img.rect(cx - 7, yTop + 22, 15, 3, 0xd8dce0);
+      img.rect(cx - 6, yTop + 22, 13, 1, 0x2a3a5a);
+      img.rect(cx - 3, yTop + 10, 7, 9, 0x3a7a4a);
+      img.rect(cx - 2, yTop + 11, 5, 7, 0x4a8a5a);
+      img.rect(cx - 3, yTop + 14, 7, 1, 0xf0f0f0);
+      // pools, loungers, the slide
+      for (const [py, pw, ph] of [[34, 8, 6], [52, 6, 5]]) {
+        img.rect(cx - Math.floor(pw / 2) - 1, yTop + py - 1, pw + 2, ph + 2, 0xc8c0a8);
+        img.rect(cx - Math.floor(pw / 2), yTop + py, pw, ph, 0x3ab0d8);
+        img.rect(cx - Math.floor(pw / 2), yTop + py, pw, 1, 0x8ad8f0);
+      }
+      for (let j = 30; j < 62; j += 2)
+        for (const dx of [-6, 6]) if (j < 33 || j > 41) img.set(cx + dx, yTop + j, j % 4 ? 0xf0e8d8 : 0x3a6ac8);
+      for (let k = 0; k < 10; k++) img.set(cx + 3 + Math.round(Math.sin(k * 0.7) * 2), yTop + 44 + k, k % 2 ? 0xf0c020 : 0xe0402a);
+      // the funnel aft, lifeboats along both sides
+      img.ellipse(cx + 0.5, yTop + 76.5, 3.5, 5, 0x1a1a1e);
+      img.ellipse(cx + 0.5, yTop + 77, 3, 4.2, 0xe8a020);
+      img.ellipse(cx + 0.5, yTop + 74.5, 2.4, 1.6, 0x1a1a1e);
+      for (let j = 28; j < 70; j += 7)
+        for (const side of [-1, 1]) {
+          img.rect(side < 0 ? cx - 10 : cx + 9, yTop + j, 2, 4, 0xf07a20);
+          img.set(side < 0 ? cx - 10 : cx + 10, yTop + j, 0xf8a050);
+        }
+      img.rect(cx - 5, yTop + 84, 11, 6, 0xd8dce0); // the aft deck
+      img.rect(cx - 4, yTop + 85, 9, 1, 0x9aa0a8);
+      // mooring lines to the pier
+      for (const j of [8, 30, 70, 92]) img.line(qx + 6, yTop + j + (j < 50 ? 3 : -3), sx + 1, yTop + j, 0x3a3a3e);
+      reserveRect(sx - 2, yTop - 2, 24, len + 10);
+    }
+    // a fish farm out in the bay: eight pens of floats round dark nets, linked by walkways, a shed on its raft;
+    // the feeding boat goes round it (live)
+    {
+      const pens = [];
+      for (let r = 0; r < 4; r++) for (let c = 0; c < 2; c++) pens.push([20 + c * 22, 3286 + r * 22]);
+      for (const [x, u] of pens) {
+        img.line(x + 9, Y(u), x + 13, Y(u), 0xb8b4a8);
+        img.line(x, Y(u) - 9, x, Y(u) - 13, 0xb8b4a8);
+      }
+      for (const [x, u] of pens)
+        for (let a = 0; a < Math.PI * 2; a += 0.04) {
+          const px = Math.round(x + Math.cos(a) * 9);
+          const py = Math.round(Y(u) + Math.sin(a) * 9);
+          img.set(px, py, Math.floor(a * 6) % 2 ? 0xe8e4d8 : 0xd84a2a);
+          for (let k = 1; k < 9; k++) if ((k + Math.round(a * 20)) % 3 === 0) img.set(Math.round(x + Math.cos(a) * k), Math.round(Y(u) + Math.sin(a) * k), 0x14262e, 0.5);
+        }
+      img.rect(10, Y(3374), 12, 7, 0x8a7a64); // the raft
+      img.rect(12, Y(3373), 8, 5, 0x5a6a7a); // the shed
+      img.rect(12, Y(3373), 8, 1, 0x7a8a9a);
+      const fb = (up) => {
+        const r = new Raster(5, 10);
+        for (let j = 0; j < 9; j++) {
+          const w = (up ? j < 2 : j > 6) ? 1 : 3;
+          for (let i = 0; i < w; i++) r.set(1 + i + (3 - w > 0 ? 1 : 0), j, j % 3 === 0 ? 0xd8d4c8 : 0xf0ece0);
+        }
+        r.rect(1, up ? 5 : 2, 3, 2, 0x3a5a8a);
+        for (let j = 1; j < 10; j++) r.set(4, j, 0x0a1418, 0.25);
+        return frameAt(r, 3320);
+      };
+      kit.path([[54, 3270], [54, 3380], [6, 3384], [6, 3274], [54, 3270]], [fb(true)], { sp: 4, mode: 'wrap', turn: 'none', fu: [fb(true)], fd: [fb(false)], s0: 0.3 });
+    }
+    // the shadow of a plume of ash blown out over the bay, drifting across the water (live)
+    {
+      const r = new Raster(120, 74);
+      for (let y = 0; y < r.h; y++)
+        for (let x = 0; x < r.w; x++) {
+          const d = ((x - 60) / 58) ** 2 + ((y - 37) / 35) ** 2 + (fbm(x, y, { seed: 83, scale: 14, octaves: 2 }) - 0.5) * 0.9;
+          if (d >= 1) continue;
+          if (d > 0.7 && (d - 0.7) / 0.3 > bayer(x, y)) continue;
+          r.set(x, y, 0x1e1812);
+        }
+      kit.path([[-80, 2980], [260, 3420]], [frameAt(r, 3200)], { sp: 4, turn: 'none', a: 0.22, d: 0.3, fx: 1, s0: 0.45 });
+      kit.path([[260, 3700], [-80, 4100]], [frameAt(r, 3900)], { sp: 3, turn: 'none', a: 0.18, d: 0.3, fx: 1, s0: 0.2 });
+    }
     // fish-farm pens: rings of floats around dark nets
     for (const [x, u, r] of [[146, 3020, 10], [128, 3070, 8], [30, 3520, 11], [150, 3620, 9], [58, 4060, 10], [36, 4120, 8]])
       for (let a = 0; a < Math.PI * 2; a += 0.04) {

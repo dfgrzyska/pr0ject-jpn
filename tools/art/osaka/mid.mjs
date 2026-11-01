@@ -14,7 +14,9 @@
 // Live (see ../props.mjs): both Ferris wheels turn (Tempozan's ring of lights chasing round), boats
 // cruise the rivers and the canal, trains pull in and out under Umeda's glass roof, swans and koi swim,
 // neon signs light up letter by letter and billboards chase, the giant crab waves its claws, lantern
-// strings sway, the fountain plays, neon reflections shimmer on the water and fishing boats drift.
+// strings sway, the fountain plays, neon reflections shimmer on the water and fishing boats drift; the crowd
+// streams over Ebisu-bashi, strollers walk the canal banks, the food stalls' griddles steam and the office
+// windows of Umeda and Nakanoshima go dark and light up.
 //
 // Coordinates: u = distance from the bottom of the strip (stage start), strip y = L - u.
 import { readFileSync } from 'node:fs';
@@ -22,7 +24,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Raster, fbm, rng, bayer, scaleColor, rgb } from '../../lib/raster.mjs';
 import { crownPixels, rampColor } from '../nature.mjs';
-import { PropKit, Window, todGrade, tintTable } from '../props.mjs';
+import { PropKit, Window, puff, todGrade, tintTable } from '../props.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -101,6 +103,8 @@ export function buildMid() {
   const lights = [];
   const pools = [];
   const kit = new PropKit(5515); // the moving parts
+  // steam off the stalls' takoyaki and yakisoba griddles (live)
+  const stallSteam = [2, 3, 4].map((r) => [0, 1].map((v) => kit.frame(puff(r, r * 23 + v, [0xa8a8b0, 0xc8c8d0, 0xe4e4ea, 0xffffff]))));
   const tod = todGrade(TOD, smooth);
   /**
    * Draw with the stage's own helpers into a frame at (x0, y0) (strip pixels): graded for its place, lit
@@ -773,6 +777,7 @@ export function buildMid() {
           },
         });
         reserveRect(sx, y, 9, 8);
+        if (k % 2 === 0) kit.emit(sx + 4, U(y + 5), stallSteam, { rate: 1.2, life: [1.2, 2], vy: 6, sx: 1, wf: 0.6, a: 0.42, tint: 1 }); // the griddle steaming (live)
       }
       crowd(x, y + 8, n * 9, 6, n * 3, true);
     };
@@ -1448,6 +1453,32 @@ export function buildMid() {
         glow(x, Y(u - 6), 0xfff0c8);
       }
       crowd(58, Y(u + 4), 64, 8, u === d0 + 640 ? 90 : 30, true);
+    }
+    // live: the crowd streaming both ways over Ebisu-bashi (and fewer over the other two), strollers on the
+    // riverside walks, the takoyaki stands' griddles steaming at the bridge ends
+    {
+      const er = rng(5501);
+      const walker = (c, f, u) => {
+        const r = new Raster(2, 4);
+        r.set(0, 0, 0x2a2026);
+        r.set(0, 1, c);
+        r.set(0, 2, f ? scaleColor(c, 0.8) : c);
+        r.set(1, 3, 0x101018, 0.4);
+        return kit.frame(tod.frame(r, u));
+      };
+      const cols = [0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0x3a3a4a, 0xff9ac0, 0x6aaa5a];
+      for (const [u, n] of [[d0 + 300, 3], [d0 + 640, 9], [d0 + 940, 3]])
+        for (let k = 0; k < n; k++) {
+          const c = cols[k % cols.length];
+          const lane = u - 4 + Math.floor(er() * 8);
+          const pts = k % 2 ? [[60, lane], [120, lane]] : [[120, lane], [60, lane]];
+          kit.path(pts, [walker(c, 0, u), walker(c, 1, u)], { sp: 5 + er() * 4, mode: 'wrap', turn: 'flip', fps: 4, s0: er() });
+        }
+      for (const [x, s0] of [[60, 0.2], [120, 0.6], [59, 0.9], [121, 0.35]]) {
+        const c = cols[Math.floor(er() * cols.length)];
+        kit.path([[x, d0 + 40], [x, d1 - 40]], [walker(c, 0, (d0 + d1) / 2), walker(c, 1, (d0 + d1) / 2)], { sp: 3, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0 });
+      }
+      for (const [x, u] of [[54, d0 + 652], [126, d0 + 628], [54, d0 + 312]]) kit.emit(x, u, stallSteam, { rate: 1.4, life: [1.2, 2], vy: 6, sx: 1, wf: 0.6, a: 0.42, tint: 1 });
     }
     // canal cruise boats going up and down between the bridges, full of people, their wakes spreading (live)
     for (const [x, u0, u1, s0] of [[84, d0 + 330, d0 + 620, 0.3], [72, d0 + 660, d0 + 920, 0.8], [96, d0 + 960, d0 + 1150, 0.1]]) {
@@ -2513,6 +2544,26 @@ export function buildMid() {
       return kit.frame(out);
     });
     kit.loop(x0, U(y0), frames, { fps: 2.5, fx: 1 });
+  }
+
+  // the office towers of Umeda and Nakanoshima come alive at dusk: windows going dark and lighting up as
+  // people leave or work late, here and there (live)
+  {
+    const fr = rng(5503);
+    const byStretch = new Map();
+    for (const [x, y] of lights) {
+      const u = U(y);
+      if (u < NAKANOSHIMA[0] || u > UMEDA[1] || fr() > 0.25) continue;
+      const k = Math.floor(u / 256);
+      if (!byStretch.has(k)) byStretch.set(k, []);
+      byStretch.get(k).push([x, u]);
+    }
+    for (const [k, wins] of byStretch) {
+      const dark = new Raster(1, 1);
+      dark.set(0, 0, 0x2a2c38);
+      const f = kit.frame(tod.frame(dark, k * 256 + 128));
+      kit.wave([f], wins.map(([x, u]) => [0, x, u, fr() * 20]), { w: 0.12, a0: 0, a1: 1, pw: 7, d: 0.05 });
+    }
   }
 
   const chunks = [];
