@@ -9,7 +9,9 @@
 // Live (see ../props.mjs): waves roll in onto every beach and break white over the reefs, the lagoons
 // glint, the boats and the ferry sail on with their wakes, divers' bubbles rise round the dive boats, sea
 // turtles, fish and mantas glide under the surface, humpbacks breach, cyclists ride Bise's lanes, gusts
-// sweep the cane fields, banners flutter over Shuri's courtyard, the Hiji falls pour, kuina dart across the
+// sweep the cane fields, the cane cutters work and the sugar mill smokes, a parasail, a banana boat and jet
+// skis play off the resort beach, squalls drift over the sea, banners flutter over Shuri's courtyard, the Hiji
+// falls pour, kuina dart across the
 // Yanbaru road, mist drifts over the forest, cars cross the Kōri bridge and the lighthouse flashes.
 //
 // Coordinates: u = distance from the bottom of the strip (stage start), strip y = L - u.
@@ -520,6 +522,37 @@ export function buildMid() {
   boat(84, 620, 8, null);
   boat(30, 680, 9, 0x3a6ab0);
 
+  // water sports off the resort beach (live): a speedboat towing a parasail to and fro, jet skis looping, a
+  // banana boat bouncing along behind its boat
+  {
+    const tow = (kind) => {
+      const out = new Raster(kind === 'para' ? 34 : 26, 9);
+      out.rect(0, 3, 7, 3, 0xf2f2ee); // the boat, bow to the right
+      out.set(7, 4, 0xf2f2ee);
+      out.rect(1, 4, 4, 1, 0x3a5a8a);
+      for (let x = 8; x < (kind === 'para' ? 22 : 16); x++) out.set(x, 4, 0x2a2a30, 0.5); // the tow line
+      if (kind === 'para') {
+        for (let x = 22; x < 34; x++) for (let y = 1; y < 8; y++) if (((x - 28) / 6) ** 2 + ((y - 4) / 3.5) ** 2 < 1) out.set(x, y, (x >> 1) % 2 ? 0xe0402a : 0xf0c020); // the canopy
+      } else {
+        for (let x = 16; x < 26; x++) out.set(x, 4, 0xf0d020); // the banana, riders on it
+        for (let x = 17; x < 25; x += 2) out.set(x, 3, [0xe05a5a, 0x3a6ad0, 0xe8e8f0, 0x5aaa6a][(x >> 1) % 4]);
+      }
+      return gradeF(out);
+    };
+    kit.path([[-40, 716], [220, 716]], [tow('para')], { sp: 9, mode: 'pp', hold: 2, turn: 'flip', wake: { f: smallWake, every: 3, life: 1.8 }, s0: 0.3 });
+    kit.path([[-30, 734], [210, 734]], [tow('banana')], { sp: 7, mode: 'pp', hold: 2, turn: 'flip', wake: { f: smallWake, every: 3, life: 1.6 }, s0: 0.7 });
+    const jet = new Raster(5, 3);
+    jet.rect(0, 0, 4, 3, 0xe8e8ee);
+    jet.set(4, 1, 0xe8e8ee);
+    jet.set(1, 1, 0xe05a2a);
+    const jf = gradeF(jet);
+    for (const [cx, cu, r, s0] of [[46, 700, 14, 0.1], [130, 724, 11, 0.6]]) {
+      const pts = [];
+      for (let a = 0; a <= Math.PI * 2 + 0.01; a += Math.PI / 8) pts.push([cx + Math.cos(a) * r * 1.6, cu + Math.sin(a) * r]);
+      kit.path(pts, [jf], { sp: 14, turn: 'rot', wake: { f: smallWake, every: 2, life: 1.2 }, s0 });
+    }
+  }
+
   // ------------------------------------------------------------ B. resort beach
   for (let x = 6; x < W; x += 14 + Math.floor(rand() * 8)) {
     const u = Math.round(MAIN_S + 12 + rand() * 10);
@@ -776,6 +809,85 @@ export function buildMid() {
     arc(52, 30, 0, -3.0, -0.15, 4);
     arc(32, 18, -10, -2.8, -0.35, 3);
     for (let i = 0; i < 7; i++) tree('fukugi', gx - 56 + i * 18 + rand() * 4, gy + 10 + rand() * 4, 4 + rand());
+  }
+
+  // the cane harvest and the sugar mill: one field half cut (rows of stubble, bundles of stalks, the cutters at
+  // work and a small truck loaded high), and at the edge of the fields the mill, its brick chimney smoking (live)
+  {
+    const hr = rng(2215);
+    // the mill: a long shed of corrugated iron, the boiler house, the chimney, cane stacked in the yard
+    const mx = 128;
+    const my = Y(2428);
+    for (let y = my - 4; y < my + 58; y++)
+      for (let x = mx - 4; x < W; x++)
+        if (K(x, y) === 2) {
+          img.set(x, y, rampColor(C.lane, 0.2 + fbm(x, y, { seed: 2216, scale: 4 }) * 0.4, x, y));
+          cane[y * W + x] = 0;
+        }
+    reserveRect(mx - 6, my - 6, W - mx + 6, 66);
+    objects.push({
+      y: my + 30,
+      shadow: () => shadowRect(mx + 3, my + 4, 38, 30, 0.5),
+      draw: () => {
+        for (let y = my; y < my + 24; y++)
+          for (let x = mx; x < mx + 38; x++) img.set(x, y, (x - mx) % 3 === 0 ? 0x8a9098 : y < my + 12 ? 0xb4bac0 : 0x9aa0a8); // the corrugated roof
+        img.rect(mx, my + 11, 38, 1, 0x6a7078);
+        for (let y = my + 24; y < my + 30; y++) for (let x = mx + 1; x < mx + 37; x++) img.set(x, y, y === my + 24 ? 0x4a4a52 : 0xd8d4c8);
+        img.rect(mx + 6, my + 26, 8, 4, 0x3a3a42); // the loading door
+        img.rect(mx + 26, my - 10, 10, 12, C.roof[1]); // the boiler house
+        img.rect(mx + 26, my - 10, 10, 1, C.roof[3]);
+        img.disc(mx + 31.5, my - 14.5, 3, 0x2a2420); // the chimney seen from above
+        img.disc(mx + 31.5, my - 14.5, 2.2, 0x8a3a2a);
+        img.disc(mx + 31.5, my - 14.5, 1.2, 0x1a1414);
+      },
+    });
+    for (let k = 0; k < 5; k++) {
+      const x = mx + 2 + k * 7;
+      const y = my + 36 + (k % 2) * 6;
+      img.rect(x + 1, y + 1, 6, 4, 0x101810, 0.4);
+      for (let j = 0; j < 4; j++) img.rect(x, y + j, 6, 1, j % 2 ? C.cane[0] : C.cane[2]); // stacks of cut cane
+    }
+    kit.emit(mx + 32, U(my - 15), [2, 3, 4, 5].map((r) => [0, 1].map((v) => kit.frame(puff(r, r * 13 + v + 211, [0x8a8a90, 0xa8a8b0, 0xc8c8cc, 0xe8e8ea])))), { rate: 1.4, life: [3, 4], vy: 9, sx: 1, wf: 1, a: 0.6 });
+    // the field being cut: the most cane-filled patch below the fields' top, its lower half stubble
+    let best = null;
+    for (let u = 2370; u < 2530; u += 6)
+      for (let x = 4; x < 100; x += 6) {
+        let n = 0;
+        for (let y = Y(u + 26); y < Y(u); y++) for (let xx = x; xx < x + 40; xx++) n += cane[y * W + xx] ? 1 : 0;
+        if (!best || n > best.n) best = { n, x, u };
+      }
+    if (best && best.n > 600) {
+      const { x: fx, u: fu } = best;
+      for (let y = Y(fu + 13); y < Y(fu); y++)
+        for (let x = fx; x < fx + 40; x++) {
+          if (!cane[y * W + x]) continue;
+          img.set(x, y, (x + y) % 3 === 0 ? 0xc8b878 : (x - fx) % 3 === 0 ? 0x8a7a48 : 0xa89858); // stubble
+          cane[y * W + x] = 0;
+        }
+      for (let k = 0; k < 7; k++) {
+        const bx = fx + 3 + Math.floor(hr() * 34);
+        const by = Y(fu + 2 + Math.floor(hr() * 10));
+        img.rect(bx, by, 4, 1, C.cane[2]); // bundles of stalks
+        img.set(bx + 4, by, C.cane[0]);
+      }
+      // the truck at the edge of the cut, loaded high with cane
+      const tx = fx + 30;
+      const ty = Y(fu + 4);
+      img.rect(tx + 1, ty + 1, 9, 5, 0x101810, 0.4);
+      img.rect(tx, ty, 3, 5, 0x3a6ab0); // the cab
+      img.rect(tx, ty, 3, 1, 0x8ab0d8);
+      for (let j = 0; j < 5; j++) img.rect(tx + 3, ty + j, 6, 1, j % 2 ? C.cane[1] : C.cane[2]);
+      const cutter = (f) => {
+        const out = new Raster(3, 4);
+        out.set(1, 0, 0xe8e0c8); // a sun hat
+        out.set(1, 1, 0x5a7ab0);
+        out.set(f ? 0 : 2, 1, 0xc0c4c8); // the cane knife
+        out.set(1, 2, 0x3a3a4a);
+        out.set(2, 3, 0x101810, 0.4);
+        return gradeF(out);
+      };
+      kit.wander(fx + 20, fu + 7, 16, 5, [cutter(0), cutter(1)], { n: 3, sp: 2, idle: 0.6, turn: 'flip', fps: 2 });
+    }
   }
 
   // ------------------------------------------------------------ D2. Naha, on the way up to Shuri
@@ -2194,6 +2306,21 @@ export function buildMid() {
     kit.spot(open, breach, { rate: 0.07, fps: 6, a: 0.95 });
     kit.spot(open, dive, { rate: 0.08, fps: 4, a: 0.9 });
     kit.spot(open, blow, { rate: 0.12, fps: 5, a: 0.9 });
+  }
+  // tropical squalls: a dark shower cloud's shadow drifting over the sea with its rain falling in streaks
+  // (live), one off the south coast, one beyond the Kōri bridge
+  {
+    const r = new Raster(110, 76);
+    for (let y = 0; y < r.h; y++)
+      for (let x = 0; x < r.w; x++) {
+        const d = ((x - 55) / 53) ** 2 + ((y - 38) / 36) ** 2 + (fbm(x, y, { seed: 2231, scale: 14, octaves: 2 }) - 0.5) * 0.8;
+        if (d >= 1) continue;
+        if (d > 0.65 && (d - 0.65) / 0.35 > bayer(x, y)) continue;
+        r.set(x, y, (x * 3 + y * 2) % 11 === 0 && d < 0.8 ? 0x8a9aa8 : 0x0a1420); // the rain, streaking down at a slant
+      }
+    const f = gradeF(r);
+    kit.path([[-80, 300], [260, 520]], [f], { sp: 5, turn: 'none', a: 0.32, d: 0.4, fx: 1, s0: 0.35 });
+    kit.path([[260, 5300], [-80, 5700]], [f], { sp: 4, turn: 'none', a: 0.3, d: 0.4, fx: 1, s0: 0.5 });
   }
   // gusts over the cane fields: the long leaves flash pale, a patch at a time, in waves across the farm
   for (let y0 = Y(NAHA[0]); y0 < Y(FIELDS[0]); y0 += 16)

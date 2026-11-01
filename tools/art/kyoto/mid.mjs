@@ -15,8 +15,11 @@
 // Togetsukyō, gusts of wind sweep the bamboo grove, the Golden Pavilion's reflection ripples and koi swim in
 // its pond, Otowa's three streams run, rickshaws pull through Gion and the bamboo grove, maiko under red
 // umbrellas and tourists stroll Hanamikōji, pilgrims climb through the torii tunnels, a fox slips between
-// the stone monuments under shafts of sunlight, the nobori banners flutter, and the fires of the 大
-// flicker and smoke. Hanami picnics on blue tarps under the sakura at Arashiyama and below Kiyomizu.
+// the stone monuments under shafts of sunlight, kites wheel over the Kamo, strollers in kimono walk the
+// bamboo path under shafts of light, a monk rakes Ryōan-ji's gravel, the nobori banners flutter, and the
+// fires of the 大 flicker and smoke while the fire-keepers carry torches up the path and embers fly.
+// Hanami picnics on blue tarps under the sakura at Arashiyama and below Kiyomizu; Tenryū-ji's Sōgenchi
+// garden where the bamboo grove ends.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -788,6 +791,23 @@ export function buildMid() {
     reserveRect(0, Y(KAMO[1]), W, KAMO[1] - KAMO[0]);
     flow(w0 + 4, w1 - 4, 1, 600);
     petalRafts(w0 + 8, w1 - 8, 1, 600, 1171);
+    // black kites (tobi) wheeling over the river on the warm air, high above the bank (live)
+    {
+      const kite = (f) => {
+        const out = new Raster(11, 7);
+        const tip = f ? -1 : 1;
+        for (let i = 0; i < 5; i++) {
+          out.set(5, 1 + i, 0x3a2a22); // the body, head to the right
+          out.set(4 - i, 3 + Math.round(((i * tip) / 2) | 0), 0x4a3828); // the wings, tips lifting and dropping
+          out.set(6 + i, 3 + Math.round(((i * tip) / 2) | 0), 0x4a3828);
+        }
+        out.set(5, 0, 0x2a1e18);
+        out.set(4, 6, 0x3a2a22); // the forked tail
+        out.set(6, 6, 0x3a2a22);
+        return kit.frame(gradeAt(out, 600));
+      };
+      kit.wander(90, 600, 70, 70, [kite(0), kite(0), kite(1)], { n: 2, sp: 11, idle: 0, turn: 'rot', fps: 1.5, d: 2.4, a: 0.9 });
+    }
     // the turtle stepping stones across the river
     for (let u = w0 + 3; u < w1 - 2; u += 7) {
       const x = 30 + ((u / 7) % 2 ? 2 : 0);
@@ -1104,6 +1124,53 @@ export function buildMid() {
       kit.path(pts, [rickshawFrame(false, 2990)], { sp: 8, mode: 'pp', hold: 3, turn: 'none', fd: [rickshawFrame(false, 2990)], fu: [rickshawFrame(true, 2990)], s0: 0.45 });
     }
     crowd(84, Y(3260), 12, 560, 90, true, 0.25);
+    // Tenryū-ji's Sōgenchi garden where the grove ends: the pond with its rock "dragon gate" waterfall and
+    // islet pine, raked gravel along the veranda of the abbot's hall, pines and maples round it
+    {
+      const tr = rng(1201);
+      for (let y = Y(3262); y < Y(3168); y++) for (let x = 0; x < 76; x++) img.set(x, y, rampColor(C.moss, 0.3 + fbm(x, y, { seed: 1202, scale: 4 }) * 0.5, x, y));
+      reserveRect(0, Y(3264), 78, 98);
+      pondAt(38, 3198, 30, 20, C.pond, 1203, C.stone);
+      for (const [rx, ru, r] of [[18, 3214, 3], [22, 3210, 2], [14, 3208, 2.5], [56, 3186, 2.5], [44, 3192, 2]]) {
+        img.disc(rx + 1, Y(ru) + 1, r, 0x2a2824);
+        img.disc(rx, Y(ru), r, C.stone[1]);
+        img.disc(rx - r * 0.3, Y(ru) - r * 0.3, r * 0.5, C.stone[3]);
+      }
+      img.rect(16, Y(3214), 1, 6, 0xd8e8e8); // the dry "dragon gate" falls, a thread of water down the rocks
+      img.disc(48, Y(3204), 4, rampColor(C.moss, 0.6, 48, Y(3204))); // the islet, a pine on it
+      tree('pine', 48, Y(3206), 4.5);
+      for (let y = Y(3236); y < Y(3226); y++) for (let x = 4; x < 72; x++) img.set(x, y, (y - Y(3236)) % 2 ? C.whiteGravel[1] : C.whiteGravel[3]);
+      hall(6, Y(3260), 64, 16, 6, 'temple');
+      for (const [x, u, k] of [[72, 3172, 'pine'], [4, 3176, 'broadleaf'], [70, 3240, 'broadleaf'], [26, 3172, 'sakura']]) tree(k, x, Y(u), 5 + tr() * 2);
+    }
+    // live: strollers in rented kimono along the bamboo path, and shafts of sunlight slanting through the grove
+    {
+      const wr = rng(1205);
+      const stroller = (c, f) => {
+        const out = new Raster(2, 4);
+        out.set(0, 0, 0x141014);
+        out.set(0, 1, c);
+        out.set(0, 2, f ? scaleColor(c, 0.8) : c);
+        out.set(1, 3, 0x101418, 0.4);
+        return kit.frame(gradeAt(out, 2980));
+      };
+      for (const c of [KIMONO[0], KIMONO[1], KIMONO[3], KIMONO[4], KIMONO[6]]) {
+        const side = wr() < 0.5 ? -2 : 2;
+        const pts = [];
+        for (let u = a0 + 10; u <= 3250; u += 16) pts.push([Math.round(bx(u)) + side, u]);
+        kit.path(pts, [stroller(c, 0), stroller(c, 1)], { sp: 2.5, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0: wr() });
+      }
+      const beam = (len) => {
+        const out = new Raster(len, Math.ceil(len * 0.7) + 4);
+        for (let k = 0; k < len; k++)
+          for (let w = 0; w < 4; w++) out.set(k, Math.round(k * 0.7) + w, 0xf8ffd8, (w === 0 || w === 3 ? 0.35 : 0.7) * (1 - k / len) ** 0.6);
+        return kit.frame(out);
+      };
+      const beams = [beam(24), beam(32)];
+      const parts = [];
+      for (let u = a0 + 40; u < 3150; u += 38) parts.push([parts.length % 2, Math.floor(wr() * 140), u, wr() * 6]);
+      kit.wave(beams, parts, { w: 0.3, a0: 0, a1: 0.28, pw: 2, d: 0.6 });
+    }
     // Nonomiya shrine: the black torii of unbarked wood, a little hall, a moss garden
     fillGround(126, Y(2990), 50, 70, C.moss, 32, 4);
     reserveRect(124, Y(2992), 54, 74);
@@ -1335,6 +1402,20 @@ export function buildMid() {
       img.disc(x, y, 1.6, 0x3f7a3a);
       img.set(Math.round(x), Math.round(y), k % 4 ? 0x6aa050 : 0xf8c8d8);
     }
+    // live: a monk in grey work clothes raking the straight lines at the garden's edge, to and fro
+    {
+      const monk = (f) => {
+        const out = new Raster(9, 5);
+        out.set(6, 0, 0xd8a888); // the shaved head
+        out.rect(5, 1, 3, 3, 0x4a4440);
+        out.set(f ? 5 : 7, 4, 0x2a2420); // the feet
+        for (let i = 0; i < 5; i++) out.set(4 - i, 2 + Math.floor(i / 2), 0x8a6a44); // the rake's handle
+        out.rect(0, 4, 1, 1, 0x6a5034); // its head in the gravel
+        out.set(8, 4, 0x101418, 0.4);
+        return kit.frame(gradeAt(out, 4712));
+      };
+      kit.path([[30, 4712], [152, 4712]], [monk(0), monk(1)], { sp: 2.5, mode: 'pp', hold: 4, turn: 'flip', fps: 3 });
+    }
     // the rock garden: raked white gravel, fifteen rocks in five mossy groups, the clay wall
     const gx0 = 22;
     const gx1 = 160;
@@ -1561,6 +1642,36 @@ export function buildMid() {
     for (let i = 0; i < pyres.length; i += 28) {
       const [x, y] = pyres[i];
       kit.emit(x, U(y) + 3, smoke, { rate: 0.9, life: [3, 4], vy: 7, sx: 1, wf: 0.8, a: 0.4, tint: 1 });
+    }
+    // live: the fire-keepers carrying torches up the path in a line, and embers flying up off the beds
+    {
+      const torch = (f) => {
+        const out = new Raster(3, 6);
+        out.set(1, 3, 0x1a1418); // the bearer, dark against the dusk
+        out.set(1, 4, 0x2a2024);
+        out.set(0, 5, 0x0a0a10, 0.4);
+        out.set(2, 2, 0x5a3a24); // the torch
+        out.set(2, f ? 0 : 1, f ? 0xffe080 : 0xff9a30);
+        out.set(2, 1, 0xffc050);
+        out.set(f ? 1 : 2, 0, 0xff7a20, 0.8);
+        return kit.frame(out);
+      };
+      const tp = [];
+      for (let u = 6310; u <= 6900; u += 18) tp.push([Math.round(90 + 10 * Math.sin((u - 6300) / 110)) + 3, u]);
+      kit.path(tp, [torch(0), torch(1)], { sp: 3, n: 7, gap: 13, mode: 'pp', hold: 6, turn: 'none', fps: 5, fx: 1 });
+      const ember = [0, 1, 2, 3, 4, 5].map((k) => {
+        const out = new Raster(3, 9);
+        out.set(1 + (k % 2 ? 1 : 0) - (k > 3 ? 1 : 0), 8 - k, k < 2 ? 0xffe080 : k < 4 ? 0xff9a30 : 0xc84a20, k < 5 ? 1 : 0.5);
+        return kit.frame(out);
+      });
+      const rects = [];
+      for (const st of strokes)
+        for (let i = 0; i < st.length - 1; i++) {
+          const [ax, au] = st[i];
+          const [bx2, bu] = st[i + 1];
+          rects.push([Math.min(ax, bx2) - 2, Math.max(au, bu) + 8, Math.abs(bx2 - ax) + 4, Math.abs(bu - au) + 8]);
+        }
+      kit.spot(rects, ember, { rate: 7, fps: 8, a: 0.95 });
     }
     // the little hall at the top of the 大, visitors waiting for dark
     const sc = 90;

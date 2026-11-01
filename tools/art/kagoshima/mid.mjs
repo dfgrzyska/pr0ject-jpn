@@ -9,7 +9,8 @@
 //
 // Live (see ../props.mjs): the Ferris wheel turns, trams shuttle along the lawn tracks, the Sakurajima
 // ferries cross the bay with their wakes, the feeding boat circles the fish farm, the shadow of an ash plume
-// drifts over the water, steam seeps from the sand baths, dolphins leap, ash billows out of the crater and steam off the
+// drifts over the water, steam seeps from the sand baths and the port's foot bath, ash sweepers trundle up the
+// lava road in their dust, volcanic bombs thud down under the crater, dolphins leap, ash billows out of the crater and steam off the
 // vents and cracks, and the lava breathes, flaring up and dying down.
 //
 // Coordinates: u = distance from the bottom of the strip (stage start), strip y = L - u.
@@ -737,6 +738,32 @@ export function buildMid() {
     // ferry terminal and pier
     building(70, Y(i0 + 90), 40, 16, 6, { roof: 0x8a8e96 });
     for (let u = i0 - 30; u < i0 + 40; u++) for (let x = 84; x < 96; x++) if (D(x, Y(u)) <= 2) img.set(x, Y(u), u % 4 ? 0x8a8a84 : 0x6a6a64);
+    // the long hot-spring foot bath along the sea wall by the port: a wooden trough of milky water, people
+    // sitting along both sides with their feet in it, steam rising off it (live)
+    {
+      const fu = i0 + 54;
+      const fy = Y(fu);
+      const fr = rng(4431);
+      objects.push({
+        y: fy + 6,
+        shadow: () => shadowRect(8, fy + 2, 58, 6, 0.55),
+        draw: () => {
+          img.rect(6, fy, 58, 6, 0x8a6a44);
+          img.rect(6, fy, 58, 1, 0xa8885c);
+          img.rect(7, fy + 1, 56, 4, 0xa8c8b8);
+          for (let x = 9; x < 62; x += 7) img.set(x, fy + 2, 0xd8ece4); // ripples where the feet are
+          for (let x = 8; x < 63; x += 3) {
+            for (const [dy, hy] of [[-1, -2], [6, 7]]) {
+              if (fr() < 0.3) continue;
+              img.set(x, fy + dy, fr.pick([0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0x6aaa5a, 0x3a3a4a]));
+              img.set(x, fy + hy, 0x2a2024);
+            }
+          }
+        },
+      });
+      reserveRect(4, fy - 4, 62, 14);
+      for (const x of [16, 34, 52]) kit.emit(x, fu - 2, vapour.slice(0, 2), { rate: 0.7, life: [1.4, 2.2], vy: 5, sx: 3, wf: 1, a: 0.3, tint: 1 });
+    }
     hRoad(i0 + 110, 4);
     vRoad(150, 4, i0 + 110, LAVA[0] + 60);
     // village with ash on the roofs
@@ -845,6 +872,60 @@ export function buildMid() {
       for (let j = 0; j < 7; j++) img.set(x + Math.round(Math.sin(j) * 1.5), y - j, 0xffffff, 0.3 - j * 0.035);
       kit.emit(Math.round(x), U(y) + 1, vapour, { rate: 0.8, life: [2.4, 3.4], vy: 6, sx: 1, wf: 1, a: 0.4, tint: 1 }); // steam off the crack (live)
     }
+  }
+
+  // the lava road's ash sweepers trundling up and down with a cloud of grey dust behind them; patches of
+  // knotweed, the brightest green on the lava; volcanic bombs thudding down on the slopes under the crater,
+  // glowing and smoking (live)
+  {
+    const lr = rng(4441);
+    const roadX = (u) => 70 + 40 * Math.sin((u - LAVA[0]) / 170);
+    const sweeper = (up) => {
+      const r = new Raster(5, 9);
+      r.rect(0, 0, 5, 9, 0x101010, 0.25);
+      r.rect(0, 0, 4, 8, 0xe8e4dc);
+      r.rect(0, up ? 0 : 6, 4, 2, 0x3a5a8a); // the cab
+      r.rect(0, up ? 7 : 0, 4, 1, 0x2a2a2e); // the brushes
+      r.set(1, 4, 0xf0a020); // the beacon
+      return frameAt(r, 5800);
+    };
+    const dust = [3, 4, 5, 5].map((rad, k) => {
+      const r = new Raster(rad * 2 + 1, rad * 2 + 1);
+      for (let y = 0; y < r.h; y++) for (let x = 0; x < r.w; x++) if (Math.hypot(x - rad, y - rad) < rad && bayer(x, y) < 0.7 - k * 0.15) r.set(x, y, 0x9a948c, 0.7);
+      return frameAt(r, 5800);
+    });
+    for (const s0 of [0.2, 0.7]) {
+      const pts = [];
+      for (let u = LAVA[0] + 10; u < CRATER.u - 120; u += 16) pts.push([Math.round(roadX(u)) + (s0 < 0.5 ? -2 : 2), u]);
+      kit.path(pts, [sweeper(true)], { sp: 6, mode: 'pp', hold: 4, turn: 'none', fu: [sweeper(true)], fd: [sweeper(false)], wake: { f: dust, every: 4, life: 2.4 }, s0 });
+    }
+    for (let k = 0; k < 26; k++) {
+      const x = Math.round(lr() * W);
+      const y = Y(LAVA[0] + 40 + lr() * 1100);
+      if (anyRes(x - 4, y - 3, 9, 7)) continue;
+      for (let j = 0; j < 14; j++) {
+        const px = x + Math.round((lr() - 0.5) * 8);
+        const py = y + Math.round((lr() - 0.5) * 5);
+        img.set(px, py, lr() < 0.2 ? 0x8a3a3a : lr() < 0.5 ? 0x5a8a3a : 0x7aa84a); // knotweed leaves, a red stem here and there
+      }
+    }
+    const bomb = [0, 1, 2, 3, 4, 5, 6].map((k) => {
+      const r = new Raster(13, 13);
+      const c = 6;
+      if (k === 0) r.set(c, c, 0x1a1414, 0.5); // its shadow, coming down
+      if (k === 1) r.disc(c + 0.5, c + 0.5, 1.5, 0x1a1414, 0.6);
+      if (k === 2) {
+        r.disc(c + 0.5, c + 0.5, 2.5, 0xff8a20);
+        r.disc(c + 0.5, c + 0.5, 1.2, 0xfff0a0);
+      }
+      if (k >= 3) {
+        const rr = k - 1;
+        for (let a = 0; a < Math.PI * 2; a += 0.5) r.set(Math.round(c + Math.cos(a) * rr), Math.round(c + Math.sin(a) * rr * 0.8), 0x7a7470, 0.8 - (k - 3) * 0.15); // the ash it throws up
+        r.disc(c + 0.5, c + 0.5, 1.4, k < 5 ? 0xff6a10 : 0xa83a10); // the rock still glowing
+      }
+      return kit.frame(r);
+    });
+    kit.spot([[8, 6980, 164, 300]], bomb, { rate: 0.5, fps: 7 });
   }
 
   // ------------------------------------------------------------ G. the summit crater and two side vents

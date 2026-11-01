@@ -9,7 +9,9 @@
 // Live (see ../props.mjs): the chairlift runs, a jumper goes down the in-run and flies, cars drive up
 // Ekimae-dōri and across town, the streetcar runs through Susukino, chimneys smoke, snow slides off the
 // tin roofs, manholes steam, office windows go dark and light up, the open channel of the frozen river
-// steams, Susukino's neon walls flicker, the ramen alley and Nijō market's grill steam, shoppers browse, skaters circle the rink on Shōbu pond and the TV Tower's
+// steams, Susukino's neon walls flicker, the ramen alley and Nijō market's grill steam, shoppers browse,
+// a snowcat grooms the landing hill under the fans' flags, children sledge in Nakajima park, people shovel
+// snow in the suburb, the sculptors' chainsaws throw chips off the crane, skaters circle the rink on Shōbu pond and the TV Tower's
 // big clock counts the time of the stage.
 //
 // Coordinates: u = distance from the bottom of the strip (stage start), strip y = L - u.
@@ -563,6 +565,31 @@ export function buildMid() {
       jumper.set(4, 5, 0x3a3a48); // skis in a V
       jumper.set(3, 5, 0x101018, 0.3);
       kit.path([[cx, 888], [cx, 524], [cx, 300], [cx, 200], [cx, 120]], [frameAt(jumper, 500)], { sp: 30, turn: 'none' });
+      // a snowcat grooming the landing hill up one side and back down, leaving corduroy behind it
+      const cat = (up) => {
+        const r = new Raster(7, 10);
+        r.rect(0, 1, 7, 8, 0x2a2a30); // the tracks
+        r.rect(1, 2, 5, 6, 0xe0602a); // the red body and cab
+        r.rect(2, up ? 2 : 5, 3, 2, 0x3a4a6a);
+        r.rect(0, up ? 0 : 9, 7, 1, 0xc8ccd4); // the blade
+        r.rect(1, up ? 9 : 0, 5, 1, 0x8a8a92); // the tiller
+        return frameAt(r, 380);
+      };
+      const cord = [0, 1, 2].map((k) => {
+        const r = new Raster(7, 1);
+        for (let x = 0; x < 7; x += 2) r.set(x, 0, 0xf4f6fa, 0.8 - k * 0.2);
+        return frameAt(r, 380);
+      });
+      kit.path([[cx - 16, 246], [cx - 9, 500]], [cat(true)], { sp: 4, mode: 'pp', hold: 3, turn: 'none', fu: [cat(true)], fd: [cat(false)], wake: { f: cord, every: 2, life: 5 } });
+      // the fans in the stands waving their flags
+      const flag = [0xe8343a, 0xf0f0f0, 0x2a5aa8, 0xf0c020].map((c) => [0, 1, 0, 1].map((f) => {
+        const r = new Raster(3, 4);
+        r.set(0, 1, 0x6a5a4a);
+        r.set(0, 2, 0x6a5a4a);
+        r.rect(1, f ? 0 : 1, 2, 2, c);
+        return frameAt(r, 150);
+      }));
+      for (const fl of flag) kit.spot([[46, 152, 88, 26]], fl, { rate: 1.6, fps: 5 });
     }
     // forest edge to the suburbs: a few houses among the trees
     tinHouse(40, Y(1060), 16, 12, { lit: 0.8, chimney: true });
@@ -998,6 +1025,43 @@ export function buildMid() {
       img.set(Math.round(x + 3), Y(u), C.snow[0]);
     }
     for (const [x, u] of [[70, 4080], [130, 4060], [60, 4560], [140, 4780]]) snowman(x, Y(u));
+    // a sledging hill by the pond: a mound of packed snow, runs worn into it, children sliding down and
+    // trudging back up with their sleds (live)
+    {
+      const hx = 150;
+      const hu = 4262;
+      for (let y = Y(hu + 36); y < Y(hu - 30); y++)
+        for (let x = hx - 30; x < W; x++) {
+          const e = ((x + 0.5 - hx) / 28) ** 2 + ((U(y) - hu) / 32) ** 2;
+          if (e >= 1) continue;
+          const lit = 0.55 + (U(y) - hu) / 64 - (x - hx) / 90;
+          let c = rampColor(C.snow, Math.max(0.2, Math.min(1, lit)), x, y);
+          if (Math.abs(x - hx + 8) < 1 || Math.abs(x - hx - 4) < 1) c = rampColor(C.packed, 0.7, x, y); // the worn runs
+          img.set(x, y, c);
+        }
+      reserveRect(hx - 31, Y(hu + 37), W - hx + 31, 70);
+      const sledder = (c) => {
+        const r = new Raster(3, 5);
+        r.set(1, 0, 0x2a2026);
+        r.set(1, 1, c);
+        r.set(0, 2, c);
+        r.set(2, 2, c);
+        r.rect(0, 3, 3, 2, 0xd83a2a); // the sled
+        return frameAt(r, hu);
+      };
+      const walker = (c, f) => {
+        const r = new Raster(3, 5);
+        r.set(1, 0, 0x2a2026);
+        r.set(1, 1, c);
+        r.set(1, 2, f ? scaleColor(c, 0.8) : c);
+        r.rect(f ? 0 : 2, 3, 1, 2, 0xd83a2a); // dragging the sled behind
+        return frameAt(r, hu);
+      };
+      for (const [c, x, s0] of [[0x3a6ad0, hx - 8, 0.1], [0xe8a030, hx + 4, 0.55], [0x5aaa6a, hx - 8, 0.8]]) {
+        kit.path([[x, hu + 30], [x, hu - 34]], [sledder(c)], { sp: 16, turn: 'none', s0 });
+        kit.path([[x + 14, hu - 34], [x + 14, hu + 30]], [walker(c, 0), walker(c, 1)], { sp: 3, turn: 'none', fps: 3, s0: (s0 + 0.5) % 1 });
+      }
+    }
   }
 
   // ------------------------------------------------------------ F. Ōdōri park: the Snow Festival
@@ -1054,6 +1118,26 @@ export function buildMid() {
       const [b0] = blockAt(3);
       craneSculpture(90, Y(b0 + 120));
       crowd(30, Y(b0 + 30), 120, 20, 50);
+      // the sculptors still at it with chainsaws and spatulas, snow and ice chips flying off the wings (live)
+      const sculptor = (f) => {
+        const r = new Raster(4, 5);
+        r.set(1, 0, 0xe8e8f0); // a white helmet
+        r.rect(1, 1, 1, 2, 0xf07a20); // the orange suit
+        r.set(f ? 2 : 3, 1, 0x8a8a92); // the saw
+        r.set(1, 3, 0x2a2a3a);
+        r.set(2, 4, 0x101018, 0.4);
+        return frameAt(r, b0 + 120);
+      };
+      for (const [x, u] of [[54, b0 + 104], [126, b0 + 110], [90, b0 + 70]]) kit.wander(x, u, 5, 3, [sculptor(0), sculptor(1)], { n: 1, sp: 2, idle: 0.7, turn: 'flip', fps: 6 });
+      const chips = [0, 1, 2, 3].map((k) => {
+        const r = new Raster(7, 7);
+        for (let i = 0; i < 5; i++) {
+          const a = i * 1.3 + k * 0.4;
+          r.set(Math.round(3 + Math.cos(a) * (k + 1)), Math.round(3 + Math.sin(a) * (k + 1) * 0.7), 0xffffff, k > 2 ? 0.5 : 1);
+        }
+        return frameAt(r, b0 + 110);
+      });
+      kit.spot([[48, b0 + 112, 14, 10], [120, b0 + 118, 14, 10], [84, b0 + 78, 14, 10]], chips, { rate: 3, fps: 8 });
     }
     // 5: big-air ramp with stands
     {
@@ -1831,6 +1915,30 @@ export function buildMid() {
       img.disc(x + 0.5, Y(u) + 0.5, 1.5, 0x2a2a30);
       kit.emit(x, u, steam, { rate: 0.8, life: [1.6, 2.6], vy: 6, sx: 1, wf: 0.7, a: 0.4, tint: 1 });
     }
+  // people out with their snow shovels in front of the suburb's houses, tossing the snow aside (live)
+  {
+    const sr = rng(3395);
+    const shoveller = (c, f) => {
+      const r = new Raster(4, 5);
+      r.set(1, 0, 0x2a2026);
+      r.rect(1, 1, 1, 2, c);
+      r.set(f ? 2 : 3, f ? 2 : 1, 0x6a5a4a); // the shovel's handle
+      r.rect(3, f ? 3 : 2, 1, 1, 0x3a7ac8); // its blade
+      r.set(1, 3, 0x2a2a3a);
+      return frameAt(r, 1700);
+    };
+    const toss = [0, 1, 2, 3].map((k) => {
+      const r = new Raster(6, 6);
+      for (let i = 0; i < 4 + k; i++) r.set(Math.min(5, 1 + k + (i % 2)), Math.max(0, 4 - k + Math.floor(i / 2) - 1), 0xf4f6fa, k > 2 ? 0.5 : 0.95);
+      return frameAt(r, 1700);
+    });
+    const homes = roofEdges.filter(([, u]) => u > SUBURB[0] + 20 && u < CENTER[0] - 20).filter(() => sr() < 0.12);
+    for (const [x, u, w] of homes) {
+      const c = sr.pick([0xd83a3a, 0x3a6ad0, 0x5aaa6a, 0xe8a030, 0x8a4ab0]);
+      kit.wander(x + w / 2, u - 9, 4, 1, [shoveller(c, 0), shoveller(c, 1)], { n: 1, sp: 1.5, idle: 0.5, turn: 'flip', fps: 2 });
+    }
+    if (homes.length) kit.spot(homes.map(([x, u, w]) => [x + w / 2 - 6, u - 6, 12, 5]), toss, { rate: homes.length * 0.25, fps: 6 });
+  }
   {
     const slide = [0, 1, 2, 3, 4].map((k) => {
       const r = new Raster(7, 7);

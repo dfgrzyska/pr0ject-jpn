@@ -12,8 +12,10 @@
 // are puffs the game keeps sending up (shaded like clouds, lit from the top left), swelling and bending
 // with the breeze. The hot pools bubble (the grey mud in "monks' heads"), waves wash the black sand,
 // boats cross the bay, trains pass the station, crocodiles swim in their pens, the macaques of
-// Takasakiyama wander their clearing, the ropeway's cabins glide over the woods and steam seeps from the
-// Myōban huts (see ../props.mjs). Vents and turret pads come from the wave file.
+// Takasakiyama wander their clearing, the ropeway's cabins glide over the woods (macaques watching from its
+// pylons), steam seeps from the Myōban huts, bathers in yukata stroll Kannawa's lane as its lanterns brighten
+// one after another, eggs cook in a basket in Umi Jigoku with visitors round its railing, and lights chase up
+// Beppu Tower (see ../props.mjs). Vents and turret pads come from the wave file.
 // Coordinates: u = distance from the bottom of the strip (stage start), y = L - u.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -739,6 +741,21 @@ export function buildMid() {
       });
       reserveRect(x - 2, y - 62, 18, 70);
     }
+    // the tower's light strings chasing up its legs, all day long (live)
+    {
+      const x = 156;
+      const y = Y(1150);
+      const frames = [0, 1, 2, 3].map((k) => {
+        const r = new Raster(15, 64);
+        for (let j2 = 0; j2 < 50; j2 += 2) {
+          if (Math.floor(j2 / 2) % 4 !== k) continue;
+          const hw = 6 - j2 * 0.09;
+          for (const sx of [-1, 1]) r.set(Math.round(7 + sx * hw), 62 - j2, 0xfff0a0);
+        }
+        return kit.frame(r);
+      });
+      kit.loop(x, U(y - 62), frames, { fps: 8, fx: 1 });
+    }
     // the covered shopping arcade (Yayoi Tengai)
     {
       const x = 114;
@@ -814,6 +831,37 @@ export function buildMid() {
       }
     };
     lane(64, KANNAWA[0], KANNAWA[1], 12, 95, 0.6);
+    // live: bathers in yukata, towels over their shoulders, strolling the lane from one bath to the next, and
+    // the lane's lanterns brightening one after another up the slope
+    {
+      const yr = rng(6621);
+      const laneX = (u) => 64 + 12 * Math.sin(u / 95 + 0.6);
+      const bather = (c, f) => {
+        const r = new Raster(3, 4);
+        r.set(1, 0, 0x2a2024);
+        r.set(1, 1, c);
+        r.set(0, 1, 0xf4f0e6); // the towel
+        r.set(1, 2, f ? scaleColor(c, 0.8) : c);
+        r.set(2, 3, 0x101010, 0.4);
+        return kit.frame(tod.frame(r, 2700));
+      };
+      for (const c of [0x2b3c78, 0xe8e0d0, 0x8a2a3a, 0x3a5a7a, 0xd8a0b0]) {
+        const side = yr() < 0.5 ? -2 : 2;
+        const pts = [];
+        for (let u = KANNAWA[0] + 8; u <= KANNAWA[1] - 8; u += 16) pts.push([Math.round(laneX(u)) + side, u]);
+        kit.path(pts, [bather(c, 0), bather(c, 1)], { sp: 2.5, mode: 'pp', hold: 4, turn: 'none', fps: 3, s0: yr() });
+      }
+      const glowF = new Raster(3, 3);
+      for (const [x, y, a] of [[1, 1, 1], [0, 1, 0.5], [2, 1, 0.5], [1, 0, 0.5], [1, 2, 0.5]]) glowF.set(x, y, 0xffc070, a);
+      const parts = [];
+      for (let u = KANNAWA[0]; u < KANNAWA[1]; u++)
+        if (u % 34 === 0) {
+          const c = laneX(u);
+          parts.push([0, Math.round(c - 6), u + 1, -u * 0.012]);
+          parts.push([0, Math.round(laneX(u + 17) + 4), u + 18, -(u + 17) * 0.012]);
+        }
+      kit.wave([kit.frame(glowF)], parts, { w: 0.8, a0: 0, a1: 0.85, pw: 3 });
+    }
     for (const u of [2380, 2700, 3010]) hRoad(u, 3);
     // the steam kitchen (jigoku-mushi): food cooked in boxes over the vents, steam from each lid
     {
@@ -974,6 +1022,42 @@ export function buildMid() {
       if (k % 4 === 0) img.disc(x + 2, y - 2, 1, 0xf8d0e0);
     }
     gate(8, 3330, 34, 0x2b3c78);
+    // eggs cooking in Umi Jigoku: a basket hung from a bamboo frame into the cobalt water, steam boiling off it;
+    // a railing round the near shore with visitors along it (some strolling, live)
+    {
+      const er = rng(6631);
+      const bx = 44;
+      const by = Y(3400);
+      img.rect(bx - 4, by - 6, 1, 8, 0x8a7a4a); // the bamboo frame
+      img.rect(bx + 5, by - 6, 1, 8, 0x8a7a4a);
+      img.rect(bx - 4, by - 6, 10, 1, 0xa89a5a);
+      img.set(bx, by - 5, 0x5a4a30); // the rope
+      img.set(bx, by - 4, 0x5a4a30);
+      img.rect(bx - 2, by - 3, 5, 3, 0xb8945a); // the wicker basket, eggs showing at its top
+      for (let i = 0; i < 3; i++) img.set(bx - 1 + i, by - 3, 0xf4f0e6);
+      kit.emit(bx, 3402, [2, 3, 4].map(puffFrames), { rate: 2, life: [1.6, 2.4], vy: 7, sx: 1, wf: 0.5, a: 0.7, d: 1.1, tint: 1 });
+      const rail = [];
+      for (let a = 0.2; a <= Math.PI - 0.2; a += 0.04) rail.push([76 + Math.cos(a) * 49, Y(3420) + Math.sin(a) * 33]);
+      rail.forEach(([x, y], i) => {
+        img.set(Math.round(x), Math.round(y), 0x4a3a2a);
+        if (i % 5 === 0) img.set(Math.round(x), Math.round(y) + 1, 0x2a2018);
+        reserveRect(x - 1, y - 1, 3, 4);
+      });
+      for (const [x, y] of rail.filter(() => er() < 0.25)) {
+        img.set(Math.round(x), Math.round(y) + 2, er.pick([0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0x2b3c78]));
+        img.set(Math.round(x), Math.round(y) + 1, 0x2a2024);
+      }
+      const visitor = (c, f) => {
+        const r = new Raster(2, 4);
+        r.set(0, 0, 0x2a2024);
+        r.set(0, 1, c);
+        r.set(0, 2, f ? scaleColor(c, 0.8) : c);
+        r.set(1, 3, 0x101010, 0.4);
+        return kit.frame(tod.frame(r, 3400));
+      };
+      for (const [c, s0] of [[0xd04040, 0.2], [0x3a6ad0, 0.6], [0xe8e8f0, 0.9]])
+        kit.path(rail.filter((_, i) => i % 6 === 0).map(([x, y]) => [Math.round(x), U(Math.round(y) + 3)]), [visitor(c, 0), visitor(c, 1)], { sp: 3, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0 });
+    }
     // Oniishibozu: grey mud pools with bubbles like shaven monks' heads
     for (const [x, u, rx, ry] of [[66, 3610, 30, 17], [112, 3770, 28, 16], [40, 3770, 20, 13], [124, 3612, 16, 11], [76, 3700, 12, 8]]) {
       hotPool(x, u, rx, ry, C.mud, 90 + u, C.stone);
@@ -1177,6 +1261,12 @@ export function buildMid() {
           img.rect(Math.round(x) - 3, y - 3, 7, 7, 0x6a6c72); // a lattice pylon
           for (let k = -3; k < 4; k += 2) img.line(Math.round(x) - 3, y + k, Math.round(x) + 3, y - k, 0x9a9ca2);
           img.rect(Math.round(x) - 5, y, 11, 1, 0x4a4a50);
+          // a macaque or two sitting up on the crossbar, watching the cabins go by
+          for (const dx of t === 0.5 ? [-4, 3] : [2]) {
+            img.rect(Math.round(x) + dx, y - 2, 2, 2, 0x7a5a40);
+            img.set(Math.round(x) + dx, y - 3, 0xd87a6a);
+            img.set(Math.round(x) + dx + 1, y, 0x5a4030); // the tail hanging down
+          }
         }
       },
     });

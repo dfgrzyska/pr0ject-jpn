@@ -16,7 +16,8 @@
 // neon signs light up letter by letter and billboards chase, the giant crab waves its claws, lantern
 // strings sway, the fountain plays, neon reflections shimmer on the water and fishing boats drift; the crowd
 // streams over Ebisu-bashi, strollers walk the canal banks, the food stalls' griddles steam and the office
-// windows of Umeda and Nakanoshima go dark and light up.
+// windows of Umeda and Nakanoshima go dark and light up; pigeons take off from the castle plazas, the yatai on
+// Tempozan's promenade steam, and tugboats work past the container cranes in the bay.
 //
 // Coordinates: u = distance from the bottom of the strip (stage start), strip y = L - u.
 import { readFileSync } from 'node:fs';
@@ -1094,6 +1095,23 @@ export function buildMid() {
       });
     }
     crowd(36, Y(780), 108, 150, 190);
+    // flocks of pigeons pecking on the plazas take off all at once, wheel and scatter (live)
+    {
+      const flock = [0, 1, 2, 3, 4, 5].map((k) => {
+        const r = new Raster(19, 15);
+        for (let i = 0; i < 9; i++) {
+          const a = i * 0.7 + 0.4;
+          const d = 1.5 + (i % 3) + k * 1.6;
+          const x = Math.round(9 + Math.cos(a) * d * 1.2 + k * 0.8);
+          const y = Math.round(10 + Math.sin(a) * d * 0.6 - k * 1.4);
+          if (x < 0 || x >= 19 || y < 0 || y >= 15) continue;
+          r.set(x, y, 0x8a8c96, k > 4 ? 0.5 : 1);
+          if (k && (i + k) % 2) r.set(x + 1, y, 0xd8dae0, k > 4 ? 0.4 : 0.9); // a wing flashing
+        }
+        return kit.frame(tod.frame(r, 860));
+      });
+      kit.spot([[56, 940, 68, 110], [60, 150, 60, 40]], flock, { rate: 0.4, fps: 6 });
+    }
     crowd(84, Y(990), 12, 200, 40, true);
     // Gokuraku-bashi: the arched wooden bridge out of the Honmaru to the north
     objects.push({
@@ -2406,6 +2424,28 @@ export function buildMid() {
         glow(x, Y(p1 - 7), 0xfff0c8);
         pool(x, Y(p1 - 6), 12, C.lamp, 0.35);
       }
+      // a row of yatai, the little food carts, along the promenade: red lanterns, curtains over the counters,
+      // stools in front, steam off the pots (live)
+      for (const [k, x] of [12, 48, 84, 120, 156].entries()) {
+        const y = Y(6420);
+        objects.push({
+          y: y + 9,
+          shadow: () => shadowRect(x + 2, y + 2, 16, 8, 0.6),
+          draw: () => {
+            img.rect(x, y, 16, 6, WOOD[2]);
+            img.rect(x, y, 16, 1, WOOD[3]);
+            img.rect(x + 1, y + 1, 14, 2, [0x8a2020, 0x2b3c78, 0x8a2020, 0x3a4a3a, 0x2b3c78][k]); // the noren over the counter
+            for (let i = 0; i < 4; i++) img.set(x + 2 + i * 4, y + 3, 0xe8e0d0); // the curtain's slits
+            img.rect(x + 1, y + 4, 14, 2, WOOD[1]);
+            for (let i = 0; i < 3; i++) img.set(x + 3 + i * 5, y + 8, 0x3a3a40); // the stools
+            glow(x - 1, y + 1, 0xff4a30);
+            glow(x + 16, y + 1, 0xff4a30);
+            pool(x + 8, y + 4, 10, 0xff7a40, 0.35);
+          },
+        });
+        reserveRect(x - 2, y - 2, 20, 12);
+        kit.emit(x + 8, 6420, stallSteam, { rate: 1.1, life: [1.2, 2], vy: 6, sx: 1, wf: 0.6, a: 0.4, tint: 1 });
+      }
       crowd(4, Y(p1 - 8), 172, 26, 60, false);
       crowd(4, Y(6330), 172, 40, 40, false);
     }
@@ -2431,6 +2471,55 @@ export function buildMid() {
           pool(x + 7, y + 17, 20, 0xffc070, 0.35);
         },
       });
+    }
+    // the container terminal down the left edge of the bay: the quay stacked with containers, three gantry
+    // cranes with their booms out over the water and red lights on top; tugboats working along the right (live)
+    {
+      const [q0, q1] = [6600, 7130];
+      for (let u = q0; u < q1; u++)
+        for (let x = 0; x < 16; x++) img.set(x, Y(u), x === 15 ? 0x6a6e74 : rampColor(STONE, 0.4 + fbm(x, u, { seed: 5521, scale: 3 }) * 0.3, x, Y(u)));
+      reserveRect(0, Y(q1), 17, q1 - q0);
+      const cols = [0xc84a30, 0x2a5a9a, 0x3a8a5a, 0xd8a030, 0x8a8a92, 0x6a3a8a];
+      for (let u = q0 + 6; u < q1 - 6; u += 5)
+        for (const x of [1, 6]) if ((u + x) % 7) img.rect(x, Y(u), 4, 4, cols[(u * 3 + x) % cols.length]);
+      for (const u of [6700, 6870, 7040]) {
+        const y = Y(u);
+        objects.push({
+          y: y + 6,
+          shadow: () => {
+            for (let x = 16; x < 44; x++) img.tint(x + 3, y + 7, 0.6);
+          },
+          draw: () => {
+            img.rect(2, y - 4, 2, 12, 0x3a3e46); // the legs on their rails
+            img.rect(12, y - 4, 2, 12, 0x3a3e46);
+            img.rect(0, y, 46, 3, 0x5a6a7a); // the boom out over the water
+            for (let x = 1; x < 46; x += 3) img.set(x, y + 1, 0x2a3440);
+            img.rect(0, y, 46, 1, 0x8a9aaa);
+            img.rect(20, y + 3, 4, 2, 0xd8d4c8); // the trolley and its cab
+            glow(45, y, 0xff3020);
+            glow(1, y - 4, 0xff3020);
+          },
+        });
+      }
+      const tug = (up) => {
+        const r = new Raster(7, 13);
+        for (let j = 0; j < 12; j++) {
+          const w = (up ? j < 3 : j > 8) ? 3 : 5;
+          r.rect(Math.floor((7 - w) / 2), j, w, 1, j % 4 === 0 ? 0x1a1a20 : 0x2a2a30);
+        }
+        r.rect(1, 5, 5, 3, 0xd8402a); // the wheelhouse
+        r.rect(2, 5, 3, 1, 0xf0e8d8);
+        r.set(3, up ? 9 : 3, 0xe8c040); // the funnel
+        r.rect(6, 1, 1, 12, 0x0a1418, 0.25);
+        return kit.frame(tod.frame(r, 6900, [[3, up ? 0 : 12, 0xffffff, 0.9]]));
+      };
+      const wakeT = [0, 1, 2].map((k) => {
+        const w = new Raster(1, 11 + k * 4);
+        w.set(0, 0, 0xeaf0f0);
+        w.set(0, 10 + k * 4, 0xeaf0f0);
+        return kit.frame(tod.frame(w, 6900));
+      });
+      for (const [x, s0] of [[156, 0.2], [170, 0.75]]) kit.path([[x, 6600], [x, 7120]], [tug(true)], { sp: 6, mode: 'pp', hold: 4, turn: 'none', fu: [tug(true)], fd: [tug(false)], wake: { f: wakeT, every: 3, life: 2 }, s0 });
     }
     // Minato Ōhashi: the red truss bridge across the harbour mouth, a chain of lights along it
     objects.push({
