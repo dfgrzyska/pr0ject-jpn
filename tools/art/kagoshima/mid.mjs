@@ -381,15 +381,36 @@ export function buildMid() {
 
   // ------------------------------------------------------------ B. Sengan-en, the Shimadzu garden by the sea
   {
+    // the coast road, and the Nippō railway inland of it, keep to the shore: where the land turns west round the
+    // head of the bay they bend with it and run off the screen along the bay (they don't stop at the corner)
     const roadX = (u) => seaX(u) - 14;
-    for (let u = SENGAN[0]; u < BAY[0] + 30; u++) {
-      const cx = Math.round(roadX(u));
-      for (let x = cx - 5; x <= cx + 4; x++) if (D(x, Y(u)) > 0) roadPx(x, Y(u), x + 0.5 - cx, 3);
-      // the Nippō railway along the shore
-      for (const x of [cx - 8, cx - 10]) if (D(x, Y(u)) > 0) img.set(x, Y(u), u % 3 ? C.rail : 0x5a4a3a);
-      reserveRect(cx - 12, Y(u), 18, 1);
-      if (u % 30 === 0) tree('palm', cx + 7, Y(u), 4.5);
+    const rails = [[], []];
+    for (let u = SENGAN[0]; u < BAY[0] + 160; u++) {
+      const cx = roadX(u);
+      if (cx < -24) break;
+      const slope = (roadX(u + 1) - roadX(u - 1)) / 2; // px across per px up the strip
+      const k = Math.sqrt(1 + slope * slope); // on the bend a row cuts the road at a slant
+      const y = Y(u);
+      for (let x = Math.floor(cx - 5.5 * k); x <= cx + 4.5 * k; x++) if (D(x, y) > 0) roadPx(x, y, (x + 0.5 - cx) / k, 3);
+      reserveRect(cx - 6 * k, y, 11 * k, 1);
+      // the tracks lie 8 and 10 px inland, square to the road
+      for (const [i, off] of [[0, 8], [1, 10]]) rails[i].push([cx - off / k, u + (off * slope) / k]);
+      if (u % 30 === 0 && Math.abs(slope) < 0.4) tree('palm', cx + 7, y, 4.5);
     }
+    for (const line of rails)
+      for (let i = 1; i < line.length; i++) {
+        const [ax, au] = line[i - 1];
+        const [bx, bu] = line[i];
+        const n = Math.max(1, Math.ceil(Math.max(Math.abs(bx - ax), Math.abs(bu - au))));
+        for (let j = 0; j <= n; j++) {
+          const x = Math.round(ax + ((bx - ax) * j) / n);
+          const u = au + ((bu - au) * j) / n;
+          const yy = Y(u);
+          if (D(x, yy) <= 0) continue;
+          img.set(x, yy, Math.round(u) % 3 ? C.rail : 0x5a4a3a);
+          reserveRect(x - 1, yy, 3, 1);
+        }
+      }
     // pond with an island
     for (let u = 1430; u < 1500; u++)
       for (let x = 60; x < 124; x++) {
