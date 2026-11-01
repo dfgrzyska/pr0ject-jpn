@@ -373,6 +373,7 @@ export class Player {
     const s = this.scene;
     s.sfx.bomb();
     s.stampChance = false; // no stamp for this city now
+    s.run.bombs++;
     s.bombClear = BOMB.clearTime;
     s.bullets.cancelAll(s.fx);
     s.fx.flash(0.75, 0.45);
@@ -392,6 +393,7 @@ export class Player {
     }
     s.sfx.hit();
     s.stampChance = false; // no stamp for this city now
+    s.run.deaths++;
     this.alive = false;
     this.lives--;
     this.drag = null;

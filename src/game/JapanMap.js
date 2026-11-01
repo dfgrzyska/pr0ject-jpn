@@ -10,10 +10,12 @@ const W = VIEW.width;
  * The map of Japan between two stages: every city of this run (cleared ones in gold, the next one
  * pulsing, the rest dim), the route flown so far, and the player's ship flying on to the next city
  * along an arc. Built inside the Stage scene as an overlay; `ready` once the ship has landed.
+ * finale (the ending): the whole route drawn in from city to city, then the ship flies away off the map.
  */
 export class JapanMap {
-  constructor(scene, stages, order, pos) {
+  constructor(scene, stages, order, pos, finale = false) {
     this.scene = scene;
+    this.finale = finale;
     this.stages = stages;
     this.order = order;
     this.pos = pos; // the city just cleared
@@ -35,10 +37,10 @@ export class JapanMap {
       hasStamp(stages[i].id, true) ? scene.add.image(0, 0, 'sprites', 'stamp_icon').setDepth(d + 2).setTint(INK[stages[i].id]).setAlpha(hasStamp(stages[i].id) ? 1 : PALE + 0.2) : null,
     );
     const next = stages[order[pos + 1]];
-    this.title = pixelText(scene, W / 2, 0, 'PODRÓŻ PO JAPONII').setDepth(d + 2).setTint(0xffd6e5);
+    this.title = pixelText(scene, W / 2, 0, finale ? 'PODRÓŻ UKOŃCZONA' : 'PODRÓŻ PO JAPONII').setDepth(d + 2).setTint(0xffd6e5);
     this.count = pixelText(scene, W / 2, 0, `MIASTA: ${pos + 1} / ${order.length}`).setDepth(d + 2).setTint(0xb0aec0);
-    this.dest = pixelText(scene, W / 2, 0, `DALEJ: ETAP ${pos + 2}`).setDepth(d + 2).setTint(0xffffff);
-    this.destSub = pixelText(scene, W / 2, 0, next.subtitle).setDepth(d + 2).setTint(0xf08bb0);
+    this.dest = pixelText(scene, W / 2, 0, finale ? 'ARIGATŌ!' : `DALEJ: ETAP ${pos + 2}`).setDepth(d + 2).setTint(0xffffff).setVisible(!finale);
+    this.destSub = pixelText(scene, W / 2, 0, finale ? '' : next.subtitle).setDepth(d + 2).setTint(0xf08bb0);
     this.hint = pixelText(scene, W / 2, 0, scene.sys.game.device.input.touch ? 'DOTKNIJ, ABY LECIEĆ' : 'ENTER - LECIMY').setDepth(d + 2).setTint(0xffe080).setVisible(false);
     this.layout(scene.H);
   }
@@ -88,6 +90,7 @@ export class JapanMap {
 
   update(dt) {
     this.t += dt;
+    if (this.finale) return this.finaleUpdate();
     const k = Math.min(1, this.t / FLIGHT);
     const e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2; // ease in and out
     const g = this.gfx;
@@ -127,6 +130,40 @@ export class JapanMap {
       this.scene.sfx.pickup?.();
     }
     this.hint.setVisible(this.ready && Math.floor(this.t * 2.5) % 2 === 0);
+  }
+
+  /** The ending: the route drawn in city by city, all the cities lighting up gold, the ship flying away north. */
+  finaleUpdate() {
+    const g = this.gfx;
+    g.clear();
+    const n = this.order.length;
+    const drawn = Math.min(1, this.t / 2.4) * (n - 1);
+    g.fillStyle(0xe8c060, 1);
+    for (let i = 0; i < n - 1; i++) for (let s = 0; s <= Math.min(1, drawn - i); s += 0.03) g.fillRect(...this.arc(i, i + 1, s).map(Math.round), 1, 1);
+    this.order.forEach((_, i) => {
+      const [x, y] = this.city(i);
+      if (i <= drawn + 0.001) {
+        g.fillStyle(0x2a1a10, 1).fillCircle(x, y, 3.5);
+        g.fillStyle(0xe8b830, 1).fillCircle(x, y, 2.5);
+        g.fillStyle(0xfff0a0, 1).fillRect(x - 1, y - 1, 1, 1);
+      } else {
+        g.fillStyle(0x0b0a12, 1).fillCircle(x, y, 2.5);
+        g.fillStyle(0x8a8aa8, 1).fillCircle(x, y, 1.5);
+      }
+    });
+    // from the last city the ship climbs away in a curve and leaves the map at the top
+    const f = Math.max(0, Math.min(1, (this.t - 2.8) / 2.6));
+    const e = f * f;
+    const [x0, y0] = this.city(n - 1);
+    const [cx, cy] = [x0 + 50, y0 - 30];
+    const [x1, y1] = [W / 2 + 40, -24];
+    const at = (t) => [(1 - t) ** 2 * x0 + 2 * (1 - t) * t * cx + t * t * x1, (1 - t) ** 2 * y0 + 2 * (1 - t) * t * cy + t * t * y1];
+    const [sx, sy] = at(e);
+    const [ax, ay] = at(Math.min(1, e + 0.02));
+    this.ship.setPosition(Math.round(sx), Math.round(sy)).setVisible(this.t > 2.4);
+    this.ship.setRotation(f > 0 ? Math.atan2(ay - sy, ax - sx) + Math.PI / 2 : 0);
+    this.dest.setVisible(this.t > 2.4);
+    if (f >= 1 && !this.ready) this.ready = true;
   }
 
   destroy() {

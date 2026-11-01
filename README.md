@@ -15,7 +15,7 @@ npm run art        # przegenerowanie grafik do public/assets/
 Wersja online: https://dfgrzyska.github.io/pr0ject-jpn/ — budowana automatycznie przy każdym pushu na `main`
 (`.github/workflows/pages.yml`; w Settings → Pages źródło musi być ustawione na „GitHub Actions”).
 
-Parametry do testów w adresie: `?stage=1` … `?stage=6` (ten etap pierwszy, reszta losowo — 1 Kioto, 2 Okinawa, 3 Sapporo, 4 Kagoshima, 5 Osaka, 6 Beppu), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność),
+Parametry do testów w adresie: `?stage=1` … `?stage=6` (ten etap pierwszy, reszta losowo — 1 Kioto, 2 Okinawa, 3 Sapporo, 4 Kagoshima, 5 Osaka, 6 Beppu), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność), `?ending` (od razu zakończenie po zmyślonej podróży),
 `?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5), `?ship=oni|kitsune|tsubame`,
 `?noprops` (tło bez animacji). Z `?god` albo `?t=` pieczątek nie da się zdobyć.
 
@@ -42,6 +42,27 @@ otwiera ikona w lewym górnym rogu ekranu tytułowego albo klawisz K. Pieczątki
 (Okinawa), wieża telewizyjna w śniegu (Sapporo), wybuchająca Sakurajima (Kagoshima), zamek (Osaka) i znak ♨
 gorących źródeł (Beppu), każda innym tuszem. Pieczątka zdobyta w trybie łatwym jest blada (w książeczce z
 podpisem „NA ŁATWYM” zamiast daty); to samo miasto przejście na normalnym odbija w pełnym kolorze.
+
+## Zakończenie
+
+Po wynikach ostatniego miasta gra się nie urywa: przychodzi zakończenie w pięciu scenach, każdą można przewinąć
+dotknięciem albo Enterem (`src/game/Ending.js`), przy spokojnym utworze — głównym motywie Kioto zwolnionym do
+pożegnania:
+1. **Mapa podróży** — na mapie Japonii rysuje się cała przebyta trasa, miasto po mieście zapala się na złoto,
+   a statek odlatuje z ostatniego miasta poza mapę.
+2. **Pieczęcie podróży** — na papierze washi przybijane są po kolei pieczęcie sześciu miast z kanji ich nazw,
+   z głuchym stuknięciem; przy miastach, w których w tej grze zdobyto pieczątkę, stoi jej znaczek. Na dole
+   licznik pieczątek z tej gry, a przy komplecie „KOMPLET W JEDNEJ GRZE!”.
+3. **Podsumowanie** — wynik i rekord, statek, stracone statki, użyte bomby, czas gry i pieczątki (na łatwym
+   także kontynuacje i zachęta do trybu normalnego; podróż bez straty dostaje osobny napis).
+4. **Bossowie podróży** — jak napisy końcowe przesuwają się Kyūbi z ogonami, para shisa, niedźwiedź, Sakurajima,
+   ośmiornica i oni, z imionami i miastami, w kolejności tej podróży.
+5. **Fudżi o wschodzie** — ilustracja (`tools/art/ending.mjs`): Fudżi ze słońcem wschodzącym zza zbocza nad
+   morzem chmur (pas chmur dryfuje), pagoda Chūreitō wśród kwitnących wiśni, gałąź sakury; statek gracza
+   przelatuje ku słońcu, sypią się płatki, logo przybija się jak pieczątka, „DZIĘKUJEMY ZA GRĘ” — i powrót do
+   ekranu tytułowego.
+
+Gra liczy przez całą podróż straty, bomby, czas i zdobyte pieczątki (przenoszone między etapami razem z wynikiem).
 
 ## Tryb łatwy
 
@@ -374,7 +395,7 @@ startuje następny etap. Okinawa jest we wstawce (jak na mapach Japonii). Poło�
 Oryginalna ścieżka „Senbon” grana na żywo przez Web Audio (`src/audio/`) — bez plików audio.
 Skala *in* (miyako-bushi) na A, instrumenty: koto, flet w stylu shakuhachi, chiptune'owy bas, taiko,
 kołatka i shaker. Muzyka rośnie z etapem: spokojne miasto → rozkręcenie przy świątyni → pełny utwór na grzbiecie
-→ skoczny motyw tanuki (pon-poko na taiko, shamisen) → finał na szczycie → motyw bossa przy Kyūbim; do tego dżingle końca etapu i końca gry.
+→ skoczny motyw tanuki (pon-poko na taiko, shamisen) → finał na szczycie → motyw bossa przy Kyūbim; do tego dżingle końca etapu i końca gry oraz spokojny utwór zakończenia (główny motyw zwolniony, druga połowa oktawę niżej).
 Nuty są tekstem w `src/audio/score.js` (16 kroków na takt, np. `'A4 - - E5 - - F5 - ...'`).
 Etap 2 ma własną ścieżkę „Churaumi” (`src/audio/score2.js`): skala ryukyu (C E F G B), sanshin, flet,
 bębny eisa (duży bęben i paranku), kołatki sanba i bujający rytm kachāshī; osobne motywy manty i shisa.

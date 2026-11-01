@@ -125,6 +125,10 @@ const TANUKI_DRUMS = repeat('K . k k K . k . K . k k K k K .', 4, 'K k K k K k K
 
 const REST = '. . . . . . . . . . . . . . . .';
 
+// ---- the ending: the main theme slowed to a farewell, the koto rippling under the flute, the busier answer
+// an octave lower and calmer, a soft taiko on each bar
+const octave = (lines, d) => lines.map((l) => l.replace(/([A-G][b#]?)(\d)/g, (_, n, o) => `${n}${Number(o) + d}`));
+
 export const SONGS = {
   title: {
     bpm: 92,
@@ -205,6 +209,20 @@ export const SONGS = {
       bass: ['A2 . . . . . . . . . . . E2 . E2 .', 'A2 - - - - - - - - - - - - - - -', REST],
       drums: ['K . . . K . . . K . K . K K K K', 'K . . . . . . . . . . . . . . .', REST],
       pad: [REST, 'A3+E4+A4 - - - - - - - - - - - - - - -', REST],
+    },
+  },
+  ending: {
+    bpm: 76,
+    bars: 16,
+    loop: true,
+    sync: false,
+    mix: { koto: 1.3, pad: 1.5, lead: 1.05, bass: 0.8 },
+    tracks: {
+      koto: [...KOTO, ...KOTO],
+      pad: [...PAD, ...PAD],
+      bass: [...BASS_HALF, ...BASS_HALF],
+      lead: [...LEAD_A, ...octave(LEAD_B, -1)],
+      drums: repeat('K . . . . . . . . . . . . . . .', 16, 'K . . . . . . . K . . . K . . .'),
     },
   },
   over: {

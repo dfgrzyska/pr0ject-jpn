@@ -121,6 +121,17 @@ const EN = {
   'RZUCAJ FASOLKI!': 'THROW THE BEANS!',
   'ZESTRZEL MASU I ZŁAP FASOLKI': 'SHOOT THE MASU, GRAB BEANS',
   'ONI WPADA W SZAŁ!': 'THE ONI GOES WILD!',
+  // the ending
+  'PODRÓŻ UKOŃCZONA': 'JOURNEY COMPLETE',
+  'PODRÓŻ UKOŃCZONA!': 'JOURNEY COMPLETE!',
+  PODRÓŻ: 'JOURNEY',
+  UKOŃCZONA: 'COMPLETE',
+  'PIECZĘCIE PODRÓŻY': 'SEALS OF THE JOURNEY',
+  'KOMPLET W JEDNEJ GRZE!': 'ALL IN ONE GAME!',
+  'BEZ ANI JEDNEJ STRATY!': 'NOT ONE SHIP LOST!',
+  'SPRÓBUJ NA NORMALNYM': 'NOW TRY NORMAL',
+  'BOSSOWIE PODRÓŻY': 'BOSSES OF THE JOURNEY',
+  'DZIĘKUJEMY ZA GRĘ': 'THANKS FOR PLAYING',
   'KYUBI WPADA W SZAŁ!': 'KYUBI GOES WILD!',
   // the cities
   KIOTO: 'KYOTO',
@@ -169,6 +180,11 @@ const PATTERNS = [
   [/^MIASTA: (.+)$/, (n) => `CITIES: ${n}`],
   [/^STADO! \+(\d+)$/, (n) => `FLOCK! +${n}`],
   [/^KONTYNUACJE: (\d+)$/, (n) => `CONTINUES: ${n}`],
+  [/^PIECZĄTKI: (.+)$/, (n) => `STAMPS: ${n}`],
+  [/^STATEK: (.+)$/, (name) => `SHIP: ${name}`],
+  [/^STRACONE STATKI: (\d+)$/, (n) => `SHIPS LOST: ${n}`],
+  [/^UŻYTE BOMBY: (\d+)$/, (n) => `BOMBS USED: ${n}`],
+  [/^CZAS GRY: (.+)$/, (time) => `PLAY TIME: ${time}`],
 ];
 
 function initial() {

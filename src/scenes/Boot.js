@@ -47,6 +47,8 @@ export class Boot extends Phaser.Scene {
     this.load.image('font_ink', 'font_ink.png');
     this.load.json('fontMeta', 'font.json');
     this.load.image('japan', 'japan.png'); // the map between stages
+    this.load.image('ending', 'ending.png'); // the ending's last picture (Fuji at sunrise)
+    this.load.image('ending_clouds', 'ending_clouds.png');
     // the cities' backgrounds come later, one city at a time (queueStage)
   }
 

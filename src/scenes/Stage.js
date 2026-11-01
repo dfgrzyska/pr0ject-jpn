@@ -7,6 +7,7 @@ import { Enemies } from '../game/Enemies.js';
 import { Fx } from '../game/Fx.js';
 import { Hud, pixelText } from '../game/Hud.js';
 import { JapanMap } from '../game/JapanMap.js';
+import { Ending } from '../game/Ending.js';
 import { Parallax } from '../game/Parallax.js';
 import { Player } from '../game/Player.js';
 import { Pool } from '../game/Pool.js';
@@ -88,6 +89,9 @@ export class Stage extends Phaser.Scene {
     this.stageTitle = `ETAP ${this.pos + 1}`;
     this.carry = data.carry ?? null;
     this.continues = this.carry?.continues ?? 0; // easy: continues used in this game
+    // the whole journey so far, for the ending: ships lost, bombs used, time flown, stamps won, cities cleared
+    this.run = this.carry?.run ?? { deaths: 0, bombs: 0, time: 0, stamps: [], cities: [] };
+    this.ending = null;
     this.contT = 0; // easy: the continue countdown after a game over
     this.bossDown = false;
     this.bossClearT = 0;
@@ -148,6 +152,14 @@ export class Stage extends Phaser.Scene {
     });
 
     this.loadAhead();
+    // debug: ?ending goes straight to the ending, after a made-up journey
+    if (q.has('ending')) {
+      this.run = { deaths: 2, bombs: 3, time: 1294, stamps: this.order.slice(0, 4).map((i) => STAGES[i].id), cities: this.order.map((i) => STAGES[i].id) };
+      this.score.score = 1234560;
+      this.player.setShip(SHIPS[this.shipIndex]);
+      this.openEnding();
+      return;
+    }
     if (this.carry) {
       this.startGame(); // straight on from the previous stage
       return;
@@ -273,9 +285,9 @@ export class Stage extends Phaser.Scene {
     } else this.restart();
   }
 
-  /** Tap / Enter on the results: on to the map, or (after the last city) a new game. */
+  /** Tap / Enter on the results: on to the map, or (after the last city) the ending. */
   leaveClear() {
-    if (this.order[this.pos + 1] === undefined) this.advance();
+    if (this.order[this.pos + 1] === undefined) this.openEnding();
     else this.openMap();
   }
 
@@ -294,8 +306,15 @@ export class Stage extends Phaser.Scene {
     this.scene.restart({
       order: this.order,
       pos,
-      carry: { ship: this.shipIndex, lives: p.lives, weapon: p.weapon, level: p.level, score: s.score, mult: s.mult, progress: s.progress, continues: this.continues },
+      carry: { ship: this.shipIndex, lives: p.lives, weapon: p.weapon, level: p.level, score: s.score, mult: s.mult, progress: s.progress, continues: this.continues, run: this.run },
     });
+  }
+
+  /** After the last city's results: the ending (the journey's map, the seals, the summary, the bosses, Fuji). */
+  openEnding() {
+    this.hud.closePanel();
+    this.state = 'ending';
+    this.ending = new Ending(this);
   }
 
   /** A moment's hit-stop when a boss or miniboss goes down: everything holds still, then the explosions. */
@@ -396,7 +415,10 @@ export class Stage extends Phaser.Scene {
     const next = STAGES[this.order[this.pos + 1]];
     this.bullets.cancelAll(this.fx);
     const hi = this.recordHi();
+    this.lastHi = hi; // (the ending shows it again)
     const won = this.stampChance && pressStamp(this.stage.id, isEasy());
+    if (this.stampChance) this.run.stamps.push(this.stage.id); // earned in this game (even if the book had it)
+    this.run.cities.push(this.stage.id);
     const stamp = !this.stampEligible ? null : won ? [t(isEasy() ? 'stamp.newEasy' : 'stamp.new'), 0xffe080, 1, true] : [t(this.stampOwned ? 'stamp.have' : 'stamp.missed'), 0x8a8aa8];
     this.time.delayedCall(2000, () => {
       this.hud.panel([
@@ -411,8 +433,8 @@ export class Stage extends Phaser.Scene {
         ['BOMBA UZUPEŁNIONA', 0xb0aec0],
         ...(stamp ? [stamp] : []),
         '',
-        next ? [`DALEJ: ETAP ${this.pos + 2} - ${next.name}`, 0xffffff] : ['GRATULACJE!', 0xffe080],
-        [next ? 'DOTKNIJ / ENTER' : 'DOTKNIJ / ENTER - JESZCZE RAZ', 0xffe080, 1, true],
+        next ? [`DALEJ: ETAP ${this.pos + 2} - ${next.name}`, 0xffffff] : ['PODRÓŻ UKOŃCZONA!', 0xffe080],
+        ['DOTKNIJ / ENTER', 0xffe080, 1, true],
       ]);
       if (won) this.landStamp();
     });
@@ -472,6 +494,7 @@ export class Stage extends Phaser.Scene {
       return;
     }
     if (this.state === 'map') return this.leaveMap();
+    if (this.state === 'ending') return this.ending.tap();
     if (this.state === 'over' || this.state === 'clear') {
       if (this.endTimer <= 0) this.leaveEnd();
       return;
@@ -503,6 +526,8 @@ export class Stage extends Phaser.Scene {
       if (confirm || bomb) this.startGame();
     } else if (this.state === 'map') {
       if (confirm) this.leaveMap();
+    } else if (this.state === 'ending') {
+      if (confirm || bomb) this.ending.tap();
     } else if (this.state === 'over' || this.state === 'clear') {
       if (confirm && this.endTimer <= 0) this.leaveEnd();
     } else if (this.paused) {
@@ -516,6 +541,7 @@ export class Stage extends Phaser.Scene {
     this.hud.layout(this.H);
     this.select?.layout(this.H);
     this.map?.layout(this.H);
+    this.ending?.layout(this.H);
     this.book?.layout(this.H);
     this.player.clamp();
   }
@@ -596,6 +622,8 @@ export class Stage extends Phaser.Scene {
       }
     }
     if (this.state === 'map') this.map.update(dt);
+    if (this.state === 'ending') this.ending.update(dt);
+    if (playing) this.run.time += dt;
     if (this.state === 'clear') {
       this.clearT += dt;
       if (this.clearT > 0.8 && this.player.alive && this.player.y > -40) this.player.y -= Math.min(220, (this.clearT - 0.8) * 260) * dt;

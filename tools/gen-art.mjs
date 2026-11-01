@@ -10,6 +10,7 @@ import { Raster } from './lib/raster.mjs';
 import { buildSprites } from './art/sprites.mjs';
 import { buildFont, FONT } from './art/font.mjs';
 import { buildJapanMap } from './art/japan.mjs';
+import { buildEnding, buildEndingClouds } from './art/ending.mjs';
 import * as kyoto from './art/kyoto/index.mjs';
 import * as okinawa from './art/okinawa/index.mjs';
 import * as sapporo from './art/sapporo/index.mjs';
@@ -78,6 +79,12 @@ console.log('map of Japan');
 const japan = buildJapanMap();
 write('japan.png', japan.toPNG());
 if (preview) writeFileSync(join(previewDir, 'japan_x3.png'), japan.scaled(3).toPNG());
+
+console.log('ending');
+const ending = buildEnding();
+write('ending.png', ending.toPNG());
+write('ending_clouds.png', buildEndingClouds().toPNG());
+if (preview) writeFileSync(join(previewDir, 'ending_x2.png'), ending.scaled(2).toPNG());
 
 for (const { id, art } of STAGES) {
   if (only && only !== id) continue;
