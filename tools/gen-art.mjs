@@ -68,6 +68,7 @@ console.log('icons');
 console.log('font');
 const font = buildFont();
 write('font.png', font.raster.toPNG());
+write('font_ink.png', buildFont(false).raster.toPNG()); // the same glyphs without the outline, same layout
 // non-ASCII escaped, so the glyph list survives any charset handling on the way to the browser
 const asciiJson = (o) => JSON.stringify(o).replace(/[\u0080-￿]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
 write('font.json', Buffer.from(asciiJson({ ...FONT, chars: font.chars })));

@@ -1,4 +1,4 @@
-# Shmup Japonia — Kioto, Okinawa, Sapporo, Kagoshima, Osaka, Beppu
+# pr0ject-jpn — Kioto, Okinawa, Sapporo, Kagoshima, Osaka, Beppu
 
 Pionowy shmup w przeglądarce (Phaser 4.2.1, WebGL), rozdzielczość wewnętrzna 180×320–420,
 skalowanie całkowitą wielokrotnością pikseli urządzenia.
@@ -40,7 +40,35 @@ mapie Japonii zdobyte miasta mają znaczek. Książeczkę z sześcioma ramkami (
 otwiera ikona w lewym górnym rogu ekranu tytułowego albo klawisz K. Pieczątki zapisują się w przeglądarce
 (`src/game/Stamps.js`), a rysuje je `tools/art/stamps.mjs`: pagoda Yasaka (Kioto), brama Shureimon nad falami
 (Okinawa), wieża telewizyjna w śniegu (Sapporo), wybuchająca Sakurajima (Kagoshima), zamek (Osaka) i znak ♨
-gorących źródeł (Beppu), każda innym tuszem.
+gorących źródeł (Beppu), każda innym tuszem. Pieczątka zdobyta w trybie łatwym jest blada (w książeczce z
+podpisem „NA ŁATWYM” zamiast daty); to samo miasto przejście na normalnym odbija w pełnym kolorze.
+
+## Tryb łatwy
+
+Na ekranie wyboru statku, pod statystykami, jest przełącznik TRYB: NORMALNY / ŁATWY (dotknięcie albo strzałki
+góra / dół), zapamiętywany w przeglądarce. Łatwy to ta sama gra — te same miasta, fale, bossowie i ataki — tylko
+z łagodniejszymi liczbami (`EASY` w `src/config.js`, `src/difficulty.js`):
+
+| | Normalny | Łatwy |
+| --- | --- | --- |
+| Życia (Oni / Kitsune / Tsubame) | 3 / 3 / 2 | 5 / 5 / 4 |
+| Trafienie z gotową bombą | śmierć | bomba wybucha sama („AUTOBOMBA!”) |
+| Koniec gry | od nowa | „KONTYNUOWAĆ?” przez 10 s: dalej w tym samym miejscu, pełne życia, wynik od zera |
+| Utrata mocy po śmierci | −1 poziom | brak |
+| Nieśmiertelność po odrodzeniu | 2,5 s | 3,5 s |
+| Otarcia do nowej bomby | 40 | 30 |
+| Prędkość pocisków | ×1 | ×0,85 |
+| Pociski w wachlarzach i pierścieniach | wszystkie | ok. 30% mniej (7→5, 14→10; celowany środkowy zostaje) |
+| Rozprysk śnieżek, lawy, takoyaki | 6 | 4 |
+| Wrogowie nie strzelają w dolnej części ekranu | od 62% wysokości | od 55% (bossowie jak na normalnym) |
+| Cisza po wejściu wroga | 0,7 s | 1,0 s |
+| Strzelający drobni wrogowie | 25% | 12% |
+| Ostrzeżenia (pioruny, gejzery, szczelina oni) | ×1 | ×1,3 |
+| Wytrzymałość bossów i minibossów | 100% | 75% |
+| Zacięcie przegrzanej broni (Beppu) | 1,8 s | 1,0 s |
+
+W grze przy mnożniku świeci zielone „ŁATWY”, a wyniki i koniec gry pokazują „TRYB ŁATWY” i liczbę kontynuacji.
+Łatwy ma osobny rekord. Kropka trafienia, broń gracza i punkty za wrogów są takie same.
 
 ## Statki
 
@@ -59,7 +87,8 @@ Wybór jest zapamiętywany; „jeszcze raz” wraca do ekranu wyboru z ostatnim 
 
 - Telefon: statek podąża za ruchem palca względem miejsca dotknięcia; bomba — przycisk w prawym dolnym rogu; pauza i głośnik — prawy górny róg.
 - Klawiatura: strzałki / WASD — ruch, Z — bomba, Esc / P — pauza, M — dźwięk, Enter — start; na ekranie tytułowym
-  K — książeczka pieczątek, L — polski / angielski, I — instalacja (gdy przeglądarka na to pozwala).
+  K — książeczka pieczątek, L — polski / angielski, I — instalacja (gdy przeglądarka na to pozwala); na ekranie
+  wyboru statku góra / dół — tryb normalny / łatwy.
 - Strzał jest automatyczny.
 - Palec trzymany na ekranie po utracie statku przejmuje nowy statek przy pierwszym ruchu (nie trzeba dotykać od nowa);
   róg bomby bez bomby steruje jak reszta ekranu.

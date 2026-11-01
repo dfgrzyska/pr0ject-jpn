@@ -159,3 +159,24 @@ export const FAIR = {
   popcornFireChance: 0.25,
   bulletSpeed: { slow: 52, normal: 66, fast: 80 },
 };
+
+// Easy mode (ŁATWY, picked on the ship screen): the same cities, waves, bosses and attacks with gentler
+// numbers, two more lives, a bomb that goes off by itself when you're hit, and continues. Each entry stands in
+// for the normal value named beside it (src/difficulty.js).
+export const EASY = {
+  extraLives: 2, // on top of the ship's own
+  autoBomb: true, // hit with the bomb ready: it goes off instead
+  continues: true, // game over: carry on where you fell, score from zero
+  invulnerable: 3.5, // s after respawn (PLAYER.invulnerable)
+  deathPowerLoss: 0, // (PLAYER.deathPowerLoss)
+  grazePerBomb: 30, // (GRAZE.perBomb)
+  bulletSpeed: 0.85, // every enemy bullet
+  volley: 0.7, // bullets in fans and rings, keeping odd counts odd (the aimed bullet in the middle stays)
+  lobBurst: 4, // pellets where a lobbed snowball lands (6)
+  noFireAfterEnter: 1.0, // (FAIR)
+  noFireBelow: 0.55, // (FAIR; bosses keep the normal line)
+  popcornFireChance: 0.12, // (FAIR)
+  warn: 1.3, // warning time of beams and scalding zones
+  bossHp: 0.75, // bosses, heavies and their parts
+  heatJam: 1.0, // s (HEAT.jam)
+};

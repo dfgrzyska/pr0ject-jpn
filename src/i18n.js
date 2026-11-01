@@ -10,13 +10,15 @@ const KEY = 'shmupjp.lang';
 const STRINGS = {
   pl: {
     'book.title': 'KSIĄŻECZKA PIECZĄTEK',
-    'book.rule': 'ZA ETAP BEZ ŚMIERCI I BEZ BOMBY',
+    'book.rule': 'ETAP BEZ ŚMIERCI I BOMBY',
     'book.full': 'KOMPLET! OMEDETŌ!',
     'book.backTouch': 'DOTKNIJ, ABY WRÓCIĆ',
     'book.backKeys': 'ESC / ENTER - POWRÓT',
     'book.openTouch': 'KSIĄŻECZKA - IKONA W ROGU',
     'book.openKeys': 'K - KSIĄŻECZKA PIECZĄTEK',
     'stamp.new': 'NOWA PIECZĄTKA!',
+    'stamp.newEasy': 'NOWA PIECZĄTKA (BLADA)!',
+    'book.easy': 'NA ŁATWYM',
     'stamp.have': 'PIECZĄTKA JUŻ W KSIĄŻECZCE',
     'stamp.missed': 'BEZ PIECZĄTKI - ŚMIERĆ LUB BOMBA',
     'lang.keys': 'L - ENGLISH',
@@ -27,13 +29,15 @@ const STRINGS = {
   },
   en: {
     'book.title': 'STAMP BOOK',
-    'book.rule': 'NO DEATHS, NO BOMBS IN A STAGE',
+    'book.rule': 'NO DEATHS, NO BOMBS',
     'book.full': 'COMPLETE! OMEDETŌ!',
     'book.backTouch': 'TAP TO GO BACK',
     'book.backKeys': 'ESC / ENTER - BACK',
     'book.openTouch': 'STAMP BOOK - ICON IN THE CORNER',
     'book.openKeys': 'K - STAMP BOOK',
     'stamp.new': 'NEW STAMP!',
+    'stamp.newEasy': 'NEW STAMP (PALE)!',
+    'book.easy': 'ON EASY',
     'stamp.have': 'STAMP ALREADY IN THE BOOK',
     'stamp.missed': 'NO STAMP - A DEATH OR A BOMB',
     'lang.keys': 'L - POLSKI',
@@ -46,8 +50,6 @@ const STRINGS = {
 
 const EN = {
   // title, pause, results
-  JAPONIA: 'JAPAN',
-  'SHMUP JAPONIA': 'SHMUP JAPAN',
   PODSTAWOWA: 'BASIC',
   ROZRZUT: 'SPREAD',
   NAPROWADZANE: 'HOMING',
@@ -82,6 +84,15 @@ const EN = {
   'SIŁA OGNIA': 'FIREPOWER',
   ŻYCIA: 'LIVES',
   'DOTKNIJ PONOWNIE = START': 'TAP AGAIN = START',
+  TRYB: 'MODE',
+  NORMALNY: 'NORMAL',
+  ŁATWY: 'EASY',
+  'PEŁNE WYZWANIE': 'THE FULL CHALLENGE',
+  'WIĘCEJ ŻYĆ I KONTYNUACJE': 'MORE LIVES AND CONTINUES',
+  'TRYB ŁATWY': 'EASY MODE',
+  'KONTYNUOWAĆ?': 'CONTINUE?',
+  'PEŁNE ŻYCIA, WYNIK OD ZERA': 'FULL LIVES, SCORE FROM ZERO',
+  'DOTKNIJ / ENTER - TAK': 'TAP / ENTER - YES',
   'STRZAŁKI - WYBÓR': 'ARROWS - CHOOSE',
   CIĘŻKI: 'HEAVY',
   SZYBKI: 'FAST',
@@ -89,6 +100,7 @@ const EN = {
   'GORĄCE DZIAŁA': 'HOT GUNS',
   'PRZEGRZANIE!': 'OVERHEAT!',
   'BOMBA GOTOWA': 'BOMB READY',
+  'AUTOBOMBA!': 'AUTO BOMB!',
   'FASOLKI!': 'BEANS!',
   'MOC MAX': 'POWER MAX',
   'MOC +1': 'POWER +1',
@@ -154,6 +166,7 @@ const PATTERNS = [
   [/^REKORD (\d+)$/, (n) => `BEST ${n}`],
   [/^MIASTA: (.+)$/, (n) => `CITIES: ${n}`],
   [/^STADO! \+(\d+)$/, (n) => `FLOCK! +${n}`],
+  [/^KONTYNUACJE: (\d+)$/, (n) => `CONTINUES: ${n}`],
 ];
 
 function initial() {
@@ -176,7 +189,6 @@ export function getLang() {
 export function setLang(l) {
   lang = l;
   document.documentElement.lang = l;
-  document.title = tr('SHMUP JAPONIA').replace('SHMUP', 'Shmup').replace(/ (\w)(\w+)$/, (_, a, b) => ` ${a}${b.toLowerCase()}`);
   try {
     localStorage.setItem(KEY, l);
   } catch {

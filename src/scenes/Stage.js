@@ -12,13 +12,14 @@ import { Player } from '../game/Player.js';
 import { Pool } from '../game/Pool.js';
 import { Score } from '../game/Score.js';
 import { ShipSelect } from '../game/ShipSelect.js';
-import { INK, StampBook, hasStamp, pressStamp, stampFrame } from '../game/Stamps.js';
+import { INK, PALE, StampBook, hasStamp, pressStamp, stampFrame } from '../game/Stamps.js';
 import { Waves } from '../game/Waves.js';
+import { isEasy, rules } from '../difficulty.js';
 import { getLang, setLang, t } from '../i18n.js';
 import { canInstall, install, iosHint } from '../pwa.js';
 import { stageReady } from './Boot.js';
 
-const HI_KEY = 'shmupjp.hiscore';
+const HI_KEY = 'shmupjp.hiscore'; // (easy keeps its own record, .easy)
 const SHIP_KEY = 'shmupjp.ship';
 
 function loadShipIndex() {
@@ -37,9 +38,13 @@ function randomOrder(first) {
   return order;
 }
 
+function hiKey() {
+  return isEasy() ? `${HI_KEY}.easy` : HI_KEY;
+}
+
 function loadHi() {
   try {
-    return Number(localStorage.getItem(HI_KEY)) || 0;
+    return Number(localStorage.getItem(hiKey())) || 0;
   } catch {
     return 0;
   }
@@ -47,7 +52,7 @@ function loadHi() {
 
 function saveHi(v) {
   try {
-    localStorage.setItem(HI_KEY, String(v));
+    localStorage.setItem(hiKey(), String(v));
   } catch {
     /* private mode etc. */
   }
@@ -81,6 +86,8 @@ export class Stage extends Phaser.Scene {
     const q = new URLSearchParams(window.location.search);
     this.stageTitle = `ETAP ${this.pos + 1}`;
     this.carry = data.carry ?? null;
+    this.continues = this.carry?.continues ?? 0; // easy: continues used in this game
+    this.contT = 0; // easy: the continue countdown after a game over
     this.bossDown = false;
     this.bossClearT = 0;
     this.H = this.scale.height;
@@ -116,9 +123,10 @@ export class Stage extends Phaser.Scene {
     this.book = null; // the stamp book
     this.stampLand = null; // the stamp coming down onto the results
     this.freezeT = 0; // hit-stop
-    // this city's stamp: won by clearing the stage without a death or a bomb (not with debug help)
+    // this city's stamp: won by clearing the stage without a death or a bomb (not with debug help); on easy a
+    // pale one, which a win on normal inks in full
     this.stampInk = INK[this.stage.id];
-    this.stampOwned = hasStamp(this.stage.id);
+    this.stampOwned = hasStamp(this.stage.id, isEasy());
     this.stampEligible = false;
     this.stampChance = false;
     this.debugStart = Number(q.get('t')) || 0;
@@ -157,8 +165,7 @@ export class Stage extends Phaser.Scene {
   showTitle() {
     const touch = this.sys.game.device.input.touch;
     this.hud.panel([
-      ['SHMUP', 0xffd6e5, 2],
-      ['JAPONIA', 0xffd6e5, 2],
+      ['PR0JECT-JPN', 0xffd6e5, 2], // (the font has capitals only)
       '',
       [this.stageTitle, 0xffffff],
       [this.stage.subtitle, 0xf08bb0],
@@ -252,6 +259,14 @@ export class Stage extends Phaser.Scene {
     this.music.play('title', true);
   }
 
+  /** Tap / Enter on the results or the game over: on, carry on (easy, once the countdown shows), or again. */
+  leaveEnd() {
+    if (this.state === 'clear') this.leaveClear();
+    else if (this.contT > 0) {
+      if (this.contShown) this.continueGame();
+    } else this.restart();
+  }
+
   /** Tap / Enter on the results: on to the map, or (after the last city) a new game. */
   leaveClear() {
     if (this.order[this.pos + 1] === undefined) this.advance();
@@ -273,7 +288,7 @@ export class Stage extends Phaser.Scene {
     this.scene.restart({
       order: this.order,
       pos,
-      carry: { ship: this.shipIndex, lives: p.lives, weapon: p.weapon, level: p.level, score: s.score, mult: s.mult, progress: s.progress },
+      carry: { ship: this.shipIndex, lives: p.lives, weapon: p.weapon, level: p.level, score: s.score, mult: s.mult, progress: s.progress, continues: this.continues },
     });
   }
 
@@ -301,10 +316,22 @@ export class Stage extends Phaser.Scene {
     this.state = 'over';
     this.music.play('over', true);
     this.endTimer = 1.8;
+    if (rules().continues) {
+      // easy: a countdown to carry on (see update); its panel comes up once the explosion is over
+      this.contT = 11.3;
+      this.contShown = 0;
+      return;
+    }
+    this.finalOver(1300);
+  }
+
+  /** The game is over for good: the score, the record, and a new game. */
+  finalOver(delay) {
     const hi = this.recordHi();
-    this.time.delayedCall(1300, () =>
+    this.time.delayedCall(delay, () =>
       this.hud.panel([
         ['KONIEC GRY', 0xff7448, 2],
+        ...this.modeLines(),
         '',
         ['WYNIK', 0xb0aec0],
         [String(this.score.score).padStart(8, '0'), 0xffffff, 2],
@@ -313,6 +340,44 @@ export class Stage extends Phaser.Scene {
         ['DOTKNIJ / ENTER - JESZCZE RAZ', 0xffe080, 1, true],
       ]),
     );
+  }
+
+  /** Easy, after a game over: the countdown to carry on. */
+  showContinue(n) {
+    this.hud.panel([
+      ['KONTYNUOWAĆ?', 0xffd6e5, 2],
+      '',
+      [String(n), 0xffffff, 3],
+      '',
+      ['WYNIK', 0xb0aec0],
+      [String(this.score.score).padStart(8, '0'), 0xffffff, 2],
+      '',
+      ['PEŁNE ŻYCIA, WYNIK OD ZERA', 0xb0aec0],
+      ['DOTKNIJ / ENTER - TAK', 0xffe080, 1, true],
+    ]);
+  }
+
+  /** Easy: carry on where the ship fell, with full lives and the score from zero. */
+  continueGame() {
+    this.recordHi();
+    this.hud.closePanel();
+    this.contT = 0;
+    this.continues++;
+    this.endTimer = 0;
+    Object.assign(this.score, { score: 0, mult: 1, progress: 0 });
+    const p = this.player;
+    p.lives = p.fullLives();
+    p.respawnTimer = 0;
+    this.bullets.cancelAll(this.fx);
+    this.state = 'play';
+    p.spawn();
+    this.music.play(this.stageSong(), true);
+  }
+
+  /** Easy: a line saying so on the results, and the continues used. */
+  modeLines() {
+    if (!isEasy()) return [];
+    return [['TRYB ŁATWY', 0x9cf09a], ...(this.continues ? [[`KONTYNUACJE: ${this.continues}`, 0xb0aec0]] : [])];
   }
 
   stageClear() {
@@ -325,12 +390,13 @@ export class Stage extends Phaser.Scene {
     const next = STAGES[this.order[this.pos + 1]];
     this.bullets.cancelAll(this.fx);
     const hi = this.recordHi();
-    const won = this.stampChance && pressStamp(this.stage.id);
-    const stamp = !this.stampEligible ? null : won ? [t('stamp.new'), 0xffe080, 1, true] : [t(this.stampOwned ? 'stamp.have' : 'stamp.missed'), 0x8a8aa8];
+    const won = this.stampChance && pressStamp(this.stage.id, isEasy());
+    const stamp = !this.stampEligible ? null : won ? [t(isEasy() ? 'stamp.newEasy' : 'stamp.new'), 0xffe080, 1, true] : [t(this.stampOwned ? 'stamp.have' : 'stamp.missed'), 0x8a8aa8];
     this.time.delayedCall(2000, () => {
       this.hud.panel([
         [this.stageTitle, 0xffd6e5, 2],
         ['UKOŃCZONY', 0xffd6e5, 2],
+        ...this.modeLines(),
         '',
         ['WYNIK', 0xb0aec0],
         [String(this.score.score).padStart(8, '0'), 0xffffff, 2],
@@ -350,7 +416,7 @@ export class Stage extends Phaser.Scene {
   landStamp() {
     const img = this.add.image(VIEW.width / 2, this.H - 38, 'sprites', stampFrame(this.stage.id)).setDepth(DEPTH.overlay + 2).setTint(this.stampInk).setScale(2.6).setAlpha(0);
     this.hud.overlayItems.push(img);
-    this.stampLand = { img, t: -0.35 };
+    this.stampLand = { img, t: -0.35, ink: isEasy() ? PALE + 0.2 : 0.95 }; // pale on easy (on the dark results a little less so)
   }
 
   recordHi() {
@@ -393,6 +459,7 @@ export class Stage extends Phaser.Scene {
     }
     if (this.state === 'book') return this.closeBook();
     if (this.state === 'select') {
+      if (this.select.hitMode(p)) return this.select.toggleMode();
       const i = this.select.hit(p);
       if (i === null || i === this.select.index) this.startGame();
       else this.select.select(i);
@@ -400,7 +467,7 @@ export class Stage extends Phaser.Scene {
     }
     if (this.state === 'map') return this.leaveMap();
     if (this.state === 'over' || this.state === 'clear') {
-      if (this.endTimer <= 0) (this.state === 'clear' ? this.leaveClear() : this.restart());
+      if (this.endTimer <= 0) this.leaveEnd();
       return;
     }
     if (this.paused || this.hud.hitPause(p)) return this.togglePause();
@@ -426,11 +493,12 @@ export class Stage extends Phaser.Scene {
     } else if (this.state === 'select') {
       if (down(k.LEFT) || down(k.A)) this.select.select(this.select.index - 1);
       if (down(k.RIGHT) || down(k.D)) this.select.select(this.select.index + 1);
+      if (down(k.UP) || down(k.W) || down(k.DOWN) || down(k.S)) this.select.toggleMode();
       if (confirm || bomb) this.startGame();
     } else if (this.state === 'map') {
       if (confirm) this.leaveMap();
     } else if (this.state === 'over' || this.state === 'clear') {
-      if (confirm && this.endTimer <= 0) (this.state === 'clear' ? this.leaveClear() : this.restart());
+      if (confirm && this.endTimer <= 0) this.leaveEnd();
     } else if (this.paused) {
       if (confirm) this.togglePause();
     } else if (bomb) this.player.bomb();
@@ -468,6 +536,18 @@ export class Stage extends Phaser.Scene {
       return;
     }
     if (this.endTimer > 0) this.endTimer -= dt;
+    if (this.state === 'over' && this.contT > 0) {
+      // easy: the continue countdown, then the game is over for good
+      this.contT -= dt;
+      const n = Math.ceil(this.contT);
+      if (this.contT <= 0) {
+        this.endTimer = 0.6;
+        this.finalOver(0);
+      } else if (n <= 10 && n !== this.contShown) {
+        this.contShown = n;
+        this.showContinue(n);
+      }
+    }
 
     const playing = this.state === 'play';
     // the moving background steps back when the screen fills with bullets
@@ -504,7 +584,7 @@ export class Stage extends Phaser.Scene {
       if (land && land.img.active) {
         land.t += dt;
         const k = Math.max(0, Math.min(1, land.t / 0.22));
-        land.img.setScale(2.6 - 1.6 * k * k).setAlpha(land.t < 0 ? 0 : 0.95 * Math.min(1, k * 2));
+        land.img.setScale(2.6 - 1.6 * k * k).setAlpha(land.t < 0 ? 0 : land.ink * Math.min(1, k * 2));
         if (k >= 1 && !land.done) {
           land.done = true;
           this.sfx.stamp();

@@ -1,4 +1,5 @@
-import { BEANS, DEPTH, GRAZE, HEAT, PLAYER, SCORE, VIEW } from '../config.js';
+import { BEANS, DEPTH, HEAT, PLAYER, SCORE, VIEW } from '../config.js';
+import { isEasy, rules } from '../difficulty.js';
 import { FONT } from '../scenes/Boot.js';
 import { getLang, tr } from '../i18n.js';
 import { canInstall } from '../pwa.js';
@@ -13,10 +14,10 @@ const WEAPON_ICON = { basic: 'wpn_basic', spread: 'wpn_spread', laser: 'wpn_lase
  * origin of 0.5 on an odd width (or the 13 px line) puts every glyph on a half pixel; some GPUs (iPhone)
  * then sample the font a texel off and letters lose their top row (O turns into U, A into H). So the
  * display origin is floored whenever the text is measured; callers pass whole-pixel positions.
- * The text comes out in the language chosen (see i18n.js).
+ * The text comes out in the language chosen (see i18n.js). font: FONT, or INK_FONT on light paper.
  */
-export function pixelText(scene, x, y, str, origin = 0.5) {
-  const t = scene.add.bitmapText(Math.round(x), Math.round(y), FONT, tr(str)).setLetterSpacing(-1);
+export function pixelText(scene, x, y, str, origin = 0.5, font = FONT) {
+  const t = scene.add.bitmapText(Math.round(x), Math.round(y), font, tr(str)).setLetterSpacing(-1);
   const measure = t.getTextBounds;
   t.getTextBounds = function (round) {
     const bounds = measure.call(this, round);
@@ -33,6 +34,7 @@ export class Hud {
     const d = DEPTH.hud;
     this.score = this.text(3, 2, '00000000', 0).setDepth(d);
     this.mult = this.text(57, 2, '×1', 0).setDepth(d);
+    this.easy = this.text(84, 2, 'ŁATWY', 0).setDepth(d).setTint(0x9cf09a).setAlpha(0.7).setVisible(false); // easy mode, in play
     this.bar = scene.add.graphics().setDepth(d);
     this.lives = [];
     for (let i = 0; i < 6; i++) this.lives.push(scene.add.image(7 + i * 9, 20, 'sprites', 'icon_life').setDepth(d));
@@ -204,7 +206,7 @@ export class Hud {
         const a = -Math.PI / 2;
         this.bar.lineStyle(2, 0xffe080, 0.85);
         this.bar.beginPath();
-        this.bar.arc(this.bombBtn.x, this.bombBtn.y, 15, a, a + (Math.PI * 2 * p.grazeCharge) / GRAZE.perBomb);
+        this.bar.arc(this.bombBtn.x, this.bombBtn.y, 15, a, a + (Math.PI * 2 * p.grazeCharge) / rules().grazePerBomb);
         this.bar.strokePath();
       }
     }
@@ -218,9 +220,10 @@ export class Hud {
     const en = getLang() === 'en';
     this.langPl.setVisible(s.state === 'title').setTint(en ? 0x6a6a80 : 0xffe080);
     this.langEn.setVisible(s.state === 'title').setTint(en ? 0xffe080 : 0x6a6a80);
+    if (this.easy.visible !== (s.state === 'play' && isEasy())) this.easy.setText(tr('ŁATWY')).setVisible(!this.easy.visible);
     const seal = s.state === 'play' && s.stampEligible && !s.stampOwned;
     if (seal && s.stampChance) {
-      this.stampIcon.setVisible(true).setTint(s.stampInk).setAlpha(0.95).setX(7);
+      this.stampIcon.setVisible(true).setTint(s.stampInk).setAlpha(isEasy() ? 0.6 : 0.95).setX(7); // paler on easy
       this.stampFade = 1.2;
     } else if (seal && this.stampFade > 0) {
       this.stampFade -= dt;

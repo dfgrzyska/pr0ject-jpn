@@ -1,4 +1,5 @@
-// 5x7 pixel font with Polish diacritics, rendered white with a dark outline.
+// 5x7 pixel font with Polish diacritics, rendered white with a dark outline (and once more without it: the ink
+// font, for print on light paper — the stamp book).
 // Cell: 7x13 (1px outline, accent rows above with a 1px gap, 1 ogonek row below),
 // cells separated by a 1px transparent gutter so GPUs that sample at texel edges never bleed in a neighbour.
 import { Raster } from '../lib/raster.mjs';
@@ -82,7 +83,7 @@ const DIACRITICS = {
 
 export const FONT = { cellW: 7, cellH: 13, gap: 1, perRow: 16 };
 
-export function buildFont() {
+export function buildFont(outline = true) {
   const glyphs = [];
   for (const [ch, rows] of Object.entries(G)) glyphs.push([ch, rows, []]);
   for (const [ch, [base, marks]] of Object.entries(DIACRITICS)) glyphs.push([ch, G[base], marks]);
@@ -98,11 +99,12 @@ export function buildFont() {
     rows.forEach((r, y) => [...r].forEach((c, x) => c === '#' && on.add(`${x},${y}`)));
     for (const [x, y] of marks) on.add(`${x},${y}`);
     // outline first (8-neighbourhood), then glyph on top
-    for (const key of on) {
-      const [x, y] = key.split(',').map(Number);
-      for (let dy = -1; dy <= 1; dy++)
-        for (let dx = -1; dx <= 1; dx++) if (!on.has(`${x + dx},${y + dy}`)) img.set(ox + x + dx, oy + y + dy, 0x120e1a);
-    }
+    if (outline)
+      for (const key of on) {
+        const [x, y] = key.split(',').map(Number);
+        for (let dy = -1; dy <= 1; dy++)
+          for (let dx = -1; dx <= 1; dx++) if (!on.has(`${x + dx},${y + dy}`)) img.set(ox + x + dx, oy + y + dy, 0x120e1a);
+      }
     for (const key of on) {
       const [x, y] = key.split(',').map(Number);
       img.set(ox + x, oy + y, 0xffffff);

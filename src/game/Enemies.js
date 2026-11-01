@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { BEANS, DEPTH, ENEMIES, FAIR, PLAYER, VIEW } from '../config.js';
+import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
 import { SKINS } from './skins.js';
 
@@ -109,7 +110,7 @@ export class Enemies {
       case 'popcorn':
         e = this.pool.spawn(look.frame, w.x, -8, base);
         e.play({ key: look.anim, startFrame: Math.floor(Math.random() * 2) });
-        e.fireAt = Math.random() < FAIR.popcornFireChance ? 0.9 + Math.random() * 1.4 : Infinity;
+        e.fireAt = Math.random() < rules().popcornFireChance ? 0.9 + Math.random() * 1.4 : Infinity;
         if (look.flock && w.flock) e.flock = w.flock;
         e.split = !!look.split;
         e.hatch = look.hatch ?? 0;
@@ -231,7 +232,10 @@ export class Enemies {
 
   canFire(e) {
     const H = this.scene.H;
-    return e.seen >= FAIR.noFireAfterEnter && e.y > 4 && e.y < H * FAIR.noFireBelow && this.scene.bombClear <= 0;
+    const r = rules();
+    // (bosses keep the normal line on easy too: their attacks wait for it)
+    const below = e.type === 'boss' || e.type === 'heavy' ? FAIR.noFireBelow : r.noFireBelow;
+    return e.seen >= r.noFireAfterEnter && e.y > 4 && e.y < H * below && this.scene.bombClear <= 0;
   }
 
   aimAt(e, ox = 0, oy = 0) {
@@ -243,7 +247,10 @@ export class Enemies {
     // a bomb blows the lid off a vinegar jar; otherwise invulnerable things shrug it off
     if (e.dead || e.hp <= 0 || e.ghost || (e.invuln && !(byBomb && e.lidded))) return;
     const boss = e.type === 'heavy' || e.type === 'boss' || e.type === 'kuroko';
-    if (boss) this.scene.sfx.bossHit(e.oni && !bean);
+    if (boss) {
+      this.scene.sfx.bossHit(e.oni && !bean);
+      amount /= rules().bossHp; // easy: they give in sooner
+    }
     if (e.oni && !bean) {
       // the oni's hide: normal shots barely chip it (no flash), a bomb does half
       e.hp -= amount * (byBomb ? 0.5 : BEANS.armor);
@@ -1374,8 +1381,9 @@ export class Enemies {
         // lightning: one column on the player, one or two elsewhere
         const xs = [pl.x, 14 + Math.random() * 152];
         if (e.step % 2) xs.push(14 + Math.random() * 152);
-        for (const x of xs) b.beam(Phaser.Math.Clamp(x, 6, VIEW.width - 6), { warn: 0.75, live: 0.22, w: 5 });
-        s.time.delayedCall(750, () => s.fx.flash(0.12, 0.12));
+        let warn = 0;
+        for (const x of xs) warn = b.beam(Phaser.Math.Clamp(x, 6, VIEW.width - 6), { warn: 0.75, live: 0.22, w: 5 });
+        s.time.delayedCall(warn * 1000, () => s.fx.flash(0.12, 0.12));
         e.timer = 0.85;
         if (++e.step >= 5) this.nextPattern(e);
         break;
@@ -1555,8 +1563,9 @@ export class Enemies {
       default: {
         // volcanic lightning in the ash cloud and a fan of glowing rocks
         const xs = [pl.x, 14 + Math.random() * 152, 14 + Math.random() * 152].slice(0, g.enraged ? 3 : 2);
-        for (const x of xs) b.beam(Phaser.Math.Clamp(x, 6, VIEW.width - 6), { warn: 0.75, live: 0.22, w: 5, y0: c.y + 14 });
-        s.time.delayedCall(750, () => s.fx.flash(0.12, 0.12));
+        let warn = 0;
+        for (const x of xs) warn = b.beam(Phaser.Math.Clamp(x, 6, VIEW.width - 6), { warn: 0.75, live: 0.22, w: 5, y0: c.y + 14 });
+        s.time.delayedCall(warn * 1000, () => s.fx.flash(0.12, 0.12));
         b.fan(c.x, c.y + 10, this.aimAt(c, 0, 10), g.enraged ? 7 : 5, 0.9, slow, true);
         g.timer = 0.95;
         if (++g.step >= 4) next();
@@ -1911,9 +1920,8 @@ export class Enemies {
     e.timer -= dt;
     if (e.timer > 0 || e.y < -4) return;
     e.timer = e.every;
-    const warn = 0.9;
     const live = e.mud ? 1.1 : 0.55;
-    b.zone(e.x, e.y, e.mud ? 16 : 12, { warn, live, kind: e.mud ? 'mud' : 'water', u: e.u });
+    const warn = b.zone(e.x, e.y, e.mud ? 16 : 12, { warn: 0.9, live, kind: e.mud ? 'mud' : 'water', u: e.u });
     e.erupt = warn;
     e.showT = warn + live;
     e.setAlpha(1).play(e.mud ? this.skin.geyser.mudAnim : this.skin.geyser.anim);
@@ -2160,10 +2168,9 @@ export class Enemies {
         const dx = pl.x - ix;
         const dy = pl.y - iy;
         const d = Math.hypot(dx, dy) || 1;
-        const warn = 0.8;
-        b.zone(ix, iy, 14, { warn, live: 0.3, kind: 'blood' });
+        const warn = b.zone(ix, iy, 14, { warn: 0.8, live: 0.3, kind: 'blood' });
         const n = Math.min(14, Math.ceil(d / 17) + 1);
-        for (let i = 1; i <= n; i++) b.zone(ix + (dx / d) * 17 * i, iy + (dy / d) * 17 * i, 8, { warn: warn + 0.06 * i, live: 0.3, kind: 'blood' });
+        for (let i = 1; i <= n; i++) b.zone(ix + (dx / d) * 17 * i, iy + (dy / d) * 17 * i, 8, { warn: 0.8 + 0.06 * i, live: 0.3, kind: 'blood' });
         g.act = { t: 0, warn, ix, iy };
         e.pose = 1;
         if (++g.step >= (g.enraged ? 3 : 2)) next();

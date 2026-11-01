@@ -1,4 +1,5 @@
 import { DEPTH, FAIR } from '../config.js';
+import { rules, volley } from '../difficulty.js';
 import { Pool } from './Pool.js';
 
 const TAU = Math.PI * 2;
@@ -53,7 +54,14 @@ export class Bullets {
   /** Any bullet sprite, with optional behaviour props (see PLAIN). */
   shot(frame, x, y, angle, speed, radius, extra) {
     if (this.scene.bombClear > 0) return null;
-    const b = this.pool.spawn(frame, x, y, { ...PLAIN, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, radius, ...extra });
+    const k = rules().bulletSpeed; // easy: every bullet a little slower
+    const b = this.pool.spawn(frame, x, y, { ...PLAIN, vx: Math.cos(angle) * speed * k, vy: Math.sin(angle) * speed * k, radius, ...extra });
+    if (k !== 1) {
+      // falling and curving bullets keep their paths, only slower
+      b.ax *= k * k;
+      b.ay *= k * k;
+      b.maxV *= k;
+    }
     if (b.wig) {
       b.bx = x;
       b.by = y;
@@ -64,10 +72,12 @@ export class Bullets {
 
   /** n bullets spread over `arc` (radians) centred on `angle`. */
   fan(x, y, angle, n, arc, speed, big) {
+    n = volley(n);
     for (let i = 0; i < n; i++) this.fire(x, y, angle + (n > 1 ? (i / (n - 1) - 0.5) * arc : 0), speed, big);
   }
 
   ring(x, y, n, offset, speed, big) {
+    n = volley(n);
     for (let i = 0; i < n; i++) this.fire(x, y, offset + (i / n) * Math.PI * 2, speed, big);
   }
 
@@ -76,27 +86,35 @@ export class Bullets {
     if (this.scene.bombClear > 0) return;
     const mark = this.marks.spawn('lob_mark_0', tx, ty);
     const look = LOBS[kind];
-    this.lobs.spawn(look.low, x, y, { x0: x, y0: y, tx, ty, t: 0, time, mark, look });
+    this.lobs.spawn(look.low, x, y, { x0: x, y0: y, tx, ty, t: 0, time: time / rules().bulletSpeed, mark, look });
   }
 
-  /** A column from y0 down: blinks as a warning for `warn` s, then strikes for `live` s. kind: bolt | steam. */
+  /**
+   * A column from y0 down: blinks as a warning for `warn` s, then strikes for `live` s. kind: bolt | steam.
+   * Returns the warning time it really gets (longer on easy).
+   */
   beam(x, { warn = 0.7, live = 0.22, w = 4, kind = 'bolt', y0 = 0 } = {}) {
-    if (this.scene.bombClear > 0) return;
-    this.beams.push({ x, warn, live, w, kind, y0, t: 0 });
+    warn *= rules().warn;
+    if (this.scene.bombClear <= 0) this.beams.push({ x, warn, live, w, kind, y0, t: 0 });
+    return warn;
   }
 
   /**
    * A scalding circle at (x, y): the ring fills as a warning for `warn` s, then it erupts for `live` s.
    * u = strip position: the zone rides on the mid layer (a geyser vent); null keeps it on the screen.
+   * Returns the warning time it really gets (longer on easy).
    */
   zone(x, y, r, { warn = 0.9, live = 0.45, kind = 'water', u = null } = {}) {
-    if (this.scene.bombClear > 0) return;
-    this.zones.push({ x, y, r, warn, live, kind, u, t: 0 });
+    warn *= rules().warn;
+    if (this.scene.bombClear <= 0) this.zones.push({ x, y, r, warn, live, kind, u, t: 0 });
+    return warn;
   }
 
   /** Two orbs circling a centre that drifts along (vx, vy), joined by a hurting arc. */
   pair(cx, cy, vx, vy, r = 15, w = 1.8) {
     if (this.scene.bombClear > 0) return;
+    vx *= rules().bulletSpeed;
+    vy *= rules().bulletSpeed;
     const a0 = Math.random() * TAU;
     const one = this.shot('orb_0', cx, cy, 0, 0, 2.2, { orb: { cx, cy, vx, vy, r, w, a: a0 } });
     const two = this.shot('orb_0', cx, cy, 0, 0, 2.2, { orb: { cx, cy, vx, vy, r, w, a: a0 + Math.PI } });
@@ -210,7 +228,8 @@ export class Bullets {
       this.lobs.kill(l);
       this.shot('splat', l.tx, l.ty, 0, 0, 6, { life: 0.12 });
       const off = Math.random() * TAU;
-      for (let i = 0; i < 6; i++) this.shot(l.look.burst, l.tx, l.ty, off + (i / 6) * TAU, FAIR.bulletSpeed.slow * 0.85, 1.8);
+      const n = rules().lobBurst;
+      for (let i = 0; i < n; i++) this.shot(l.look.burst, l.tx, l.ty, off + (i / n) * TAU, FAIR.bulletSpeed.slow * 0.85, 1.8);
       this.scene.fx.shards(l.tx, l.ty, 6, true);
     }
     this.lobs.sweep();
@@ -312,8 +331,8 @@ export class Bullets {
         b.radius = 2.2;
       }
     } else if (b.age >= f.at + f.hold) {
-      b.vx = Math.cos(f.ang) * f.speed;
-      b.vy = Math.sin(f.ang) * f.speed;
+      b.vx = Math.cos(f.ang) * f.speed * rules().bulletSpeed;
+      b.vy = Math.sin(f.ang) * f.speed * rules().bulletSpeed;
       b.frz = null;
     }
   }

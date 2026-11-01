@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { keepForOffline } from '../pwa.js';
 
 export const FONT = 'pixel';
+/** The same letters without their dark outline: print on light paper (the stamp book). */
+export const INK_FONT = 'ink';
 
 /**
  * Queue a city's backgrounds unless they are in already: the far loop, the middle layer's pieces and the
@@ -42,6 +44,7 @@ export class Boot extends Phaser.Scene {
     this.load.setPath('assets/');
     this.load.atlas('sprites', 'sprites.png', 'sprites.json');
     this.load.image('font', 'font.png');
+    this.load.image('font_ink', 'font_ink.png');
     this.load.json('fontMeta', 'font.json');
     this.load.image('japan', 'japan.png'); // the map between stages
     // the cities' backgrounds come later, one city at a time (queueStage)
@@ -51,15 +54,17 @@ export class Boot extends Phaser.Scene {
     keepForOffline(); // what every city shares is in now
     const meta = this.cache.json.get('fontMeta');
     // Phaser 4: Parse returns the whole cache entry ({ data, texture, frame })
-    const entry = Phaser.GameObjects.RetroFont.Parse(this, {
-      image: 'font',
-      width: meta.cellW,
-      height: meta.cellH,
-      chars: meta.chars,
-      charsPerRow: meta.perRow,
-      spacing: { x: meta.gap, y: meta.gap },
-    });
-    this.cache.bitmapFont.add(FONT, entry);
+    const font = (image) =>
+      Phaser.GameObjects.RetroFont.Parse(this, {
+        image,
+        width: meta.cellW,
+        height: meta.cellH,
+        chars: meta.chars,
+        charsPerRow: meta.perRow,
+        spacing: { x: meta.gap, y: meta.gap },
+      });
+    this.cache.bitmapFont.add(FONT, font('font'));
+    this.cache.bitmapFont.add(INK_FONT, font('font_ink'));
 
     const anim = (key, frames, frameRate, repeat = -1) =>
       this.anims.create({ key, frames: frames.map((frame) => ({ key: 'sprites', frame })), frameRate, repeat });

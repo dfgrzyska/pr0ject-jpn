@@ -1,7 +1,7 @@
 import { DEPTH, VIEW } from '../config.js';
 import { MAP, project } from '../data/japan.js';
 import { pixelText } from './Hud.js';
-import { INK, hasStamp } from './Stamps.js';
+import { INK, PALE, hasStamp } from './Stamps.js';
 
 const FLIGHT = 2.6; // s for the ship to fly to the next city
 const W = VIEW.width;
@@ -30,7 +30,10 @@ export class JapanMap {
       return { k, shadow, text };
     });
     // the cities whose stamp is in the book wear a little seal
-    this.seals = order.map((i) => (hasStamp(stages[i].id) ? scene.add.image(0, 0, 'sprites', 'stamp_icon').setDepth(d + 2).setTint(INK[stages[i].id]) : null));
+    // (a pale seal for a stamp won on easy only)
+    this.seals = order.map((i) =>
+      hasStamp(stages[i].id, true) ? scene.add.image(0, 0, 'sprites', 'stamp_icon').setDepth(d + 2).setTint(INK[stages[i].id]).setAlpha(hasStamp(stages[i].id) ? 1 : PALE + 0.2) : null,
+    );
     const next = stages[order[pos + 1]];
     this.title = pixelText(scene, W / 2, 0, 'PODRÓŻ PO JAPONII').setDepth(d + 2).setTint(0xffd6e5);
     this.count = pixelText(scene, W / 2, 0, `MIASTA: ${pos + 1} / ${order.length}`).setDepth(d + 2).setTint(0xb0aec0);

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { BEANS, BOMB, DEPTH, GRAZE, HEAT, PLAYER, SHIPS, VIEW, WEAPONS } from '../config.js';
+import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
 
 const WEAPON_NAMES = { basic: 'PODSTAWOWA', spread: 'ROZRZUT', laser: 'LASER', homing: 'NAPROWADZANE' };
@@ -38,8 +39,13 @@ export class Player {
 
   setShip(ship) {
     this.ship = ship;
-    this.lives = ship.lives;
+    this.lives = this.fullLives();
     this.sprite.setFrame(ship.frame);
+  }
+
+  /** The ship's lives at the start of a game (two more on easy). */
+  fullLives() {
+    return this.ship.lives + rules().extraLives;
   }
 
   setVisible(v) {
@@ -54,7 +60,7 @@ export class Player {
     this.entering = 0.7;
     this.x = VIEW.width / 2;
     this.y = this.scene.H + 20;
-    this.invulnerable = PLAYER.invulnerable;
+    this.invulnerable = rules().invulnerable;
     this.bombs = 1;
     this.heat = 0;
     this.jam = 0;
@@ -235,7 +241,7 @@ export class Player {
     const fx = this.scene.fx;
     if (this.jam > 0) {
       this.jam -= dt;
-      this.heat = Math.max(0, this.jam / HEAT.jam);
+      this.heat = Math.max(0, this.jam / rules().heatJam);
       if (Math.random() < dt * 14) fx.puff('wisp_s_1', this.x + (Math.random() - 0.5) * 10, this.y - 4, 0.35);
       return;
     }
@@ -244,7 +250,7 @@ export class Player {
     this.heat = Phaser.Math.Clamp(this.heat + (inSteam ? HEAT.rise : -HEAT.cool) * dt, 0, 1);
     if (was < HEAT.boostAt && this.heat >= HEAT.boostAt) fx.text(this.x, this.y - 18, 'GORĄCE DZIAŁA', 1, 0xffb070);
     if (this.heat >= 1) {
-      this.jam = HEAT.jam;
+      this.jam = rules().heatJam;
       fx.text(this.x, this.y - 18, 'PRZEGRZANIE!', 1.4, 0xff6a50);
       this.scene.sfx.explode('s');
     }
@@ -257,7 +263,7 @@ export class Player {
     s.fx.spark(b.x, b.y);
     s.sfx.graze();
     if (this.bombs > 0) return;
-    if (++this.grazeCharge >= GRAZE.perBomb) {
+    if (++this.grazeCharge >= rules().grazePerBomb) {
       this.grazeCharge = 0;
       this.bombs = 1;
       s.fx.text(this.x, this.y - 18, 'BOMBA GOTOWA', 1.2, 0xffe080);
@@ -363,6 +369,11 @@ export class Player {
   hit() {
     if (!this.alive || this.invulnerable > 0 || this.entering > 0 || this.god) return;
     const s = this.scene;
+    // easy: with the bomb ready, it goes off by itself instead
+    if (rules().autoBomb && this.bomb()) {
+      s.fx.text(this.x, this.y - 18, 'AUTOBOMBA!', 1.2, 0xffe080);
+      return;
+    }
     s.sfx.hit();
     s.stampChance = false; // no stamp for this city now
     this.alive = false;
@@ -375,7 +386,7 @@ export class Player {
     s.score.death();
     this.beanT = 0;
     // lose power; the lost level drops as a pickup that can be caught again
-    const lost = Math.min(PLAYER.deathPowerLoss, this.level - 1);
+    const lost = Math.min(rules().deathPowerLoss, this.level - 1);
     if (lost > 0) {
       this.level -= lost;
       const color = WEAPONS.typeToColor[this.weapon];
