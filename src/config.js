@@ -127,7 +127,7 @@ export const ENEMIES = {
   diver: { hp: 5, weight: 1, score: 150, radius: 6, explosion: 's' },
   heavy: { hp: 600, weight: 5, score: 8000, radius: 19, explosion: 'l' }, // Kyūbi / tanuki (Kyoto), manta (Okinawa), Yuki-onna (Sapporo), Raijū (Kagoshima), bunraku puppet (Osaka)
   // stage boss, one entry per part (Okinawa: two shisa sharing one HP bar; Sapporo: the bear, parts set their own HP)
-  boss: { hp: 520, weight: 6, score: 15000, radius: 15, explosion: 'l' },
+  boss: { hp: 572, weight: 6, score: 15000, radius: 15, explosion: 'l' },
   carrier: { hp: 12, weight: 2, score: 500, radius: 7, explosion: 's' },
   // Sapporo: rotary snowplough driving along the streets, sweeping a stream of snow
   plow: { hp: 30, weight: 3, score: 600, radius: 8, explosion: 'm', ground: true },

@@ -477,10 +477,10 @@ export class Enemies {
       return e;
     };
     // parts before the body, so shots reach them first
-    part('kuma_heart_0', 'heart', 0, 4, 300, 6, 6000).play('kuma_heart');
-    part('kuma_paw', 'paw', -22, -13, 150, 7, 3000).setFlipX(true);
-    part('kuma_paw', 'paw', 22, -13, 150, 7, 3000);
-    g.body = part('kuma_ice', 'body', 0, 0, 700, 20, 0);
+    part('kuma_heart_0', 'heart', 0, 4, 330, 6, 6000).play('kuma_heart');
+    part('kuma_paw', 'paw', -22, -13, 165, 7, 3000).setFlipX(true);
+    part('kuma_paw', 'paw', 22, -13, 165, 7, 3000);
+    g.body = part('kuma_ice', 'body', 0, 0, 770, 20, 0);
     g.body.pass = true; // shots go through the ice to reach the paws and the heart
     g.maxTotal = g.parts.reduce((sum, p) => sum + p.maxHp, 0);
     this.bossGroup = g;
@@ -1612,8 +1612,8 @@ export class Enemies {
       g.parts.push(e);
       return e;
     };
-    for (const v of w.vents) part('vent_0', 'vent', v, 260, 9, 5000).play('vent');
-    g.crater = part('crater_shut', 'crater', w.crater, 900, 15, 0);
+    for (const v of w.vents) part('vent_0', 'vent', v, 286, 9, 5000).play('vent');
+    g.crater = part('crater_shut', 'crater', w.crater, 990, 15, 0);
     g.maxTotal = g.parts.reduce((sum, p) => sum + p.maxHp, 0);
     this.bossGroup = g;
     return g.crater;
@@ -1863,12 +1863,12 @@ export class Enemies {
   spawnTako(w, base) {
     const g = { kind: 'tako', state: 'enter', t: 0, phase: 0, step: 0, timer: 1.2, parts: [], enraged: false, defeated: false, awake: false, head: null, home: w.x, homeY: 62, slam: null };
     for (const [dx, dy, rest, phase] of [[-24, 14, 2.35, 0], [-9, 20, 1.95, 1.7], [9, 20, 1.19, 3.1], [24, 14, 0.79, 4.6]]) {
-      const t = this.pool.spawn('ttip', w.x + dx, -60, { ...base, role: 'tentacle', group: g, dx, dy, rest, phase, hp: 170, maxHp: 170, radius: 3.5, pts: 3000, segs: [] });
+      const t = this.pool.spawn('ttip', w.x + dx, -60, { ...base, role: 'tentacle', group: g, dx, dy, rest, phase, hp: 187, maxHp: 187, radius: 3.5, pts: 3000, segs: [] });
       for (let i = 0; i < 8; i++) t.segs.push(this.segPool.spawn(`tseg_${i < 3 ? 0 : i < 6 ? 1 : 2}`, t.x, t.y, { r: i < 3 ? 5 : i < 6 ? 4 : 3 }));
       t.setDepth(DEPTH.air - 0.11);
       g.parts.push(t);
     }
-    g.head = this.pool.spawn('tako_0', w.x, -60, { ...base, role: 'head', group: g, hp: 800, maxHp: 800, radius: 18, invuln: true });
+    g.head = this.pool.spawn('tako_0', w.x, -60, { ...base, role: 'head', group: g, hp: 880, maxHp: 880, radius: 18, invuln: true });
     g.head.play('tako');
     g.head.setDepth(DEPTH.air - 0.1);
     g.parts.push(g.head);
@@ -2224,7 +2224,7 @@ export class Enemies {
     const [x, u] = w.pond;
     const g = { kind: 'oni', state: 'dormant', t: 0, phase: 0, step: 0, timer: 1, parts: [], enraged: false, defeated: false, awake: false };
     Object.assign(g, { home: x, u, sway: 0, masuT: 0, masuSide: 1, act: null, poseT: 0 });
-    const e = this.pool.spawn('oni_0', x, s.parallax.screenY(u), { ...base, role: 'body', hp: 1000, maxHp: 1000, radius: 18, group: g, invuln: true, oni: true, pose: 0, hurtT: 0, shoutT: 0 });
+    const e = this.pool.spawn('oni_0', x, s.parallax.screenY(u), { ...base, role: 'body', hp: 900, maxHp: 900, radius: 18, group: g, invuln: true, oni: true, pose: 0, hurtT: 0, shoutT: 0 });
     e.segs = [{ x, y: 0, r: 12 }]; // the head
     e.setDepth(DEPTH.air - 0.1).setAlpha(0);
     g.body = e;
