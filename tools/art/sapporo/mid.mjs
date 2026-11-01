@@ -1040,7 +1040,9 @@ export function buildMid() {
   {
     const [g0] = PLAZA;
     for (const x of ODORI_SIDE) vRoad(x, 6, g0, L, false);
-    for (let u = g0 + 10; u < L; u++)
+    // packed snow from the park's last cross street on (below it the park's own ground, so the sculptures
+    // and kamakura at the park's end don't sit in patches of it)
+    for (let u = Math.max(g0 + 10, ODORI[1]); u < L; u++)
       for (let x = 22; x < 158; x++) {
         const y = Y(u);
         if (!isRes(x, y)) img.set(x, y, rampColor(C.packed, 0.55 + fbm(x, y, { seed: 37, scale: 7 }) * 0.45, x, y));
@@ -1236,6 +1238,22 @@ export function buildMid() {
     const glowAt = (x, y, c, a) => !shading && glow(x, y, c, a);
     const poolAt = (...args) => !shading && pool(...args);
     const S = C.snow;
+    const JOINT = 0x76809c; // the grooves between the carved stones
+    const EAVE = 0x5c6684; // the underside of an eave, deep in shadow
+    const UNDER = 0x8690aa; // the shadow an eave casts on the wall below it
+    const OUTLINE = 0x6a7490; // where the carved snow meets the ground
+    // floodlight washing up a face: pinkish from the lamp on the left, bluish from the one on the right
+    const flood = (x) => mix(0xffdcf0, 0xd8e8ff, Math.max(0, Math.min(1, (x - cx + W2) / (W2 * 2))));
+    // the stones of the walls: courses 3 px high, stones 5-8 px wide, each course set off from the one above
+    const hash = (a, b) => (((a + 11) * 73856093) ^ ((b + 7) * 19349663)) >>> 0;
+    const stoneAt = (x, row) => {
+      let s = cx - W2 - 8 - ((row * 5) % 8);
+      for (let i = 0; ; i++) {
+        const sw = 5 + (hash(i, row) % 4);
+        if (x < s + sw) return { i, sx: x - s, sw };
+        s += sw;
+      }
+    };
     const paint = () => {
         // the plinth and the steps up to the walls
         for (let y = by - 6; y < by; y++) for (let x = cx - W2; x < cx + W2; x++) put(x, y, y === by - 6 ? S[3] : (x + y) % 9 === 0 ? S[1] : S[2]);
@@ -1244,19 +1262,29 @@ export function buildMid() {
             put(x, by - 6 - k * 2, S[3]);
             put(x, by - 5 - k * 2, S[1]);
           }
-        // the stone walls: concave fan slope, courses of fitted blocks, lit on the left, in shadow on the right
+        // the stone walls: concave fan slope, courses of fitted stones with deep joints, each stone catching the
+        // light on its top and turned from it on its right, the wall lit on the left and in shadow on the right,
+        // and the floodlights at the foot washing up over the stones (not into the joints)
         const wallTop = by - 30;
-        for (let y = wallTop; y < by - 6; y++) {
+        for (let y = wallTop + 1; y < by - 6; y++) {
           const t = (y - wallTop) / (by - 6 - wallTop);
           const hw = 30 + 8 * t * t;
+          const row = Math.floor((y - wallTop - 1) / 3);
+          const sy = (y - wallTop - 1) % 3; // 0: the joint above the course
           for (let x = Math.round(cx - hw); x < cx + hw; x++) {
             if (Math.abs(x + 0.5 - cx) < 7 - (by - 6 - y) * 0.3 && y > by - 18) continue; // the stair cut into them
-            const row = Math.floor((y - wallTop) / 3);
-            const joint = (y - wallTop) % 3 === 0 || (x + row * 4 + (row % 2) * 2) % 7 === 0;
             const side = (x - cx) / hw;
-            let v = 0.62 - side * 0.28 - (joint ? 0.25 : 0);
+            const { i, sx, sw } = stoneAt(x, row);
+            if (sy === 0 || sx === 0) {
+              put(x, y, side > 0.3 ? mix(JOINT, EAVE, 0.5) : JOINT);
+              continue;
+            }
+            let v = 0.6 - side * 0.3 + ((hash(i, row + 50) % 100) / 100 - 0.5) * 0.24;
+            if (sy === 1) v += 0.12;
+            if (sx === sw - 1) v -= 0.14;
             if (Math.abs(x + 0.5 - (cx - hw)) < 1 || Math.abs(x + 0.5 - (cx + hw)) < 1) v -= 0.15;
             put(x, y, rampColor(S, Math.max(0, Math.min(1, v)), x, y));
+            glowAt(x, y, flood(x), 0.08 + 0.22 * t);
           }
         }
         for (let x = cx - 30; x < cx + 30; x++) put(x, wallTop, S[3]); // the snow lying on the walls
@@ -1270,40 +1298,45 @@ export function buildMid() {
         ];
         let y = wallTop;
         tiers.forEach(([hw, wh, gable], i) => {
-          // the storey's wall, white plaster with dark window recesses
+          // the storey's wall, white plaster with window recesses (deep under the lintel, the sill lit from
+          // below), in the shadow of the eave above at its top and washed by the floodlights from below
           for (let yy = y - wh; yy < y; yy++)
             for (let x = cx - hw + 2; x < cx + hw - 2; x++) {
               const r = yy - (y - wh);
               const win = r >= 2 && r <= 4 && (x - cx + hw) % 4 >= 1 && (x - cx + hw) % 4 <= 2 && Math.abs(x + 0.5 - cx) < hw - 4;
-              put(x, yy, win ? (r === 2 ? S[0] : 0x7a849c) : x > cx + hw - 5 ? S[1] : r === wh - 1 ? S[1] : S[3]);
+              const shade = x > cx + hw - 5;
+              put(x, yy, win ? [EAVE, 0x6e7890, 0x8a94ac][r - 2] : r === 0 ? UNDER : shade || r === wh - 1 ? S[1] : S[3]);
+              if (!win && r > 0) glowAt(x, yy, flood(x), (0.12 + 0.36 * (r / (wh - 1))) * (shade ? 0.5 : 1));
             }
           y -= wh;
-          // the roof: thick snow, rows of carved tiles, an upturned corner at each end, shadow under the eave
+          // the roof: thick snow, rows of carved tiles, an upturned corner at each end, the eave dark beneath
           const rh = 5;
           for (let yy = y - rh; yy < y; yy++) {
             const r = yy - (y - rh);
             const span = hw + 2 + r * 0.8;
             for (let x = Math.round(cx - span); x < cx + span; x++) {
               const tile = r > 0 && (x - cx) % 2 === 0;
-              put(x, yy, r === 0 ? S[3] : r === rh - 1 ? S[0] : tile ? S[1] : x < cx ? S[3] : S[2]);
+              put(x, yy, r === 0 ? S[3] : r === rh - 1 ? EAVE : tile ? S[1] : x < cx ? S[3] : S[2]);
             }
           }
           for (const s of [-1, 1]) {
+            put(Math.round(cx + s * (hw + 6)), y - 1, EAVE);
             put(Math.round(cx + s * (hw + 6)), y - 2, S[3]);
             put(Math.round(cx + s * (hw + 6)), y - 3, S[3]);
             put(Math.round(cx + s * (hw + 7)), y - 4, S[2]);
           }
           if (gable === 'chidori') {
-            // a triangular gable rising out of the roof, its fish-tail ornament
-            for (let k = 0; k < 7; k++) for (let x = cx - 7 + k; x <= cx + 7 - k; x++) put(x, y - rh - k + 3, Math.abs(x - cx) === 7 - k || k === 6 ? S[3] : x > cx ? S[2] : S[3]);
+            // a triangular gable rising out of the roof, a carved bargeboard along its edges, its fish-tail ornament
+            for (let k = 0; k < 7; k++)
+              for (let x = cx - 7 + k; x <= cx + 7 - k; x++) put(x, y - rh - k + 3, Math.abs(x - cx) === 7 - k || k === 6 ? S[3] : Math.abs(x - cx) === 6 - k ? S[0] : x > cx ? S[2] : S[3]);
             put(cx, y - rh + 1, S[0]);
             put(cx, y - rh + 2, S[1]);
           } else if (gable === 'kara') {
-            // the curved kara gable over the entrance
+            // the curved kara gable over the entrance, shadow under its curve
             for (let x = cx - 9; x <= cx + 9; x++) {
               const a = Math.round(Math.sin(((x - cx + 9) / 18) * Math.PI) * 4);
               put(x, y - 2 - a, S[3]);
-              put(x, y - 1 - a, S[1]);
+              put(x, y - 1 - a, S[0]);
               for (let yy = y - a; yy < y + 2; yy++) put(x, yy, S[2]);
             }
           }
@@ -1322,6 +1355,11 @@ export function buildMid() {
           poolAt(cx + s * 30, by - 20, 30, s < 0 ? 0xff60c8 : 0x60a8ff, 0.32);
         }
         poolAt(cx, by - 50, 46, 0xd8e8ff, 0.2);
+        // a dark line all round where the carved snow meets the ground, so the castle stands clear of the snow
+        if (!shading)
+          for (let yy = castle.y0; yy <= castle.y1; yy++)
+            for (let x = castle.x0; x <= castle.x1; x++)
+              if (!castle.mask.has(yy * W + x) && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => castle.mask.has((yy + dy) * W + x + dx))) img.set(x, yy, OUTLINE);
     };
     objects.push({
       y: by,
@@ -1392,8 +1430,13 @@ export function buildMid() {
     if (y > hy + 2 && y < hy + 5 && x > hx - 9 && x < hx - 2 && (x + y) % 2 === 0) return 1; // the lower jaw
     if (Math.abs(y - (hy - 3 - (x - hx) * 0.6)) < 0.8 && x > hx && x < hx + 7) return 3; // horns
     if (Math.abs(y - (hy - 2 - (x - hx) * 0.3)) < 0.8 && x > hx + 1 && x < hx + 9) return 1;
-    // claws reaching out
-    if (Math.abs(y - h * 0.62) < 1 && x > 3 && x < 9) return 3;
+    // a foreleg reaching out of the coil into the hollow of the S, three frosted claws spread at its end
+    const ly = Math.round(h * 0.62);
+    const lt = (h - 4 - ly) / (h - 14);
+    const lx0 = w / 2 + Math.sin(lt * 5.2) * (w * 0.28) * (1 - lt * 0.4) - (2 + (1 - lt) * 3.2) + 1;
+    const lx1 = lx0 - 6;
+    if (x >= lx1 && x <= lx0 && Math.abs(y - (ly + ((lx0 - x) / 6) * 3)) < 1) return 1;
+    for (const [dx, dy] of [[-1, -1], [-2, 0], [-1, 2]]) if (x === Math.round(lx1 + dx) && y === ly + 3 + dy) return 3;
     return 0;
   }
   function SWANS(x, y, w, h) {
