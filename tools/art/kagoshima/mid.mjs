@@ -1,5 +1,5 @@
 // Middle layer (Kagoshima): the city under a haze of volcanic ash (Chūō station with its rooftop Ferris
-// wheel, trams on lawn-covered tracks, palm avenues, the Tenmonkan arcade, yellow ash bags), the
+// wheel, trams on lawn-covered tracks to their depot by the river, palm avenues, the Tenmonkan arcade, yellow ash bags), the
 // Kōtsuki river with stone arch bridges, Sengan-en garden by the sea, hot sand baths on a black beach,
 // fields of black-vinegar jars on the coast, Kinkō Bay (a cruise ship at its pier, ferries, a fish farm and
 // more pens, dolphins), Sakurajima (port, ash-covered village,
@@ -247,12 +247,13 @@ export function buildMid() {
 
   // ------------------------------------------------------------ A. the city
   {
-    const streets = [120, 250, 450, 600, 850, 1100];
+    const streets = [120, 250, 450, 600, 850, 1100, 1166];
+    const DEPOT = { x0: 56, x1: 141, u0: 1174, u1: RIVER[0] - 3 }; // the tram depot by the river, where the avenue ends
     for (const x of [30, 150]) vRoad(x, 5, 0, RIVER[0]);
-    vRoad(90, 10, 0, RIVER[0]);
+    vRoad(90, 10, 0, DEPOT.u0);
     for (const u of streets) hRoad(u, 5);
     // the tram line down the middle of the avenue: lawn-covered tracks, a tram here and there
-    for (let u = 0; u < RIVER[0]; u++) {
+    for (let u = 0; u < DEPOT.u0; u++) {
       const y = Y(u);
       if (streets.some((s) => Math.abs(u - s) < 7)) continue;
       for (let x = 85; x <= 95; x++) img.set(x, y, rampColor(C.lawn, fbm(x, y, { seed: 35, scale: 2 }), x, y));
@@ -271,10 +272,74 @@ export function buildMid() {
       };
       const fu = tram(true);
       const fd = tram(false);
-      kit.path([[x + 2, 10], [x + 2, RIVER[0] - 24]], [fu], { sp: 9, mode: 'pp', hold: 4, turn: 'none', fu: [fu], fd: [fd], s0 });
+      kit.path([[x + 2, 10], [x + 2, DEPOT.u0 + 16]], [fu], { sp: 9, mode: 'pp', hold: 4, turn: 'none', fu: [fu], fd: [fd], s0 });
+    }
+    // the tram depot: through its gate the two tracks fan out over the yard to four, trams parked on them under
+    // the overhead wires, into the long shed with a door for each track; the workshop beside it
+    {
+      const { x0, x1, u0, u1 } = DEPOT;
+      for (let u = u0 + 2; u < u1; u++)
+        for (let x = x0; x < x1; x++) {
+          const y = Y(u);
+          if (isRes(x, y)) continue; // (a turret stand)
+          img.set(x, y, x === x0 || x === x1 - 1 ? 0x5a5a5e : rampColor(C.walk, 0.25 + fbm(x, y, { seed: 461, scale: 4 }) * 0.35, x, y));
+        }
+      for (let x = x0; x < x1; x++) if (x < 82 || x > 98) img.set(x, Y(u0 + 2), 0x5a5a5e); // the fence, the gate open in the middle
+      const TRACKS = [78, 88, 98, 108];
+      const fan = (i, u) => {
+        const from = i < 2 ? 87 : 93;
+        const t = Math.max(0, Math.min(1, (u - u0 - 4) / 30));
+        return from + (TRACKS[i] - from) * t * t * (3 - 2 * t);
+      };
+      for (let u = u0 + 2; u < u1 - 2; u++)
+        for (let i = 0; i < 4; i++) {
+          const cx = Math.round(fan(i, u));
+          const y = Y(u);
+          for (let x = cx - 3; x <= cx + 3; x++) img.set(x, y, rampColor(C.stone, 0.15 + fbm(x, y, { seed: 462, scale: 2 }) * 0.3, x, y)); // ballast
+          if (u % 3 === 0) img.rect(cx - 3, y, 7, 1, 0x5a4a3a); // sleepers
+          img.set(cx - 2, y, C.rail);
+          img.set(cx + 2, y, C.rail);
+          if (u % 18 === 0 && u > u0 + 40) img.set(cx + 5, y, 0x2a2a2e); // the overhead wire poles
+        }
+      // the shed over the tracks' far end: a corrugated roof in four bays with skylights, the doors facing the yard
+      const sy = Y(u1 - 4);
+      const sh = 54;
+      objects.push({
+        y: sy + sh + 4,
+        shadow: () => shadowRect(70, sy + 4, 46, sh, 0.5),
+        draw: () => {
+          for (let y = sy; y < sy + sh; y++)
+            for (let x = 70; x < 116; x++) {
+              const bay = (x - 70) % 11;
+              let c = bay === 0 ? 0x6a6e76 : bay < 5 ? 0xb4b8be : 0x9aa0a8; // each bay's roof, lit on one side
+              if (bay === 5 && (y - sy) % 6 < 3) c = 0x8ab0c8; // skylights along its ridge
+              img.set(x, y, c);
+            }
+          for (let y = sy + sh; y < sy + sh + 4; y++) for (let x = 70; x < 116; x++) img.set(x, y, y === sy + sh ? 0x4a4a52 : 0xc8c4bc);
+          for (const cx of TRACKS) img.rect(cx - 3, sy + sh + 1, 7, 3, 0x1a1a1e); // the doors
+        },
+      });
+      // the workshop and its yard crane
+      building(118, Y(u1 - 6), 20, 26, 5, { roof: 0x6a4a3a, tiles: true });
+      // trams parked in the yard, waiting for the morning
+      for (const [i, u, color] of [[0, u0 + 54, 0xe8e0d0], [1, u0 + 46, 0xd84a2a], [3, u0 + 58, 0x2a8a5a]]) {
+        const cx = Math.round(fan(i, u));
+        const y = Y(u + 24);
+        objects.push({
+          y: y + 24,
+          shadow: () => shadowRect(cx - 2, y + 2, 6, 24, 0.55),
+          draw: () => {
+            img.rect(cx - 3, y, 6, 24, color);
+            img.rect(cx - 3, y, 6, 1, 0xf0ece0);
+            for (let k = 2; k < 22; k += 4) img.rect(cx - 2, y + k, 4, 2, 0x8aa8c0);
+            img.rect(cx - 2, y, 4, 2, 0x5a7a9a);
+          },
+        });
+      }
+      reserveRect(x0 - 1, Y(u1 + 1), x1 - x0 + 2, u1 - u0 + 2);
     }
     // palms along the avenue
-    for (let u = 20; u < RIVER[0]; u += 26) {
+    for (let u = 20; u < DEPOT.u0 - 8; u += 26) {
       if (streets.some((s) => Math.abs(u - s) < 12)) continue;
       for (const x of [76, 104]) tree('palm', x, Y(u), 5 + rand());
     }
@@ -338,6 +403,10 @@ export function buildMid() {
             const h = Math.min(u1 - u, 22 + Math.floor(rand() * 24));
             const face = 4 + Math.floor(rand() * 6);
             const top = Y(u + h);
+            if (x + w > DEPOT.x0 && x < DEPOT.x1 && u + h > DEPOT.u0) {
+              u += h + 2; // (the depot's yard)
+              continue;
+            }
             if (!anyRes(x, top, w - 1, h)) building(x, top, w - 1, h - face - 1, face);
             else if (u < u1 - 10 && rand() < 0.6) tree('broadleaf', x + w / 2, Y(u + h / 2), 5);
             u += h + 2;
@@ -365,7 +434,7 @@ export function buildMid() {
         img.set(x, y, bank < 3 ? C.stone[1] : rampColor(C.shallow, 0.3 + fbm(x, y, { seed: 37, scale: 5 }) * 0.5, x, y));
       }
     reserveRect(0, Y(r1), W, r1 - r0);
-    for (const bx of [30, 90, 150])
+    for (const bx of [30, 150])
       objects.push({
         y: Y(r0),
         shadow: () => shadowRect(bx + 7, Y(r1 + 2), 3, r1 - r0 + 4, 0.55),
@@ -383,20 +452,71 @@ export function buildMid() {
   // ------------------------------------------------------------ B. Sengan-en, the Shimadzu garden by the sea
   {
     // the coast road, and the Nippō railway inland of it, keep to the shore: where the land turns west round the
-    // head of the bay they bend with it and run off the screen along the bay (they don't stop at the corner)
-    const roadX = (u) => seaX(u) - 14;
+    // head of the bay they bend with it and run off the screen along the bay (they don't stop at the corner).
+    // It starts off the right-hand bridge over the Kōtsuki, square with the city street it carries on.
+    const roadX = (u) => {
+      const coast = seaX(u) - 14;
+      return u < 1400 ? 150 + (coast - 150) * smooth(SENGAN[0], 1400, u) : coast;
+    };
+    // Sengan-en's entrance across the left-hand bridge: the roofed gate in the white garden wall along the river,
+    // the garden path setting off from it
+    {
+      const wy = Y(SENGAN[0] + 4);
+      for (let x = 0; x < 72; x++) {
+        if (Math.abs(x - 30) < 8) continue;
+        img.set(x, wy, C.tile[2]); // the tiled cap on the wall
+        img.set(x, wy + 1, 0xe8e2d4);
+        img.set(x, wy + 2, 0xd0c8b8);
+        img.tint(x + 1, wy + 3, 0.6);
+      }
+      reserveRect(0, wy - 1, 72, 5);
+      objects.push({
+        y: wy + 4,
+        shadow: () => shadowRect(24, wy, 15, 5, 0.55),
+        draw: () => {
+          for (let j = 0; j < 5; j++) img.rect(22 + Math.max(0, 1 - j), wy - 2 + j, 17 - 2 * Math.max(0, 1 - j), 1, j < 2 ? C.tile[2] : C.tile[1]);
+          img.rect(23, wy + 3, 2, 2, 0x5a3a24); // the posts
+          img.rect(36, wy + 3, 2, 2, 0x5a3a24);
+          img.rect(25, wy - 2, 11, 1, C.tile[0]);
+        },
+      });
+      reserveRect(20, wy - 4, 21, 10);
+    }
     const rails = [[], []];
+    const TUNNEL = 1392; // the railway comes out of its tunnel under the hill here (it runs under Shiroyama)
     for (let u = SENGAN[0]; u < BAY[0] + 160; u++) {
       const cx = roadX(u);
       if (cx < -24) break;
       const slope = (roadX(u + 1) - roadX(u - 1)) / 2; // px across per px up the strip
       const k = Math.sqrt(1 + slope * slope); // on the bend a row cuts the road at a slant
       const y = Y(u);
-      for (let x = Math.floor(cx - 5.5 * k); x <= cx + 4.5 * k; x++) if (D(x, y) > 0) roadPx(x, y, (x + 0.5 - cx) / k, 3);
-      reserveRect(cx - 6 * k, y, 11 * k, 1);
-      // the tracks lie 8 and 10 px inland, square to the road
-      for (const [i, off] of [[0, 8], [1, 10]]) rails[i].push([cx - off / k, u + (off * slope) / k]);
-      if (u % 30 === 0 && Math.abs(slope) < 0.4) tree('palm', cx + 7, y, 4.5);
+      // as wide as the city street off the bridge at first (as vRoad draws it), narrowing to the coast road
+      const hw = 3 + 2 * (1 - smooth(SENGAN[0] + 20, 1440, u));
+      for (let x = Math.floor(cx - (hw + 2) * k); x <= cx + (hw + 1) * k; x++) if (D(x, y) > 0) roadPx(x, y, (x + 0.5 - cx) / k, hw);
+      reserveRect(cx - (hw + 3) * k, y, (hw * 2 + 6) * k, 1);
+      // the tracks lie 8 and 10 px inland of the coast road, square to it
+      if (u >= TUNNEL) for (const [i, off] of [[0, 8], [1, 10]]) rails[i].push([cx - off / k, u + (off * slope) / k]);
+      if (u % 30 === 0 && Math.abs(slope) < 0.4 && u > TUNNEL) tree('palm', cx + 7, y, 4.5);
+    }
+    {
+      // the tunnel mouth: a grassy hump over the line, a concrete portal with its dark arch facing up the coast
+      const tx = Math.round(roadX(TUNNEL) - 9);
+      const ty = Y(TUNNEL);
+      for (let y = ty; y < ty + 22; y++)
+        for (let x = tx - 14; x <= tx + 10; x++) {
+          const e = ((x + 0.5 - tx + 2) / 13) ** 2 + ((y - ty - 9) / 12) ** 2;
+          if (e < 1 && !isRes(x, y)) img.set(x, y, e > 0.8 ? rampColor(C.grass, 0.05, x, y) : rampColor(C.grass, 0.75 - e * 0.5 - (y - ty) * 0.012 + fbm(x, y, { seed: 451, scale: 3 }) * 0.2, x, y)); // lit on top, shaded round its foot
+        }
+      for (let k = 0; k < 4; k++) {
+        img.set(tx - 6 - k, ty + 1 + k, 0x9a968e); // the wing walls
+        img.set(tx + 5 + k, ty + 1 + k, 0x9a968e);
+      }
+      img.rect(tx - 5, ty, 10, 4, 0xb4b0a8); // the portal
+      img.rect(tx - 5, ty, 10, 1, 0xd4d0c8);
+      img.rect(tx - 2, ty + 1, 4, 3, 0x0c0c0e); // its dark arch
+      img.set(tx - 2, ty + 1, 0x3a3a3e);
+      img.set(tx + 1, ty + 1, 0x3a3a3e);
+      reserveRect(tx - 15, ty - 1, 26, 24);
     }
     for (const line of rails)
       for (let i = 1; i < line.length; i++) {
@@ -442,8 +562,10 @@ export function buildMid() {
       img.rect(x + 1, Y(u) + 1, 3, 3, 0x2a2a28);
       img.rect(x, Y(u), 3, 3, C.stone[2]);
     }
-    for (let u = 1400; u < 2100; u++) {
-      const x = Math.round(40 + 22 * Math.sin(u / 60));
+    for (let u = SENGAN[0] + 8; u < 2100; u++) {
+      // (from the gate by the left-hand bridge it winds off through the garden)
+      const wind = 40 + 22 * Math.sin(u / 60);
+      const x = Math.round(u < 1430 ? 30 + (40 + 22 * Math.sin(1430 / 60) - 30) * smooth(SENGAN[0] + 8, 1430, u) : wind);
       for (let k = -1; k <= 1; k++) if (!isRes(x + k, Y(u))) img.set(x + k, Y(u), rampColor(C.walk, 0.6, x + k, Y(u)));
     }
   }
