@@ -17,7 +17,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Raster, fbm, rng, bayer, scaleColor, rgb, mix } from '../../lib/raster.mjs';
 import { crownPixels, rampColor } from '../nature.mjs';
-import { PropKit, puff, todGrade, tintTable } from '../props.mjs';
+import { PropKit, cut, puff, todGrade, tintTable } from '../props.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -106,6 +106,7 @@ export function buildMid() {
   const glow = (x, y, c, a = 1) => lights.push([Math.round(x), Math.round(y), c, a]);
   const pool = (x, y, r, c, k = 0.5) => pools.push({ x, y, r, c, k });
   const kit = new PropKit(3313); // the moving parts
+  let castle = null; // the snow castle's outline, for its projection mapping
   const tod = todGrade(TOD, smooth);
   /** A frame graded for strip position u; `lit` are [x, y, colour, alpha] pixels painted on afterwards. */
   const frameAt = (r, u, lit = []) => {
@@ -948,17 +949,25 @@ export function buildMid() {
     }
     const blockAt = (i) => [ODORI_CROSS[i] + 10, ODORI_CROSS[i + 1] - 10];
 
-    // 1: ice sculptures (cyan, lit from below)
+    // 1: the ice sculpture garden: a dragon, a pair of swans, a fish owl, a fox, an orca and a crab, and a row
+    // of blocks with fish frozen inside, every one lit from below
     {
       const [b0, b1] = blockAt(0);
-      for (const [x, u, w, h] of [[40, b0 + 40, 14, 22], [72, b0 + 100, 20, 30], [120, b0 + 50, 16, 18], [130, b0 + 140, 12, 26], [96, b0 + 150, 18, 16]]) iceBlock(x, Y(u), w, h);
-      crowd(30, Y(b1), 120, b1 - b0, 90);
+      // (the turret stand at the top left stays clear)
+      iceStatue(102, Y(b0 + 128), 40, 44, DRAGON, 0x60d0ff);
+      iceStatue(139, Y(b0 + 140), 22, 30, OWL, 0x9a8aff);
+      iceStatue(44, Y(b0 + 68), 24, 30, FOX, 0xffb060);
+      iceStatue(88, Y(b0 + 70), 32, 28, ORCA, 0x60e0d0);
+      iceStatue(132, Y(b0 + 76), 38, 28, SWANS, 0xff7ad8);
+      fishBlocks(90, Y(b0 + 26), 4);
+      crowd(30, Y(b1), 120, b1 - b0, 70);
     }
-    // 2: giant snow castle with projection-mapped light
+    // 2: the great snow castle, a keep of five roofs on its stone walls, with projection mapping washing
+    // colours over it (live)
     {
       const [b0] = blockAt(1);
-      snowCastle(90, Y(b0 + 150));
-      crowd(30, Y(b0 + 40), 120, 30, 60);
+      snowCastle(90, Y(b0 + 50)); // its top just clear of the turret stand above
+      crowd(30, Y(b0 + 40), 120, 26, 60);
     }
     // 3: ice slide, kamakura and a family of snowmen
     {
@@ -995,7 +1004,9 @@ export function buildMid() {
           if (!anyRes(tx - 6, ty - 6, 12, 12)) bare(tx, ty, 6, rand.pick([0xffd890, 0x9ad0ff, 0xff9ad0]));
         }
       const [c0, c1] = blockAt(7);
-      for (const [x, u, w, h] of [[60, c0 + 60, 18, 26], [104, c0 + 120, 22, 20], [128, c0 + 40, 12, 14]]) iceBlock(x, Y(u), w, h);
+      iceStatue(70, Y(c0 + 66), 30, 34, CRAB, 0xff8a5a);
+      iceStatue(116, Y(c0 + 140), 26, 30, LOTUS, 0xff7ad8);
+      iceStatue(132, Y(c0 + 64), 22, 30, OWL, 0x60d0ff);
       for (let u = c0 + 10; u < c1; u += 30) for (const x of [34, 150]) bare(x, Y(u), 5, 0xffd890);
       crowd(30, Y(c1), 120, c1 - c0, 70);
     }
@@ -1004,8 +1015,8 @@ export function buildMid() {
       const [b0, b1] = blockAt(8);
       for (let u = b0 + 12; u < b1; u += 24) for (const x of [40, 140]) if (!anyRes(x - 6, Y(u) - 6, 12, 12)) bare(x, Y(u), 6, rand.pick([0xffd890, 0x9ad0ff]));
       for (const [x, u] of [[70, b0 + 40], [110, b0 + 40], [90, b0 + 120]]) kamakura(x, Y(u));
-      iceBlock(60, Y(b0 + 170), 22, 18);
-      iceBlock(100, Y(b0 + 176), 18, 24);
+      iceStatue(66, Y(b0 + 150), 24, 30, FOX, 0x9ad0ff);
+      iceStatue(112, Y(b0 + 156), 32, 28, ORCA, 0xff9ad0);
       crowd(30, Y(b1), 120, b1 - b0, 70);
     }
     // snow lanterns (yuki-toro) lining the walkways
@@ -1055,7 +1066,7 @@ export function buildMid() {
     });
     reserveRect(50, py - 22, 80, 46);
     for (let u = g0 + 20; u < 7010; u += 20) for (const x of [32, 148]) if (!anyRes(x - 6, Y(u) - 6, 12, 12)) bare(x, Y(u), 6, u % 40 ? 0xffd890 : 0x9ad0ff);
-    for (const [x, u] of [[60, g0 + 60], [120, g0 + 60]]) iceBlock(x - 9, Y(u), 18, 22);
+    for (const [x, u, shape, tint] of [[60, g0 + 82, SWANS, 0x60d0ff], [120, g0 + 82, LOTUS, 0xffd060]]) iceStatue(x, Y(u), shape === SWANS ? 38 : 26, shape === SWANS ? 28 : 30, shape, tint);
     for (const x of [44, 136]) {
       objects.push({
         y: Y(6900),
@@ -1107,56 +1118,221 @@ export function buildMid() {
   }
 
   // ------------------------------------------------------------ festival helpers (hoisted)
-  function iceBlock(x, y, w, h) {
+  /**
+   * An ice sculpture on its block, lit from inside and below: clear ice, thick and deep blue-green in the
+   * middle, bright along every edge, with streaks of reflection, frosted parts and sparkles, and the colour
+   * of the LEDs under it rising into its lower half. shape(x, y) on a w x h grid (top left = 0, 0) returns
+   * 0 nothing, 1 ice, 2 a carved line, 3 frosted ice. Painted with the lights after the grade: it glows.
+   * by = strip y of the foot of the block.
+   */
+  function iceStatue(cx, by, w, h, shape, tint) {
+    const x0 = Math.round(cx - w / 2);
+    const y0 = by - 5 - h; // the statue stands on a block 5 px high
+    const grid = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) grid[y * w + x] = shape(x, y, w, h);
+    const at = (x, y) => (x < 0 || y < 0 || x >= w || y >= h ? 0 : grid[y * w + x]);
+    // how deep each pixel lies inside the ice (1 = on the edge, up to 4)
+    const depth = (x, y) => {
+      for (let r = 1; r <= 3; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (Math.max(Math.abs(dx), Math.abs(dy)) === r && !at(x + dx, y + dy)) return r;
+      return 4;
+    };
+    const sr = rng(cx * 31 + by);
     objects.push({
-      y: y + h,
-      shadow: () => shadowRect(x + 3, y + 3, w, h, 0.6),
+      y: by,
+      shadow: () => {
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (at(x, y) && !at(x - 3, y - 2)) img.tint(x0 + x + 3, y0 + y + 2, 0.7);
+      },
       draw: () => {
-        for (let yy = y; yy < y + h; yy++)
-          for (let xx = x; xx < x + w; xx++) {
-            const n = fbm(xx, yy, { seed: 96, scale: 4 });
-            let c = rampColor(C.ice, 0.35 + n * 0.6, xx, yy);
-            if (xx === x || yy === y) c = C.ice[3];
-            if ((xx - x + yy - y) % 7 === 0) c = 0xe8f8ff;
-            img.set(xx, yy, c);
+        // the block it stands on: cut ice, its front face lit by the lamps
+        const bw = Math.round(w * 0.7);
+        const bx = Math.round(cx - bw / 2);
+        for (let yy = by - 5; yy < by; yy++)
+          for (let xx = bx; xx < bx + bw; xx++) glow(xx, yy, yy === by - 5 ? 0xe8fbff : xx === bx || xx === bx + bw - 1 ? 0xb8e8f8 : mix(0x6ab0d0, tint, 0.35 + (yy - by + 5) * 0.08), 0.92);
+        for (let y = 0; y < h; y++)
+          for (let x = 0; x < w; x++) {
+            const k = at(x, y);
+            if (!k) continue;
+            const d = depth(x, y);
+            let c = k === 3 ? 0xf2faff : k === 2 ? 0x3a86b8 : d === 1 ? 0xeafcff : d === 2 ? 0xb4e6f6 : d === 3 ? 0x82cce8 : 0x5ab4d8;
+            if (k === 1 && d > 1 && (x + y * 0.55 + 40) % 11 < 1.2) c = 0xf4feff; // a streak of reflection
+            if (k === 1 && d === 1 && (x < w / 2) !== (y > h / 2)) c = 0xffffff; // the edge catching the light
+            const t = y / h;
+            if (t > 0.55 && k !== 3) c = mix(c, tint, (t - 0.55) * 0.9);
+            glow(x0 + x, y0 + y, c, k === 3 ? 0.95 : d === 1 ? 0.95 : 0.82);
           }
-        pool(x + w / 2, y + h, w, 0x60d0ff, 0.45);
-        for (let k = 0; k < 4; k++) glow(x + 1 + Math.floor(rand() * (w - 2)), y + 1 + Math.floor(rand() * (h - 2)), 0xe8fbff, 0.8);
+        for (let i = 0; i < Math.round((w * h) / 70); i++) {
+          const x = Math.floor(sr() * w);
+          const y = Math.floor(sr() * h);
+          if (at(x, y) === 1 && depth(x, y) > 1) glow(x0 + x, y0 + y, 0xffffff); // a sparkle in the ice
+        }
+        pool(cx, by - 2, w * 0.8, tint, 0.5);
+        pool(cx, y0 + h * 0.4, w * 0.7, 0x80d8ff, 0.18);
       },
     });
-    reserveRect(x - 2, y - 2, w + 4, h + 4);
+    reserveRect(x0 - 2, y0 - 2, w + 4, h + 9);
   }
-  function snowCastle(cx, y) {
-    const w = 64;
-    const x = cx - w / 2;
+  /** A row of clear ice blocks with fish frozen inside them (salmon, sea bream, a squid, a crab), lit from below. */
+  function fishBlocks(cx, by, n) {
+    const bw = 13;
+    const bh = 15;
+    const x0 = Math.round(cx - (n * (bw + 3)) / 2);
+    const catches = [
+      [0xe86a4a, 0xf0a080, 'fish'],
+      [0xe84a6a, 0xf08aa0, 'fish'],
+      [0xf0f0f8, 0xc8c8d8, 'squid'],
+      [0xd84a2a, 0xf07a4a, 'crab'],
+    ];
     objects.push({
-      y: y + 70,
-      shadow: () => shadowRect(x + 6, y + 6, w, 70, 0.5),
+      y: by,
+      shadow: () => shadowRect(x0 + 3, by - bh + 2, n * (bw + 3), bh, 0.65),
       draw: () => {
-        // stone base (snow), three roof tiers with walls, a crest on top
-        for (let yy = y + 44; yy < y + 70; yy++) {
-          const inset = Math.floor((y + 70 - yy) * 0.25);
-          for (let xx = x + inset; xx < x + w - inset; xx++) img.set(xx, yy, (yy - y) % 4 === 0 || (xx - x + (yy >> 2)) % 6 === 0 ? C.snow[1] : C.snow[2]);
-        }
-        const tiers = [[0, 44, 20], [8, 26, 18], [16, 10, 16]];
-        for (const [ins, ty, th] of tiers) {
-          for (let yy = y + ty; yy < y + ty + th; yy++)
-            for (let xx = x + ins; xx < x + w - ins; xx++) {
-              const roof = yy < y + ty + 7;
-              img.set(xx, yy, roof ? (yy === y + ty ? C.snow[3] : C.snow[2]) : (xx - x) % 6 === 2 && yy > y + ty + 9 ? C.snow[0] : C.snow[3]);
+        for (let i = 0; i < n; i++) {
+          const x = x0 + i * (bw + 3);
+          const y = by - bh;
+          const [body, light, kind] = catches[i % catches.length];
+          for (let yy = y; yy < by; yy++)
+            for (let xx = x; xx < x + bw; xx++) {
+              const edge = xx === x || xx === x + bw - 1 || yy === y || yy === by - 1;
+              let c = edge ? 0xeafcff : yy === y + 1 || xx === x + 1 ? 0xc8f0fa : 0x7ec8e4;
+              // the catch inside, seen through the ice
+              const lx = xx - x - bw / 2 + 0.5;
+              const ly = yy - y - bh / 2 + 0.5;
+              let inside = false;
+              if (kind === 'fish') inside = (lx / 5) ** 2 + (ly / 2.2) ** 2 < 1 || (lx > 4 && Math.abs(ly) < lx - 3.5 && lx < 6.5);
+              else if (kind === 'squid') inside = ((lx / 2.2) ** 2 + ((ly + 2) / 4) ** 2 < 1) || (ly > 1 && ly < 6 && Math.abs(lx) < 2.5 && (xx + yy) % 2 === 0);
+              else inside = (lx / 4) ** 2 + (ly / 3) ** 2 < 1 || (Math.abs(ly) < 1 && Math.abs(lx) < 6 && Math.abs(lx) > 3);
+              if (!edge && inside) c = mix(ly < 0 ? light : body, 0x9ad8f0, 0.35);
+              if (!edge && (xx - x + (yy - y) * 0.6) % 9 < 1) c = 0xf0fcff;
+              glow(xx, yy, c, edge ? 0.95 : 0.85);
             }
-          img.rect(x + ins, y + ty + 7, w - ins * 2, 1, C.snow[0]);
+          if (kind === 'fish') glow(x + 3, y + 7, 0x1a1a22);
         }
-        img.rect(cx - 4, y + 4, 8, 6, C.snow[3]);
-        img.set(cx - 5, y + 3, C.snow[1]);
-        img.set(cx + 4, y + 3, C.snow[1]);
-        // projection mapping washes
-        pool(cx - 18, y + 40, 30, 0xff50c0, 0.4);
-        pool(cx + 18, y + 30, 30, 0x50a0ff, 0.4);
-        pool(cx, y + 64, 24, 0xffe060, 0.3);
+        pool(cx, by, n * 10, 0x60d0ff, 0.45);
       },
     });
-    reserveRect(x - 2, y - 2, w + 4, 74);
+    reserveRect(x0 - 2, by - bh - 2, n * (bw + 3) + 4, bh + 4);
+  }
+  /**
+   * The great snow castle: a carved replica of a Japanese keep, 80 px wide. Fan-sloped stone walls (ishigaki)
+   * with fitted blocks and a stair up the middle, then five storeys narrowing upwards, each with rows of
+   * windows under a roof of carved tiles with upturned corners; triangular chidori gables and a curved kara
+   * gable over the front, golden fish (shachihoko) on the top ridge. Lit from the top left; the projection
+   * mapping (live) is cut from it after the grade.
+   */
+  function snowCastle(cx, by) {
+    const W2 = 40; // half width of the plinth
+    const top = by - 104;
+    castle = { x0: cx - W2 - 2, y0: top - 6, x1: cx + W2 + 2, y1: by + 1, mask: new Set() };
+    let shading = null; // while casting the shadow: the pixels already darkened
+    const put = (x, y, c, a = 1) => {
+      if (shading) {
+        if (!shading.has(y * W + x)) img.tint(x + 6, y + 5, 0.62);
+        shading.add(y * W + x);
+        return;
+      }
+      img.set(x, y, c, a);
+      castle.mask.add(y * W + x);
+    };
+    const glowAt = (x, y, c, a) => !shading && glow(x, y, c, a);
+    const poolAt = (...args) => !shading && pool(...args);
+    const S = C.snow;
+    const paint = () => {
+        // the plinth and the steps up to the walls
+        for (let y = by - 6; y < by; y++) for (let x = cx - W2; x < cx + W2; x++) put(x, y, y === by - 6 ? S[3] : (x + y) % 9 === 0 ? S[1] : S[2]);
+        for (let k = 0; k < 5; k++)
+          for (let x = cx - 7 + k; x < cx + 7 - k; x++) {
+            put(x, by - 6 - k * 2, S[3]);
+            put(x, by - 5 - k * 2, S[1]);
+          }
+        // the stone walls: concave fan slope, courses of fitted blocks, lit on the left, in shadow on the right
+        const wallTop = by - 30;
+        for (let y = wallTop; y < by - 6; y++) {
+          const t = (y - wallTop) / (by - 6 - wallTop);
+          const hw = 30 + 8 * t * t;
+          for (let x = Math.round(cx - hw); x < cx + hw; x++) {
+            if (Math.abs(x + 0.5 - cx) < 7 - (by - 6 - y) * 0.3 && y > by - 18) continue; // the stair cut into them
+            const row = Math.floor((y - wallTop) / 3);
+            const joint = (y - wallTop) % 3 === 0 || (x + row * 4 + (row % 2) * 2) % 7 === 0;
+            const side = (x - cx) / hw;
+            let v = 0.62 - side * 0.28 - (joint ? 0.25 : 0);
+            if (Math.abs(x + 0.5 - (cx - hw)) < 1 || Math.abs(x + 0.5 - (cx + hw)) < 1) v -= 0.15;
+            put(x, y, rampColor(S, Math.max(0, Math.min(1, v)), x, y));
+          }
+        }
+        for (let x = cx - 30; x < cx + 30; x++) put(x, wallTop, S[3]); // the snow lying on the walls
+        // five storeys, each a wall of windows under a roof
+        const tiers = [
+          [28, 10, 'kara'],
+          [23, 9, 'chidori'],
+          [18, 8, ''],
+          [14, 8, 'chidori'],
+          [10, 7, ''],
+        ];
+        let y = wallTop;
+        tiers.forEach(([hw, wh, gable], i) => {
+          // the storey's wall, white plaster with dark window recesses
+          for (let yy = y - wh; yy < y; yy++)
+            for (let x = cx - hw + 2; x < cx + hw - 2; x++) {
+              const r = yy - (y - wh);
+              const win = r >= 2 && r <= 4 && (x - cx + hw) % 4 >= 1 && (x - cx + hw) % 4 <= 2 && Math.abs(x + 0.5 - cx) < hw - 4;
+              put(x, yy, win ? (r === 2 ? S[0] : 0x7a849c) : x > cx + hw - 5 ? S[1] : r === wh - 1 ? S[1] : S[3]);
+            }
+          y -= wh;
+          // the roof: thick snow, rows of carved tiles, an upturned corner at each end, shadow under the eave
+          const rh = 5;
+          for (let yy = y - rh; yy < y; yy++) {
+            const r = yy - (y - rh);
+            const span = hw + 2 + r * 0.8;
+            for (let x = Math.round(cx - span); x < cx + span; x++) {
+              const tile = r > 0 && (x - cx) % 2 === 0;
+              put(x, yy, r === 0 ? S[3] : r === rh - 1 ? S[0] : tile ? S[1] : x < cx ? S[3] : S[2]);
+            }
+          }
+          for (const s of [-1, 1]) {
+            put(Math.round(cx + s * (hw + 6)), y - 2, S[3]);
+            put(Math.round(cx + s * (hw + 6)), y - 3, S[3]);
+            put(Math.round(cx + s * (hw + 7)), y - 4, S[2]);
+          }
+          if (gable === 'chidori') {
+            // a triangular gable rising out of the roof, its fish-tail ornament
+            for (let k = 0; k < 7; k++) for (let x = cx - 7 + k; x <= cx + 7 - k; x++) put(x, y - rh - k + 3, Math.abs(x - cx) === 7 - k || k === 6 ? S[3] : x > cx ? S[2] : S[3]);
+            put(cx, y - rh + 1, S[0]);
+            put(cx, y - rh + 2, S[1]);
+          } else if (gable === 'kara') {
+            // the curved kara gable over the entrance
+            for (let x = cx - 9; x <= cx + 9; x++) {
+              const a = Math.round(Math.sin(((x - cx + 9) / 18) * Math.PI) * 4);
+              put(x, y - 2 - a, S[3]);
+              put(x, y - 1 - a, S[1]);
+              for (let yy = y - a; yy < y + 2; yy++) put(x, yy, S[2]);
+            }
+          }
+          y -= rh - 1;
+        });
+        // the top ridge and its golden shachihoko (lit gold by the floodlights)
+        for (let x = cx - 9; x < cx + 9; x++) put(x, y - 1, S[3]);
+        for (const s of [-1, 1]) {
+          glowAt(cx + s * 9, y - 2, 0xffd060);
+          glowAt(cx + s * 9, y - 3, 0xffe080);
+          glowAt(cx + s * 8, y - 4, 0xffd060);
+        }
+        // floodlights at the foot, their light washing up the walls
+        for (const s of [-1, 1]) {
+          glowAt(cx + s * 36, by - 2, 0xffffff);
+          poolAt(cx + s * 30, by - 20, 30, s < 0 ? 0xff60c8 : 0x60a8ff, 0.32);
+        }
+        poolAt(cx, by - 50, 46, 0xd8e8ff, 0.2);
+    };
+    objects.push({
+      y: by,
+      shadow: () => {
+        shading = new Set();
+        paint();
+        shading = null;
+      },
+      draw: paint,
+    });
+    reserveRect(cx - W2 - 3, top - 8, W2 * 2 + 6, by - top + 10);
   }
   function iceSlide(cx, y, len) {
     objects.push({
@@ -1194,6 +1370,147 @@ export function buildMid() {
       },
     });
     reserveRect(cx - 42, y - 2, 84, 64);
+  }
+  // ------------------------------------------------------------ ice sculpture shapes (x, y on a w x h grid)
+  function DRAGON(x, y, w, h) {
+    // a coiling body: discs along an S-curve rising to the head, a ridge of spikes along its back
+    let best = 0;
+    for (let i = 0; i <= 40; i++) {
+      const t = i / 40;
+      const px = w / 2 + Math.sin(t * 5.2) * (w * 0.28) * (1 - t * 0.4);
+      const py = h - 4 - t * (h - 14);
+      const r = 2 + (1 - t) * 3.2;
+      const d = Math.hypot(x - px, y - py);
+      if (d < r) best = Math.max(best, i % 4 === 0 && d > r - 1.2 ? 2 : 1);
+      if (i % 3 === 0 && d < r + 2 && y < py - r + 1 && Math.abs(x - px) < 1) best = Math.max(best, 1); // spikes
+    }
+    if (best) return best;
+    // the head: a snout to the left, horns swept back, an open jaw
+    const hx = w / 2 + Math.sin(5.2) * w * 0.17;
+    const hy = 9;
+    if (((x - hx + 3) / 7) ** 2 + ((y - hy) / 3.5) ** 2 < 1) return y === Math.round(hy) && x < hx - 4 ? 2 : (x - hx + 6) ** 2 + (y - hy + 1) ** 2 < 1.5 ? 3 : 1;
+    if (y > hy + 2 && y < hy + 5 && x > hx - 9 && x < hx - 2 && (x + y) % 2 === 0) return 1; // the lower jaw
+    if (Math.abs(y - (hy - 3 - (x - hx) * 0.6)) < 0.8 && x > hx && x < hx + 7) return 3; // horns
+    if (Math.abs(y - (hy - 2 - (x - hx) * 0.3)) < 0.8 && x > hx + 1 && x < hx + 9) return 1;
+    // claws reaching out
+    if (Math.abs(y - h * 0.62) < 1 && x > 3 && x < 9) return 3;
+    return 0;
+  }
+  function SWANS(x, y, w, h) {
+    // two swans face to face: bodies low at either side, necks bowing out and back in until they meet beak
+    // to beak at the top, the pair making a heart
+    const cx = w / 2;
+    for (const s of [-1, 1]) {
+      const bx = cx + s * 10;
+      const byy = h - 6;
+      if (((x - bx) / 8) ** 2 + ((y - byy) / 4.5) ** 2 < 1) return y < byy - 1 && Math.abs(x - bx + s * 1) < 5 && (x + y) % 3 === 0 ? 2 : 1;
+      if (((x - (bx + s * 7)) / 3) ** 2 + ((y - (byy - 3)) / 3.5) ** 2 < 1 && y < byy) return 3; // the tail feathers, frosted
+      // the neck: a curve from the breast out and up and in to the head
+      for (let i = 0; i <= 24; i++) {
+        const t = i / 24;
+        const p0 = [cx + s * 5, byy - 2];
+        const p1 = [cx + s * 16, byy - 26];
+        const p2 = [cx + s * 2.5, byy - 17];
+        const u = 1 - t;
+        const px = u * u * p0[0] + 2 * u * t * p1[0] + t * t * p2[0];
+        const py = u * u * p0[1] + 2 * u * t * p1[1] + t * t * p2[1];
+        if (Math.hypot(x - px, y - py) < 1.6 - t * 0.4) return 1;
+      }
+      if (Math.hypot(x - (cx + s * 2.5), y - (byy - 17)) < 2.1) return 1; // the head
+      if (Math.abs(y - (byy - 16)) < 0.7 && (x - cx) * s >= 0 && (x - cx) * s < 1.2) return 3; // beaks touching
+    }
+    return 0;
+  }
+  function OWL(x, y, w, h) {
+    // Blakiston's fish owl on a branch: ear tufts, a frosted face disc round each great eye, wing feathers
+    const cx = w / 2;
+    if (Math.abs(y - (h - 2)) < 1.2 && x > 1 && x < w - 1) return 2; // the branch
+    if (((x - cx) / (w * 0.42)) ** 2 + ((y - h * 0.6) / (h * 0.36)) ** 2 < 1) {
+      if (Math.abs(x - cx) > w * 0.22 && (y + Math.abs(x - cx)) % 3 === 0) return 2; // wing feathers
+      return y > h * 0.55 && (x + y) % 4 === 0 ? 2 : 1;
+    }
+    if (((x - cx) / (w * 0.4)) ** 2 + ((y - h * 0.26) / (h * 0.22)) ** 2 < 1) {
+      for (const s of [-1, 1]) {
+        const d = Math.hypot(x - (cx + s * 4), y - h * 0.24);
+        if (d < 1.3) return 2;
+        if (d < 3.2) return 3;
+      }
+      return Math.abs(x - cx) < 1 && y > h * 0.28 ? 2 : 1;
+    }
+    for (const s of [-1, 1]) if (Math.abs(x - (cx + s * 6)) < 1.5 && y < h * 0.1 + 3 && y > 0) return 1; // ear tufts
+    return 0;
+  }
+  function FOX(x, y, w, h) {
+    // an Ezo red fox sitting, its great brush of a tail curled round its feet
+    const cx = w / 2 - 2;
+    if (((x - cx) / 6) ** 2 + ((y - h * 0.62) / (h * 0.3)) ** 2 < 1) return Math.abs(x - cx) < 2 && y > h * 0.45 && y < h * 0.7 ? 3 : 1; // body, white chest
+    if (((x - cx) / 5) ** 2 + ((y - h * 0.24) / 4) ** 2 < 1) {
+      for (const s of [-1, 1]) if (Math.abs(x - (cx + s * 2)) < 1 && Math.abs(y - h * 0.22) < 0.6) return 2; // eyes
+      return y > h * 0.28 && Math.abs(x - cx) < 2 ? 3 : 1;
+    }
+    for (const s of [-1, 1]) if (Math.abs(x - (cx + s * 3)) < 2 - (h * 0.14 - y) * 0.4 && y < h * 0.16 && y > h * 0.02) return 1; // ears
+    // the tail sweeping round from behind to the front
+    const tx = x - (cx + 7);
+    const ty = y - (h - 6);
+    if ((tx / 6) ** 2 + (ty / 4) ** 2 < 1 && tx > -9) return tx > 3 ? 3 : (x + y) % 4 === 0 ? 2 : 1;
+    return 0;
+  }
+  function ORCA(x, y, w, h) {
+    // an orca leaping out of a wave, nose up to the right: a sleek body, the tall dorsal fin, tail flukes,
+    // its white eye patch and belly frosted, spray at its tail
+    const cx = w * 0.52;
+    const cy = h * 0.52;
+    const a = -0.55;
+    const lx = (x - cx) * Math.cos(a) + (y - cy) * Math.sin(a); // along the body (head +)
+    const ly = -(x - cx) * Math.sin(a) + (y - cy) * Math.cos(a); // across it (belly +)
+    const len = 13;
+    const half = lx > 0 ? 5 * Math.sqrt(Math.max(0, 1 - (lx / len) ** 2)) : 5 * Math.max(0, 1 + lx / (len * 1.15));
+    if (Math.abs(lx) < len && Math.abs(ly) < half) {
+      if (lx > 4 && lx < 8 && ly < -1.5 && ly > -3.5) return 3; // the eye patch
+      if (ly > half * 0.35 && lx > -6) return 3; // the white belly
+      if (lx > len - 3 && Math.abs(ly) < 0.6) return 2; // the mouth
+      return 1;
+    }
+    if (lx > -4 && lx < 2 && ly < -half && ly > -half - 7 + Math.abs(lx + 1) * 1.6) return 1; // the dorsal fin
+    if (lx < -len + 3 && lx > -len - 4 && Math.abs(ly) < (-len + 3 - lx) * 0.9) return 1; // the flukes
+    if (y > h - 5 && x < w * 0.5 && (x * 7 + y * 3) % 4 === 0) return 3; // spray
+    return 0;
+  }
+  function CRAB(x, y, w, h) {
+    // a Hokkaido hairy crab: a round shell, eight legs splayed, two claws raised
+    const cx = w / 2;
+    const cy = h * 0.62;
+    if (((x - cx) / 8) ** 2 + ((y - cy) / 6) ** 2 < 1) return (x + y) % 3 === 0 ? 2 : Math.abs(y - cy + 2) < 1 ? 3 : 1;
+    for (const s of [-1, 1])
+      for (let k = 0; k < 4; k++) {
+        const ax = cx + s * (7 + k * 0.5);
+        const ay = cy - 1 + k * 2;
+        const lx = (x - ax) * s;
+        if (lx > 0 && lx < 7 && Math.abs(y - (ay + lx * (k - 1) * 0.35)) < 0.9) return 1;
+      }
+    for (const s of [-1, 1]) {
+      if (Math.hypot(x - (cx + s * 9), y - h * 0.22) < 3.4) return Math.abs(x - (cx + s * 9)) < 0.6 && y < h * 0.22 ? 2 : 1; // claws
+      if (Math.abs(x - (cx + s * (6 + (cy - y) * 0.4))) < 1 && y > h * 0.3 && y < cy - 4) return 1; // the arms
+      if (Math.hypot(x - (cx + s * 2), y - (cy - 6)) < 1) return 3; // eyes on stalks
+    }
+    return 0;
+  }
+  function LOTUS(x, y, w, h) {
+    // a lotus in bloom: layers of pointed petals opening out, a frosted heart, a leaf below
+    const cx = w / 2;
+    const base = h - 6;
+    if (Math.abs(y - (h - 3)) < 2 && Math.abs(x - cx) < w * 0.45 - Math.abs(y - (h - 3))) return (x + y) % 3 === 0 ? 2 : 1; // the leaf
+    for (const [n, len, spread] of [[7, h * 0.72, 1.25], [5, h * 0.55, 0.9], [3, h * 0.36, 0.6]]) {
+      for (let i = 0; i < n; i++) {
+        const a = -Math.PI / 2 + (i / (n - 1) - 0.5) * spread * 2;
+        const px = x - cx;
+        const py = y - base;
+        const along = px * Math.cos(a) + py * Math.sin(a);
+        const across = -px * Math.sin(a) + py * Math.cos(a);
+        if (along > 0 && along < len && Math.abs(across) < Math.sin((along / len) * Math.PI) * (len * 0.22)) return Math.abs(across) < 0.6 ? 2 : len < h * 0.4 ? 3 : 1;
+      }
+    }
+    return 0;
   }
   /** Crane sculpture shape: 0 none, 1 snow, 2 black wingtips/neck, 3 red crown. */
   function crane(x, y) {
@@ -1373,6 +1690,24 @@ export function buildMid() {
       }
   }
   for (const [x, y, c, a] of lights) img.set(x, y, c, a);
+
+  // projection mapping on the snow castle (live): bands of colour sweeping up its walls and roofs, in turn
+  if (castle) {
+    const PROJ = [0xff50c0, 0x50a8ff, 0xffd050, 0x9a60ff, 0x50e0c0, 0xff7040];
+    const frames = PROJ.map((col, f) =>
+      kit.frame(
+        cut(img, castle.x0, castle.y0, castle.x1 - castle.x0, castle.y1 - castle.y0, (r, g, b, a, x, y) => {
+          if (!castle.mask.has(y * W + x)) return null;
+          const band = ((castle.y1 - y) + f * 9) % 36;
+          if (band > 18) return null;
+          const k = 0.5 * Math.sin((band / 18) * Math.PI);
+          const [cr, cg, cb] = rgb(col);
+          return [r + (cr - r) * k, g + (cg - g) * k, b + (cb - b) * k, 255];
+        }),
+      ),
+    );
+    kit.loop(castle.x0, U(castle.y0), frames, { fps: 1.2, fx: 1 });
+  }
 
   const chunks = [];
   for (let i = 0; i < CHUNKS; i++) chunks.push(img.crop(0, i * CHUNK, W, CHUNK));

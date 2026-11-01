@@ -148,8 +148,11 @@ wyciąg krzesełkowy) → przedmieścia z kolorowymi blaszanymi dachami pod śni
 zasypanymi autami i strzałkami yabane nad drogami → centrum: wieża zegarowa Tokeidai, ceglany Akarenga
 z ośmiokątną kopułą i czerwonymi gwiazdami, ruch na alei → neony Susukino i zaułek ramen z lampionami →
 zamarznięta rzeka Toyohira z mostami → park Nakajima (staw, Hōheikan, sala koncertowa; zamieć i miniboss) →
-Festiwal Śniegu w parku Ōdōri (lodowe rzeźby, śnieżny zamek, zjeżdżalnia, kamakura, żuraw tanchō, rampa big air,
-stragany, podświetlone drzewa) → plac pod wieżą telewizyjną z cokołem rzeźby niedźwiedzia.
+Festiwal Śniegu w parku Ōdōri: ogród lodowych rzeźb świecących od środka i od kolorowych lamp (smok, para
+łabędzi z szyjami w serce, sowa rybołowna, lis, skacząca orka, krab, lotos i bryły lodu z zamrożonymi rybami),
+wielki śnieżny zamek (kamienny cokół ze schodami, pięć pięter z oknami, dachy z zadartymi rogami, szczyty chidori
+i kara, złote shachihoko) z projekcją świetlną przesuwającą kolory po ścianach, zjeżdżalnia, kamakura, żuraw
+tanchō, rampa big air, stragany, podświetlone drzewa → plac pod wieżą telewizyjną z cokołem rzeźby niedźwiedzia.
 
 Pora dnia przechodzi płynnie przez cały pas tła (gradacja kolorów w generatorze); okna, latarnie i neony są
 dorysowywane po gradacji, więc świecą w ciemności. Daleka warstwa to ośnieżony las w dolinie, bliska — padający
@@ -361,7 +364,7 @@ i zapisuje w `meta.json`, gdzie co stoi i jak się porusza — `tools/art/props.
 |---|---|
 | Kioto | płynące Kamo i Katsura, łódki pod Togetsukyō, podmuchy wiatru w gaju bambusowym, falujące odbicie Złotego Pawilonu i karpie w stawie, trzy strumienie Otowa, riksze w Gion i w bambusach, łopoczące chorągwie nobori w Fushimi, migoczące ognie 大 z dymem |
 | Okinawa | fale napływające na każdą plażę i biała piana na rafach, błyski na lagunach, łodzie sabani i prom z kilwaterem, cienie żółwi morskich, podmuchy wiatru nad trzciną cukrową, parada eisa na Kokusai-dōri, flagi nad ulicą, noren w drzwiach warsztatów Tsuboya i koty na bruku, kupujący pod dachem pasażu, chorągwie na dziedzińcu Shuri, błyskająca latarnia morska |
-| Sapporo | wyciąg krzesełkowy, skoczek na skoczni Ōkurayama, samochody w centrum, dym z kominów, para nad nurtem zamarzniętej rzeki, migające neony Susukino, para z ramenowni, łyżwiarze na stawie w parku Nakajima, zegar na TV Tower odliczający czas etapu |
+| Sapporo | projekcja świetlna na śnieżnym zamku, wyciąg krzesełkowy, skoczek na skoczni Ōkurayama, samochody w centrum, dym z kominów, para nad nurtem zamarzniętej rzeki, migające neony Susukino, para z ramenowni, łyżwiarze na stawie w parku Nakajima, zegar na TV Tower odliczający czas etapu |
 | Kagoshima | diabelski młyn na dworcu Chūō, tramwaje na trawiastych torach, promy na Sakurajimę, wyskakujące delfiny, kolumna popiołu z krateru, para z otworów i szczelin, pulsująca lawa |
 | Osaka | oba diabelskie młyny (na Tempozan kolory przebiegają po obręczy), statki na rzekach i kanale Dōtonbori, pociągi pod szklanym dachem Umedy, łabędzie w fosach i karpie w stawie, neony zapalające się litera po literze i biegające światła na billboardach, krab machający szczypcami i ośmiornica, kołyszące się girlandy lampionów, fontanna, drgające odbicia neonów w wodzie, dryfujące łodzie rybackie |
 | Beppu | żywe kolumny pary, bąble w gorących stawach (w szarym błocie Oniishibozu rosną i pękają „głowy mnichów”), fale na czarnej plaży, prom i łodzie, pociągi na stacji, pływające krokodyle, makaki na polanie |
