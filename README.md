@@ -295,8 +295,8 @@ Boss: czerwony oni z kolczastą maczugą kanabō, jak figury z Oniyamy. Śpi w s
 z krwi, gdy przewijanie stanie. Zwykłe strzały ledwie go drapią — działają **fasolki Setsubun** („Oni wa soto,
 fuku wa uchi”): co kilka sekund przez ekran przelatuje drewniane pudełko masu, zestrzel je i złap fasolki —
 przez 9 s co druga salwa dorzuca parę fasolek (pasek nad paskiem temperatury). Ataki: cios kanabō (zaznaczone
-miejsce uderzenia i szczelina z wybuchów biegnąca do gracza), krew ze stawu rzucana łukiem, tupnięcia
-budzące gejzery w całym ekranie, ryk z wachlarzami; poniżej 35% wpada w szał i kręci maczugą (spirala).
+miejsce uderzenia i szczelina z wybuchów biegnąca do gracza), tupnięcia budzące gejzery w całym ekranie, ryk
+z wachlarzami; poniżej 35% wpada w szał i kręci maczugą (spirala).
 
 ## Kolejność etapów
 

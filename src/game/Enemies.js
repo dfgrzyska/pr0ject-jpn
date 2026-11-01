@@ -2050,7 +2050,7 @@ export class Enemies {
    * The oni sleeps in the blood pond and rises when the scroll stops. Normal shots barely chip his hide:
    * Setsubun beans do the damage ("Oni wa soto!"). Masu boxes of beans fly across the screen; shoot one
    * and catch the beans. Attacks: the kanabō smash (a marked spot, then a fissure of eruptions running
-   * at the player), blood lobbed from the pond, stomps that set off geysers, roaring fans; enraged
+   * at the player), stomps that set off geysers, roaring fans; enraged
    * below 35% he also swings the club round in a spiral. The pond position comes from the boss wave.
    */
   spawnOni(w, base) {
@@ -2144,7 +2144,7 @@ export class Enemies {
     const s = this.scene;
     const b = s.bullets;
     const pl = s.player;
-    const list = g.enraged ? ['smash', 'spin', 'blood', 'stomp', 'spin', 'roar'] : ['smash', 'blood', 'stomp', 'roar'];
+    const list = g.enraged ? ['smash', 'spin', 'stomp', 'spin', 'roar'] : ['smash', 'stomp', 'roar'];
     const next = () => {
       g.phase++;
       g.step = 0;
@@ -2167,20 +2167,6 @@ export class Enemies {
         g.act = { t: 0, warn, ix, iy };
         e.pose = 1;
         if (++g.step >= (g.enraged ? 3 : 2)) next();
-        break;
-      }
-      case 'blood': {
-        // scoops the pond and throws blood at the player and around
-        const n = g.enraged ? 4 : 3;
-        for (let i = 0; i < n; i++) {
-          const tx = i === 0 ? pl.x : 14 + Math.random() * (VIEW.width - 28);
-          const ty = i === 0 ? pl.y : pl.y + (Math.random() - 0.5) * 70;
-          b.lob(e.x, e.y + 22, Phaser.Math.Clamp(tx, 10, VIEW.width - 10), Phaser.Math.Clamp(ty, 40, s.H - 14), 1.1 + i * 0.1, 'blood');
-        }
-        e.pose = 2;
-        g.poseT = 0.35;
-        g.timer = 0.9;
-        if (++g.step >= 3) next();
         break;
       }
       case 'stomp': {
