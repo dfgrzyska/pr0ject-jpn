@@ -135,16 +135,19 @@ Pas tła (warstwa środkowa) ~7 tys. px, ok. 3,5 min — przelot nad Kioto:
   honden, scena kagura, ściany beczek sake, czerwone flagi nobori, święte drzewa z shimenawa, tłumy);
 - **Senbon Torii** (47–76 s): tunele torii na grzbiecie (z rozwidleniem na dwa) z pielgrzymami migającymi
   między bramami, kopce otsuka, lis przemykający między nimi, smugi słońca na zboczach;
-- **Arashiyama** (76–103 s): gaj bambusowy z płotkami z chrustu i rikszami, czarna torii chramu Nonomiya,
+- **Arashiyama** (76–103 s): gaj bambusowy z płotkami z chrustu i rikszami, czarna torii chramu Nonomiya
+  (dróżka od ścieżki przez lukę w płotku),
   smugi słońca w gaju i spacerowicze w wypożyczonych kimonach, staw Sōgenchi z ogrodu Tenryū-ji (wysepka z sosną,
   skalny wodospad, żwir przed werandą pawilonu) na końcu gaju, hanami na niebieskich plandekach pod wiśniami nad rzeką,
   rzeka Katsura z mostem Togetsukyō i łodziami;
 - **Kinkaku-ji** (103–133 s): Złoty Pawilon odbity w lustrzanym stawie z wysepkami, wodospad Ryūmon,
-  mchowy ogród, herbaciarnia Sekka-tei;
+  mchowy ogród, herbaciarnia Sekka-tei; żwirowa ścieżka od bramy Sōmon biegnie przez cały ogród aż do Ryōan-ji,
+  z odejściami do dzwonnicy i pawilonu opata;
 - **Ryōan-ji** (133–153 s): ogród kamienny — grabiony żwir, 15 kamieni w omszałych obwódkach, gliniany mur,
-  weranda z siedzącymi gośćmi, mnich grabiący proste linie żwiru;
-- **Kiyomizu-dera** (153–196 s): schody Sannenzaka między sklepikami z ceramiką, brama Niōmon z lwami,
-  dzwonnica, trzypiętrowe pagody, wodospad Otowa, wielki drewniany taras na kracie pali nad doliną wiśni;
+  weranda z siedzącymi gośćmi, mnich grabiący proste linie żwiru; ścieżka okrąża ogród od wschodu do wejścia pawilonu;
+- **Kiyomizu-dera** (153–196 s): brukowana ulica Gojō-zaka u stóp wzgórza i odchodzące od niej schody Sannenzaka
+  między sklepikami z ceramiką, brama Niōmon z lwami, dzwonnica, trzypiętrowe pagody, wodospad Otowa, wielki
+  drewniany taras na kracie pali nad doliną wiśni, za główną halą ścieżka do chramu Jishu i Okunoinu i dalej w górę;
 - **Daimonji o zmierzchu** (196–216 s): znak 大 z płonących stosów na zboczu (Gozan Okuribi), iskry lecące
   w górę, strażnicy ognia wspinający się ścieżką z pochodniami; tu przewijanie
   staje (pole `stop` w `scroll` w `stage1.json`, cały znak na ekranie) i budzi się boss.
@@ -179,25 +182,27 @@ na niebiesko, dochodzą pierścienie. Mruga, a przy ataku otwiera pysk i rozpala
 
 Okinawa, ok. 3,5 min: morze z wyspami Kerama (zalesione wzgórza, białe plaże i skaliste cyple w najczystszej
 wodzie Japonii, łodzie nurków z bąblami na powierzchni, kajaki i chatka na plaży), rafami i łodziami sabani →
-plaża kurortu (parasole, hotel, basen; przy brzegu motorówka z paralotnią, banana boat i skutery wodne) → wioska Bise pod drzewami fukugi: piaszczyste, kręte uliczki w gęstych
+plaża kurortu (parasole, hotel z podjazdem i parkingiem od drogi nadmorskiej, basen; przy brzegu motorówka z paralotnią, banana boat i skutery wodne) → wioska Bise pod drzewami fukugi (główna uliczka schodzi do drogi nadmorskiej): piaszczyste, kręte uliczki w gęstych
 szpalerach fukugi, każde obejście w osobnym pierścieniu drzew z koralowym murkiem, ekranem hinpun za bramą,
 domem pod czerwoną dachówką z shisa na kalenicy, przybudówką i grządkami, rowerzyści i spacerowicze → pola trzciny cukrowej i ananasów
 (żniwa: na pół ścięte pole ze ścierniskiem i snopkami, ścinacze trzciny, ciężarówka załadowana pod sufit; cukrownia z blaszaną
-halą, kotłownią, ceglanym kominem w dymie i stertami trzciny na placu) → Naha w drodze na Shuri: zbocze z grobami-żółwiami
+halą, kotłownią, ceglanym kominem w dymie i stertami trzciny na placu otwartym na ostatnią uliczkę wioski) → Naha w drodze na Shuri: zbocze z grobami-żółwiami
 kamekōbaka (przed jednym rodzina świętuje Shīmī na kocu z pudełkami jedzenia), ulica garncarzy Tsuboya
 Yachimun-dōri (bruk z płyt wapienia, warsztaty pod czerwoną dachówką, galerie, shisa na słupkach bram, garnki
 i dzbany, stary piec schodkowy noborigama z drewnem na opał i deskami suszących się naczyń, koty), rynek
 Makishi pod szklanym dachem (stragany z kolorowymi rybami, homarami, małżami olbrzymimi, winogronami morskimi
 i owocami) z pasażem Heiwa-dōri, sklepy z koszulami kariyushi, sanshinami i sata andagi → Kokusai-dōri
 zamknięta dla parady eisa (chorąży, bębniarze z ōdaiko i shime-daiko, tancerki, klaun chondārā), restauracja
-w stylu Ryūkyū z dziedzińcem, plac z zespołem sanshin → zamek Shuri (Shureimon, pasiasty dziedziniec, hala
-Seiden) → las Yanbaru: kręta droga z żółtymi znakami ostrzegającymi przed ptakami kuina (i kuinami
+w stylu Ryūkyū z dziedzińcem, plac z zespołem sanshin → zamek Shuri (brukowane podejście od końca Kokusai-dōri przez Shureimon i bramę
+w zakrzywionych murach na pasiasty dziedziniec pod halą Seiden) → las Yanbaru: kręta droga (wjeżdża zza
+wschodniej krawędzi, od drogi wzdłuż wybrzeża, za zamkiem) z żółtymi znakami ostrzegającymi przed ptakami kuina (i kuinami
 przebiegającymi przez jezdnię), wodospad Hiji spadający ze skalnego progu do jeziorka, strumień do klifów pod
 wiszącym mostkiem i drogą, ścieżka z tarasem widokowym, mgła płynąca nad koronami → most Kōri: dwa kilometry
 prosto nad szmaragdową płycizną, z latarniami, cieniem na wodzie i jadącymi autami → wyspa Kōri (domy, trzcina,
 parking przy plaży Tinu i dwie skały Heart Rock w płytkiej wodzie) → otwarte morze z rafami widocznymi pod wodą
 (kępy korali, piaszczyste kanały), ławicami ryb, mantami i humbakami, które wyskakują, pokazują płetwy ogonowe
-i wydmuchują fontanny (miniboss) → wyspa z latarnią → otwarte morze z bossem.
+i wydmuchują fontanny (miniboss) → wyspa z latarnią (ścieżka od domku latarnika do pomostu z łodzią
+zaopatrzeniową) → otwarte morze z bossem.
 
 Daleka warstwa to głęboki ocean (płynie dalej podczas walki z bossem), bliska — chmury i mewy.
 Wrogowie mają skórki wyspiarskie (`src/game/skins.js`), zachowania są te same co w Kioto:
@@ -218,14 +223,15 @@ gdy jedna padnie, druga wpada w szał (szybsza, gęstsze serie). Po pokonaniu et
 ## Etap 3
 
 Sapporo zimą, ok. 3,5 min, od zachodu słońca przez różowy i fioletowy zmierzch nad przedmieściem i niebieską
-godzinę w centrum do nocy od Susukino: skocznia Ōkurayama (rozbieg, zeskok z liniami, stadion,
-wyciąg krzesełkowy, ratrak wygładzający zeskok, kibice machający flagami) → przedmieścia z kolorowymi blaszanymi dachami pod śniegiem, zbiornikami na naftę,
+godzinę w centrum do nocy od Susukino: skocznia Ōkurayama (rozbieg, zeskok z liniami, stadion z drogą
+dojazdową i parkingiem, wyciąg krzesełkowy, ratrak wygładzający zeskok, kibice machający flagami, droga
+z przedmieścia na szczyt skoczni z kilkoma domami na skraju lasu) → przedmieścia z kolorowymi blaszanymi dachami pod śniegiem, zbiornikami na naftę,
 zasypanymi autami i strzałkami yabane nad drogami → centrum: wieża zegarowa Tokeidai, ceglany Akarenga
 z ośmiokątną kopułą i czerwonymi gwiazdami, targ Nijō (długa hala straganów rybnych pod zaśnieżonymi dachami:
 kraby królewskie, jeżowce, kawior z łososia i łososie pod kolorowymi markizami, kupujący, para z grilla), ruch na
 alei, parujące studzienki i okna biurowców gasnące i zapalające się → neony Susukino z tramwajem na przecznicy
 i zaułek ramen z lampionami →
-zamarznięta rzeka Toyohira z mostami → park Nakajima (staw, Hōheikan, sala koncertowa, górka saneczkowa z dziećmi; zamieć i miniboss) →
+zamarznięta rzeka Toyohira z mostami → park Nakajima (ścieżki od mostów, staw, Hōheikan, sala koncertowa, górka saneczkowa z dziećmi; zamieć i miniboss) →
 Festiwal Śniegu w parku Ōdōri: ogród lodowych rzeźb świecących od środka i od kolorowych lamp (smok, para
 łabędzi z szyjami w serce, sowa rybołowna, lis, skacząca orka, krab, lotos i bryły lodu z zamrożonymi rybami),
 wielki śnieżny zamek (kamienny cokół ze schodami, pięć pięter z oknami, dachy z zadartymi rogami, szczyty chidori
@@ -302,21 +308,23 @@ Po pokonaniu krater stygnie i zostaje w tle.
 
 Ok. 3,5 min od popołudnia do nocy. Zamek Osaka wiosną: hanami pod kwitnącymi wiśniami (niebieskie maty
 z piknikującymi, kramy z pasiastymi markizami i lampionami, fontanna), szerokie zielone fosy z łodziami
-gozabune, wysokie mury ishigaki z widocznym licem z wielkich kamieni i narożnikami sangi-zumi, białe mury tamon
-z narożnymi wieżami yagura i bramami, gaj śliwowy, chram Hōkoku, Miraiza, olbrzymi kamień Takoishi w bramie
+gozabune, staw w ogrodzie Nishinomaru z mostkiem taikobashi na wysepkę z sosną i kamieniami do
+herbaciarni, wysokie mury ishigaki z widocznym licem z wielkich kamieni i narożnikami sangi-zumi, białe mury tamon
+z narożnymi wieżami yagura i bramami, gaj śliwowy, chram Hōkoku i Miraiza ze ścieżkami od alejki, olbrzymi kamień Takoishi w bramie
 Sakuramon, a w Honmaru pięciodachowy donżon na kamiennym podeście — zielona miedź, białe ściany, szczyty
 chidori- i kara-hafu, czarno-złote najwyższe piętro i złote shachihoko, ze schodkowym cieniem; drewniany most
 Gokuraku-bashi → Nakanoshima między dwiema rzekami (ceglana Central Public Hall z łukowym dachem, ratusz,
 biblioteka z kopułą, ogród różany, promenady z lampami, statki i tramwaj wodny) → wieżowce Umedy (szklane
 fasady, lądowiska na dachach, Sky Building z ogrodem na moście, czerwony diabelski młyn na dachu, dworzec
 pod wielkim szklanym dachem, aleja Midōsuji z drzewami i ruchem) → Shinsekai z Tsūtenkaku, zaułkiem Janjan,
-lampionem-rozdymką i neonami, Abeno Harukas → kanał Dōtonbori nocą (neony, wielkie szyldy z ośmiornicą, krabem,
+lampionem-rozdymką i neonami, Abeno Harukas → kanał Dōtonbori nocą (otwarty na obu końcach jak prawdziwy:
+na dole skręca na wschód, u góry na zachód, za krawędzie mapy; neony, wielkie szyldy z ośmiornicą, krabem,
 takoyaki, gyoza, sushi i ramenem, tłumy na moście Ebisu, stateczki) → Osaka nocą: Hōzen-ji Yokochō (brukowana
 uliczka z lampionami, omszały posąg Mizukake Fudō, ściany lampionów wotywnych, kadzielnica) → chram Namba Yasaka
 z ogromną głową lwa ze sceną w pysku i girlandami lampionów → targ Kuromon Ichiba pod szklanym dachem (stragany
 z rybami, krabami, tuńczykiem, jeżowcami, owocami i grillami) → Shitennō-ji (pięciopiętrowa pagoda, złota hala,
 cynobrowe krużganki, staw z żółwiami) → Sumiyoshi Taisha (aleja kamiennych latarni, łukowy most Sorihashi
-z odbiciem w stawie, hale ze skrzyżowanymi belkami chigi) → nabrzeże Tempozan (diabelski młyn, akwarium
+przez staw w osi alei, dalej ścieżka do bram w płotach wokół hal ze skrzyżowanymi belkami chigi) → nabrzeże Tempozan (diabelski młyn, akwarium
 Kaiyūkan, fontanna, drzewa z iluminacją, rząd straganów yatai z lampionami na bulwarze) → zatoka z czerwonym mostem
 Minato Ōhashi, żaglowcem, łodziami rybackimi pod lampami, nabrzeżem kontenerowym z dźwigami przy lewym brzegu
 i holownikami — tu wynurza się ośmiornica.
@@ -353,11 +361,14 @@ z zakrzywionym szczytem karahafu, gęsta zabudowa → Kannawa: zbocze ciasno upa
 Ideyu-zaka z lampionami i ludźmi w yukatach, kuchnia parowa jigoku-mushi, kąpiel dla stóp, ryokany z ogrodami i taras widokowy,
 a w górze zbocza tarasy strzechowych chatek Myōban, w których na niebieskiej glince rośnie sól kąpielowa
 yu-no-hana (para sączy się spod okapów) →
-„piekła” (jigoku) na żwirowych dziedzińcach w ogrodach: kobaltowy Umi Jigoku z czerwoną kapliczką i ogromnymi
+„piekła” (jigoku) na żwirowych dziedzińcach w ogrodach (bramy tam, gdzie dochodzą ścieżki; parking
+autokarów i parking zajazdu z wjazdami na główną ścieżkę): kobaltowy Umi Jigoku z czerwoną kapliczką i ogromnymi
 liśćmi lilii wiktorii, koszykiem jajek gotujących się na bambusowym stelażu i barierką ze zwiedzającymi, szare błoto Oniishibozu, kolorowe stawy Kamado z kucharzem-oni na kotle, mleczny Shiraike
 z mostkiem → zagrody krokodyli Oniyama z figurą czerwonego oni → lasy Takasakiyamy z polaną pełną makaków
-i kolejką linową na Tsurumi rozpiętą wysoko nad koronami (pylony z siedzącymi makakami, stacje, dwa czerwone wagoniki z cieniami)
-i świątynią → kamienna niecka gejzeru Tatsumaki z widownią → krwistoczerwony staw Chinoike.
+i kolejką linową na Tsurumi rozpiętą wysoko nad koronami (pylony z siedzącymi makakami, stacje z dojściami, dwa czerwone
+wagoniki z cieniami) i świątynią przy kamiennych schodach → kamienna niecka gejzeru Tatsumaki z widownią i przejściem
+wzdłuż wschodniego muru → krwistoczerwony staw Chinoike (dwa sklepy przy ścieżce, czerwony strumień spływający
+za wschodnią krawędź).
 
 Znak rozpoznawczy miasta to kolumny pary wychodzące spomiędzy domów. Są żywe: w tle jest narysowana tylko
 wilgotna plama i niska mgiełka przy każdym źródle, a samą kolumnę tworzą kłęby, które gra ciągle wypuszcza —

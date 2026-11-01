@@ -480,6 +480,25 @@ export function buildMid() {
       }
     crowd(44, Y(150), 92, 30, 70);
     reserveRect(36, Y(240), 108, 130);
+    // the access road up to the outrun between the stands, the car park beside it
+    vRoad(cx, 5, 0, 110);
+    for (let u = 40; u < 84; u++)
+      for (let x = cx + 5; x < 150; x++) { // (opening onto the road)
+        const edge = u === 40 || u === 83 || x === 149;
+        img.set(x, Y(u), edge ? C.bank : rampColor(C.packed, fbm(x, u, { seed: 36, scale: 4, octaves: 2 }), x, Y(u)));
+      }
+    reserveRect(cx + 4, Y(86), 152 - cx - 4, 48);
+    {
+      const pr = rng(4471);
+      for (const u of [76, 56])
+        for (let x = 106; x < 146; x += 5) {
+          if (pr() < 0.25) continue;
+          const c = pr.pick([0x2a2a30, 0xe0e0e8, 0x8a2a2a, 0x3a5a9a, 0xe8c030]);
+          img.rect(x + 1, Y(u) + 1, 3, 5, 0x101018, 0.4);
+          img.rect(x, Y(u), 3, 5, c);
+          img.rect(x, Y(u), 3, 1, C.snow[3]); // snow on the roof
+        }
+    }
     office(14, Y(205), 24, 16, 6, { wall: 0x8a6a4a, lit: 0.8 });
     // landing hill: groomed slope with distance lines (green = hill size, red = K point, blue ticks)
     for (let u = 235; u < 522; u++) {
@@ -591,14 +610,17 @@ export function buildMid() {
       }));
       for (const fl of flag) kit.spot([[46, 152, 88, 26]], fl, { rate: 1.6, fps: 5 });
     }
-    // forest edge to the suburbs: a few houses among the trees
-    tinHouse(40, Y(1060), 16, 12, { lit: 0.8, chimney: true });
-    tinHouse(120, Y(1040), 18, 12, { lit: 0.8 });
-    tank(58, Y(1050));
+    // the road up from the suburb to the lodge at the top of the jump, a few houses along it at the forest edge
+    vRoad(cx, 5, 941, SUBURB[0] - 10);
+    tinHouse(62, Y(1060), 16, 12, { lit: 0.8, chimney: true });
+    tinHouse(102, Y(1040), 18, 12, { lit: 0.8 });
+    tank(48, Y(1052));
   }
 
   // ------------------------------------------------------------ streets (B, C, D)
-  for (const [x, hw] of AVENUES) vRoad(x, hw, SUBURB[0] - 10, x === 90 ? CENTER[0] : RIVER[0]);
+  const lastBelowRiver = Math.max(...STREETS, ...plowRoads.filter((u) => u < RIVER[0]));
+  for (const [x, hw] of AVENUES) vRoad(x, hw, SUBURB[0] - 10, x === 90 ? CENTER[0] : x === 30 ? RIVER[0] : lastBelowRiver);
+  hRoad(SUBURB[0] - 10, 5); // (along the bottom of the suburb, where the avenues start)
   vRoad(90, 10, CENTER[0], RIVER[0], false); // Ekimae-dōri / main street through the centre and Susukino
   for (const u of STREETS) hRoad(u, 5);
   for (const u of plowRoads) if (u < RIVER[0]) hRoad(u, 6);
@@ -964,7 +986,7 @@ export function buildMid() {
         }
       }
     };
-    path([[20, 3870], [40, 4000], [30, 4150], [60, 4250], [150, 4180], [160, 4000], [120, 3880]]);
+    path([[30, 3852], [20, 3870], [40, 4000], [30, 4150], [60, 4250], [150, 4180], [160, 4000], [120, 3880], [96, 3852]]); // (from the bridges)
     path([[60, 4250], [20, 4420], [40, 4600], [100, 4700], [150, 4600], [160, 4420], [150, 4180]]);
     path([[100, 4700], [80, 4850], [90, 4990]]);
     for (const [x, u] of [[40, 4000], [30, 4150], [150, 4180], [20, 4420], [40, 4600], [160, 4420], [100, 4700], [80, 4850]]) streetLamp(x + 4, Y(u), true);
@@ -1018,6 +1040,7 @@ export function buildMid() {
     }
     // Kitara concert hall: big modern roof
     office(18, Y(4860), 56, 36, 8, { wall: 0x9a9ca4, lit: 0.8, cool: true });
+    path([[84, 4812], [46, 4812]]); // to its doors
     // cross-country ski track
     for (let u = 4520; u < 4800; u++) {
       const x = 30 + 10 * Math.sin(u / 40);
@@ -1067,7 +1090,7 @@ export function buildMid() {
   // ------------------------------------------------------------ F. Ōdōri park: the Snow Festival
   {
     const [o0, o1] = ODORI;
-    for (const x of ODORI_SIDE) vRoad(x, 6, o0 - 20, o1 + 20, false);
+    for (const x of ODORI_SIDE) vRoad(x, 6, o0, o1 + 20, false);
     for (const u of ODORI_CROSS) hRoad(u, 6, 0, W, false);
     for (const u of ODORI_CROSS) for (const x of [26, 154]) streetLamp(x, Y(u + 10), true);
     // building fronts at both edges of the screen

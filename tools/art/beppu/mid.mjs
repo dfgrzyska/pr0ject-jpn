@@ -360,6 +360,16 @@ export function buildMid() {
     }
     reserveRect(x, y, w, h);
   };
+  /** A short gravel walk over x0..x1, rows u0..u1: a way from a path to a building or gate beside it. */
+  const walk = (x0, x1, u0, u1) => {
+    const across = x1 - x0 >= u1 - u0 + 1; // (edged along its length only, so it runs into the path it joins)
+    for (let u = u0; u <= u1; u++)
+      for (let x = Math.max(0, Math.floor(x0)); x < Math.min(W, x1); x++) {
+        const edge = across ? u === u0 || u === u1 : x === Math.floor(x0) || x === x1 - 1;
+        img.set(x, Y(u), edge ? C.gravel[0] : rampColor(C.gravel, fbm(x, u, { seed: 191, scale: 2 }), x, Y(u)));
+      }
+    reserveRect(x0 - 1, Y(u1 + 1), x1 - x0 + 2, u1 - u0 + 3);
+  };
   const parking = (x, y, w, h) => {
     fill(x, y, w, h, C.asphalt, 73, 4);
     for (let xx = x + 1; xx < x + w - 4; xx += 6) {
@@ -1071,7 +1081,7 @@ export function buildMid() {
       }
       plume(x, Y(u), 1.2);
     }
-    gate(70, 3700, 30, 0x5a5a5a);
+    gate(4, 3560, 32, 0x5a5a5a); // (on the south wall, where the west path comes up)
     // Kamado Jigoku: pools in different colours and the red oni cook on his giant pot
     for (const [x, u, ramp] of [[36, 4090, C.milk], [80, 4130, C.blood], [126, 4100, C.cobalt], [108, 4320, C.mud], [48, 4340, C.jade], [86, 4260, C.milk], [28, 4210, C.cobalt]]) {
       hotPool(x, u, 17, 10, ramp, x + u);
@@ -1103,9 +1113,15 @@ export function buildMid() {
       reserveRect(x - 2, y - 16, 30, 40);
       plume(x + 13, y + 8, 1.8, { front: true });
     }
-    gate(30, 4470, 32, 0x8a2a2a);
-    // Shiraike: the milky white pond in a Japanese garden, a little bridge, stone lanterns
+    // Kamado's gate in the middle of its south wall, a walk to it from the main path (between the turret stands)
+    gate(74, 4040, 30, 0x8a2a2a);
+    walk(86, 93, 4012, 4023);
+    walk(86, 161, 4006, 4011);
+    // Shiraike: the milky white pond in a Japanese garden, a little bridge, stone lanterns; its gate on the north
+    // wall by the main path
     hotPool(96, 4440, 30, 16, C.milk, 95, C.rock);
+    gate(114, 4506, 30, 0x2b3c78);
+    walk(128, 155, 4507, 4512);
     img.rect(90, Y(4440) - 1, 14, 3, 0xc83a2a);
     img.rect(90, Y(4440) - 1, 14, 1, 0xe85a4a);
     plume(110, Y(4446), 1.4);
@@ -1124,6 +1140,8 @@ export function buildMid() {
     // between the hells: rest houses, a coach park, an inn
     parking(4, Y(3900), 60, 14);
     parking(4, Y(3920), 60, 14);
+    fill(64, Y(3920), 96, 34, C.asphalt, 75, 4); // the coaches' apron, out to the main path
+    reserveRect(64, Y(3920), 96, 34);
     img.rect(70, Y(3906), 18, 6, 0xe8d8a0);
     img.rect(70, Y(3906), 18, 1, 0xf8f0d0);
     img.rect(92, Y(3906), 18, 6, 0x3a6aa0);
@@ -1134,6 +1152,8 @@ export function buildMid() {
     block(8, Y(4600), 52, 18, 14, { roof: 0xb8b0a4, wall: 0xeee6d6, balcony: true, items: ['ac', 'bath', 'garden'] });
     house(70, Y(4590), 44, 15, 6, { ramp: ROOF.dark, hip: true, wall: 0xeee6d6, noren: 0x2b3c78 });
     parking(12, Y(4650), 70, 14);
+    fill(82, Y(4648), 79, 10, C.asphalt, 76, 4); // its drive out to the main path
+    reserveRect(82, Y(4648), 79, 10);
     for (const [y0, y1] of [[3330, 3500], [3560, 3830], [4040, 4400], [4404, 4490]]) reserveRect(0, Y(y1), 146, y1 - y0);
     for (let k = 0; k < 700; k++) {
       const x = rand() * W;
@@ -1329,6 +1349,9 @@ export function buildMid() {
     }
     // the temple hall among the cedars
     house(16, Y(6080), 54, 18, 7, { ramp: ROOF.dark, hip: true, wood: true, noren: 0x7a1a1a });
+    walk(43, 131, 6049, 6054); // from the stairway to its door
+    walk(137, 160, 6276, 6281); // to the ropeway's top station
+    walk(5, 12, ONIYAMA[1] - 2, TAKASAKI[0] + 24); // from its bottom station down to the crocodile park
     for (let k = 0; k < 700; k++) {
       const x = rand() * W;
       const u = TAKASAKI[0] + rand() * (TAKASAKI[1] - TAKASAKI[0]);
@@ -1374,6 +1397,10 @@ export function buildMid() {
     // spectator benches below the pit, everyone waiting for the next eruption
     for (let r = 0; r < 3; r++) img.rect(14, Y(t0 + 6 - r * 5), 152, 2, C.wood[r % 2 ? 1 : 2]);
     crowd(14, Y(t0 + 12), 152, 12, 70, true);
+    // the walk round the pit's east wall, from the benches to the path up to Chinoike
+    walk(160, W, t0 - 4, t0 + 1);
+    walk(173, W, t0 - 4, t1);
+    walk(100, W, t1 - 6, t1);
     for (let k = 0; k < 6; k++) plume(20 + rand() * 140, Y(t0 + 60 + rand() * 230), 0.8 + rand() * 0.6);
   }
 
@@ -1389,12 +1416,14 @@ export function buildMid() {
     crowd(10, Y(pu - 47), 160, 5, 50, true);
     house(110, Y(TATSUMAKI[1] + 110), 50, 13, 6, { ramp: ROOF.brown, hip: true, wood: true, noren: 0x8a1a1a });
     house(12, Y(TATSUMAKI[1] + 190), 40, 12, 5, { ramp: ROOF.kawara, hip: true, noren: 0x2b3c78 });
+    walk(99, 136, TATSUMAKI[1] + 85, TATSUMAKI[1] + 90); // from the path to their doors
+    walk(32, 70, TATSUMAKI[1] + 167, TATSUMAKI[1] + 172);
     // a gravel path up to the pond, a stream of red water running from it
     for (let u = TATSUMAKI[1]; u < pu - 50; u++) {
       const c = 90 + 18 * Math.sin(u / 50);
       for (let x = Math.floor(c - 4); x <= c + 4; x++) img.set(x, Y(u), Math.abs(x + 0.5 - c) > 3.5 ? C.gravel[0] : rampColor(C.gravel, fbm(x, u, { seed: 191, scale: 2 }), x, Y(u)));
       reserveRect(c - 5, Y(u), 10, 1);
-      const sc = 140 + 10 * Math.sin(u / 23);
+      const sc = 140 + 10 * Math.sin(u / 23) + 60 * (1 - smooth(TATSUMAKI[1] + 10, TATSUMAKI[1] + 80, u)); // (away off the east edge)
       for (let x = Math.floor(sc - 1); x <= sc + 1; x++) img.set(x, Y(u), C.blood[1 + (Math.abs(x - sc) < 0.6 ? 1 : 0)]);
     }
     crowd(70, Y(pu - 60), 40, 120, 30, true);

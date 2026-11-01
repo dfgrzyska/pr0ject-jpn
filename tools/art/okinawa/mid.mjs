@@ -585,6 +585,22 @@ export function buildMid() {
     for (let i = 0; i < 6; i++) img.rect(114 + i * 6, py + 4 + (i % 2), 4, 1, 0x9ae8f0);
     for (let i = 0; i < 5; i++) img.rect(112 + i * 7, py + 18, 4, 2, 0xf6f2e6);
     reserveRect(108, py - 2, 44, 24);
+    // its drive up to the coast road (u 1150), the forecourt behind it with guests' cars
+    for (let u = 961; u < 1150; u++)
+      for (let x = 112; x < 152; x++) {
+        const drive = x >= 125 && x <= 131;
+        if (u > 972 && !drive) continue;
+        const y = Y(u);
+        img.set(x, y, !drive && (u === 961 || u === 972) ? 0xd8d4c8 : rampColor(C.asphalt, fbm(x, y, { seed: 33, scale: 3 }), x, y));
+      }
+    for (const [x, c] of [[114, 0xe8e8ec], [119, 0x2a5ab0], [140, 0xc8302a], [146, 0x3a3a42]]) {
+      img.rect(x + 1, Y(970) + 1, 4, 6, 0x101418, 0.4);
+      img.rect(x, Y(970), 4, 6, c);
+      img.rect(x, Y(970) + 1, 4, 1, 0x8ab0d0); // the windscreen
+      img.rect(x, Y(970) + 4, 4, 1, scaleColor(c, 0.75));
+    }
+    reserveRect(110, Y(974), 44, 16);
+    reserveRect(122, Y(1150), 13, 1150 - 970);
   }
   // coastal road (asphalt with dashed centre line)
   const ROAD_U = 1150;
@@ -595,6 +611,13 @@ export function buildMid() {
       img.set(x, y, u === ROAD_U + 5 && x % 8 < 4 ? 0xe8e4d0 : rampColor(C.asphalt, fbm(x, y, { seed: 31, scale: 3 }), x, y));
     }
   reserveRect(0, Y(ROAD_U + 12), W, 14);
+  // Bise's main lane coming down through the trees to it
+  for (let u = ROAD_U + 10; u < VILLAGE[0] + 2; u++)
+    for (let x = 86; x < 94; x++) {
+      const y = Y(u);
+      if (K(x, y) === 2) img.set(x, y, rampColor(C.lane, 0.5 + fbm(x, y, { seed: 52, scale: 3 }) * 0.45, x, y));
+    }
+  reserveRect(85, Y(VILLAGE[0] + 2), 10, VILLAGE[0] + 2 - ROAD_U - 10);
 
   // ------------------------------------------------------------ C. Bise: the fukugi village
   // Sand lanes winding under tight rows of fukugi trees (the Bise fukugi road on the Motobu peninsula); every
@@ -818,13 +841,13 @@ export function buildMid() {
     // the mill: a long shed of corrugated iron, the boiler house, the chimney, cane stacked in the yard
     const mx = 128;
     const my = Y(2428);
-    for (let y = my - 4; y < my + 58; y++)
+    for (let y = my - 4; y < Y(VILLAGE[1] - 1); y++) // (down to the village's last lane)
       for (let x = mx - 4; x < W; x++)
         if (K(x, y) === 2) {
           img.set(x, y, rampColor(C.lane, 0.2 + fbm(x, y, { seed: 2216, scale: 4 }) * 0.4, x, y));
           cane[y * W + x] = 0;
         }
-    reserveRect(mx - 6, my - 6, W - mx + 6, 66);
+    reserveRect(mx - 6, my - 6, W - mx + 6, Y(VILLAGE[1] - 1) - my + 6);
     objects.push({
       y: my + 30,
       shadow: () => shadowRect(mx + 3, my + 4, 38, 30, 0.5),
@@ -1643,12 +1666,36 @@ export function buildMid() {
 
   // ------------------------------------------------------------ E. Shuri castle
   {
-    // curved outer walls
+    // the stone-paved approach from where Kokusai-dōri ends: through Shureimon and the gateway in the walls
+    for (let u = NAHA[1]; u < 3518; u++)
+      for (let x = 85; x < 96; x++) {
+        const y = Y(u);
+        const joint = u % 5 === 0 || (x - 85 + (Math.floor(u / 5) % 2) * 3) % 6 === 5;
+        img.set(x, y, x === 85 || x === 95 ? C.stone[0] : joint ? C.stone[1] : rampColor(C.stone, 0.55 + fbm(x, y, { seed: 54, scale: 3 }) * 0.35, x, y));
+      }
+    reserveRect(82, Y(3518), 17, 3518 - NAHA[1]);
+    // curved outer walls, open where the approach passes through
     for (const [rx, ry, a0, a1] of [[90, 120, -2.9, -0.25], [90, 96, -2.7, -0.45]]) {
       const cy = Y(3420);
-      const pts = [];
-      for (let a = a0; a <= a1; a += 0.03) pts.push([90 + Math.cos(a) * rx * 0.62, cy + Math.sin(a) * ry * 0.9]);
-      wall(pts, 4);
+      const sides = [[], []];
+      for (let a = a0; a <= a1; a += 0.03) {
+        const x = 90 + Math.cos(a) * rx * 0.62;
+        if (Math.abs(x - 90) >= 9) sides[x < 90 ? 0 : 1].push([x, cy + Math.sin(a) * ry * 0.9]);
+      }
+      for (const pts of sides) wall(pts, 4);
+    }
+    // the gate tower over the gateway (Kankaimon)
+    {
+      const ty = Y(3512);
+      objects.push({
+        y: ty + 8,
+        shadow: () => shadowRect(83, ty + 3, 20, 7, 0.5),
+        draw: () => {
+          for (let yy = 0; yy < 6; yy++) for (let xx = 0; xx < 20; xx++) img.set(80 + xx, ty + yy, xx % 3 === 2 ? scaleColor(C.roof[2], 1.2) : yy < 3 ? C.roof[2] : C.roof[1]);
+          img.rect(80, ty + 5, 20, 1, C.roof[0]);
+          img.rect(86, ty + 6, 8, 2, 0x2a1a14); // the arch's dark mouth
+        },
+      });
     }
     // Shureimon gate
     const gx = 76;
@@ -1669,9 +1716,9 @@ export function buildMid() {
     reserveRect(gx - 2, gy - 2, 34, 20);
     // Una courtyard: red/white striped paving, Seiden main hall, side halls
     const cyTop = Y(3600);
-    for (let yy = cyTop - 4; yy < cyTop + 84; yy++) for (let xx = 46; xx < 134; xx++) img.set(xx, yy, rampColor(C.stone, 0.5 + fbm(xx, yy, { seed: 53, scale: 4 }) * 0.4, xx, yy));
+    for (let yy = Y(3636); yy < cyTop + 84; yy++) for (let xx = 42; xx < 138; xx++) img.set(xx, yy, rampColor(C.stone, 0.5 + fbm(xx, yy, { seed: 53, scale: 4 }) * 0.4, xx, yy));
     for (let yy = cyTop; yy < cyTop + 76; yy++) for (let xx = 58; xx < 122; xx++) img.set(xx, yy, Math.floor((xx - 58) / 2) % 2 ? 0xd8cfc0 : 0xb8503a);
-    reserveRect(44, cyTop - 6, 92, 92);
+    reserveRect(40, Y(3638), 100, Y(3514) - Y(3638)); // (up to the Seiden's front, out to the side halls)
     // festival banners on tall poles at the courtyard's corners, fluttering (live)
     for (const [bx, c1, c2] of [[50, 0xe8c030, 0xc8302a], [128, 0xc8302a, 0xe8c030]])
       for (const by of [cyTop + 6, cyTop + 60]) {
@@ -1727,8 +1774,9 @@ export function buildMid() {
   // A narrow road winds through the forest to the Kōri bridge, Yanbaru kuina (flightless rails found only
   // here) dashing across it by the yellow warning signs; the Hiji falls drop off a rock step into a pool, the
   // stream runs down to the cliffs under a suspension footbridge and the road; mist drifts over the canopy.
-  const roadX = (u) => 90 + 22 * Math.sin((u - JUNGLE[0]) / 120) * smooth(3860, 3930, u) * (1 - smooth(4560, 4640, u));
-  const ROAD = [3870, 4640];
+  // (it comes in from the coast road off the east edge, behind Shuri castle)
+  const roadX = (u) => 90 + 22 * Math.sin((u - JUNGLE[0]) / 120) * (1 - smooth(4560, 4640, u)) + 110 * (1 - smooth(3780, 3950, u));
+  const ROAD = [3800, 4640];
   {
     const yr = rng(2207);
     // the stream: from the hills off the west edge, over the falls, down to the sea at the cliffs
@@ -1846,16 +1894,18 @@ export function buildMid() {
     for (let u = ROAD[0]; u <= ROAD[1] + 12; u++) {
       const y = Y(u);
       const cx = roadX(u);
-      for (let x = Math.floor(cx - 4); x <= cx + 4; x++) {
+      const slope = (roadX(u + 1) - roadX(u - 1)) / 2;
+      const k = Math.sqrt(1 + slope * slope);
+      for (let x = Math.floor(cx - 4 * k); x <= cx + 4 * k; x++) {
         if (K(x, y) === 0) continue;
-        const dx = x + 0.5 - cx;
+        const dx = (x + 0.5 - cx) / k;
         let c = rampColor(C.asphalt, fbm(x, y, { seed: 66, scale: 3 }), x, y);
         if (Math.abs(dx) > 3.2) c = rampColor(C.redEarth, 0.5, x, y);
         else if (Math.abs(Math.abs(dx) - 2.6) < 0.5) c = 0xd8d8d0;
         else if (Math.abs(dx) < 0.5 && u % 8 < 4) c = 0xe8e4d0;
         img.set(x, y, c);
       }
-      reserveRect(cx - 6, y, 12, 1);
+      reserveRect(cx - 6 * k, y, 12 * k, 1);
     }
     {
       // where the stream passes under it: concrete railings either side
@@ -2022,6 +2072,22 @@ export function buildMid() {
     }
     reserveRect(lx - 7, ly - 7, 14, 14);
     house(ix - 24, Y(iu - 10), 16, 10);
+    // a trail from the keeper's house and the lighthouse down to a jetty on the south shore, the supply boat
+    const trail = (x, u) => {
+      const y = Y(u);
+      if (K(x, y) === 0) return false;
+      img.set(x, y, rampColor(C.lane, 0.4 + fbm(x, y, { seed: 2231, scale: 3 }) * 0.45, x, y));
+      reserved[y * W + x] = 1;
+      return true;
+    };
+    for (let x = ix - 16; x <= ix; x++) for (const u of [iu - 12, iu - 13]) trail(x, u);
+    let shore = iu + 1;
+    while (trail(ix - 1, shore) & trail(ix, shore)) shore--;
+    for (let u = shore; u > shore - 10; u--)
+      for (let x = ix - 2; x <= ix + 1; x++) img.set(x, Y(u), x === ix - 2 || x === ix + 1 ? 0x6a4a2a : u % 2 ? 0x9a7a4a : 0xb08a58);
+    img.rect(ix + 3, Y(shore - 3), 3, 7, 0x0a1a2a, 0.3);
+    img.rect(ix + 2, Y(shore - 2), 3, 7, 0xf2eee0); // the supply boat moored alongside
+    img.rect(ix + 2, Y(shore - 4), 3, 2, 0x3a6ab0);
     for (let i = 0; i < 9; i++) {
       const a = (i / 9) * Math.PI * 2 + rand() * 0.4;
       tree('palm', ix + Math.cos(a) * 28, Y(iu + Math.sin(a) * 26), 6 + rand() * 2);

@@ -205,6 +205,17 @@ export function buildMid() {
       reserveRect(cx - hw - 3, y, hw * 2 + 7, 1);
     }
   };
+  // horizontal gravel walk over x0..x1, rows u0..u1 (the side ways off the paths to the halls)
+  const walk = (x0, x1, u0, u1) => {
+    for (let u = u0; u <= u1; u++)
+      for (let x = Math.floor(x0); x < x1; x++) {
+        const y = Y(u);
+        if (!img.alpha(x, y)) continue;
+        const c = rampColor(C.gravel, 0.25 + fbm(x, y, { seed: 8, scale: 4, octaves: 2 }) * 0.6, x, y);
+        img.set(x, y, u === u0 || u === u1 ? scaleColor(c, 0.75) : c);
+      }
+    reserveRect(x0 - 3, Y(u1 + 3), x1 - x0 + 6, u1 - u0 + 7);
+  };
   /** A body of water: an irregular ellipse filled from a ramp, rimmed with stones. */
   const pondAt = (cx, cu, rx, ry, ramp, seed, rim = C.stone) => {
     const cy = Y(cu);
@@ -1107,7 +1118,7 @@ export function buildMid() {
     const [a0] = ARASHI;
     fillGround(0, Y(3260), W, 3260 - a0, C.bambooFloor, 31, 5);
     // the path through the bamboo grove, low brushwood fences on both sides
-    const bx = (u) => 90 + 10 * Math.sin((u - a0) / 80);
+    const bx = (u) => 90 + 10 * Math.sin((u - a0) / 80) - (90 - pathX(a0)) * (1 - smooth(a0, a0 + 80, u)); // (from where the ridge path comes in)
     path(a0, 3262, bx, 6);
     for (let u = a0; u < 3262; u++)
       for (const s of [-1, 1]) {
@@ -1176,6 +1187,8 @@ export function buildMid() {
     reserveRect(124, Y(2992), 54, 74);
     gateSmall(150, Y(2934), 9, true);
     hall(132, Y(2984), 34, 16, 5, 'hondo');
+    walk(bx(2916) + 5, 154, 2913, 2918); // its approach, through a gap in the fence and the torii to the hall
+    path(2913, 2964, () => 150, 3);
     // the south bank promenade and the Katsura river with Togetsukyō bridge
     fillGround(0, Y(3330), W, 70, C.gravel, 33, 6);
     for (let u = 3330; u < 3440; u++)
@@ -1247,7 +1260,7 @@ export function buildMid() {
     for (let u = KINKAKU[0] + 4; u < KINKAKU[0] + 10; u++) for (let x = 0; x < W; x++) if (x < 132 || x > 148) img.set(x, Y(u), u > KINKAKU[0] + 7 ? C.roofTileDark[(x & 1) + 1] : rampColor(C.earthWall, fbm(x, u * 3, { seed: 46, scale: 3 }), x, Y(u)));
     reserveRect(0, Y(KINKAKU[0] + 10), W, 6);
     // the gravel walk round the pond
-    path(KINKAKU[0], 4380, () => 140, 5);
+    path(KINKAKU[0], KINKAKU[1], () => 140, 5); // (on into Ryōan-ji)
     for (let u = 3980; u < 4010; u++) for (let x = 100; x < 140; x++) img.set(x, Y(u), rampColor(C.gravel, 0.5, x, Y(u)));
     reserveRect(100, Y(4010), 40, 30);
     // Kyōko-chi, the mirror pond, with its islands of pines and rocks
@@ -1373,6 +1386,7 @@ export function buildMid() {
     // the Sōmon entrance gate in the clay wall, the bell tower, the approach
     hall(126, Y(3540), 28, 14, 7, 'temple');
     hall(20, Y(3590), 22, 14, 6, 'temple');
+    walk(26, 137, 3564, 3569);
     crowd(132, Y(3600), 16, 60, 30, true, 0.15);
     {
       const x = 106;
@@ -1383,8 +1397,9 @@ export function buildMid() {
       reserveRect(x - 1, y - 1, 12, 15);
     }
     // the Sekka-tei tea house, the abbot's hall, visitors on the walks
-    hall(130, Y(4168), 30, 12, 5, 'hondo');
+    hall(104, Y(4168), 30, 12, 5, 'hondo');
     hall(10, Y(4296), 64, 20, 7, 'temple');
+    walk(36, 137, 4262, 4267);
     crowd(135, Y(4380), 10, 870, 70, true, 0.15);
     crowd(100, Y(4008), 40, 26, 30, true, 0.15);
   }
@@ -1392,7 +1407,7 @@ export function buildMid() {
   // ------------------------------------------------------------ H. Ryōan-ji (u 4400..5000)
   {
     fillGround(0, Y(RYOAN[1]), W, RYOAN[1] - RYOAN[0], C.moss, 38, 7);
-    path(RYOAN[0], 4690, () => 152, 5, 'gravel');
+    path(RYOAN[0], 4880, (u) => 140 + 30 * smooth(4420, 4600, u), 5, 'gravel'); // (to the abbot's hall's east door)
     // Kyōyōchi pond on the way in, with water lilies
     pondAt(80, 4490, 28, 46, C.pond, 39, C.stone);
     for (let k = 0; k < 18; k++) {
@@ -1461,7 +1476,8 @@ export function buildMid() {
     for (let x = gx0 + 2; x < gx1 - 2; x += 3) if (rand() < 0.7) crowd(x, Y(gu1 + 3), 1, 2, 1, true);
     reserveRect(gx0, Y(gu1 + 8), gx1 - gx0, 8);
     hall(gx0, Y(4892), gx1 - gx0, 30, 8, 'temple');
-    crowd(146, Y(4690), 12, 290, 40, true, 0.1);
+    crowd(136, Y(4480), 10, 80, 12, true, 0.1);
+    crowd(166, Y(4880), 9, 280, 28, true, 0.1);
   }
 
   // ------------------------------------------------------------ I. Kiyomizu-dera (u 5000..6300)
@@ -1469,7 +1485,15 @@ export function buildMid() {
     fillGround(0, Y(5420), W, 420, [0x3a3634, 0x46423e, 0x524e48], 43, 4);
     // Sannenzaka: stone steps winding up between shops
     const sx = (u) => 90 + 16 * Math.sin((u - 5000) / 60);
-    path(5000, 5400, sx, 7, 'stairs');
+    // Gojō-zaka: the stone-paved street across the foot of the hill that the steps go up from
+    paving(0, Y(5001), W, 12);
+    for (let x = 0; x < W; x++) {
+      img.set(x, Y(4990), C.stone[0]);
+      img.set(x, Y(5001), C.stone[0]);
+    }
+    reserveRect(0, Y(5004), W, 18);
+    crowd(0, Y(4999), W, 7, 26, true, 0.3);
+    path(5002, 5400, sx, 7, 'stairs');
     for (let u = 5000; u < 5400; u++) {
       const c = sx(u);
       for (const s of [-1, 1]) img.set(Math.round(c + s * 8), Y(u), C.stone[3]);
@@ -1567,7 +1591,12 @@ export function buildMid() {
     hall(126, Y(5900), 44, 16, 6, 'hondo');
     hall(16, Y(5880), 36, 16, 6, 'shrine');
     crowd(10, Y(5930), 160, 100, 50, false, 0.2);
-    path(5930, 6300, (u) => 90 + 12 * Math.sin((u - 5930) / 90), 5, 'gravel');
+    path(5812, 5930, () => 90, 5, 'gravel'); // from behind the main hall
+    walk(30, 152, 5846, 5851);
+    path(5846, 5857, () => 34, 3); // to the Jishu shrine
+    path(5846, 5877, () => 148, 3); // to Okunoin
+    crowd(86, Y(5930), 8, 118, 10, true, 0.25);
+    path(5930, 6300, (u) => 90 + 12 * Math.sin(((u - 5930) * Math.PI) / 185), 5, 'gravel'); // (meets the mountain path)
   }
 
   // ------------------------------------------------------------ J. the Daimonji mountain at dusk (u 6300..7168)

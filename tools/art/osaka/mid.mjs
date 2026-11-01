@@ -188,6 +188,10 @@ export function buildMid() {
     // rivers across, the canal down the middle and the open bay
     if ((u >= TOSABORI[0] && u < TOSABORI[1]) || (u >= DOJIMA[0] && u < DOJIMA[1])) return true;
     if (u >= DOTONBORI[0] + 30 && u < DOTONBORI[1] - 30 && x >= 64 && x < 116) return true;
+    // (it runs on off the east edge at its south end and off the west edge at its north end, like the real
+    // Dōtonbori between two rivers)
+    if (u >= DOTONBORI[0] + 30 && u < DOTONBORI[0] + 50 && x >= 64) return true;
+    if (u >= DOTONBORI[1] - 50 && u < DOTONBORI[1] - 30 && x < 116) return true;
     if (u >= PORT[1] + (fbm(x, 3, { seed: 51, scale: 20 }) - 0.5) * 30) return true;
     return false;
   };
@@ -942,8 +946,8 @@ export function buildMid() {
         img.set(x, Y(u), e > 1 ? rampColor(C.ishi, 0.3 + fbm(x, u, { seed: 42, scale: 2 }) * 0.6, x, Y(u)) : rampColor([0x2a5a62, 0x346a70, 0x40787c, 0x5a9090], 0.3 + (1 - e) * 0.4 + fbm(x, u, { seed: 43, scale: 4 }) * 0.3, x, Y(u)));
       }
     reserveRect(4, Y(cu + 34), 76, 68);
-    img.disc(30, Y(cu + 10), 6, C.ishi[2]);
-    tree('pine', 30, Y(cu + 12), 5);
+    img.disc(52, Y(cu + 2), 6, C.ishi[2]);
+    tree('pine', 52, Y(cu + 4), 5);
     for (let k = 0; k < 18; k++) {
       const kx = cx + (rand() - 0.5) * 50;
       const ky = Y(cu) + (rand() - 0.5) * 36;
@@ -951,12 +955,12 @@ export function buildMid() {
       img.rect(Math.round(kx), Math.round(ky), 2, 1, rand.pick([0xf06a20, 0xf8f4f0, 0xe83a2a, 0xf0b030]));
     }
     for (let j = 0; j < 22; j++) {
-      // the taikobashi arching over the pond
-      const yy = Y(cu - 8) - Math.round(Math.sin((j / 21) * Math.PI) * 3);
-      img.rect(48 + j, yy, 1, 4, j % 3 ? 0xc8382a : 0xa82a20);
-      img.set(48 + j, yy - 1, 0xe85a4a);
+      // the taikobashi arching over the pond from the island to the east shore, by the main walk
+      const yy = Y(cu) - Math.round(Math.sin((j / 21) * Math.PI) * 3);
+      img.rect(58 + j, yy, 1, 4, j % 3 ? 0xc8382a : 0xa82a20);
+      img.set(58 + j, yy - 1, 0xe85a4a);
     }
-    for (let k = 0; k < 7; k++) img.disc(62 + k * 2, Y(cu + 12 - k * 4), 1.2, C.stone[3]); // stepping stones
+    for (let k = 0; k < 6; k++) img.disc(54 + k * 2, Y(cu + 9 + k * 2.2), 1.2, C.stone[3]); // stepping stones to the tea house
     for (const [lx, lu] of [[12, cu - 26], [72, cu + 24], [58, cu - 28]]) {
       img.rect(lx, Y(lu), 3, 4, C.stone[2]);
       img.rect(lx - 1, Y(lu), 5, 1, C.stone[3]);
@@ -1004,6 +1008,11 @@ export function buildMid() {
       building(x, y, 48, 18, 14, { style: 'office', roof: 0x9a7a62, wall: 0xc8a888, items: ['hut', 'ac'] });
       for (const tx of [x - 2, x + 42]) yagura(tx + 4, y + 10, 10, 2, [0x6a4a3a, 0x7a5a48, 0x8a6a56, 0xa08068]);
     }
+    // walks up from the cross walk to the shrine's torii and to Miraiza's door
+    gravelPath(26, 34, 410, 483);
+    gravelPath(138, 146, 410, 487);
+    reserveRect(25, Y(483), 10, 73);
+    reserveRect(137, Y(487), 10, 77);
     for (let k = 0; k < 90; k++) {
       // the plum grove: small trees in pink, white and red
       const x = 108 + rand() * 68;
@@ -1245,7 +1254,7 @@ export function buildMid() {
   // ------------------------------------------------------------ C. Umeda: skyscrapers, the station under its glass roof
   {
     for (const x of [30, 150]) vRoad(x, 5, UMEDA[0], SHINSEKAI[1]);
-    vRoad(90, 8, UMEDA[0], DOTONBORI[0] + 30); // Midōsuji
+    vRoad(90, 8, UMEDA[0], SHINSEKAI[1]); // Midōsuji (to the cross street on the canal's south bank)
     for (const u of [2100, 2350, 2600, 2900]) {
       hRoad(u, 6);
       for (const [x, hw] of [[30, 5], [90, 8], [150, 5]]) crossing(x, hw, u, 6);
@@ -1466,11 +1475,15 @@ export function buildMid() {
     const [d0, d1] = DOTONBORI;
     // riverside walk (Tombori) on both banks
     for (let u = d0 + 30; u < d1 - 30; u++)
-      for (const [x0, x1] of [[56, 64], [116, 124]])
+      for (const [x0, x1] of [[56, 64], [116, 124]]) {
+        if (x0 < 64 ? u >= d1 - 50 : u < d0 + 50) continue; // (where the canal turns away)
         for (let x = x0; x < x1; x++) img.set(x, Y(u), (x + u) % 5 === 0 ? 0x6a6660 : 0x8a847c);
+      }
     reserveRect(56, Y(d1 - 30), 68, d1 - d0 - 60);
-    for (let u = d0 + 40; u < d1 - 40; u += 12) for (const x of [58, 121]) lantern(x, Y(u), rand.pick([0xff5a30, 0xffd040]));
-    for (let u = d0 + 40; u < d1 - 40; u += 3) {
+    reserveRect(0, Y(d1 - 28), 64, 24);
+    reserveRect(116, Y(d0 + 52), W - 116, 24);
+    for (let u = d0 + 56; u < d1 - 56; u += 12) for (const x of [58, 121]) lantern(x, Y(u), rand.pick([0xff5a30, 0xffd040]));
+    for (let u = d0 + 56; u < d1 - 56; u += 3) {
       crowd(57, Y(u), 6, 2, 1, true);
       crowd(117, Y(u), 6, 2, 1, true);
     }
@@ -1505,7 +1518,7 @@ export function buildMid() {
         }
       for (const [x, s0] of [[60, 0.2], [120, 0.6], [59, 0.9], [121, 0.35]]) {
         const c = cols[Math.floor(er() * cols.length)];
-        kit.path([[x, d0 + 40], [x, d1 - 40]], [walker(c, 0, (d0 + d1) / 2), walker(c, 1, (d0 + d1) / 2)], { sp: 3, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0 });
+        kit.path([[x, d0 + 56], [x, d1 - 56]], [walker(c, 0, (d0 + d1) / 2), walker(c, 1, (d0 + d1) / 2)], { sp: 3, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0 });
       }
       for (const [x, u] of [[54, d0 + 652], [126, d0 + 628], [54, d0 + 312]]) kit.emit(x, u, stallSteam, { rate: 1.4, life: [1.2, 2], vy: 6, sx: 1, wf: 0.6, a: 0.42, tint: 1 });
     }
@@ -1532,8 +1545,8 @@ export function buildMid() {
       kit.path([[x + 6, u0], [x + 6, u1]], [boatF], { sp: 7, mode: 'pp', hold: 3, turn: 'none', wake: { f: wakeF, every: 3, life: 2 }, s0 });
     }
     // buildings on both banks, lit up, with neon and billboards
-    district(0, 55, d0 + 30, d1 - 30, 'canal');
-    district(125, W, d0 + 30, d1 - 30, 'canal');
+    district(0, 55, d0 + 30, d1 - 56, 'canal');
+    district(125, W, d0 + 56, d1 - 30, 'canal');
     // giant food signs: octopus, takoyaki, gyoza, sushi, ramen, a crab waving its legs
     const signs = [
       ['tako', 8, d0 + 120],
@@ -2239,30 +2252,39 @@ export function buildMid() {
         stoneLantern(61, Y(u + 4));
         stoneLantern(116, Y(u + 4));
       }
-      // the pond, and the Sorihashi arching over it with its reflection
+      // the pond, and the Sorihashi arching over it on the approach's line, from shore to shore: seen from the
+      // south, its near slope rises long and lit to the crest, the far one drops short and dark
       pondAtNight(90, 6035, 68, 34);
       {
-        const bx0 = 40;
-        const bx1 = 140;
-        const yw = Y(6030);
+        const [b0, crest, b1] = [5996, 6054, 6074];
         objects.push({
-          y: yw + 2,
+          y: Y(b0) + 1,
+          shadow: () => shadowRect(98, Y(b1), 3, b1 - b0, 0.5),
           draw: () => {
-            for (let x = bx0; x <= bx1; x++) {
-              const t = (x - bx0) / (bx1 - bx0);
-              const h = Math.round(Math.sin(t * Math.PI) * 16);
-              const yt = yw - h;
-              for (let j = 0; j < 4; j++) img.set(x, yt - j, j === 3 ? 0xf06a40 : j === 2 ? VERM[0] : VERM[1]);
-              img.set(x, yt + 1, VERM[2]);
-              if (x % 8 === 0) for (let j = 1; j < h + 2; j++) img.set(x, yt + j, VERM[2]); // the posts under the deck
-              // the reflection: the arch mirrored in the still pond, closing the circle
-              for (let j = 0; j < 3; j++) img.set(x, yw + h + j, VERM[1], 0.45);
-              if (x % 6 === 0) glow(x, yt - 4, 0xffd8a0, 0.6);
+            for (let u = b0; u <= b1; u++) {
+              const y = Y(u);
+              const near = u <= crest;
+              const t = near ? (u - b0) / (crest - b0) : 1;
+              for (let x = 84; x <= 96; x++) {
+                if (x === 84 || x === 96) img.set(x, y, u % 6 === 0 ? 0xf06a40 : VERM[0]); // the lacquered rails
+                else img.set(x, y, near ? (u % 3 === 0 ? 0x7a4e32 : scaleColor(0xa8764a, 0.8 + t * 0.35)) : u % 2 ? 0x4a3022 : 0x5e3e2a); // the planks
+              }
+              img.set(83, y, VERM[2]);
+              img.set(97, y, VERM[2]);
+              if (u % 10 === 0) for (const x of [84, 96]) glow(x, y, 0xffd8a0, 0.6);
             }
+            // its red sides mirrored in the still pond either side
+            for (let u = b0 + 6; u < b1 - 6; u++) for (const x of [81, 99]) img.set(x, Y(u), VERM[1], 0.35);
           },
         });
-        crowd(bx0 + 10, Y(6050), bx1 - bx0 - 20, 6, 20, true);
+        crowd(86, Y(6058), 8, 56, 14, true);
       }
+      // on from the bridge to the gaps in the vermilion fences round the halls
+      ishidatami(44, 125, 6074, 6080);
+      ishidatami(46, 53, 6080, 6082);
+      ishidatami(118, 125, 6080, 6168);
+      reserveRect(43, Y(6082), 83, 9);
+      reserveRect(117, Y(6168), 9, 89);
       // the four main halls in Sumiyoshi style: straight gable roofs, crossed chigi and katsuogi logs on the ridge
       const sumiHall = (x, y, w, h) => {
         objects.push({
