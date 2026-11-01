@@ -260,16 +260,22 @@ zamachy łapami, łososie wijące się w locie i spadające sople; poniżej 35% 
 ## Etap 4
 
 Kagoshima i wulkan Sakurajima, ok. 3,5 min, od przymglonego popiołem przedpołudnia po czerwoną łunę krateru:
-miasto (dworzec Chūō z diabelskim młynem na dachu, tramwaj po torach porośniętych trawą, aleja palm, pasaż
-Tenmonkan, żółte worki na popiół na rogach ulic, wzgórze Shiroyama) → rzeka Kōtsuki z kamiennymi mostami →
-ogród Sengan-en nad morzem (rezydencja Shimadzu, kamienny Shūseikan, replika armaty, kolej wzdłuż brzegu) →
+miasto (dworzec Chūō z diabelskim młynem na dachu i peronem na wiadukcie kolejowym, po którym przejeżdżają
+pociągi; tramwaj po torach porośniętych trawą środkiem alei aż do zajezdni nad rzeką — brama, cztery tory, hala,
+warsztat; aleja palm, pasaż Tenmonkan, żółte worki na popiół na rogach ulic, wzgórze Shiroyama) → rzeka Kōtsuki
+z dwoma kamiennymi mostami: lewy do bramy ogrodu, prawy w nadmorską drogę → ogród Sengan-en nad morzem (brama
+w murze nad rzeką, ścieżka do rezydencji Shimadzu i kamiennego Shūseikanu, replika armaty; wzdłuż brzegu droga
+i kolej Nippō, która wychodzi tu z tunelu pod Shiroyamą) →
 czarna plaża z kąpielami w gorącym piasku jak w Ibusuki (rzędy zakopanych po szyję kąpiących się w yukatach
-i ręcznikach na głowach, maty z trzciny, łaźnia, para sącząca się z piasku, pomocnicy z łopatami) → pola
-tysięcy czarnych dzbanów z octem kurozu → zatoka Kinkō (statek wycieczkowy przy molo na początku zatoki, promy,
+i ręcznikach na głowach, maty z trzciny, łaźnia z dróżką przez tory, para sącząca się z piasku, pomocnicy
+z łopatami) → pola
+tysięcy czarnych dzbanów z octem kurozu → zatoka Kinkō (statek wycieczkowy przy molo na początku zatoki,
+terminal promowy u nasady molo i promy kursujące stamtąd do molo na Sakurajimie,
 farma ryb z ośmioma sadzami, pomostami i łodzią karmiącą, inne sadze, łodzie, delfiny, cień chmury popiołu
-sunący po wodzie; burza popiołowa i miniboss) → Sakurajima (przystań z długą kąpielą dla stóp nad morzem, wioska pod popiołem, schrony przed bombami wulkanicznymi, pola
-olbrzymiej rzodkwi daikon, sady komikan, zasypana brama torii w Kurokami) → pola lawy z 1914 r. (śmieciarki zamiatające
-popiół na drodze, kępy rdestu, pod kraterem spadające bomby wulkaniczne) → krater.
+sunący po wodzie; burza popiołowa i miniboss) → Sakurajima (przystań z długą kąpielą dla stóp nad morzem, wioska pod popiołem z uliczkami między rzędami domów, schrony przed bombami wulkanicznymi, pola
+olbrzymiej rzodkwi daikon, sady komikan, zasypana brama torii w Kurokami) → pola lawy z 1914 r. (jedna droga z portu
+przez wioskę i dalej krętą serpentyną przez lawę do punktu widokowego Yunohira z parkingiem — na krater drogi nie
+ma; śmieciarki zamiatające popiół, kępy rdestu, pod kraterem spadające bomby wulkaniczne) → krater.
 
 Daleka warstwa to zatoka w szarej mgiełce, bliska — opadający popiół, od zboczy wulkanu żar unoszący się w górę,
 w czasie burzy przyciemnione niebo i błyski. Pole `embersFrom` w `stage4.json` mówi, od której sekundy leci żar.

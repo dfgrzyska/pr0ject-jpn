@@ -118,6 +118,13 @@ export function buildMid() {
   const ashOn = (c, x, y, amt = 0.3) => (fbm(x, y, { seed: 7, scale: 3 }) < amt ? scaleColor(C.ash[3], 0.95) : c); // grey ash dusting
 
   const pads = stage.waves.filter((w) => w.type === 'turret').map((w) => ({ x: w.x, u: anchor + V * w.t + 10 }));
+  // Sakurajima's road: up from the port through the village (x 150), then bending away over the 1914 lava and
+  // winding up towards the summit (one road, so it never starts or stops in the middle of the lava)
+  const LAVA_ROAD = [5440, 5600]; // where it leaves the village road's line and where it takes up the winding one
+  const lavaRoadX = (u) => {
+    const wind = 70 + 40 * Math.sin((u - LAVA[0]) / 170);
+    return u < LAVA_ROAD[1] ? 150 + (wind - 150) * smooth(LAVA_ROAD[0], LAVA_ROAD[1], u) : wind;
+  };
   for (const p of pads) reserveRect(p.x - 12, Y(p.u) - 12, 24, 24);
 
   // ------------------------------------------------------------ 1. land and sea
@@ -249,6 +256,7 @@ export function buildMid() {
   {
     const streets = [120, 250, 450, 600, 850, 1100, 1166];
     const DEPOT = { x0: 56, x1: 141, u0: 1174, u1: RIVER[0] - 3 }; // the tram depot by the river, where the avenue ends
+    const VIADUCT = [425, 437]; // the railway into Kagoshima-Chūō station, on its viaduct (below)
     for (const x of [30, 150]) vRoad(x, 5, 0, RIVER[0]);
     vRoad(90, 10, 0, DEPOT.u0);
     for (const u of streets) hRoad(u, 5);
@@ -340,7 +348,7 @@ export function buildMid() {
     }
     // palms along the avenue
     for (let u = 20; u < DEPOT.u0 - 8; u += 26) {
-      if (streets.some((s) => Math.abs(u - s) < 12)) continue;
+      if (streets.some((s) => Math.abs(u - s) < 12) || (u > VIADUCT[0] - 12 && u < VIADUCT[1] + 10)) continue;
       for (const x of [76, 104]) tree('palm', x, Y(u), 5 + rand());
     }
     // Kagoshima-Chūō station with the Ferris wheel on its roof
@@ -381,6 +389,33 @@ export function buildMid() {
       });
       kit.orbit(cx, U(cy) - 1, 15, gondolas, { n: 12, w: ((Math.PI * 2) / 12 / 3) * 1.5, d: 0.02 });
     }
+    // the railway into Kagoshima-Chūō: two tracks on a concrete viaduct along the station's north side, over
+    // the avenues, the platform between them under its canopy beside the station; trains crossing (live)
+    {
+      const [v0, v1] = VIADUCT;
+      for (let u = v0 - 5; u < v0; u++) for (let x = 3; x < W; x++) img.tint(x, Y(u), 0.6); // its shadow on the street below
+      for (let u = v0; u <= v1; u++)
+        for (let x = 0; x < W; x++) {
+          const y = Y(u);
+          let c = u === v0 || u === v1 ? 0xb4b0a8 : rampColor(C.stone, 0.2 + fbm(x, y, { seed: 471, scale: 2 }) * 0.25, x, y);
+          if (u === v0 + 2 || u === v0 + 4 || u === v1 - 4 || u === v1 - 2) c = C.rail;
+          else if ((u === v0 + 3 || u === v1 - 3) && x % 3 === 0) c = 0x5a4a3a; // sleepers
+          img.set(x, y, c);
+        }
+      for (let x = 104; x < 140; x++) for (let u = v0 + 5; u <= v1 - 5; u++) img.set(x, Y(u), (x - 104) % 4 === 0 ? 0x8a8e96 : 0xc8ccd4); // the platform canopy
+      for (let x = 4; x < W; x += 30) img.rect(x, Y(v0 - 1), 3, 1, 0x3a3a3e); // the piers' feet
+      reserveRect(0, Y(v1 + 1), W, v1 - v0 + 7);
+      const train = (up) => {
+        const r = new Raster(60, 4);
+        r.rect(0, 0, 60, 4, 0xf0f0ec);
+        r.rect(0, 2, 60, 1, 0x2a5aa8); // the stripe
+        for (let x = 3; x < 57; x += 3) if (x % 20 > 1) r.set(x, 1, 0x3a4a5a); // windows, the gaps between the cars
+        r.set(up ? 59 : 0, 1, 0x2a3a4a);
+        return frameAt(r, 430);
+      };
+      kit.path([[-260, v0 + 3], [440, v0 + 3]], [train(true)], { sp: 30, turn: 'flip', s0: 0.2 });
+      kit.path([[440, v1 - 3], [-260, v1 - 3]], [train(false)], { sp: 26, turn: 'flip', s0: 0.65 });
+    }
     // Tenmonkan: a covered shopping arcade cutting through the blocks
     for (let u = 610; u < 1090; u++) {
       if (streets.some((s) => Math.abs(u - s) < 8)) continue;
@@ -403,8 +438,8 @@ export function buildMid() {
             const h = Math.min(u1 - u, 22 + Math.floor(rand() * 24));
             const face = 4 + Math.floor(rand() * 6);
             const top = Y(u + h);
-            if (x + w > DEPOT.x0 && x < DEPOT.x1 && u + h > DEPOT.u0) {
-              u += h + 2; // (the depot's yard)
+            if ((x + w > DEPOT.x0 && x < DEPOT.x1 && u + h > DEPOT.u0) || (u < VIADUCT[1] + 3 && u + h > VIADUCT[0] - 6)) {
+              u += h + 2; // (the depot's yard, the railway viaduct)
               continue;
             }
             if (!anyRes(x, top, w - 1, h)) building(x, top, w - 1, h - face - 1, face);
@@ -562,7 +597,8 @@ export function buildMid() {
       img.rect(x + 1, Y(u) + 1, 3, 3, 0x2a2a28);
       img.rect(x, Y(u), 3, 3, C.stone[2]);
     }
-    for (let u = SENGAN[0] + 8; u < 2100; u++) {
+    for (let u = SENGAN[0] + 8; u < 1908; u++) {
+      // (up to the door of the Shūseikan)
       // (from the gate by the left-hand bridge it winds off through the garden)
       const wind = 40 + 22 * Math.sin(u / 60);
       const x = Math.round(u < 1430 ? 30 + (40 + 22 * Math.sin(1430 / 60) - 30) * smooth(SENGAN[0] + 8, 1430, u) : wind);
@@ -626,6 +662,12 @@ export function buildMid() {
     }
     // the bathhouse behind the beach, a path down to the sand
     building(60, Y(2272), 28, 13, 4, { roof: 0x5a4a3e, tiles: true });
+    for (let x = 74; x < seaX(2253) - 18; x++)
+      for (const u of [2252, 2253]) {
+        if (isRes(x, Y(u))) continue; // (the rails: a level crossing)
+        img.set(x, Y(u), rampColor(C.walk, u === 2252 ? 0.35 : 0.6, x, Y(u)));
+        reserved[Y(u) * W + x] = 1;
+      }
     // steam seeping out of the sand (live) and the attendants with their shovels
     for (let k = 0; k < 7; k++) {
       const u = S0 + 20 + Math.floor(sr() * (S1 - S0 - 40));
@@ -693,12 +735,13 @@ export function buildMid() {
       r.rect(2, 23, 7, 1, 0xe0a020);
       r.rect(4, 25, 3, 3, 0x5a5e66);
       for (let j = 4; j < 37; j++) for (let i = 11; i < 14; i++) if (i - 11 < Math.min(3, j - 3) && j < 34 + (i - 11)) r.set(i, j, 0x0a1418, 0.25);
-      const [a, b] = up ? [2950, 4280] : [4280, 2950];
+      const [a, b] = up ? [2962, 4206] : [4206, 2962]; // from the berth beside the city's pier to the Sakurajima pier
       const sp = 10;
-      kit.path([[x + 7, a], [x + 7, b]], [frameAt(r, u)], { sp, turn: 'none', wake: { f: wake, every: 3, life: 2.6 }, s0: passing(u, sp, Math.abs(u - a), 1330) });
+      kit.path([[x + 7, a], [x + 7, b]], [frameAt(r, u)], { sp, turn: 'none', wake: { f: wake, every: 3, life: 2.6 }, s0: passing(u, sp, Math.abs(u - a), 1244) });
     };
-    ferry(56, 3300, true);
-    ferry(128, 3880, false);
+    ferry(70, 3300, true);
+    ferry(70, 3880, false);
+    building(64, Y(2884), 20, 10, 4, { roof: 0x8a8e96 }); // the ferry terminal at the root of the pier
     // a cruise ship moored at a pier at the head of the bay, bow out towards Sakurajima: balconies down both
     // sides, lifeboats slung along them, pools and loungers, a water slide, a sports court on the bow, the
     // funnel aft; its shadow on the water
@@ -824,7 +867,7 @@ export function buildMid() {
       img.rect(x + 1, Y(u) + 2, 1, 3, 0x3a5a8a);
       for (let k = 0; k < 14; k++) img.set(x + 1, Y(u) + 8 + k, 0xeaf0f0, 0.6 * (1 - k / 14));
     }
-    for (const [x, u] of [[80, 3560], [88, 3572], [74, 3584], [92, 3590]]) {
+    for (const [x, u] of [[126, 3560], [134, 3572], [120, 3584], [138, 3590]]) {
       img.rect(x, Y(u), 5, 2, 0x6a7a86);
       img.set(x + 2, Y(u) - 1, 0x4a5a66);
       img.set(x + 5, Y(u) + 1, 0xeaf0f0, 0.7);
@@ -850,7 +893,7 @@ export function buildMid() {
         if (f >= 4) for (let a = 0; a < Math.PI * 2; a += 0.6) r.set(Math.round(5 + Math.cos(a) * (f - 1)), Math.round(3 + Math.sin(a) * (f - 2.5)), 0xeaf0f0, f === 4 ? 0.9 : 0.5);
         return frameAt(r, 3570);
       });
-      kit.spot([[56, 3640, 70, 120]], leap, { rate: 0.45, fps: 6 });
+      kit.spot([[100, 3640, 70, 120]], leap, { rate: 0.45, fps: 6 });
     }
   }
 
@@ -887,8 +930,16 @@ export function buildMid() {
       for (const x of [16, 34, 52]) kit.emit(x, fu - 2, vapour.slice(0, 2), { rate: 0.7, life: [1.4, 2.2], vy: 5, sx: 3, wf: 1, a: 0.3, tint: 1 });
     }
     hRoad(i0 + 110, 4);
-    vRoad(150, 4, i0 + 110, LAVA[0] + 60);
+    vRoad(150, 4, i0 + 110, LAVA_ROAD[0]);
     // village with ash on the roofs
+    // lanes of packed ash between the rows of houses, off the main road
+    for (let u = i0 + 151; u < i0 + 380; u += 30) // (in the free band between two rows of houses)
+      for (let uu = u - 2; uu <= u + 2; uu++)
+        for (let x = 0; x < 146; x++) {
+          const y = Y(uu);
+          img.set(x, y, Math.abs(uu - u) > 1 ? rampColor(C.walk, 0.25, x, y) : rampColor(C.walk, 0.5 + fbm(x, y, { seed: 481, scale: 3 }) * 0.3, x, y));
+          reserved[y * W + x] = 1;
+        }
     for (let u = i0 + 130; u < i0 + 380; u += 30)
       for (let x = 6; x < 140; x += 24 + Math.floor(rand() * 6)) {
         const w = 14 + Math.floor(rand() * 6);
@@ -939,15 +990,19 @@ export function buildMid() {
 
   // ------------------------------------------------------------ F. lava fields and the climb
   {
-    const roadX = (u) => 70 + 40 * Math.sin((u - LAVA[0]) / 170);
-    for (let u = LAVA[0]; u < CRATER.u - CRATER.ry - 30; u++) {
-      const cx = Math.round(roadX(u));
-      for (let x = cx - 5; x <= cx + 5; x++) roadPx(x, Y(u), x + 0.5 - cx, 4);
-      reserveRect(cx - 6, Y(u), 13, 1);
+    for (let u = LAVA_ROAD[0] - 2; u < 6104; u++) {
+      // (as far as the Yunohira observatory: no road goes on to the crater)
+      const cx = lavaRoadX(u);
+      const slope = (lavaRoadX(u + 1) - lavaRoadX(u - 1)) / 2;
+      const k = Math.sqrt(1 + slope * slope); // as wide as the village road, also where it runs at a slant
+      for (let x = Math.floor(cx - 6 * k); x <= cx + 5 * k; x++) roadPx(x, Y(u), (x + 0.5 - cx) / k, 4);
+      reserveRect(cx - 7 * k, Y(u), 14 * k, 1);
     }
     // the Yunohira observatory with its car park
-    building(118, Y(6150), 34, 14, 6, { roof: 0x9a968e });
-    for (let k = 0; k < 6; k++) img.rect(118 + k * 6, Y(6110), 4, 6, 0x56565a);
+    for (let u = 6100; u < 6122; u++) for (let x = 10; x < 56; x++) roadPx(x, Y(u), 99, 4); // the car park's paving
+    reserveRect(8, Y(6124), 50, 26);
+    for (let k = 0; k < 6; k++) img.rect(14 + k * 6, Y(6118), 1, 6, 0xe8e4dc); // its bays
+    building(14, Y(6150), 34, 14, 6, { roof: 0x9a968e });
     // jagged lava: dark ridges, pioneer pines, steaming cracks that glow more towards the summit
     for (let k = 0; k < 260; k++) {
       const x = rand() * W;
@@ -1001,7 +1056,7 @@ export function buildMid() {
   // glowing and smoking (live)
   {
     const lr = rng(4441);
-    const roadX = (u) => 70 + 40 * Math.sin((u - LAVA[0]) / 170);
+    const roadX = lavaRoadX;
     const sweeper = (up) => {
       const r = new Raster(5, 9);
       r.rect(0, 0, 5, 9, 0x101010, 0.25);
@@ -1018,7 +1073,7 @@ export function buildMid() {
     });
     for (const s0 of [0.2, 0.7]) {
       const pts = [];
-      for (let u = LAVA[0] + 10; u < CRATER.u - 120; u += 16) pts.push([Math.round(roadX(u)) + (s0 < 0.5 ? -2 : 2), u]);
+      for (let u = LAVA_ROAD[0] - 300; u < 6100; u += 16) pts.push([Math.round(roadX(u)) + (s0 < 0.5 ? -2 : 2), u]); // (from down in the village)
       kit.path(pts, [sweeper(true)], { sp: 6, mode: 'pp', hold: 4, turn: 'none', fu: [sweeper(true)], fd: [sweeper(false)], wake: { f: dust, every: 4, life: 2.4 }, s0 });
     }
     for (let k = 0; k < 26; k++) {
