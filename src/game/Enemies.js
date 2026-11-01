@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { BEANS, DEPTH, ENEMIES, FAIR, PLAYER, VIEW } from '../config.js';
-import { rules } from '../difficulty.js';
+import { rules, volley } from '../difficulty.js';
 import { Pool } from './Pool.js';
 import { SKINS } from './skins.js';
 
@@ -56,6 +56,27 @@ const EXTRAS = {
 const CLAY = 0xd8784a; // the shisa's glazed clay
 const WOOD = 0xa8683a; // the bunraku puppet
 
+// Kyūbi's tails, in step with tools/art/kyoto/kyubi.mjs: tail i (0 = far left, 4 = straight up, 8 = far right)
+// fans out from a root 7 px under the body's centre; x, y = where its tip is from the body's centre, a = the
+// way it points. The right-hand tails are the left-hand ones mirrored.
+const KYUBI_TAIL = Array.from({ length: 9 }, (_, i) => {
+  const j = Math.min(i, 8 - i);
+  const a = -Math.PI + 0.12 + (j + 0.5) * ((Math.PI - 0.24) / 9);
+  const d = 42 - Math.abs(j - 4) * 1.5;
+  const droop = -(4 - j) * 1.1;
+  const x = Math.cos(a) * d - Math.sin(a) * droop;
+  const y = Math.sin(a) * d + Math.cos(a) * droop + 7;
+  return { frame: `kyubi_tail_${j}`, flip: i > 4, x: i > 4 ? -x : x, y, a: i > 4 ? -Math.PI - a : a };
+});
+const KYUBI_ORDER = [0, 8, 1, 7, 2, 6, 3, 5, 4]; // drawn outer to centre, and lost in that order (the centre one last)
+// the 大 laid out in fire beds on the Daimonji slope at the end of the Kyoto strip, stroke by stroke in the order
+// it is written ([x, u], as in tools/art/kyoto/mid.mjs)
+const DAIMONJI = [
+  [[30, 6676], [150, 6676]],
+  [[90, 6820], [84, 6720], [62, 6580], [34, 6450]],
+  [[92, 6676], [114, 6580], [146, 6450]],
+];
+
 // Six archetypes shared by every city (each stage picks a skin), plus stage bosses.
 export class Enemies {
   constructor(scene, skin = 'kyoto') {
@@ -65,6 +86,7 @@ export class Enemies {
     this.heads = new Pool(scene, DEPTH.ground + 0.2);
     this.wrecks = new Pool(scene, DEPTH.ground);
     this.segPool = new Pool(scene, DEPTH.air - 0.12); // the octopus's tentacle segments
+    this.tailPool = new Pool(scene, DEPTH.air - 0.13); // Kyūbi's tails
     this.heavy = null;
     this.bossGroup = null;
     this.dying = []; // bosses and heavies going down (goDown)
@@ -211,6 +233,7 @@ export class Enemies {
         if (w.boss === 'oni') return this.spawnOni(w, base);
         if (w.boss === 'volcano') return this.spawnVolcano(w, base);
         if (w.boss === 'tako') return this.spawnTako(w, base);
+        if (w.boss === 'kyubi') return this.spawnKyubi(w, base);
         return w.boss === 'kuma' ? this.spawnKuma(w, base) : this.spawnBoss(w, base);
       default:
         return;
@@ -384,7 +407,7 @@ export class Enemies {
   /** HP shown in the top bar: the mid-stage heavy or the whole boss pair. */
   bossBar() {
     const g = this.bossGroup;
-    if (g && !g.defeated && (g.kind === 'kuma' || g.kind === 'volcano' || g.kind === 'tako' || g.kind === 'oni' ? g.awake : g.parts.some((p) => !p.dead && p.group === g && p.y > 0))) {
+    if (g && !g.defeated && (g.kind === 'kuma' || g.kind === 'volcano' || g.kind === 'tako' || g.kind === 'oni' || g.kind === 'kyubi' ? g.awake : g.parts.some((p) => !p.dead && p.group === g && p.y > 0))) {
       // parts are pooled sprites: once dead they may come back as other enemies, so check the group
       let hp = 0;
       for (const p of g.parts) if (!p.dead && p.group === g) hp += Math.max(0, p.hp);
@@ -401,6 +424,7 @@ export class Enemies {
     if (g.kind === 'volcano') return this.updateVolcano(g, dt);
     if (g.kind === 'tako') return this.updateTako(g, dt);
     if (g.kind === 'oni') return this.updateOni(g, dt);
+    if (g.kind === 'kyubi') return this.updateKyubi(g, dt);
     const alive = g.parts.filter((p) => !p.dead && p.group === g && p.hp > 0);
     if (!alive.length) return;
     g.t += dt;
@@ -665,11 +689,13 @@ export class Enemies {
    * A boss or a heavy going down: its body stays on, shaking and flashing in a chain of blasts, then goes out
    * its own way: the oni sinks into the blood pond, the octopus into the canal, the crocodile into its pool
    * and the manta into the sea; Yuki-onna shatters into ice, the clay shisa and the wooden puppet crumble,
-   * the tanuki scatters into leaves, Sakurajima cools down, the rest blow up.
+   * the tanuki scatters into leaves, Sakurajima cools down, Kyūbi burns away in fox-fire (and the 大 on the
+   * slope flares up), the rest blow up.
    */
   goDown(e) {
     const s = this.scene;
-    const body = s.add.sprite(e.x, e.y, e.texture.key, e.frame.name).setDepth(e.depth).setFlipX(e.flipX).setRotation(e.rotation).setScale(e.scaleX, e.scaleY);
+    const copy = (o) => s.add.sprite(o.x, o.y, o.texture.key, o.frame.name).setDepth(o.depth).setFlipX(o.flipX).setRotation(o.rotation).setScale(o.scaleX, o.scaleY);
+    const body = copy(e);
     if (e.oni) body.setCrop(0, 0, 63, 60); // standing in the pond
     const kind = e.group?.kind ?? e.kind;
     const end =
@@ -683,9 +709,13 @@ export class Enemies {
               ? 'crumble'
               : kind === 'volcano'
                 ? 'cool'
-                : 'burst';
+                : kind === 'kyubi'
+                  ? 'foxfire'
+                  : 'burst';
     const color = kind === 'bunraku' ? WOOD : CLAY;
-    this.dying.push({ body, t: 0, x: e.x, y: e.y, r: Math.max(10, e.radius), end, color, oni: !!e.oni, liquid: e.oni ? 'bloodball_1' : 'splash', next: 0, ended: false });
+    // what goes down with the body (the fox's last tail), kept where it was on it
+    const extra = kind === 'kyubi' ? e.group.tails.filter((tl) => !tl.lost && !tl.dead).map((tl) => ({ s: copy(tl), ox: tl.x - e.x, oy: tl.y - e.y })) : [];
+    this.dying.push({ body, extra, t: 0, x: e.x, y: e.y, r: Math.max(10, e.radius), end, color, oni: !!e.oni, liquid: e.oni ? 'bloodball_1' : 'splash', next: 0, ended: false });
   }
 
   /** The bodies going down: the chain of blasts (1.1 s), then each one's own end. */
@@ -700,6 +730,7 @@ export class Enemies {
       if (d.t < 1.1) {
         b.setPosition(d.x + Math.round((Math.random() - 0.5) * 3), d.y + Math.round((Math.random() - 0.5) * 3));
         b.setTint(Math.floor(d.t * 14) % 2 ? 0x707070 : 0x000000).setTintMode(Phaser.TintModes.ADD);
+        for (const x of d.extra) x.s.setPosition(b.x + x.ox, b.y + x.oy).setTint(Math.floor(d.t * 14) % 2 ? 0x707070 : 0x000000).setTintMode(Phaser.TintModes.ADD);
         if ((d.next -= dt) <= 0) {
           d.next = 0.11;
           fx.explode(d.x + (Math.random() - 0.5) * d.r * 2.2, d.y + (Math.random() - 0.5) * d.r * 1.8, Math.random() < 0.3 ? 'm' : 's', null, (d.n = (d.n ?? 0) + 1) % 3 !== 0);
@@ -709,6 +740,7 @@ export class Enemies {
         if (!d.ended) {
           d.ended = true;
           b.setPosition(d.x, d.y).clearTint();
+          for (const x of d.extra) x.s.setPosition(d.x + x.ox, d.y + x.oy).clearTint();
           s.cameras.main.shake(400, 0.007);
           if (d.end === 'burst' || d.end === 'cool') {
             fx.explode(d.x, d.y, 'l');
@@ -731,9 +763,31 @@ export class Enemies {
             fx.leaves(d.x, d.y, 34);
             fx.smoke(d.x, d.y, 4, d.r * 0.5);
             fx.flash(0.3, 0.3);
+          } else if (d.end === 'foxfire') {
+            fx.foxfire(d.x, d.y, 26, 14);
+            fx.light(d.x, d.y, 2, false, 0x80b0ff);
+            fx.shockwave(d.x, d.y);
+            fx.flash(0.5, 0.5);
           }
         }
         if (d.end === 'burst') done = true;
+        else if (d.end === 'foxfire') {
+          // the fox burns away in blue flame, while the 大 on the slope behind it flares up
+          const f = Math.min(1, k / 1.4);
+          const blue = Phaser.Display.Color.GetColor(30 * f, 60 * f, 140 * f);
+          for (const o of [b, ...d.extra.map((x) => x.s)]) o.setAlpha(1 - f).setTint(blue).setTintMode(Phaser.TintModes.ADD);
+          if (Math.random() < dt * 40 * (1 - f)) fx.foxfire(d.x + (Math.random() - 0.5) * 24, d.y + (Math.random() - 0.5) * 30, 1, 2);
+          for (let i = 0; i < 3 && k < 1.2; i++) {
+            const st = DAIMONJI[Math.floor(Math.random() * DAIMONJI.length)];
+            const j = Math.floor(Math.random() * (st.length - 1));
+            const q = Math.random();
+            const x = st[j][0] + (st[j + 1][0] - st[j][0]) * q;
+            const y = s.parallax.screenY(st[j][1] + (st[j + 1][1] - st[j][1]) * q);
+            if (y > -10 && y < s.H + 10) fx.light(x, y, 0.5 + Math.random() * 0.5, true, 0xff8a30);
+            if (Math.random() < 0.08) fx.spark(x, y);
+          }
+          done = f >= 1;
+        }
         else if (d.end === 'sink') {
           // down into the water, splashing round the edge (the oni the way he rose: his feet stay under the surface)
           const f = Math.min(1, k / 1.5);
@@ -757,8 +811,10 @@ export class Enemies {
           done = f >= 1;
         }
       }
-      if (done) b.destroy();
-      else this.dying[n++] = d;
+      if (done) {
+        b.destroy();
+        for (const x of d.extra) x.s.destroy();
+      } else this.dying[n++] = d;
     }
     this.dying.length = n;
   }
@@ -770,6 +826,7 @@ export class Enemies {
   wounds(e, dt) {
     const s = this.scene;
     if (e.group?.kind !== 'volcano') e.setOrigin(0.5, Math.floor(e.age * 1.25) % 2 ? 0.5 - 1 / e.height : 0.5);
+    if (e.group?.kind === 'kyubi') return; // (the fox shows its wounds by losing its tails)
     const frac = e.hp / e.maxHp;
     const lvl = frac < 1 / 3 ? 2 : frac < 2 / 3 ? 1 : 0;
     if (!lvl && !e.wounds) return;
@@ -815,6 +872,7 @@ export class Enemies {
     if (e.kuroko) for (const k of e.kuroko) if (!k.dead && k.master === e) this.pool.kill(k);
     if (e.decoys) this.dropDecoys(e);
     if (e.kind === 'yukionna') this.scene.parallax.windTarget = 0; // her blizzard dies down with her
+    if (e.group?.kind === 'kyubi' && e.role === 'body') for (const tl of e.group.tails) this.tailPool.kill(tl);
     if (e === this.heavy) this.heavy = null;
     if (e.oni) e.setCrop(); // pooled: the next enemy must not come out cropped
     e.setOrigin(0.5, 0.5); // (breathing)
@@ -898,7 +956,7 @@ export class Enemies {
         e.setTint(0x808080).setTintMode(Phaser.TintModes.ADD);
         e.head?.setTint(0x808080).setTintMode(Phaser.TintModes.ADD);
         if (e.segs) for (const sg of e.segs) sg.setTint?.(0x808080).setTintMode(Phaser.TintModes.ADD);
-      } else if ((e.type === 'boss' && e.group.enraged) || e.rage) {
+      } else if ((e.type === 'boss' && e.group.enraged && e.group.kind !== 'kyubi') || e.rage) {
         e.setTint(0xffa8a0).setTintMode(Phaser.TintModes.MULTIPLY);
         if (e.segs) for (const sg of e.segs) sg.setTint?.(0xffa8a0).setTintMode(Phaser.TintModes.MULTIPLY);
       } else if (e.tintMode !== Phaser.TintModes.MULTIPLY) {
@@ -918,6 +976,7 @@ export class Enemies {
     this.woundPool.sweep();
     this.heads.sweep();
     this.segPool.sweep();
+    this.tailPool.sweep();
     if (this.skin.duos) this.drawDuos();
     for (const w of this.wrecks.live) {
       w.y = s.parallax.screenY(w.u);
@@ -2381,6 +2440,232 @@ export class Enemies {
       e.pose = 0;
       g.act = null;
       g.timer = 0.35;
+    }
+  }
+
+  // ---------------------------------------------------------------- boss: Kyūbi, the nine-tailed fox
+  /**
+   * Waits at the head of the 大 on the Daimonji slope while fox-fire gathers; when the scroll stops it condenses
+   * out of the flames and its nine tails unfurl. Every ninth of its life it loses a tail, which burns away into
+   * a wisp hunting the player; the attacks fired from the tail tips thin out with them.
+   */
+  spawnKyubi(w, base) {
+    const g = { kind: 'kyubi', state: 'dormant', t: 0, phase: 0, step: 0, timer: 1, parts: [], enraged: false, defeated: false, awake: false };
+    Object.assign(g, { home: w.x, homeY: 66, sway: 0, n: 0, tails: [], poseT: 0, blinkT: 2 });
+    const e = this.pool.spawn('kyubi_idle', g.home, g.homeY, { ...base, role: 'body', hp: 1430, maxHp: 1430, radius: 13, group: g, ghost: true, invuln: true });
+    e.setDepth(DEPTH.air - 0.1).setAlpha(0);
+    for (let i = 0; i < 9; i++) {
+      const tl = this.tailPool.spawn(`${KYUBI_TAIL[i].frame}_0`, e.x, e.y, { i, lost: false, fly: null, grown: 0 });
+      tl.setDepth(DEPTH.air - 0.13 + KYUBI_ORDER.indexOf(i) * 0.001).setVisible(false);
+      g.tails.push(tl);
+    }
+    g.body = e;
+    g.parts.push(e);
+    g.maxTotal = e.maxHp;
+    this.bossGroup = g;
+    return e;
+  }
+
+  updateKyubi(g, dt) {
+    const s = this.scene;
+    const fx = s.fx;
+    const e = g.body;
+    if (e.dead || e.group !== g) return;
+    g.t += dt;
+    if (g.state === 'dormant') {
+      // fox-fire drifting in from all round to where it will appear
+      if (Math.random() < dt * 10) {
+        const a = Math.random() * TAU;
+        const p = fx.part(fx.parts, `kitsunebi_${Math.floor(Math.random() * 2)}`, g.home + Math.cos(a) * 46, g.homeY + Math.sin(a) * 34, { vx: -Math.cos(a) * 60, vy: -Math.sin(a) * 45, drag: 0, life: 0.7, a0: 0.8 });
+        p.setScale(0.6);
+      }
+      if (s.parallax.time >= s.parallax.maxTime - 1e-3) {
+        Object.assign(g, { state: 'rise', t: 0 });
+        s.cameras.main.shake(1800, 0.004);
+        fx.flash(0.35, 0.4);
+        // its waking flare sweeps the slope: whatever is left of the waves goes up with it
+        for (const o of this.pool.live) if (!o.dead && o.group !== g && o.def.weight > 0) this.destroy(o);
+        s.bullets.cancelAll(fx);
+      }
+      return;
+    }
+    if (g.state === 'rise') {
+      // the body condenses out of a flare of fox-fire, then the tails unfurl from the centre outwards
+      e.setAlpha(Math.min(1, g.t / 1.0) * (Math.floor(g.t * 16) % 2 && g.t < 1 ? 0.6 : 1));
+      if (g.t < 1 && Math.random() < dt * 30) fx.foxfire(e.x + (Math.random() - 0.5) * 26, e.y + (Math.random() - 0.5) * 30, 1, 2);
+      const grown = Math.max(0, Math.min(9, Math.floor((g.t - 1.0) / 0.16) + 1));
+      while (g.n < grown) {
+        const i = [4, 3, 5, 2, 6, 1, 7, 0, 8][g.n++];
+        g.tails[i].grown = 0.001;
+        fx.foxfire(e.x + KYUBI_TAIL[i].x, e.y + KYUBI_TAIL[i].y, 3, 3);
+      }
+      this.layKyubi(g, dt);
+      if (g.t >= 1.0 + 9 * 0.16 + 0.5) {
+        Object.assign(g, { state: 'fight', awake: true, t: 0, timer: 1.2, poseT: 0.6 });
+        Object.assign(e, { ghost: false, invuln: false });
+        e.setAlpha(1);
+        fx.text(e.x, e.y - 36, 'KON!', 0.9, 0xffe0b0);
+        s.sfx.shout();
+      }
+      return;
+    }
+    // hovering over the 大, swaying, blinking now and then; eyes blaze and the mouth opens as it casts
+    g.sway += dt * (g.enraged ? 0.75 : 0.5);
+    e.x = g.home + 28 * Math.sin(g.sway);
+    e.y = g.homeY + 4 * Math.sin(g.t * 1.3);
+    g.poseT -= dt;
+    if ((g.blinkT -= dt) < 0) g.blinkT = 2 + Math.random() * 2.5;
+    e.setFrame(g.poseT > 0 ? 'kyubi_cast' : g.blinkT < 0.12 ? 'kyubi_blink' : 'kyubi_idle');
+    const want = Math.max(1, Math.ceil((9 * e.hp) / e.maxHp - 1e-6));
+    while (g.n > want) this.kyubiLoseTail(g);
+    if (!g.enraged && e.hp < e.maxHp * 0.35) {
+      Object.assign(g, { enraged: true, timer: 0.8, phase: 0, step: 0 });
+      s.hud.show('', 'KYUBI WPADA W SZAŁ!', 1.6, true);
+    }
+    this.layKyubi(g, dt);
+    g.timer -= dt * (g.enraged ? 1.35 : 1);
+    if (g.timer > 0 || !this.canFire(e)) return;
+    this.kyubiAttack(g, e);
+  }
+
+  /** The tails on the body: swaying, unfurling, flashing with it, ablaze in blue when it rages; lost ones flying off. */
+  layKyubi(g, dt) {
+    const s = this.scene;
+    const e = g.body;
+    const f = Math.floor(g.t * 5);
+    for (const tl of g.tails) {
+      if (tl.dead) continue;
+      const T = KYUBI_TAIL[tl.i];
+      if (tl.fly) {
+        // torn loose: it drifts away and burns out
+        const fl = tl.fly;
+        fl.t += dt;
+        tl.x += fl.vx * dt;
+        tl.y += fl.vy * dt;
+        tl.setAlpha(Math.max(0, 1 - fl.t / 0.6)).setScale(Math.max(0.2, 1 - fl.t)).setTint(0x3060c0).setTintMode(Phaser.TintModes.ADD);
+        if (Math.random() < dt * 30) s.fx.foxfire(tl.x + T.x * 0.6 * tl.scaleX, tl.y + (T.y - 7) * 0.6 * tl.scaleX, 1, 3);
+        if (fl.t >= 0.6) this.tailPool.kill(tl);
+        continue;
+      }
+      if (!tl.grown) continue;
+      tl.grown = Math.min(1, tl.grown + dt / 0.2);
+      tl.setVisible(true).setPosition(e.x, e.y + 7).setScale(0.3 + 0.7 * tl.grown).setFlipX(T.flip).setAlpha(e.alpha);
+      tl.setFrame(`${T.frame}_${(f + (T.flip ? 1 : 0) + (tl.i % 2)) % 3}`);
+      if (e.flash > 0) tl.setTint(0x808080).setTintMode(Phaser.TintModes.ADD);
+      else if (g.enraged) {
+        const k = 0.6 + 0.4 * Math.sin(g.t * 9 + tl.i);
+        tl.setTint(Phaser.Display.Color.GetColor(16 * k, 40 * k, 110 * k)).setTintMode(Phaser.TintModes.ADD);
+        if (Math.random() < dt * 4) s.fx.foxfire(e.x + T.x, e.y + T.y, 1, 2);
+      } else tl.clearTint();
+    }
+  }
+
+  /** Where the tips of the tails it still has are, left to right: [{ x, y, a }]. */
+  kyubiTips(g) {
+    const e = g.body;
+    const out = [];
+    for (const tl of g.tails) if (!tl.lost) out.push({ x: e.x + KYUBI_TAIL[tl.i].x, y: e.y + KYUBI_TAIL[tl.i].y, a: KYUBI_TAIL[tl.i].a });
+    return out;
+  }
+
+  /** A ninth of its life gone: the outermost tail tears loose and burns away, its wisp of fox-fire hunting the player. */
+  kyubiLoseTail(g) {
+    const s = this.scene;
+    const e = g.body;
+    const i = KYUBI_ORDER[9 - g.n--];
+    const tl = g.tails[i];
+    const T = KYUBI_TAIL[i];
+    tl.lost = true;
+    tl.fly = { t: 0, vx: Math.cos(T.a) * 34, vy: Math.sin(T.a) * 34 - 12 };
+    const x = e.x + T.x;
+    const y = e.y + T.y;
+    s.fx.foxfire(x, y, 8, 5);
+    s.fx.light(x, y, 0.8, false, 0x80b0ff);
+    s.sfx.explode('s');
+    s.cameras.main.shake(160, 0.004);
+    g.poseT = 0.35;
+    if (this.canFire(e)) s.bullets.shot('kitsunebi_0', x, y, this.aimAt(e, T.x, T.y), 42, 3, { home: 1.5, life: 3.4, spin: true });
+  }
+
+  kyubiAttack(g, e) {
+    const s = this.scene;
+    const b = s.bullets;
+    const list = g.enraged ? ['fire', 'lash', 'daimonji', 'dance', 'rings'] : ['fire', 'daimonji', 'lash', 'dance'];
+    const next = (pause = 1.0) => {
+      g.phase++;
+      g.step = 0;
+      g.timer = pause;
+    };
+    const tips = this.kyubiTips(g);
+    g.poseT = 0.3;
+    switch (list[g.phase % list.length]) {
+      case 'fire': {
+        // kitsune-bi: a flame from every tail tip drifts out, hangs a moment, then they fly at the player one by one
+        const n = volley(tips.length);
+        for (let k = 0; k < n; k++) {
+          const p = tips[Math.round((k * (tips.length - 1)) / Math.max(1, n - 1))];
+          const order = g.step % 2 ? n - 1 - k : k;
+          b.shot('eb_fox', p.x, p.y, p.a, 34, 2.5, { frz: { at: 0.45, hold: 0.3 + order * 0.09, turn: 0, speed: g.enraged ? fast : normal, aim: true, frame: 'eb_fox' } });
+        }
+        g.timer = g.enraged ? 0.95 : 1.2;
+        if (++g.step >= (g.enraged ? 4 : 3)) next();
+        break;
+      }
+      case 'daimonji': {
+        if (g.step === 0) {
+          // the 大 on the slope catches fire stroke by stroke, the way it is written (warning rings first); the
+          // safe places are between the strokes
+          let k = 0;
+          for (const st of DAIMONJI) {
+            for (let j = 0; j < st.length - 1; j++) {
+              const [ax, au] = st[j];
+              const [bx, bu] = st[j + 1];
+              const n = Math.ceil(Math.hypot(bx - ax, bu - au) / 12);
+              for (let q = j === 0 ? 0 : 1; q <= n; q++) {
+                const x = ax + ((bx - ax) * q) / n;
+                const u = au + ((bu - au) * q) / n;
+                const y = s.parallax.screenY(u);
+                k++;
+                if (y > -10 && y < s.H + 10) b.zone(x, y, 8, { warn: 0.9 + k * 0.016, live: g.enraged ? 1.0 : 0.6, kind: 'fire', u });
+              }
+            }
+            k += 8; // a breath between the strokes
+          }
+          s.fx.text(e.x, e.y - 34, 'DAIMONJI!', 1.2, 0xffc070);
+          g.timer = 0.8;
+          g.step = 1;
+          break;
+        }
+        // while it burns: small aimed fans
+        b.fan(e.x, e.y + 10, this.aimAt(e, 0, 10), g.enraged ? 5 : 3, 0.5, slow);
+        g.timer = 0.7;
+        if (++g.step >= 5) next(1.2);
+        break;
+      }
+      case 'lash': {
+        // the tails lash in a sweep, each one flinging a little fan at the player from its tip
+        const n = tips.length;
+        const k = g.step % n;
+        const p = tips[Math.floor(g.step / n) % 2 ? n - 1 - k : k];
+        b.fan(p.x, p.y, Math.atan2(s.player.y - p.y, s.player.x - p.x), 3, 0.32, normal);
+        g.timer = g.enraged ? 0.1 : 0.13;
+        if (++g.step >= n * (g.enraged ? 3 : 2)) next();
+        break;
+      }
+      case 'dance': {
+        // the fox dance: a spiral of fox-fire (three arms when it rages, with a slow counter-spiral)
+        const arms = g.enraged ? 3 : 2;
+        for (let k = 0; k < arms; k++) b.shot('eb_fox_s', e.x, e.y + 4, g.step * 0.31 + (k * TAU) / arms, slow + 6, 1.8);
+        if (g.enraged && g.step % 3 === 0) b.fire(e.x, e.y + 4, -g.step * 0.21, slow);
+        g.timer = 0.085;
+        if (++g.step >= 34) next();
+        break;
+      }
+      default:
+        // rings with interleaving gaps
+        b.ring(e.x, e.y + 4, 14, g.step * 0.22, slow, g.step % 2 === 1);
+        g.timer = 0.55;
+        if (++g.step >= 4) next();
     }
   }
 

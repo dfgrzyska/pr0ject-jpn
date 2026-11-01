@@ -178,6 +178,21 @@ export class Fx {
     this.petals.spawn(frame, x, y, { vx: 0, vy: 0, life });
   }
 
+  /** Blue fox-fire licking upwards (Kyūbi: its tails ablaze, a lost tail burning away, its end). */
+  foxfire(x, y, n = 1, spread = 3) {
+    for (let i = 0; i < n; i++) {
+      const p = this.part(this.parts, `kitsunebi_${i % 2}`, x + (Math.random() - 0.5) * spread * 2, y + (Math.random() - 0.5) * spread * 2, {
+        vx: (Math.random() - 0.5) * 12,
+        vy: -16 - Math.random() * 16,
+        drag: 0.8,
+        grow: -0.5,
+        life: 0.35 + Math.random() * 0.3,
+        a0: 0.85,
+      });
+      p.setScale(0.5 + Math.random() * 0.4);
+    }
+  }
+
   /** Leaves scattering in a puff (the tanuki's shapeshifting). */
   leaves(x, y, n) {
     for (let i = 0; i < n; i++) {

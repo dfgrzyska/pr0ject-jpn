@@ -8,13 +8,15 @@ const TAU = Math.PI * 2;
 //   ax, ay   acceleration (icicles fall, the blizzard pushes bullets sideways); maxV caps the speed
 //   life     seconds before the bullet disappears (snowball impact)
 //   safe     seconds of harmless, motionless warning (icicles hang and blink first)
-//   frz      { at, hold, turn, speed }: stop at `at` s, hang frozen for `hold` s, fly on turned by `turn`
+//   frz      { at, hold, turn, speed, frame, aim }: stop at `at` s, hang frozen for `hold` s (as `frame`, an ice
+//            crystal by default), fly on turned by `turn`, or straight at the player (aim: Kyūbi's fox-fire)
 //   wig, wf  sideways wiggle amplitude (px) and frequency (salmon)
 //   spin     rotate the sprite to its flight direction
 //   orb      { cx, cy, vx, vy, r, a, w }: circles a drifting centre (Raijū's orbs); link = the partner orb,
 //            the electric arc between the two hurts as well
 //   bounce   wall bounces left (Kamado pot: shots ricochet off the screen edges)
 //   grow     { r0, r1, t, drag }: a steam puff swelling from radius r0 to r1 over t s while it slows down
+//   home     turn rate (rad/s) of a fox-fire wisp steering after the player until it burns out (life)
 // lobbed projectile looks: sprite low / high in the arc; spin = turns in flight; burst = ring bullet
 const LOBS = {
   snowball: { low: 'snowball_0', high: 'snowball_1', spin: 0, burst: 'eb_s' },
@@ -28,9 +30,10 @@ const ZONES = {
   water: { warn: 0xbfe8ff, fill: 0xd8f0ff, core: 0xffffff },
   mud: { warn: 0xd8a870, fill: 0x7a5232, core: 0xb08458 },
   blood: { warn: 0xff6a58, fill: 0xa8141e, core: 0xf04a3a },
+  fire: { warn: 0xffb050, fill: 0xd8461a, core: 0xffe08a }, // the Daimonji fire beds
 };
 
-const PLAIN = { ax: 0, ay: 0, maxV: Infinity, life: Infinity, safe: 0, frz: null, wig: 0, wf: 0, spin: false, age: 0, orb: null, link: null, lead: false, bounce: 0, grow: null, grazed: false };
+const PLAIN = { ax: 0, ay: 0, maxV: Infinity, life: Infinity, safe: 0, frz: null, wig: 0, wf: 0, spin: false, age: 0, orb: null, link: null, lead: false, bounce: 0, grow: null, home: 0, grazed: false };
 
 // Enemy bullets: bright core, dark outline, slow. Angle: radians, 0 = right, PI/2 = down.
 // Lobbed snowballs fly above everything, harmless, with a ring marking where they land.
@@ -165,6 +168,18 @@ export class Bullets {
         continue;
       }
       if (b.frz) this.freeze(b, dt);
+      if (b.home) {
+        // a wisp of fox-fire: turns after the player, flickering, and burns out
+        const p = this.scene.player;
+        const cur = Math.atan2(b.vy, b.vx);
+        const d = ((Math.atan2(p.y - b.y, p.x - b.x) - cur + Math.PI * 3) % TAU) - Math.PI;
+        const a = cur + Math.max(-b.home * dt, Math.min(b.home * dt, d));
+        const v = Math.hypot(b.vx, b.vy);
+        b.vx = Math.cos(a) * v;
+        b.vy = Math.sin(a) * v;
+        b.setRotation(a - Math.PI / 2).setFrame(Math.floor(b.age * 10) % 2 ? 'kitsunebi_1' : 'kitsunebi_0');
+        if (b.life < 0.5) b.setAlpha(b.life / 0.5);
+      }
       if (b.ax || b.ay) {
         b.vx += b.ax * dt;
         b.vy += b.ay * dt;
@@ -314,7 +329,7 @@ export class Bullets {
     }
   }
 
-  /** Stop in mid-air, hang as an ice crystal, then fly on in a turned direction. */
+  /** Stop in mid-air, hang (as an ice crystal), then fly on in a turned direction or at the player. */
   freeze(b, dt) {
     const f = b.frz;
     if (!f.frozen) {
@@ -327,10 +342,11 @@ export class Bullets {
         f.ang = Math.atan2(b.vy, b.vx) + f.turn;
         b.vx = 0;
         b.vy = 0;
-        b.setFrame('eb_ice');
+        b.setFrame(f.frame ?? 'eb_ice');
         b.radius = 2.2;
       }
     } else if (b.age >= f.at + f.hold) {
+      if (f.aim) f.ang = Math.atan2(this.scene.player.y - b.y, this.scene.player.x - b.x);
       b.vx = Math.cos(f.ang) * f.speed * rules().bulletSpeed;
       b.vy = Math.sin(f.ang) * f.speed * rules().bulletSpeed;
       b.frz = null;

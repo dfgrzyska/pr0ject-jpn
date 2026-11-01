@@ -8,8 +8,8 @@ export const SKINS = {
     shooter: { frame: 'shooter_0', anim: 'shooter' },
     diver: { frame: 'diver_0', anim: 'diver' },
     carrier: { frame: 'carrier_{c}_0', anim: 'carrier_{c}' },
-    heavy: { frame: 'kyubi_0', anim: 'kyubi' },
-    tanuki: { frame: 'tanuki_0', anim: 'tanuki', kind: 'tanuki' }, // second heavy: waves with look: 'tanuki'
+    heavy: { frame: 'tanuki_0', anim: 'tanuki', kind: 'tanuki' },
+    tanuki: { frame: 'tanuki_0', anim: 'tanuki', kind: 'tanuki' }, // (the waves name it: look: 'tanuki')
     turret: { base: 'turret_base', head: 'turret_head_', wreck: 'turret_wreck' },
   },
   okinawa: {

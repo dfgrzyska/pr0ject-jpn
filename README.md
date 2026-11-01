@@ -121,7 +121,8 @@ Pas tła (warstwa środkowa) ~7 tys. px, ok. 3,5 min — przelot nad Kioto:
   weranda z siedzącymi gośćmi;
 - **Kiyomizu-dera** (153–196 s): schody Sannenzaka między sklepikami z ceramiką, brama Niōmon z lwami,
   dzwonnica, trzypiętrowe pagody, wodospad Otowa, wielki drewniany taras na kracie pali nad doliną wiśni;
-- **Daimonji o zmierzchu** (196–216 s): znak 大 z płonących stosów na zboczu (Gozan Okuribi).
+- **Daimonji o zmierzchu** (196–216 s): znak 大 z płonących stosów na zboczu (Gozan Okuribi); tu przewijanie
+  staje (pole `stop` w `scroll` w `stage1.json`, cały znak na ekranie) i budzi się boss.
 
 Paralaksa: na grzbiecie z torii daleka warstwa to dolina pod spodem (zapętlona), środkowa — miasto,
 świątynie i drzewa (wieżyczki są do niej przyczepione), bliska — płatki sakury i mgła.
@@ -134,11 +135,20 @@ Wrogowie (roboty w stylu Fushimi Inari):
 | Strzelec | kanonierka podwieszona pod belką torii | wlatuje, staje, strzela celowanymi seriami (`aimed`/`fan`), odlatuje |
 | Wieżyczka | kamienna latarnia tōrō z działem | na warstwie terenu, wachlarz (`fan`) lub pierścień (`ring`) |
 | Nurek | chōchin-obake — czerwony papierowy lampion-yōkai z parady stu demonów (jedno oko, zęby, wywalony język) | zawisa, celuje i pikuje w gracza |
-| Ciężki | tanuki — figurka z Shigaraki (kapelusz, butelka sake, zeszyt rachunków) | pierwszy miniboss (ok. 70 s): bębni w brzuch (pierścień na każde „pon”), rzuca butelkami sake z celownikiem na ziemi, zmienia się listkiem w trzy tanuki — kopie mają listek na kapeluszu i pękają od jednego trafienia |
-| Ciężki | Kyūbi — czerwony lis o dziewięciu ogonach z klejnotem hōju i lisim ogniem | drugi miniboss (ok. 150 s, nad Ryōan-ji), pierścienie / wachlarze / spirala |
+| Ciężki | tanuki — figurka z Shigaraki (kapelusz, butelka sake, zeszyt rachunków) | miniboss (ok. 150 s, nad Ryōan-ji): bębni w brzuch (pierścień na każde „pon”), rzuca butelkami sake z celownikiem na ziemi, zmienia się listkiem w trzy tanuki — kopie mają listek na kapeluszu i pękają od jednego trafienia |
 | Nośnik | dron z klejnotem hōju (czerwony/niebieski/zielony) | zygzak, po ~4,6 s ucieka, zawsze zostawia znajdźkę |
 
 Znajdźki: czerwona — rozrzut, niebieska — laser, zielona — naprowadzane „lisie ognie”.
+
+Boss: Kyūbi, lis o dziewięciu ogonach — dziki lis z chramu Inari (słomiana lina shimenawa na szyi, klejnot hōju na
+piersi). Gdy tło stanie, lisi ogień zlatuje się nad głowę znaku 大, z płomieni wyłania się ciało, a ogony
+rozkładają się jeden po drugim od środka (podmuch pobudki zmiata resztki fal). Ogony to osobne sprite'y
+(`tools/art/kyoto/kyubi.mjs`): co 1/9 życia odrywa mu się skrajny i spala w lisim ogniu, a z niego wylatuje
+błędny ognik, który przez chwilę goni gracza. Ataki: kitsune-bi (z końca każdego ogona ognik, który zawisa
+i leci w gracza — im mniej ogonów, tym mniej ogników), Daimonji (znak 大 na zboczu zapala się kreska po kresce,
+w kolejności pisania, najpierw pierścienie ostrzeżenia — bezpiecznie jest między kreskami), smagnięcie ogonami
+(wachlarze z końców ogonów po kolei) i lisi taniec (spirala). Poniżej 35% życia wpada w szał: ogony płoną
+na niebiesko, dochodzą pierścienie. Mruga, a przy ataku otwiera pysk i rozpala oczy.
 
 ## Etap 2
 
@@ -344,7 +354,7 @@ startuje następny etap. Okinawa jest we wstawce (jak na mapach Japonii). Poło�
 Oryginalna ścieżka „Senbon” grana na żywo przez Web Audio (`src/audio/`) — bez plików audio.
 Skala *in* (miyako-bushi) na A, instrumenty: koto, flet w stylu shakuhachi, chiptune'owy bas, taiko,
 kołatka i shaker. Muzyka rośnie z etapem: spokojne miasto → rozkręcenie przy świątyni → pełny utwór na grzbiecie
-→ skoczny motyw tanuki (pon-poko na taiko, shamisen) i osobny motyw Kyūbiego → finał na szczycie; do tego dżingle końca etapu i końca gry.
+→ skoczny motyw tanuki (pon-poko na taiko, shamisen) → finał na szczycie → motyw bossa przy Kyūbim; do tego dżingle końca etapu i końca gry.
 Nuty są tekstem w `src/audio/score.js` (16 kroków na takt, np. `'A4 - - E5 - - F5 - ...'`).
 Etap 2 ma własną ścieżkę „Churaumi” (`src/audio/score2.js`): skala ryukyu (C E F G B), sanshin, flet,
 bębny eisa (duży bęben i paranku), kołatki sanba i bujający rytm kachāshī; osobne motywy manty i shisa.
@@ -423,10 +433,12 @@ Efekty wspólne dla wszystkich miast (`tools/art/fx.mjs`, `src/game/Fx.js`):
 - **Światło wybuchów:** każdy wybuch na chwilę oświetla ziemię wokół siebie. Siła zależy od pory dnia na
   trasie (pole `dark` w `stageN.json`), więc w nocnym Sapporo czy Osace widać ją wyraźnie, a w dzień ledwo.
 - **Cienie chmur** powoli przesuwają się po ziemi i znikają, gdy zapada noc.
-- **Bossowie i minibossowie** oddychają (piksel w górę i w dół), przy 2/3 i 1/3 życia pękają, dymią i iskrzą.
+- **Bossowie i minibossowie** oddychają (piksel w górę i w dół), przy 2/3 i 1/3 życia pękają, dymią i iskrzą
+  (Kyūbi zamiast tego traci ogony).
   Zestrzelony nie znika od razu: trzęsie się i błyska w serii wybuchów, a potem odchodzi po swojemu. Oni
   zapada się w krwawy staw, ośmiornica, krokodyl i manta toną, Yuki-onna pęka jak lód, shisa i lalka bunraku
-  rozpadają się na kawałki, tanuki rozsypuje się w liście, Sakurajima stygnie, reszta wybucha.
+  rozpadają się na kawałki, tanuki rozsypuje się w liście, Sakurajima stygnie, Kyūbi spala się w niebieskim
+  lisim ogniu, a znak 大 na zboczu za nim buchnie płomieniem, reszta wybucha.
 - **Statek** ma błysk przy lufie, iskry z silników i rozpada się na kawałki we własnych kolorach.
 - **Logo** pr0ject-jpn (`tools/art/logo.mjs`) spada na ekran tytułowy jak przybijana pieczątka. Na starcie
   etapu pieczęć miasta z kanji jego nazwy (京都, 沖縄, 札幌, 鹿児島, 大阪, 別府, w kolorze tuszu miasta)

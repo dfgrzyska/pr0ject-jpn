@@ -17,7 +17,8 @@ export class Parallax {
     this.anchor = stage.scroll.anchor;
     this.length = meta.length;
     this.chunkH = meta.chunkHeight;
-    this.maxTime = (meta.length - this.anchor) / this.speed.mid;
+    // the scroll stops at the end of the strip, or where the stage says (Kyoto: with the 大 on the screen)
+    this.maxTime = ((stage.scroll.stop ?? meta.length) - this.anchor) / this.speed.mid;
     this.time = 0;
     this.farTime = 0;
     this.uTop = this.anchor;
