@@ -41,6 +41,27 @@ export function beppuSprites(add) {
   cloud(38, 28, [[11, 15, 9], [21, 11, 10], [29, 16, 8], [19, 19, 9]], 0.7, 'steam_1', add);
   cloud(18, 12, [[6, 7, 5], [11, 5, 5], [13, 8, 4]], 0.5, 'wisp_s_0', add);
   cloud(14, 12, [[5, 7, 4], [9, 5, 4.5]], 0.5, 'wisp_s_1', add);
+  // the steam nozzles' scalding puffs: the cloud shape of the steam, but solid, with the enemy bullets' dark
+  // outline, a hot pink-red rim going pale inside and a white-hot core, boiling (two frames), so it can't pass for
+  // the harmless steam around it
+  for (let f = 0; f < 2; f++) {
+    const r = new Raster(15, 13);
+    const puffs = f
+      ? [[7.5, 7.4, 4.5], [4.2, 5.8, 3.2], [10.8, 5.6, 3.3], [7.6, 3.6, 2.8]]
+      : [[7.5, 7.2, 4.7], [4.4, 5.2, 3.3], [10.6, 5.8, 3.1], [7.2, 3.8, 2.7]];
+    for (let y = 0; y < 13; y++)
+      for (let x = 0; x < 15; x++) {
+        let best = Infinity;
+        for (const [cx, cy, pr] of puffs) best = Math.min(best, Math.hypot(x + 0.5 - cx, y + 0.5 - cy) - pr);
+        if (best > 1) continue;
+        const depth = -best; // how far inside the cloud's edge
+        let c = best > 0 ? 0x3a0a18 : depth < 1.3 ? 0xf0305a : depth < 2.6 ? 0xff8aa8 : 0xffe0ea;
+        if (Math.hypot(x + 0.5 - 7.5 - (f ? 0.6 : -0.4), y + 0.5 - 6.6) < 1.7) c = 0xffffff; // the white-hot core
+        r.set(x, y, c);
+      }
+    for (const [x, y] of f ? [[4, 5], [11, 4]] : [[5, 4], [10, 6]]) r.set(x, y, 0xffffff); // bubbles boiling up
+    add(`eb_steam_${f}`, r);
+  }
   // boiling at a vent before it erupts
   for (const [name, a, b] of [['boil', 0xd8f4ff, 0x8ac8e0], ['mudboil', 0xb8b0a4, 0x6e6a64]])
     for (let f = 0; f < 2; f++) {

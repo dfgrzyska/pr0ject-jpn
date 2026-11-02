@@ -964,6 +964,13 @@ export class Enemies {
         e.head?.clearTint();
         if (e.segs) for (const sg of e.segs) sg.clearTint?.();
       }
+      if (e.heat && !(e.flash > 0)) {
+        e.head?.setTint(Math.floor(e.age * 16) % 2 ? 0xff3a2a : 0xff9a80).setTintMode(Phaser.TintModes.MULTIPLY); // a steam nozzle heating up
+        e.hot = true;
+      } else if (e.hot && !(e.flash > 0)) {
+        e.head?.clearTint();
+        e.hot = false;
+      }
       const off = e.y > H + 40 || e.y < -70 || e.x < -50 || e.x > VIEW.width + 50;
       if (e.wounds) for (const w of e.wounds) if (e.flash > 0) w.setVisible(false);
       if (off && e.type !== 'boss' && (e.age > 2 || e.y > H)) {
@@ -1236,6 +1243,7 @@ export class Enemies {
       const i = ((Math.round(th / (TAU / 16)) % 16) + 16) % 16;
       e.head.setFrame(`${this.skin.turret.head}${i}`).setPosition(e.x, e.y - 1);
     }
+    e.heat = e.pattern === 'puff' && this.canFire(e) && e.timer < 0.55; // a steam nozzle glows red before it fires
     if (this.canFire(e)) {
       e.timer -= dt;
       if (e.timer <= 0) {
@@ -1244,8 +1252,9 @@ export class Enemies {
         const my = e.y + Math.sin(ang) * 6;
         if (e.pattern === 'lob') b.lob(e.x, e.y - 3, p.x, p.y); // snowman: a snowball where you are now
         else if (e.pattern === 'puff') {
-          // steam nozzle: puffs that swell, slow down and hang in the air for a while
-          for (const d of [-0.38, 0, 0.38]) b.shot('wisp_s_1', mx, my, ang + d, 90, 2, { grow: { r0: 2, r1: 5.5, t: 1.3, drag: 0.7 }, life: 2.8 });
+          // steam nozzle: scalding puffs (pink-red, boiling: not the white steam around) that swell, slow down
+          // and hang in the air for a while
+          for (const d of [-0.38, 0, 0.38]) b.shot('eb_steam_0', mx, my, ang + d, 90, 2, { grow: { r0: 2, r1: 5.5, t: 1.3, drag: 0.7, frames: ['eb_steam_0', 'eb_steam_1'] }, life: 2.8 });
           e.timer = 2.6;
         } else if (e.pattern === 'ring') {
           e.shots++;

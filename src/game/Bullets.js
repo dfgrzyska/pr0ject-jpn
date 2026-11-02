@@ -15,7 +15,8 @@ const TAU = Math.PI * 2;
 //   orb      { cx, cy, vx, vy, r, a, w }: circles a drifting centre (Raijū's orbs); link = the partner orb,
 //            the electric arc between the two hurts as well
 //   bounce   wall bounces left (Kamado pot: shots ricochet off the screen edges)
-//   grow     { r0, r1, t, drag }: a steam puff swelling from radius r0 to r1 over t s while it slows down
+//   grow     { r0, r1, t, drag, frames }: a steam puff swelling from radius r0 to r1 over t s while it slows down,
+//            cycling through frames (boiling) if given
 //   home     turn rate (rad/s) of a fox-fire wisp steering after the player until it burns out (life)
 // lobbed projectile looks: sprite low / high in the arc; spin = turns in flight; burst = ring bullet
 const LOBS = {
@@ -216,6 +217,7 @@ export class Bullets {
           b.setScale(0.45 + 0.55 * k);
           b.vx *= 1 - Math.min(1, g.drag * dt);
           b.vy *= 1 - Math.min(1, g.drag * dt);
+          if (g.frames) b.setFrame(g.frames[Math.floor(b.age * 7) % g.frames.length]);
           if (b.life < 0.4) b.setAlpha(b.life / 0.4);
         }
         b.x += b.vx * dt;

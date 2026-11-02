@@ -389,7 +389,7 @@ ale przy pełnym pasku działa się zacinają na ~2 s — trzeba wlatywać i wyl
 | --- | --- | --- |
 | Popcorn | jajka gotowane w źródłach (jigoku-mushi) | **wykluwanie**: jajko chwieje się coraz mocniej i po ~2 s na ekranie pęka — wylatuje mały oni, który goni gracza i strzela |
 | Strzelec | żelazny kocioł Kamado z kucharzem-oni | **rykoszety**: szeroki wachlarz, który raz odbija się od krawędzi ekranu |
-| Wieżyczka | dysza pary na kamiennym postumencie | **kłęby**: pociski-obłoki rosną, zwalniają i wiszą w powietrzu |
+| Wieżyczka | dysza pary na kamiennym postumencie | **kłęby**: pociski-obłoki rosną, zwalniają i wiszą w powietrzu; to wrząca, różowoczerwona para z ciemnym obrysem i białym środkiem (nie do pomylenia z białą parą w tle), a dysza przed strzałem rozgrzewa się na czerwono |
 | Nurek | makak z Takasakiyamy | **kradzież**: zamiast taranować kradnie poziom mocy (albo bombę) i ucieka zygzakiem z łupem; zestrzel go, a łup wraca |
 | Nośnik | drewniane wiaderko kąpielowe z ręcznikiem | — |
 
