@@ -7,6 +7,7 @@ import { Enemies } from '../game/Enemies.js';
 import { Fx } from '../game/Fx.js';
 import { Hud, pixelText } from '../game/Hud.js';
 import { JapanMap } from '../game/JapanMap.js';
+import { Debug } from '../game/Debug.js';
 import { Ending } from '../game/Ending.js';
 import { Parallax } from '../game/Parallax.js';
 import { Player } from '../game/Player.js';
@@ -120,6 +121,7 @@ export class Stage extends Phaser.Scene {
     this.music = getMusic(this);
     this.sfx = this.music.sfx;
     this.hud = new Hud(this);
+    this.debug = new Debug(this);
 
     const qShip = SHIPS.findIndex((sh) => sh.id === q.get('ship'));
     this.shipIndex = qShip >= 0 ? qShip : loadShipIndex();
@@ -139,7 +141,7 @@ export class Stage extends Phaser.Scene {
     if (WEAPONS[q.get('weapon')]) this.player.weapon = q.get('weapon');
     if (q.get('power')) this.player.level = Phaser.Math.Clamp(Number(q.get('power')), 1, PLAYER.maxPower);
 
-    this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,K,L,I,ESC,P,ENTER,SPACE');
+    this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,K,L,I,G,ESC,P,ENTER,SPACE');
     this.input.on('pointerdown', this.onPointerDown, this);
     this.input.on('pointermove', (p) => this.state === 'play' && !this.paused && this.player.dragMove(p));
     this.input.on('pointerup', (p) => this.player.endDrag(p));
@@ -480,6 +482,7 @@ export class Stage extends Phaser.Scene {
       this.music.toggle();
       return;
     }
+    if (this.hud.hitDebug(p)) return this.debug.toggle();
     if (this.state === 'title') {
       if (this.hud.hitLang(p)) return this.toggleLang();
       if (this.hud.hitInstall(p)) return install().then(() => this.state === 'title' && this.showTitle());
@@ -512,6 +515,7 @@ export class Stage extends Phaser.Scene {
     const bomb = down(k.Z);
     if (down(k.ESC) || down(k.P)) this.togglePause();
     if (down(k.M)) this.music.toggle();
+    if (down(k.G)) this.debug.toggle();
     if (this.state === 'title') {
       if (down(k.K)) this.openBook();
       else if (down(k.L)) this.toggleLang();
@@ -556,6 +560,7 @@ export class Stage extends Phaser.Scene {
       if (stageReady(this, this.stage.id)) this.scene.restart(this.loadingData);
       return;
     }
+    this.debug.frame(delta);
     const dt = Math.min(delta / 1000, 1 / 20);
     this.handleKeys();
     this.hud.update(dt);

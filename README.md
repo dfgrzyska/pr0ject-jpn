@@ -19,6 +19,22 @@ Parametry do testów w adresie: `?stage=1` … `?stage=6` (ten etap pierwszy, re
 `?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5), `?ship=oni|kitsune|tsubame`,
 `?noprops` (tło bez animacji). Z `?god` albo `?t=` pieczątek nie da się zdobyć.
 
+## Panel debugowania
+
+Napis DEBUG w prawym górnym rogu ekranu tytułowego i ekranu pauzy (albo klawisz G) włącza i wyłącza panel
+w lewym górnym rogu; ustawienie zostaje w przeglądarce (`src/game/Debug.js`). Panel tylko patrzy, nic w grze
+nie zmienia. Pokazuje:
+
+- FPS oraz średni i najdłuższy czas klatki z ostatniej sekundy (ms);
+- wykres ostatnich 90 klatek (2 ms na piksel, kreska na 16,7 ms): szare na czas, żółte spóźnione, czerwone
+  przycięcia — przerwy między klatkami dłuższe niż 25 ms;
+- liczbę przycięć od początku etapu i trzy ostatnie: sekunda etapu, długość i co działo się tuż przed nim —
+  TEKSTURA (doszedł obraz tła innego miasta, które gra wczytuje w trakcie gry), TŁO, WROGOWIE, POCISKI,
+  RYSOWANIE (ta część poprzedniej klatki trwała ponad 6 ms) albo „?”, gdy nic z tego (zwykle przeglądarka
+  sprzątająca pamięć albo telefon zajęty czymś innym);
+- pociski wrogów i wrogów na ekranie, aktywne elementy żywego tła (z wszystkich na mapie), obiekty na scenie;
+- ile plików tła innych miast już doszło (z ilu) i czas etapu.
+
 ## Na telefonie, offline, po angielsku
 
 Grę można zainstalować jak aplikację: na Androidzie (i w Chrome / Edge na komputerze) na ekranie tytułowym

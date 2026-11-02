@@ -48,6 +48,8 @@ export class Hud {
     // the language switch, under it: PL EN, the one in use lit
     this.langPl = pixelText(scene, 8, 29, 'PL').setDepth(DEPTH.overlay + 3).setVisible(false);
     this.langEn = pixelText(scene, 22, 29, 'EN').setDepth(DEPTH.overlay + 3).setVisible(false);
+    // the debug panel's switch, top right under the buttons: on the title screen and while paused
+    this.debugBtn = pixelText(scene, W - 4, 29, 'DEBUG', 0).setOrigin(1, 0.5).setDepth(DEPTH.overlay + 3).setVisible(false);
     this.installBtn = scene.add.image(12, 46, 'sprites', 'btn_install').setDepth(DEPTH.overlay + 3).setAlpha(0.85).setVisible(false);
     // the stamp still to be won in this city: its seal under the lives, fading away after a death or a bomb
     this.stampIcon = scene.add.image(7, 30, 'sprites', 'stamp_icon').setDepth(d).setVisible(false);
@@ -108,6 +110,10 @@ export class Hud {
 
   hitLang(p) {
     return this.langPl.visible && p.x < 34 && p.y > 21 && p.y < 38;
+  }
+
+  hitDebug(p) {
+    return this.debugBtn.visible && p.x > W - 44 && p.y > 21 && p.y < 38;
   }
 
   hitBomb(p) {
@@ -263,6 +269,7 @@ export class Hud {
     const en = getLang() === 'en';
     this.langPl.setVisible(s.state === 'title').setTint(en ? 0x6a6a80 : 0xffe080);
     this.langEn.setVisible(s.state === 'title').setTint(en ? 0xffe080 : 0x6a6a80);
+    this.debugBtn.setVisible(s.state === 'title' || s.paused).setTint(s.debug?.on ? 0xffe080 : 0x6a6a80);
     if (this.easy.visible !== (s.state === 'play' && isEasy())) this.easy.setText(tr('ŁATWY')).setVisible(!this.easy.visible);
     const seal = s.state === 'play' && s.stampEligible && !s.stampOwned;
     if (seal && s.stampChance) {
