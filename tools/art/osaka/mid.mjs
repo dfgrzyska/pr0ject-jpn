@@ -25,7 +25,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Raster, fbm, rng, bayer, scaleColor, rgb } from '../../lib/raster.mjs';
 import { crownPixels, rampColor } from '../nature.mjs';
-import { PropKit, Window, puff, todGrade, tintTable } from '../props.mjs';
+import { PropKit, Window, puff, todGrade, tintTable, planTraffic } from '../props.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -192,7 +192,7 @@ export function buildMid() {
     // Dōtonbori between two rivers)
     if (u >= DOTONBORI[0] + 30 && u < DOTONBORI[0] + 50 && x >= 64) return true;
     if (u >= DOTONBORI[1] - 50 && u < DOTONBORI[1] - 30 && x < 116) return true;
-    if (u >= PORT[1] + (fbm(x, 3, { seed: 51, scale: 20 }) - 0.5) * 30) return true;
+    if (u >= PORT[1] + 2) return true; // (the bay, behind the straight quay wall)
     return false;
   };
   for (let y = 0; y < L; y++) {
@@ -217,8 +217,8 @@ export function buildMid() {
   const W_ = (x, y) => x >= 0 && x < W && y >= 0 && y < L && water[y * W + x];
 
   // ------------------------------------------------------------ helpers
-  const roadPx = (x, y, across, hw, lanes = true) => {
-    if (W_(x, y)) return;
+  const roadPx = (x, y, across, hw, lanes = true, overWater = false) => {
+    if (W_(x, y) && !overWater) return;
     const a = Math.abs(across);
     let c;
     if (a > hw + 0.5) c = rampColor(C.paving, fbm(x, y, { seed: 33, scale: 3 }), x, y);
@@ -270,23 +270,28 @@ export function buildMid() {
   const bridge = (cx, hw, u0, u1, lamps) => {
     const x0 = Math.floor(cx - hw - 3); // the parapets
     const x1 = Math.floor(cx + hw + 2);
+    const deck = () => {
+      for (let u = u0; u < u1; u++) {
+        const y = Y(u);
+        for (let x = x0; x <= x1; x++) {
+          if (x === x0 || x === x1) img.set(x, y, u % 3 ? C.stone[2] : C.stone[3]);
+          else roadPx(x, y, x + 0.5 - cx, hw, true, true); // (the deck, over the water)
+        }
+        if (lamps && u % 14 === 0)
+          for (const px of [x0, x1]) {
+            img.set(px, y, 0x3a3a40);
+            glow(px, y - 1, 0xfff0c8);
+            pool(px, y, 8, C.lamp, 0.3 * night(u) + 0.05);
+          }
+      }
+    };
+    // the deck again over the boats on the river (live layer), so they pass under it; the traffic goes over it
+    kit.loop(x0, u1, [capture(x0, Y(u1), x1 - x0 + 1, u1 - u0 + 1, deck)], { d: 0.04 });
     objects.push({
       y: Y(u0),
       shadow: () => shadowRect(x1 + 1, Y(u1), 3, u1 - u0, 0.55),
       draw: () => {
-        for (let u = u0; u < u1; u++) {
-          const y = Y(u);
-          for (let x = x0; x <= x1; x++) {
-            if (x === x0 || x === x1) img.set(x, y, u % 3 ? C.stone[2] : C.stone[3]);
-            else roadPx(x, y, x + 0.5 - cx, hw, true);
-          }
-          if (lamps && u % 14 === 0)
-            for (const px of [x0, x1]) {
-              img.set(px, y, 0x3a3a40);
-              glow(px, y - 1, 0xfff0c8);
-              pool(px, y, 8, C.lamp, 0.3 * night(u) + 0.05);
-            }
-        }
+        deck();
         // the shadow of the deck on the water below
         for (let x = x0; x <= x1; x++) img.tint(x, Y(u0) + 1, 0.6);
       },
@@ -1144,7 +1149,6 @@ export function buildMid() {
     for (let u = 1150; u < 1172; u++) for (let x = 82; x < 98; x++) img.set(x, Y(u), x < 84 || x > 95 ? C.ishi[x < 84 ? 3 : 1] : rampColor(C.gravel, 0.5, x, Y(u)));
     stoneFace(0, W, 1176, 4);
     hRoad(1186, 5);
-    for (let k = 0; k < 6; k++) car(8 + k * 28 + Math.floor(rand() * 8), Y(1186) + (k % 2 ? 1 : -6), false);
     for (const [x, hw] of NORTH_SOUTH) vRoad(x, hw, 1192, TOSABORI[0]);
     for (const [x0, x1] of [[0, 22], [38, 79], [101, 142], [158, W]]) district(x0, x1, 1196, 1298, 'town');
   }
@@ -1232,7 +1236,6 @@ export function buildMid() {
       const u = rand() < 0.5 ? 1366 + rand() * 34 : 1870 + rand() * 34;
       if (!anyRes(x - 4, Y(u) - 4, 8, 8)) tree(rand() < 0.5 ? 'sakura' : 'broadleaf', x, Y(u), 3.5 + rand() * 2);
     }
-    for (let u = NAKANOSHIMA[0] + 10; u < NAKANOSHIMA[1]; u += 40) for (const [bx, hw] of NORTH_SOUTH) if (rand() < 0.5) car(bx + (rand() < 0.5 ? -hw + 1 : 1 + (hw > 6 ? 2 : 0)), Y(u), true);
     // river cruise boats and a water bus going up and down both rivers (live), bow to the right
     for (const [u, c, sp, right] of [[1338, 0xe8e4dc, 8, true], [1323, 0x3a6aa8, 6, false], [1944, 0xe8e4dc, 7, false], [1930, 0x3a6aa8, 5, true]]) {
       const out = new Raster(20, 7);
@@ -1260,10 +1263,58 @@ export function buildMid() {
       for (const [x, hw] of [[30, 5], [90, 8], [150, 5]]) crossing(x, hw, u, 6);
     }
     for (let u = UMEDA[0] + 12; u < DOTONBORI[0]; u += 16) {
-      // ginkgo trees along Midōsuji, traffic
+      // ginkgo trees along Midōsuji
       for (const x of [79, 101]) tree('broadleaf', x, Y(u), 2.6);
-      if (rand() < 0.55) car(rand() < 0.5 ? 83 : 93, Y(u + 6), true);
-      if (rand() < 0.25) car(rand() < 0.5 ? 26 : 31, Y(u + 3), true);
+    }
+    // live traffic, keeping left as in Japan, all at one speed and started so that no car ever drives through
+    // another (planTraffic): both ways up and down the three avenues, each turning in off a cross street at the
+    // edge of the screen and off again along another one, so none appears or vanishes in sight (none crosses the
+    // station's tracks: they turn off before it and on again after it); both ways along three cross streets
+    {
+      const SP = 14;
+      const cols = [0xe8e8ec, 0x2a2a30, 0xc03a30, 0x3a5a9a, 0x9aa0a8, 0xe8d8a0, 0x4a7a5a];
+      const carF = (c, dir) => {
+        const side = dir === 'side';
+        const r = new Raster(side ? 5 : 3, side ? 3 : 5);
+        r.rect(0, 0, r.w, r.h, c);
+        if (side) {
+          r.rect(1, 0, 3, 3, scaleColor(c, 1.15)); // the roof
+          r.rect(3, 0, 1, 3, 0x2a3440); // the windscreen (facing right)
+        } else {
+          r.rect(0, 1, 3, 3, scaleColor(c, 1.15));
+          r.rect(0, dir === 'up' ? 1 : 3, 3, 1, 0x2a3440);
+        }
+        return kit.frame(tod.frame(r, 2000));
+      };
+      const side = cols.map((c) => carF(c, 'side'));
+      const up = cols.map((c) => carF(c, 'up'));
+      const down = cols.map((c) => carF(c, 'down'));
+      // (lanes: x 28/32, 86/94, 148/152 up/down; the cross streets' eastbound lanes on their north sides)
+      const avenue = (x, fromRight, u0, u1, n, goingUp) => {
+        const e = fromRight ? 188 : -8;
+        const a = (uu, east) => uu + (east ? 3 : -3);
+        // in along the bottom street, up the avenue, out along the top one (or the other way round)
+        const pts = goingUp
+          ? [[e, a(u0, !fromRight)], [x, a(u0, !fromRight)], [x, a(u1, fromRight)], [e, a(u1, fromRight)]]
+          : [[e, a(u1, !fromRight)], [x, a(u1, !fromRight)], [x, a(u0, fromRight)], [e, a(u0, fromRight)]];
+        let total = 0;
+        for (let i = 1; i < pts.length; i++) total += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+        return { pts, sp: SP, n, gap: total / n, size: [5, 3] };
+      };
+      const routes = [];
+      for (const [u0, u1, n] of [[1186, 2600, 4], [2900, 3750, 3]]) {
+        routes.push(avenue(28, false, u0, u1, n, true), avenue(32, false, u0, u1, n, false));
+        routes.push(avenue(86, false, u0, u1, n, true), avenue(94, false, u0, u1, n, false));
+        routes.push(avenue(148, true, u0, u1, n, true), avenue(152, true, u0, u1, n, false));
+      }
+      for (const [u, k] of [[1640, 2], [2100, 3], [2350, 3]]) routes.push({ pts: [[-8, u + k], [188, u + k]], sp: SP, size: [5, 3] }, { pts: [[188, u - k], [-8, u - k]], sp: SP, size: [5, 3] });
+      const onScreen = (u) => [Math.max(0, (u - anchor - 10) / V), Math.max(0, (u + 440 - anchor) / V)];
+      const s0 = planTraffic(routes, onScreen);
+      routes.forEach((r, k) => {
+        const o = (k * 3) % cols.length; // (each route its own mix of colours)
+        const turn = (a) => [...a.slice(o), ...a.slice(0, o)];
+        kit.path(r.pts, turn(side), { sp: SP, n: r.n ?? 1, gap: r.gap ?? 20, turn: 'flip', fu: turn(up), fd: turn(down), cars: 1, s0: s0[k], d: 0.08 }); // (over the bridges)
+      });
     }
     // the station: tracks, trains, and the great curved glass roof over the platforms
     for (let u = 2700; u < 2780; u++)
@@ -2473,24 +2524,63 @@ export function buildMid() {
     }
 
     // ---- the bay: the sailing ship at the quay, fishing boats with lamps, the lit harbour bridge
+    // the Santa Maria, the replica galleon that takes visitors round the bay, moored alongside the quay: bow to the
+    // left with its bowsprit, raised forecastle and sterncastle with the cabin's windows, three masts with their
+    // yards across the hull and the sails furled on them (a lateen yard on the mizzen), shrouds down to the sides,
+    // mooring lines and fenders on the quay side, a string of lights along the rigging, its shadow on the water
     {
-      const x = 130;
-      const y = Y(p1 + 44);
+      const [bx0, bx1] = [114, 160]; // bow tip, stern
+      const yc = Y(6452); // the keel's line
+      const half = (x) => (x < 126 ? 1 + (x - bx0) * 0.5 : x > 154 ? 7 - (x - 154) * 0.25 : 7);
       objects.push({
-        y: y + 34,
+        y: yc + 8,
+        shadow: () => {
+          for (let x = bx0; x <= bx1; x++) for (let j = -Math.round(half(x)); j <= half(x); j++) img.tint(x + 4, yc + j + 4, 0.55);
+        },
         draw: () => {
-          for (let j = 0; j < 34; j++) {
-            const w = j < 6 ? 3 + j * 2 : 14;
-            img.rect(x + Math.floor((14 - w) / 2), y + j, w, 1, j % 6 === 0 ? 0x5a3a22 : 0x7a5230);
+          img.line(bx0 - 10, yc - 1, bx0, yc, 0x4a3020); // the bowsprit
+          for (let x = bx0; x <= bx1; x++) {
+            const h = Math.round(half(x));
+            for (let j = -h; j <= h; j++) {
+              const edge = Math.abs(j) === h;
+              const side = Math.abs(j) === h - 1;
+              const fore = x < 128;
+              const aft = x > 146;
+              let c = (x + (j & 1)) % 3 ? 0xb08850 : 0x9a7444; // deck planks along the length
+              if (fore || aft) c = (x & 1) ? 0xc89a62 : 0xb88a56; // the raised castles
+              if (side) c = j < 0 ? 0x7a5232 : 0x5a3a24; // the bulwarks
+              if (edge) c = 0x2e1c12;
+              if (side && x % 4 === 0) c = 0xd8a840; // the gilded wale
+              img.set(x, yc + j, c);
+            }
           }
-          for (const [my, mw] of [[8, 18], [17, 20], [26, 16]]) {
-            img.rect(x + 7 - mw / 2, y + my, mw, 2, 0xf0ece0);
-            img.rect(x + 7 - mw / 2, y + my + 2, mw, 1, 0xc8c0b0);
-            glow(x + 7, y + my - 1, 0xffe0a0);
+          for (const x of [128, 146]) for (let j = -6; j <= 6; j++) img.set(x, yc + j, 0x5a3a24); // the castles' fronts
+          img.rect(150, yc - 4, 8, 9, 0x8a2a1e); // the cabin roof on the sterncastle
+          img.rect(150, yc - 4, 8, 1, 0xa83a2a);
+          for (const j of [-3, 0, 3]) img.set(159, yc + j, 0xffd890); // the stern windows
+          // masts, yards with the sails furled along them, shrouds to the bulwarks
+          for (const [mx, reach] of [[124, 10], [137, 12]]) {
+            for (let j = -reach; j <= reach; j++) {
+              img.set(mx, yc + j, 0x3a2416);
+              img.set(mx + 1, yc + j, Math.abs(j) < reach - 1 ? (j < 0 ? 0xf2ead8 : 0xd0c4aa) : 0x3a2416);
+            }
+            for (const sgn of [-1, 1]) img.line(mx - 3, yc + sgn * 6, mx, yc + sgn * 1, 0x4a3a2a);
+            img.rect(mx - 1, yc - 1, 3, 3, 0x2a1a10); // the mast and its top
           }
-          img.line(x + 7, y - 4, x + 7, y + 33, 0x4a3020);
-          for (let k = 0; k < 14; k++) glow(x + k, y + 4 + Math.round(Math.sin(k / 2) * 2), k % 2 ? 0xffe0a0 : 0xff6a40, 0.8); // the string of lights on its rigging
-          pool(x + 7, y + 17, 20, 0xffc070, 0.35);
+          img.line(146, yc + 8, 156, yc - 7, 0x3a2416); // the mizzen's lateen yard
+          img.line(147, yc + 8, 157, yc - 7, 0xe8dcc4);
+          img.rect(150, yc - 1, 3, 3, 0x2a1a10);
+          // mooring lines and fenders on the quay side
+          for (const [x, qx] of [[118, 110], [156, 166]]) img.line(x, yc + half(x), qx, Y(6428), 0xd8c8a0);
+          for (const x of [124, 134, 144]) img.rect(x, yc + 8, 2, 1, 0x1a1a1e);
+          // the string of lights from the bowsprit over the mast tops to the stern
+          const pts = [[bx0 - 10, yc - 1], [125, yc - 2], [138, yc - 2], [151, yc - 2], [bx1, yc]];
+          for (let i = 0; i < pts.length - 1; i++) {
+            const [ax, ay] = pts[i];
+            const [cx, cy] = pts[i + 1];
+            for (let k = 0; k < 4; k++) glow(ax + ((cx - ax) * k) / 4, ay + ((cy - ay) * k) / 4 - 1, (i + k) % 2 ? 0xffe0a0 : 0xff6a40, 0.8);
+          }
+          pool(137, yc, 24, 0xffc070, 0.32);
         },
       });
     }

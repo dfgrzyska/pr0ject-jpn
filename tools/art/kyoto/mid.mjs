@@ -1484,7 +1484,7 @@ export function buildMid() {
   {
     fillGround(0, Y(5420), W, 420, [0x3a3634, 0x46423e, 0x524e48], 43, 4);
     // Sannenzaka: stone steps winding up between shops
-    const sx = (u) => 90 + 16 * Math.sin((u - 5000) / 60);
+    const sx = (u) => 90 + 16 * Math.sin((u - 5000) / 60) * (1 - smooth(5320, 5400, u)); // (straightening out to meet the gate's steps)
     // Gojō-zaka: the stone-paved street across the foot of the hill that the steps go up from
     paving(0, Y(5001), W, 12);
     for (let x = 0; x < W; x++) {

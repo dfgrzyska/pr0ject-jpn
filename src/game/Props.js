@@ -1,4 +1,5 @@
 import { DEPTH } from '../config.js';
+import { pathAt } from './pathTime.js';
 
 // The living background: the parts of the stage strip that move, listed in meta.props by the art
 // generator (tools/art/props.mjs) with their frames in bg/<id>/props.png.
@@ -44,8 +45,7 @@ export class Props {
       for (let i = 1; i < p.pts.length; i++) p.len.push(p.len[i - 1] + Math.hypot(p.pts[i][0] - p.pts[i - 1][0], p.pts[i][1] - p.pts[i - 1][1]));
       p.total = p.len[p.len.length - 1];
       p.dir = 1;
-      p.wait = 0;
-      p.s = p.mode === 'pp' ? (p.n - 1) * p.gap + p.s0 * (p.total - (p.n - 1) * p.gap) : p.s0 * p.total;
+      p.s = 0;
       p.trail = [];
     }
     if (p.k === 'wander')
@@ -57,10 +57,9 @@ export class Props {
     return p;
   }
 
-  /** Set the clock to stage time t (start of play, a debug jump): movers that loop go where they'd be by then. */
+  /** Set the clock to stage time t (start of play, a debug jump): the movers go where they'd be by then. */
   sync(t) {
     this.time = t;
-    for (const p of this.list) if (p.k === 'path' && p.mode !== 'pp') p.s = (p.s0 * p.total + p.sp * t) % p.total;
   }
 
   /** What white turns into at strip position u (for frames drawn ungraded). */
@@ -163,18 +162,13 @@ export class Props {
     return [x0 + (x1 - x0) * k, u0 + (u1 - u0) * k, (x1 - x0) / seg, (u1 - u0) / seg];
   }
 
-  path(p, dt) {
-    const minS = p.mode === 'pp' ? (p.n - 1) * p.gap : 0;
-    if (p.wait > 0) p.wait -= dt;
-    else p.s += p.sp * dt * p.dir;
-    if (p.mode === 'pp') {
-      if (p.s > p.total || p.s < minS) {
-        p.s = Math.max(minS, Math.min(p.total, p.s));
-        p.dir = -p.dir;
-        p.wait = p.hold;
-      }
-    } else if (p.s > p.total) p.s -= p.total;
-    const moving = p.wait <= 0;
+  path(p) {
+    // (from the stage clock, not stepped along, so movers that crossed off screen are where they should be when
+    // they come back, and the traffic the generator planned never drives through itself)
+    const at = pathAt(p, this.time);
+    p.s = at.s;
+    p.dir = at.dir;
+    const moving = at.moving;
     for (let i = 0; i < p.n; i++) {
       let s = p.s - i * p.gap;
       if (p.mode !== 'pp') s = ((s % p.total) + p.total) % p.total;

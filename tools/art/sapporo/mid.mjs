@@ -20,7 +20,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Raster, fbm, rng, bayer, scaleColor, rgb, mix } from '../../lib/raster.mjs';
 import { crownPixels, rampColor } from '../nature.mjs';
-import { PropKit, cut, puff, todGrade, tintTable } from '../props.mjs';
+import { PropKit, cut, puff, todGrade, tintTable, planTraffic } from '../props.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -632,8 +632,9 @@ export function buildMid() {
       if (u > CENTER[0]) streetLamp(x + 9, Y(u - 8), true);
     }
 
-  // live traffic: cars driving up Ekimae-dōri (tail lights only, so nothing bright heads down the screen)
-  // and along the cross streets the snowplows don't use
+  // live traffic, keeping left as in Japan: cars driving up Ekimae-dōri's west lane (tail lights only, so nothing
+  // bright heads down the screen: the east lane is a queue standing still) and both ways along the cross streets
+  // the snowplows don't use, all at one speed and started so that none ever drives through another or the tram
   {
     const carUp = (c) => {
       const r = new Raster(3, 5);
@@ -641,19 +642,27 @@ export function buildMid() {
       r.rect(0, 0, 3, 1, C.snow[3]);
       return frameAt(r, 2800, [[0, 4, 0xff3020, 0.8], [2, 4, 0xff3020, 0.8]]);
     };
-    const ups = [0x2a2a30, 0xe0e0e8, 0x8a2a2a, 0xe8c030].map(carUp);
-    for (let k = 0; k < 4; k++) kit.path([[95, CENTER[0] + 20], [95, RIVER[0] - 12]], [ups[k]], { sp: 11 + k * 2, n: 2, gap: 380, turn: 'none' });
     const carSide = (c) => {
       const r = new Raster(5, 3);
       r.rect(0, 0, 5, 3, c);
       r.rect(1, 0, 3, 1, C.snow[3]);
       return frameAt(r, 2800, [[4, 0, 0xfff4d0, 0.5], [4, 2, 0xfff4d0, 0.5], [0, 0, 0xff3020, 0.6], [0, 2, 0xff3020, 0.6]]);
     };
-    const sides = [0xe0e0e8, 0x3a5a9a, 0x2a2a30, 0x8a2a2a].map(carSide);
-    STREETS.filter((s) => s > CENTER[0] && s !== TRAM_U && !plowRoads.some((p) => Math.abs(p - s) < 20)).forEach((s, k) => {
-      kit.path([[-8, s - 2], [188, s - 2]], [sides[k % 4]], { sp: 13, n: 1, turn: 'flip' });
-      kit.path([[188, s + 2], [-8, s + 2]], [sides[(k + 2) % 4]], { sp: 10, n: 1, turn: 'flip' });
-    });
+    const SP = 12;
+    const cols = [0x2a2a30, 0xe0e0e8, 0x8a2a2a, 0xe8c030, 0x3a5a9a];
+    // up the west lane from the street at the bottom of the centre (turning left off it), over the river and
+    // left again along the park's street, out of sight at the edge
+    const up = { pts: [[-8, 2242], [85, 2242], [85, 3846], [-8, 3846]], sp: SP, n: 5, gap: 358, size: [5, 3] };
+    const tram = { pts: [[-30, TRAM_U], [210, TRAM_U]], sp: 10, mode: 'pp', hold: 4, s0: 0.3, size: [26, 6] };
+    const streets = STREETS.filter((s) => s > CENTER[0] && s !== TRAM_U && !plowRoads.some((p) => Math.abs(p - s) < 20));
+    const sides = streets.flatMap((s) => [
+      { pts: [[-8, s + 2], [188, s + 2]], sp: SP, size: [5, 3] }, // eastbound on the north side
+      { pts: [[188, s - 2], [-8, s - 2]], sp: SP, size: [5, 3] },
+    ]);
+    const onScreen = (u) => [Math.max(0, (u - anchor - 10) / V), Math.max(0, (u + 440 - anchor) / V)];
+    const [, upS0, ...sideS0] = planTraffic([tram, up, ...sides], onScreen);
+    kit.path(up.pts, cols.map(carSide), { sp: SP, n: up.n, gap: up.gap, turn: 'flip', fu: cols.map(carUp), cars: 1, s0: upS0 });
+    sides.forEach((r, k) => kit.path(r.pts, [carSide(cols[(k + 1) % cols.length])], { sp: SP, turn: 'flip', cars: 1, s0: sideS0[k] }));
   }
   // the streetcar along a cross street in Susukino: rails set in the road, a cream-and-green tram running to
   // and fro, its windows lit (live)
@@ -671,23 +680,17 @@ export function buildMid() {
     for (let x = 2; x < 24; x += 3) lit.push([x, 1, C.warm, 0.9], [x, 4, C.warm, 0.9]);
     kit.path([[-30, TRAM_U], [210, TRAM_U]], [frameAt(tram, TRAM_U, lit)], { sp: 10, mode: 'pp', hold: 4, turn: 'flip', s0: 0.3 });
   }
-  // parked and waiting cars in the centre and Susukino: headlights (down lane) and tail lights (up lane)
+  // the queue standing in the southbound lane through the centre and Susukino, headlights on
   for (let u = CENTER[0] + 20; u < RIVER[0] - 12; u += 9) {
     if (rand() < 0.45) continue;
     if ([...STREETS, ...plowRoads].some((s) => Math.abs(u - s) < 12)) continue;
     const y = Y(u);
-    const down = rand() < 0.5;
-    const x = down ? 84 + Math.floor(rand() * 2) : 94 + Math.floor(rand() * 2);
+    const x = 94 + Math.floor(rand() * 2); // (the southbound queue in the east lane: the west lane is moving)
     img.rect(x - 1, y - 2, 3, 5, rand.pick([0x2a2a30, 0xe0e0e8, 0x8a2a2a, 0xe8c030]));
     img.rect(x - 1, y - 2, 3, 1, C.snow[3]);
-    if (down) {
-      glow(x - 1, y + 3, 0xffffff);
-      glow(x + 1, y + 3, 0xffffff);
-      pool(x, y + 6, 6, 0xfff4d0, 0.4);
-    } else {
-      glow(x - 1, y + 3, 0xff3020);
-      glow(x + 1, y + 3, 0xff3020);
-    }
+    glow(x - 1, y + 3, 0xffffff);
+    glow(x + 1, y + 3, 0xffffff);
+    pool(x, y + 6, 6, 0xfff4d0, 0.4);
   }
 
   /** Fill a city block with lots (houses in the suburb, offices/neon further in). */
@@ -1082,7 +1085,7 @@ export function buildMid() {
       };
       for (const [c, x, s0] of [[0x3a6ad0, hx - 8, 0.1], [0xe8a030, hx + 4, 0.55], [0x5aaa6a, hx - 8, 0.8]]) {
         kit.path([[x, hu + 30], [x, hu - 34]], [sledder(c)], { sp: 16, turn: 'none', s0 });
-        kit.path([[x + 14, hu - 34], [x + 14, hu + 30]], [walker(c, 0), walker(c, 1)], { sp: 3, turn: 'none', fps: 3, s0: (s0 + 0.5) % 1 });
+        kit.path([[x + 6, hu - 34], [x + 6, hu + 30]], [walker(c, 0), walker(c, 1)], { sp: 3, turn: 'none', fps: 3, s0: (s0 + 0.5) % 1 }); // (beside the run, clear of the sleds)
       }
     }
   }

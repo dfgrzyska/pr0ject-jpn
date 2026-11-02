@@ -228,8 +228,9 @@ dojazdową i parkingiem, wyciąg krzesełkowy, ratrak wygładzający zeskok, kib
 z przedmieścia na szczyt skoczni z kilkoma domami na skraju lasu) → przedmieścia z kolorowymi blaszanymi dachami pod śniegiem, zbiornikami na naftę,
 zasypanymi autami i strzałkami yabane nad drogami → centrum: wieża zegarowa Tokeidai, ceglany Akarenga
 z ośmiokątną kopułą i czerwonymi gwiazdami, targ Nijō (długa hala straganów rybnych pod zaśnieżonymi dachami:
-kraby królewskie, jeżowce, kawior z łososia i łososie pod kolorowymi markizami, kupujący, para z grilla), ruch na
-alei, parujące studzienki i okna biurowców gasnące i zapalające się → neony Susukino z tramwajem na przecznicy
+kraby królewskie, jeżowce, kawior z łososia i łososie pod kolorowymi markizami, kupujący, para z grilla), ruch
+lewostronny (auta jadą w górę zachodnim pasem Ekimae-dōri, na wschodnim stoi korek, przecznicami w obie strony),
+parujące studzienki i okna biurowców gasnące i zapalające się → neony Susukino z tramwajem na przecznicy
 i zaułek ramen z lampionami →
 zamarznięta rzeka Toyohira z mostami → park Nakajima (ścieżki od mostów, staw, Hōheikan, sala koncertowa, górka saneczkowa z dziećmi; zamieć i miniboss) →
 Festiwal Śniegu w parku Ōdōri: ogród lodowych rzeźb świecących od środka i od kolorowych lamp (smok, para
@@ -316,7 +317,8 @@ chidori- i kara-hafu, czarno-złote najwyższe piętro i złote shachihoko, ze s
 Gokuraku-bashi → Nakanoshima między dwiema rzekami (ceglana Central Public Hall z łukowym dachem, ratusz,
 biblioteka z kopułą, ogród różany, promenady z lampami, statki i tramwaj wodny) → wieżowce Umedy (szklane
 fasady, lądowiska na dachach, Sky Building z ogrodem na moście, czerwony diabelski młyn na dachu, dworzec
-pod wielkim szklanym dachem, aleja Midōsuji z drzewami i ruchem) → Shinsekai z Tsūtenkaku, zaułkiem Janjan,
+pod wielkim szklanym dachem, aleja Midōsuji z drzewami; ruch lewostronny w obie strony na trzech alejach
+i przecznicach — auta skręcają z przecznic przy krawędzi ekranu i przed dworcem, nie przejeżdżają przez tory) → Shinsekai z Tsūtenkaku, zaułkiem Janjan,
 lampionem-rozdymką i neonami, Abeno Harukas → kanał Dōtonbori nocą (otwarty na obu końcach jak prawdziwy:
 na dole skręca na wschód, u góry na zachód, za krawędzie mapy; neony, wielkie szyldy z ośmiornicą, krabem,
 takoyaki, gyoza, sushi i ramenem, tłumy na moście Ebisu, stateczki) → Osaka nocą: Hōzen-ji Yokochō (brukowana
@@ -326,7 +328,7 @@ z rybami, krabami, tuńczykiem, jeżowcami, owocami i grillami) → Shitennō-ji
 cynobrowe krużganki, staw z żółwiami) → Sumiyoshi Taisha (aleja kamiennych latarni, łukowy most Sorihashi
 przez staw w osi alei, dalej ścieżka do bram w płotach wokół hal ze skrzyżowanymi belkami chigi) → nabrzeże Tempozan (diabelski młyn, akwarium
 Kaiyūkan, fontanna, drzewa z iluminacją, rząd straganów yatai z lampionami na bulwarze) → zatoka z czerwonym mostem
-Minato Ōhashi, żaglowcem, łodziami rybackimi pod lampami, nabrzeżem kontenerowym z dźwigami przy lewym brzegu
+Minato Ōhashi, żaglowcem Santa Maria przycumowanym burtą do prostego nabrzeża, łodziami rybackimi pod lampami, nabrzeżem kontenerowym z dźwigami przy lewym brzegu
 i holownikami — tu wynurza się ośmiornica.
 
 Zwrot dla zwykłych wrogów — **pary manzai** (boke i tsukkomi, osakańska komedia w duecie): każdy wróg ma
@@ -350,7 +352,8 @@ i taniec). Zestrzelony lalkarz = bezwładna część; bez wszystkich trzech lalk
 Boss: olbrzymia ośmiornica w opasce sprzedawcy takoyaki. Cztery macki z segmentów kołyszą się i podwijają,
 plują pierścieniami z końcówek, uderzają w dół (najpierw migająca linia), głowa rzuca takoyaki z celownikiem;
 trafienie w dowolny segment rani mackę. Po odcięciu wszystkich macek łeb staje się celem: spirale i kule tuszu,
-grad takoyaki; poniżej 35% wpada w szał.
+grad takoyaki (salwa co sekundę: jedno ląduje przy graczu, drugie obok, każde rozpryskuje się na kilka
+pocisków); poniżej 35% wpada w szał.
 
 ## Beppu
 
@@ -467,9 +470,9 @@ i zapisuje w `meta.json`, gdzie co stoi i jak się porusza — `tools/art/props.
 |---|---|
 | Kioto | płynące Kamo i Katsura z tratwami płatków sakury, łódki pod Togetsukyō, podmuchy wiatru w gaju bambusowym, falujące odbicie Złotego Pawilonu i karpie w stawie, trzy strumienie Otowa, riksze w Gion i w bambusach, maiko pod czerwonymi parasolkami i turyści na Hanamikōji, pielgrzymi w tunelach torii, lis między kopcami i smugi słońca, łopoczące chorągwie nobori w Fushimi, migoczące ognie 大 z dymem, kanie nad Kamo, spacerowicze w kimonach i smugi światła w gaju bambusowym, mnich grabiący żwir w Ryōan-ji, strażnicy ognia z pochodniami i iskry nad 大 |
 | Okinawa | fale napływające na każdą plażę i biała piana na rafach, błyski na lagunach, łodzie sabani i prom z kilwaterem, bąble nurków przy Keramie, cienie żółwi morskich, ławic ryb i mant, wyskakujące humbaki z fontannami i płetwami ogonowymi, rowerzyści w Bise, wodospad Hiji z pyłem wodnym, kuiny na drodze w Yanbaru, mgła nad lasem, auta na moście Kōri, podmuchy wiatru nad trzciną cukrową, parada eisa na Kokusai-dōri, flagi nad ulicą, noren w drzwiach warsztatów Tsuboya i koty na bruku, kupujący pod dachem pasażu, chorągwie na dziedzińcu Shuri, błyskająca latarnia morska, ścinacze trzciny i dym z cukrowni, paralotnia, banana boat i skutery przy plaży kurortu, ulewy przesuwające się nad morzem |
-| Sapporo | projekcja świetlna na śnieżnym zamku, wyciąg krzesełkowy, skoczek na skoczni Ōkurayama, samochody w centrum, tramwaj w Susukino, śnieg zsuwający się z dachów, parujące studzienki, gasnące i zapalające się okna biurowców, kupujący i para na targu Nijō, dym z kominów, para nad nurtem zamarzniętej rzeki, migające neony Susukino, para z ramenowni, łyżwiarze na stawie w parku Nakajima, zegar na TV Tower odliczający czas etapu, ratrak na zeskoku i flagi kibiców, dzieci na sankach, odśnieżający mieszkańcy, rzeźbiarze z piłami przy żurawiu |
+| Sapporo | projekcja świetlna na śnieżnym zamku, wyciąg krzesełkowy, skoczek na skoczni Ōkurayama, samochody w centrum (ruch lewostronny), tramwaj w Susukino, śnieg zsuwający się z dachów, parujące studzienki, gasnące i zapalające się okna biurowców, kupujący i para na targu Nijō, dym z kominów, para nad nurtem zamarzniętej rzeki, migające neony Susukino, para z ramenowni, łyżwiarze na stawie w parku Nakajima, zegar na TV Tower odliczający czas etapu, ratrak na zeskoku i flagi kibiców, dzieci na sankach, odśnieżający mieszkańcy, rzeźbiarze z piłami przy żurawiu |
 | Kagoshima | diabelski młyn na dworcu Chūō, tramwaje na trawiastych torach, para z gorącego piasku i pomocnicy z łopatami, promy na Sakurajimę, łódź karmiąca na farmie ryb, cień chmury popiołu nad zatoką, wyskakujące delfiny, kolumna popiołu z krateru, para z otworów i szczelin, pulsująca lawa, para nad kąpielą dla stóp, śmieciarki popiołu w kurzu, bomby wulkaniczne pod kraterem |
-| Osaka | oba diabelskie młyny (na Tempozan kolory przebiegają po obręczy), statki na rzekach i kanale Dōtonbori, pociągi pod szklanym dachem Umedy, łabędzie w fosach i karpie w stawie, neony zapalające się litera po literze i biegające światła na billboardach, krab machający szczypcami i ośmiornica, kołyszące się girlandy lampionów, fontanna, drgające odbicia neonów w wodzie, dryfujące łodzie rybackie, tłum na moście Ebisu i spacerowicze nad kanałem, para nad straganami z takoyaki, gasnące i zapalające się okna biurowców Umedy, gołębie zrywające się z placów przy zamku, para nad yatai na Tempozan, holowniki przy dźwigach w zatoce |
+| Osaka | oba diabelskie młyny (na Tempozan kolory przebiegają po obręczy), ruch na alejach i przecznicach, statki na rzekach i kanale Dōtonbori, pociągi pod szklanym dachem Umedy, łabędzie w fosach i karpie w stawie, neony zapalające się litera po literze i biegające światła na billboardach, krab machający szczypcami i ośmiornica, kołyszące się girlandy lampionów, fontanna, drgające odbicia neonów w wodzie, dryfujące łodzie rybackie, tłum na moście Ebisu i spacerowicze nad kanałem, para nad straganami z takoyaki, gasnące i zapalające się okna biurowców Umedy, gołębie zrywające się z placów przy zamku, para nad yatai na Tempozan, holowniki przy dźwigach w zatoce |
 | Beppu | żywe kolumny pary, bąble w gorących stawach (w szarym błocie Oniishibozu rosną i pękają „głowy mnichów”), fale na czarnej plaży, prom i łodzie, pociągi na stacji, pływające krokodyle, makaki na polanie, para spod strzech chatek Myōban, wagoniki kolejki na Tsurumi z cieniami na lesie, ludzie w yukatach i rozjaśniające się latarnie w Kannawie, para nad koszykiem jajek w Umi Jigoku, zwiedzający przy barierce, światełka biegnące po wieży Beppu |
 
 Żeby nie przeszkadzało w czytaniu pocisków: wszystko leży pod wrogami (i daleko pod ich pociskami), rusza się
@@ -477,6 +480,11 @@ wolno albo w miejscu, nic małego i jasnego nie lata po ekranie (światła tylko
 nie mają reflektorów, odbłyski wody to krótkie poziome kreski), kolory przechodzą tę samą korektę pory dnia co
 tło, a gdy pocisków robi się dużo, efekty (para, dym, bąble, błyski, neony) przygasają — pełne obiekty, które
 zastępują fragment tła (młyny, pojazdy, zwierzęta), zostają bez zmian. `?noprops` wyłącza żywe tło do porównania.
+
+Ruchome obiekty stoją tam, gdzie wynika z zegara etapu (`src/game/pathTime.js`), a nie z sumowania kroków, więc
+po zjechaniu z ekranu i powrocie są we właściwym miejscu. Generator liczy ich pozycje tym samym wzorem
+(`planTraffic` w `tools/art/props.mjs`): auta na jednym pasie jadą jednym tempem, a start każdej trasy jest dobrany
+tak, żeby żadne auto nie przejechało przez inne, przez tramwaj ani pociąg wtedy, gdy ich spotkanie jest na ekranie.
 
 ## Grafika
 

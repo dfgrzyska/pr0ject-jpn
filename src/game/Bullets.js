@@ -84,12 +84,15 @@ export class Bullets {
     for (let i = 0; i < n; i++) this.fire(x, y, offset + (i / n) * Math.PI * 2, speed, big);
   }
 
-  /** Snowball (sake flask, lava bomb) thrown in an arc from (x, y) to (tx, ty); bursts into a small ring where it lands. */
-  lob(x, y, tx, ty, time = 1.15, kind = 'snowball') {
+  /**
+   * Snowball (sake flask, lava bomb) thrown in an arc from (x, y) to (tx, ty); bursts into a small ring where it
+   * lands, of `burst` pellets (the difficulty's number unless given).
+   */
+  lob(x, y, tx, ty, time = 1.15, kind = 'snowball', burst = null) {
     if (this.scene.bombClear > 0) return;
     const mark = this.marks.spawn('lob_mark_0', tx, ty);
     const look = LOBS[kind];
-    this.lobs.spawn(look.low, x, y, { x0: x, y0: y, tx, ty, t: 0, time: time / rules().bulletSpeed, mark, look });
+    this.lobs.spawn(look.low, x, y, { x0: x, y0: y, tx, ty, t: 0, time: time / rules().bulletSpeed, mark, look, burst });
   }
 
   /**
@@ -243,7 +246,7 @@ export class Bullets {
       this.lobs.kill(l);
       this.shot('splat', l.tx, l.ty, 0, 0, 6, { life: 0.12 });
       const off = Math.random() * TAU;
-      const n = rules().lobBurst;
+      const n = l.burst ?? rules().lobBurst;
       for (let i = 0; i < n; i++) this.shot(l.look.burst, l.tx, l.ty, off + (i / n) * TAU, FAIR.bulletSpeed.slow * 0.85, 1.8);
       this.scene.fx.shards(l.tx, l.ty, 6, true);
     }

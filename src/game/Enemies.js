@@ -2088,10 +2088,16 @@ export class Enemies {
         if (++g.step >= 4) next();
         break;
       }
-      default:
-        for (let i = 0; i < (g.enraged ? 3 : 2); i++) b.lob(h.x - 16 + i * 16, h.y + 10, Phaser.Math.Clamp(pl.x + (Math.random() - 0.5) * 50, 10, VIEW.width - 10), pl.y + (Math.random() - 0.5) * 20, 1.15, 'takoyaki');
-        g.timer = 0.6;
-        if (++g.step >= 5) next();
+      default: {
+        // a takoyaki barrage: one lands where the player is, the others well to the side (room to step between),
+        // a volley a second so the last one's pellets have spread out before the next lands, smaller bursts
+        const side = g.step % 2 ? 1 : -1;
+        const spots = g.enraged ? [0, side * 52, -side * 52] : [0, side * 52];
+        const burst = Math.max(3, rules().lobBurst - 2);
+        spots.forEach((dx, i) => b.lob(h.x - 16 + i * 16, h.y + 10, Phaser.Math.Clamp(pl.x + dx, 10, VIEW.width - 10), pl.y, 1.15, 'takoyaki', burst));
+        g.timer = 1;
+        if (++g.step >= 4) next();
+      }
     }
   }
 

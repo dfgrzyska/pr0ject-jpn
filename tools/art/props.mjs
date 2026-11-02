@@ -7,6 +7,97 @@
 import { Raster, rgb, rng, fbm, bayer } from '../lib/raster.mjs';
 import { packAtlas } from '../lib/spritekit.mjs';
 import { rampColor } from './nature.mjs';
+import { pathAt } from '../../src/game/pathTime.js';
+
+/**
+ * Traffic that never drives through itself. routes: [{ pts, sp, n = 1, gap = 20, mode = 'wrap', hold = 0, s0,
+ * size: [along, across] }] in the order they're settled: a route with s0 given stays as it is (a tram, a train),
+ * every other one gets the start s0 that keeps its cars clear of all the routes before it whenever they meet on
+ * screen (or, failing that, the start with the fewest touches). visible(u) → [t0, t1]: the stretch of stage time
+ * when strip position u is on screen. The game moves the cars with the same pathAt, so the plan holds in play.
+ * Returns the s0 of every route.
+ */
+export function planTraffic(routes, visible, { tries = 96, dt = 1 / 24, seed = 7 } = {}) {
+  const R = rng(seed);
+  const geo = routes.map((r) => {
+    const len = [0];
+    for (let i = 1; i < r.pts.length; i++) len.push(len[i - 1] + Math.hypot(r.pts[i][0] - r.pts[i - 1][0], r.pts[i][1] - r.pts[i - 1][1]));
+    const g = { ...r, n: r.n ?? 1, gap: r.gap ?? 20, mode: r.mode ?? 'wrap', hold: r.hold ?? 0, len, total: len[len.length - 1] };
+    // the point at distance s and whether that stretch runs up/down the strip (the car's box turns with it)
+    g.at = (s) => {
+      s = Math.max(0, Math.min(g.total, s));
+      let i = 1;
+      while (i < len.length - 1 && len[i] < s) i++;
+      const [x0, u0] = r.pts[i - 1];
+      const [x1, u1] = r.pts[i];
+      const k = (s - len[i - 1]) / (len[i] - len[i - 1] || 1);
+      return [x0 + (x1 - x0) * k, u0 + (u1 - u0) * k, Math.abs(u1 - u0) > Math.abs(x1 - x0)];
+    };
+    g.cars = (t) => {
+      const { s } = pathAt(g, t);
+      const out = [];
+      for (let i = 0; i < g.n; i++) {
+        let si = s - i * g.gap;
+        if (g.mode !== 'pp') si = ((si % g.total) + g.total) % g.total;
+        const [x, u, vert] = g.at(si);
+        const [a, b] = g.size;
+        out.push([x, u, (vert ? b : a) / 2 + 1, (vert ? a : b) / 2 + 1]); // half extents, a pixel of air round each
+      }
+      return out;
+    };
+    return g;
+  });
+  // where two routes meet: the strip positions where their lines pass close to each other
+  const meets = (a, b) => {
+    const found = [];
+    for (let sa = 0; sa <= a.total; sa += 2) {
+      const [xa, ua] = a.at(sa);
+      for (let sb = 0; sb <= b.total; sb += 2) {
+        const [xb, ub] = b.at(sb);
+        if (Math.abs(xa - xb) < 10 && Math.abs(ua - ub) < 10 && !found.some((u) => Math.abs(u - ua) < 30)) found.push(ua);
+      }
+    }
+    return found;
+  };
+  const touches = (g, others, windows, best) => {
+    let n = 0;
+    for (const [t0, t1] of windows)
+      for (let t = t0; t <= t1; t += dt) {
+        const mine = g.cars(t);
+        for (const o of others)
+          for (const [x2, u2, w2, h2] of o.cars(t))
+            for (const [x, u, w, h] of mine) if (Math.abs(x - x2) < w + w2 && Math.abs(u - u2) < h + h2) n++;
+        if (n >= best) return n;
+      }
+    return n;
+  };
+  const settled = [];
+  for (const g of geo) {
+    if (g.s0 === undefined) {
+      const others = [];
+      const windows = [];
+      for (const o of settled) {
+        const us = meets(g, o);
+        if (!us.length) continue;
+        others.push(o);
+        for (const u of us) windows.push(visible(u));
+      }
+      const start = R();
+      let best = Infinity;
+      for (let k = 0; k < tries && best > 0; k++) {
+        g.s0 = (start + k / tries) % 1;
+        const n = windows.length ? touches(g, others, windows, best) : 0;
+        if (n < best) {
+          best = n;
+          g.best = g.s0;
+        }
+      }
+      g.s0 = g.best;
+    }
+    settled.push(g);
+  }
+  return geo.map((g) => g.s0);
+}
 
 /** A raster addressed in strip pixels: lets a stage's drawing helpers paint into a small frame. */
 export class Window extends Raster {
