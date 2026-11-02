@@ -1407,10 +1407,10 @@ export class Enemies {
         e.setFrame(e.step % 2 ? 'tanuki_drum_1' : 'tanuki_drum_0');
         if (e.step % 2) {
           const pon = e.step % 4 === 1;
-          b.ring(e.x, e.y + 8, pon ? 14 : 10, e.step * 0.21, pon ? slow : normal, !pon);
+          b.ring(e.x, e.y + 8, pon ? 12 : 8, e.step * 0.21, pon ? slow : normal, !pon);
           s.fx.text(e.x + (pon ? -14 : 14), e.y + 4, pon ? 'PON' : 'POKO', 0.5, 0xffe0b0);
         }
-        e.timer = 0.24;
+        e.timer = 0.28;
         if (++e.step >= 16) {
           e.play('tanuki');
           this.nextPattern(e);
@@ -1972,7 +1972,7 @@ export class Enemies {
       g.timer = 0.5;
       s.hud.show('', 'OŚMIORNICA WŚCIEKŁA!', 1.6, true);
     }
-    g.timer -= dt * (g.enraged ? 1.4 : 1);
+    g.timer -= dt * (g.enraged ? 1.2 : 1); // (its rage less frantic than the others': the screen fills fast)
     if (g.timer > 0) return;
     if (arms.length) this.takoArms(g, arms);
     else this.takoHead(g, h);
@@ -2012,8 +2012,8 @@ export class Enemies {
       case 0: {
         // the tips spit small rings, one arm after another
         const t = arms[g.step % arms.length];
-        if (this.canFire(t)) b.ring(t.x, t.y, 8, g.step * 0.4, slow);
-        g.timer = 0.45;
+        if (this.canFire(t)) b.ring(t.x, t.y, 7, g.step * 0.4, slow);
+        g.timer = 0.6;
         if (++g.step >= arms.length * 2) next();
         break;
       }
@@ -2057,7 +2057,7 @@ export class Enemies {
       sl.k = 1;
       if (!sl.burst) {
         sl.burst = true;
-        s.bullets.ring(sl.arm.x, sl.arm.y, 10, Math.random() * TAU, normal);
+        s.bullets.ring(sl.arm.x, sl.arm.y, 8, Math.random() * TAU, slow);
         s.cameras.main.shake(200, 0.004);
       }
     } else if (sl.t < 1.85) sl.k = 1 - (sl.t - 1.45) / 0.4;
@@ -2081,19 +2081,21 @@ export class Enemies {
     };
     switch (g.phase % 3) {
       case 0: {
-        // ink spiral from the siphon
-        const a = g.step * 0.33;
-        for (let k = 0; k < (g.enraged ? 3 : 2); k++) b.shot('eb_ink', h.x, h.y + 16, a + (k * TAU) / (g.enraged ? 3 : 2), slow, 2);
-        g.timer = 0.1;
-        if (++g.step >= 34) next();
+        // ink spiral from the siphon: three arms in a rage, but sparser, so no more ink at once
+        const n = g.enraged ? 3 : 2;
+        const a = g.step * (g.enraged ? 0.5 : 0.4);
+        for (let k = 0; k < n; k++) b.shot('eb_ink', h.x, h.y + 16, a + (k * TAU) / n, slow, 2);
+        g.timer = g.enraged ? 0.3 : 0.14;
+        if (++g.step >= (g.enraged ? 18 : 26)) next();
         break;
       }
       case 1: {
-        // big ink blobs at the player, a ring behind them
-        const a = this.aimAt(h, 0, 16);
-        for (let i = 0; i < 5; i++) b.shot('eb_ink_m', h.x, h.y + 16, a + (i / 4 - 0.5) * 0.9, normal, 3);
-        b.ring(h.x, h.y + 16, 14, g.step * 0.3, slow);
-        g.timer = 0.9;
+        // big ink blobs at the player, then a ring, by turns (never both at once)
+        if (g.step % 2 === 0) {
+          const a = this.aimAt(h, 0, 16);
+          for (let i = 0; i < 3; i++) b.shot('eb_ink_m', h.x, h.y + 16, a + (i - 1) * 0.42, normal, 3);
+        } else b.ring(h.x, h.y + 16, 10, g.step * 0.3, slow);
+        g.timer = 0.85;
         if (++g.step >= 4) next();
         break;
       }
@@ -2102,7 +2104,7 @@ export class Enemies {
         // a volley a second so the last one's pellets have spread out before the next lands, smaller bursts
         const side = g.step % 2 ? 1 : -1;
         const spots = g.enraged ? [0, side * 52, -side * 52] : [0, side * 52];
-        const burst = Math.max(3, rules().lobBurst - 2);
+        const burst = Math.max(2, rules().lobBurst - 1);
         spots.forEach((dx, i) => b.lob(h.x - 16 + i * 16, h.y + 10, Phaser.Math.Clamp(pl.x + dx, 10, VIEW.width - 10), pl.y, 1.15, 'takoyaki', burst));
         g.timer = 1;
         if (++g.step >= 4) next();
@@ -2538,7 +2540,7 @@ export class Enemies {
       s.hud.show('', 'KYUBI WPADA W SZAŁ!', 1.6, true);
     }
     this.layKyubi(g, dt);
-    g.timer -= dt * (g.enraged ? 1.35 : 1);
+    g.timer -= dt * (g.enraged ? 1.15 : 1);
     if (g.timer > 0 || !this.canFire(e)) return;
     this.kyubiAttack(g, e);
   }
@@ -2606,7 +2608,7 @@ export class Enemies {
     const s = this.scene;
     const b = s.bullets;
     const list = g.enraged ? ['fire', 'lash', 'daimonji', 'dance', 'rings'] : ['fire', 'daimonji', 'lash', 'dance'];
-    const next = (pause = 1.0) => {
+    const next = (pause = 1.3) => {
       g.phase++;
       g.step = 0;
       g.timer = pause;
@@ -2663,24 +2665,24 @@ export class Enemies {
         const k = g.step % n;
         const p = tips[Math.floor(g.step / n) % 2 ? n - 1 - k : k];
         b.fan(p.x, p.y, Math.atan2(s.player.y - p.y, s.player.x - p.x), 3, 0.32, normal);
-        g.timer = g.enraged ? 0.1 : 0.13;
-        if (++g.step >= n * (g.enraged ? 3 : 2)) next();
+        g.timer = 0.18;
+        if (++g.step >= n + 3) next(); // (one sweep along the tails and a few back)
         break;
       }
       case 'dance': {
-        // the fox dance: a spiral of fox-fire (three arms when it rages, with a slow counter-spiral)
+        // the fox dance: a spiral of fox-fire (three arms when it rages, sparser, with a slow counter-spiral)
         const arms = g.enraged ? 3 : 2;
-        for (let k = 0; k < arms; k++) b.shot('eb_fox_s', e.x, e.y + 4, g.step * 0.31 + (k * TAU) / arms, slow + 6, 1.8);
-        if (g.enraged && g.step % 3 === 0) b.fire(e.x, e.y + 4, -g.step * 0.21, slow);
-        g.timer = 0.085;
-        if (++g.step >= 34) next();
+        for (let k = 0; k < arms; k++) b.shot('eb_fox_s', e.x, e.y + 4, g.step * (g.enraged ? 0.45 : 0.36) + (k * TAU) / arms, slow + 6, 1.8);
+        if (g.enraged && g.step % 5 === 0) b.fire(e.x, e.y + 4, -g.step * 0.3, slow);
+        g.timer = g.enraged ? 0.22 : 0.145;
+        if (++g.step >= (g.enraged ? 20 : 24)) next();
         break;
       }
       default:
         // rings with interleaving gaps
-        b.ring(e.x, e.y + 4, 14, g.step * 0.22, slow, g.step % 2 === 1);
-        g.timer = 0.55;
-        if (++g.step >= 4) next();
+        b.ring(e.x, e.y + 4, 12, g.step * 0.22, slow, g.step % 2 === 1);
+        g.timer = 0.8;
+        if (++g.step >= 4) next(1.8); // (the rings drift off before the flames come)
     }
   }
 

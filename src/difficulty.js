@@ -13,7 +13,7 @@ const NORMAL = {
   grazePerBomb: GRAZE.perBomb,
   bulletSpeed: 1,
   volley: 1,
-  lobBurst: 6,
+  lobBurst: 4,
   noFireAfterEnter: FAIR.noFireAfterEnter,
   noFireBelow: FAIR.noFireBelow,
   popcornFireChance: FAIR.popcornFireChance,

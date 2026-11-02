@@ -172,7 +172,7 @@ export const EASY = {
   grazePerBomb: 30, // (GRAZE.perBomb)
   bulletSpeed: 0.85, // every enemy bullet
   volley: 0.7, // bullets in fans and rings, keeping odd counts odd (the aimed bullet in the middle stays)
-  lobBurst: 4, // pellets where a lobbed snowball lands (6)
+  lobBurst: 3, // pellets where a lobbed snowball lands (4)
   noFireAfterEnter: 1.0, // (FAIR)
   noFireBelow: 0.55, // (FAIR; bosses keep the normal line)
   popcornFireChance: 0.12, // (FAIR)

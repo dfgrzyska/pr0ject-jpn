@@ -80,7 +80,7 @@ z łagodniejszymi liczbami (`EASY` w `src/config.js`, `src/difficulty.js`):
 | Otarcia do nowej bomby | 40 | 30 |
 | Prędkość pocisków | ×1 | ×0,85 |
 | Pociski w wachlarzach i pierścieniach | wszystkie | ok. 30% mniej (7→5, 14→10; celowany środkowy zostaje) |
-| Rozprysk śnieżek, lawy, takoyaki | 6 | 4 |
+| Rozprysk śnieżek, butelek sake, lawy, takoyaki | 4 | 3 |
 | Wrogowie nie strzelają w dolnej części ekranu | od 62% wysokości | od 55% (bossowie jak na normalnym) |
 | Cisza po wejściu wroga | 0,7 s | 1,0 s |
 | Strzelający drobni wrogowie | 25% | 12% |
@@ -163,7 +163,7 @@ Wrogowie (roboty w stylu Fushimi Inari):
 | Strzelec | kanonierka podwieszona pod belką torii | wlatuje, staje, strzela celowanymi seriami (`aimed`/`fan`), odlatuje |
 | Wieżyczka | kamienna latarnia tōrō z działem | na warstwie terenu, wachlarz (`fan`) lub pierścień (`ring`) |
 | Nurek | chōchin-obake — czerwony papierowy lampion-yōkai z parady stu demonów (jedno oko, zęby, wywalony język) | zawisa, celuje i pikuje w gracza |
-| Ciężki | tanuki — figurka z Shigaraki (kapelusz, butelka sake, zeszyt rachunków) | miniboss (ok. 150 s, nad Ryōan-ji): bębni w brzuch (pierścień na każde „pon”), rzuca butelkami sake z celownikiem na ziemi, zmienia się listkiem w trzy tanuki — kopie mają listek na kapeluszu i pękają od jednego trafienia |
+| Ciężki | tanuki — figurka z Shigaraki (kapelusz, butelka sake, zeszyt rachunków) | miniboss (ok. 150 s, nad Ryōan-ji): bębni w brzuch (pierścień na każde „pon”), rzuca butelkami sake z celownikiem na ziemi, zmienia się listkiem w trzy tanuki — kopie mają listek na kapeluszu i pękają od jednego trafienia; naraz najwyżej ok. 50 pocisków |
 | Nośnik | dron z klejnotem hōju (czerwony/niebieski/zielony) | zygzak, po ~4,6 s ucieka, zawsze zostawia znajdźkę |
 
 Znajdźki: czerwona — rozrzut, niebieska — laser, zielona — naprowadzane „lisie ognie”.
@@ -176,7 +176,8 @@ błędny ognik, który przez chwilę goni gracza. Ataki: kitsune-bi (z końca ka
 i leci w gracza — im mniej ogonów, tym mniej ogników), Daimonji (znak 大 na zboczu zapala się kreska po kresce,
 w kolejności pisania, najpierw pierścienie ostrzeżenia — bezpiecznie jest między kreskami), smagnięcie ogonami
 (wachlarze z końców ogonów po kolei) i lisi taniec (spirala). Poniżej 35% życia wpada w szał: ogony płoną
-na niebiesko, dochodzą pierścienie. Mruga, a przy ataku otwiera pysk i rozpala oczy.
+na niebiesko, dochodzą pierścienie, a spirala ma trzy ramiona (ale rzadsza). Między atakami jest chwila oddechu
+i naraz na ekranie jest najwyżej ok. 50 pocisków, także w szale. Mruga, a przy ataku otwiera pysk i rozpala oczy.
 
 ## Etap 2
 
@@ -351,9 +352,10 @@ i taniec). Zestrzelony lalkarz = bezwładna część; bez wszystkich trzech lalk
 
 Boss: olbrzymia ośmiornica w opasce sprzedawcy takoyaki. Cztery macki z segmentów kołyszą się i podwijają,
 plują pierścieniami z końcówek, uderzają w dół (najpierw migająca linia), głowa rzuca takoyaki z celownikiem;
-trafienie w dowolny segment rani mackę. Po odcięciu wszystkich macek łeb staje się celem: spirale i kule tuszu,
-grad takoyaki (salwa co sekundę: jedno ląduje przy graczu, drugie obok, każde rozpryskuje się na kilka
-pocisków); poniżej 35% wpada w szał.
+trafienie w dowolny segment rani mackę. Po odcięciu wszystkich macek łeb staje się celem: spirala tuszu, na zmianę
+trzy duże kule tuszu i pierścień, grad takoyaki (salwa co sekundę: jedno ląduje przy graczu, drugie obok, każde
+rozpryskuje się na 3 pociski); poniżej 35% wpada w szał (spirala o trzech ramionach, ale rzadsza). Ataki są dobrane
+tak, żeby na ekranie było naraz najwyżej ok. 40 pocisków, także w szale.
 
 ## Beppu
 
