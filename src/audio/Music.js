@@ -1,5 +1,8 @@
 // Step sequencer for the procedural soundtrack. Notes are scheduled slightly ahead on the
-// AudioContext clock (lookahead scheduler), so timing stays tight regardless of frame rate.
+// AudioContext clock (lookahead scheduler), so timing stays tight regardless of frame rate. The scheduling
+// (building the notes' nodes) runs right after each frame is drawn, when there's the most time before the
+// next one: run from a timer it would now and then land just before a frame and make it late (a stutter
+// on phones). The timer only takes over when no frames come (a hidden tab, a long load).
 import { PERCUSSION, SONGS, parseSong } from './score.js';
 import { Sfx } from './Sfx.js';
 import { Synth } from './synth.js';
@@ -18,7 +21,7 @@ function loadEnabled() {
 }
 
 export class Music {
-  constructor(ctx, destination) {
+  constructor(ctx, destination, game) {
     this.ctx = ctx;
     this.enabled = loadEnabled();
     // master = the speaker toggle (music + effects); out = music only (ducked on pause)
@@ -48,7 +51,12 @@ export class Music {
     this.step = 0;
     this.next = 0;
     this.paused = false;
-    this.timer = setInterval(() => this.tick(), 25);
+    this.lastFrame = 0;
+    game?.events.on('postrender', () => {
+      this.lastFrame = performance.now();
+      this.tick();
+    });
+    this.timer = setInterval(() => performance.now() - this.lastFrame > 60 && this.tick(), 25);
     installAudioUnlock(ctx);
   }
 
@@ -170,6 +178,6 @@ let instance = null;
 export function getMusic(scene) {
   if (instance) return instance;
   const sound = scene.sound;
-  instance = sound && sound.context ? new Music(sound.context, sound.destination) : SILENT;
+  instance = sound && sound.context ? new Music(sound.context, sound.destination, scene.game) : SILENT;
   return instance;
 }

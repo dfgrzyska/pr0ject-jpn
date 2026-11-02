@@ -28,11 +28,14 @@ nie zmienia. Pokazuje:
 - FPS oraz średni i najdłuższy czas klatki z ostatniej sekundy (ms);
 - ile średnio z klatki zajmuje logika gry (LOGIKA) i rysowanie (RYS), a z logiki żywe tło (TŁO), wrogowie (WRG)
   i pociski (POC) — gdy obie liczby są małe, a klatek ubywa, czas zjada przeglądarka albo telefon;
+- MUZ: planowanie muzyki (średnio na klatkę i najdłuższe w ostatniej sekundzie) — nuty są budowane z węzłów
+  Web Audio zaraz po narysowaniu klatki, kiedy do następnej jest najwięcej czasu (z zegara tylko wtedy, gdy
+  klatek nie ma, np. w schowanej karcie), żeby nie opóźniały klatek na telefonie;
 - wykres ostatnich 90 klatek (2 ms na piksel, kreska na 16,7 ms): szare na czas, żółte spóźnione, czerwone
   przycięcia — przerwy między klatkami dłuższe niż 25 ms;
 - liczbę przycięć od początku etapu i trzy ostatnie: sekunda etapu, długość i co działo się tuż przed nim —
   TEKSTURA (doszedł obraz tła innego miasta, które gra wczytuje w trakcie gry), TŁO, WROGOWIE, POCISKI,
-  RYSOWANIE (ta część poprzedniej klatki trwała ponad 6 ms) albo „?”, gdy nic z tego (zwykle przeglądarka
+  RYSOWANIE (ta część poprzedniej klatki trwała ponad 6 ms), MUZYKA (ponad 3 ms) albo „?”, gdy nic z tego (zwykle przeglądarka
   sprzątająca pamięć albo telefon zajęty czymś innym);
 - pociski wrogów i wrogów na ekranie, aktywne elementy żywego tła (z wszystkich na mapie), obiekty na scenie;
 - ile plików tła innych miast już doszło (z ilu) i czas etapu.

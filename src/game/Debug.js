@@ -17,8 +17,8 @@ const Y = 40;
 const PITCH = 11;
 
 const WORDS = {
-  pl: { hitches: 'PRZYCIĘCIA', bg: 'TŁO', enemies: 'WROGOWIE', bullets: 'POCISKI', render: 'RYSOWANIE', tex: 'TEKSTURA', foes: 'WROGÓW', scene: 'SCENA', cities: 'MIASTA', logic: 'LOGIKA', draw: 'RYS', en: 'WRG', bu: 'POC' },
-  en: { hitches: 'HITCHES', bg: 'BG', enemies: 'ENEMIES', bullets: 'BULLETS', render: 'RENDER', tex: 'TEXTURE', foes: 'ENEMIES', scene: 'SCENE', cities: 'CITIES', logic: 'LOGIC', draw: 'DRAW', en: 'ENM', bu: 'BUL' },
+  pl: { hitches: 'PRZYCIĘCIA', bg: 'TŁO', enemies: 'WROGOWIE', bullets: 'POCISKI', render: 'RYSOWANIE', music: 'MUZYKA', tex: 'TEKSTURA', foes: 'WROGÓW', scene: 'SCENA', cities: 'MIASTA', logic: 'LOGIKA', draw: 'RYS', en: 'WRG', bu: 'POC', mu: 'MUZ' },
+  en: { hitches: 'HITCHES', bg: 'BG', enemies: 'ENEMIES', bullets: 'BULLETS', render: 'RENDER', music: 'MUSIC', tex: 'TEXTURE', foes: 'ENEMIES', scene: 'SCENE', cities: 'CITIES', logic: 'LOGIC', draw: 'DRAW', en: 'ENM', bu: 'BUL', mu: 'MUS' },
 };
 
 // the other cities' backgrounds: counted over the whole game (the Stage scene starts over every stage)
@@ -34,7 +34,10 @@ export class Debug {
     }
     this.times = new Float32Array(N);
     this.next = 0;
-    this.cur = { bg: 0, enemies: 0, bullets: 0, render: 0, logic: 0 }; // ms each part took in the frame being made
+    this.cur = { bg: 0, enemies: 0, bullets: 0, render: 0, logic: 0, music: 0 }; // ms each part took in the frame being made
+    this.musicMax = 0; // the longest music scheduling this second, and the last second's
+    this.musicPeak = 0;
+    this.musicInDraw = 0; // music scheduled after the drawing (it runs on the same event: not the drawing's time)
     this.prev = { ...this.cur };
     this.acc = { ...this.cur }; // summed over the second, for the averages
     this.mean = { ...this.cur };
@@ -47,18 +50,19 @@ export class Debug {
     this.max = 0;
     this.textT = 0;
     this.wrapped = false;
-    this.bg = scene.add.rectangle(X - 1, Y - 2, 124, 17 + 10 * PITCH + 6, 0x0b0a12, 0.6).setOrigin(0, 0).setDepth(DEPTH.overlay + 4);
+    this.bg = scene.add.rectangle(X - 1, Y - 2, 124, 17 + 11 * PITCH + 6, 0x0b0a12, 0.6).setOrigin(0, 0).setDepth(DEPTH.overlay + 4);
     this.graph = scene.add.graphics().setDepth(DEPTH.overlay + 5);
-    this.lines = Array.from({ length: 10 }, () => pixelText(scene, X + 1, 0, '', 0).setDepth(DEPTH.overlay + 5));
+    this.lines = Array.from({ length: 11 }, () => pixelText(scene, X + 1, 0, '', 0).setDepth(DEPTH.overlay + 5));
     this.lines.forEach((l, i) => (l.y = i === 0 ? Y : Y + 17 + i * PITCH));
     this.hookTextures();
     const ge = scene.game.events;
     this.onPre = () => {
       // everything since this frame began (the scenes' updates) is the logic; drawing starts now
       this.renderT = performance.now();
+      this.musicInDraw = 0;
       if (this.on && this.frameT) this.cur.logic += this.renderT - this.frameT;
     };
-    this.onPost = () => this.on && (this.cur.render += performance.now() - this.renderT);
+    this.onPost = () => this.on && (this.cur.render += performance.now() - this.renderT - this.musicInDraw);
     ge.on('prerender', this.onPre);
     ge.on('postrender', this.onPost);
     scene.events.once('shutdown', () => {
@@ -107,6 +111,22 @@ export class Debug {
     timed(s.parallax.props, 'update', 'bg');
     timed(s.enemies, 'update', 'enemies');
     timed(s.bullets, 'update', 'bullets');
+    // the music's scheduling (after each frame is drawn, or from its timer between frames)
+    const m = s.music;
+    if (m?.tick && !m.timed) {
+      m.timed = true;
+      const tick = m.tick.bind(m);
+      m.tick = () => {
+        const t0 = performance.now();
+        tick();
+        const d = performance.now() - t0;
+        const dbg = s.sys.isActive() ? s.debug : null; // (the music outlives the stage: time it for the one on)
+        if (!dbg?.on) return;
+        dbg.cur.music += d;
+        dbg.musicInDraw += d;
+        dbg.musicMax = Math.max(dbg.musicMax, d);
+      };
+    }
   }
 
   /** The other cities' backgrounds arriving: Boot's loader keeps going while you play. */
@@ -136,6 +156,7 @@ export class Debug {
       const why = [];
       if (tex) why.push(w.tex);
       for (const k of ['bg', 'enemies', 'bullets', 'render']) if (this.prev[k] > SLOW) why.push(w[k]);
+      if (this.prev.music > SLOW / 2) why.push(w.music);
       this.hitches++;
       this.log.unshift([this.scene.t, delta, why.length ? why.join(' ') : '?']);
       this.log.length = Math.min(this.log.length, 3);
@@ -160,6 +181,8 @@ export class Debug {
         this.mean[k] = this.acc[k] / sec.n;
         this.acc[k] = 0;
       }
+      this.musicPeak = this.musicMax;
+      this.musicMax = 0;
       Object.assign(sec, { t: 0, n: 0, sum: 0, max: 0 });
     }
     this.draw(w);
@@ -190,6 +213,7 @@ export class Debug {
       `${this.fps} FPS ${Math.round(this.avg)}/${Math.round(this.max)}MS`,
       `${w.logic} ${ms(m.logic)} ${w.draw} ${ms(m.render)} MS`,
       `${w.bg} ${ms(m.bg)} ${w.en} ${ms(m.enemies)} ${w.bu} ${ms(m.bullets)}`,
+      `${w.mu} ${ms(m.music)} MAX ${ms(this.musicPeak)} MS`,
       `${w.hitches} ${this.hitches}`,
       ...[0, 1, 2].map((i) => (this.log[i] ? `${Math.round(this.log[i][0])}S ${Math.round(this.log[i][1])}MS ${this.log[i][2]}` : '')),
       `${w.bullets} ${s.bullets.pool.live.length} ${w.foes} ${s.enemies.pool.live.length}`,
@@ -197,6 +221,6 @@ export class Debug {
       `${w.cities} ${textures.done}/${textures.done + waiting} T ${Math.round(s.t)}S`,
     ];
     text.forEach((str, i) => this.lines[i].setText(str));
-    this.lines[3].setTint(this.hitches ? 0xff8a6a : 0xb0aec0);
+    this.lines[4].setTint(this.hitches ? 0xff8a6a : 0xb0aec0);
   }
 }
