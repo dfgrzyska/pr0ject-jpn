@@ -26,6 +26,8 @@ w lewym górnym rogu; ustawienie zostaje w przeglądarce (`src/game/Debug.js`). 
 nie zmienia. Pokazuje:
 
 - FPS oraz średni i najdłuższy czas klatki z ostatniej sekundy (ms);
+- ile średnio z klatki zajmuje logika gry (LOGIKA) i rysowanie (RYS), a z logiki żywe tło (TŁO), wrogowie (WRG)
+  i pociski (POC) — gdy obie liczby są małe, a klatek ubywa, czas zjada przeglądarka albo telefon;
 - wykres ostatnich 90 klatek (2 ms na piksel, kreska na 16,7 ms): szare na czas, żółte spóźnione, czerwone
   przycięcia — przerwy między klatkami dłuższe niż 25 ms;
 - liczbę przycięć od początku etapu i trzy ostatnie: sekunda etapu, długość i co działo się tuż przed nim —
