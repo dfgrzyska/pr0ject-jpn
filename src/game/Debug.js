@@ -17,12 +17,14 @@ const Y = 40;
 const PITCH = 11;
 
 const WORDS = {
-  pl: { hitches: 'PRZYCIĘCIA', bg: 'TŁO', enemies: 'WROGOWIE', bullets: 'POCISKI', render: 'RYSOWANIE', music: 'MUZYKA', tex: 'TEKSTURA', foes: 'WROGÓW', scene: 'SCENA', cities: 'MIASTA', logic: 'LOGIKA', draw: 'RYS', en: 'WRG', bu: 'POC', mu: 'MUZ' },
-  en: { hitches: 'HITCHES', bg: 'BG', enemies: 'ENEMIES', bullets: 'BULLETS', render: 'RENDER', music: 'MUSIC', tex: 'TEXTURE', foes: 'ENEMIES', scene: 'SCENE', cities: 'CITIES', logic: 'LOGIC', draw: 'DRAW', en: 'ENM', bu: 'BUL', mu: 'MUS' },
+  pl: { hitches: 'PRZYCIĘCIA', bg: 'TŁO', enemies: 'WROGOWIE', bullets: 'POCISKI', render: 'RYSOWANIE', music: 'MUZYKA', paused: 'PAUZA', tex: 'TEKSTURA', foes: 'WROGÓW', scene: 'SCENA', cities: 'MIASTA', sound: 'DŹWIĘK', logic: 'LOGIKA', draw: 'RYS', en: 'WRG', bu: 'POC', mu: 'MUZ' },
+  en: { hitches: 'HITCHES', bg: 'BG', enemies: 'ENEMIES', bullets: 'BULLETS', render: 'RENDER', music: 'MUSIC', paused: 'PAUSE', tex: 'TEXTURE', foes: 'ENEMIES', scene: 'SCENE', cities: 'CITIES', sound: 'AUDIO', logic: 'LOGIC', draw: 'DRAW', en: 'ENM', bu: 'BUL', mu: 'MUS' },
 };
 
 // the other cities' backgrounds: counted over the whole game (the Stage scene starts over every stage)
 const textures = { done: 0, recent: 0, hooked: false };
+// sound sources started and not yet ended (music notes and effects): they should come and go
+const audio = { live: 0 };
 
 export class Debug {
   constructor(scene) {
@@ -43,6 +45,8 @@ export class Debug {
     this.mean = { ...this.cur };
     this.frameT = 0;
     this.hitches = 0;
+    this.quiet = 0; // hitches while not playing (paused, between stages): the phone may run the screen slower then
+    this.wasQuiet = false;
     this.log = []; // the last hitches: [stage time, ms, causes]
     this.sec = { t: 0, n: 0, sum: 0, max: 0 };
     this.fps = 0;
@@ -50,9 +54,9 @@ export class Debug {
     this.max = 0;
     this.textT = 0;
     this.wrapped = false;
-    this.bg = scene.add.rectangle(X - 1, Y - 2, 124, 17 + 11 * PITCH + 6, 0x0b0a12, 0.6).setOrigin(0, 0).setDepth(DEPTH.overlay + 4);
+    this.bg = scene.add.rectangle(X - 1, Y - 2, 124, 17 + 12 * PITCH + 6, 0x0b0a12, 0.6).setOrigin(0, 0).setDepth(DEPTH.overlay + 4);
     this.graph = scene.add.graphics().setDepth(DEPTH.overlay + 5);
-    this.lines = Array.from({ length: 11 }, () => pixelText(scene, X + 1, 0, '', 0).setDepth(DEPTH.overlay + 5));
+    this.lines = Array.from({ length: 12 }, () => pixelText(scene, X + 1, 0, '', 0).setDepth(DEPTH.overlay + 5));
     this.lines.forEach((l, i) => (l.y = i === 0 ? Y : Y + 17 + i * PITCH));
     this.hookTextures();
     const ge = scene.game.events;
@@ -84,6 +88,7 @@ export class Debug {
       this.wrap();
       for (const k in this.cur) this.cur[k] = 0;
       this.hitches = 0;
+      this.quiet = 0;
       this.log = [];
       this.times.fill(0);
     }
@@ -113,6 +118,20 @@ export class Debug {
     timed(s.bullets, 'update', 'bullets');
     // the music's scheduling (after each frame is drawn, or from its timer between frames)
     const m = s.music;
+    // and every sound source started, until it ends (the audio engine's state shows beside the count)
+    const ctx = m?.ctx;
+    if (ctx && !ctx.counted) {
+      ctx.counted = true;
+      for (const k of ['createOscillator', 'createBufferSource']) {
+        const make = ctx[k].bind(ctx);
+        ctx[k] = (...a) => {
+          const node = make(...a);
+          audio.live++;
+          node.addEventListener('ended', () => audio.live--);
+          return node;
+        };
+      }
+    }
     if (m?.tick && !m.timed) {
       m.timed = true;
       const tick = m.tick.bind(m);
@@ -150,7 +169,12 @@ export class Debug {
     this.times[this.next] = delta;
     this.next = (this.next + 1) % N;
     const w = WORDS[getLang()] ?? WORDS.pl;
-    if (delta > HITCH) {
+    const s = this.scene;
+    const quiet = s.paused || s.state !== 'play';
+    const back = !quiet && this.wasQuiet; // the first frame back in play (the gap before it is the pause itself)
+    this.wasQuiet = quiet;
+    if (delta > HITCH && quiet) this.quiet++;
+    else if (delta > HITCH && !back) {
       // the wait came between the last frame and this one: what the last frame did, a texture made meanwhile,
       // or nothing of ours (the browser tidying memory, the phone busy)
       const why = [];
@@ -214,11 +238,12 @@ export class Debug {
       `${w.logic} ${ms(m.logic)} ${w.draw} ${ms(m.render)} MS`,
       `${w.bg} ${ms(m.bg)} ${w.en} ${ms(m.enemies)} ${w.bu} ${ms(m.bullets)}`,
       `${w.mu} ${ms(m.music)} MAX ${ms(this.musicPeak)} MS`,
-      `${w.hitches} ${this.hitches}`,
+      `${w.hitches} ${this.hitches}${this.quiet ? ` ${w.paused} ${this.quiet}` : ''}`,
       ...[0, 1, 2].map((i) => (this.log[i] ? `${Math.round(this.log[i][0])}S ${Math.round(this.log[i][1])}MS ${this.log[i][2]}` : '')),
       `${w.bullets} ${s.bullets.pool.live.length} ${w.foes} ${s.enemies.pool.live.length}`,
       `${w.bg} ${props.filter((p) => p.on).length}/${props.length} ${w.scene} ${s.children.list.length}`,
       `${w.cities} ${textures.done}/${textures.done + waiting} T ${Math.round(s.t)}S`,
+      `${w.sound} ${(s.music?.ctx?.state ?? '-').toUpperCase()} ${audio.live}`,
     ];
     text.forEach((str, i) => this.lines[i].setText(str));
     this.lines[4].setTint(this.hitches ? 0xff8a6a : 0xb0aec0);

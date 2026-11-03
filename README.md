@@ -33,12 +33,15 @@ nie zmienia. Pokazuje:
   klatek nie ma, np. w schowanej karcie), żeby nie opóźniały klatek na telefonie;
 - wykres ostatnich 90 klatek (2 ms na piksel, kreska na 16,7 ms): szare na czas, żółte spóźnione, czerwone
   przycięcia — przerwy między klatkami dłuższe niż 25 ms;
-- liczbę przycięć od początku etapu i trzy ostatnie: sekunda etapu, długość i co działo się tuż przed nim —
+- liczbę przycięć w grze od początku etapu (w pauzie i poza grą liczone osobno jako PAUZA, pierwsza klatka po
+  powrocie z pauzy się nie liczy) i trzy ostatnie: sekunda etapu, długość i co działo się tuż przed nim —
   TEKSTURA (doszedł obraz tła innego miasta, które gra wczytuje w trakcie gry), TŁO, WROGOWIE, POCISKI,
   RYSOWANIE (ta część poprzedniej klatki trwała ponad 6 ms), MUZYKA (ponad 3 ms) albo „?”, gdy nic z tego (zwykle przeglądarka
   sprzątająca pamięć albo telefon zajęty czymś innym);
 - pociski wrogów i wrogów na ekranie, aktywne elementy żywego tła (z wszystkich na mapie), obiekty na scenie;
-- ile plików tła innych miast już doszło (z ilu) i czas etapu.
+- ile plików tła innych miast już doszło (z ilu) i czas etapu;
+- DŹWIĘK: stan silnika dźwięku przeglądarki (RUNNING, SUSPENDED, INTERRUPTED) i ile źródeł dźwięku gra naraz
+  (nuty i efekty: powinny przychodzić i odchodzić).
 
 Płynność na telefonie: gra nie tworzy obiektów w trakcie etapu, tylko używa gotowych. Pule sprite'ów
 (pociski, strzały, efekty, wrogowie) i obrazki żywego tła są tworzone na starcie etapu: tyle na każdej głębokości,
