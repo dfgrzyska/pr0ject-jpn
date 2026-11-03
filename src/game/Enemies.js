@@ -2300,7 +2300,7 @@ export class Enemies {
     const [x, u] = w.pond;
     const g = { kind: 'oni', state: 'dormant', t: 0, phase: 0, step: 0, timer: 1, parts: [], enraged: false, defeated: false, awake: false };
     Object.assign(g, { home: x, u, sway: 0, masuT: 0, masuSide: 1, act: null, poseT: 0 });
-    const e = this.pool.spawn('oni_0', x, s.parallax.screenY(u), { ...base, role: 'body', hp: 900, maxHp: 900, radius: 18, group: g, invuln: true, oni: true, pose: 0, hurtT: 0, shoutT: 0 });
+    const e = this.pool.spawn('oni_0', x, s.parallax.screenY(u), { ...base, role: 'body', hp: 855, maxHp: 855, radius: 18, group: g, invuln: true, oni: true, pose: 0, hurtT: 0, shoutT: 0 });
     e.segs = [{ x, y: 0, r: 12 }]; // the head
     e.setDepth(DEPTH.air - 0.1).setAlpha(0);
     g.body = e;

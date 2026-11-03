@@ -16,6 +16,8 @@ export class Player {
     this.muzzleT = 0;
     this.trailT = 0;
     this.shots = new Pool(scene, DEPTH.playerShot);
+    // Setsubun: two beans circling the ship while it has beans to throw (blinking as they run out)
+    this.beanOrbit = [0, 1].map(() => scene.add.image(0, 0, 'sprites', 'ps_bean').setDepth(DEPTH.player + 0.02).setVisible(false));
 
     this.setShip(SHIPS[1]);
     this.bombs = 1;
@@ -56,6 +58,7 @@ export class Player {
     this.flame.setVisible(v);
     this.dot.setVisible(v);
     if (!v) this.muzzle.setVisible(false);
+    if (!v) this.beanOrbit?.forEach((b) => b.setVisible(false));
   }
 
   /** Fly in from the bottom edge. */
@@ -158,6 +161,11 @@ export class Player {
     this.sprite.setPosition(this.x, this.y);
     this.flame.setPosition(this.x, this.y + this.ship.flameY);
     this.dot.setPosition(this.x, this.y);
+    const beans = this.alive && this.beanT > 0 && (this.beanT > 2 || Math.floor(this.beanT * 8) % 2 === 0);
+    this.beanOrbit.forEach((b, i) => {
+      const a = this.scene.t * 7 + i * Math.PI;
+      b.setVisible(beans).setPosition(Math.round(this.x + Math.cos(a) * 10), Math.round(this.y + Math.sin(a) * 7));
+    });
     const blink = this.invulnerable > 0 && Math.floor(this.invulnerable * 16) % 2 === 0;
     // a flash at the nose with each volley, sparks trailing from the engines
     this.muzzleT -= dt;
@@ -247,7 +255,7 @@ export class Player {
     // Setsubun: a pair of roasted beans thrown with every other volley
     if (this.beanT > 0 && this.volleys % 2 === 0) {
       const { damage, speed } = BEANS;
-      for (const side of [-1, 1]) this.shot('ps_bean', x + side * 4, y - 6, side * 30, -speed, damage, 2, { bean: true });
+      for (const side of [-1, 1]) this.shot('ps_bean_0', x + side * 4, y - 6, side * 30, -speed, damage, 3, { bean: true });
     }
   }
 
@@ -333,6 +341,7 @@ export class Player {
           s.vy = Math.sin(ang) * v;
         }
       }
+      if (s.bean) s.setFrame(Math.floor(s.life * 14) % 2 ? 'ps_bean_1' : 'ps_bean_0'); // spinning
       s.x += s.vx * dt;
       s.y += s.vy * dt;
       if (s.life <= 0 || s.y < -16 || s.y > this.scene.H + 16 || s.x < -16 || s.x > VIEW.width + 16) this.shots.kill(s);

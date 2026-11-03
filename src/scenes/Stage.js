@@ -724,7 +724,8 @@ export class Stage extends Phaser.Scene {
         const dy = e.y - s.y;
         if (dx * dx + dy * dy < r * r || (e.segs && e.segs.some((sg) => (sg.x - s.x) ** 2 + (sg.y - s.y) ** 2 < (sg.r + s.radius) ** 2))) {
           this.enemies.damage(e, s.damage, false, s.bean);
-          if (Math.random() < 0.5) this.fx.spark(s.x, s.y - 2);
+          if (s.bean) this.fx.beanPop(s.x, s.y - 2);
+          else if (Math.random() < 0.5) this.fx.spark(s.x, s.y - 2);
           p.shots.kill(s);
           break;
         }

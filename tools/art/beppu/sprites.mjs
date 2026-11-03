@@ -327,7 +327,33 @@ export function beppuSprites(add) {
     p.rect(3, 0, 5, 2, 'R'); // a red ribbon, so it reads as special
     add('pickup_mame', render(p));
   }
-  add('ps_bean', raw(['.ty.', 'tyyt', 'tyyt', '.tt.']));
+  // the Setsubun beans thrown in the oni fight: roasted soybeans with a dark rim, a warm glow round them and a
+  // short glowing trail, spinning (two frames: end on, side on), so the stronger volleys can't be missed; a
+  // crumb for when one bursts on the oni; a small bean that circles the ship while it has beans to throw
+  const BEAN = { k: 0x7a4a1c, t: 0xf4c87c, h: 0xffffff, d: 0xc08a46 };
+  const beanFrame = (rows, name, trail) => {
+    const r = new Raster(9, trail ? 13 : 9);
+    // the glow: a soft gold ring round the bean
+    for (let y = 0; y < 9; y++)
+      for (let x = 0; x < 9; x++) {
+        const d = Math.hypot(x + 0.5 - 4.5, y + 0.5 - 4.5);
+        if (d < 4.4 && d >= 3.2) r.set(x, y, d < 3.8 ? 0xfff4c8 : 0xffc860, d < 3.8 ? 0.7 : 0.4);
+      }
+    if (trail) [[4, 9, 0.85], [4, 10, 0.65], [4, 11, 0.42], [4, 12, 0.22], [3, 9, 0.35], [5, 9, 0.35]].forEach(([x, y, a]) => r.set(x, y, 0xffe8a0, a));
+    rows.forEach((row, y) => [...row].forEach((c, x) => c !== '.' && r.set(x + 1, y + 2, BEAN[c])));
+    add(name, r);
+  };
+  beanFrame(['..kkk..', '.ktttk.', '.kthtk.', '.ktttk.', '.ktdtk.', '..kkk..'], 'ps_bean_0', true);
+  beanFrame(['.kkkk..', 'ktthtk.', 'kttttk.', 'ktdttk.', '.kkkk..'], 'ps_bean_1', true);
+  add('ps_bean', raw(['.ty.', 'tyyt', 'tyyt', '.tt.'])); // (the small one circling the ship)
+  {
+    const r = new Raster(2, 2);
+    r.set(0, 0, BEAN.t);
+    r.set(1, 0, BEAN.h);
+    r.set(0, 1, BEAN.d);
+    r.set(1, 1, BEAN.k);
+    add('bean_bit', r);
+  }
   add('bloodball_0', raw(['.kkk.', 'kMmMk', 'kmhmk', 'kMmMk', '.kkk.']));
   add('bloodball_1', raw(['..kkk..', '.kMMMk.', 'kMmmmMk', 'kMmhmMk', 'kMmmmMk', '.kMMMk.', '..kkk..']));
 }

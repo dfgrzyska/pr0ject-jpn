@@ -203,6 +203,16 @@ export class Fx {
   }
 
   /** Ice shards / snow bits bursting out (shattered ice, snowball impact). */
+  /** A Setsubun bean bursting on the oni: crumbs flying off and a warm flash. */
+  beanPop(x, y) {
+    for (let i = 0; i < 4; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const v = 35 + Math.random() * 45;
+      this.part(this.parts, 'bean_bit', x, y, { vx: Math.cos(a) * v, vy: Math.sin(a) * v - 15, g: 90, drag: 1.5, life: 0.35 + Math.random() * 0.2 });
+    }
+    this.light(x, y, 0.5, false, 0xffd070);
+  }
+
   shards(x, y, n, small = false) {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
