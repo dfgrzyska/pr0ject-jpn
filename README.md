@@ -40,6 +40,12 @@ nie zmienia. Pokazuje:
 - pociski wrogów i wrogów na ekranie, aktywne elementy żywego tła (z wszystkich na mapie), obiekty na scenie;
 - ile plików tła innych miast już doszło (z ilu) i czas etapu.
 
+Płynność na telefonie: gra nie tworzy obiektów w trakcie etapu, tylko używa gotowych. Pule sprite'ów
+(pociski, strzały, efekty, wrogowie) i obrazki żywego tła są tworzone na starcie etapu: tyle na każdej głębokości,
+ile może być naraz na ekranie (policzone z listy ruchomych elementów). Drobne opadające cząsteczki
+(popiół, żar, płatki sakury, śnieg; w burzy i zamieci po kilkaset naraz) rysuje jeden blitter zamiast setek
+sprite'ów. Ruchome elementy tła są przeliczane bez tworzenia obiektów pomocniczych w każdej klatce.
+
 ## Na telefonie, offline, po angielsku
 
 Grę można zainstalować jak aplikację: na Androidzie (i w Chrome / Edge na komputerze) na ekranie tytułowym

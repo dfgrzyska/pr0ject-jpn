@@ -17,6 +17,9 @@ import { pathAt } from './pathTime.js';
 // stand in for part of the strip (wheels, boats, trains, animals) stay as they are.
 const BASE = DEPTH.mid + 0.5;
 const TAU = Math.PI * 2;
+// filled in place every frame (where a mover is, the point on its route), so moving them makes no garbage
+const WHEN = { s: 0, dir: 1, moving: true };
+const AT = [0, 0, 0, 0];
 
 export class Props {
   constructor(scene, id, meta, parallax) {
@@ -33,6 +36,42 @@ export class Props {
     this.wind = 0; // px/s the steam and smoke lean with
     this.free = new Map(); // spare images by depth (a changed depth re-sorts the whole scene)
     this.parts = []; // puffs, wakes and one-shot spots
+    this.warm();
+  }
+
+  /**
+   * Make the images ahead, as many at each depth as can be out at once anywhere on the strip (a screen's
+   * height of movers, puffs and wakes, counted from the list), so the steam of Kannawa or a street full of cars
+   * never has to stop and make them in the middle of play.
+   */
+  warm() {
+    if (!this.list.length) return;
+    const H = 420 + 48;
+    const need = (p) => {
+      const n = { loop: 1, wave: p.parts?.length ?? 0, path: p.n, orbit: p.n, wander: p.n }[p.k] ?? 0;
+      if (p.k === 'emit') return [[p.depth, Math.ceil(p.rate * p.life[1] * (p.burst ? 1.6 : 1))]];
+      if (p.k === 'spot') return [[p.depth, Math.ceil(p.rate * (p.f.length / p.fps) + 1)]];
+      const out = [[p.depth, n]];
+      if (p.k === 'path' && p.wake) out.push([p.depth - 0.01, Math.ceil((p.n * p.sp * (p.wake.life ?? 1.5)) / p.wake.every)]);
+      return out;
+    };
+    const peak = new Map();
+    for (const top of this.list) {
+      // a screen whose top edge is where this one comes in: everything overlapping it is out at once
+      const lo = top.e[1] - H;
+      const sum = new Map();
+      for (const p of this.list) {
+        if (p.e[1] < lo || p.e[0] > top.e[1]) continue;
+        for (const [d, n] of need(p)) sum.set(d, (sum.get(d) ?? 0) + n);
+      }
+      for (const [d, n] of sum) peak.set(d, Math.max(peak.get(d) ?? 0, n));
+    }
+    const frame = this.scene.textures.get(this.key).getFrameNames()[0];
+    for (const [d, n] of peak) {
+      const spare = [];
+      for (let i = 0; i < Math.min(n, 320); i++) spare.push(this.scene.add.image(0, 0, this.key, frame).setDepth(d).setVisible(false));
+      this.free.set(d, spare);
+    }
   }
 
   prepare(src) {
@@ -150,29 +189,41 @@ export class Props {
     }
   }
 
-  /** Point at distance s along a route: [x, u, dx, du] (direction of the segment). */
+  /** Point at distance s along a route: [x, u, dx, du] (direction of the segment), in the shared AT. */
   at(p, s) {
     s = Math.max(0, Math.min(p.total, s));
     let i = 1;
     while (i < p.len.length - 1 && p.len[i] < s) i++;
-    const [x0, u0] = p.pts[i - 1];
-    const [x1, u1] = p.pts[i];
+    const a = p.pts[i - 1];
+    const b = p.pts[i];
+    const x0 = a[0];
+    const u0 = a[1];
+    const x1 = b[0];
+    const u1 = b[1];
     const seg = p.len[i] - p.len[i - 1] || 1;
     const k = (s - p.len[i - 1]) / seg;
-    return [x0 + (x1 - x0) * k, u0 + (u1 - u0) * k, (x1 - x0) / seg, (u1 - u0) / seg];
+    AT[0] = x0 + (x1 - x0) * k;
+    AT[1] = u0 + (u1 - u0) * k;
+    AT[2] = (x1 - x0) / seg;
+    AT[3] = (u1 - u0) / seg;
+    return AT;
   }
 
   path(p) {
     // (from the stage clock, not stepped along, so movers that crossed off screen are where they should be when
     // they come back, and the traffic the generator planned never drives through itself)
-    const at = pathAt(p, this.time);
+    const at = pathAt(p, this.time, WHEN);
     p.s = at.s;
     p.dir = at.dir;
     const moving = at.moving;
     for (let i = 0; i < p.n; i++) {
       let s = p.s - i * p.gap;
       if (p.mode !== 'pp') s = ((s % p.total) + p.total) % p.total;
-      const [x, u, dx0, du0] = this.at(p, s);
+      const pt = this.at(p, s);
+      const x = pt[0];
+      const u = pt[1];
+      const dx0 = pt[2];
+      const du0 = pt[3];
       const dx = dx0 * p.dir;
       const du = du0 * p.dir;
       const o = p.objs[i];

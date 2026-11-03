@@ -34,7 +34,14 @@ export class Parallax {
     for (let i = 0; i < meta.chunks; i++)
       this.chunks.push(scene.add.image(0, 0, `mid_${stage.id}_${i}`).setOrigin(0, 0).setDepth(DEPTH.mid).setVisible(false));
 
+    // the small drifting bits (ash, embers, snowflakes, petals) are blitter bobs: hundreds at once in a blizzard
+    // or an ash storm, each far lighter than a sprite and the same to look at; the big ones (clouds, mist, steam
+    // banks, gulls, blizzard streaks, sparkling dust) stay sprites, as they scale, turn or animate
+    this.bits = scene.add.blitter(0, 0, 'sprites').setDepth(DEPTH.near);
+    this.bitsLive = [];
+    this.bitsFree = [];
     this.near = new Pool(scene, DEPTH.near);
+    this.near.warm(this.nearKind === 'snow' ? 80 : 12); // (Sapporo's blizzard streaks come thick and fast)
     this.petalTimer = 0;
     this.mistTimer = 1;
     this.snow = 0.3; // snowfall intensity 0..1 (set by the stage); 1 = blizzard
@@ -137,15 +144,35 @@ export class Parallax {
       if (this.time < this.nightFrom) this.spawnTropic(dt, fall, scrolling);
     }
     else this.spawnSakura(dt, fall, scrolling);
-    for (const p of this.near.live) {
-      p.age += dt;
-      p.y += p.vy * dt;
-      // snow drifts with the current wind (wf = how strongly, by flake size)
-      p.x += ((p.wf ? this.wind * p.wf : p.vx) + Math.sin(p.age * 3) * p.sway) * dt;
-      if (p.flipT && p.age % (p.flipT * 2) < dt) p.setFlipX(!p.flipX);
-      if (p.y > H + 40 || p.y < -60 || p.x < -60 || p.x > VIEW.width + 60) this.near.kill(p);
-    }
+    for (const p of this.near.live) if (this.drift(p, dt, H)) this.near.kill(p);
     this.near.sweep();
+    let j = 0;
+    for (const b of this.bitsLive) {
+      if (this.drift(b, dt, H)) {
+        b.setVisible(false);
+        this.bitsFree.push(b);
+      } else this.bitsLive[j++] = b;
+    }
+    this.bitsLive.length = j;
+  }
+
+  /** Move a drifting bit (sprite or bob) along; true once it has left the screen. */
+  drift(p, dt, H) {
+    p.age += dt;
+    p.y += p.vy * dt;
+    // snow drifts with the current wind (wf = how strongly, by flake size)
+    p.x += ((p.wf ? this.wind * p.wf : p.vx) + Math.sin(p.age * 3) * p.sway) * dt;
+    if (p.flipT && p.age % (p.flipT * 2) < dt) p.setFlipX(!p.flipX);
+    return p.y > H + 40 || p.y < -60 || p.x < -60 || p.x > VIEW.width + 60;
+  }
+
+  /** A small drifting bit as a blitter bob (reused once it has drifted off). */
+  bit(frame, x, y, props) {
+    const b = this.bitsFree.pop() ?? this.bits.create(0, 0, frame);
+    b.reset(x, y, frame); // (visible, opaque, unflipped)
+    Object.assign(b, props);
+    this.bitsLive.push(b);
+    return b;
   }
 
   /** Kagoshima: ash drifting down, embers rising on the volcano, and Raijū's ash storm with lightning. */
@@ -157,14 +184,14 @@ export class Parallax {
       this.petalTimer += 1 / (8 + 50 * s);
       const size = Math.random() < 0.6 ? 0 : Math.random() < 0.75 ? 1 : 2;
       const wf = [0.6, 0.9, 1.2][size];
-      const p = this.near.spawn(`ashf_${size}`, Math.random() * 240 - 30, -4, { vy: (fall * 0.4 + 12) * wf * (0.8 + Math.random() * 0.4), vx: 0, wf, sway: 4 + Math.random() * 5, age: Math.random() * 6, flipT: 0 });
+      const p = this.bit(`ashf_${size}`, Math.random() * 240 - 30, -4, { vy: (fall * 0.4 + 12) * wf * (0.8 + Math.random() * 0.4), vx: 0, wf, sway: 4 + Math.random() * 5, age: Math.random() * 6, flipT: 0 });
       p.setAlpha(0.45 + wf * 0.25);
     }
     if (this.time >= this.embersFrom) {
       this.mistTimer -= dt;
       while (this.mistTimer <= 0) {
         this.mistTimer += 0.09;
-        const p = this.near.spawn(Math.random() < 0.6 ? 'ember_0' : 'ember_1', Math.random() * 180, H + 4, { vy: -(30 + Math.random() * 50), vx: 0, wf: 0.5, sway: 8, age: Math.random() * 6, flipT: 0 });
+        const p = this.bit(Math.random() < 0.6 ? 'ember_0' : 'ember_1', Math.random() * 180, H + 4, { vy: -(30 + Math.random() * 50), vx: 0, wf: 0.5, sway: 8, age: Math.random() * 6, flipT: 0 });
         p.setAlpha(0.85);
       }
     }
@@ -228,7 +255,7 @@ export class Parallax {
       const r = Math.random();
       const size = r < 0.55 ? 0 : r < 0.88 ? 1 : 2;
       const wf = [0.7, 1, 1.4][size];
-      const p = this.near.spawn(`flake_${size}`, Math.random() * 240 - 30, -4, { vy: (fall * 0.5 + 16) * wf * (0.8 + Math.random() * 0.4), vx: 0, wf, sway: 3 + Math.random() * 6, age: Math.random() * 6, flipT: 0 });
+      const p = this.bit(`flake_${size}`, Math.random() * 240 - 30, -4, { vy: (fall * 0.5 + 16) * wf * (0.8 + Math.random() * 0.4), vx: 0, wf, sway: 3 + Math.random() * 6, age: Math.random() * 6, flipT: 0 });
       p.setAlpha(0.45 + wf * 0.3);
     }
     this.mistTimer -= dt;
@@ -252,7 +279,7 @@ export class Parallax {
     this.petalTimer -= dt;
     if (this.petalTimer <= 0) {
       this.petalTimer = 0.25 + Math.random() * 0.4;
-      const p = this.near.spawn(`petal_${Math.floor(Math.random() * 4)}`, Math.random() * 196 - 8, -6, {
+      const p = this.bit(`petal_${Math.floor(Math.random() * 4)}`, Math.random() * 196 - 8, -6, {
         vy: fall * (0.75 + Math.random() * 0.5),
         vx: -8 + Math.random() * 16,
         sway: Math.random() * 6,

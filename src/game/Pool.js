@@ -20,6 +20,15 @@ export class Pool {
     return s;
   }
 
+  /** Make sprites ahead, up to n in all (at a stage's start), so none has to be made in the middle of a fight. */
+  warm(n, frame = 'eb_s') {
+    for (let i = this.live.length + this.free.length; i < n; i++) {
+      const s = this.scene.add.sprite(0, 0, 'sprites', frame).setDepth(this.depth).setVisible(false).setActive(false);
+      s.dead = true;
+      this.free.push(s);
+    }
+  }
+
   kill(s) {
     if (s.dead) return;
     s.dead = true;

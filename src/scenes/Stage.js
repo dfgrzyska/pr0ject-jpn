@@ -122,6 +122,13 @@ export class Stage extends Phaser.Scene {
     this.sfx = this.music.sfx;
     this.hud = new Hud(this);
     this.debug = new Debug(this);
+    // the sprite pools made ahead (the most the busiest stages need, with some to spare), so a fight never has
+    // to stop and make them: on a phone that tends to come back as a stutter a moment later
+    const b = this.bullets;
+    const f = this.fx;
+    const e = this.enemies;
+    for (const [pool, n] of [[b.pool, 90], [b.lobs, 8], [b.marks, 8], [this.player.shots, 50], [f.parts, 80], [f.petals, 60], [f.sparks, 30], [f.smokes, 30], [f.air, 12], [f.lights, 12], [f.scorch, 10], [f.ground, 6], [e.pool, 30], [e.heads, 8], [e.wrecks, 8], [e.woundPool, 8]])
+      pool.warm(n);
 
     const qShip = SHIPS.findIndex((sh) => sh.id === q.get('ship'));
     this.shipIndex = qShip >= 0 ? qShip : loadShipIndex();
