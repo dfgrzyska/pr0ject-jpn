@@ -559,8 +559,10 @@ src/config.js          parametry rozgrywki (bronie, wrogowie, mnożnik, fair pla
 src/scenes/Boot.js     ładowanie, font, animacje
 src/scenes/Stage.js    pętla etapu, kolizje, stany (tytuł / gra / pauza / koniec)
 src/data/              etapy (stages.js + stageN.json)
-src/game/*.js          paralaksa i żywe tło, gracz i bronie, wrogowie i bossowie, skórki, pociski, fale, wynik, HUD,
-                       efekty, mapa Japonii, książeczka pieczątek
+src/game/*.js          paralaksa i żywe tło, gracz i bronie, wrogowie (rdzeń w Enemies.js), skórki, pociski, fale,
+                       wynik, HUD, efekty, mapa Japonii, książeczka pieczątek, panel debugowania
+src/game/enemies/      wrogowie i bossowie każdego miasta (kyoto.js … beppu.js, metody dołączane do Enemies)
+                       i to, co dzielą z rdzeniem (shared.js); zmiana w jednym mieście dotyka tylko jego pliku
 src/i18n.js            język (PL / EN)
 src/pwa.js             instalacja na telefonie, gra offline (z public/sw.js)
 tools/                 generator grafiki
