@@ -9,7 +9,10 @@ import { getLang } from '../i18n.js';
 import { pixelText } from './Hud.js';
 
 const KEY = 'shmupjp.debug';
-const HITCH = 25; // ms between two frames that counts as a hitch (60 Hz: 16.7)
+// ms between two frames that counts as a hitch: a frame lost at 60 Hz (33 ms), not one a 120 Hz screen showed a
+// tick late (25 ms). The time is the real one between frames (the game loop's raw delta): what Phaser hands the
+// scenes is the average of the last ten, which smears one long stall over several frames.
+const HITCH = 30;
 const SLOW = 6; // ms a part of the frame may take before it is named as the cause
 const N = 90; // frames in the graph
 const X = 2;
@@ -161,7 +164,7 @@ export class Debug {
     });
   }
 
-  /** Each frame, first thing: delta = ms since the last one. */
+  /** Each frame, first thing: delta = real ms since the last one. */
   frame(delta) {
     const tex = textures.recent;
     textures.recent = 0;
@@ -221,7 +224,7 @@ export class Debug {
       const ms = this.times[(this.next + k) % N];
       if (!ms) continue;
       const h = Math.max(1, Math.min(16, Math.round(ms / 2)));
-      g.fillStyle(ms > HITCH ? 0xff4a3a : ms > 18 ? 0xffd040 : 0x9a9ab0, 1).fillRect(X + k, gy + 16 - h, 1, h);
+      g.fillStyle(ms > HITCH ? 0xff4a3a : ms > 20 ? 0xffd040 : 0x9a9ab0, 1).fillRect(X + k, gy + 16 - h, 1, h);
     }
     // the words, four times a second (setting text every frame costs)
     this.textT -= this.times[(this.next + N - 1) % N] || 16;

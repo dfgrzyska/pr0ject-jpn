@@ -567,7 +567,7 @@ export class Stage extends Phaser.Scene {
       if (stageReady(this, this.stage.id)) this.scene.restart(this.loadingData);
       return;
     }
-    this.debug.frame(delta);
+    this.debug.frame(this.game.loop.rawDelta); // (the real time between frames, not Phaser's ten-frame average)
     const dt = Math.min(delta / 1000, 1 / 20);
     this.handleKeys();
     this.hud.update(dt);

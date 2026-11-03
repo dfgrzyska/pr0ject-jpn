@@ -32,7 +32,8 @@ nie zmienia. Pokazuje:
   Web Audio zaraz po narysowaniu klatki, kiedy do następnej jest najwięcej czasu (z zegara tylko wtedy, gdy
   klatek nie ma, np. w schowanej karcie), żeby nie opóźniały klatek na telefonie;
 - wykres ostatnich 90 klatek (2 ms na piksel, kreska na 16,7 ms): szare na czas, żółte spóźnione, czerwone
-  przycięcia — przerwy między klatkami dłuższe niż 25 ms;
+  przycięcia — prawdziwe przerwy między klatkami dłuższe niż 30 ms, czyli zgubiona klatka (panel mierzy surowy czas
+  pętli gry, nie uśrednioną wartość, którą Phaser podaje scenom);
 - liczbę przycięć w grze od początku etapu (w pauzie i poza grą liczone osobno jako PAUZA, pierwsza klatka po
   powrocie z pauzy się nie liczy) i trzy ostatnie: sekunda etapu, długość i co działo się tuż przed nim —
   TEKSTURA (doszedł obraz tła innego miasta, które gra wczytuje w trakcie gry), TŁO, WROGOWIE, POCISKI,
