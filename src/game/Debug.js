@@ -74,10 +74,11 @@ export class Debug {
     this.hookTextures();
     const ge = scene.game.events;
     this.onStep = () => {
-      // a frame begins: the probe's wait since the last one began (still waiting counts: the timer may fire after us)
+      // a frame begins: the probe's wait since the last one began (still waiting counts: the timer may fire after us),
+      // never more than the time between the frames (a hidden page stops both: Phaser starts its count anew then)
       const now = performance.now();
       const p = this.probe;
-      this.held = Math.max(p.gap, now - p.last);
+      this.held = Math.min(Math.max(p.gap, now - p.last), scene.game.loop.rawDelta + 2);
       p.gap = 0;
       p.last = now;
       this.stepT = now;
