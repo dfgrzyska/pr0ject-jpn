@@ -43,6 +43,7 @@ export class Music {
     this.out.connect(comp).connect(this.master);
     this.synth = new Synth(ctx, this.out);
     this.sfx = new Sfx(ctx, this.master);
+    this.sfx.muted = !this.enabled;
     this.songs = Object.fromEntries(Object.entries(SONGS).map(([k, v]) => [k, parseSong(k, v)]));
     this.current = null;
     this.pending = null;
@@ -107,6 +108,7 @@ export class Music {
       /* ignore */
     }
     this.master.gain.setTargetAtTime(this.enabled ? 1 : 0, this.ctx.currentTime, 0.05);
+    this.sfx.muted = !this.enabled;
     return this.enabled;
   }
 
@@ -120,7 +122,8 @@ export class Music {
       const stepDur = 60 / song.bpm / 4;
       // swing: every second 16th lands late (shuffle feel for the Okinawan songs)
       const late = this.step % 2 ? (song.swing ?? 0) * stepDur : 0;
-      this.playStep(song, this.songBar * 16 + this.step, this.next + late, stepDur);
+      // switched off, the song still moves on (to come back in step) but no notes are built
+      if (this.enabled) this.playStep(song, this.songBar * 16 + this.step, this.next + late, stepDur);
       this.next += stepDur;
       if (++this.step === 16) {
         this.step = 0;

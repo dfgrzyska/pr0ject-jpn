@@ -8,10 +8,10 @@
 const GESTURES = ['touchend', 'click', 'pointerup', 'keydown', 'mousedown'];
 const IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-/** 0.1 s of 8-bit silence as a WAV blob URL. */
+/** 2 s of 8-bit silence as a WAV blob URL (a long loop: each wrap-around is work for the phone). */
 function silentWav() {
   const rate = 8000;
-  const n = 800;
+  const n = 16000;
   const buf = new ArrayBuffer(44 + n);
   const v = new DataView(buf);
   const str = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
@@ -45,8 +45,8 @@ export function installAudioUnlock(ctx) {
         /* unsupported value */
       }
     }
-    // Older iOS: a playing <audio> element switches the session to playback as well.
-    if (IOS && !document.hidden) {
+    // Older iOS (no audioSession): a playing <audio> element switches the session to playback as well.
+    if (IOS && !document.hidden && navigator.audioSession?.type !== 'playback') {
       if (!media) {
         media = new Audio(silentWav());
         media.loop = true;

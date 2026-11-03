@@ -15,6 +15,7 @@ export class Sfx {
     this.out.connect(destination);
     this.s = new Synth(ctx, this.out);
     this.last = {};
+    this.muted = false; // the speaker switched off: no sound is built at all (Music.toggle sets it)
   }
 
   now() {
@@ -24,7 +25,7 @@ export class Sfx {
   /** True when `key` has been quiet for at least `gap` seconds (and marks it played). */
   ready(key, gap) {
     const t = this.now();
-    if (this.ctx.state !== 'running' || t - (this.last[key] ?? -1) < gap) return false;
+    if (this.muted || this.ctx.state !== 'running' || t - (this.last[key] ?? -1) < gap) return false;
     this.last[key] = t;
     return true;
   }
@@ -84,6 +85,7 @@ export class Sfx {
 
   /** A stamp pressed onto paper: a soft thump, the rustle of the page. */
   stamp() {
+    if (this.muted) return;
     const t = this.now();
     this.blip('sine', 150, 45, 0.2, 0.42, t);
     this.s.noiseBurst(t, 0.07, 'lowpass', 600, 1, 0.35);
@@ -107,6 +109,7 @@ export class Sfx {
 
   /** The bomb: a rising whoosh into a deep boom. */
   bomb() {
+    if (this.muted) return;
     const t = this.now();
     const s = this.s;
     const src = this.ctx.createBufferSource();
@@ -126,6 +129,7 @@ export class Sfx {
 
   /** The player's ship going down: a falling squeal and a crunch. */
   hit() {
+    if (this.muted) return;
     const t = this.now();
     this.blip('square', 900, 70, 0.45, 0.07, t, this.s.filter('lowpass', 2200));
     this.blip('sawtooth', 450, 40, 0.5, 0.05, t + 0.03, this.s.filter('lowpass', 1400));
@@ -143,12 +147,14 @@ export class Sfx {
 
   /** The warning before a boss: a two-tone alarm. */
   warning() {
+    if (this.muted) return;
     const t = this.now();
     for (let i = 0; i < 6; i++) this.blip('square', i % 2 ? 660 : 880, i % 2 ? 655 : 875, 0.16, 0.045, t + i * 0.18, this.s.filter('lowpass', 2400));
   }
 
   /** A kakegoe shout, "yoo!", the way a tsuzumi player calls before the beat. */
   shout(delay = 0) {
+    if (this.muted) return;
     const t = this.now() + delay;
     const s = this.s;
     const o = s.osc('sawtooth', 230, t, t + 0.6);

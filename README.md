@@ -26,23 +26,30 @@ w lewym górnym rogu; ustawienie zostaje w przeglądarce (`src/game/Debug.js`). 
 nie zmienia. Pokazuje:
 
 - FPS oraz średni i najdłuższy czas klatki z ostatniej sekundy (ms);
-- ile średnio z klatki zajmuje logika gry (LOGIKA) i rysowanie (RYS), a z logiki żywe tło (TŁO), wrogowie (WRG)
-  i pociski (POC) — gdy obie liczby są małe, a klatek ubywa, czas zjada przeglądarka albo telefon;
+- ile średnio z klatki zajmuje logika gry (LOGIKA), rysowanie (RYS) i praca samego Phasera przed logiką (PH: wejście,
+  animacje, zegary), a z logiki żywe tło (TŁO), wrogowie (WRG) i pociski (POC) — gdy te liczby są małe, a klatek
+  ubywa, czas zjada przeglądarka albo telefon;
 - MUZ: planowanie muzyki (średnio na klatkę i najdłuższe w ostatniej sekundzie) — nuty są budowane z węzłów
   Web Audio zaraz po narysowaniu klatki, kiedy do następnej jest najwięcej czasu (z zegara tylko wtedy, gdy
   klatek nie ma, np. w schowanej karcie), żeby nie opóźniały klatek na telefonie;
+- SONDA: zegar co 4 ms działający, gdy panel jest włączony; średnio najdłuższa przerwa między jego tyknięciami
+  w klatce (normalnie ok. 5 ms) — dłuższa przerwa znaczy, że wątek strony był czymś zajęty;
 - wykres ostatnich 90 klatek (2 ms na piksel, kreska na 16,7 ms): szare na czas, żółte spóźnione, czerwone
   przycięcia — prawdziwe przerwy między klatkami dłuższe niż 30 ms, czyli zgubiona klatka (panel mierzy surowy czas
   pętli gry, nie uśrednioną wartość, którą Phaser podaje scenom);
 - liczbę przycięć w grze od początku etapu (w pauzie i poza grą liczone osobno jako PAUZA, pierwsza klatka po
-  powrocie z pauzy się nie liczy) i trzy ostatnie: sekunda etapu, długość i co działo się tuż przed nim —
-  TEKSTURA (doszedł obraz tła innego miasta, które gra wczytuje w trakcie gry), TŁO, WROGOWIE, POCISKI,
-  RYSOWANIE (ta część poprzedniej klatki trwała ponad 6 ms), MUZYKA (ponad 3 ms) albo „?”, gdy nic z tego (zwykle przeglądarka
-  sprzątająca pamięć albo telefon zajęty czymś innym);
+  powrocie z pauzy się nie liczy), pod nią ile z nich było ZAJĘTY / WOLNY / TXT (niżej), i trzy ostatnie: sekunda
+  etapu, długość i co działo się w klatce tuż przed nim — TEKSTURA (doszedł obraz tła innego miasta, które gra
+  wczytuje w trakcie gry), PHASER, TŁO, WROGOWIE, POCISKI, RESZTA (reszta logiki), RYSOWANIE (ta część trwała ponad
+  6 ms), MUZYKA (ponad 3 ms); do tego stan wątku strony według sondy: ZAJĘTY n (wątek stał n ms, a nie przez
+  pracę gry: przeglądarka sprzątająca pamięć albo jej własna praca) albo WOLNY (wątek był wolny, klatka przyszła
+  późno od strony ekranu: przeglądarka, karta graficzna, telefon); TXT, gdy w tej klatce panel zmieniał swoje
+  napisy (gdyby to on szarpał, prawie każde przycięcie miałoby TXT, a nie co piętnaste);
 - pociski wrogów i wrogów na ekranie, aktywne elementy żywego tła (z wszystkich na mapie), obiekty na scenie;
 - ile plików tła innych miast już doszło (z ilu) i czas etapu;
 - DŹWIĘK: stan silnika dźwięku przeglądarki (RUNNING, SUSPENDED, INTERRUPTED) i ile źródeł dźwięku gra naraz
-  (nuty i efekty: powinny przychodzić i odchodzić).
+  (nuty i efekty: powinny przychodzić i odchodzić). Wyłączony głośnik (M) nie buduje żadnych dźwięków (muzyka idzie
+  dalej po cichu, żeby po włączeniu wrócić w rytmie), więc gra z dźwiękiem i bez porównuje koszt dźwięku.
 
 Płynność na telefonie: gra nie tworzy obiektów w trakcie etapu, tylko używa gotowych. Pule sprite'ów
 (pociski, strzały, efekty, wrogowie) i obrazki żywego tła są tworzone na starcie etapu: tyle na każdej głębokości,
