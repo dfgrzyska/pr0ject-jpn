@@ -167,10 +167,15 @@ export class Parallax {
   }
 
   /** A small drifting bit as a blitter bob (reused once it has drifted off). */
-  bit(frame, x, y, props) {
+  bit(frame, x, y, vy, vx, wf, sway, age, flipT) {
     const b = this.bitsFree.pop() ?? this.bits.create(0, 0, frame);
     b.reset(x, y, frame); // (visible, opaque, unflipped)
-    Object.assign(b, props);
+    b.vy = vy;
+    b.vx = vx;
+    b.wf = wf;
+    b.sway = sway;
+    b.age = age;
+    b.flipT = flipT;
     this.bitsLive.push(b);
     return b;
   }
@@ -184,14 +189,14 @@ export class Parallax {
       this.petalTimer += 1 / (8 + 50 * s);
       const size = Math.random() < 0.6 ? 0 : Math.random() < 0.75 ? 1 : 2;
       const wf = [0.6, 0.9, 1.2][size];
-      const p = this.bit(`ashf_${size}`, Math.random() * 240 - 30, -4, { vy: (fall * 0.4 + 12) * wf * (0.8 + Math.random() * 0.4), vx: 0, wf, sway: 4 + Math.random() * 5, age: Math.random() * 6, flipT: 0 });
+      const p = this.bit(`ashf_${size}`, Math.random() * 240 - 30, -4, (fall * 0.4 + 12) * wf * (0.8 + Math.random() * 0.4), 0, wf, 4 + Math.random() * 5, Math.random() * 6, 0);
       p.setAlpha(0.45 + wf * 0.25);
     }
     if (this.time >= this.embersFrom) {
       this.mistTimer -= dt;
       while (this.mistTimer <= 0) {
         this.mistTimer += 0.09;
-        const p = this.bit(Math.random() < 0.6 ? 'ember_0' : 'ember_1', Math.random() * 180, H + 4, { vy: -(30 + Math.random() * 50), vx: 0, wf: 0.5, sway: 8, age: Math.random() * 6, flipT: 0 });
+        const p = this.bit(Math.random() < 0.6 ? 'ember_0' : 'ember_1', Math.random() * 180, H + 4, -(30 + Math.random() * 50), 0, 0.5, 8, Math.random() * 6, 0);
         p.setAlpha(0.85);
       }
     }
@@ -255,7 +260,7 @@ export class Parallax {
       const r = Math.random();
       const size = r < 0.55 ? 0 : r < 0.88 ? 1 : 2;
       const wf = [0.7, 1, 1.4][size];
-      const p = this.bit(`flake_${size}`, Math.random() * 240 - 30, -4, { vy: (fall * 0.5 + 16) * wf * (0.8 + Math.random() * 0.4), vx: 0, wf, sway: 3 + Math.random() * 6, age: Math.random() * 6, flipT: 0 });
+      const p = this.bit(`flake_${size}`, Math.random() * 240 - 30, -4, (fall * 0.5 + 16) * wf * (0.8 + Math.random() * 0.4), 0, wf, 3 + Math.random() * 6, Math.random() * 6, 0);
       p.setAlpha(0.45 + wf * 0.3);
     }
     this.mistTimer -= dt;
@@ -279,13 +284,17 @@ export class Parallax {
     this.petalTimer -= dt;
     if (this.petalTimer <= 0) {
       this.petalTimer = 0.25 + Math.random() * 0.4;
-      const p = this.bit(`petal_${Math.floor(Math.random() * 4)}`, Math.random() * 196 - 8, -6, {
-        vy: fall * (0.75 + Math.random() * 0.5),
-        vx: -8 + Math.random() * 16,
-        sway: Math.random() * 6,
-        age: 0,
-        flipT: 0.15 + Math.random() * 0.3,
-      });
+      const p = this.bit(
+        `petal_${Math.floor(Math.random() * 4)}`,
+        Math.random() * 196 - 8,
+        -6,
+        fall * (0.75 + Math.random() * 0.5),
+        -8 + Math.random() * 16,
+        0,
+        Math.random() * 6,
+        0,
+        0.15 + Math.random() * 0.3,
+      );
       p.setAlpha(0.65);
     }
     this.mistTimer -= dt;

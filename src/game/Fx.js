@@ -58,7 +58,10 @@ export class Fx {
    */
   explode(x, y, size, u = null, light = false) {
     const pool = u === null ? this.air : this.ground;
-    const e = pool.spawn(`expl_${size}_0`, x, y, { u, vx: 0, vy: 0 });
+    const e = pool.spawn(`expl_${size}_0`, x, y);
+    e.u = u;
+    e.vx = 0;
+    e.vy = 0;
     this.scene.sfx.explode(size);
     e.play(`expl_${size}`);
     e.once('animationcomplete', () => pool.kill(e));
@@ -71,7 +74,7 @@ export class Fx {
     }
     this.cityBits(x, y, light ? 2 : k.bits, k.speed, onGround);
     if (onGround && k.scorch >= 0) {
-      const s = this.scorch.spawn(`scorch_${k.scorch}`, x, y, {});
+      const s = this.scorch.spawn(`scorch_${k.scorch}`, x, y);
       s.setFlipX(Math.random() < 0.5).setFlipY(Math.random() < 0.5);
     }
     return e;
@@ -79,22 +82,34 @@ export class Fx {
 
   /** One moving particle: drag, a pull (g, px/s² down), spin, swelling, fading out over its life. */
   part(pool, frame, x, y, o) {
-    return pool.spawn(frame, x, y, { vx: 0, vy: 0, drag: 2, g: 0, spin: 0, grow: 0, life: 0.6, wait: 0, a0: 1, ground: false, ...o, max: o.life ?? 0.6 });
+    const p = pool.spawn(frame, x, y);
+    p.vx = 0;
+    p.vy = 0;
+    p.drag = 2;
+    p.g = 0;
+    p.spin = 0;
+    p.grow = 0;
+    p.life = 0.6;
+    p.wait = 0;
+    p.a0 = 1;
+    p.ground = false;
+    if (o) Object.assign(p, o);
+    p.max = p.life;
+    return p;
   }
 
   /** Puffs of smoke rolling off a blast, a moment after it (spread: px around the centre). */
   smoke(x, y, n, spread = 4, ground = false) {
     for (let i = 0; i < n; i++) {
-      const p = this.part(this.smokes, `smoke_${Math.min(2, Math.floor(Math.random() * (n > 2 ? 3 : 2)))}`, x + (Math.random() - 0.5) * spread * 2, y + (Math.random() - 0.5) * spread * 2, {
-        vx: (Math.random() - 0.5) * 14,
-        vy: 4 + Math.random() * 8,
-        drag: 0.6,
-        grow: 0.5 + Math.random() * 0.4,
-        life: 0.8 + Math.random() * 0.6,
-        wait: 0.08 + Math.random() * 0.14,
-        a0: 0.65,
-        ground,
-      });
+      const p = this.part(this.smokes, `smoke_${Math.min(2, Math.floor(Math.random() * (n > 2 ? 3 : 2)))}`, x + (Math.random() - 0.5) * spread * 2, y + (Math.random() - 0.5) * spread * 2);
+      p.vx = (Math.random() - 0.5) * 14;
+      p.vy = 4 + Math.random() * 8;
+      p.drag = 0.6;
+      p.grow = 0.5 + Math.random() * 0.4;
+      p.life = p.max = 0.8 + Math.random() * 0.6;
+      p.wait = 0.08 + Math.random() * 0.14;
+      p.a0 = 0.65;
+      p.ground = ground;
       p.setScale(0.6).setVisible(false).setRotation(Math.floor(Math.random() * 4) * (Math.PI / 2));
     }
   }
@@ -105,14 +120,13 @@ export class Fx {
       const a = Math.random() * Math.PI * 2;
       const v = (45 + Math.random() * 80) * speed;
       const hot = tint === null && speed > 1 && i % 3 === 0;
-      const p = this.part(this.parts, hot ? 'debris_hot' : `debris_${i % 4}`, x, y, {
-        vx: Math.cos(a) * v,
-        vy: Math.sin(a) * v,
-        drag: 2.4,
-        spin: (Math.random() - 0.5) * 16,
-        life: 0.45 + Math.random() * 0.45,
-        ground,
-      });
+      const p = this.part(this.parts, hot ? 'debris_hot' : `debris_${i % 4}`, x, y);
+      p.vx = Math.cos(a) * v;
+      p.vy = Math.sin(a) * v;
+      p.drag = 2.4;
+      p.spin = (Math.random() - 0.5) * 16;
+      p.life = p.max = 0.45 + Math.random() * 0.45;
+      p.ground = ground;
       if (tint !== null) p.setTint(tint);
     }
   }
@@ -123,17 +137,16 @@ export class Fx {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
       const v = b.speed * speed * (0.4 + Math.random() * 0.8);
-      const p = this.part(this.parts, b.frames[i % b.frames.length], x, y, {
-        vx: Math.cos(a) * v,
-        vy: Math.sin(a) * v,
-        drag: b.drag,
-        g: b.g,
-        grow: b.grow ?? 0,
-        spin: b.grow ? 0 : (Math.random() - 0.5) * 6,
-        life: b.life * (0.7 + Math.random() * 0.6),
-        a0: b.alpha ?? 1,
-        ground,
-      });
+      const p = this.part(this.parts, b.frames[i % b.frames.length], x, y);
+      p.vx = Math.cos(a) * v;
+      p.vy = Math.sin(a) * v;
+      p.drag = b.drag;
+      p.g = b.g;
+      p.grow = b.grow ?? 0;
+      p.spin = b.grow ? 0 : (Math.random() - 0.5) * 6;
+      p.life = p.max = b.life * (0.7 + Math.random() * 0.6);
+      p.a0 = b.alpha ?? 1;
+      p.ground = ground;
       if (b.tints) p.setTint(b.tints[i % b.tints.length]);
     }
   }
@@ -141,12 +154,20 @@ export class Fx {
   /** The warm light of a blast on the ground around it, strong at night, a faint warmth by day. */
   light(x, y, size, ground = false, tint = 0xffb070) {
     const a = 0.1 + 0.55 * this.scene.parallax.darkness(this.scene.H);
-    const p = this.part(this.lights, 'glow', x, y, { life: 0.38, a0: a, grow: 0.6, drag: 0, ground });
+    const p = this.part(this.lights, 'glow', x, y);
+    p.life = p.max = 0.38;
+    p.a0 = a;
+    p.grow = 0.6;
+    p.drag = 0;
+    p.ground = ground;
     p.setScale(size).setTint(tint).setBlendMode(Phaser.BlendModes.ADD);
   }
 
   spark(x, y) {
-    const s = this.sparks.spawn('spark_0', x, y, { u: null, vx: 0, vy: 0 });
+    const s = this.sparks.spawn('spark_0', x, y);
+    s.u = null;
+    s.vx = 0;
+    s.vy = 0;
     s.play('spark');
     s.once('animationcomplete', () => this.sparks.kill(s));
   }
@@ -165,30 +186,31 @@ export class Fx {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
       const v = 60 + Math.random() * 160;
-      this.petals.spawn(`petal_${i % 4}`, x, y, {
-        vx: Math.cos(a) * v,
-        vy: Math.sin(a) * v,
-        life: 0.8 + Math.random() * 0.8,
-      });
+      const p = this.petals.spawn(`petal_${i % 4}`, x, y);
+      p.vx = Math.cos(a) * v;
+      p.vy = Math.sin(a) * v;
+      p.life = 0.8 + Math.random() * 0.8;
     }
   }
 
   /** A single sprite that fades out where it stands (a kappa's splash). */
   puff(frame, x, y, life = 0.3) {
-    this.petals.spawn(frame, x, y, { vx: 0, vy: 0, life });
+    const p = this.petals.spawn(frame, x, y);
+    p.vx = 0;
+    p.vy = 0;
+    p.life = life;
   }
 
   /** Blue fox-fire licking upwards (Kyūbi: its tails ablaze, a lost tail burning away, its end). */
   foxfire(x, y, n = 1, spread = 3) {
     for (let i = 0; i < n; i++) {
-      const p = this.part(this.parts, `kitsunebi_${i % 2}`, x + (Math.random() - 0.5) * spread * 2, y + (Math.random() - 0.5) * spread * 2, {
-        vx: (Math.random() - 0.5) * 12,
-        vy: -16 - Math.random() * 16,
-        drag: 0.8,
-        grow: -0.5,
-        life: 0.35 + Math.random() * 0.3,
-        a0: 0.85,
-      });
+      const p = this.part(this.parts, `kitsunebi_${i % 2}`, x + (Math.random() - 0.5) * spread * 2, y + (Math.random() - 0.5) * spread * 2);
+      p.vx = (Math.random() - 0.5) * 12;
+      p.vy = -16 - Math.random() * 16;
+      p.drag = 0.8;
+      p.grow = -0.5;
+      p.life = p.max = 0.35 + Math.random() * 0.3;
+      p.a0 = 0.85;
       p.setScale(0.5 + Math.random() * 0.4);
     }
   }
@@ -198,7 +220,10 @@ export class Fx {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
       const v = 30 + Math.random() * 90;
-      this.petals.spawn(`leaf_${i % 2}`, x, y, { vx: Math.cos(a) * v, vy: Math.sin(a) * v - 20, life: 0.6 + Math.random() * 0.6 });
+      const p = this.petals.spawn(`leaf_${i % 2}`, x, y);
+      p.vx = Math.cos(a) * v;
+      p.vy = Math.sin(a) * v - 20;
+      p.life = 0.6 + Math.random() * 0.6;
     }
   }
 
@@ -208,7 +233,12 @@ export class Fx {
     for (let i = 0; i < 4; i++) {
       const a = Math.random() * Math.PI * 2;
       const v = 35 + Math.random() * 45;
-      this.part(this.parts, 'bean_bit', x, y, { vx: Math.cos(a) * v, vy: Math.sin(a) * v - 15, g: 90, drag: 1.5, life: 0.35 + Math.random() * 0.2 });
+      const p = this.part(this.parts, 'bean_bit', x, y);
+      p.vx = Math.cos(a) * v;
+      p.vy = Math.sin(a) * v - 15;
+      p.g = 90;
+      p.drag = 1.5;
+      p.life = p.max = 0.35 + Math.random() * 0.2;
     }
     this.light(x, y, 0.5, false, 0xffd070);
   }
@@ -217,7 +247,10 @@ export class Fx {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
       const v = (small ? 30 : 60) + Math.random() * (small ? 60 : 150);
-      this.petals.spawn(`shard_${i % 3}`, x, y, { vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.4 + Math.random() * (small ? 0.3 : 0.7) });
+      const p = this.petals.spawn(`shard_${i % 3}`, x, y);
+      p.vx = Math.cos(a) * v;
+      p.vy = Math.sin(a) * v;
+      p.life = 0.4 + Math.random() * (small ? 0.3 : 0.7);
     }
   }
 

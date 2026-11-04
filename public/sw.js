@@ -16,10 +16,14 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// Content-hashed Vite JS chunks never change for a given filename: serve from cache immediately.
+const HASHED_CHUNK = /\/assets\/[^/]+-[A-Za-z0-9_-]{8}\.js$/;
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
-  e.respondWith(
+  const url = new URL(req.url);
+  if (req.method !== 'GET' || url.origin !== self.location.origin) return;
+  const netFirst = () =>
     fetch(req)
       .then((res) => {
         if (res.ok) {
@@ -31,6 +35,10 @@ self.addEventListener('fetch', (e) => {
       // offline: the cached copy (whatever headers it was cached with); the game's page for any address in it
       .catch(() =>
         caches.match(req, { ignoreVary: true, ignoreSearch: req.mode === 'navigate' }).then((hit) => hit ?? (req.mode === 'navigate' ? caches.match('index.html', { ignoreVary: true }) : Response.error())),
-      ),
-  );
+      );
+  if (HASHED_CHUNK.test(url.pathname)) {
+    e.respondWith(caches.match(req, { ignoreVary: true }).then((hit) => hit ?? netFirst()));
+    return;
+  }
+  e.respondWith(netFirst());
 });

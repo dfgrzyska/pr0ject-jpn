@@ -722,7 +722,7 @@ export class Stage extends Phaser.Scene {
         const r = e.radius + s.radius;
         const dx = e.x - s.x;
         const dy = e.y - s.y;
-        if (dx * dx + dy * dy < r * r || (e.segs && e.segs.some((sg) => (sg.x - s.x) ** 2 + (sg.y - s.y) ** 2 < (sg.r + s.radius) ** 2))) {
+        if (dx * dx + dy * dy < r * r || this.hitSegs(e.segs, s.x, s.y, s.radius, 1)) {
           this.enemies.damage(e, s.damage, false, s.bean);
           if (s.bean) this.fx.beanPop(s.x, s.y - 2);
           else if (Math.random() < 0.5) this.fx.spark(s.x, s.y - 2);
@@ -771,7 +771,7 @@ export class Stage extends Phaser.Scene {
       if (e.ground || e.dead || e.ghost || e.harmless || e.loot) continue;
       // a macaque reaches out further: it grabs rather than rams
       const r = (e.thief ? e.radius + 3 : e.radius * 0.7) + hr;
-      const touch = (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < r * r || (e.segs && e.segs.some((sg) => (sg.x - p.x) ** 2 + (sg.y - p.y) ** 2 < (sg.r * 0.8 + hr) ** 2));
+      const touch = (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < r * r || this.hitSegs(e.segs, p.x, p.y, hr, 0.8);
       if (touch) {
         const loot = e.thief && p.steal();
         if (loot) {
@@ -784,5 +784,16 @@ export class Stage extends Phaser.Scene {
         return;
       }
     }
+  }
+
+  hitSegs(segs, x, y, r, scale) {
+    if (!segs) return false;
+    for (const sg of segs) {
+      const sr = sg.r * scale + r;
+      const dx = sg.x - x;
+      const dy = sg.y - y;
+      if (dx * dx + dy * dy < sr * sr) return true;
+    }
+    return false;
   }
 }

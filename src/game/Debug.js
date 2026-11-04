@@ -161,6 +161,7 @@ export class Debug {
     const timed = (obj, name, key) => {
       const f = obj[name].bind(obj);
       obj[name] = (...a) => {
+        if (!this.on) return f(...a);
         const t0 = performance.now();
         const r = f(...a);
         this.cur[key] += performance.now() - t0;
@@ -176,12 +177,15 @@ export class Debug {
     const ctx = m?.ctx;
     if (ctx && !ctx.counted) {
       ctx.counted = true;
+      const onEnded = () => {
+        audio.live = Math.max(0, audio.live - 1);
+      };
       for (const k of ['createOscillator', 'createBufferSource']) {
         const make = ctx[k].bind(ctx);
         ctx[k] = (...a) => {
           const node = make(...a);
           audio.live++;
-          node.addEventListener('ended', () => audio.live--);
+          node.addEventListener('ended', onEnded, { once: true });
           return node;
         };
       }
@@ -190,11 +194,11 @@ export class Debug {
       m.timed = true;
       const tick = m.tick.bind(m);
       m.tick = () => {
+        const dbg = s.sys.isActive() ? s.debug : null; // (the music outlives the stage: time it for the one on)
+        if (!dbg?.on) return tick();
         const t0 = performance.now();
         tick();
         const d = performance.now() - t0;
-        const dbg = s.sys.isActive() ? s.debug : null; // (the music outlives the stage: time it for the one on)
-        if (!dbg?.on) return;
         dbg.cur.music += d;
         dbg.musicInDraw += d;
         dbg.musicMax = Math.max(dbg.musicMax, d);

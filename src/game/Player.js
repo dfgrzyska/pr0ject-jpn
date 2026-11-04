@@ -174,7 +174,12 @@ export class Player {
       this.trailT = 0.035;
       const fx = this.scene.fx;
       const side = Math.random() < 0.5 ? -2.5 : 2.5;
-      const p = fx.part(fx.parts, 'dot_1', this.x + side, this.y + this.ship.flameY + 3, { vx: (Math.random() - 0.5) * 6, vy: 46 + Math.random() * 20, drag: 0, life: 0.2 + Math.random() * 0.1, a0: blink ? 0.3 : 0.85 });
+      const p = fx.part(fx.parts, 'dot_1', this.x + side, this.y + this.ship.flameY + 3);
+      p.vx = (Math.random() - 0.5) * 6;
+      p.vy = 46 + Math.random() * 20;
+      p.drag = 0;
+      p.life = p.max = 0.2 + Math.random() * 0.1;
+      p.a0 = blink ? 0.3 : 0.85;
       p.setTint(Math.random() < 0.5 ? 0xffb050 : 0xfff0a0);
     }
     this.sprite.setAlpha(blink ? 0.35 : 1);
@@ -205,7 +210,15 @@ export class Player {
 
   shot(frame, x, y, vx, vy, damage, radius, extra) {
     const hot = this.heat >= HEAT.boostAt;
-    const s = this.shots.spawn(frame, x, y, { vx, vy, damage: damage * this.ship.damage * (hot ? HEAT.boost : 1), radius, homing: false, life: 2, bean: false, ...extra });
+    const s = this.shots.spawn(frame, x, y);
+    s.vx = vx;
+    s.vy = vy;
+    s.damage = damage * this.ship.damage * (hot ? HEAT.boost : 1);
+    s.radius = radius;
+    s.homing = false;
+    s.life = 2;
+    s.bean = false;
+    if (extra) Object.assign(s, extra);
     if (hot) s.setTint(0xffb070);
     return s;
   }

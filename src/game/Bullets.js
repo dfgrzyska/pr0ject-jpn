@@ -59,7 +59,12 @@ export class Bullets {
   shot(frame, x, y, angle, speed, radius, extra) {
     if (this.scene.bombClear > 0) return null;
     const k = rules().bulletSpeed; // easy: every bullet a little slower
-    const b = this.pool.spawn(frame, x, y, { ...PLAIN, vx: Math.cos(angle) * speed * k, vy: Math.sin(angle) * speed * k, radius, ...extra });
+    const b = this.pool.spawn(frame, x, y);
+    Object.assign(b, PLAIN);
+    b.vx = Math.cos(angle) * speed * k;
+    b.vy = Math.sin(angle) * speed * k;
+    b.radius = radius;
+    if (extra) Object.assign(b, extra);
     if (k !== 1) {
       // falling and curving bullets keep their paths, only slower
       b.ax *= k * k;
@@ -255,13 +260,19 @@ export class Bullets {
     this.lobs.sweep();
     this.marks.sweep();
 
-    for (const bm of this.beams) bm.t += dt;
-    this.beams = this.beams.filter((bm) => bm.t < bm.warn + bm.live);
+    let n = 0;
+    for (const bm of this.beams) {
+      bm.t += dt;
+      if (bm.t < bm.warn + bm.live) this.beams[n++] = bm;
+    }
+    this.beams.length = n;
+    n = 0;
     for (const z of this.zones) {
       z.t += dt;
       if (z.u !== null) z.y = this.scene.parallax.screenY(z.u);
+      if (z.t < z.warn + z.live) this.zones[n++] = z;
     }
-    this.zones = this.zones.filter((z) => z.t < z.warn + z.live);
+    this.zones.length = n;
     this.draw(H);
   }
 

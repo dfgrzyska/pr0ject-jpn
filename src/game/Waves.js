@@ -33,11 +33,12 @@ export class Waves {
   update(t, spawn) {
     while (this.next < this.list.length && this.list[this.next].t <= t) this.expand(this.list[this.next++]);
     if (!this.queue.length) return;
-    this.queue = this.queue.filter((q) => {
-      if (q.at > t) return true;
-      spawn(q.wave);
-      return false;
-    });
+    let j = 0;
+    for (const q of this.queue) {
+      if (q.at > t) this.queue[j++] = q;
+      else spawn(q.wave);
+    }
+    this.queue.length = j;
   }
 
   expand(w) {

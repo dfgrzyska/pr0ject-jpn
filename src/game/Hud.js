@@ -226,12 +226,24 @@ export class Hud {
   update(dt) {
     const s = this.scene;
     const p = s.player;
-    this.score.setText(String(Math.min(99999999, s.score.score)).padStart(8, '0'));
-    const maxed = s.score.mult >= SCORE.multiplierMax;
-    this.mult.setText(`×${s.score.mult}`).setTint(maxed ? 0xffd060 : 0xffffff);
+    const sc = Math.min(99999999, s.score.score);
+    if (sc !== this.lastScore) {
+      this.lastScore = sc;
+      this.score.setText(String(sc).padStart(8, '0'));
+    }
+    const mult = s.score.mult;
+    const maxed = mult >= SCORE.multiplierMax;
+    if (mult !== this.lastMult) {
+      this.lastMult = mult;
+      this.mult.setText(`×${mult}`).setTint(maxed ? 0xffd060 : 0xffffff);
+    }
     // the bars are drawn again only when something on them changes
     const heatC = p.heatOn ? (p.jam > 0 ? (Math.floor(p.jam * 8) % 2 ? 0xff4a3a : 0x6a1a14) : p.heat >= HEAT.boostAt ? 0xffa040 : 0x9ab4c4) : 0;
-    const key = [Math.round(20 * s.score.fraction), maxed, heatC, p.heatOn ? Math.round(22 * p.heat) : -1, p.beanT > 0 ? Math.round((22 * p.beanT) / BEANS.time) : -1, p.bombs === 0 ? p.grazeCharge : 0, this.H].join();
+    const fracW = Math.round(20 * s.score.fraction);
+    const heatW = p.heatOn ? Math.round(22 * p.heat) : -1;
+    const beanW = p.beanT > 0 ? Math.round((22 * p.beanT) / BEANS.time) : -1;
+    const grz = p.bombs === 0 ? p.grazeCharge : 0;
+    const key = `${fracW},${maxed ? 1 : 0},${heatC},${heatW},${beanW},${grz},${this.H}`;
     if (key !== this.barKey) {
       this.barKey = key;
       this.bar.clear();

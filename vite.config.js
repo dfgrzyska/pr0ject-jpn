@@ -4,5 +4,15 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   base: './',
   server: { host: true },
-  build: { assetsInlineLimit: 0, chunkSizeWarningLimit: 1600 },
+  build: {
+    assetsInlineLimit: 0,
+    chunkSizeWarningLimit: 1600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/phaser')) return 'phaser';
+        },
+      },
+    },
+  },
 });
