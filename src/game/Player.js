@@ -417,7 +417,7 @@ export class Player {
   }
 
   bomb() {
-    if (!this.alive || this.bombs <= 0 || this.entering > 0) return false;
+    if (!this.alive || this.bombs <= 0 || this.entering > 0 || this.scene.ceasefire) return false;
     this.bombs = 0;
     this.invulnerable = Math.max(this.invulnerable, BOMB.invulnerable);
     const s = this.scene;

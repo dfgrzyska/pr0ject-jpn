@@ -217,7 +217,7 @@ export class Enemies {
     const r = rules();
     // (bosses keep the normal line on easy too: their attacks wait for it)
     const below = e.type === 'boss' || e.type === 'heavy' ? FAIR.noFireBelow : r.noFireBelow;
-    return e.seen >= r.noFireAfterEnter && e.y > 4 && e.y < H * below && this.scene.bombClear <= 0;
+    return e.seen >= r.noFireAfterEnter && e.y > 4 && e.y < H * below && this.scene.bombClear <= 0 && !this.scene.ceasefire;
   }
 
   aimAt(e, ox = 0, oy = 0) {

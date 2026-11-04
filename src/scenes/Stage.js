@@ -8,6 +8,7 @@ import { Fx } from '../game/Fx.js';
 import { Hud, pixelText } from '../game/Hud.js';
 import { JapanMap } from '../game/JapanMap.js';
 import { Debug } from '../game/Debug.js';
+import { Interlude } from '../game/Interlude.js';
 import { Ending } from '../game/Ending.js';
 import { Parallax } from '../game/Parallax.js';
 import { Player } from '../game/Player.js';
@@ -122,6 +123,10 @@ export class Stage extends Phaser.Scene {
     this.sfx = this.music.sfx;
     this.hud = new Hud(this);
     this.debug = new Debug(this);
+    // Hiroshima: the moment of silence over the Peace Park (no shooting, the paper cranes dance)
+    this.ceasefire = false;
+    this.interlude = this.stage.interlude ? new Interlude(this, this.stage.interlude) : null;
+    this.music.duck?.(1);
     // the sprite pools made ahead (the most the busiest stages need, with some to spare), so a fight never has
     // to stop and make them: on a phone that tends to come back as a stutter a moment later
     const b = this.bullets;
@@ -266,6 +271,7 @@ export class Stage extends Phaser.Scene {
       this.t = this.debugStart;
       this.parallax.setTime(this.debugStart);
       this.waves.skipTo(this.debugStart);
+      this.interlude?.skipTo(this.debugStart);
     }
     this.parallax.props.sync(this.t);
     this.player.spawn();
@@ -603,6 +609,7 @@ export class Stage extends Phaser.Scene {
     if (playing) {
       this.t += dt;
       this.waves.update(this.t, (w) => this.enemies.spawn(w));
+      this.interlude?.update(dt, this.t);
       for (const type of ['heavy', 'boss']) {
         const w = this.waves.upcoming(type, this.t, 3);
         if (w && !this.warned.has(w)) {
@@ -655,7 +662,7 @@ export class Stage extends Phaser.Scene {
     }
     // Beppu: steam clouds heat the guns
     if (playing && this.stage.near === 'steam') this.player.heatUpdate(dt, this.player.alive && this.enemies.steamAt(this.player.x, this.player.y));
-    this.player.update(dt, playing ? this.keys : null, playing);
+    this.player.update(dt, playing ? this.keys : null, playing && !this.ceasefire);
     this.enemies.update(dt);
     this.bullets.update(dt, this.H);
     this.updatePickups(dt);

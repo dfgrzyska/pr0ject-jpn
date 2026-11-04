@@ -713,10 +713,12 @@ export function buildMid() {
   // ------------------------------------------------------------ 1. water mask & ground base
   // Miyajima's shore: the pier headland on the west, the pine headland on the east, and between them the wide
   // tidal cove of the Great Torii running in to the shrine's stilts (u = 5330 on the axis)
-  const miyajimaCoastU = (x) => {
+  const miyajimaCoastU = (x, u = 4800) => {
     const wob = fbm(x, 0, { seed: 701, scale: 18 }) * 34;
     const base = Math.round(4510 + wob);
-    const k = Math.abs(x - 90) / 64;
+    // the sides of the cove wander in and out: little bays, sand spits, rocks
+    const jig = (fbm(u, 7, { seed: 703, scale: 46, octaves: 3 }) - 0.5) * 22;
+    const k = Math.abs(x + (x < 90 ? jig : -jig) - 90) / 56;
     if (k < 1) return Math.max(base, Math.round(4520 + (COVE_END_U - 4520) * Math.sqrt(1 - k * k) ** 0.8 + fbm(x, 1, { seed: 702, scale: 9 }) * 12));
     return base;
   };
@@ -725,7 +727,7 @@ export function buildMid() {
     // the two branches of the Ōta delta, edge to edge
     if ((u >= MOTOYASU[0] && u < MOTOYASU[1]) || (u >= HONKAWA[0] && u < HONKAWA[1])) return true;
     // Hiroshima Bay between the mainland seawall and Miyajima
-    if (u >= QUAY_U && u < miyajimaCoastU(x)) {
+    if (u >= QUAY_U && u < miyajimaCoastU(x, u)) {
       if (u < 3010 && ((x >= 72 && x <= 82) || (x >= 98 && x <= 108))) return false; // Miyajimaguchi ferry piers (JR, Matsudai)
       if (u >= 4400 && u < 4545 && x >= 14 && x <= 46) return false; // Miyajima ferry pier
       for (const isl of bayIslets) {
@@ -2600,18 +2602,26 @@ export function buildMid() {
     for (const [x, u, c] of [[96, 3200, 0xd83a2a], [66, 3200, 0x2a8a4a], [84, 3700, 0xd83a2a], [54, 3700, 0x2a8a4a], [60, 4200, 0xd83a2a], [26, 4200, 0x2a8a4a]])
       kit.loop(x, u, buoy(c), { fps: 1.2 });
     // the JR and Matsudai ferries, pier to pier with their white wakes, and the Aqua Net boat in from the city
+    // (frames face right, bow first: the route turns them to their heading)
     const ferry = (band, deck) =>
-      capture(80, Y(3600), 12, 28, () => {
-        const fx = 80;
+      capture(60, Y(3600), 30, 13, () => {
+        const fx = 60;
         const fy = Y(3600);
-        img.rect(fx + 1, fy + 2, 10, 24, 0xf2f4f8);
-        img.rect(fx + 2, fy, 8, 3, 0xf2f4f8);
-        img.rect(fx + 3, fy + 26, 6, 2, 0xf2f4f8);
-        img.rect(fx + 1, fy + 12, 10, 2, band);
-        img.rect(fx + 2, fy + 5, 8, 15, deck);
-        img.rect(fx + 3, fy + 6, 6, 3, 0x2c4e6c);
-        img.rect(fx + 5, fy + 15, 2, 3, band);
-        for (let k = 0; k < 8; k++) img.set(fx + 2 + ((k * 3) % 8), fy + 9 + ((k * 5) % 10), rand.pick(COATS));
+        for (let x = 0; x < 30; x++) {
+          const taper = x > 24 ? Math.round(((x - 24) / 5) ** 1.6 * 5) : 0; // the bow narrowing to a point
+          for (let y = 1 + taper; y < 12 - taper; y++) img.set(fx + x, fy + y, y === 1 + taper || y === 11 - taper ? band : 0xf2f4f8);
+        }
+        img.rect(fx, fy + 2, 1, 9, scaleColor(band, 0.8)); // the stern ramp
+        img.rect(fx + 7, fy + 3, 15, 7, deck); // the passenger deck
+        for (let x = fx + 8; x < fx + 21; x += 2) {
+          img.set(x, fy + 3, 0x2c4e6c);
+          img.set(x, fy + 9, 0x2c4e6c);
+        }
+        img.rect(fx + 19, fy + 4, 4, 5, 0xf8f8fa); // the bridge
+        img.rect(fx + 22, fy + 4, 1, 5, 0x2c4e6c);
+        img.rect(fx + 13, fy + 5, 3, 3, band); // the funnel
+        img.set(fx + 14, fy + 6, 0x2a2a30);
+        for (let k = 0; k < 9; k++) img.set(fx + 2 + ((k * 3) % 5), fy + 3 + ((k * 5) % 7), rand.pick(COATS)); // people out on the stern
       });
     const jrFerry = ferry(0x1e3c7a, 0xdbe4ec);
     const mtFerry = ferry(0xc8302a, 0xe4e8ec);
@@ -2662,81 +2672,139 @@ export function buildMid() {
       for (let x = 14; x < 46; x += 4) img.rect(x, Y(4520) + 18, 2, 6, 0x5a7a94);
     } });
     crowd(16, Y(4470), 28, 60, 30, true);
-    // ---- the shore: the stone-lantern promenade round the cove, Omotesandō behind it to the west
+    // ---- the shore round the cove: the stone-lantern promenade and the old pines along the water, the sand of
+    // Mikasa-hama by the pier where the deer lie about
     const coastW = (u) => {
-      for (let x = 30; x < 92; x++) if (W_(x, Y(u))) return x;
+      for (let x = 24; x < 92; x++) if (W_(x, Y(u))) return x;
       return 92;
     };
     const coastE = (u) => {
-      for (let x = 150; x > 92; x--) if (W_(x, Y(u))) return x;
+      for (let x = 156; x > 92; x--) if (W_(x, Y(u))) return x;
       return 92;
     };
     for (let u = 4540; u < 5340; u++) {
       const xl = coastW(u);
       const xr = coastE(u);
-      for (let x = Math.max(24, xl - 12); x < xl - 1; x++) img.set(x, Y(u), rampColor(C.paving, 0.45 + fbm(x, u, { seed: 402, scale: 4 }) * 0.4, x, Y(u)));
-      for (let x = xr + 2; x < Math.min(W - 18, xr + 13); x++) img.set(x, Y(u), rampColor(C.paving, 0.45 + fbm(x, u, { seed: 403, scale: 4 }) * 0.4, x, Y(u)));
-      if (u % 46 === 0 && u > 4560) {
-        stoneLantern(xl - 4, u, true);
-        stoneLantern(xr + 5, u, true);
+      for (let x = Math.max(25, xl - 11); x < xl - 3; x++) img.set(x, Y(u), rampColor(C.paving, 0.45 + fbm(x, u, { seed: 402, scale: 4 }) * 0.4, x, Y(u)));
+      for (let x = xr + 4; x < Math.min(W, xr + 13); x++) img.set(x, Y(u), rampColor(C.paving, 0.45 + fbm(x, u, { seed: 403, scale: 4 }) * 0.4, x, Y(u)));
+      const beach = u < 4760 ? 5 : 3;
+      for (let x = Math.max(25, xl - beach); x < xl; x++) img.set(x, Y(u), rampColor(C.sand, 0.4 + fbm(x, u, { seed: 404, scale: 3 }) * 0.5, x, Y(u)));
+      for (let x = xr + 1; x < xr + beach - 1; x++) img.set(x, Y(u), rampColor(C.sand, 0.4 + fbm(x, u, { seed: 406, scale: 3 }) * 0.5, x, Y(u)));
+      if (u % 40 === 0 && u > 4560) {
+        stoneLantern(Math.max(27, xl - 6), u, true);
+        stoneLantern(xr + 6, u, true);
       }
+      if (u % 64 === 20 && u > 4580 && u < 5150) tree(xr + 13, Y(u), 5, C.pine, u + 7, 'pine');
     }
-    // Omotesandō: the shopping street of tiled two-storey shops, noren, the momiji-manju bakers steaming, the
-    // great o-shamoji rice scoop on show
-    for (let u = 4546; u < 5040; u++) for (let x = 6; x < 22; x++) img.set(x, Y(u), rampColor(C.paving, 0.4 + fbm(x, u, { seed: 404, scale: 3 }) * 0.4, x, Y(u)));
+    reserveRect(24, Y(5340), 10, 800);
+
+    // ---- Omotesandō: the covered shopping street from the pier to the shrine. Old two-storey shops along both
+    // sides with tiled roofs, noren and red lanterns at the street, wooden signboards on the roofs, momiji-manju
+    // bakers steaming; the arcade's glass roof over the street; the great o-shamoji at its end
     {
-      const noren = [0x2a3a6a, 0x8a2a2a, 0x2a5a3a, 0x6a3a6a, 0xd8c8a0];
-      for (let u = 4556, k = 0; u < 5030; u += 20, k++) {
-        hall(-2, Y(u + 18), 9, 9, 6, C.kawara, 'shop', { noren: noren[k % 5], wall: C.oldWood[k % 3 + 1], hip: false, sortBias: 0 });
-        hall(21, Y(u + 14), 9, 8, 5, C.kawara, 'shop', { noren: noren[(k + 2) % 5], wall: C.oldWood[(k + 1) % 3 + 1], hip: false });
-        if (k % 3 === 1) kit.emit(18, u + 4, stallSteam, { rate: 1.2, life: [1.2, 2], vy: 5, sx: 1, wf: 0.6, a: 0.45, tint: 1 });
-        if (k % 2 === 0) glow(8, Y(u + 2), 0xffb040, 0.9);
-      }
+      const st = [8, 16]; // the street
+      for (let u = 4546; u < 5060; u++)
+        for (let x = st[0]; x < st[1]; x++) img.set(x, Y(u), rampColor(C.paving, 0.4 + fbm(x, u, { seed: 405, scale: 3 }) * 0.4, x, Y(u)));
+      const noren = [0x2a3a6a, 0x8a2a2a, 0x2a5a3a, 0x6a3a6a, 0xd8c8a0, 0x1e2a44];
+      /** A row of shops along the street: roofs end-on to it, their fronts a strip of noren and lanterns. */
+      const row = (x0, x1, front) => {
+        let u = 4550;
+        let k = 0;
+        while (u < 5050) {
+          const len = 10 + ((k * 7) % 3) * 4;
+          const y = Y(u + len);
+          const w = x1 - x0;
+          const two = k % 3 !== 1;
+          const ramp = k % 4 === 3 ? C.tileRoof : C.kawara;
+          const nc = noren[(k + x0 + 6) % noren.length];
+          const uu = u;
+          objects.push({
+            y: y + len,
+            shadow: () => shadowRect(x0 + 2, y + 2, w, len, 0.55),
+            draw: () => {
+              roof(x0, y, w, len - 1, ramp, { ridgeAt: 0.45, noshi: two });
+              // the street front: noren, the lit shop inside, a red lantern
+              for (let yy = y + 1; yy < y + len - 1; yy++) {
+                img.set(front, yy, (yy & 1) ? nc : scaleColor(nc, 0.7));
+                img.set(front + (front > x0 ? -1 : 1), yy, C.oldWood[2]);
+              }
+              glow(front, y + 3, 0xff5a30, 0.95);
+              glow(front, y + 4, 0xffd080, 0.7);
+              pool(front + (front > x0 ? 2 : -2), y + len / 2, 5, C.lamp, 0.2 + dusk(uu) * 0.2);
+              if (two && k % 2 === 0) {
+                // a signboard on the roof
+                img.rect(x0 + 2, y + 2, w - 4, 2, 0x3a2a1c);
+                img.rect(x0 + 3, y + 2, w - 6, 1, 0xe8d8b0);
+              }
+            },
+          });
+          if (k % 4 === 1) kit.emit(front + (front > x0 ? 2 : -2), u + len / 2, stallSteam, { rate: 1.1, life: [1.1, 1.8], vy: 5, sx: 1, wf: 0.6, a: 0.42, tint: 1 }); // momiji-manju fresh from the irons
+          u += len + (k % 5 === 4 ? 3 : 0);
+          k++;
+        }
+      };
+      row(-1, st[0], st[0] - 1);
+      row(st[1], 25, st[1]);
+      reserveRect(0, Y(5060), 25, 520);
+      // the arcade roof: glass between steel ribs, the street showing through
+      objects.push({
+        y: Y(4546),
+        draw: () => {
+          for (let u = 4552; u < 5040; u++)
+            for (let x = st[0]; x < st[1]; x++) {
+              const rib = (u - 4552) % 12 === 0;
+              img.set(x, Y(u) - 4, rib ? 0x9aa4ac : 0xc8e0ec, rib ? 0.9 : 0.28);
+            }
+        },
+      });
+      crowd(st[0], Y(5040), st[1] - st[0] - 1, 488, 70, true);
       // the o-shamoji, eight metres of wood in its case at the street's end
       objects.push({
         y: Y(5040),
         shadow: () => shadowRect(10, Y(5062), 10, 24, 0.6),
         draw: () => {
-          const y = Y(5060);
-          img.rect(8, y, 10, 22, 0x9aa8b0, 0.6);
-          img.rect(8, y, 10, 1, 0xd8dcde);
-          img.rect(11, y + 2, 4, 9, C.hinoki[3]);
-          img.rect(12, y + 11, 2, 9, C.hinoki[2]);
-          img.set(11, y + 2, C.hinoki[2]);
+          const y = Y(5062);
+          img.rect(7, y, 11, 22, 0x9aa8b0, 0.6);
+          img.rect(7, y, 11, 1, 0xd8dcde);
+          img.rect(10, y + 2, 5, 9, C.hinoki[3]);
+          img.rect(11, y + 11, 3, 9, C.hinoki[2]);
+          img.set(10, y + 2, C.hinoki[2]);
           img.set(14, y + 2, C.hinoki[2]);
           img.set(12, y + 4, 0x2a2026);
-          img.set(13, y + 6, 0x2a2026);
+          img.set(12, y + 6, 0x2a2026);
+          img.set(13, y + 5, 0x2a2026);
         },
       });
-      for (let k = 0; k < 10; k++) {
+      for (let k = 0; k < 12; k++) {
         const c = COATS[k % COATS.length];
-        const x = 9 + (k % 4) * 3;
-        kit.path([[x, 4552], [x, 5030]], [walker(c, 0, 4800), walker(c, 1, 4800)], { sp: 3 + (k % 3), mode: 'pp', hold: 2, turn: 'none', fps: 3, s0: (k * 0.29) % 1 });
+        const x = st[0] + 1 + (k % 3) * 2;
+        kit.path([[x, 4552], [x, 5034]], [walker(c, 0, 4800), walker(c, 1, 4800)], { sp: 3 + (k % 3), mode: 'pp', hold: 2, turn: 'none', fps: 3, s0: (k * 0.29) % 1 });
       }
+      kit.wander(12, 4800, 2, 200, deerF0(4800), { n: 2, sp: 3, turn: 'flip', fps: 3, idle: 0.7 });
     }
-    // the inns and houses along the east shore
-    for (let u = 4580, k = 0; u < 5160; u += 36, k++) {
-      if (padNear(158, u, 22)) continue;
-      hall(162, Y(u + 26), 18, 12, 7, C.kawara, 'plain', { wall: k % 2 ? 0xe8e0d0 : C.oldWood[2], bay: 4 });
+    // the inns along the east shore: two storeys of dark timber, lit paper windows, little gardens between
+    for (let u = 4572, k = 0; u < 5180; u += 38, k++) {
+      if (padNear(166, u, 24)) continue;
+      const x = 160 + (k % 2) * 2;
+      const uu = u;
+      hall(x, Y(u + 28), 20, 12, 8, C.kawara, 'oldwood', {
+        wall: k % 2 ? C.oldWood[2] : C.oldWood[1],
+        bay: 4,
+        noshi: true,
+        extra: () => {
+          for (let xx = x + 2; xx < x + 18; xx += 3) glow(xx, Y(uu + 28) + 15, 0xffe0a0, 0.55 + dusk(uu) * 0.4);
+        },
+      });
+      tree(176, Y(u + 4), 3.5, k % 3 ? C.momijiR : C.pine, u + 31, k % 3 ? 'broadleaf' : 'pine');
     }
-    // the deer of Miyajima, everywhere
-    const deerF = [0, 1].map((f) => sprite(7, 6, 4900, (r) => {
-      r.rect(1, 2, 4, 2, 0xb8763c);
-      r.set(2, 2, 0xf8eed8);
-      r.set(4, 2, 0xf8eed8);
-      r.rect(4, 0, 2, 2, 0xc88446);
-      r.set(6, 0, 0x3a2618);
-      r.set(0, 2, 0xffffff);
-      r.set(1, f ? 4 : 5, 0x6e4422);
-      r.set(4, f ? 5 : 4, 0x6e4422);
-    }));
-    kit.wander(30, 4620, 6, 40, deerF, { n: 2, sp: 5, turn: 'flip', fps: 3, idle: 0.6 });
-    kit.wander(14, 4800, 6, 120, deerF, { n: 3, sp: 4, turn: 'flip', fps: 3, idle: 0.6 });
-    kit.wander(156, 4760, 6, 100, deerF, { n: 3, sp: 5, turn: 'flip', fps: 3, idle: 0.5 });
-    kit.wander(40, 5160, 8, 50, deerF, { n: 2, sp: 4, turn: 'flip', fps: 3, idle: 0.6 });
-    strollers(40, 4700, 6, 120, 6);
-    strollers(152, 4900, 6, 160, 6);
-    // a rickshaw puller trotting along the west shore
+    // the deer of Miyajima, everywhere; visitors; a rickshaw along the west shore
+    const deerF = deerF0(4900);
+    kit.wander(36, 4600, 4, 40, deerF, { n: 3, sp: 4, turn: 'flip', fps: 3, idle: 0.8 });
+    kit.wander(30, 4840, 3, 120, deerF, { n: 2, sp: 4, turn: 'flip', fps: 3, idle: 0.6 });
+    kit.wander(152, 4760, 4, 100, deerF, { n: 3, sp: 5, turn: 'flip', fps: 3, idle: 0.5 });
+    kit.wander(48, 5180, 6, 40, deerF, { n: 2, sp: 4, turn: 'flip', fps: 3, idle: 0.6 });
+    strollers(31, 4800, 2, 220, 6, { sp: 3 });
+    strollers(150, 4900, 3, 220, 6, { sp: 3 });
     const rick = [0, 1].map((f) => sprite(8, 5, 4900, (r) => {
       r.rect(0, 1, 4, 3, 0x2a2a30);
       r.rect(1, 1, 2, 2, 0xc83a2a);
@@ -2746,7 +2814,7 @@ export function buildMid() {
       r.set(7, 1, 0x2a2a34);
       r.set(6, f ? 3 : 1, 0x2a2a34);
     }));
-    kit.path([[28, 4560], [28, 4760], [40, 4900], [50, 5120]], rick, { sp: 6, mode: 'pp', hold: 4, turn: 'rot', fps: 4 });
+    kit.path([[29, 4560], [30, 4800], [36, 4980], [50, 5150]], rick, { sp: 6, mode: 'pp', hold: 4, turn: 'rot', fps: 4 });
 
     // ---- the Great Torii: two camphor pillars and four sleeve pillars in vermilion, the black kasagi with its
     // upswept ends, the tablet; drawn as its own layer so the boats rowing out at high tide pass under it
@@ -2804,6 +2872,24 @@ export function buildMid() {
       });
       kit.path([[90, 4600], [90, 4842], [92, 5000]], [sappa], { sp: 5, mode: 'pp', hold: 5, d: 0.05, turn: 'none', wake: { f: wakeF0(tu), every: 6, life: 1.6 } });
       kit.path([[60, 4640], [86, 4830], [120, 4900]], [sappa], { sp: 4, mode: 'pp', hold: 7, s0: 0.5, d: 0.05, turn: 'none', wake: { f: wakeF0(tu), every: 6, life: 1.6 } });
+      // a yakatabune: the roofed pleasure boat with its paper lanterns, going round the torii (live)
+      const yakata = capture(60, Y(4700), 24, 10, () => {
+        const y = Y(4700);
+        for (let x = 0; x < 24; x++) {
+          const taper = x > 19 ? x - 19 : 0;
+          for (let yy = 1 + Math.ceil(taper / 2); yy < 9 - Math.ceil(taper / 2); yy++) img.set(60 + x, y + yy, yy === 1 + Math.ceil(taper / 2) ? C.wood[3] : C.wood[1]);
+        }
+        img.rect(63, y + 2, 15, 6, C.kawara[2]);
+        img.rect(63, y + 2, 15, 1, C.kawara[4]);
+        img.rect(63, y + 4, 15, 1, C.kawara[1]);
+        for (let x = 64; x < 78; x += 3) {
+          img.set(x, y + 1, 0xff5a30);
+          img.set(x, y + 8, 0xff5a30);
+          glow(x, y + 1, 0xffb060, 0.8);
+          glow(x, y + 8, 0xffb060, 0.8);
+        }
+      });
+      kit.path([[58, 4760], [90, 4720], [124, 4770], [124, 4900], [90, 4960], [56, 4900], [58, 4760]], [yakata], { sp: 6, d: 0.05, turn: 'rot', wake: { f: wakeF0(4800), every: 6, life: 1.8 } });
       kit.spot([[40, 5000, 100, 420]], glintF0(4800), { rate: 2, fps: 6, a: 0.7 });
     }
 
@@ -2951,6 +3037,35 @@ export function buildMid() {
         r.set(3, 5, 0x2a2026);
       }));
       kit.loop(90, 5054, dancer, { fps: 2 });
+      // a Shinto wedding walking the east corridor under the red umbrella: priest, miko, the bride in white, the
+      // groom, the families
+      {
+        const fig = (c, head, u0) => [0, 1].map((f) => sprite(3, 4, u0, (r) => {
+          r.set(1, 0, head);
+          r.rect(0, 1, 3, 2, c);
+          r.set(f ? 0 : 2, 3, scaleColor(c, 0.7));
+        }));
+        const bride = [0, 1].map((f) => sprite(5, 6, 5100, (r) => {
+          r.rect(0, 0, 5, 3, 0xd83a2a);
+          r.set(2, 0, 0xf4a040);
+          r.rect(1, 3, 3, 2, 0xf8f8f4);
+          r.set(f ? 1 : 3, 5, 0xe8e8e4);
+        }));
+        const party = [fig(0xf4f4f0, 0x2a2026, 5100), fig(0xd83a2a, 0x2a2026, 5100), bride, fig(0x1a1a20, 0x2a2026, 5100), fig(0x2a2a34, 0x2a2026, 5100), fig(0x5a3a6a, 0x2a2026, 5100), fig(0x2a2a34, 0xd8d0c8, 5100)];
+        kit.path([[121, 5192], [121, 5044], [104, 5034]], party, { sp: 2, n: party.length, gap: 5, mode: 'pp', hold: 6, turn: 'none', fps: 2, cars: 1, s0: 0.2 });
+      }
+      // visitors on the Hirabutai, the corridors' vermilion shimmering in the tide under them
+      crowd(68, Y(5068), 48, 40, 34, true);
+      crowd(86, Y(5022), 13, 16, 10, true);
+      {
+        const shimmer = sprite(9, 2, 5100, (r) => {
+          for (let x = 0; x < 9; x++) r.set(x, x % 3 === 0 ? 1 : 0, C.vermilion[2], 0.5);
+        });
+        const parts = [];
+        for (let x = 40; x < 140; x += 10) for (const u of [5022, 5190]) if (W_(x, Y(u))) parts.push([0, x, u, x * 0.21 + u * 0.01]);
+        for (let u = 5040; u < 5190; u += 10) for (const x of [56, 124]) if (W_(x, Y(u))) parts.push([0, x, u, u * 0.05]);
+        if (parts.length) kit.wave([shimmer], parts, { w: 1.1, a0: 0, a1: 0.85, pw: 2 });
+      }
     }
 
     // ---- the hill above the shrine: the Gojūnotō and the great unpainted Senjōkaku among the pines
@@ -2993,26 +3108,138 @@ export function buildMid() {
       grove(130, W, 5250, 5480, 18, [C.pine, C.pine, C.momijiR, C.momijiO], 4501, 4, 6);
     }
 
-    // ---- Miyajima town behind the shrine: lanes of old houses, the path up to Daishō-in, pines and maples
+    // ---- Miyajima town behind the shrine: Machiya-dōri's merchant houses along their lane, the Treasure Hall,
+    // Kiyomori Shrine, Daigan-ji, the two-storey Tahōtō on its knoll, the aquarium; the path up to Daishō-in
     {
+      const noren2 = [0x2a3a6a, 0x8a2a2a, 0x2a5a3a, 0x6a3a6a, 0x1e2a44];
       for (let u = 5330; u < 5900; u++) {
         const bend = Math.round(Math.sin((u - 5330) / 120) * 6);
         for (let dx = -5; dx <= 5; dx++) {
           const x = 92 + bend + dx;
           img.set(x, Y(u), Math.abs(dx) === 5 ? C.stone[2] : rampColor(C.paving, 0.5 + fbm(x, u, { seed: 461, scale: 3 }) * 0.3, x, Y(u)));
         }
-      }
-      reserveRect(84, Y(5900), 22, 570);
-      for (let u = 5480, k = 0; u < 5860; u += 34, k++) {
-        for (const x of [10, 112]) {
-          if (padNear(x + 12, u + 12, 26) || anyRes(x, Y(u + 26), 24, 28)) continue;
-          hall(x + ((k * 7) % 12), Y(u + 24), 22, 11, 7, C.kawara, 'plain', { wall: k % 2 ? 0xe8e0d0 : C.oldWood[2], bay: 4 });
+        if (u % 30 === 0 && u > 5480) {
+          stoneLantern(92 + bend - 7, u, true);
+          stoneLantern(92 + bend + 8, u, true);
         }
       }
-      hall(50, Y(5560), 30, 14, 7, C.kawara, 'temple', { gable: 'tri', gw: 9, bay: 5 }); // Daigan-ji
-      grove(4, 176, 5300, 5895, 150, [C.pine, C.pine, C.momijiR, C.momijiO, C.momijiY, C.camphor], 4601, 4, 6.5);
-      kit.wander(70, 5650, 16, 80, deerF, { n: 3, sp: 4, turn: 'flip', fps: 3, idle: 0.6 });
-      kit.wander(140, 5700, 14, 60, deerF, { n: 2, sp: 4, turn: 'flip', fps: 3, idle: 0.6 });
+      reserveRect(84, Y(5900), 22, 570);
+      // Machiya-dōri: a lane of lattice-fronted merchant houses running across the town
+      const lane = [5500, 5512];
+      for (let u = lane[0]; u < lane[1]; u++) for (let x = 0; x < W; x++) if (!isRes(x, Y(u))) img.set(x, Y(u), rampColor(C.paving, 0.45 + fbm(x, u, { seed: 462, scale: 3 }) * 0.35, x, Y(u)));
+      for (const [x0, x1] of [[2, 82], [106, 178]]) {
+        let x = x0;
+        let k = 0;
+        while (x < x1 - 10) {
+          const w = 12 + ((k * 5 + x0) % 3) * 3;
+          const ww = Math.min(w, x1 - x);
+          const hx = x;
+          const nc = noren2[(k + x0) % noren2.length];
+          hall(x, Y(lane[1] + 22), ww - 1, 11, 9, k % 3 === 2 ? C.tileRoof : C.kawara, 'oldwood', {
+            wall: C.oldWood[1 + (k % 2)],
+            bay: 2,
+            noshi: k % 2 === 0,
+            extra: () => {
+              const fy = Y(lane[1] + 22) + 11;
+              for (let xx = hx + 1; xx < hx + ww - 2; xx++) img.set(xx, fy + 7, (xx & 1) ? nc : scaleColor(nc, 0.7));
+              glow(hx + 2, fy + 6, 0xff6a30, 0.9);
+              pool(hx + ww / 2, fy + 10, 6, C.lamp, 0.2 + dusk(5500) * 0.25);
+            },
+          });
+          x += ww;
+          k++;
+        }
+      }
+      for (let k = 0; k < 6; k++) {
+        const c = COATS[(k * 3) % COATS.length];
+        const lu = lane[0] + 2 + (k % 3) * 3;
+        kit.path(k % 2 ? [[4, lu], [176, lu]] : [[176, lu], [4, lu]], [walker(c, 0, 5500), walker(c, 1, 5500)], { sp: 3 + (k % 2), mode: 'pp', hold: 2, turn: 'flip', fps: 3, s0: k * 0.17 });
+      }
+      kit.wander(50, lane[0] + 6, 30, 3, deerF0(5500), { n: 2, sp: 3, turn: 'flip', fps: 3, idle: 0.8 });
+      // Daigan-ji by the shrine, and the little Kiyomori Shrine among the pines
+      hall(48, Y(5470), 32, 14, 7, C.kawara, 'temple', { gable: 'tri', gw: 9, bay: 5, noshi: true });
+      hall(138, Y(5468), 18, 9, 5, C.hiwada, 'shrine', { bark: true, bay: 4 });
+      objects.push({
+        y: Y(5440),
+        draw: () => {
+          const y = Y(5440);
+          img.rect(141, y - 6, 1, 6, C.vermilion[2]);
+          img.rect(152, y - 6, 1, 6, C.vermilion[2]);
+          img.rect(139, y - 7, 16, 1, 0x2a2026);
+          img.rect(140, y - 5, 14, 1, C.vermilion[2]);
+        },
+      });
+      // the Treasure Hall: white storehouse walls under grey tiles
+      hall(112, Y(5640), 50, 18, 10, C.kawara, 'plain', {
+        wall: 0xf0ece4,
+        noshi: true,
+        ridgeAt: 0.4,
+        extra: () => {
+          const fy = Y(5640) + 18;
+          for (let x = 114; x < 160; x++) img.set(x, fy + 7, (x + (x >> 1)) % 3 ? 0x5a5a62 : 0xe8e8e8); // namako tiles along the foot
+          img.rect(134, fy + 3, 6, 6, C.oldWood[0]);
+        },
+      });
+      // the Tahōtō on its knoll: a square lower storey with a skirt roof, the white drum, the square upper roof
+      {
+        const tx = 32;
+        const tu = 5600;
+        for (let u = tu - 16; u < tu + 22; u++)
+          for (let x = tx - 20; x < tx + 20; x++) {
+            const d = Math.hypot((x - tx) / 20, (u - tu - 3) / 19);
+            if (d < 1) img.set(x, Y(u), rampColor(C.grass, 0.85 - d * 0.5 + (tx - x) * 0.01, x, Y(u)));
+          }
+        for (let u = tu - 16; u < tu; u++) img.rect(tx - 2, Y(u), 5, 1, u % 2 ? C.granite[3] : C.granite[1]);
+        objects.push({
+          y: Y(tu) + 2,
+          shadow: () => shadowRect(tx - 2, Y(tu) - 30, 18, 32, 0.55),
+          draw: () => {
+            const y0 = Y(tu);
+            facade(tx - 6, y0 - 7, 13, 7, 'shrine', { bay: 4, wall: 0xf0e8d0 });
+            roof(tx - 10, y0 - 13, 21, 6, C.hiwada, { bark: true, ridge: false });
+            for (let yy = -5; yy <= 0; yy++)
+              for (let xx = -4; xx <= 4; xx++) if ((xx / 4.5) ** 2 + ((yy + 0.5) / 5.5) ** 2 < 1) img.set(tx + xx, y0 - 13 + yy, xx < 1 ? C.plaster[2] : C.plaster[0]);
+            facade(tx - 4, y0 - 20, 9, 4, 'shrine', { bay: 4, wall: 0xf0e8d0 });
+            roof(tx - 9, y0 - 26, 19, 7, C.hiwada, { bark: true, ridge: false });
+            for (let k = 0; k < 10; k++) img.set(tx, y0 - 27 - k, k % 2 ? 0x8a7a3a : 0x6a5a2a);
+            img.set(tx, y0 - 37, C.gold);
+          },
+        });
+        reserveRect(tx - 12, Y(tu) - 40, 25, 44);
+      }
+      // the aquarium: low halls in the island's style round a sea-lion pool
+      {
+        const ax0 = 10;
+        const au = 5716;
+        hall(ax0, Y(au + 40), 40, 14, 8, C.tileRoof, 'plain', {
+          wall: 0xe8e4dc,
+          noshi: true,
+          extra: () => {
+            for (let x = ax0 + 3; x < ax0 + 37; x += 5) img.rect(x, Y(au + 40) + 16, 3, 4, 0x6a9ab8);
+          },
+        });
+        for (let u = au - 18; u < au; u++)
+          for (let x = ax0 + 4; x < ax0 + 36; x++) {
+            const d = Math.hypot((x - ax0 - 20) / 16, (u - au + 9) / 9);
+            const y = Y(u);
+            if (d < 1) {
+              img.set(x, y, d > 0.86 ? C.granite[3] : rampColor([0x2a6a8a, 0x3a8aaa, 0x5aaac8], 0.4 + fbm(x, y, { seed: 463, scale: 3 }) * 0.5, x, y));
+              if (d <= 0.86) wet[y * W + x] = 1;
+            }
+          }
+        reserveRect(ax0, Y(au), 40, 20);
+        const seal = [0, 1].map((f) => sprite(6, 3, au, (r) => {
+          r.rect(0, 1, 5, 1, 0x3a3028);
+          r.set(5, f ? 0 : 1, 0x4a3a30);
+          r.set(1, f ? 2 : 0, 0x2a2420);
+          r.set(4, 0, 0x4a3a30);
+        }));
+        kit.wander(ax0 + 20, au - 9, 12, 5, seal, { n: 2, sp: 6, turn: 'rot', fps: 3, idle: 0.3 });
+        kit.spot([[ax0 + 8, au - 2, 24, 14]], glintF0(au), { rate: 1.5, fps: 6, a: 0.8 });
+      }
+      grove(4, 176, 5300, 5895, 170, [C.pine, C.pine, C.momijiR, C.momijiO, C.momijiY, C.camphor], 4601, 4, 6.5);
+      kit.wander(70, 5650, 16, 80, deerF0(5650), { n: 3, sp: 4, turn: 'flip', fps: 3, idle: 0.6 });
+      kit.wander(150, 5760, 14, 60, deerF0(5650), { n: 2, sp: 4, turn: 'flip', fps: 3, idle: 0.6 });
       for (const s0 of [0.1, 0.45, 0.8]) {
         const c = COATS[(s0 * 10) | 0];
         kit.path([[92, 5340], [94, 5600], [90, 5890]], [walker(c, 0, 5600), walker(c, 1, 5600)], { sp: 3, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0 });

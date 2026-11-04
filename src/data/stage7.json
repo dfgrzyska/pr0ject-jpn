@@ -10,6 +10,7 @@
   "scroll": { "far": 12, "mid": 30, "near": 64, "anchor": 420 },
   "boss": true,
   "end": 232,
+  "interlude": { "from": 43, "to": 54.5, "x": 60, "u": 1606, "n": 24, "title": "CHWILA CISZY", "sub": "NIECH SPOCZYWAJĄ W POKOJU" },
   "music": {
     "schedule": [[0, "s7_intro"], [28, "s7_build"], [132, "s7_full"]],
     "heavy": "s7_heavy",

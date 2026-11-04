@@ -56,6 +56,22 @@ export class Sfx {
     src.start(t, Math.random() * 0.4, len + 0.05);
   }
 
+  /** A temple bell (bonshō) struck once: low inharmonic partials, slightly beating, ringing out for seconds. */
+  bell() {
+    if (!this.ready('bell', 2)) return;
+    const t = this.now();
+    const s = this.s;
+    for (const [f, a, len] of [[98, 0.11, 6], [98.6, 0.06, 5.5], [196.4, 0.05, 4.5], [261, 0.035, 3.6], [392.5, 0.022, 2.6], [523, 0.012, 1.8]]) {
+      const o = s.osc('sine', f, t, t + len + 0.05);
+      const g = s.gain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(a, t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      o.connect(g).connect(this.out);
+    }
+    this.sweep(900, 200, 0.18, 0.05, t);
+  }
+
   shot(weapon) {
     if (!this.ready(`shot_${weapon}`, SHOT_GAP[weapon] ?? 0.08)) return;
     const t = this.now();
