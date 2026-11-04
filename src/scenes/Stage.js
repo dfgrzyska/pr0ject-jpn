@@ -11,6 +11,7 @@ import { JapanMap } from '../game/JapanMap.js';
 import { Debug } from '../game/Debug.js';
 import { Interlude } from '../game/Interlude.js';
 import { Ending } from '../game/Ending.js';
+import { PauseMenu } from '../game/PauseMenu.js';
 import { Parallax } from '../game/Parallax.js';
 import { Player } from '../game/Player.js';
 import { Pool } from '../game/Pool.js';
@@ -100,6 +101,7 @@ export class Stage extends Phaser.Scene {
     this.H = this.scale.height;
     this.state = 'title';
     this.paused = false;
+    this.pauseMenu = null;
     this.bombClear = 0;
     this.t = 0;
     this.endTimer = 0;
@@ -157,7 +159,7 @@ export class Stage extends Phaser.Scene {
     this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,K,L,I,G,ESC,P,ENTER,SPACE');
     this.input.on('pointerdown', this.onPointerDown, this);
     this.input.on('pointermove', (p) => {
-      if (this.state === 'city') this.journey.pointerMove(p);
+      if (this.state === 'city' || this.state === 'title') this.journey.pointerMove(p);
       else if (this.state === 'play' && !this.paused) this.player.dragMove(p);
     });
     this.input.on('pointerup', (p) => { this.player.endDrag(p); this.journey?.pointerUp(p); });
@@ -281,7 +283,7 @@ export class Stage extends Phaser.Scene {
 
   /** After game over: return to the menu for a fresh journey. */
   restart() {
-    this.scene.restart();
+    this.scene.restart({});
   }
 
   /** After the results of a cleared stage: the map of Japan, the ship flying on to the next city. */
@@ -315,7 +317,7 @@ export class Stage extends Phaser.Scene {
   /** After a cleared stage: carry everything into the next city of this game's order, or start a new game. */
   advance() {
     const pos = this.pos + 1;
-    if (pos >= this.order.length) return this.scene.restart();
+    if (pos >= this.order.length) return this.scene.restart({});
     const p = this.player;
     const s = this.score;
     this.scene.restart({
@@ -477,19 +479,31 @@ export class Stage extends Phaser.Scene {
     this.player.drag = null;
     this.music.setPaused(this.paused);
     if (this.paused) {
-      const touch = this.sys.game.device.input.touch;
-      this.hud.panel([['PAUZA', 0xffffff, 2], '', [touch ? 'DOTKNIJ, ABY WRÓCIĆ' : 'ESC - POWRÓT', 0xffe080, 1, true]]);
+      this.pauseMenu = new PauseMenu(this);
       this.anims.pauseAll();
       this.time.paused = true;
     } else {
+      this.pauseMenu?.destroy();
+      this.pauseMenu = null;
       this.hud.closePanel();
       this.anims.resumeAll();
       this.time.paused = false;
     }
   }
 
+  returnToTitle() {
+    this.pauseMenu?.destroy();
+    this.pauseMenu = null;
+    this.paused = false;
+    this.anims.resumeAll();
+    this.time.paused = false;
+    this.music.setPaused(false);
+    this.scene.restart({});
+  }
+
   // ---------------------------------------------------------------- input
   onPointerDown(p) {
+    if (this.paused) return this.pauseMenu?.pointer(p);
     if (this.state === 'select' && p.x < 60 && p.y < 28) return this.openCities();
     if (this.hud.hitSound(p)) {
       this.music.unlock();
@@ -517,7 +531,7 @@ export class Stage extends Phaser.Scene {
       if (this.endTimer <= 0) this.leaveEnd();
       return;
     }
-    if (this.paused || this.hud.hitPause(p)) return this.togglePause();
+    if (this.hud.hitPause(p)) return this.togglePause();
     // the bomb corner only takes the touch when a bomb actually goes off; otherwise it steers like anywhere else
     if (this.hud.hitBomb(p) && this.player.bomb()) return;
     this.player.beginDrag(p);
@@ -529,9 +543,16 @@ export class Stage extends Phaser.Scene {
     const confirm = down(k.ENTER) || down(k.SPACE);
     const bomb = down(k.Z);
     const escape = down(k.ESC);
+    if (this.paused) {
+      if (escape || down(k.P)) this.pauseMenu.back();
+      else if (down(k.UP) || down(k.DOWN) || down(k.W) || down(k.S)) this.pauseMenu.move();
+      else if (confirm || bomb) this.pauseMenu.activate();
+      if (down(k.M)) this.music.toggle();
+      return;
+    }
     if (escape && this.state === 'city') return this.showTitle();
     if (escape && this.state === 'select') return this.openCities();
-    if (escape || down(k.P)) this.togglePause();
+    if (escape || down(k.P)) { this.togglePause(); if (this.paused) return; }
     if (down(k.M)) this.music.toggle();
     if (down(k.G)) this.debug.toggle();
     if (this.state === 'title') {
@@ -559,8 +580,6 @@ export class Stage extends Phaser.Scene {
       if (confirm || bomb) this.ending.tap();
     } else if (this.state === 'over' || this.state === 'clear') {
       if (confirm && this.endTimer <= 0) this.leaveEnd();
-    } else if (this.paused) {
-      if (confirm) this.togglePause();
     } else if (bomb) this.player.bomb();
   }
 
@@ -569,6 +588,7 @@ export class Stage extends Phaser.Scene {
     this.cameras.resize(VIEW.width, this.H);
     this.hud.layout(this.H);
     this.journey?.layout(this.H);
+    this.pauseMenu?.layout(this.H);
     this.select?.layout(this.H);
     this.map?.layout(this.H);
     this.ending?.layout(this.H);

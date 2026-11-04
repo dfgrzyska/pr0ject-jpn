@@ -19,6 +19,7 @@ export class JourneyMenu {
     this.scene = scene;
     this.index = index;
     this.time = 0;
+    this.modeTime = 0;
     this.items = [];
     const add = (o, depth = DEPTH.overlay + 1) => { this.items.push(o); return o.setDepth(depth); };
     this.bg = add(scene.add.rectangle(0, 0, VIEW.width, VIEW.maxHeight, 0x0c1830).setOrigin(0), DEPTH.overlay);
@@ -28,6 +29,8 @@ export class JourneyMenu {
     this.labels = STAGES.map((s) => add(pixelText(scene, 0, 0, s.name)));
     this.ship = add(scene.add.image(0, 0, 'sprites', SHIPS[scene.shipIndex].frame), DEPTH.overlay + 2);
     this.logo = add(scene.add.image(90, 0, 'sprites', 'logo'));
+    this.tagline = add(pixelText(scene, 90, 0, 'JAPONIA CZEKA').setTint(0xe6bc81));
+    this.caption = add(pixelText(scene, 90, 0, 'SIEDEM MIAST. JEDNA PODRÓŻ.').setTint(0x829fb2));
     this.heading = add(pixelText(scene, 90, 50, 'WYBIERZ MIASTO'));
     this.newGame = add(pixelText(scene, 90, 0, 'NOWA GRA'));
     this.stamps = add(pixelText(scene, 90, 0, 'PIECZĄTKI'));
@@ -43,22 +46,34 @@ export class JourneyMenu {
 
   city(i) {
     const [x, y] = project(...STAGES[i].map);
-    return { x: Math.round(x * 0.8), y: Math.round(y * 0.8 + this.map.y) };
+    return { x: Math.round(x * this.map.scaleX), y: Math.round(y * this.map.scaleY + this.map.y) };
   }
 
   layout(H) {
     this.H = H;
     this.bg.setSize(VIEW.width, H);
-    this.map.y = Math.round((H - MAP.h * 0.8) / 2);
+    const scale = this.mode === 'city' ? 0.8 : 1;
+    this.scene.tweens.killTweensOf(this.map);
+    this.map.setScale(scale);
+    this.map.y = Math.round((H - MAP.h * scale) / 2);
     this.railTop = 80;
     this.railBottom = H - 100;
-    this.logo.y = Math.round(H * 0.3);
+    this.logo.y = Math.round(H * 0.29);
+    this.tagline.y = this.logo.y + 30;
+    this.caption.y = H - 40;
     this.newGame.y = Math.round(H * 0.54);
-    this.stamps.y = this.newGame.y + 36;
+    this.stamps.y = this.newGame.y + 44;
     this.name.y = H - 73;
     this.subtitle.y = H - 58;
     this.next.y = H - 30;
     this.hint.y = H - 12;
+    this.layoutLabels();
+    const p = this.city(this.index);
+    this.ship.setPosition(p.x, p.y);
+    this.flight = null;
+  }
+
+  layoutLabels() {
     this.labels.forEach((label, i) => {
       const p = this.city(i);
       const half = label.width / 2;
@@ -66,22 +81,23 @@ export class JourneyMenu {
       const y = p.y + (STAGES[i].id === 'stage7' ? -26 : STAGES[i].map[3] * 0.8);
       label.setPosition(Math.round(x), Math.round(y));
     });
-    const p = this.city(this.index);
-    this.ship.setPosition(p.x, p.y);
-    this.flight = null;
   }
 
   setMode(mode) {
     this.mode = mode;
+    this.modeTime = 0;
     this.drag = null;
     const title = mode === 'title';
     const cities = mode === 'city';
-    for (const o of [this.logo, this.newGame, this.stamps]) o.setVisible(title);
-    for (const o of [this.heading, this.name, this.subtitle, this.next, this.ship, ...this.labels]) o.setVisible(cities);
+    for (const o of [this.logo, this.tagline, this.caption, this.newGame, this.stamps]) o.setVisible(title);
+    for (const o of [this.heading, this.name, this.subtitle, this.next, ...this.labels]) o.setVisible(cities);
+    this.ship.setVisible(title || cities).setDepth(DEPTH.overlay + (title ? 0.5 : 2));
+    if (cities) this.ship.setRotation(0);
     this.back.setVisible(cities);
     this.hint.setVisible(title || cities);
     this.scene.tweens.killTweensOf(this.map);
-    this.scene.tweens.add({ targets: this.map, alpha: title ? 0.3 : 1, duration: 250 });
+    const scale = cities ? 0.8 : 1;
+    this.scene.tweens.add({ targets: this.map, scaleX: scale, scaleY: scale, y: Math.round((this.H - MAP.h * scale) / 2), alpha: title ? 0.58 : 1, duration: 450, ease: 'Sine.easeInOut' });
     this.name.setText(STAGES[this.index].name).setTint(0xffe080);
     this.subtitle.setText(tr(STAGES[this.index].subtitle));
     this.next.setTint(0xffe080);
@@ -112,9 +128,9 @@ export class JourneyMenu {
 
   pointerDown(p) {
     if (this.mode === 'title') {
-      if (p.x < 25 || p.x > 155) return;
-      if (Math.abs(p.y - this.newGame.y) <= 15) this.scene.openCities();
-      else if (Math.abs(p.y - this.stamps.y) <= 15) this.scene.openBook();
+      if (p.x < 14 || p.x > 166) return;
+      if (Math.abs(p.y - this.newGame.y) <= 18) this.scene.openCities();
+      else if (Math.abs(p.y - this.stamps.y) <= 18) this.scene.openBook();
       return;
     }
     if (p.y < 28 && p.x < 60) return this.scene.showTitle();
@@ -132,12 +148,21 @@ export class JourneyMenu {
     if (nearest !== null) this.choose(nearest);
   }
 
-  pointerMove(p) { if (this.drag === p.id && p.isDown) this.slide(p.y); }
+  pointerMove(p) {
+    if (this.mode === 'title' && p.x >= 14 && p.x <= 166) {
+      if (Math.abs(p.y - this.newGame.y) <= 18) this.focus = 0;
+      else if (Math.abs(p.y - this.stamps.y) <= 18) this.focus = 1;
+    }
+    if (this.drag === p.id && p.isDown) this.slide(p.y);
+  }
   pointerUp(p) { if (this.drag === p.id) this.drag = null; }
   remember() { try { localStorage.setItem(CITY_KEY, STAGES[this.index].id); } catch { /* private mode */ } }
 
   update(dt) {
     this.time += dt;
+    this.modeTime += dt;
+    this.layoutLabels();
+    if (!this.flight && this.mode === 'city') { const p = this.city(this.index); this.ship.setPosition(p.x, p.y); }
     this.clouds.forEach((c, i) => c.setPosition(((this.time * (2 + i) + i * 100) % 240) - 30, this.H * (0.35 + i * 0.25)));
     this.newGame.setTint(this.focus === 0 ? 0xffe080 : 0xb0aec0);
     this.stamps.setTint(this.focus === 1 ? 0xffe080 : 0xb0aec0);
@@ -150,20 +175,52 @@ export class JourneyMenu {
       this.labels[i].setTint(selected ? 0xffe080 : 0xb0c1ce);
     });
     if (this.mode === 'title') {
-      for (const [i, text] of [this.newGame, this.stamps].entries())
-        g.lineStyle(1, this.focus === i ? 0xffe080 : 0x436078).strokeRoundedRect(25, text.y - 15, 130, 30, 3);
+      const appear = Math.min(1, this.modeTime / 0.6);
+      this.logo.setAlpha(appear).setY(Math.round(this.H * 0.29 + Math.sin(this.time * 1.6) * 2));
+      this.tagline.setAlpha(appear * (0.85 + Math.sin(this.time * 2) * 0.15));
+      // A quiet flight over the full-width atlas, behind the menu cards.
+      const t = (this.time * 0.045) % 1;
+      const x = -18 + t * 216, y = this.H * 0.42 - Math.sin(t * Math.PI) * 62;
+      this.ship.setPosition(Math.round(x), Math.round(y)).setRotation(Math.atan2(-62 * Math.PI * Math.cos(t * Math.PI), 216) + Math.PI / 2).setAlpha(0.8);
+      for (let n = 1; n <= 14; n++) {
+        const u = t - n * 0.009;
+        if (u < 0) continue;
+        g.fillStyle(0xd8c9a4, (1 - n / 15) * 0.35).fillRect(Math.round(-18 + u * 216), Math.round(this.H * 0.42 - Math.sin(u * Math.PI) * 62), 1, 1);
+      }
+      for (let n = 0; n < 18; n++) {
+        const x = (n * 47 + Math.sin(this.time * 0.4 + n) * 5 + 180) % 180;
+        const y = (n * 71 - this.time * (2 + n % 3) + this.H * 100) % this.H;
+        g.fillStyle(0xffdfb0, 0.12 + (Math.sin(this.time * 2 + n) + 1) * 0.12).fillRect(Math.round(x), Math.round(y), 1, 1);
+      }
+      g.lineStyle(1, 0xcba671, 0.6).lineBetween(56, this.tagline.y + 14, 124, this.tagline.y + 14);
+      for (const [i, text] of [this.newGame, this.stamps].entries()) {
+        const active = this.focus === i;
+        const reveal = Math.max(0, Math.min(1, (this.modeTime - i * 0.1) / 0.4));
+        text.setAlpha(reveal);
+        g.fillStyle(0x050e1b, 0.65 * reveal).fillRoundedRect(16, text.y - 16, 152, 38, 5);
+        g.fillStyle(active ? 0x253c50 : 0x102438, 0.95 * reveal).fillRoundedRect(14, text.y - 19, 152, 38, 5);
+        g.lineStyle(1, active ? 0xffdf9a : 0x4d7188, reveal).strokeRoundedRect(14, text.y - 19, 152, 38, 5);
+        if (active) {
+          const offset = Math.round(Math.sin(this.time * 5) * 2);
+          g.fillStyle(0xffdf9a, reveal).fillTriangle(24 + offset, text.y - 3, 24 + offset, text.y + 3, 28 + offset, text.y);
+          g.lineStyle(1, 0xffdf9a, 0.4 + Math.sin(this.time * 3) * 0.15).lineBetween(43, text.y + 14, 137, text.y + 14);
+        }
+      }
       return;
     }
-    g.fillStyle(0x132942).fillRoundedRect(153, this.railTop - 17, 25, this.railBottom - this.railTop + 34, 5);
-    g.lineStyle(1, 0x66869e).lineBetween(166, this.railTop, 166, this.railBottom);
+    this.ship.setAlpha(1);
+    const railOffset = Math.round(34 * (1 - Math.min(1, this.modeTime / 0.35)) ** 2);
+    g.fillStyle(0x132942).fillRoundedRect(153 + railOffset, this.railTop - 17, 25, this.railBottom - this.railTop + 34, 5);
+    g.lineStyle(1, 0x66869e).lineBetween(166 + railOffset, this.railTop, 166 + railOffset, this.railBottom);
     NORTH_TO_SOUTH.forEach((i, k) => {
       const y = this.railTop + k * (this.railBottom - this.railTop) / 6;
-      g.fillStyle(i === this.index ? 0xffe080 : 0x66869e).fillCircle(166, y, i === this.index ? 6 : 2);
-      if (i === this.index) g.lineStyle(1, 0x0c1830).lineBetween(163, y, 169, y);
+      g.fillStyle(i === this.index ? 0xffe080 : 0x66869e).fillCircle(166 + railOffset, y, i === this.index ? 6 : 2);
+      if (i === this.index) g.lineStyle(1, 0x0c1830).lineBetween(163 + railOffset, y, 169 + railOffset, y);
     });
     g.lineStyle(1, 0xffe080).strokeRoundedRect(32, this.next.y - 14, 116, 28, 3);
     const f = this.flight;
     if (!f) return;
+    f.to = this.city(this.index);
     f.t += dt;
     const k = Math.min(1, f.t / f.duration), e = k * k * (3 - 2 * k);
     const at = (t) => ({ x: (1 - t) ** 2 * f.from.x + 2 * (1 - t) * t * f.cx + t * t * f.to.x,
