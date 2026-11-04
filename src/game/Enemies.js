@@ -841,10 +841,55 @@ export class Enemies {
       e.x += Math.cos(e.ang) * e.v * dt;
       e.y += Math.sin(e.ang) * e.v * dt;
       if (this.scene.parallax.nearKind === 'sakura') {
-        for (const bit of this.scene.parallax.bitsLive) {
-          if (Math.abs(bit.x - e.x) < 15 && Math.abs(bit.y - e.y) < 15) {
-            bit.vx += (bit.x >= e.x ? 1 : -1) * 55 * dt;
+        const px = this.scene.parallax;
+        for (const bit of px.bitsLive) {
+          const dx = bit.x - e.x;
+          const dy = bit.y - e.y;
+          if (Math.abs(dx) < 38 && Math.abs(dy) < 38) {
+            const d = Math.hypot(dx, dy) || 1;
+            if (d < 38) {
+              const k = 1 - d / 38;
+              bit.vx += (dx >= 0 ? 1 : -1) * 320 * k * dt;
+              bit.vy += (dy >= 0 ? 90 : -50) * k * dt;
+              bit.flipT = 0.055;
+              bit.sway = Math.max(bit.sway, 16);
+              bit.setAlpha(0.92);
+            }
           }
+        }
+        if (Math.random() < dt * 28) {
+          const nx = -Math.sin(e.ang);
+          const ny = Math.cos(e.ang);
+          const bx = e.x - Math.cos(e.ang) * 6;
+          const by = e.y - Math.sin(e.ang) * 6;
+          const side = Math.random() < 0.5 ? -1 : 1;
+          const b = px.bit(
+            `petal_${Math.floor(Math.random() * 4)}`,
+            bx + nx * side * 4,
+            by + ny * side * 4,
+            28 + Math.random() * 26,
+            nx * side * (65 + Math.random() * 45),
+            0,
+            14,
+            Math.random() * 3,
+            0.055,
+          );
+          b.setAlpha(0.88);
+          const s2 = -side;
+          const wp = this.scene.fx.part(
+            this.scene.fx.parts,
+            `petal_${Math.floor(Math.random() * 4)}`,
+            bx + nx * s2 * 4,
+            by + ny * s2 * 4,
+          );
+          wp.vx = nx * s2 * (70 + Math.random() * 55);
+          wp.vy = ny * s2 * (45 + Math.random() * 35) + 18;
+          wp.drag = 1.6;
+          wp.g = 18;
+          wp.spin = s2 * (10 + Math.random() * 6);
+          wp.life = wp.max = 0.5 + Math.random() * 0.2;
+          wp.a0 = 0.92;
+          wp.setScale(1.1);
         }
       }
     }

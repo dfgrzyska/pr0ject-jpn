@@ -175,14 +175,20 @@ export class Parallax {
     let j = 0;
     const pl = this.nearKind === 'sakura' && this.scene.player?.alive ? this.scene.player : null;
     for (const b of this.bitsLive) {
-      if (pl && Math.abs(b.x - pl.x) < 28 && Math.abs(b.y - pl.y) < 28) {
+      if (pl && Math.abs(b.x - pl.x) < 46 && Math.abs(b.y - pl.y) < 46) {
         const dx = b.x - pl.x;
         const dy = b.y - pl.y;
         const d = Math.hypot(dx, dy) || 1;
-        if (d < 28) {
-          const k = 1 - d / 28;
-          b.vx += (Math.abs(dx) > 2 ? dx / d : pl.bank >= 0 ? 1 : -1) * k * 220 * dt;
-          b.vy += ((dy / d) * 90 - 40) * k * dt;
+        if (d < 46) {
+          const k = 1 - d / 46;
+          const sx = Math.abs(dx) > 2 ? Math.sign(dx) : pl.bank < -0.1 ? 1 : pl.bank > 0.1 ? -1 : (b.age * 17) % 2 > 1 ? 1 : -1;
+          b.vx += (sx * (320 + Math.abs(pl.vx || 0) * 1.2) + (pl.vx || 0) * 0.35) * k * dt;
+          b.vy += ((dy < 0 ? -65 : 130) + (pl.vy || 0) * 0.3) * k * dt;
+          if (d < 34) {
+            b.flipT = 0.055;
+            b.sway = Math.max(b.sway, 16);
+            b.setAlpha(0.92);
+          }
         }
       }
       if (this.drift(b, dt, H)) {
@@ -191,6 +197,41 @@ export class Parallax {
       } else this.bitsLive[j++] = b;
     }
     this.bitsLive.length = j;
+    if (pl && !pl.entering) {
+      const spd = Math.hypot(pl.vx || 0, pl.vy || 0);
+      const canopy = pl.x < 44 || pl.x > VIEW.width - 44 ? 14 : 0;
+      const rate = 8 + canopy + Math.min(36, spd * 0.32 + Math.abs(pl.bank) * 20);
+      if (Math.random() < dt * rate) {
+        const side = Math.random() < 0.5 ? -1 : 1;
+        const b = this.bit(
+          `petal_${Math.floor(Math.random() * 4)}`,
+          pl.x + side * (5 + Math.random() * 5),
+          pl.y - 2 + Math.random() * 8,
+          36 + Math.random() * 34,
+          side * (68 + Math.random() * 55) - (pl.vx || 0) * 0.25,
+          0,
+          14 + Math.random() * 6,
+          Math.random() * 3,
+          0.055,
+        );
+        b.setAlpha(0.88);
+        const s2 = -side;
+        const wp = this.scene.fx.part(
+          this.scene.fx.parts,
+          `petal_${Math.floor(Math.random() * 4)}`,
+          pl.x + s2 * (6 + Math.random() * 4),
+          pl.y + 2,
+        );
+        wp.vx = s2 * (75 + Math.random() * 60) - (pl.vx || 0) * 0.3;
+        wp.vy = 28 + Math.random() * 38;
+        wp.drag = 1.5;
+        wp.g = 18;
+        wp.spin = s2 * (9 + Math.random() * 7);
+        wp.life = wp.max = 0.55 + Math.random() * 0.25;
+        wp.a0 = 0.92;
+        wp.setScale(1.15);
+      }
+    }
   }
 
   /** Move a drifting bit (sprite or bob) along; true once it has left the screen. */
@@ -199,7 +240,7 @@ export class Parallax {
     p.y += p.vy * dt;
     // snow drifts with the current wind (wf = how strongly, by flake size)
     p.x += (p.vx + (p.wf ? this.wind * p.wf : 0) + Math.sin(p.age * 3) * p.sway) * dt;
-    if (Math.abs(p.vx) > 12) p.vx *= Math.max(0, 1 - 1.8 * dt);
+    if (Math.abs(p.vx) > 14) p.vx *= Math.max(0, 1 - 1.35 * dt);
     if (p.flipT && p.age % (p.flipT * 2) < dt) p.setFlipX(!p.flipX);
     return p.y > H + 40 || p.y < -60 || p.x < -60 || p.x > VIEW.width + 60;
   }
@@ -321,7 +362,7 @@ export class Parallax {
   spawnSakura(dt, fall, scrolling) {
     this.petalTimer -= dt;
     if (this.petalTimer <= 0) {
-      this.petalTimer = 0.25 + Math.random() * 0.4;
+      this.petalTimer += 0.09 + Math.random() * 0.14;
       const p = this.bit(
         `petal_${Math.floor(Math.random() * 4)}`,
         Math.random() * 196 - 8,
@@ -333,7 +374,7 @@ export class Parallax {
         0,
         0.15 + Math.random() * 0.3,
       );
-      p.setAlpha(0.65);
+      p.setAlpha(0.75);
     }
     this.mistTimer -= dt;
     if (this.mistTimer <= 0 && scrolling) {

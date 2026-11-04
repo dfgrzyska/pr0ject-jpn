@@ -159,10 +159,13 @@ export class Player {
         const vx = this.x - (this.prevX ?? this.x);
         bank = Math.abs(vx) > 0.3 ? Math.sign(vx) : 0;
       }
+      const dx = this.x - (this.prevX ?? this.x);
       this.prevX = this.x;
+      this.vx = dt > 0 ? dx / dt : 0;
       const dy = this.y - (this.prevY ?? this.y);
       this.prevY = this.y;
       const vy = dt > 0 ? dy / dt : 0;
+      this.vy = vy;
       const thrustTarget = vy < -8 ? Math.min(1, -vy / this.ship.speed) : vy > 8 ? Math.max(-0.4, (-vy / this.ship.speed) * 0.45) : 0;
       this.thrust += (thrustTarget - this.thrust) * Math.min(1, 14 * dt);
       const bankRate = 13 * (this.ship.speed / 100);
