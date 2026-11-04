@@ -906,7 +906,8 @@ export class Enemies {
             }
           }
         }
-        if (Math.random() < dt * 28) {
+        // Kyoto only: diving lanterns trail petals (Miyajima's shamoji just part the falling leaves)
+        if (px.nearKind === 'sakura' && Math.random() < dt * 28) {
           const nx = -Math.sin(e.ang);
           const ny = Math.cos(e.ang);
           const bx = e.x - Math.cos(e.ang) * 6;

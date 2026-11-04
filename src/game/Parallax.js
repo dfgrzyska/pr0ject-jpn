@@ -201,7 +201,8 @@ export class Parallax {
       } else this.bitsLive[j++] = b;
     }
     this.bitsLive.length = j;
-    if (pl && !pl.entering) {
+    // Kyoto only: the ship kicks up a slipstream of petals; elsewhere it just parts the falling leaves
+    if (pl && !pl.entering && this.nearKind === 'sakura') {
       const spd = Math.hypot(pl.vx || 0, pl.vy || 0);
       const canopy = pl.x < 44 || pl.x > VIEW.width - 44 ? 14 : 0;
       const rate = 8 + canopy + Math.min(36, spd * 0.32 + Math.abs(pl.bank) * 20);
