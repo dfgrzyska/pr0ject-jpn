@@ -6,6 +6,7 @@ import { Bullets } from '../game/Bullets.js';
 import { Enemies } from '../game/Enemies.js';
 import { Fx } from '../game/Fx.js';
 import { Hud, pixelText } from '../game/Hud.js';
+import { JourneyMenu, lastCity } from '../game/JourneyMenu.js';
 import { JapanMap } from '../game/JapanMap.js';
 import { Debug } from '../game/Debug.js';
 import { Interlude } from '../game/Interlude.js';
@@ -19,11 +20,10 @@ import { INK, PALE, StampBook, hasStamp, pressStamp, stampFrame } from '../game/
 import { Waves } from '../game/Waves.js';
 import { isEasy, rules } from '../difficulty.js';
 import { getLang, setLang, t } from '../i18n.js';
-import { canInstall, install, iosHint } from '../pwa.js';
+import { canInstall, install } from '../pwa.js';
 import { stageReady } from './Boot.js';
 
 const HI_KEY = 'shmupjp.hiscore'; // (easy keeps its own record, .easy)
-let logoPressed = false; // the logo comes down like a stamp the first time the title shows
 const SHIP_KEY = 'shmupjp.ship';
 
 function loadShipIndex() {
@@ -71,7 +71,7 @@ export class Stage extends Phaser.Scene {
     // every new game plays all the cities in a fresh random order; "ETAP n" is the place in that order
     // (debug: ?stage=2 puts stage 2, Okinawa, first)
     const qStage = Number(new URLSearchParams(window.location.search).get('stage')) - 1;
-    this.order = data.order ?? randomOrder(qStage >= 0 && qStage < STAGES.length ? qStage : null);
+    this.order = data.order ?? randomOrder(qStage >= 0 && qStage < STAGES.length ? qStage : lastCity());
     this.pos = data.pos ?? 0;
     this.stageIndex = this.order[this.pos];
     this.stage = STAGES[this.stageIndex];
@@ -138,6 +138,7 @@ export class Stage extends Phaser.Scene {
     const qShip = SHIPS.findIndex((sh) => sh.id === q.get('ship'));
     this.shipIndex = qShip >= 0 ? qShip : loadShipIndex();
     this.select = null;
+    this.journey = null;
     this.map = null; // the map of Japan between stages
     this.book = null; // the stamp book
     this.stampLand = null; // the stamp coming down onto the results
@@ -155,9 +156,12 @@ export class Stage extends Phaser.Scene {
 
     this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,K,L,I,G,ESC,P,ENTER,SPACE');
     this.input.on('pointerdown', this.onPointerDown, this);
-    this.input.on('pointermove', (p) => this.state === 'play' && !this.paused && this.player.dragMove(p));
-    this.input.on('pointerup', (p) => this.player.endDrag(p));
-    this.input.on('pointerupoutside', (p) => this.player.endDrag(p));
+    this.input.on('pointermove', (p) => {
+      if (this.state === 'city') this.journey.pointerMove(p);
+      else if (this.state === 'play' && !this.paused) this.player.dragMove(p);
+    });
+    this.input.on('pointerup', (p) => { this.player.endDrag(p); this.journey?.pointerUp(p); });
+    this.input.on('pointerupoutside', (p) => { this.player.endDrag(p); this.journey?.pointerUp(p); });
     this.scale.on('resize', this.onResize, this);
     this.game.events.on('hidden', this.onHidden, this);
     this.events.once('shutdown', () => {
@@ -179,8 +183,10 @@ export class Stage extends Phaser.Scene {
       return;
     }
     this.music.play('title'); // audible once the browser allows audio (first tap / key)
-    if (data.select) this.openSelect();
-    else this.showTitle();
+    if (data.select) {
+      this.journey = new JourneyMenu(this, this.stageIndex);
+      this.openSelect();
+    } else this.showTitle();
   }
 
   /** Bring in the other cities' backgrounds while this one is played, the next city first. */
@@ -190,33 +196,23 @@ export class Stage extends Phaser.Scene {
 
   // ---------------------------------------------------------------- flow
   showTitle() {
-    const touch = this.sys.game.device.input.touch;
-    this.hud.panel([
-      { image: 'logo', h: 30 },
-      '',
-      [this.stageTitle, 0xffffff],
-      [this.stage.subtitle, 0xf08bb0],
-      '',
-      { sprite: 'pickup_red', x: 52, text: 'ROZRZUT', tint: 0xff8a6a },
-      { sprite: 'pickup_blue', x: 52, text: 'LASER', tint: 0x8ac8ff },
-      { sprite: 'pickup_green', x: 52, text: 'NAPROWADZANE', tint: 0x9cf09a },
-      '',
-      [touch ? 'PRZESUWAJ PALCEM' : 'STRZAŁKI / WASD - RUCH', 0xb0aec0],
-      [touch ? 'BOMBA - PRZYCISK W ROGU' : 'Z - BOMBA   ESC - PAUZA', 0xb0aec0],
-      [touch ? 'DŹWIĘK - GŁOŚNIK U GÓRY' : 'M - DŹWIĘK', 0xb0aec0],
-      [t(touch ? 'book.openTouch' : 'book.openKeys'), 0xe8a080],
-      ...(touch ? [] : [[t('lang.keys'), 0xb0aec0]]),
-      // the game as an app on the phone
-      ...(canInstall() ? [[t(touch ? 'app.touch' : 'app.keys'), 0x9ad8ff]] : []),
-      ...(iosHint() ? [[t('app.ios1'), 0x9ad8ff], [t('app.ios2'), 0x9ad8ff]] : []),
-      '',
-      [touch ? 'DOTKNIJ, ABY ZACZĄĆ' : 'ENTER - START', 0xffe080, 1, true],
-    ]);
-    if (!logoPressed) {
-      logoPressed = true;
-      const img = this.hud.overlayItems.find((o) => o.frame?.name === 'logo');
-      if (img) this.logoLand = { img, t: -0.3, done: false };
-    }
+    this.hud.closePanel();
+    this.state = 'title';
+    const index = this.journey?.index ?? this.stageIndex;
+    this.journey?.destroy();
+    this.journey = new JourneyMenu(this, index);
+  }
+
+  openCities() {
+    this.select?.destroy();
+    this.select = null;
+    this.state = 'city';
+    this.journey.setMode('city');
+  }
+
+  confirmCity() {
+    this.journey.remember();
+    this.scene.restart({ order: randomOrder(this.journey.index), pos: 0, select: true });
   }
 
   /** Polish / English, from the title screen. */
@@ -228,6 +224,7 @@ export class Stage extends Phaser.Scene {
   /** The stamp book, opened from the title screen. */
   openBook() {
     this.hud.closePanel();
+    this.journey.setMode('backdrop');
     this.state = 'book';
     this.book = new StampBook(this, t);
   }
@@ -241,11 +238,14 @@ export class Stage extends Phaser.Scene {
 
   openSelect() {
     this.hud.closePanel();
+    this.journey?.setMode('backdrop');
     this.state = 'select';
     this.select = new ShipSelect(this, this.shipIndex);
   }
 
   startGame() {
+    this.journey?.destroy();
+    this.journey = null;
     this.music.unlock();
     this.hud.closePanel();
     if (this.select) {
@@ -279,9 +279,9 @@ export class Stage extends Phaser.Scene {
     this.hud.cityCard(`seal_${this.stage.id}`, this.stampInk, this.stageTitle, this.stage.subtitle);
   }
 
-  /** After game over: a new game in a new random order (ship selection, fresh lives and score). */
+  /** After game over: return to the menu for a fresh journey. */
   restart() {
-    this.scene.restart({ select: true });
+    this.scene.restart();
   }
 
   /** After the results of a cleared stage: the map of Japan, the ship flying on to the next city. */
@@ -315,7 +315,7 @@ export class Stage extends Phaser.Scene {
   /** After a cleared stage: carry everything into the next city of this game's order, or start a new game. */
   advance() {
     const pos = this.pos + 1;
-    if (pos >= this.order.length) return this.scene.restart({ select: true });
+    if (pos >= this.order.length) return this.scene.restart();
     const p = this.player;
     const s = this.score;
     this.scene.restart({
@@ -490,16 +490,18 @@ export class Stage extends Phaser.Scene {
 
   // ---------------------------------------------------------------- input
   onPointerDown(p) {
+    if (this.state === 'select' && p.x < 60 && p.y < 28) return this.openCities();
     if (this.hud.hitSound(p)) {
       this.music.unlock();
       this.music.toggle();
       return;
     }
     if (this.hud.hitDebug(p)) return this.debug.toggle();
+    if (this.state === 'city') return this.journey.pointerDown(p);
     if (this.state === 'title') {
       if (this.hud.hitLang(p)) return this.toggleLang();
       if (this.hud.hitInstall(p)) return install().then(() => this.state === 'title' && this.showTitle());
-      return this.hud.hitBook(p) ? this.openBook() : this.openSelect();
+      return this.journey.pointerDown(p);
     }
     if (this.state === 'book') return this.book.hitTurn(p) || this.closeBook();
     if (this.state === 'select') {
@@ -526,18 +528,26 @@ export class Stage extends Phaser.Scene {
     const down = Phaser.Input.Keyboard.JustDown;
     const confirm = down(k.ENTER) || down(k.SPACE);
     const bomb = down(k.Z);
-    if (down(k.ESC) || down(k.P)) this.togglePause();
+    const escape = down(k.ESC);
+    if (escape && this.state === 'city') return this.showTitle();
+    if (escape && this.state === 'select') return this.openCities();
+    if (escape || down(k.P)) this.togglePause();
     if (down(k.M)) this.music.toggle();
     if (down(k.G)) this.debug.toggle();
     if (this.state === 'title') {
       if (down(k.K)) this.openBook();
       else if (down(k.L)) this.toggleLang();
       else if (down(k.I) && canInstall()) install().then(() => this.state === 'title' && this.showTitle());
-      else if (confirm || bomb) this.openSelect();
+      else if (down(k.UP) || down(k.DOWN) || down(k.W) || down(k.S)) this.journey.focus = 1 - this.journey.focus;
+      else if (confirm || bomb) this.journey.focus === 0 ? this.openCities() : this.openBook();
+    } else if (this.state === 'city') {
+      if (down(k.UP) || down(k.W) || down(k.LEFT) || down(k.A)) this.journey.step(-1);
+      if (down(k.DOWN) || down(k.S) || down(k.RIGHT) || down(k.D)) this.journey.step(1);
+      if (confirm || bomb) this.confirmCity();
     } else if (this.state === 'book') {
       if (down(k.LEFT) || down(k.A)) this.book.turn(-1);
       else if (down(k.RIGHT) || down(k.D)) this.book.turn(1);
-      else if (confirm || bomb || down(k.K) || down(k.ESC)) this.closeBook();
+      else if (confirm || bomb || down(k.K) || escape) this.closeBook();
     } else if (this.state === 'select') {
       if (down(k.LEFT) || down(k.A)) this.select.select(this.select.index - 1);
       if (down(k.RIGHT) || down(k.D)) this.select.select(this.select.index + 1);
@@ -558,6 +568,7 @@ export class Stage extends Phaser.Scene {
     this.H = size.height;
     this.cameras.resize(VIEW.width, this.H);
     this.hud.layout(this.H);
+    this.journey?.layout(this.H);
     this.select?.layout(this.H);
     this.map?.layout(this.H);
     this.ending?.layout(this.H);
@@ -604,7 +615,8 @@ export class Stage extends Phaser.Scene {
     const playing = this.state === 'play';
     // the moving background steps back when the screen fills with bullets
     this.parallax.props.calmTarget = Math.max(0, Math.min(1, (this.bullets.pool.live.length - 10) / 30));
-    this.parallax.update(dt, this.state !== 'title' && this.state !== 'select', this.H);
+    this.parallax.update(dt, !['title', 'city', 'book', 'select'].includes(this.state), this.H);
+    this.journey?.update(dt);
     this.select?.update(dt);
     if (playing) {
       this.t += dt;
@@ -629,19 +641,6 @@ export class Stage extends Phaser.Scene {
       this.bullets.cancelAll(null);
     }
 
-    const logo = this.logoLand;
-    if (logo) {
-      // the logo pressed onto the title screen
-      logo.t += dt;
-      const k = Math.max(0, Math.min(1, logo.t / 0.22));
-      if (logo.img.active) logo.img.setScale(2.6 - 1.6 * k * k).setAlpha(logo.t < 0 ? 0 : Math.min(1, k * 2));
-      if (k >= 1 && !logo.done) {
-        logo.done = true;
-        this.sfx.stamp();
-        this.cameras.main.shake(140, 0.006);
-        this.logoLand = null;
-      }
-    }
     if (this.state === 'map') this.map.update(dt);
     if (this.state === 'ending') this.ending.update(dt);
     if (playing) this.run.time += dt;

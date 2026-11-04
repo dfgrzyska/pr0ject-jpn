@@ -25,6 +25,7 @@ export class Props {
   constructor(scene, id, meta, parallax) {
     this.scene = scene;
     this.key = `props_${id}`;
+    this.dispersePuffs = id === 'stage6'; // Only Beppu's hot-spring steam reacts to the ship.
     this.px = parallax;
     const off = new URLSearchParams(location.search).has('noprops') || !scene.textures.exists(this.key);
     this.list = off ? [] : (meta.props ?? []).map((p) => this.prepare(p));
@@ -331,7 +332,7 @@ export class Props {
 
   updateParts(dt, H) {
     let j = 0;
-    const pl = this.scene.player?.alive ? this.scene.player : null;
+    const pl = this.dispersePuffs && this.scene.player?.alive ? this.scene.player : null;
     for (const q of this.parts) {
       q.t += dt;
       const k = q.t / q.dur;

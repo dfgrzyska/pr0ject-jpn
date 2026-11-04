@@ -18,6 +18,7 @@ export class ShipSelect {
     const touch = scene.sys.game.device.input.touch;
     this.dim = scene.add.rectangle(0, 0, W, VIEW.maxHeight, 0x0b0a12, 0.72).setOrigin(0, 0).setDepth(DEPTH.overlay);
     this.box = scene.add.graphics().setDepth(d);
+    this.back = pixelText(scene, 27, 12, '< WRÓĆ').setDepth(d);
     this.title = pixelText(scene, W / 2, 0, 'WYBIERZ STATEK').setDepth(d).setTint(0xffd6e5);
     this.ships = SHIPS.map((s, i) => scene.add.image(SLOT_X[i], 0, 'sprites', s.frame).setScale(2).setDepth(d + 1));
     this.flames = SHIPS.map((s, i) =>
@@ -108,7 +109,7 @@ export class ShipSelect {
   }
 
   destroy() {
-    for (const o of [this.dim, this.box, this.title, this.role, this.hint, this.start, this.modeLabel, this.mode, this.modeInfo]) o.destroy();
+    for (const o of [this.back, this.dim, this.box, this.title, this.role, this.hint, this.start, this.modeLabel, this.mode, this.modeInfo]) o.destroy();
     for (const o of [...this.ships, ...this.flames, ...this.names, ...this.labels, ...this.pips.flat(), ...this.lifeIcons]) o.destroy();
   }
 }

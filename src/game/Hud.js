@@ -276,7 +276,8 @@ export class Hud {
     this.pips.forEach((pip, i) => pip.setFrame(i < p.level ? 'pip_on' : 'pip_off'));
     this.bombBtn.setAlpha(p.bombs > 0 ? 0.8 : 0.22);
     this.soundBtn.setFrame(s.music.enabled ? 'btn_sound_on' : 'btn_sound_off');
-    this.bookBtn.setVisible(s.state === 'title');
+    this.bookBtn.setVisible(false);
+    this.soundBtn.setDepth(['title', 'city', 'select'].includes(s.state) ? DEPTH.overlay + 3 : DEPTH.hud);
     this.installBtn.setVisible(s.state === 'title' && canInstall());
     const en = getLang() === 'en';
     this.langPl.setVisible(s.state === 'title').setTint(en ? 0x6a6a80 : 0xffe080);

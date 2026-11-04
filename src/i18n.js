@@ -49,6 +49,13 @@ const STRINGS = {
 };
 
 const EN = {
+  'DOTKNIJ, ABY WYBRAĆ': 'TAP TO CHOOSE',
+  'NOWA GRA': 'NEW GAME',
+  'PIECZĄTKI': 'STAMPS',
+  'WYBIERZ MIASTO': 'CHOOSE A CITY',
+  'DALEJ >': 'NEXT >',
+  '< WRÓĆ': '< BACK',
+  'STRZAŁKI / ENTER': 'ARROWS / ENTER',
   // title, pause, results
   PODSTAWOWA: 'BASIC',
   ROZRZUT: 'SPREAD',
