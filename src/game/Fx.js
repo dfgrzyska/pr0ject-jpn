@@ -22,6 +22,7 @@ const BITS = {
   ash: { frames: ['ashf_1', 'ashf_2', 'ember_0', 'ember_1'], speed: 55, life: 0.9, drag: 1.8, g: 10 },
   osaka: { frames: ['dot_1', 'dot_2'], tints: [0xff4fb0, 0x4fe8ff, 0xffe04f, 0x9a7aff], speed: 95, life: 0.45, drag: 2.4, g: 0 },
   steam: { frames: ['wisp_s_0', 'wisp_s_1'], speed: 22, life: 0.8, drag: 1.2, g: -14, grow: 0.9, alpha: 0.7 },
+  momiji: { frames: ['momiji_0', 'momiji_1', 'momiji_2', 'momiji_3'], speed: 62, life: 1.05, drag: 1.85, g: 15 },
 };
 
 export class Fx {

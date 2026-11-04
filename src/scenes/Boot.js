@@ -119,6 +119,13 @@ export class Boot extends Phaser.Scene {
     anim('mudboil', ['mudboil_0', 'mudboil_1'], 5);
     for (const c of ['red', 'blue', 'green']) anim(`oke_${c}`, [`oke_${c}_0`, `oke_${c}_1`], 3);
     for (const c of ['red', 'blue', 'green']) anim(`ramen_${c}`, [`ramen_${c}_0`, `ramen_${c}_1`], 4);
+    // stage 7 (Hiroshima & Miyajima)
+    anim('tsuru', ['tsuru_0', 'tsuru_1'], 7);
+    anim('shamoji', ['shamoji_0', 'shamoji_1'], 6);
+    anim('heike', ['heike_0', 'heike_1'], 5);
+    anim('sankibo', ['sankibo_0', 'sankibo_1'], 4);
+    anim('brazier', ['brazier_0', 'brazier_1'], 7);
+    for (const c of ['red', 'blue', 'green']) anim(`manju_${c}`, [`manju_${c}_0`, `manju_${c}_1`], 5);
     anim('homing', ['ps_homing_0', 'ps_homing_1'], 10);
     anim('expl_s', [0, 1, 2, 3, 4].map((i) => `expl_s_${i}`), 16, 0);
     anim('expl_m', [0, 1, 2, 3, 4, 5].map((i) => `expl_m_${i}`), 14, 0);

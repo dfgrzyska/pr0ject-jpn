@@ -26,6 +26,8 @@ const MINI = {
   U: ['#.#', '#.#', '#.#', '#.#', '.#.'],
   W: ['#.#', '#.#', '###', '###', '#.#'],
   Y: ['#.#', '#.#', '.#.', '.#.', '.#.'],
+  Z: ['###', '..#', '.#.', '#..', '###'],
+  Y: ['#.#', '#.#', '.#.', '.#.', '.#.'],
 };
 
 const on = (r, x, y) => r.set(Math.round(x), Math.round(y), 0xffffff);
@@ -257,6 +259,56 @@ function beppu() {
   return inkUp(r, 61);
 }
 
+/** Hiroshima & Miyajima: the Great Floating Torii (Ō-Torii) standing in Seto waves before Mount Misen. */
+function hiroshima(name = 'HIROSZIMA') {
+  const r = new Raster(S, S);
+  const inside = (x, y, k) => {
+    const dx = Math.abs(x + 0.5 - MID);
+    const dy = Math.abs(y + 0.5 - MID);
+    return dx < k && dy < k && dx + dy < k * 1.68;
+  };
+  for (let y = 0; y < S; y++)
+    for (let x = 0; x < S; x++)
+      if ((inside(x, y, 27) && !inside(x, y, 25)) || (inside(x, y, 23.5) && !inside(x, y, 22.5))) on(r, x, y);
+  nameBand(r, name, 40, 46, (x, y) => inside(x, y, 21.8));
+  // Mount Misen ridge silhouette in the distance
+  for (let x = 9; x <= 46; x++) {
+    const h1 = Math.round(25 - 6 * Math.exp(-(((x - 18) / 8) ** 2)) - 4 * Math.exp(-(((x - 38) / 7) ** 2)));
+    on(r, x, h1);
+  }
+  // Great Floating Torii: kasagi, shimaki, nuki crossbar, central tablet, main & sleeve pillars
+  eave(r, MID, 12, 15, 2);
+  eave(r, MID, 14, 13, 1);
+  for (let x = 15; x <= 40; x++) {
+    on(r, x, 18);
+    on(r, x, 19);
+  }
+  for (let y = 14; y <= 19; y++) for (let x = 26; x <= 29; x++) on(r, x, y);
+  off(r, 27, 16);
+  off(r, 28, 16);
+  for (const s of [-1, 1]) {
+    const px = Math.round(MID + s * 8.5);
+    for (let y = 14; y <= 34; y++) {
+      on(r, px, y);
+      on(r, px + (s < 0 ? 1 : -1), y);
+    }
+    const ox = Math.round(MID + s * 12.5);
+    for (let y = 25; y <= 34; y++) on(r, ox, y);
+    on(r, Math.round((px + ox) / 2), 27);
+    on(r, Math.round((px + ox) / 2), 31);
+  }
+  for (let x = 9; x <= 46; x++) if ((x + 1) % 4) on(r, x, 35 + (x % 6 < 3 ? 0 : 1));
+  for (let x = 13; x <= 42; x++) if ((x + 2) % 5) on(r, x, 38);
+  for (const [lx, ly] of [[11, 10], [43, 10]]) {
+    on(r, lx, ly);
+    on(r, lx - 1, ly + 1);
+    on(r, lx + 1, ly + 1);
+    on(r, lx, ly + 1);
+    on(r, lx, ly + 2);
+  }
+  return inkUp(r, 71);
+}
+
 export function stampSprites() {
   const out = [
     { name: 'stamp_stage1', raster: kyoto() },
@@ -266,6 +318,8 @@ export function stampSprites() {
     { name: 'stamp_stage4', raster: kagoshima() },
     { name: 'stamp_stage5', raster: osaka() },
     { name: 'stamp_stage6', raster: beppu() },
+    { name: 'stamp_stage7', raster: hiroshima() },
+    { name: 'stamp_stage7_en', raster: hiroshima('HIROSHIMA') },
   ];
   // the HUD's little stamp: a round seal (tinted with the city's ink)
   const icon = new Raster(9, 9);

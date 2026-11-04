@@ -60,4 +60,14 @@ export const SKINS = {
     geyser: { frame: 'boil_0', anim: 'boil', mud: 'mudboil_0', mudAnim: 'mudboil' },
     steam: { frame: 'steam_0' },
   },
+  // Hiroshima & Miyajima: paper crane flocks, armored Seto oysters with pearl crits, scooping shamoji paddles,
+  // tidal stone lanterns, Heike-gani samurai crab, and Sankibō the Great Tengu of Mount Misen
+  hiroshima: {
+    popcorn: { frame: 'tsuru_0', anim: 'tsuru', flock: true, crane: true },
+    shooter: { frame: 'kaki_0', oyster: true, hp: 9 },
+    diver: { frame: 'shamoji_0', anim: 'shamoji', scoop: true },
+    carrier: { frame: 'manju_{c}_0', anim: 'manju_{c}' },
+    heavy: { frame: 'heike_0', anim: 'heike', kind: 'heikegani' },
+    turret: { base: 'hidoro_base', head: 'hidoro_head_', wreck: 'hidoro_wreck', pattern: 'tide' },
+  },
 };

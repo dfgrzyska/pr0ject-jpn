@@ -16,13 +16,22 @@ const W = VIEW.width;
 // the page: a dashed frame round each stamp (56 px), its city and date printed under it
 const FRAME = 60;
 const SLOT = FRAME + 16;
+const PER_PAGE = 6;
 
 /** Each city's ink. */
-export const INK = { stage1: 0xd8402a, stage2: 0x1a8a9a, stage3: 0x2a5aa8, stage4: 0x2a7a4a, stage5: 0x8a2a8a, stage6: 0xd8582a };
+export const INK = {
+  stage1: 0xd8402a,
+  stage2: 0x1a8a9a,
+  stage3: 0x2a5aa8,
+  stage4: 0x2a7a4a,
+  stage5: 0x8a2a8a,
+  stage6: 0xd8582a,
+  stage7: 0xc83228,
+};
 
-/** The stamp's frame in the atlas (Kyoto's band reads KYOTO in English). */
+/** The stamp's frame in the atlas (Kyoto's and Hiroshima's bands have English variants). */
 export function stampFrame(id) {
-  return getLang() === 'en' && id === 'stage1' ? 'stamp_stage1_en' : `stamp_${id}`;
+  return getLang() === 'en' && (id === 'stage1' || id === 'stage7') ? `stamp_${id}_en` : `stamp_${id}`;
 }
 
 /** { stageId: 'YYYY.MM.DD' }: the stamps won on normal, or (easy) the pale ones won on easy. */
@@ -54,10 +63,13 @@ export function pressStamp(id, easy = false) {
   return true;
 }
 
-/** The book opened from the title screen: a page of six frames, a stamp in each one already earned. */
+/** The book opened from the title screen: pages of up to six frames, a stamp in each one already earned. */
 export class StampBook {
   constructor(scene, t) {
     this.scene = scene;
+    this.t = t;
+    this.H = scene.H;
+    this.pageIdx = 0;
     const d = DEPTH.overlay + 4;
     const stamps = loadStamps();
     const pale = loadStamps(true);
@@ -77,14 +89,36 @@ export class StampBook {
       const when = print(date ?? (easy ? t('book.easy') : '-'), easy ? INK[st.id] : 0x7a6a50);
       return { stamp, name, when, date };
     });
-    const n = this.slots.filter((s) => s.date).length;
+    this.pages = Math.max(1, Math.ceil(this.slots.length / PER_PAGE));
+    this.earned = this.slots.filter((s) => s.date).length;
     this.rule = print(t('book.rule'), 0x5a4a3a);
-    this.count = print(n === STAGES.length ? t('book.full') : `${n} / ${STAGES.length}`, n === STAGES.length ? 0xb83a1a : 0x3a2a20);
+    this.count = print('', this.earned === STAGES.length ? 0xb83a1a : 0x3a2a20);
+    this.prevBtn = print('<', 0xa8321a).setVisible(this.pages > 1);
+    this.nextBtn = print('>', 0xa8321a).setVisible(this.pages > 1);
     this.hint = pixelText(scene, W / 2, 0, t(scene.sys.game.device.input.touch ? 'book.backTouch' : 'book.backKeys')).setDepth(d + 2).setTint(0xffe080);
     this.layout(scene.H);
   }
 
+  turn(dir) {
+    if (this.pages <= 1) return false;
+    this.pageIdx = (this.pageIdx + dir + this.pages) % this.pages;
+    this.scene.sfx.tick?.();
+    this.layout(this.H);
+    return true;
+  }
+
+  hitTurn(p) {
+    if (this.pages <= 1) return false;
+    const bottom = this.H - 20;
+    if (p.y >= bottom - 28 && p.y <= bottom + 2) {
+      if (p.x < 52) return this.turn(-1);
+      if (p.x > W - 52) return this.turn(1);
+    }
+    return false;
+  }
+
   layout(H) {
+    this.H = H;
     const top = 6;
     const bottom = H - 20;
     const g = this.page;
@@ -95,13 +129,24 @@ export class StampBook {
     g.lineStyle(1, 0xb83a1a, 1).strokeRect(8.5, top + 3.5, W - 17, bottom - top - 8);
     this.title.setPosition(W / 2, top + 12);
     g.fillStyle(0xb83a1a, 1).fillRect(30, top + 20, W - 60, 1);
-    // three rows of two between the title and the rule at the foot, the spare height shared out between them
+
     const a0 = top + 24;
     const a1 = bottom - 30;
     const gap = Math.max(0, (a1 - a0 - 3 * SLOT) / 3);
     const half = FRAME / 2;
-    this.slots.forEach((s, i) => {
-      const cx = i % 2 ? 132 : 48;
+    const start = this.pageIdx * PER_PAGE;
+    const end = Math.min(this.slots.length, start + PER_PAGE);
+    const onPage = end - start;
+
+    this.slots.forEach((s, idx) => {
+      const vis = idx >= start && idx < end;
+      s.stamp.setVisible(vis);
+      s.name.setVisible(vis);
+      s.when.setVisible(vis);
+      if (!vis) return;
+      const i = idx - start;
+      const oddLast = i === onPage - 1 && i % 2 === 0;
+      const cx = oddLast ? W / 2 : i % 2 ? 132 : 48;
       const cy = Math.round(a0 + gap / 2 + Math.floor(i / 2) * (SLOT + gap)) + half;
       // the frame printed on the page for each stamp: a dashed square
       g.fillStyle(0xc4b28c, 1);
@@ -115,13 +160,19 @@ export class StampBook {
       s.name.setPosition(cx, cy + half + 5);
       s.when.setPosition(cx, cy + half + 13);
     });
+
+    const baseCount = this.earned === STAGES.length ? this.t('book.full') : `${this.earned} / ${STAGES.length}`;
+    const pageSuffix = this.pages > 1 ? ` (${this.pageIdx + 1}/${this.pages})` : '';
+    this.count.setText(`${baseCount}${pageSuffix}`);
     this.rule.setPosition(W / 2, bottom - 22);
     this.count.setPosition(W / 2, bottom - 11);
+    this.prevBtn.setPosition(16, bottom - 11);
+    this.nextBtn.setPosition(W - 16, bottom - 11);
     this.hint.setPosition(W / 2, H - 9);
   }
 
   destroy() {
-    for (const o of [this.shade, this.page, this.title, this.rule, this.count, this.hint]) o.destroy();
+    for (const o of [this.shade, this.page, this.title, this.rule, this.count, this.prevBtn, this.nextBtn, this.hint]) o.destroy();
     for (const s of this.slots) for (const o of [s.stamp, s.name, s.when]) o.destroy();
   }
 }

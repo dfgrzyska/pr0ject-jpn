@@ -40,4 +40,10 @@ export const EXTRAS = {
   vx: 0,
   vy: 0,
   leapt: false,
+  oyster: false,
+  shellOpen: false,
+  opening: false,
+  scoop: false,
+  crane: false,
+  guarding: false,
 };

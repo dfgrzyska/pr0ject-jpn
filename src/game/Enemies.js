@@ -10,6 +10,7 @@ import { sapporo } from './enemies/sapporo.js';
 import { kagoshima } from './enemies/kagoshima.js';
 import { osaka } from './enemies/osaka.js';
 import { beppu } from './enemies/beppu.js';
+import { hiroshima } from './enemies/hiroshima.js';
 // the two halves of a burst volcanic bomb
 const FRAG = { hp: 1, weight: 0, score: 50, radius: 3, explosion: 's' };
 
@@ -84,6 +85,7 @@ export class Enemies {
         e.fireAt = Math.random() < rules().popcornFireChance ? 0.9 + Math.random() * 1.4 : Infinity;
         if (look.flock && w.flock) e.flock = w.flock;
         e.split = !!look.split;
+        e.crane = !!look.crane;
         e.hatch = look.hatch ?? 0;
         if (e.hatch) e.fireAt = Infinity; // eggs never shoot; what hatches does
         e.tossV = (w.x < VIEW.width / 2 ? 1 : -1) * (26 + Math.random() * 18);
@@ -94,6 +96,12 @@ export class Enemies {
           // ice lantern: the shell soaks up damage first, the flame inside is weak
           e.lantern = true;
           e.armor = e.maxArmor = look.armor;
+          e.hp = e.maxHp = look.hp;
+        } else if (look.oyster) {
+          // Seto oyster: armored bivalve shell while shut, lustrous pearl exposed when open
+          e.oyster = true;
+          e.shellOpen = false;
+          e.opening = false;
           e.hp = e.maxHp = look.hp;
         } else e.play(look.anim);
         e.sniper = !!look.sniper;
@@ -121,6 +129,7 @@ export class Enemies {
         e.play(look.anim);
         e.stopY = w.y ?? 30 + Math.random() * 18;
         e.thief = !!look.thief;
+        e.scoop = !!look.scoop;
         break;
       case 'carrier':
         e = this.pool.spawn(look.frame.replace('{c}', w.color ?? 'red'), w.x, -10, { ...base, color: w.color ?? 'red', path: w.path ?? (look.melt ? 'drift' : 'zigzag'), melt: look.melt ?? 0 });
@@ -175,6 +184,7 @@ export class Enemies {
         if (w.boss === 'volcano') return this.spawnVolcano(w, base);
         if (w.boss === 'tako') return this.spawnTako(w, base);
         if (w.boss === 'kyubi') return this.spawnKyubi(w, base);
+        if (w.boss === 'sankibo') return this.spawnSankibo(w, base);
         return w.boss === 'kuma' ? this.spawnKuma(w, base) : this.spawnBoss(w, base);
       default:
         return;
@@ -218,16 +228,30 @@ export class Enemies {
   damage(e, amount, byBomb = false, bean = false) {
     // a bomb blows the lid off a vinegar jar; otherwise invulnerable things shrug it off
     if (e.dead || e.hp <= 0 || e.ghost || (e.invuln && !(byBomb && e.lidded))) return;
+    const crabBlock = e.kind === 'heikegani' && e.guarding && !byBomb && Math.abs(this.scene.player.x - e.x) < 22;
     const boss = e.type === 'heavy' || e.type === 'boss' || e.type === 'kuroko';
     if (boss) {
-      this.scene.sfx.bossHit(e.oni && !bean);
+      this.scene.sfx.bossHit((e.oni && !bean) || crabBlock);
       amount /= rules().bossHp; // easy: they give in sooner
+    }
+    if (crabBlock) {
+      // Heike-gani's iron pincers deflect frontal shots unless flanked from the sides
+      if (Math.random() < 0.45) this.scene.fx.spark(e.x, e.y + 14);
+      e.hp -= amount * 0.15;
+      if (e.hp <= 0) this.destroy(e, byBomb);
+      return;
     }
     if (e.oni && !bean) {
       // the oni's hide: normal shots barely chip it (no flash), a bomb does half
       e.hp -= amount * (byBomb ? 0.5 : BEANS.armor);
       if (e.hp <= 0) this.destroy(e, byBomb);
       return;
+    }
+    if (e.oyster && !byBomb) {
+      if (!e.shellOpen) {
+        amount *= 0.3;
+        if (Math.random() < 0.35) this.scene.fx.spark(e.x, e.y);
+      } else amount *= 2.0;
     }
     if (e.oni) this.oniHurt(e);
     // brief brighten, rate-limited so constant fire blinks instead of whiting the sprite out
@@ -274,6 +298,18 @@ export class Enemies {
     if (e.group?.kind === 'tako' && e.role === 'tentacle') {
       this.tentacleDown(e);
       return;
+    }
+    if (e.group?.kind === 'sankibo' && e.role === 'brazier') {
+      this.brazierDown(e);
+      return;
+    }
+    if (e.group?.kind === 'sankibo' && e.role === 'body') {
+      for (const br of e.group.braziers) {
+        if (!br.dead && br.group === e.group) {
+          s.fx.explode(br.x, br.y, 's');
+          this.remove(br);
+        }
+      }
     }
     if (e.duo) this.duoDown(e);
     if (e.type === 'kuroko' && e.master && !e.master.dead) e.master.recoil = 2.0;
@@ -329,7 +365,7 @@ export class Enemies {
   /** HP shown in the top bar: the mid-stage heavy or the whole boss pair. */
   bossBar() {
     const g = this.bossGroup;
-    if (g && !g.defeated && (g.kind === 'kuma' || g.kind === 'volcano' || g.kind === 'tako' || g.kind === 'oni' || g.kind === 'kyubi' ? g.awake : g.parts.some((p) => !p.dead && p.group === g && p.y > 0))) {
+    if (g && !g.defeated && (g.kind === 'kuma' || g.kind === 'volcano' || g.kind === 'tako' || g.kind === 'oni' || g.kind === 'kyubi' || g.kind === 'sankibo' ? g.awake : g.parts.some((p) => !p.dead && p.group === g && p.y > 0))) {
       // parts are pooled sprites: once dead they may come back as other enemies, so check the group
       let hp = 0;
       for (const p of g.parts) if (!p.dead && p.group === g) hp += Math.max(0, p.hp);
@@ -347,6 +383,7 @@ export class Enemies {
     if (g.kind === 'tako') return this.updateTako(g, dt);
     if (g.kind === 'oni') return this.updateOni(g, dt);
     if (g.kind === 'kyubi') return this.updateKyubi(g, dt);
+    if (g.kind === 'sankibo') return this.updateSankibo(g, dt);
     this.updateShisa(g, dt);
   }
 
@@ -364,19 +401,21 @@ export class Enemies {
     if (e.oni) body.setCrop(0, 0, 63, 60); // standing in the pond
     const kind = e.group?.kind ?? e.kind;
     const end =
-      e.oni || kind === 'tako' || kind === 'wani' || e.frame.name.startsWith('manta')
+      e.oni || kind === 'tako' || kind === 'wani' || kind === 'heikegani' || e.frame.name.startsWith('manta')
         ? 'sink'
         : kind === 'yukionna'
           ? 'shatter'
           : kind === 'tanuki'
             ? 'leaves'
-            : kind === 'bunraku' || (e.type === 'boss' && !kind)
-              ? 'crumble'
-              : kind === 'volcano'
-                ? 'cool'
-                : kind === 'kyubi'
-                  ? 'foxfire'
-                  : 'burst';
+            : kind === 'sankibo'
+              ? 'momiji'
+              : kind === 'bunraku' || (e.type === 'boss' && !kind)
+                ? 'crumble'
+                : kind === 'volcano'
+                  ? 'cool'
+                  : kind === 'kyubi'
+                    ? 'foxfire'
+                    : 'burst';
     const color = kind === 'bunraku' ? WOOD : CLAY;
     // what goes down with the body (the fox's last tail), kept where it was on it
     const extra = kind === 'kyubi' ? e.group.tails.filter((tl) => !tl.lost && !tl.dead).map((tl) => ({ s: copy(tl), ox: tl.x - e.x, oy: tl.y - e.y })) : [];
@@ -428,6 +467,11 @@ export class Enemies {
             fx.leaves(d.x, d.y, 34);
             fx.smoke(d.x, d.y, 4, d.r * 0.5);
             fx.flash(0.3, 0.3);
+          } else if (d.end === 'momiji') {
+            fx.cityBits(d.x, d.y, 36, 2.0);
+            fx.light(d.x, d.y, 2.0, false, 0xff8a30);
+            fx.shockwave(d.x, d.y);
+            fx.flash(0.5, 0.45);
           } else if (d.end === 'foxfire') {
             fx.foxfire(d.x, d.y, 26, 14);
             fx.light(d.x, d.y, 2, false, 0x80b0ff);
@@ -538,7 +582,7 @@ export class Enemies {
     if (e.head) this.heads.kill(e.head);
     if (e.kuroko) for (const k of e.kuroko) if (!k.dead && k.master === e) this.pool.kill(k);
     if (e.decoys) this.dropDecoys(e);
-    if (e.kind === 'yukionna') this.scene.parallax.windTarget = 0; // her blizzard dies down with her
+    if (e.kind === 'yukionna' || (e.group?.kind === 'sankibo' && e.role === 'body')) this.scene.parallax.windTarget = 0; // blizzard / Tengu gale dies down
     if (e.group?.kind === 'kyubi' && e.role === 'body') for (const tl of e.group.tails) this.tailPool.kill(tl);
     if (e === this.heavy) this.heavy = null;
     if (e.oni) e.setCrop(); // pooled: the next enemy must not come out cropped
@@ -578,6 +622,7 @@ export class Enemies {
           else if (e.kind === 'raiju') this.raiju(e, dt, b);
           else if (e.kind === 'bunraku') this.bunraku(e, dt, b);
           else if (e.kind === 'wani') this.wani(e, dt, b);
+          else if (e.kind === 'heikegani') this.updateHeike(e, dt, b);
           else this.heavyUpdate(e, dt, b);
           break;
         case 'turret':
@@ -726,6 +771,7 @@ export class Enemies {
       default:
         e.y += 58 * dt;
     }
+    if (e.crane) e.setRotation(e.path === 'sine' ? Math.cos(e.age * 2.4) * 0.22 : e.path === 'arc' ? -e.dir * 0.25 : 0);
     if (e.split && Math.floor((e.age - dt) * 10) < Math.floor(e.age * 10)) {
       this.scene.fx.smoke(e.x, e.y - 3, 1, 1);
     }
@@ -760,6 +806,7 @@ export class Enemies {
   }
 
   shooter(e, dt, b) {
+    if (e.oyster) return this.oysterShooter(e, dt, b);
     if (e.lantern && e.armor > 0) {
       // the ice cracks as it takes hits, the candle flickers inside
       const crack = e.armor > e.maxArmor * 0.6 ? 0 : e.armor > e.maxArmor * 0.25 ? 1 : 2;
@@ -822,7 +869,8 @@ export class Enemies {
         // never dive upwards
         if (Math.sin(e.ang) < 0.35) e.ang = e.ang < -DOWN || e.ang > DOWN ? Math.PI - 0.36 : 0.36;
         e.v = 70;
-        if (this.skin.diver.spin) e.setRotation(e.ang - DOWN);
+        if (this.skin.diver.spin || e.scoop) e.setRotation(e.ang - DOWN);
+        if (e.scoop && this.canFire(e)) this.scene.bullets.fan(e.x, e.y + 6, e.ang, 3, 0.52, slow);
       }
     } else if (e.loot) {
       // off up and away with the loot, zigzagging
@@ -840,8 +888,9 @@ export class Enemies {
       } else e.v = Math.min(240, e.v + 280 * dt);
       e.x += Math.cos(e.ang) * e.v * dt;
       e.y += Math.sin(e.ang) * e.v * dt;
-      if (this.scene.parallax.nearKind === 'sakura') {
+      if (this.scene.parallax.nearKind === 'sakura' || this.scene.parallax.nearKind === 'momiji') {
         const px = this.scene.parallax;
+        const leaf = px.nearKind === 'momiji' ? 'momiji_' : 'petal_';
         for (const bit of px.bitsLive) {
           const dx = bit.x - e.x;
           const dy = bit.y - e.y;
@@ -864,12 +913,12 @@ export class Enemies {
           const by = e.y - Math.sin(e.ang) * 6;
           const side = Math.random() < 0.5 ? -1 : 1;
           const b = px.bit(
-            `petal_${Math.floor(Math.random() * 4)}`,
+            `${leaf}${Math.floor(Math.random() * 4)}`,
             bx + nx * side * 4,
             by + ny * side * 4,
             28 + Math.random() * 26,
             nx * side * (65 + Math.random() * 45),
-            0,
+            px.nearKind === 'momiji' ? 1 : 0,
             14,
             Math.random() * 3,
             0.055,
@@ -878,7 +927,7 @@ export class Enemies {
           const s2 = -side;
           const wp = this.scene.fx.part(
             this.scene.fx.parts,
-            `petal_${Math.floor(Math.random() * 4)}`,
+            `${leaf}${Math.floor(Math.random() * 4)}`,
             bx + nx * s2 * 4,
             by + ny * s2 * 4,
           );
@@ -909,6 +958,7 @@ export class Enemies {
       }
       return;
     }
+    if (this.skin === SKINS.hiroshima) e.setRotation(Math.sin(e.age * 4) * 0.14);
     if (e.state === 'enter') {
       if (e.path === 'zigzag') {
         e.y += 34 * dt;
@@ -956,6 +1006,11 @@ export class Enemies {
           // and hang in the air for a while
           for (const d of [-0.38, 0, 0.38]) b.shot('eb_steam_0', mx, my, ang + d, 90, 2, { grow: { r0: 2, r1: 5.5, t: 1.3, drag: 0.7, frames: ['eb_steam_0', 'eb_steam_1'] }, life: 2.8 });
           e.timer = 2.6;
+        } else if (e.pattern === 'tide') {
+          // Miyajima stone lantern: double Seto tidal wave (tight brisk crest + wider slow undertow)
+          b.fan(mx, my, ang, 3, 0.36, normal * 0.92);
+          b.fan(mx, my, ang, 4, 0.92, slow * 0.88);
+          e.timer = 2.4;
         } else if (e.pattern === 'ring') {
           e.shots++;
           b.ring(mx, my, 10, e.shots * 0.31, slow);
@@ -1027,4 +1082,4 @@ export class Enemies {
 }
 
 // each city's enemies and bosses live in its own module (src/game/enemies/): their methods join the class here
-Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu);
+Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima);

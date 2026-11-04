@@ -495,7 +495,7 @@ export class Stage extends Phaser.Scene {
       if (this.hud.hitInstall(p)) return install().then(() => this.state === 'title' && this.showTitle());
       return this.hud.hitBook(p) ? this.openBook() : this.openSelect();
     }
-    if (this.state === 'book') return this.closeBook();
+    if (this.state === 'book') return this.book.hitTurn(p) || this.closeBook();
     if (this.state === 'select') {
       if (this.select.hitMode(p)) return this.select.toggleMode();
       const i = this.select.hit(p);
@@ -529,7 +529,9 @@ export class Stage extends Phaser.Scene {
       else if (down(k.I) && canInstall()) install().then(() => this.state === 'title' && this.showTitle());
       else if (confirm || bomb) this.openSelect();
     } else if (this.state === 'book') {
-      if (confirm || bomb || down(k.K) || down(k.ESC)) this.closeBook();
+      if (down(k.LEFT) || down(k.A)) this.book.turn(-1);
+      else if (down(k.RIGHT) || down(k.D)) this.book.turn(1);
+      else if (confirm || bomb || down(k.K) || down(k.ESC)) this.closeBook();
     } else if (this.state === 'select') {
       if (down(k.LEFT) || down(k.A)) this.select.select(this.select.index - 1);
       if (down(k.RIGHT) || down(k.D)) this.select.select(this.select.index + 1);

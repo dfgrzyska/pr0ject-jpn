@@ -44,6 +44,7 @@ export class Parallax {
     this.near.warm(this.nearKind === 'snow' ? 80 : 12); // (Sapporo's blizzard streaks come thick and fast)
     this.petalTimer = 0;
     this.mistTimer = 1;
+    this.gullTimer = 4;
     this.snow = 0.3; // snowfall intensity 0..1 (set by the stage); 1 = blizzard
     this.wind = 0;
     this.windTarget = 0; // sideways push the miniboss's blizzard sets
@@ -140,6 +141,7 @@ export class Parallax {
     else if (this.nearKind === 'snow') this.spawnSnow(dt, fall);
     else if (this.nearKind === 'ash') this.spawnAsh(dt, fall, H);
     else if (this.nearKind === 'steam') this.spawnSteam(dt, fall);
+    else if (this.nearKind === 'momiji') this.spawnMomiji(dt, fall, scrolling);
     else if (this.nearKind === 'osaka') {
       if (this.time < this.nightFrom) this.spawnTropic(dt, fall, scrolling);
     }
@@ -173,7 +175,9 @@ export class Parallax {
     }
     this.near.sweep();
     let j = 0;
-    const pl = this.nearKind === 'sakura' && this.scene.player?.alive ? this.scene.player : null;
+    const isLeaf = this.nearKind === 'sakura' || this.nearKind === 'momiji';
+    const leafPrefix = this.nearKind === 'momiji' ? 'momiji_' : 'petal_';
+    const pl = isLeaf && this.scene.player?.alive ? this.scene.player : null;
     for (const b of this.bitsLive) {
       if (pl && Math.abs(b.x - pl.x) < 46 && Math.abs(b.y - pl.y) < 46) {
         const dx = b.x - pl.x;
@@ -204,12 +208,12 @@ export class Parallax {
       if (Math.random() < dt * rate) {
         const side = Math.random() < 0.5 ? -1 : 1;
         const b = this.bit(
-          `petal_${Math.floor(Math.random() * 4)}`,
+          `${leafPrefix}${Math.floor(Math.random() * 4)}`,
           pl.x + side * (5 + Math.random() * 5),
           pl.y - 2 + Math.random() * 8,
           36 + Math.random() * 34,
           side * (68 + Math.random() * 55) - (pl.vx || 0) * 0.25,
-          0,
+          this.nearKind === 'momiji' ? 1 : 0,
           14 + Math.random() * 6,
           Math.random() * 3,
           0.055,
@@ -218,7 +222,7 @@ export class Parallax {
         const s2 = -side;
         const wp = this.scene.fx.part(
           this.scene.fx.parts,
-          `petal_${Math.floor(Math.random() * 4)}`,
+          `${leafPrefix}${Math.floor(Math.random() * 4)}`,
           pl.x + s2 * (6 + Math.random() * 4),
           pl.y + 2,
         );
@@ -387,6 +391,57 @@ export class Parallax {
         flipT: 0,
       });
       m.setAlpha(0.22);
+    }
+  }
+
+  /** Hiroshima & Miyajima: crimson/golden momiji leaves (swept sideways by Sankibō's gales), Seto gulls & Misen mist. */
+  spawnMomiji(dt, fall, scrolling) {
+    const s = this.snow;
+    const breeze = Math.sin(this.farTime * 0.42) * 5;
+    this.wind += (this.windTarget + breeze - this.wind) * Math.min(1, dt * 2.2);
+    this.petalTimer -= dt;
+    while (this.petalTimer <= 0) {
+      this.petalTimer += 1 / (4 + 22 * s);
+      const p = this.bit(
+        `momiji_${Math.floor(Math.random() * 4)}`,
+        Math.random() * 240 - 30,
+        -6,
+        fall * (0.68 + Math.random() * 0.45),
+        -7 + Math.random() * 14,
+        1,
+        4 + Math.random() * 6,
+        Math.random() * 4,
+        0.14 + Math.random() * 0.24,
+      );
+      p.setAlpha(0.82);
+    }
+    if (scrolling && this.time >= 65 && this.time <= 150) {
+      this.gullTimer -= dt;
+      if (this.gullTimer <= 0) {
+        this.gullTimer = 4.5 + Math.random() * 5;
+        const left = Math.random() < 0.5;
+        const g = this.near.spawn('gull_0', left ? -8 : VIEW.width + 8, -10 + Math.random() * 60, {
+          vy: fall * 0.55,
+          vx: (left ? 1 : -1) * (26 + Math.random() * 14),
+          sway: 4,
+          age: 0,
+          flipT: 0,
+        });
+        g.setFlipX(!left).setAlpha(0.85).play('gull');
+      }
+    }
+    this.mistTimer -= dt;
+    if (this.mistTimer <= 0 && scrolling) {
+      this.mistTimer = this.time >= 135 ? 2.2 + Math.random() * 2.6 : 4.5 + Math.random() * 4;
+      const m = this.near.spawn(`mist_${Math.floor(Math.random() * 2)}`, Math.random() * 180, -16, {
+        vy: fall * 1.08,
+        vx: -3 + Math.random() * 6,
+        wf: 0.35,
+        sway: 0,
+        age: 0,
+        flipT: 0,
+      });
+      m.setAlpha(this.time >= 135 ? 0.24 : 0.14);
     }
   }
 }

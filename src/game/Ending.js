@@ -19,6 +19,7 @@ const BOSSES = {
   stage4: [['vent_0', -36, 8], ['vent_0', 36, 8], ['crater_0', 0, 0]],
   stage5: [['tako_0', 0, 0]],
   stage6: [['oni_0', 0, 0]],
+  stage7: [['brazier_0', -30, 4], ['brazier_0', 30, 4], ['sankibo_0', 0, 0]],
 };
 
 /**
@@ -98,16 +99,18 @@ export class Ending {
     this.text(W / 2, 16, 'PIECZĘCIE PODRÓŻY', 0x5a2a20, INK_FONT);
     const n = this.order.length;
     const rows = Math.ceil(n / 2);
-    const top = Math.round(H / 2 - (rows * 66) / 2) + 8;
+    const step = rows > 3 ? Math.min(64, Math.floor((H - 88) / rows)) : 66;
+    const labelDy = rows > 3 ? 26 : 28;
+    const top = Math.round((H - 12 - (rows - 1) * step - labelDy) / 2) + 8;
     this.sealing = this.order.map((i, k) => {
       const id = STAGES[i].id;
-      const x = k % 2 ? 134 : 46;
-      const y = top + Math.floor(k / 2) * 66;
+      const x = k === n - 1 && k % 2 === 0 ? W / 2 : k % 2 ? 134 : 46;
+      const y = top + Math.floor(k / 2) * step;
       const img = this.add(s.add.image(x, y, 'sprites', `seal_${id}`).setDepth(D + 2).setTint(INK[id]).setAlpha(0));
       const size = img.width > 40 ? 1.5 : 2; // (Kagoshima's three kanji: a smaller seal, so it fits its column)
-      const label = this.text(x, y + 28, STAGES[i].name, 0x3a2a24, INK_FONT).setVisible(false);
+      const label = this.text(x, y + labelDy, STAGES[i].name, 0x3a2a24, INK_FONT).setVisible(false);
       const won = this.run.stamps.includes(id);
-      const mark = won ? this.add(s.add.image(x + Math.ceil(label.width / 2) + 7, y + 28, 'sprites', 'stamp_icon').setDepth(D + 3).setTint(INK[id]).setVisible(false)) : null;
+      const mark = won ? this.add(s.add.image(x + Math.ceil(label.width / 2) + 7, y + labelDy, 'sprites', 'stamp_icon').setDepth(D + 3).setTint(INK[id]).setVisible(false)) : null;
       return { img, label, mark, size, at: 0.6 + k * 0.5, done: false };
     });
     const got = this.run.stamps.length;

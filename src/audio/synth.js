@@ -384,4 +384,25 @@ export class Synth {
     o.connect(g).connect(this.out);
     this.noiseBurst(t, 0.02, 'bandpass', 1200, 2, 0.1 * v);
   }
+
+  /** Shō: bamboo mouth-organ of Gagaku court music at Itsukushima; breathy swelling fifth/ninth cluster. */
+  sho(t, m, dur, v = 1) {
+    const f = mtof(m);
+    const end = t + dur + 0.55;
+    const lp = this.filter('lowpass', 3400, 0.9);
+    const hp = this.filter('highpass', 380, 0.7);
+    const g = this.gain();
+    const swell = Math.min(0.42, dur * 0.45);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.036 * v, t + Math.max(0.04, swell));
+    g.gain.setValueAtTime(0.036 * v, t + dur);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.48);
+    for (const [mul, amp] of [[1, 0.55], [1.498, 0.38], [2, 0.26], [2.247, 0.2]]) {
+      const o = this.osc('sawtooth', f * mul, t, end);
+      const vg = this.gain(amp);
+      o.connect(vg).connect(hp);
+    }
+    hp.connect(lp).connect(g).connect(this.out);
+    this.noiseBurst(t, Math.min(0.25, dur * 0.5), 'bandpass', 2800, 2.2, 0.016 * v);
+  }
 }

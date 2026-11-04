@@ -197,6 +197,18 @@ export class Bullets {
           b.vx *= b.maxV / v;
           b.vy *= b.maxV / v;
         }
+        if (b.spin) b.setRotation(Math.atan2(b.vy, b.vx) - Math.PI / 2);
+      }
+      if (b.grow) {
+        // a steam puff or froth bubble: swells and slows, fading out at the end
+        const g = b.grow;
+        const k = Math.min(1, b.age / g.t);
+        b.radius = g.r0 + (g.r1 - g.r0) * k;
+        b.setScale(0.45 + 0.55 * k);
+        b.vx *= 1 - Math.min(1, g.drag * dt);
+        b.vy *= 1 - Math.min(1, g.drag * dt);
+        if (g.frames) b.setFrame(g.frames[Math.floor(b.age * 7) % g.frames.length]);
+        if (b.life < 0.4) b.setAlpha(b.life / 0.4);
       }
       if (b.orb) {
         const o = b.orb;
@@ -224,17 +236,6 @@ export class Bullets {
         b.x = b.bx - (b.vy / v) * o;
         b.y = b.by + (b.vx / v) * o;
       } else {
-        if (b.grow) {
-          // a steam puff: swells and slows, fading out at the end
-          const g = b.grow;
-          const k = Math.min(1, b.age / g.t);
-          b.radius = g.r0 + (g.r1 - g.r0) * k;
-          b.setScale(0.45 + 0.55 * k);
-          b.vx *= 1 - Math.min(1, g.drag * dt);
-          b.vy *= 1 - Math.min(1, g.drag * dt);
-          if (g.frames) b.setFrame(g.frames[Math.floor(b.age * 7) % g.frames.length]);
-          if (b.life < 0.4) b.setAlpha(b.life / 0.4);
-        }
         b.x += b.vx * dt;
         b.y += b.vy * dt;
         if (b.bounce > 0 && (b.x < 3 || b.x > 177)) {
