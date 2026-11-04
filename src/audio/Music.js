@@ -52,6 +52,7 @@ export class Music {
     this.step = 0;
     this.next = 0;
     this.paused = false;
+    this.duckK = 1; // the music held down for a quiet moment (the Peace Park)
     this.lastFrame = 0;
     game?.events.on('postrender', () => {
       this.lastFrame = performance.now();
@@ -96,8 +97,15 @@ export class Music {
 
   setPaused(p) {
     this.paused = p;
-    this.out.gain.setTargetAtTime(p ? 0 : VOLUME, this.ctx.currentTime, 0.04);
+    this.out.gain.setTargetAtTime(p ? 0 : VOLUME * this.duckK, this.ctx.currentTime, 0.04);
     if (!p) this.next = this.ctx.currentTime + 0.06;
+  }
+
+  /** Hold the music down to k of its volume (1 = back to normal), easing over a second or so. */
+  duck(k) {
+    if (this.duckK === k) return;
+    this.duckK = k;
+    if (!this.paused) this.out.gain.setTargetAtTime(VOLUME * k, this.ctx.currentTime, 0.5);
   }
 
   toggle() {
@@ -169,6 +177,7 @@ const SILENT = {
   stop() {},
   unlock() {},
   setPaused() {},
+  duck() {},
   toggle() {
     return false;
   },

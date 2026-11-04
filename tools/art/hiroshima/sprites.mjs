@@ -149,6 +149,63 @@ export function hiroshimaSprites(add) {
     add('tsuru_1', render(Mask.fromRows(CRANE_B, true)));
   }
 
+  // ------------------------------------------------------------ the Peace Park interlude: paper cranes, not enemies
+  // White and soft grey so the game can tint each one (the colours of the crane garlands); head up, three wing
+  // beats (spread, half, raised). orizuru_glow: the soft halo round them.
+  for (let f = 0; f < 3; f++) {
+    const r = new Raster(17, 13);
+    const cx = 8;
+    const cy = 6;
+    const span = [8, 6, 3.5][f];
+    const lift = [0, -1, -2][f];
+    const inTri = (px, py, ax, ay, bx, by, qx, qy) => {
+      const d1 = (px - bx) * (ay - by) - (ax - bx) * (py - by);
+      const d2 = (px - qx) * (by - qy) - (bx - qx) * (py - qy);
+      const d3 = (px - ax) * (qy - ay) - (qx - ax) * (py - ay);
+      return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+    };
+    for (let y = 0; y < 13; y++)
+      for (let x = 0; x < 17; x++) {
+        const px = x + 0.5;
+        const py = y + 0.5;
+        for (const s of [-1, 1]) {
+          const tx = cx + 0.5 + s * span;
+          const ty = cy - 2 + lift;
+          if (inTri(px, py, cx + 0.5, cy - 1.5, cx + 0.5, cy + 2.5, tx, ty)) {
+            const k = Math.abs(px - cx - 0.5) / span;
+            // the fold down the middle of each wing catches the light on the left
+            const fold = Math.abs(py - (cy + 0.5 + (ty - cy) * k)) < 0.7;
+            r.set(x, y, fold ? (s < 0 ? 0xffffff : 0xc8c8cc) : k > 0.6 ? 0xffffff : s < 0 ? 0xeeeeee : 0xd8d8dc);
+          }
+        }
+      }
+    for (let y = cy - 2; y <= cy + 3; y++) {
+      const hw = y < cy + 1 ? 1 : 0;
+      for (let x = cx - hw; x <= cx + hw; x++) r.set(x, y, x < cx ? 0xffffff : 0xd0d0d4);
+    }
+    for (let k = 1; k <= 4; k++) r.set(cx, cy - 2 - k, 0xf4f4f4); // the neck
+    r.set(cx + 1, cy - 6, 0xe8e8ea); // the head, folded forward
+    for (let k = 1; k <= 3; k++) r.set(cx, cy + 3 + k, k === 3 ? 0xd0d0d4 : 0xf0f0f0); // the tail
+    // a dark rim so they read on any ground
+    const rim = new Raster(17, 13);
+    for (let y = 0; y < 13; y++)
+      for (let x = 0; x < 17; x++) {
+        if (r.alpha(x, y)) continue;
+        if (r.alpha(x - 1, y) || r.alpha(x + 1, y) || r.alpha(x, y - 1) || r.alpha(x, y + 1)) rim.set(x, y, 0x3a3448, 0.85);
+      }
+    rim.blit(r, 0, 0);
+    add(`orizuru_${f}`, rim);
+  }
+  {
+    const r = new Raster(15, 15);
+    for (let y = 0; y < 15; y++)
+      for (let x = 0; x < 15; x++) {
+        const d = Math.hypot(x + 0.5 - 7.5, y + 0.5 - 7.5) / 7.5;
+        if (d < 1) r.set(x, y, 0xffffff, (1 - d) ** 2 * 0.6);
+      }
+    add('orizuru_glow', r);
+  }
+
   // ------------------------------------------------------------ shooter: Kaki (armored Seto giant oyster + pearl)
   // kaki_0 = clamped shut (armored), kaki_1 = cracking open, kaki_2 = wide open exposing glowing pearl!
   for (let f = 0; f < 3; f++) {
