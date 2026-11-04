@@ -223,6 +223,12 @@ export const kagoshima = {
       return;
     }
     const c = g.crater;
+    for (const bit of s.parallax.bitsLive) {
+      if (bit.vy < 0 && Math.abs(bit.x - c.x) < 38) {
+        bit.vy -= 45 * dt;
+        bit.vx += (bit.x - c.x) * 0.9 * dt;
+      }
+    }
     if (g.stage === 2 && !g.enraged && c.hp < c.maxHp * 0.3) {
       g.enraged = true;
       g.timer = 0.6;

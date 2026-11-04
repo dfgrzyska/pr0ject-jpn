@@ -324,6 +324,15 @@ export const beppu = {
       case 'stomp': {
         // a stomp sets off the hot springs: eruptions all over, one under the player
         s.cameras.main.shake(300, 0.005);
+        for (let i = 0; i < 6; i++) {
+          const ang = -Math.PI * (0.15 + 0.7 * (i / 5));
+          const p = s.fx.part(s.fx.parts, 'drop_0', e.x + (i - 2.5) * 8, e.y + 24);
+          p.vx = Math.cos(ang) * 55;
+          p.vy = Math.sin(ang) * 55;
+          p.g = 110;
+          p.life = p.max = 0.4;
+          p.setTint(0xff4a3a);
+        }
         b.zone(pl.x, pl.y, 13, { warn: 1.0, live: 0.5 });
         for (let i = 0; i < 4; i++) b.zone(16 + Math.random() * (VIEW.width - 32), s.H * 0.4 + Math.random() * (s.H * 0.6 - 24), 13, { warn: 1.0, live: 0.5 });
         b.ring(e.x, e.y + 28, g.enraged ? 14 : 10, g.step * 0.3, slow);
@@ -362,6 +371,15 @@ export const beppu = {
       s.cameras.main.shake(350, 0.008);
       s.sfx.explode('m');
       s.fx.shards(a.ix, a.iy, 10, true);
+      for (let i = 0; i < 6; i++) {
+        const ang = (i / 6) * TAU;
+        const p = s.fx.part(s.fx.parts, 'drop_0', a.ix, a.iy);
+        p.vx = Math.cos(ang) * 65;
+        p.vy = Math.sin(ang) * 65 - 20;
+        p.g = 110;
+        p.life = p.max = 0.45;
+        p.setTint(0xff4a3a);
+      }
       if (s.bombClear <= 0) s.bullets.ring(a.ix, a.iy, 12, Math.random() * TAU, slow);
     }
     if (a.t >= a.warn + 0.55) {

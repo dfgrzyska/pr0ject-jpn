@@ -10,6 +10,7 @@ export const sapporo = {
     const s = this.scene;
     e.armor = 0;
     e.radius = 6;
+    e.setRotation(0);
     e.play('wisp');
     s.fx.shards(e.x, e.y, 12);
     s.sfx.explode('s');
@@ -96,6 +97,9 @@ export const sapporo = {
       if (e.cool <= 0) {
         e.cool = 0.11;
         b.fire(hx + Math.cos(ang) * 4, hy + Math.sin(ang) * 4, ang, slow);
+        const sa = ang + (Math.random() - 0.5) * 0.6;
+        const p = s.parallax.bit('flake_1', hx + Math.cos(ang) * 5, hy + Math.sin(ang) * 5, Math.sin(sa) * 42, Math.cos(sa) * 42, 0.6, 3, Math.random() * 6, 0);
+        p.setAlpha(0.75);
       }
     } else if ((e.timer -= dt) <= 0) {
       e.spray = 1.6;

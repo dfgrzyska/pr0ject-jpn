@@ -22,6 +22,7 @@ export const osaka = {
       d.t = s.t;
       if (!partner) return;
       partner.rage = true;
+      partner.recoil = 3.2;
       s.fx.text(partner.x, partner.y - 12, '!?', 0.7, 0xff7060);
       if (this.canFire(partner)) s.bullets.fan(partner.x, partner.y + 4, this.aimAt(partner, 0, 4), 3, 0.5, normal);
     } else if (s.t - d.t <= 1.2) {
@@ -107,6 +108,10 @@ export const osaka = {
       k.x = e.x + k.dx + Math.sin(e.age * 2 + k.dx) * 1.5;
       k.y = e.y + k.dy;
       k.setAlpha(0.75 + 0.15 * Math.sin(e.age * 3 + k.dy));
+      const ax = k.role === 'omo' ? e.x - 6 : k.role === 'hidari' ? e.x + 12 : e.x - 3;
+      const ay = k.role === 'omo' ? e.y - 6 : k.role === 'hidari' ? e.y : e.y + 14;
+      this.tele.lineStyle(1, 0xd8d0c0, 0.28);
+      this.tele.lineBetween(k.x, k.y, ax, ay);
     }
     if (e.state !== 'enter' && !alive.length && !e.dead) this.destroy(e);
   },
@@ -180,6 +185,7 @@ export const osaka = {
     for (let i = 0; i <= n; i++) {
       const f = (i + 1) / (n + 1);
       let a = t.rest + sway * 0.45 * f + Math.sin(g.t * 2.3 + t.phase + i * 0.6) * 0.18 * f;
+      if (t.recoil > 0) a += Math.sin(g.t * 28 - i * 0.9) * (t.recoil * 0.18) * f;
       a += (DOWN - a) * k;
       x += Math.cos(a) * len;
       y += Math.sin(a) * len;

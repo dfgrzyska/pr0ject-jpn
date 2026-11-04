@@ -67,6 +67,15 @@ export const kyoto = {
           const pon = e.step % 4 === 1;
           b.ring(e.x, e.y + 8, pon ? 12 : 8, e.step * 0.21, pon ? slow : normal, !pon);
           s.fx.text(e.x + (pon ? -14 : 14), e.y + 4, pon ? 'PON' : 'POKO', 0.5, 0xffe0b0);
+          for (const b of s.parallax.bitsLive) {
+            const dx = b.x - e.x;
+            const dy = b.y - e.y;
+            const d = Math.hypot(dx, dy) || 1;
+            if (d < 95) {
+              b.vx += (dx / d) * 35;
+              b.vy += (dy / d) * 35;
+            }
+          }
         }
         e.timer = 0.28;
         if (++e.step >= 16) {
@@ -255,7 +264,8 @@ export const kyoto = {
       }
       if (!tl.grown) continue;
       tl.grown = Math.min(1, tl.grown + dt / 0.2);
-      tl.setVisible(true).setPosition(e.x, e.y + 7).setScale(0.3 + 0.7 * tl.grown).setFlipX(T.flip).setAlpha(e.alpha);
+      const lag = g.state === 'fight' ? -Math.cos(g.sway) * (g.enraged ? 0.14 : 0.09) : 0;
+      tl.setVisible(true).setPosition(e.x, e.y + 7).setScale(0.3 + 0.7 * tl.grown).setRotation(lag * (0.5 + Math.abs(tl.i - 4) * 0.12)).setFlipX(T.flip).setAlpha(e.alpha);
       tl.setFrame(`${T.frame}_${(f + (T.flip ? 1 : 0) + (tl.i % 2)) % 3}`);
       if (e.flash > 0) tl.setTint(0x808080).setTintMode(Phaser.TintModes.ADD);
       else if (g.enraged) {

@@ -147,7 +147,12 @@ export class Parallax {
     for (const p of this.near.live) if (this.drift(p, dt, H)) this.near.kill(p);
     this.near.sweep();
     let j = 0;
+    const pl = this.nearKind === 'sakura' && this.scene.player?.alive ? this.scene.player : null;
     for (const b of this.bitsLive) {
+      if (pl && Math.abs(b.x - pl.x) < 18 && Math.abs(b.y - pl.y) < 18) {
+        b.vx += (b.x >= pl.x ? 1 : -1) * 65 * dt;
+        b.vy -= 18 * dt;
+      }
       if (this.drift(b, dt, H)) {
         b.setVisible(false);
         this.bitsFree.push(b);
@@ -161,7 +166,7 @@ export class Parallax {
     p.age += dt;
     p.y += p.vy * dt;
     // snow drifts with the current wind (wf = how strongly, by flake size)
-    p.x += ((p.wf ? this.wind * p.wf : p.vx) + Math.sin(p.age * 3) * p.sway) * dt;
+    p.x += (p.vx + (p.wf ? this.wind * p.wf : 0) + Math.sin(p.age * 3) * p.sway) * dt;
     if (p.flipT && p.age % (p.flipT * 2) < dt) p.setFlipX(!p.flipX);
     return p.y > H + 40 || p.y < -60 || p.x < -60 || p.x > VIEW.width + 60;
   }

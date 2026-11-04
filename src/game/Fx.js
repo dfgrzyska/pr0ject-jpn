@@ -180,6 +180,32 @@ export class Fx {
 
   shockwave(x, y) {
     this.rings.push({ x, y, r: 4, life: 0.6 });
+    for (const pool of [this.smokes, this.parts, this.petals]) {
+      for (const p of pool.live) {
+        if (p.ground) continue;
+        const dx = p.x - x;
+        const dy = p.y - y;
+        const d = Math.hypot(dx, dy) || 1;
+        if (d < 160) {
+          const push = (1 - d / 160) * 140;
+          p.vx += (dx / d) * push;
+          p.vy += (dy / d) * push;
+        }
+      }
+    }
+    const bits = this.scene.parallax?.bitsLive;
+    if (bits) {
+      for (const b of bits) {
+        const dx = b.x - x;
+        const dy = b.y - y;
+        const d = Math.hypot(dx, dy) || 1;
+        if (d < 160) {
+          const push = (1 - d / 160) * 110;
+          b.vx += (dx / d) * push;
+          b.vy += (dy / d) * push;
+        }
+      }
+    }
   }
 
   petalBurst(x, y, n) {
@@ -289,6 +315,7 @@ export class Fx {
         p.vx -= p.vx * drag;
         p.vy -= p.vy * drag;
         p.vy += p.g * dt;
+        if (!p.ground && pool === this.smokes && parallax.wind) p.x += parallax.wind * 0.45 * dt;
         p.x += p.vx * dt;
         p.y += p.vy * dt;
         if (p.spin) p.rotation += p.spin * dt;
@@ -303,6 +330,7 @@ export class Fx {
       p.life -= dt;
       p.vx *= 1 - 2.2 * dt;
       p.vy = p.vy * (1 - 2.2 * dt) + 30 * dt;
+      if (parallax.wind) p.x += parallax.wind * 0.35 * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.setAlpha(Math.min(1, p.life * 2));

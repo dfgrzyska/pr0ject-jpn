@@ -206,6 +206,16 @@ export class Bullets {
         b.x = o.cx + Math.cos(o.a) * o.r;
         b.y = o.cy + Math.sin(o.a) * o.r;
         b.setFrame(Math.floor(b.age * 12) % 2 ? 'orb_1' : 'orb_0');
+        if (b.lead && b.link && !b.link.dead && this.scene.parallax?.nearKind === 'ash') {
+          for (const bit of this.scene.parallax.bitsLive) {
+            const dx = o.cx - bit.x;
+            const dy = o.cy - bit.y;
+            if (Math.abs(dx) < 28 && Math.abs(dy) < 28) {
+              bit.vx += dx * 2.2 * dt;
+              bit.vy += dy * 2.2 * dt;
+            }
+          }
+        }
       } else if (b.wig) {
         b.bx += b.vx * dt;
         b.by += b.vy * dt;
@@ -231,6 +241,7 @@ export class Bullets {
           b.bounce--;
           b.vx = -b.vx;
           b.x = b.x < 3 ? 3 : 177;
+          this.scene.fx.spark(b.x, b.y);
         }
       }
       const margin = b.orb ? 30 : 8;

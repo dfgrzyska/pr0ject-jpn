@@ -36,4 +36,5 @@ export const EXTRAS = {
   harmless: false, // no contact damage (bean boxes)
   oni: false, // only Setsubun beans really hurt it
   wounds: null, // a weakened boss's cracks (sprites riding on it)
+  recoil: 0, // brief upward visual jolt on hit
 };

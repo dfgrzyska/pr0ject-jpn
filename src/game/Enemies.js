@@ -235,10 +235,21 @@ export class Enemies {
       e.flash = 0.035;
       e.flashCool = 0.12;
     }
+    if (!e.ground && !e.oni && e.group?.kind !== 'volcano') {
+      const cap = e.type === 'boss' ? 1.0 : e.type === 'heavy' ? 1.6 : 2.2;
+      const step = e.type === 'boss' ? 0.5 : e.type === 'heavy' ? 0.9 : 1.4;
+      e.recoil = Math.min(cap, (e.recoil || 0) + step);
+    }
     if (e.armor > 0) {
       // ice shell first (a bomb shatters it outright), the rest goes through to the flame
       e.armor -= byBomb ? Infinity : amount;
-      if (e.armor > 0) return;
+      if (e.armor > 0) {
+        if (e.flash === 0.035) {
+          e.setRotation((Math.random() < 0.5 ? -1 : 1) * 0.09);
+          this.scene.fx.shards(e.x, e.y, 1, true);
+        }
+        return;
+      }
       amount = byBomb ? amount : -e.armor;
       this.shatter(e);
     }
@@ -265,6 +276,7 @@ export class Enemies {
       return;
     }
     if (e.duo) this.duoDown(e);
+    if (e.type === 'kuroko' && e.master && !e.master.dead) e.master.recoil = 2.0;
     if (e.loot) this.returnLoot(e);
     if (e.split && !byBomb) {
       // a volcanic bomb bursts into two smaller halves flying apart
@@ -478,7 +490,9 @@ export class Enemies {
    */
   wounds(e, dt) {
     const s = this.scene;
-    if (e.group?.kind !== 'volcano') e.setOrigin(0.5, Math.floor(e.age * 1.25) % 2 ? 0.5 - 1 / e.height : 0.5);
+    const breathe = Math.floor(e.age * 1.25) % 2 ? 1 : 0;
+    const rec = e.recoil || 0;
+    if (e.group?.kind !== 'volcano' && !e.oni) e.setOrigin(0.5, 0.5 + (rec - breathe) / e.height);
     if (e.group?.kind === 'kyubi') return; // (the fox shows its wounds by losing its tails)
     const frac = e.hp / e.maxHp;
     const lvl = frac < 1 / 3 ? 2 : frac < 2 / 3 ? 1 : 0;
@@ -487,7 +501,7 @@ export class Enemies {
     while (e.wounds.length < lvl * 2) e.wounds.push(this.newWound(e));
     const sx = e.flipX ? -1 : 1;
     for (const w of e.wounds) {
-      w.setPosition(Math.round(e.x + w.ox * sx), Math.round(e.y + w.oy)).setFlipX(e.flipX !== w.flip).setVisible(e.visible && e.alpha > 0.5);
+      w.setPosition(Math.round(e.x + w.ox * sx), Math.round(e.y + w.oy - rec)).setFlipX(e.flipX !== w.flip).setVisible(e.visible && e.alpha > 0.5);
       w.setAlpha(e.alpha);
     }
     if (e.visible && Math.random() < dt * lvl * 1.6) {
@@ -579,16 +593,30 @@ export class Enemies {
           e.vy += 70 * dt;
           e.x += e.vx * dt;
           e.y += e.vy * dt;
+          if (Math.floor((e.age - dt) * 11) < Math.floor(e.age * 11)) s.fx.smoke(e.x, e.y - 2, 1, 1);
           break;
         case 'geyser':
           this.geyser(e, dt, b);
           break;
-        case 'steam':
+        case 'steam': {
           e.y += 22 * dt;
           e.x += Math.sin(e.age * 0.7 + e.x0) * 7 * dt;
+          let sq = 0;
+          if (s.player.alive) {
+            const dx = e.x - s.player.x;
+            const dy = e.y - s.player.y;
+            const d = Math.hypot(dx, dy);
+            if (d < 28 && d > 0) {
+              const k = 1 - d / 28;
+              e.x += (dx / d) * k * 28 * dt;
+              sq = k * 0.14;
+            }
+          }
           e.setFrame(Math.floor(e.age * 1.2) % 2 ? 'steam_1' : 'steam_0');
-          e.setScale(1.3 + Math.sin(e.age * 3) * 0.06).setTint(0xffd2b8).setTintMode(Phaser.TintModes.MULTIPLY);
+          const sc = 1.3 + Math.sin(e.age * 3) * 0.06;
+          e.setScale(sc + sq, sc - sq * 0.7).setTint(0xffd2b8).setTintMode(Phaser.TintModes.MULTIPLY);
           break;
+        }
         case 'masu':
           e.x += e.dir * 40 * dt;
           e.y = e.y0 + Math.sin(e.age * 3) * 6;
@@ -596,6 +624,13 @@ export class Enemies {
           break;
       }
       if (e.dead) continue;
+      if (e.recoil > 0) {
+        e.recoil *= Math.max(0, 1 - 18 * dt);
+        if (e.recoil < 0.04) e.recoil = 0;
+        if (!e.ground && e.type !== 'heavy' && e.type !== 'boss') {
+          e.setOrigin(0.5, e.recoil > 0 ? 0.5 + e.recoil / e.height : 0.5);
+        }
+      }
       if (e.type === 'heavy' || e.type === 'boss') this.wounds(e, dt);
       e.flashCool -= dt;
       if (e.flash > 0) {
@@ -659,6 +694,7 @@ export class Enemies {
         // flung by the volcano: drifting sideways, falling faster and faster
         e.x += e.tossV * dt;
         e.y += (30 + e.age * 28) * dt;
+        if (Math.floor((e.age - dt) * 10) < Math.floor(e.age * 10)) this.scene.fx.smoke(e.x, e.y - 3, 1, 1);
         break;
       case 'imp':
         // hatched: edges towards the player while dropping
@@ -667,6 +703,9 @@ export class Enemies {
         break;
       default:
         e.y += 58 * dt;
+    }
+    if (this.skin === SKINS.okinawa && e.seen > 0 && e.seen - dt <= 0) {
+      this.scene.fx.puff('splash', e.x, Math.max(4, e.y), 0.25);
     }
     if (e.hatch && !e.hatched) {
       // a boiled egg: wobbles harder and harder, cracks, and a little oni pops out
@@ -686,6 +725,7 @@ export class Enemies {
       // the ice cracks as it takes hits, the candle flickers inside
       const crack = e.armor > e.maxArmor * 0.6 ? 0 : e.armor > e.maxArmor * 0.25 ? 1 : 2;
       e.setFrame(`tourou_${crack}_${Math.floor(e.age * 7) % 2}`);
+      if (e.rotation) e.rotation *= Math.max(0, 1 - 14 * dt);
     }
     if (e.state === 'enter') {
       e.y += Math.max(8, (e.stopY - e.y) * 2.2) * dt;
@@ -761,6 +801,13 @@ export class Enemies {
       } else e.v = Math.min(240, e.v + 280 * dt);
       e.x += Math.cos(e.ang) * e.v * dt;
       e.y += Math.sin(e.ang) * e.v * dt;
+      if (this.scene.parallax.nearKind === 'sakura') {
+        for (const bit of this.scene.parallax.bitsLive) {
+          if (Math.abs(bit.x - e.x) < 15 && Math.abs(bit.y - e.y) < 15) {
+            bit.vx += (bit.x >= e.x ? 1 : -1) * 55 * dt;
+          }
+        }
+      }
     }
   }
 
@@ -852,6 +899,14 @@ export class Enemies {
     }
     e.fight += dt;
     e.x = 90 + 38 * Math.sin(e.fight * 0.45);
+    if (Math.floor((e.fight - dt) * 11) < Math.floor(e.fight * 11)) {
+      const fx = this.scene.fx;
+      const side = Math.floor(e.fight * 11) % 2 ? 14 : -14;
+      const p = fx.part(fx.parts, 'drop_0', e.x + side, e.y + 8);
+      p.vx = side * 2.2;
+      p.vy = 32;
+      p.life = p.max = 0.3;
+    }
     if (e.fight > 34) {
       e.state = 'leave';
       return;

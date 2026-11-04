@@ -41,6 +41,7 @@ export const okinawa = {
       g.enraged = true;
       g.timer = 0.6;
       g.step = 0;
+      this.scene.fx.shockwave(alive[0].x, alive[0].y);
       this.scene.hud.show('', 'SHISA WPADA W SZAŁ!', 1.6, true);
     }
     g.timer -= dt * (g.enraged ? 1.4 : 1);
@@ -66,6 +67,12 @@ export const okinawa = {
       case 1:
         // crossfire rings whose gaps interleave
         for (const p of alive) if (can(p)) b.ring(p.x, p.y + 4, g.enraged ? 16 : 12, g.step * 0.26 + (p.role === 'a' ? 0 : Math.PI / 12), slow, p.role === 'un');
+        if (a && un && can(a) && can(un)) {
+          const mx = (a.x + un.x) * 0.5;
+          const my = (a.y + un.y) * 0.5 + 8;
+          this.scene.fx.spark(mx, my);
+          this.scene.fx.light(mx, my, 0.55);
+        }
         g.timer = 0.8;
         if (++g.step >= 4) next();
         break;

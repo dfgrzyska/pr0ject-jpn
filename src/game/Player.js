@@ -13,6 +13,9 @@ export class Player {
     this.flame = scene.add.sprite(0, 0, 'sprites', 'flame_0').setOrigin(0.5, 0).setDepth(DEPTH.player - 0.1).play('flame');
     this.dot = scene.add.image(0, 0, 'sprites', 'hitbox').setDepth(DEPTH.player + 0.1);
     this.muzzle = scene.add.image(0, 0, 'sprites', 'muzzle_0').setDepth(DEPTH.player + 0.05).setVisible(false); // flash at the nose
+    this.noseGlow = scene.add.image(0, 0, 'sprites', 'glow').setDepth(DEPTH.player - 0.05).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
+    this.bank = 0;
+    this.thrust = 0;
     this.muzzleT = 0;
     this.trailT = 0;
     this.shots = new Pool(scene, DEPTH.playerShot);
@@ -58,6 +61,7 @@ export class Player {
     this.flame.setVisible(v);
     this.dot.setVisible(v);
     if (!v) this.muzzle.setVisible(false);
+    if (!v) this.noseGlow?.setVisible(false);
     if (!v) this.beanOrbit?.forEach((b) => b.setVisible(false));
   }
 
@@ -71,6 +75,10 @@ export class Player {
     this.bombs = 1;
     this.heat = 0;
     this.jam = 0;
+    this.bank = 0;
+    this.thrust = 0;
+    this.prevX = this.x;
+    this.prevY = this.y;
     this.drag = null;
     this.setVisible(true);
   }
@@ -152,14 +160,21 @@ export class Player {
         bank = Math.abs(vx) > 0.3 ? Math.sign(vx) : 0;
       }
       this.prevX = this.x;
+      const dy = this.y - (this.prevY ?? this.y);
+      this.prevY = this.y;
+      const vy = dt > 0 ? dy / dt : 0;
+      const thrustTarget = vy < -8 ? Math.min(1, -vy / this.ship.speed) : vy > 8 ? Math.max(-0.4, (-vy / this.ship.speed) * 0.45) : 0;
+      this.thrust += (thrustTarget - this.thrust) * Math.min(1, 14 * dt);
+      const bankRate = 13 * (this.ship.speed / 100);
+      this.bank += (bank - this.bank) * Math.min(1, bankRate * dt);
       if (this.invulnerable > 0) this.invulnerable -= dt;
       if (this.beanT > 0) this.beanT -= dt;
       if (firing && this.entering <= 0 && this.jam <= 0) this.fire(dt);
     }
     const f = this.ship.frame;
-    this.sprite.setFrame(bank < 0 ? `${f}_l` : bank > 0 ? `${f}_r` : f);
-    this.sprite.setPosition(this.x, this.y);
-    this.flame.setPosition(this.x, this.y + this.ship.flameY);
+    this.sprite.setFrame(this.bank < -0.35 ? `${f}_l` : this.bank > 0.35 ? `${f}_r` : f);
+    this.sprite.setPosition(this.x, this.y).setRotation(this.bank * 0.065);
+    this.flame.setPosition(this.x, this.y + this.ship.flameY).setScale(1 - this.thrust * 0.12, 1 + this.thrust * 0.45);
     this.dot.setPosition(this.x, this.y);
     const beans = this.alive && this.beanT > 0 && (this.beanT > 2 || Math.floor(this.beanT * 8) % 2 === 0);
     this.beanOrbit.forEach((b, i) => {
@@ -171,12 +186,12 @@ export class Player {
     this.muzzleT -= dt;
     this.muzzle.setVisible(this.alive && this.muzzleT > 0).setPosition(this.x, this.y - Math.ceil(this.sprite.height / 2) - 1);
     if (this.alive && (this.trailT -= dt) <= 0) {
-      this.trailT = 0.035;
+      this.trailT = 0.035 - this.thrust * 0.014;
       const fx = this.scene.fx;
       const side = Math.random() < 0.5 ? -2.5 : 2.5;
       const p = fx.part(fx.parts, 'dot_1', this.x + side, this.y + this.ship.flameY + 3);
       p.vx = (Math.random() - 0.5) * 6;
-      p.vy = 46 + Math.random() * 20;
+      p.vy = 46 + this.thrust * 24 + Math.random() * 20;
       p.drag = 0;
       p.life = p.max = 0.2 + Math.random() * 0.1;
       p.a0 = blink ? 0.3 : 0.85;
@@ -184,6 +199,16 @@ export class Player {
     }
     this.sprite.setAlpha(blink ? 0.35 : 1);
     this.flame.setAlpha(blink ? 0.35 : 1);
+    const hotGlow = this.alive && this.jam <= 0 && this.heat >= HEAT.boostAt;
+    const laserGlow = this.alive && this.weapon === 'laser' && this.muzzleT > -0.05;
+    if (hotGlow || laserGlow) {
+      const noseY = this.y - Math.ceil(this.sprite.height / 2);
+      const pulse = 0.9 + Math.sin(this.scene.t * 24) * 0.1;
+      const sc = (hotGlow ? 0.5 + (this.heat - HEAT.boostAt) * 0.45 : 0.38 + this.level * 0.07) * pulse;
+      const tint = hotGlow && laserGlow ? 0xffd8a8 : hotGlow ? 0xff9848 : 0x68c0ff;
+      const a = (hotGlow ? 0.22 + (this.heat - HEAT.boostAt) * 0.25 : 0.28) * (blink ? 0.35 : 1);
+      this.noseGlow.setVisible(true).setPosition(this.x, hotGlow && !laserGlow ? this.y - 2 : noseY).setScale(sc).setTint(tint).setAlpha(a);
+    } else this.noseGlow.setVisible(false);
     // hot guns glow orange; jammed ones blink grey
     if (this.jam > 0) this.sprite.setTint(Math.floor(this.jam * 10) % 2 ? 0x9a9a9a : 0xffffff);
     else if (this.heat >= HEAT.boostAt) this.sprite.setTint(0xffc8a0);
