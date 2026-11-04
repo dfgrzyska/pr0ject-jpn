@@ -331,6 +331,7 @@ export class Props {
 
   updateParts(dt, H) {
     let j = 0;
+    const pl = this.scene.player?.alive ? this.scene.player : null;
     for (const q of this.parts) {
       q.t += dt;
       const k = q.t / q.dur;
@@ -345,6 +346,38 @@ export class Props {
         const p = q.p;
         q.rise += q.vy * (1 - 0.55 * k) * dt;
         q.dx += this.wind * p.wf * (0.25 + k) * dt;
+        if (pl) {
+          const rx = q.x + q.dx - pl.x;
+          const ry = y - q.rise - pl.y;
+          const d = Math.hypot(rx, ry);
+          if (d < 48) {
+            const k = 1 - d / 48;
+            const push = k * 480 * dt;
+            const sx = Math.abs(rx) > 2 ? rx / (d || 1) : pl.bank >= 0 ? 1 : -1;
+            q.vx = (q.vx || 0) + sx * push;
+            q.vyPush = (q.vyPush || 0) + (ry / (d || 1)) * push * 0.55;
+            if (d < 30 && Math.random() < dt * 28) {
+              const fx = this.scene.fx;
+              for (const side of [-1, 1]) {
+                const bigWisp = Math.random() < 0.5;
+                const w = fx.part(fx.parts, bigWisp ? 'steam_0' : 'wisp_s_0', pl.x + side * 6, pl.y);
+                w.vx = side * (65 + Math.random() * 50);
+                w.vy = 18 + Math.random() * 28;
+                w.grow = bigWisp ? 0.5 : 1.3;
+                w.life = w.max = 0.42;
+                w.a0 = bigWisp ? 0.5 : 0.75;
+                w.setScale(bigWisp ? 0.45 : 1.0);
+              }
+            }
+          }
+        }
+        if (q.vx || q.vyPush) {
+          q.dx += q.vx * dt;
+          q.rise -= q.vyPush * dt;
+          const damp = Math.max(0, 1 - 1.5 * dt);
+          q.vx *= damp;
+          q.vyPush *= damp;
+        }
         const stage = p.f[Math.min(p.f.length - 1, Math.floor(k * p.f.length * 1.2))];
         this.setFrame(o, stage[q.v % stage.length]);
         const a = Math.min(1, k * 8) * (k < 0.5 ? 1 : 1 - (k - 0.5) / 0.5) * p.a * this.fade;

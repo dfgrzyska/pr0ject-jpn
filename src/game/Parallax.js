@@ -144,14 +144,46 @@ export class Parallax {
       if (this.time < this.nightFrom) this.spawnTropic(dt, fall, scrolling);
     }
     else this.spawnSakura(dt, fall, scrolling);
-    for (const p of this.near.live) if (this.drift(p, dt, H)) this.near.kill(p);
+    const ship = this.scene.player?.alive ? this.scene.player : null;
+    for (const p of this.near.live) {
+      if (ship && this.nearKind === 'steam') {
+        const dx = p.x - ship.x;
+        const dy = p.y - ship.y;
+        const d = Math.hypot(dx, dy);
+        if (d < 52) {
+          const k = 1 - d / 52;
+          const sx = Math.abs(dx) > 3 ? dx / d : ship.bank >= 0 ? 1 : -1;
+          p.vx += sx * k * 320 * dt;
+          p.vy += (dy / (d || 1)) * k * 160 * dt;
+          if (d < 30 && Math.random() < dt * 16) {
+            const fx = this.scene.fx;
+            const w = fx.part(fx.parts, Math.random() < 0.5 ? 'wisp_s_0' : 'wisp_s_1', ship.x + (Math.random() - 0.5) * 8, ship.y);
+            w.vx = sx * (50 + Math.random() * 40);
+            w.vy = 18 + Math.random() * 24;
+            w.grow = 0.9;
+            w.life = w.max = 0.4;
+            w.a0 = 0.35;
+          }
+        }
+        const stretch = Math.min(0.45, Math.abs(p.vx) / 130);
+        const baseSc = p.big ? 1.6 : 1;
+        p.setScale(baseSc + stretch, baseSc - stretch * 0.5).setRotation((p.vx / 130) * 0.22);
+      }
+      if (this.drift(p, dt, H)) this.near.kill(p);
+    }
     this.near.sweep();
     let j = 0;
     const pl = this.nearKind === 'sakura' && this.scene.player?.alive ? this.scene.player : null;
     for (const b of this.bitsLive) {
-      if (pl && Math.abs(b.x - pl.x) < 18 && Math.abs(b.y - pl.y) < 18) {
-        b.vx += (b.x >= pl.x ? 1 : -1) * 65 * dt;
-        b.vy -= 18 * dt;
+      if (pl && Math.abs(b.x - pl.x) < 28 && Math.abs(b.y - pl.y) < 28) {
+        const dx = b.x - pl.x;
+        const dy = b.y - pl.y;
+        const d = Math.hypot(dx, dy) || 1;
+        if (d < 28) {
+          const k = 1 - d / 28;
+          b.vx += (Math.abs(dx) > 2 ? dx / d : pl.bank >= 0 ? 1 : -1) * k * 220 * dt;
+          b.vy += ((dy / d) * 90 - 40) * k * dt;
+        }
       }
       if (this.drift(b, dt, H)) {
         b.setVisible(false);
@@ -167,6 +199,7 @@ export class Parallax {
     p.y += p.vy * dt;
     // snow drifts with the current wind (wf = how strongly, by flake size)
     p.x += (p.vx + (p.wf ? this.wind * p.wf : 0) + Math.sin(p.age * 3) * p.sway) * dt;
+    if (Math.abs(p.vx) > 12) p.vx *= Math.max(0, 1 - 1.8 * dt);
     if (p.flipT && p.age % (p.flipT * 2) < dt) p.setFlipX(!p.flipX);
     return p.y > H + 40 || p.y < -60 || p.x < -60 || p.x > VIEW.width + 60;
   }
@@ -218,10 +251,10 @@ export class Parallax {
   spawnSteam(dt, fall) {
     this.mistTimer -= dt;
     if (this.mistTimer > 0) return;
-    this.mistTimer = 1.1 + Math.random() * 1.6;
+    this.mistTimer = 0.75 + Math.random() * 1.1;
     const big = Math.random() < 0.35;
     const frame = big ? `steam_${Math.floor(Math.random() * 2)}` : `wisp_s_${Math.floor(Math.random() * 2)}`;
-    const m = this.near.spawn(frame, Math.random() * 180, -24, { vy: fall * (big ? 1.05 : 0.9), vx: -4 + Math.random() * 8, sway: 2, age: 0, flipT: 0 });
+    const m = this.near.spawn(frame, Math.random() * 180, -24, { vy: fall * (big ? 1.05 : 0.9), vx: -4 + Math.random() * 8, sway: 2, age: 0, flipT: 0, big });
     m.setAlpha(big ? 0.14 : 0.22).setScale(big ? 1.6 : 1);
   }
 

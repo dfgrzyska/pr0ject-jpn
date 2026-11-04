@@ -94,12 +94,15 @@ export const sapporo = {
     if (e.spray > 0) {
       e.spray -= dt;
       e.cool -= dt;
+      if (Math.random() < dt * 45) {
+        const sa = ang + (Math.random() - 0.5) * 0.65;
+        const v = 36 + Math.random() * 34;
+        const p = s.parallax.bit(`flake_${Math.floor(Math.random() * 3)}`, hx + Math.cos(ang) * 5, hy + Math.sin(ang) * 5, Math.sin(sa) * v, Math.cos(sa) * v, 0.5, 4, Math.random() * 6, 0);
+        p.setAlpha(0.8);
+      }
       if (e.cool <= 0) {
         e.cool = 0.11;
         b.fire(hx + Math.cos(ang) * 4, hy + Math.sin(ang) * 4, ang, slow);
-        const sa = ang + (Math.random() - 0.5) * 0.6;
-        const p = s.parallax.bit('flake_1', hx + Math.cos(ang) * 5, hy + Math.sin(ang) * 5, Math.sin(sa) * 42, Math.cos(sa) * 42, 0.6, 3, Math.random() * 6, 0);
-        p.setAlpha(0.75);
       }
     } else if ((e.timer -= dt) <= 0) {
       e.spray = 1.6;

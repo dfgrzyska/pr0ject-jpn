@@ -245,8 +245,8 @@ export class Enemies {
       e.armor -= byBomb ? Infinity : amount;
       if (e.armor > 0) {
         if (e.flash === 0.035) {
-          e.setRotation((Math.random() < 0.5 ? -1 : 1) * 0.09);
-          this.scene.fx.shards(e.x, e.y, 1, true);
+          e.setRotation((Math.random() < 0.5 ? -1 : 1) * 0.22);
+          this.scene.fx.shards(e.x, e.y, 2, true);
         }
         return;
       }
@@ -599,22 +599,44 @@ export class Enemies {
           this.geyser(e, dt, b);
           break;
         case 'steam': {
-          e.y += 22 * dt;
-          e.x += Math.sin(e.age * 0.7 + e.x0) * 7 * dt;
+          e.y += (22 + (e.vy || 0)) * dt;
+          e.x += (Math.sin(e.age * 0.7 + e.x0) * 7 + (e.vx || 0)) * dt;
+          const damp = Math.max(0, 1 - 2.6 * dt);
+          e.vx = (e.vx || 0) * damp;
+          e.vy = (e.vy || 0) * damp;
           let sq = 0;
           if (s.player.alive) {
             const dx = e.x - s.player.x;
             const dy = e.y - s.player.y;
             const d = Math.hypot(dx, dy);
-            if (d < 28 && d > 0) {
-              const k = 1 - d / 28;
-              e.x += (dx / d) * k * 28 * dt;
-              sq = k * 0.14;
+            if (d < 36) {
+              const k = 1 - d / 36;
+              e.vx += s.player.bank * 55 * k * dt;
+              sq = k * 0.65;
+              if (Math.random() < dt * 60) {
+                for (const side of [-1, 1]) {
+                  const bigWisp = Math.random() < 0.6;
+                  const frame = bigWisp ? (Math.random() < 0.5 ? 'steam_0' : 'steam_1') : Math.random() < 0.5 ? 'wisp_s_0' : 'wisp_s_1';
+                  const w = s.fx.part(s.fx.parts, frame, s.player.x + side * 7, s.player.y + (Math.random() - 0.5) * 6);
+                  w.vx = side * (75 + Math.random() * 60);
+                  w.vy = 20 + Math.random() * 35;
+                  w.drag = 2.2;
+                  w.grow = bigWisp ? 0.55 : 1.5;
+                  w.life = w.max = 0.45 + Math.random() * 0.15;
+                  w.a0 = bigWisp ? 0.65 : 0.9;
+                  w.setScale(bigWisp ? 0.5 : 1.1).setTint(0xffd2b8);
+                }
+              }
             }
           }
-          e.setFrame(Math.floor(e.age * 1.2) % 2 ? 'steam_1' : 'steam_0');
+          const stretch = Math.min(0.45, Math.abs(e.vx) / 110);
           const sc = 1.3 + Math.sin(e.age * 3) * 0.06;
-          e.setScale(sc + sq, sc - sq * 0.7).setTint(0xffd2b8).setTintMode(Phaser.TintModes.MULTIPLY);
+          e.setFrame(Math.floor(e.age * 1.2) % 2 ? 'steam_1' : 'steam_0');
+          e.setScale(sc + Math.max(sq, stretch), sc - Math.max(sq, stretch) * 0.55)
+            .setRotation((e.vx / 100) * 0.22)
+            .setAlpha(0.8 - sq * 0.75)
+            .setTint(0xffd2b8)
+            .setTintMode(Phaser.TintModes.MULTIPLY);
           break;
         }
         case 'masu':
@@ -704,8 +726,25 @@ export class Enemies {
       default:
         e.y += 58 * dt;
     }
-    if (this.skin === SKINS.okinawa && e.seen > 0 && e.seen - dt <= 0) {
-      this.scene.fx.puff('splash', e.x, Math.max(4, e.y), 0.25);
+    if (e.split && Math.floor((e.age - dt) * 10) < Math.floor(e.age * 10)) {
+      this.scene.fx.smoke(e.x, e.y - 3, 1, 1);
+    }
+    if (this.skin === SKINS.okinawa && e.y >= 16) {
+      if (!e.leapt) {
+        e.leapt = true;
+        this.scene.fx.puff('splash', e.x, e.y + 2, 0.38);
+        for (const side of [-1, 1]) {
+          const p = this.scene.fx.part(this.scene.fx.parts, 'drop_0', e.x + side * 3, e.y + 2);
+          p.vx = side * (24 + Math.random() * 18);
+          p.vy = -12 + Math.random() * 14;
+          p.life = p.max = 0.32;
+        }
+      } else if (Math.floor((e.age - dt) * 6) < Math.floor(e.age * 6)) {
+        const p = this.scene.fx.part(this.scene.fx.parts, 'drop_1', e.x, e.y - 4);
+        p.vx = (Math.random() - 0.5) * 12;
+        p.vy = 18;
+        p.life = p.max = 0.25;
+      }
     }
     if (e.hatch && !e.hatched) {
       // a boiled egg: wobbles harder and harder, cracks, and a little oni pops out

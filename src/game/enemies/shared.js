@@ -37,4 +37,7 @@ export const EXTRAS = {
   oni: false, // only Setsubun beans really hurt it
   wounds: null, // a weakened boss's cracks (sprites riding on it)
   recoil: 0, // brief upward visual jolt on hit
+  vx: 0,
+  vy: 0,
+  leapt: false,
 };

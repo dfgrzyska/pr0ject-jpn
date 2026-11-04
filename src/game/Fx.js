@@ -194,6 +194,48 @@ export class Fx {
       }
     }
     const bits = this.scene.parallax?.bitsLive;
+    const near = this.scene.parallax?.near?.live;
+    if (near) {
+      for (const n of near) {
+        const dx = n.x - x;
+        const dy = n.y - y;
+        const d = Math.hypot(dx, dy) || 1;
+        if (d < 160) {
+          const push = (1 - d / 160) * 140;
+          n.vx += (dx / d) * push;
+          n.vy += (dy / d) * push;
+        }
+      }
+    }
+    const propParts = this.scene.parallax?.props?.parts;
+    if (propParts) {
+      for (const q of propParts) {
+        if (q.kind !== 'puff') continue;
+        const py = this.scene.parallax.screenY(q.u) - q.rise;
+        const dx = q.x + q.dx - x;
+        const dy = py - y;
+        const d = Math.hypot(dx, dy) || 1;
+        if (d < 160) {
+          const push = (1 - d / 160) * 140;
+          q.vx = (q.vx || 0) + (dx / d) * push;
+          q.vyPush = (q.vyPush || 0) + (dy / d) * push;
+        }
+      }
+    }
+    const enemies = this.scene.enemies?.pool?.live;
+    if (enemies) {
+      for (const e of enemies) {
+        if (e.type !== 'steam' || e.dead) continue;
+        const dx = e.x - x;
+        const dy = e.y - y;
+        const d = Math.hypot(dx, dy) || 1;
+        if (d < 160) {
+          const push = (1 - d / 160) * 150;
+          e.vx = (e.vx || 0) + (dx / d) * push;
+          e.vy = (e.vy || 0) + (dy / d) * push;
+        }
+      }
+    }
     if (bits) {
       for (const b of bits) {
         const dx = b.x - x;
