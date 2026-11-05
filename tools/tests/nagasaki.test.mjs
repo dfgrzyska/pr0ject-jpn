@@ -17,7 +17,7 @@ test('Nagasaki assets, music and quiet memorial interval are complete', () => {
     }
     if (look.head) for (let i = 0; i < 16; i++) assert(atlas[look.head + i]);
   }
-  for (const key of ['n_ja_0', 'n_segment', 'n_pearl', 'n_traffic', 'seal_stage8', 'stamp_stage8', 'food_castella', 'food_champon']) assert(atlas[key], key);
+  for (const key of ['n_ja_0', 'n_segment', 'n_pearl', 'n_traffic', 'n_view_ferry_0', 'n_view_ferry_1', 'n_view_wake', 'seal_stage8', 'stamp_stage8', 'food_castella', 'food_champon']) assert(atlas[key], key);
   for (const song of Object.values(SONGS8)) for (const bars of Object.values(song.tracks)) for (const bar of bars) assert.equal(bar.split(' ').length, 16, bar);
   assert(!stage.waves.some(w => w.t >= stage.interlude.from && w.t < stage.interlude.to));
   assert(stage.scroll.anchor + stage.interlude.from * stage.scroll.mid <= 4620);
@@ -31,6 +31,7 @@ test('Nagasaki assets, music and quiet memorial interval are complete', () => {
 
 const object = () => ({ x: 0, y: 0, alpha: 1, visible: true,
   setOrigin() { return this; }, setDepth() { return this; },
+  setFrame() { return this; },
   setVisible(v) { this.visible = v; return this; },
   setAlpha(a) { assert(a >= 0 && a <= 1); this.alpha = a; return this; },
   setPosition(x, y) { this.x = x; this.y = y; return this; },

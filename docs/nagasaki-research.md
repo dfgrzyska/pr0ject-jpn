@@ -33,3 +33,19 @@ The memorial interlude is a tribute, with guns/bombs held and combatants removed
 Static scenery is generated offline into the existing strip chunks. Movers reuse PropKit pools. Panorama uses a handful of pre-rendered layers and grouped light masks rather than one object per window; traffic is a fixed blitter pool. No dynamic texture uploads, no runtime pixel painting, bounded boss/bullet populations. Camera motion uses differing layer offsets, and lights pulse at slow, varied rhythms rather than strobing. `?noprops` also suppresses panorama animations for comparison.
 
 Reference photographs are research only; the shipped pixel artwork is newly drawn by the repository's raster generators.
+
+## Visual revision and second-pass review
+
+Compared the initial art with Osaka's layered buildings and Hiroshima's textured materials. The initial Nagasaki strip had repeated flat roofs and circular trees; its panorama had a regular window grid, excessive empty foreground and little architectural depth.
+
+The revised strip adds shaded crowns using the same nature renderer as other cities, masonry, concrete weathering, roof tiles, open stairwells, collapsed slabs, retaining terraces, planted gardens, veranda columns, pointed church windows, timber shopfronts, cargo yards and modelled bronze. Chinatown now has varied narrow shop buildings instead of repeated identical halls. The peace interlude and the recognisable right-arm-up / left-arm-out statue gesture are retained.
+
+The requested additional review used the [official Hashima aerial photograph](https://www.nagasaki-tabinet.com/storage/tourism_attractions/51797/responsive_images/J7LrgWShqMqcAbS93Lx1UsWTEf9IfBMdo5mV6vJ6__1023_680.jpeg), [Oura photograph](https://rimage.gnst.jp/livejapan.com/public/article/detail/a/00/04/a0004962/img/en/a0004962_parts_60b59911e62c5.jpg) and the Inasa reference above. It prompted further changes: removed the invented intact mine-headframe, strengthened Hashima's rocky retaining terraces and schoolyard, differentiated Glover's wings, added Oura's pointed entrance bays and palms, and connected the panorama's dark eastern hills to the skyline rather than leaving an artificial circular hole in the city.
+
+The new vista has atmospheric ridges, individually shaded terraced buildings, winding roads, waterfront blocks, broken reflection ribbons, dry dock and ship, varied cranes, near-side neighbourhoods and both lit Megami pylons. The port geometry is shared by the painter and runtime traffic so cars and ferries follow their actual roads/water. The artwork is a compressed portrait-format interpretation, not a cadastral reconstruction.
+
+Life pass: walking visitors, fixed street traffic, restaurant steam, glowing signs, river glints, working hoists, the existing tram/ropeway, plus three ferries and wakes in the final view. Static detail is baked in four strip textures and seven panorama textures. The vista keeps 24 light points and six ferry/wake images; nothing is allocated per window or per animation frame.
+
+Validation: `npm test`, `npm run build`, and the optional Chrome integration test at 180×320 and 180×420. The latter covers the route, silent memorial, boss phases, scroll gate, victory, panorama, pause and stage clear; it checks that ferry positions and window alpha change while scene-object count stays constant. Screenshots of Hashima, Oura, Shinchi and Inasa are written to the ignored `tools/preview/` directory.
+
+Optional browser test setup: `npm install --prefix tools/preview/browser-runtime --no-save --package-lock=false playwright`, then `node tools/tests/nagasaki.browser.mjs`. Set `CHROME_PATH` if Chrome is installed elsewhere. Headless rendering is not a performance measurement on a physical phone.

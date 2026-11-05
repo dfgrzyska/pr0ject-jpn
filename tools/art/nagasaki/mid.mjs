@@ -1,5 +1,8 @@
-import { Raster, rng, fbm, mix } from '../../lib/raster.mjs';
+import { Raster, rng, fbm, mix, bayer } from '../../lib/raster.mjs';
 import { PropKit } from '../props.mjs';
+import { crownPixels } from '../nature.mjs';
+import { polygon, masonry, glow as paintGlow } from './paint.mjs';
+import { enrichLandmarks } from './landmarks.mjs';
 
 export const W = 180, L = 7168;
 const Y = (u) => L - u;
@@ -32,11 +35,10 @@ export function buildMid() {
     }
   }
   function tree(x, u, size = 5) {
-    img.ellipse(x + 2, Y(u) + 3, size, size * 0.7, 0x0b1620, 0.5);
-    for (let k = 0; k < 5; k++) {
-      const dx = rand.int(-2, 2), dy = rand.int(-2, 2);
-      img.disc(x + dx, Y(u) + dy, size - k * 0.5, color([0x253f36, 0x355240, 0x46634a, 0x5e7653, 0x768460][k], u));
-    }
+    const seed = rand.int(1, 999999);
+    const pixels = crownPixels(u > 6100 ? 'cedar' : 'broadleaf', Math.round(x), Y(u), size, rng(seed), seed);
+    for (const p of pixels) img.tint(p.x + 3, p.y + 4, .58);
+    for (const p of pixels) img.set(p.x, p.y, color(p.c, u));
   }
   function building(x, u, w, h, floors = 2, roof = 0x63667b, wall = 0xb0a69b, ruined = false) {
     const y = Y(u), rise = floors * 3;
@@ -44,26 +46,52 @@ export function buildMid() {
     img.rect(x, y, w, h + rise, color(wall, u));
     img.rect(x, y, w, h, color(roof, u));
     img.rect(x + 1, y + 1, w - 2, h - 2, color(mix(roof, 0xc6c0ad, 0.2), u));
+    // Concrete aggregate, roof expansion joints and sunken drainage channels.
+    for (let yy = 2; yy < h - 1; yy++) for (let xx = 1; xx < w - 1; xx++) {
+      if (rand() < .28) img.set(x + xx, y + yy, color(mix(roof, rand() < .5 ? 0xe0d7bc : 0x17232f, .15), u));
+    }
+    img.rect(x + w - 3, y + 2, 2, h + rise - 2, color(mix(wall, 0x12212c, .48), u));
+    for (let yy = 6; yy < h - 2; yy += 9) img.line(x + 2, y + yy, x + w - 4, y + yy, color(mix(roof, 0x14202d, .25), u));
     for (let j = 1; j < floors + 1; j++) for (let xx = 2; xx < w - 2; xx += 4) {
       const c = ruined ? 0x17232b : rand() < 0.6 ? 0xffce8d : 0x344354;
       img.rect(x + xx, y + h + j * 3 - 3, 2, 2, c);
+      img.set(x + xx, y + h + j * 3 - 1, color(mix(wall, 0xeee1bf, .3), u));
     }
     if (ruined) {
       for (let k = 0; k < w / 3; k++) img.set(x + rand.int(1, w - 2), y + rand.int(1, h - 2), 0x303a3b);
       img.line(x + w / 2, y, x + w / 2 - 3, y + h + rise, 0x2d3537);
       img.rect(x + 2, y + 2, Math.max(2, w - 5), 1, 0x969486);
+      // Exposed beams, missing slabs, rust streaks and open stairwell on each ruin.
+      for (let yy = 3; yy < h + rise; yy += 5) {
+        img.line(x, y + yy, x + 2, y + yy + 3, 0x4e5b57);
+        if (yy > h) img.line(x + 1, y + yy, x + w - 4, y + yy, 0x7c887d);
+      }
+      img.rect(x + w - 10, y + 5, 6, Math.max(4, h - 10), 0x24332f);
+      for (let yy = 6; yy < h - 5; yy += 3) img.line(x + w - 10, y + yy, x + w - 5, y + yy + 1, 0x929789);
+      for (let k = 0; k < 5; k++) { const xx = x + rand.int(2, w - 4), yy = y + rand.int(4, h + rise - 2); img.line(xx, yy, xx, yy + 3, 0x725c49); }
     } else {
       img.rect(x + 3, y + 3, 4, 3, color(0xb9b4a6, u));
       img.line(x, y, x + w, y, color(0xd3c3a8, u));
+      img.rect(x + w - 10, y + 4, 5, 4, color(0x293d4e, u));
+      img.line(x + w - 10, y + 4, x + w - 6, y + 4, color(0xb3c8c6, u));
+      for (let xx = 4; xx < w - 5; xx += 9) { img.rect(x + xx, y + h + rise - 3, 3, 3, 0x263747); img.set(x + xx, y + h + rise - 3, 0xebca8f); }
     }
   }
   function tiled(x, u, w, h, red = false) {
     building(x, u, w, h, 2, red ? 0x784043 : 0x354653, red ? 0xa7483c : 0xc3bda7);
-    for (let yy = 0; yy < h; yy += 3) rect(x - 2, u - yy, w + 4, 1, color(red ? 0xcb815a : 0x7d8991, u));
+    const y = Y(u), base = red ? 0x6e3b39 : 0x334c5a;
+    polygon(img, [[x + 3, y], [x + w - 3, y], [x + w + 3, y + h], [x - 3, y + h]], color(base, u));
+    for (let yy = 2; yy < h; yy += 3) for (let xx = -1; xx < w + 2; xx += 3) {
+      img.rect(x + xx, y + yy, 2, 1, color(red ? 0xa57150 : 0x6f8591, u));
+      img.set(x + xx + 1, y + yy + 1, color(red ? 0x453238 : 0x243746, u));
+    }
+    img.line(x + 3, y, x + w / 2, y + h, color(red ? 0xc69462 : 0x9bb0b3, u));
+    img.line(x + w - 3, y, x + w / 2, y + h, color(red ? 0xc69462 : 0x9bb0b3, u));
+    img.line(x - 3, y + h, x + w + 3, y + h, color(0xb5b29e, u));
     rect(x + 2, u + 2, w - 4, 2, color(0x95785f, u));
   }
   function lamp(x, u, red = false) {
-    img.disc(x, Y(u), 4, red ? 0xff7838 : 0xffce86, 0.15);
+    paintGlow(img, x, Y(u), 7, red ? 0xff7838 : 0xffce86, .38);
     rect(x - 1, u + 1, 2, 3, red ? 0xf5934e : 0xffdc9b);
   }
   function path(x, u0, u1, width = 12) {
@@ -74,7 +102,11 @@ export function buildMid() {
   // Mainland hills and neighbourhoods. Sea remains transparent over the moving far layer.
   for (let u = 1650; u < L; u++) for (let x = 0; x < W; x++) {
     const v = fbm(x, u, { seed: 83, scale: 20, octaves: 2 });
-    img.set(x, Y(u), color(mix(0x344b40, 0x6b6956, v), u));
+    const fine = fbm(x, u, { seed: 184, scale: 3, octaves: 2 });
+    const levels = [0x354e38, 0x486242, 0x60764c, 0x7a8859];
+    const value = v * 2.3 + (fine - .5) * .8;
+    const k = Math.max(0, Math.min(3, Math.floor(value) + (value % 1 > bayer(x, u) ? 1 : 0)));
+    img.set(x, Y(u), color(levels[k], u));
   }
   // Hashima: long seawall, apartments west of the ridge, industrial eastern half.
   const island = [[67, 330], [108, 350], [151, 432], [152, 702], [132, 800], [95, 858], [43, 834], [22, 736], [25, 438]];
@@ -83,9 +115,18 @@ export function buildMid() {
     const [x, u] = island[i], [xx, uu] = island[(i + 1) % island.length];
     line(x, u, xx, uu, 0xc7c3ac); line(x + 2, u - 3, xx + 2, uu - 3, 0x3c494b);
   }
+  // The central rock rises above the reclaimed coal yards, with retaining terraces.
+  poly([[83, 425], [104, 451], [112, 532], [107, 650], [115, 709], [100, 772], [85, 738]], 0x566054);
+  for (let u = 440; u < 762; u += 9) {
+    const x = 89 + Math.sin(u * .043) * 5;
+    line(x, u, 106 + Math.sin(u * .03) * 4, u + 3, 0x8d927c);
+    line(x + 2, u - 3, 107, u, 0x3d4b43);
+  }
   for (let u = 390; u < 820; u += 49) {
-    building(31, u, 24, 27, 5, 0x838981, 0x95968a, true);
-    building(60, u + 10, 25, 24, 6, 0x727f78, 0x969b8f, true);
+    const i = Math.round((u - 390) / 49);
+    building(30 + i % 3, u, 23 + i % 4, 24 + i % 5, 4 + i % 3, 0x838981, 0x95968a, true);
+    building(60 - i % 3, u + 10, 25 + i % 2, 24, 5 + i % 3, 0x727f78, 0x969b8f, true);
+    if (i % 2) building(47, u - 23, 24, 8, 3, 0x65736b, 0x8f9b88, true);
     rect(56, u + 18, 3, 46, 0x394740); // narrow stairs and light wells
     for (let k = 0; k < 8; k++) rect(56, u + 18 - k * 5, 3, 1, 0xb1aea0);
   }
@@ -99,7 +140,10 @@ export function buildMid() {
   for (const [x, u] of [[38, 515], [67, 565], [36, 712], [71, 774]]) { rect(x, u, 5, 4, 0x405558); rect(x, u + 1, 5, 1, 0xabb9b3); }
   building(110, 525, 29, 18, 2, 0x655c54, 0xa77054, true);
   for (let u = 430; u < 690; u += 26) { rect(110, u, 30, 4, 0x6d746c); rect(111, u - 5, 6, 5, 0x333d3d); }
-  line(112, 588, 138, 642, 0xb1aca0); line(138, 588, 112, 642, 0xb1aca0); line(112, 642, 138, 642, 0xc4bfa8);
+  // Present-day shaft foundations and broken brickwork, not an intact mine tower.
+  masonry(img, 110, Y(642), 31, 12, 0x997c61, 80, 5);
+  rect(111, 625, 29, 38, 0x505d56); rect(116, 621, 18, 28, 0x2c3d39);
+  for (let u = 595; u < 627; u += 6) rect(110, u, 32, 2, 0x8a8c77);
   rect(145, 500, 26, 8, 0xabb1a7); rect(161, 508, 8, 25, 0x7c8c86);
   for (let u = 380; u < 800; u += 17) { rect(27, u, 2, 6, 0xbdbbaa); rect(146, u, 2, 6, 0xbdbbaa); }
   // Wakes lap the seawall in three grouped frames, not hundreds of separate particles.
@@ -122,7 +166,7 @@ export function buildMid() {
   }
   // Glover hillside: retaining walls, zig-zag steps, gardens and veranda houses.
   for (let u = 1750; u < 2480; u += 42) {
-    rect(0, u, W, 4, color(0x7d8173, u));
+    masonry(img, 0, Y(u), W, 7, color(0x8f8d79, u), u);
     for (let x = 8; x < W; x += 27) tree(x, u - 16, 7);
   }
   path(82, 1700, 2490, 15);
@@ -208,7 +252,7 @@ export function buildMid() {
   kit.path([[31, 5430], [63, 5640], [62, 5880]], [ferryF], { sp: 7, mode: 'pp', turn: 'none' });
   // Fuchi-jinja lower ropeway station, then the dark wooded flank of Inasa.
   tiled(96, 6110, 52, 28); rect(104, 6125, 34, 16, 0xa7b0a6);
-  for (let u = 6150; u < L; u += 13) for (let x = 0; x < W; x += 17) tree(x + rand.int(-5, 5), u, rand.int(6, 11));
+  for (let u = 6150; u < L; u += 11) for (let x = 0; x < W; x += 13) tree(x + rand.int(-7, 7), u + rand.int(-4, 4), rand.int(7, 12));
   path(155, 6150, 6670, 6);
   for (let u = 6150; u < 6760; u += 140) {
     const x = 116 - (u - 6150) * 0.075;
@@ -226,5 +270,6 @@ export function buildMid() {
   const glow = new Raster(3, 3); glow.disc(1, 1, 1.4, 0xffb875);
   kit.wave([kit.frame(glow)], [[0, 147, 5410, 0], [0, 160, 5630, 2], [0, 33, 6990, 1], [0, 145, 6990, 3]], { w: 0.9, a0: 0.25, a1: 0.9 });
   for (const [u0, u1, xs] of [[1800, 2200, [80, 96]], [3140, 3580, [79, 99]], [4780, 5100, [51, 127]]]) for (let u = u0; u < u1; u += 41) for (const x of xs) { rect(x, u, 2, 3, rand.pick([0xb6906e, 0x987090, 0x6c94a3])); rect(x, u + 1, 2, 1, 0xc3ae91); }
+  enrichLandmarks(img, kit);
   return { strip: img, props: kit.pack(), meta: { width: W, chunkHeight: 512, chunks: 14, length: L } };
 }

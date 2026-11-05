@@ -17,7 +17,7 @@ try {
     await page.waitForFunction(() => window.game?.scene.getScene('Stage')?.state === 'title');
     await page.evaluate(() => { const s = game.scene.getScene('Stage'); s.startGame(); game.loop.stop(); s.music.play = () => {}; });
     const samples = [];
-    for (const target of [24, 103, 115, 141, 155, 166, 185, 210]) {
+    for (const target of [12, 24, 70, 103, 115, 141, 155, 166, 185, 210]) {
       const sample = await page.evaluate(target => {
         const s = game.scene.getScene('Stage');
         let frames = 0;
@@ -31,6 +31,12 @@ try {
       if (target >= 141 && target <= 166) { assert(sample.quiet); assert.equal(sample.bullets, 0); assert.equal(sample.enemies, 0); }
       if (target === 210) { assert.equal(sample.u, 6100); assert(sample.phase >= 3); }
       samples.push(sample);
+      if (H === 320 && [12, 70, 103, 166].includes(target)) {
+        await page.evaluate(() => game.loop.start(game.step.bind(game)));
+        await page.waitForTimeout(500);
+        await page.screenshot({ path: `tools/preview/nagasaki-route-${target}.png` });
+        await page.evaluate(() => game.loop.stop());
+      }
     }
     const defeated = await page.evaluate(() => {
       const s = game.scene.getScene('Stage'); s.enemies.damage(s.enemies.bossGroup.parts[0], 2e6);
@@ -47,6 +53,17 @@ try {
     // Let Phaser's own animation manager finish effects after accelerated simulation.
     await page.waitForTimeout(1800);
     await page.screenshot({ path: `tools/preview/nagasaki-inasa-${H}.png` });
+    const before = await page.evaluate(() => {
+      const v = game.scene.getScene('Stage').scenicView;
+      return { ferryX: v.ferries[0].boat.x, windowAlpha: v.layers[2].alpha, count: game.scene.getScene('Stage').children.list.length };
+    });
+    await page.waitForTimeout(1000);
+    const after = await page.evaluate(() => {
+      const v = game.scene.getScene('Stage').scenicView;
+      return { ferryX: v.ferries[0].boat.x, windowAlpha: v.layers[2].alpha, count: game.scene.getScene('Stage').children.list.length };
+    });
+    assert.notEqual(before.ferryX, after.ferryX); assert.notEqual(before.windowAlpha, after.windowAlpha);
+    assert.equal(before.count, after.count, 'the vista must reuse its scene objects');
     const clear = await page.evaluate(() => {
       game.loop.stop(); const s = game.scene.getScene('Stage');
       const before = s.scenicView.t; s.paused = true; s.update(0, 50);

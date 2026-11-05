@@ -1,6 +1,7 @@
 import { DEPTH } from '../config.js';
+import { farShore, nearShore, hillRoad } from '../data/nagasakiView.js';
 
-// Seven pre-rendered layers, four grouped window masks and 24 pooled light points.
+// Seven pre-rendered layers (including four light masks), 24 light points and three ferries/wakes.
 // No per-window objects, per-frame texture uploads or growing particle arrays.
 export class NagasakiView {
   constructor(scene) {
@@ -12,6 +13,10 @@ export class NagasakiView {
     this.layers = names.map((n, i) => scene.add.image(0, 0, `view_stage8_${n}`).setOrigin(0).setDepth(DEPTH.ground + .5 + i * .01).setVisible(false));
     this.traffic = scene.add.blitter(0, 0, 'sprites').setDepth(DEPTH.ground + .555).setVisible(false);
     this.points = Array.from({ length: 24 }, () => this.traffic.create(0, 0, 'n_traffic'));
+    this.ferries = Array.from({ length: 3 }, () => ({
+      boat: scene.add.image(0, 0, 'sprites', 'n_view_ferry_0').setDepth(DEPTH.ground + .557).setVisible(false),
+      wake: scene.add.image(0, 0, 'sprites', 'n_view_wake').setDepth(DEPTH.ground + .556).setVisible(false),
+    }));
   }
   update(dt) {
     const s = this.scene, cfg = s.stage.panorama;
@@ -30,8 +35,16 @@ export class NagasakiView {
     this.traffic.setVisible(this.animate).setPosition(-18 + pan * .7, y);
     for (let i = 0; i < this.points.length; i++) {
       const x = (i * 9 + t * (i % 2 ? 1.2 : -.8) + 216) % 216;
-      const shore = i % 3 ? 228 - x * .24 + 5 * Math.sin(x * .042) : 292 - x * .42 + 7 * Math.sin(x * .04);
+      const shore = i % 4 === 0 ? hillRoad(x) : i % 3 ? farShore(x) : nearShore(x) + 14;
       this.points[i].setPosition(x, shore).setAlpha(a * (.4 + .2 * Math.sin(t + i)));
+    }
+    for (let i = 0; i < this.ferries.length; i++) {
+      const x = 22 + (i * 57 + t * (.65 + i * .15)) % 164;
+      const fy = farShore(x) + (nearShore(x) - farShore(x)) * (.32 + i * .19);
+      const { boat, wake } = this.ferries[i];
+      boat.setVisible(true).setPosition(-18 + pan * .7 + x, y + fy).setAlpha(a * .9);
+      boat.setFrame(`n_view_ferry_${Math.floor(t * .8 + i) % 2}`);
+      wake.setVisible(this.animate).setPosition(-29 + pan * .7 + x, y + fy + 3).setAlpha(a * (.55 + Math.sin(t * 2 + i) * .15));
     }
     if (!this.announced && this.t > 5) {
       this.announced = true;
