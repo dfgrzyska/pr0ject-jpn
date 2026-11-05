@@ -1,6 +1,9 @@
 import { DEPTH } from '../../config.js';
 import { volley } from '../../difficulty.js';
-import { DOWN, slow, normal } from './shared.js';
+import { DOWN, TAU, slow, normal, fast, EXTRAS } from './shared.js';
+
+// the Dutch-ship float's two broadside batteries: separate targets riding on its sides
+const BATTERY = { hp: 85, weight: 0, score: 2500, radius: 6, explosion: 'm' };
 
 export const nagasaki = {
   biidoro(e, dt, b) {
@@ -28,34 +31,258 @@ export const nagasaki = {
       if (e.timer <= 0) { e.state = 'aim'; e.timer = .55; }
     } else this.diver(e, dt);
   },
-  oranda(e, dt, b) {
-    if (e.state === 'enter') {
-      e.y += Math.max(12, (68 - e.y) * 1.4) * dt;
-      if (e.y >= 67) { e.state = 'fight'; e.timer = 1; e.step = 0; }
-      return;
-    }
-    if (e.age > 34) { e.state = 'leave'; e.y -= 45 * dt; return; }
-    e.x = 90 + Math.sin(e.age * .55) * 36;
-    e.rotation = Math.sin(e.age * 1.7) * .05;
-    e.timer -= dt;
-    const side = e.step % 2 ? -1 : 1;
-    if (e.timer < .65) {
-      this.tele.lineStyle(1, 0xf2c35e, .5);
-      this.tele.lineBetween(e.x + side * 22, e.y + 8, e.x + side * 54, e.y + 85);
-    }
-    if (e.timer <= 0 && this.canFire(e)) {
-      b.fan(e.x + side * 22, e.y + 9, DOWN - side * .5, 5, .65, normal);
-      b.fan(e.x - side * 22, e.y + 9, DOWN + side * .7, 3, .4, slow);
-      e.timer = 1.5; e.step++;
+  // ---------------------------------------------------------------- Nagasaki miniboss: Oranda-bune
+  /**
+   * The Dutch-ship float of Nagasaki Kunchi, come to Dejima. A battery on each side is a target of its own:
+   * shoot one off and that side falls silent (its planking burns). Three moods as the hull gives way:
+   *   broadsides — sailing a figure of eight, each side fires a rolling salvo port by port down its length
+   *     (announced along the ports), the bow chaser between them;
+   *   mawashi — as the bearers spin the float at the festival: it stops, a ring warns, and it turns twice on
+   *     the spot with both batteries firing out of its sides, a spiral that reverses next time (a burst of
+   *     rings from the deck if no battery is left);
+   *   full sail — it turns its bow on you, a lane lights up, it charges down that lane and backs off throwing
+   *     powder kegs that burst where they land.
+   */
+  spawnOranda(e, base) {
+    Object.assign(e, { y: -60, radius: 12, segs: [{ x: 0, y: 0, r: 10 }, { x: 0, y: 0, r: 10 }], kuroko: [], burnt: [null, null] });
+    for (const side of [-1, 1]) {
+      const k = this.pool.spawn('n_oranda_gun_0', e.x + side * 24, e.y, {
+        ...base, ...EXTRAS, type: 'kuroko', def: BATTERY, hp: BATTERY.hp, maxHp: BATTERY.hp, radius: BATTERY.radius,
+        role: side, master: e, state: 'fight', segs: [{ x: 0, y: 0, r: 5 }, { x: 0, y: 0, r: 5 }],
+      });
+      k.setDepth(DEPTH.air - 0.05).setFlipX(side > 0);
+      e.kuroko.push(k);
     }
   },
+
+  /** A point of the ship (lx across to its right, ly towards its bow) on the screen. */
+  orandaAt(e, lx, ly) {
+    const c = Math.cos(e.rotation);
+    const s = Math.sin(e.rotation);
+    // the sprite's bow points down: local +y is the bow, +x its starboard (the screen's left when unturned)
+    return [e.x + lx * c - ly * s, e.y + lx * s + ly * c];
+  },
+
+  oranda(e, dt, b) {
+    const s = this.scene;
+    const H = s.H;
+    const alive = e.kuroko.filter((k) => !k.dead && k.master === e && k.hp > 0);
+    const has = (side) => alive.some((k) => k.role === side);
+    // the batteries ride on the sides, the hull's hit circles fore and aft
+    for (const k of alive) {
+      const [x, y] = this.orandaAt(e, k.role * 24, -3);
+      k.setPosition(x, y).setRotation(e.rotation);
+      k.setFrame(e.flashSide === k.role && e.flashT > 0 ? 'n_oranda_gun_1' : 'n_oranda_gun_0');
+      [k.segs[0].x, k.segs[0].y] = this.orandaAt(e, k.role * 24, -12);
+      [k.segs[1].x, k.segs[1].y] = this.orandaAt(e, k.role * 24, 6);
+    }
+    [e.segs[0].x, e.segs[0].y] = this.orandaAt(e, 0, 28);
+    [e.segs[1].x, e.segs[1].y] = this.orandaAt(e, 0, -30);
+    e.flashT = Math.max(0, (e.flashT ?? 0) - dt);
+    // a battery gone: its side burns
+    for (const side of [-1, 1]) {
+      const i = side < 0 ? 0 : 1;
+      if (e.state !== 'enter' && !has(side) && !e.burnt[i]) {
+        e.burnt[i] = this.woundPool.spawn('n_oranda_burnt', e.x, e.y);
+        e.burnt[i].setFlipX(side > 0);
+        s.fx.text(e.x + side * 26, e.y - 10, 'BURTA!', 1, 0xffc070);
+      }
+      const bt = e.burnt[i];
+      if (bt) {
+        const [x, y] = this.orandaAt(e, side * 24, -3);
+        bt.setPosition(x, y).setRotation(e.rotation);
+        if (Math.random() < dt * 5) s.fx.smoke(x, y - 4, 1, 1);
+      }
+    }
+
+    if (e.state === 'enter') {
+      e.y += Math.max(14, (74 - e.y) * 1.3) * dt;
+      if (e.y >= 73) Object.assign(e, { state: 'fight', fight: 0, phase: 1, mode: 'sail', timer: 1.2, salvos: 0, side: 1, spins: 0 });
+      return;
+    }
+    if (e.state === 'leave') {
+      e.y -= 48 * dt;
+      e.rotation *= Math.max(0, 1 - dt * 3);
+      return;
+    }
+    e.fight += dt;
+    if (e.fight > 52 && e.mode === 'sail') {
+      e.state = 'leave';
+      return;
+    }
+    const frac = e.hp / e.maxHp;
+    const phase = frac > 0.66 ? 1 : frac > 0.33 ? 2 : 3;
+    if (phase > e.phase) {
+      e.phase = phase;
+      if (e.mode === 'sail' || e.mode === 'salvo') {
+        e.mode = phase === 2 ? 'spinPrep' : 'chargePrep';
+        e.timer = phase === 2 ? 1.1 : 0.9;
+        e.salvo = null;
+      }
+      s.fx.text(e.x, e.y - 40, phase === 2 ? 'MAWASHI!' : 'PEŁNE ŻAGLE!', 1.4, 0xffd070);
+      s.sfx.shout?.(0.8);
+    }
+    const fire = this.canFire(e);
+    const p = s.player;
+
+    if (e.mode === 'sail' || e.mode === 'salvo') {
+      // a figure of eight over the upper screen, heeling into the turns
+      const tx = 90 + Math.sin(e.fight * 0.5) * 46;
+      const ty = 72 + Math.sin(e.fight) * 13;
+      const vx = (tx - e.x) * Math.min(1, dt * 2);
+      e.x += vx;
+      e.y += (ty - e.y) * Math.min(1, dt * 2);
+      e.rotation += (Math.max(-0.28, Math.min(0.28, (vx / dt) * 0.012)) - e.rotation) * Math.min(1, dt * 3);
+    }
+    if (e.mode === 'sail') {
+      e.timer -= dt;
+      // the next side to fire, a live one if there is any
+      if (!has(e.side) && has(-e.side)) e.side = -e.side;
+      const any = alive.length > 0;
+      if (any && e.timer < 0.7) {
+        // the warning: a gold line out of every port of that side
+        this.tele.lineStyle(1, 0xf2c35e, 0.35 + 0.3 * Math.sin(e.timer * 30));
+        for (let q = 0; q < 5; q++) {
+          const [x, y] = this.orandaAt(e, e.side * 22, -20 + q * 10);
+          const a = this.orandaAngle(e, e.side);
+          this.tele.lineBetween(x, y, x + Math.cos(a) * 26, y + Math.sin(a) * 26);
+        }
+      }
+      if (e.timer <= 0 && fire) {
+        if (any) {
+          e.mode = 'salvo';
+          e.salvo = { side: e.side, port: 0, t: 0 };
+        } else {
+          // no batteries left: the deck guns ring out instead
+          b.ring(e.x, e.y, 12, Math.random() * TAU, slow, true);
+          e.timer = 1.3;
+          if (++e.salvos % 2 === 0) e.mode = e.phase === 2 ? 'spinPrep' : e.phase === 3 ? 'chargePrep' : 'sail';
+        }
+      }
+    } else if (e.mode === 'salvo') {
+      // a rolling broadside, stern to bow, every port a little fan of three
+      const v = e.salvo;
+      v.t -= dt;
+      if (v.t <= 0 && fire) {
+        const [x, y] = this.orandaAt(e, v.side * 23, -20 + v.port * 10);
+        const a = this.orandaAngle(e, v.side);
+        const n = volley(3);
+        for (let i = 0; i < n; i++) b.fire(x, y, a + (i - (n - 1) / 2) * 0.16, v.port % 2 ? normal : slow + 6);
+        e.flashSide = v.side;
+        e.flashT = 0.08;
+        s.fx.smoke(x, y, 1, 1);
+        v.port++;
+        v.t = 0.1;
+        if (v.port >= 5) {
+          e.salvos++;
+          e.side = -v.side;
+          e.mode = 'sail';
+          e.timer = e.phase === 1 ? 1.5 : 1.0;
+          // the bow chaser answers every other salvo: three aimed shots from the lion's mouth
+          if (e.salvos % 2 === 0) e.chaser = 3;
+          if (e.phase === 2 && e.salvos % 2 === 0) Object.assign(e, { mode: 'spinPrep', timer: 1.1 });
+          if (e.phase === 3) Object.assign(e, { mode: 'chargePrep', timer: 0.9 });
+        }
+      }
+    } else if (e.mode === 'spinPrep') {
+      // to the middle, bow down; a ring warns of the spin
+      e.x += (90 - e.x) * Math.min(1, dt * 2.5);
+      e.y += (80 - e.y) * Math.min(1, dt * 2.5);
+      e.rotation += (Math.round(e.rotation / TAU) * TAU - e.rotation) * Math.min(1, dt * 4);
+      e.timer -= dt;
+      this.tele.lineStyle(1, 0xf2c35e, 0.3 + 0.4 * Math.abs(Math.sin(e.timer * 9)));
+      this.tele.strokeCircle(e.x, e.y, 44 + e.timer * 18);
+      if (e.timer <= 0) Object.assign(e, { mode: 'spin', spin: 0, turned: 0, spinDir: (e.spins++ % 2 ? -1 : 1), shotT: 0, ringT: 0.3 });
+    } else if (e.mode === 'spin') {
+      // mawashi: twice round on the spot, both sides firing as they come round
+      e.spin += dt;
+      const w = Math.min(3.0, 0.8 + e.spin * 1.4) * e.spinDir;
+      e.rotation += w * dt;
+      e.turned += Math.abs(w * dt);
+      e.shotT -= dt;
+      if (e.shotT <= 0 && fire) {
+        for (const k of alive) {
+          const [x, y] = this.orandaAt(e, k.role * 24, -3);
+          b.fire(x, y, this.orandaAngle(e, k.role), normal);
+          e.flashSide = k.role;
+          e.flashT = 0.06;
+        }
+        e.shotT = 0.11;
+      }
+      if (!alive.length && (e.ringT -= dt) <= 0 && fire) {
+        b.ring(e.x, e.y, 10, e.rotation, slow);
+        e.ringT = 0.55;
+      }
+      if (Math.random() < dt * 12) s.fx.smoke(e.x + (Math.random() - 0.5) * 40, e.y + 30, 1, 1);
+      if (e.turned >= TAU * 2) {
+        e.rotation %= TAU;
+        Object.assign(e, { mode: 'sail', timer: 1.4 });
+      }
+    } else if (e.mode === 'chargePrep') {
+      // bow on to the player: a lane lights up, the float lines up at its head
+      if (e.lane == null) e.lane = Math.max(34, Math.min(146, p.x));
+      e.x += (e.lane - e.x) * Math.min(1, dt * 3);
+      e.y += (66 - e.y) * Math.min(1, dt * 3);
+      e.rotation += (Math.round(e.rotation / TAU) * TAU - e.rotation) * Math.min(1, dt * 5);
+      e.timer -= dt;
+      const a = 0.3 + 0.4 * Math.abs(Math.sin(e.timer * 14));
+      this.tele.lineStyle(2, 0xff8a5a, a);
+      this.tele.lineBetween(e.lane - 20, e.y + 46, e.lane - 20, H);
+      this.tele.lineBetween(e.lane + 20, e.y + 46, e.lane + 20, H);
+      if (e.timer <= 0) Object.assign(e, { mode: 'charge', x: e.lane });
+    } else if (e.mode === 'charge') {
+      e.y += 170 * dt;
+      e.rotation = 0;
+      if (Math.random() < dt * 30) s.fx.puff('splash', e.x + (Math.random() - 0.5) * 30, e.y - 40, 0.3);
+      if (e.y >= H * 0.74) {
+        s.cameras.main.shake(180, 0.005);
+        Object.assign(e, { mode: 'return', kegs: 0, kegT: 0.2, lane: null });
+      }
+    } else if (e.mode === 'return') {
+      // backing off up the screen, it lobs powder kegs over its sides
+      e.y -= 62 * dt;
+      e.kegT -= dt;
+      if (e.kegT <= 0 && e.kegs < 3 && fire) {
+        const side = e.kegs % 2 ? 1 : -1;
+        const tx = Math.max(16, Math.min(164, e.x + side * (28 + e.kegs * 12)));
+        const ty = Math.min(H - 30, e.y + 70 + e.kegs * 20);
+        b.lob(e.x + side * 20, e.y, tx, ty, 1.1, 'keg', volley(6));
+        e.kegs++;
+        e.kegT = 0.55;
+      }
+      if (e.y <= 74) Object.assign(e, { mode: 'sail', timer: 0.8 });
+    }
+    // the bow chaser: aimed shots spaced apart
+    if (e.chaser > 0 && fire && e.mode !== 'spin') {
+      e.chaserT = (e.chaserT ?? 0) - dt;
+      if (e.chaserT <= 0) {
+        const [x, y] = this.orandaAt(e, 0, 42);
+        b.fire(x, y, Math.atan2(p.y - y, p.x - x), fast);
+        e.chaser--;
+        e.chaserT = 0.16;
+      }
+    }
+  },
+
+  /** Which way the guns of one side point: straight out of that side, angled a little towards the bow. */
+  orandaAngle(e, side) {
+    // local (side, 0.5) turned with the ship: out of the side and slightly forward (down the screen)
+    return Math.atan2(side * Math.sin(e.rotation) + 0.5 * Math.cos(e.rotation), side * Math.cos(e.rotation) - 0.5 * Math.sin(e.rotation));
+  },
+
   spawnJaodori(w, base) {
-    const g = { kind: 'jaodori', t: 0, phase: 0, step: 0, timer: 1.3, parts: [], defeated: false };
-    const e = this.pool.spawn('n_ja_0', 90, -30, { ...base, group: g, radius: 15 });
+    const g = { kind: 'jaodori', t: 0, ft: 0, phase: 0, step: 0, timer: 1.3, parts: [], defeated: false };
+    // over the night view from Inasa it rises out of the city's lights, small and far at first; elsewhere it
+    // comes down from the top of the screen
+    const rise = !!this.scene.stage.panorama;
+    const y0 = rise ? Math.round(this.scene.H * 0.56) : -30;
+    const e = this.pool.spawn('n_ja_0', 90, y0, { ...base, group: g, radius: 15, state: rise ? 'rise' : 'enter', pass: rise, harmless: rise });
     e.play('n_ja'); g.parts.push(e); g.maxTotal = e.maxHp;
+    if (rise) e.setScale(0.3).setAlpha(0);
     // Decorative puppet body has no collision: the clearly exposed head is the target.
-    g.body = Array.from({ length: 9 }, () => this.segPool.spawn('n_segment', 90, -60));
-    g.pearl = this.segPool.spawn('n_pearl', 90, -40).setDepth(DEPTH.air - .05);
+    g.body = Array.from({ length: 9 }, () => this.segPool.spawn('n_segment', 90, rise ? y0 + 6 : -60).setAlpha(rise ? 0 : 1));
+    g.pearl = this.segPool.spawn('n_pearl', 90, rise ? y0 + 4 : -40).setDepth(DEPTH.air - .05).setAlpha(rise ? 0 : 1);
+    g.y0 = y0;
     this.bossGroup = g;
     return e;
   },
@@ -63,21 +290,32 @@ export const nagasaki = {
     const e = g.parts[0];
     if (e.dead || e.hp <= 0) return;
     g.t += dt;
-    if (e.state === 'enter') {
+    let size = 1;
+    if (e.state === 'rise') {
+      // up out of the harbour lights, growing as it comes near; untouchable until it is here
+      const k = Math.min(1, g.t / 2.8);
+      const ease = k * k * (3 - 2 * k);
+      e.y = g.y0 + (72 - g.y0) * ease;
+      e.x = 90 + Math.sin(k * Math.PI) * 18;
+      size = 0.3 + 0.7 * ease;
+      e.setScale(size).setAlpha(Math.min(1, k * 2.5));
+      if (k >= 1) Object.assign(e, { state: 'fight', pass: false, harmless: false });
+    } else if (e.state === 'enter') {
       e.y += 32 * dt;
       if (e.y >= 72) e.state = 'fight';
     } else {
-      e.x = 90 + Math.sin(g.t * .64) * 53;
-      e.y = 73 + Math.sin(g.t * 1.1) * 14;
+      g.ft += dt;
+      e.x = 90 + Math.sin(g.ft * .64) * 53;
+      e.y = 73 + Math.sin(g.ft * 1.1) * 14;
     }
-    g.pearl.setPosition(e.x + Math.cos(g.t * 1.3) * 27, e.y + 28);
+    g.pearl.setPosition(e.x + Math.cos(g.t * 1.3) * 27 * size, e.y + 28 * size).setScale(size).setAlpha(e.alpha);
     for (let i = 0; i < g.body.length; i++) {
       const p = g.body[i], target = i ? g.body[i - 1] : e;
       p.x += (target.x - p.x) * Math.min(1, dt * 9);
-      p.y += (target.y - 5 - p.y) * Math.min(1, dt * 9);
-      p.setScale(1 - i * .045);
+      p.y += (target.y - 5 * size - p.y) * Math.min(1, dt * 9);
+      p.setScale((1 - i * .045) * size).setAlpha(e.alpha);
     }
-    if (e.state === 'enter' || !this.canFire(e)) return;
+    if (e.state !== 'fight' || !this.canFire(e)) return;
     g.timer -= dt;
     const b = this.scene.bullets;
     if (g.phase % 3 === 2 && g.step === 0) {

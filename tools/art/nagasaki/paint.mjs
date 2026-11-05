@@ -29,3 +29,90 @@ export function masonry(r, x, y, w, h, base, seed = 2, size = 5) {
     r.line(x + start, y + yy, x + end - 1, y + yy, mix(c, 0xd6c9ae, .18));
   }
 }
+
+/**
+ * A small sculpture renderer: capsules (limbs) and ellipsoids (torso, head) with a depth buffer, shaded by their
+ * surface normals against a light from the upper left. prims: { cap: [ax, ay, bx, by], r, z } | { ell: [cx, cy],
+ * rx, ry, z }, coordinates relative to (ox, oy). ramp: dark to light. Returns the covered pixels' mask (Set).
+ */
+export function sculpt(r, ox, oy, prims, ramp, { outline = true, light = [-0.55, -0.62, 0.56] } = {}) {
+  const ln = Math.hypot(...light);
+  const L = light.map((v) => v / ln);
+  let x0 = Infinity;
+  let x1 = -Infinity;
+  let y0 = Infinity;
+  let y1 = -Infinity;
+  for (const p of prims) {
+    const pts = p.cap ? [[p.cap[0], p.cap[1]], [p.cap[2], p.cap[3]]] : [p.ell];
+    const ext = p.cap ? p.r : Math.max(p.rx, p.ry);
+    for (const [px, py] of pts) {
+      x0 = Math.min(x0, px - ext);
+      x1 = Math.max(x1, px + ext);
+      y0 = Math.min(y0, py - ext);
+      y1 = Math.max(y1, py + ext);
+    }
+  }
+  const w = Math.ceil(x1 - x0) + 3;
+  const h = Math.ceil(y1 - y0) + 3;
+  const bx = Math.floor(x0) - 1;
+  const by = Math.floor(y0) - 1;
+  const depth = new Float32Array(w * h).fill(-Infinity);
+  const shade = new Float32Array(w * h);
+  for (let j = 0; j < h; j++)
+    for (let i = 0; i < w; i++) {
+      const px = bx + i + 0.5;
+      const py = by + j + 0.5;
+      for (const p of prims) {
+        let nx;
+        let ny;
+        let nz;
+        let hgt;
+        if (p.cap) {
+          const [ax, ay, cx, cy] = p.cap;
+          const dx = cx - ax;
+          const dy = cy - ay;
+          const len2 = dx * dx + dy * dy || 1;
+          const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
+          const qx = ax + dx * t;
+          const qy = ay + dy * t;
+          const d = Math.hypot(px - qx, py - qy);
+          if (d > p.r) continue;
+          nz = Math.sqrt(1 - (d / p.r) ** 2);
+          nx = (px - qx) / p.r;
+          ny = (py - qy) / p.r;
+          hgt = p.z + nz * p.r;
+        } else {
+          const ex = (px - p.ell[0]) / p.rx;
+          const ey = (py - p.ell[1]) / p.ry;
+          const d2 = ex * ex + ey * ey;
+          if (d2 > 1) continue;
+          nz = Math.sqrt(1 - d2);
+          nx = ex;
+          ny = ey;
+          hgt = p.z + nz * Math.min(p.rx, p.ry);
+        }
+        const k = j * w + i;
+        if (hgt <= depth[k]) continue;
+        depth[k] = hgt;
+        shade[k] = (nx * L[0] + ny * L[1] + nz * L[2]) * 0.62 + 0.42 + (p.tone ?? 0);
+      }
+    }
+  const mask = new Set();
+  for (let j = 0; j < h; j++)
+    for (let i = 0; i < w; i++) {
+      const k = j * w + i;
+      if (depth[k] === -Infinity) continue;
+      const x = ox + bx + i;
+      const y = oy + by + j;
+      const edge = outline && (i === 0 || j === 0 || i === w - 1 || j === h - 1 || depth[k - 1] === -Infinity || depth[k + 1] === -Infinity || depth[k - w] === -Infinity || depth[k + w] === -Infinity);
+      // a crease where a nearer form overlaps a farther one
+      const crease = !edge && (depth[k] - depth[k - 1] > 2.2 || depth[k] - depth[k - w] > 2.2);
+      let v = shade[k];
+      if (crease) v -= 0.12;
+      const s = Math.max(0, Math.min(ramp.length - 1.001, v * (ramp.length - 1)));
+      const idx = Math.floor(s) + (s % 1 > (((x & 1) ^ (y & 1)) ? 0.62 : 0.38) ? 1 : 0);
+      r.set(x, y, edge ? ramp[0] : ramp[Math.min(ramp.length - 1, idx)]);
+      mask.add(`${x},${y}`);
+    }
+  return mask;
+}

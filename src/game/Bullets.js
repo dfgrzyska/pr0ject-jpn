@@ -24,6 +24,7 @@ const LOBS = {
   tokkuri: { low: 'tokkuri_0', high: 'tokkuri_1', spin: 9, burst: 'eb_s' },
   lava: { low: 'lavaball_0', high: 'lavaball_1', spin: 0, burst: 'eb_lava' },
   takoyaki: { low: 'tako_ball_0', high: 'tako_ball_1', spin: 5, burst: 'eb_s' },
+  keg: { low: 'n_keg_0', high: 'n_keg_1', spin: 7, burst: 'eb_s' }, // the Dutch-ship float's powder kegs
 };
 
 // scalding ground zones (geysers, mud, the blood pond): warning ring colour, then the eruption

@@ -33,20 +33,20 @@
     "far": 10,
     "mid": 30,
     "near": 50,
-    "anchor": 420
+    "anchor": 420,
+    "ease": 7000
   },
   "boss": true,
   "end": 260,
   "panorama": {
-    "gate": 6100,
-    "reveal": 6700,
-    "hold": 20
+    "ridge": 6748,
+    "hold": 7
   },
   "interlude": {
-    "from": 140,
-    "to": 173,
+    "from": 149,
+    "to": 162,
     "x": 90,
-    "u": 4860,
+    "u": 4818,
     "n": 18,
     "water": true,
     "title": "MODLITWA O POKÓJ",
@@ -63,11 +63,11 @@
         "s8_build"
       ],
       [
-        140,
+        149,
         "s8_night"
       ],
       [
-        173,
+        162,
         "s8_build"
       ]
     ],
@@ -79,321 +79,81 @@
     "heavy": "BURTY FESTIWALOWEGO STATKU",
     "boss": "SMOK I ZŁOTA KULA",
     "bossDown": "TANIEC SMOKA ZAKOŃCZONY",
-    "bossDownSub": "PRZED NAMI NOCNA INASA"
+    "bossDownSub": "NAGASAKI ROZBŁYSKA ŚWIATŁAMI"
   },
   "waves": [
-    {
-      "t": 2,
-      "type": "popcorn",
-      "x": 42,
-      "path": "row",
-      "count": 5
-    },
-    {
-      "t": 4,
-      "type": "shooter",
-      "x": 55,
-      "pattern": "fan"
-    },
-    {
-      "t": 6,
-      "type": "turret",
-      "x": 55
-    },
-    {
-      "t": 8,
-      "type": "popcorn",
-      "x": 138,
-      "path": "sine",
-      "count": 5
-    },
-    {
-      "t": 10,
-      "type": "diver",
-      "x": 125,
-      "count": 2
-    },
-    {
-      "t": 12,
-      "type": "carrier",
-      "x": 90,
-      "color": "red"
-    },
-    {
-      "t": 14,
-      "type": "popcorn",
-      "x": 42,
-      "path": "sine",
-      "count": 5
-    },
-    {
-      "t": 14,
-      "type": "turret",
-      "x": 114
-    },
-    {
-      "t": 16,
-      "type": "shooter",
-      "x": 55,
-      "pattern": "fan"
-    },
-    {
-      "t": 20,
-      "type": "popcorn",
-      "x": 138,
-      "path": "row",
-      "count": 5
-    },
-    {
-      "t": 22,
-      "type": "diver",
-      "x": 125,
-      "count": 2
-    },
-    {
-      "t": 26,
-      "type": "popcorn",
-      "x": 42,
-      "path": "sine",
-      "count": 5
-    },
-    {
-      "t": 28,
-      "type": "shooter",
-      "x": 55,
-      "pattern": "fan"
-    },
-    {
-      "t": 32,
-      "type": "popcorn",
-      "x": 138,
-      "path": "sine",
-      "count": 5
-    },
-    {
-      "t": 32,
-      "type": "carrier",
-      "x": 60,
-      "color": "blue"
-    },
-    {
-      "t": 34,
-      "type": "diver",
-      "x": 125,
-      "count": 2
-    },
-    {
-      "t": 37,
-      "type": "turret",
-      "x": 40
-    },
-    {
-      "t": 38,
-      "type": "popcorn",
-      "x": 42,
-      "path": "row",
-      "count": 5
-    },
-    {
-      "t": 40,
-      "type": "shooter",
-      "x": 55,
-      "pattern": "fan"
-    },
-    {
-      "t": 44,
-      "type": "popcorn",
-      "x": 138,
-      "path": "sine",
-      "count": 5
-    },
-    {
-      "t": 46,
-      "type": "diver",
-      "x": 125,
-      "count": 2
-    },
-    {
-      "t": 50,
-      "type": "popcorn",
-      "x": 42,
-      "path": "sine",
-      "count": 5
-    },
-    {
-      "t": 52,
-      "type": "shooter",
-      "x": 55,
-      "pattern": "fan"
-    },
-    {
-      "t": 52,
-      "type": "turret",
-      "x": 134
-    },
-    {
-      "t": 56,
-      "type": "popcorn",
-      "x": 138,
-      "path": "row",
-      "count": 5
-    },
-    {
-      "t": 56,
-      "type": "carrier",
-      "x": 120,
-      "color": "green"
-    },
-    {
-      "t": 58,
-      "type": "diver",
-      "x": 125,
-      "count": 2
-    },
-    {
-      "t": 62,
-      "type": "popcorn",
-      "x": 42,
-      "path": "sine",
-      "count": 5
-    },
-    {
-      "t": 64,
-      "type": "shooter",
-      "x": 55,
-      "pattern": "fan"
-    },
-    {
-      "t": 68,
-      "type": "popcorn",
-      "x": 138,
-      "path": "sine",
-      "count": 5
-    },
-    {
-      "t": 70,
-      "type": "diver",
-      "x": 125,
-      "count": 2
-    },
-    {
-      "t": 71,
-      "type": "turret",
-      "x": 35
-    },
-    {
-      "t": 74,
-      "type": "popcorn",
-      "x": 42,
-      "path": "row",
-      "count": 5
-    },
-    {
-      "t": 76,
-      "type": "shooter",
-      "x": 55,
-      "pattern": "fan"
-    },
-    {
-      "t": 79,
-      "type": "carrier",
-      "x": 90,
-      "color": "red"
-    },
-    {
-      "t": 80,
-      "type": "popcorn",
-      "x": 138,
-      "path": "sine",
-      "count": 5
-    },
-    {
-      "t": 82,
-      "type": "diver",
-      "x": 125,
-      "count": 2
-    },
-    {
-      "t": 83,
-      "type": "turret",
-      "x": 141
-    },
-    {
-      "t": 86,
-      "type": "popcorn",
-      "x": 42,
-      "path": "sine",
-      "count": 5
-    },
-    {
-      "t": 88,
-      "type": "shooter",
-      "x": 55,
-      "pattern": "fan"
-    },
-    {
-      "t": 96,
-      "type": "heavy",
-      "x": 90,
-      "hp": 300,
-      "card": [
-        "ORANDA-BUNE",
-        "HOLENDERSKI STATEK KUNCHI"
-      ]
-    },
-    {
-      "t": 122,
-      "type": "carrier",
-      "x": 90,
-      "color": "blue"
-    },
-    {
-      "t": 127,
-      "type": "popcorn",
-      "x": 42,
-      "path": "row",
-      "count": 5
-    },
-    {
-      "t": 129,
-      "type": "shooter",
-      "x": 55,
-      "pattern": "fan"
-    },
-    {
-      "t": 133,
-      "type": "popcorn",
-      "x": 138,
-      "path": "sine",
-      "count": 5
-    },
-    {
-      "t": 133,
-      "type": "turret",
-      "x": 35
-    },
-    {
-      "t": 135,
-      "type": "diver",
-      "x": 125,
-      "count": 2
-    },
-    {
-      "t": 173.3,
-      "type": "carrier",
-      "x": 90,
-      "color": "green"
-    },
-    {
-      "t": 176,
-      "type": "boss",
-      "boss": "jaodori",
-      "x": 90,
-      "hp": 1050,
-      "card": [
-        "JA-ODORI",
-        "SMOK ŚWIĘTA KUNCHI"
-      ]
-    }
+    {"t":2,"type":"popcorn","x":56,"path":"row","count":5},
+    {"t":4,"type":"shooter","x":55,"pattern":"fan"},
+    {"t":6,"type":"turret","x":55},
+    {"t":8,"type":"popcorn","x":130,"path":"sine","count":5},
+    {"t":10,"type":"diver","x":125,"count":2},
+    {"t":12,"type":"carrier","x":90,"color":"red"},
+    {"t":13,"type":"turret","x":100},
+    {"t":14,"type":"popcorn","x":50,"path":"sine","count":5},
+    {"t":16,"type":"shooter","x":125,"pattern":"fan"},
+    {"t":19,"type":"popcorn","x":124,"path":"row","count":5},
+    {"t":21,"type":"diver","x":55,"count":2},
+    {"t":24,"type":"popcorn","x":50,"path":"sine","count":5},
+    {"t":26,"type":"shooter","x":125,"pattern":"fan"},
+    {"t":27,"type":"turret","x":14},
+    {"t":28,"type":"popcorn","x":130,"path":"sine","count":5},
+    {"t":30,"type":"carrier","x":60,"color":"blue"},
+    {"t":32,"type":"diver","x":125,"count":2},
+    {"t":34,"type":"popcorn","x":56,"path":"row","count":5},
+    {"t":36,"type":"shooter","x":55,"pattern":"fan"},
+    {"t":38,"type":"popcorn","x":124,"path":"row","count":5},
+    {"t":40,"type":"diver","x":55,"count":2},
+    {"t":42,"type":"popcorn","x":130,"path":"sine","count":5},
+    {"t":44,"type":"turret","x":24},
+    {"t":45,"type":"shooter","x":125,"pattern":"fan"},
+    {"t":47,"type":"turret","x":140},
+    {"t":48,"type":"popcorn","x":50,"path":"sine","count":5},
+    {"t":50,"type":"diver","x":125,"count":2},
+    {"t":52,"type":"carrier","x":120,"color":"green"},
+    {"t":53,"type":"popcorn","x":124,"path":"row","count":5},
+    {"t":55,"type":"shooter","x":55,"pattern":"fan"},
+    {"t":57,"type":"popcorn","x":130,"path":"sine","count":5},
+    {"t":58,"type":"turret","x":100},
+    {"t":59,"type":"diver","x":55,"count":2},
+    {"t":61,"type":"popcorn","x":56,"path":"row","count":5},
+    {"t":63,"type":"shooter","x":125,"pattern":"fan"},
+    {"t":65,"type":"popcorn","x":50,"path":"sine","count":5},
+    {"t":67,"type":"diver","x":125,"count":2},
+    {"t":68,"type":"carrier","x":90,"color":"red"},
+    {"t":69,"type":"turret","x":92},
+    {"t":70,"type":"popcorn","x":124,"path":"row","count":5},
+    {"t":72,"type":"shooter","x":55,"pattern":"fan"},
+    {"t":74,"type":"popcorn","x":130,"path":"sine","count":5},
+    {"t":79,"type":"heavy","x":90,"hp":560,"card":["ORANDA-BUNE","HOLENDERSKI STATEK KUNCHI"]},
+    {"t":128,"type":"carrier","x":90,"color":"blue"},
+    {"t":128.5,"type":"turret","x":90},
+    {"t":130,"type":"popcorn","x":56,"path":"row","count":5},
+    {"t":132,"type":"shooter","x":125,"pattern":"fan"},
+    {"t":134,"type":"popcorn","x":130,"path":"sine","count":5},
+    {"t":136,"type":"diver","x":55,"count":2},
+    {"t":138,"type":"popcorn","x":50,"path":"sine","count":5},
+    {"t":139,"type":"carrier","x":60,"color":"green"},
+    {"t":140,"type":"shooter","x":55,"pattern":"fan"},
+    {"t":142,"type":"popcorn","x":124,"path":"row","count":5},
+    {"t":144,"type":"diver","x":125,"count":2},
+    {"t":164,"type":"popcorn","x":56,"path":"row","count":5},
+    {"t":166,"type":"shooter","x":125,"pattern":"fan"},
+    {"t":167,"type":"turret","x":150},
+    {"t":168,"type":"popcorn","x":130,"path":"sine","count":5},
+    {"t":170,"type":"diver","x":55,"count":2},
+    {"t":172,"type":"carrier","x":120,"color":"red"},
+    {"t":174,"type":"popcorn","x":50,"path":"sine","count":5},
+    {"t":176,"type":"shooter","x":55,"pattern":"fan"},
+    {"t":178,"type":"popcorn","x":124,"path":"row","count":5},
+    {"t":180,"type":"diver","x":125,"count":2},
+    {"t":184,"type":"popcorn","x":60,"path":"sine","count":4},
+    {"t":189,"type":"diver","x":125,"count":2},
+    {"t":193,"type":"popcorn","x":120,"path":"sine","count":4},
+    {"t":197,"type":"shooter","x":90,"pattern":"fan"},
+    {"t":201,"type":"popcorn","x":56,"path":"row","count":4},
+    {"t":204,"type":"carrier","x":90,"color":"blue"},
+    {"t":206,"type":"diver","x":55,"count":2},
+    {"t":210,"type":"popcorn","x":124,"path":"row","count":4},
+    {"t":226,"type":"boss","boss":"jaodori","x":90,"hp":1050,"card":["JA-ODORI","SMOK ŚWIĘTA KUNCHI"]}
   ]
 }

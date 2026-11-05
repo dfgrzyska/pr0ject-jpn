@@ -84,12 +84,19 @@ export class Parallax {
     return this.uTop - y;
   }
 
+  /** How fast the strip moves (1 = its normal speed): slowing from scroll.ease to the stop, if the stage asks. */
+  rate() {
+    const from = this.speed.ease;
+    if (from == null || this.uTop < from) return 1;
+    const stop = this.anchor + this.maxTime * this.speed.mid;
+    const t = Math.min(1, (this.uTop - from) / (stop - from));
+    return Math.max(0.3, 1 - 0.7 * t * t * (3 - 2 * t));
+  }
+
   update(dt, scrolling, H) {
     if (scrolling) {
-      const scenic = this.scene.stage.panorama;
-      const gate = scenic && !this.scene.bossDown ? (scenic.gate - this.anchor) / this.speed.mid : this.maxTime;
-      const rate = scenic && this.uTop >= scenic.reveal ? .12 : 1;
-      this.time = Math.min(this.time + dt * rate, this.maxTime, gate);
+      // (Nagasaki: the climb eases off over the last stretch, cresting the summit of Inasa)
+      this.time = Math.min(this.time + dt * this.rate(), this.maxTime);
       this.farTime += dt;
     }
     this.uTop = Math.round(this.anchor + this.time * this.speed.mid);

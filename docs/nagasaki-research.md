@@ -12,7 +12,9 @@
 
 ## Route and adaptation
 
-Gunkanjima → Megami Bridge / port entrance → Glover Garden and Oura → fan-shaped Dejima → Shinchi Chinatown → Meganebashi → Suwa Shrine → Urakami / Peace Park → port crossing and Fuchi-jinja ropeway → Inasa ascent → panoramic night-view coda.
+Gunkanjima → the coasts closing in, breakwater lights and channel buoys → Megami Ōhashi → inner harbour (Mitsubishi shipyard with the Giant Cantilever Crane and an LNG carrier, Matsugae terminal with a liner) → Oura (Ishibashi tram terminus, Glover-dori, Oura Cathedral) → Glover Garden on its terraces → Oranda-zaka → Dejima in its bay with the Omotemon bridge → Shinchi Chinatown → the Nakashima's bridges and Meganebashi → Suwa Shrine → the hypocentre and the Peace Park → the inner harbour crossing, Fuchi Shrine and the ropeway → the Inasa driveway → the summit, where the night view rises behind the ridge.
+
+The strip's map (shores, river, roads, tramway) lives in `tools/art/nagasaki/geo.mjs`: every road and track runs edge to edge, loops, or ends at a terminus, car park or building; the Nakashima flows from Dejima's channel to off the west edge and every street crosses it on a bridge. Traffic routes are checked by the tests to start and end off the screen or to turn back.
 
 This is a curated, compressed sightseeing route, not a scale navigational map. The south-to-north mainland progression and the westward turn toward Inasa preserve the major geographical relationships. Individual sights retain their recognisable outlines and architectural details. Twilight gradually turns to night.
 
@@ -23,10 +25,10 @@ This is a curated, compressed sightseeing route, not a scale navigational map. T
 - Hata kite divers: Nagasaki kite motif; a sideways approach followed by a hooked dive.
 - Castella carriers: coloured gift boxes carrying weapon drops.
 - Harbour winch turrets: paired shots at different speeds, inspired by working-port machinery.
-- Miniboss: **Oranda-bune**, a Dutch-ship Kunchi float. Alternating port/starboard broadsides and staggered rows leave a readable passage. Better suited than another giant animal and tied to Nagasaki's history of exchange.
+- Miniboss: **Oranda-bune**, the Dutch-ship Kunchi float, meets the player at Dejima. Two broadside batteries are separate targets (one shot off silences its side). Rolling salvoes port by port with a bow chaser; at two thirds the *mawashi* spin (as the bearers spin the float at the festival) fires out of both sides in a reversing spiral; at one third it charges down an announced lane and lobs powder kegs.
 - Boss: **Ja-odori**, a long articulated festival dragon following its pearl. Pearl-led sweeps, paired curling streams, and a lantern procession with an announced safe lane. Festival colour palette, with a clear head hurtbox and decorative body segments.
 
-The memorial interlude is a tribute, with guns/bombs held and combatants removed without score. After the boss is defeated, all combat ends. The ship climbs the dark wooded flank alongside the ropeway; scrolling slows and layered scenery dissolves into the night panorama. The city view is a reward, not a backdrop buried under bullets.
+The memorial interlude is a tribute, with guns/bombs held and combatants removed without score; it lasts about 13 s. The ship then crosses the inner harbour and climbs Inasa with a few light waves; the scroll eases off as it crests the summit, and the night view rises from behind the ridge in parallax layers (the sky fixed, the city and port slower than the near slope, all shifting slightly with the ship). The Ja-odori dragon rises out of the city's lights and is fought over the dimmed view; when it falls the lights flare up and the stage ends a few seconds later.
 
 ## Performance budget
 

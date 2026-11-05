@@ -143,6 +143,7 @@ export class Enemies {
         this.heavy = e;
         e.patternIndex = 0;
         if (look.kind === 'bunraku') this.spawnKuroko(e, base);
+        if (look.kind === 'oranda') this.spawnOranda(e, base);
         if (look.kind === 'wani') Object.assign(e, { y: -40, radius: 11, segs: [{ x: 0, y: 0, r: 9 }, { x: 0, y: 0, r: 8 }] });
         break;
       case 'turret': {
@@ -589,6 +590,8 @@ export class Enemies {
     e.wounds = null;
     if (e.head) this.heads.kill(e.head);
     if (e.kuroko) for (const k of e.kuroko) if (!k.dead && k.master === e) this.pool.kill(k);
+    if (e.burnt) for (const bt of e.burnt) if (bt) this.woundPool.kill(bt);
+    e.burnt = null;
     if (e.decoys) this.dropDecoys(e);
     if (e.kind === 'yukionna' || (e.group?.kind === 'sankibo' && e.role === 'body')) this.scene.parallax.windTarget = 0; // blizzard / Tengu gale dies down
     if (e.group?.kind === 'kyubi' && e.role === 'body') for (const tl of e.group.tails) this.tailPool.kill(tl);
