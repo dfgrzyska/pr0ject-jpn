@@ -2726,6 +2726,32 @@ export function buildMid() {
   }
   for (const pl of pools) applyPool(img, pl);
   for (const [x, y, c, a] of lights) img.set(x, y, c, a);
+  // Glico's illuminated running man beside Ebisu-bashi: blue board, red sun,
+  // white running kit and the unmistakable raised arms. Draw after the night grade.
+  {
+    const x = 23;
+    const y = Y(DOTONBORI[0] + 668);
+    img.rect(x - 2, y - 2, 32, 57, 0x111526);
+    img.rect(x, y, 28, 53, 0xe8f6ff);
+    img.rect(x + 2, y + 2, 24, 40, 0x1259b5);
+    img.disc(x + 14, y + 19, 10, 0xe63238);
+    for (let i = 0; i < 3; i++) img.line(x + 3, y + 33 + i * 3, x + 24, y + 33 + i * 3, 0x80caff);
+    img.disc(x + 14, y + 11, 3, 0xffd9b4);
+    img.rect(x + 11, y + 15, 7, 12, 0xffffff);
+    for (let k = 0; k < 3; k++) {
+      img.line(x + 11, y + 17 + k, x + 5, y + 7 + k, 0xffffff);
+      img.line(x + 17, y + 17 + k, x + 23, y + 7 + k, 0xffffff);
+      img.line(x + 12 + k, y + 26, x + 9 + k, y + 37, 0xffffff);
+      img.line(x + 16, y + 26 + k, x + 22, y + 29 + k, 0xffffff);
+      img.line(x + 22, y + 29 + k, x + 23, y + 23 + k, 0xffffff);
+    }
+    img.rect(x + 12, y + 18, 5, 2, 0xe63238);
+    // Compact 3x5 GLICO lettering on the white footer.
+    const letters = ['111100101101111', '100100100100111', '111010010010111', '111100100100111', '111101101101111'];
+    letters.forEach((glyph, i) => {
+      for (let p = 0; p < 15; p++) if (glyph[p] === '1') img.set(x + 4 + i * 4 + p % 3, y + 45 + Math.floor(p / 3), 0xdb2638);
+    });
+  }
   // neon reflections dancing on the dark water near lit banks: the same streaks in two jittered frames
   // for each stretch of water, alternating (live)
   const streaks = new Map();

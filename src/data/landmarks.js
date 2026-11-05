@@ -1,0 +1,15 @@
+// Ranges use the background generators' u coordinates, measured from the strip's bottom.
+// Names fit the game's bitmap font (romanized Japanese, without macrons).
+export const LANDMARKS = {
+  stage1: [[0, 540, 'GION'], [1130, 1830, 'FUSHIMI INARI'], [1830, 2700, 'SENBON TORII'], [2700, 3500, 'ARASHIYAMA'], [3500, 4400, 'KINKAKU-JI'], [4400, 5000, 'RYOAN-JI'], [5000, 6300, 'KIYOMIZU-DERA'], [6300, 7168, 'DAIMONJI']],
+  stage2: [[2690, 2860, 'TSUBOYA'], [2860, 2990, 'MAKISHI'], [2990, 3200, 'KOKUSAI-DORI'], [3200, 3850, 'SHURI'], [4400, 4600, 'HIJI']],
+  stage3: [[0, 1100, 'OKURAYAMA'], [3100, 3660, 'SUSUKINO'], [5000, 6600, 'ODORI']],
+  stage4: [[1345, 2200, 'SENGAN-EN'], [4250, 6560, 'SAKURAJIMA']],
+  stage5: [[0, 1290, 'OSAKA-JO'], [1360, 1910, 'NAKANOSHIMA'], [1970, 2950, 'UMEDA'], [2950, 3750, 'SHINSEKAI'], [3750, 4290, 'DOTONBORI'], [4290, 4490, 'DOTONBORI / GLICO'], [4490, 4950, 'DOTONBORI'], [4950, 5160, 'HOZEN-JI YOKOCHO'], [5160, 5370, 'NAMBA YASAKA'], [5370, 5610, 'KUROMON'], [5610, 5910, 'SHITENNO-JI'], [5910, 6210, 'SUMIYOSHI TAISHA'], [6210, 6430, 'TEMPOZAN']],
+  stage6: [[2100, 3300, 'KANNAWA'], [4700, 5450, 'ONIYAMA JIGOKU'], [5450, 6300, 'TAKASAKIYAMA'], [6300, 6650, 'TATSUMAKI JIGOKU']],
+  stage7: [[152, 708, 'HIROSHIMA-JO'], [732, 1228, 'SHUKKEIEN'], [1246, 1428, 'GENBAKU DOME'], [1520, 1964, 'HEIWA KINEN KOEN'], [4520, 5330, 'MIYAJIMA']],
+};
+
+export function landmarkAt(stageId, u) {
+  return LANDMARKS[stageId]?.find(([from, to]) => u >= from && u < to) ?? null;
+}

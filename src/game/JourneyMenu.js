@@ -3,6 +3,11 @@ import { STAGES } from '../data/stages.js';
 import { MAP, project } from '../data/japan.js';
 import { pixelText } from './Hud.js';
 import { tr } from '../i18n.js';
+import { INK_FONT } from '../scenes/Boot.js';
+import { titleLayout } from '../data/titleLayout.js';
+import { discoveries } from './Discoveries.js';
+import { YOKAI, FOODS } from '../data/discoveries.js';
+import { hasStamp } from './Stamps.js';
 
 const CITY_KEY = 'shmupjp.startCity';
 const NORTH_TO_SOUTH = STAGES.map((_, i) => i).sort((a, b) => STAGES[b].map[1] - STAGES[a].map[1]);
@@ -24,16 +29,29 @@ export class JourneyMenu {
     const add = (o, depth = DEPTH.overlay + 1) => { this.items.push(o); return o.setDepth(depth); };
     this.bg = add(scene.add.rectangle(0, 0, VIEW.width, VIEW.maxHeight, 0x0c1830).setOrigin(0), DEPTH.overlay);
     this.map = add(scene.add.image(0, 0, 'japan').setOrigin(0).setScale(0.8), DEPTH.overlay);
+    this.sky = add(scene.add.rectangle(0, 0, VIEW.width, VIEW.maxHeight, 0x111b36).setOrigin(0), DEPTH.overlay + 0.04);
+    this.cloth = add(scene.add.tileSprite(0, 0, VIEW.width, VIEW.maxHeight, 'sprites', 'menu_waves').setOrigin(0), DEPTH.overlay + 0.05);
+    this.evening = add(scene.add.image(0, 0, 'sprites', 'menu_evening').setOrigin(0), DEPTH.overlay + 0.1);
+    this.lanterns = [24, 156].map((x) => add(scene.add.image(x, 0, 'sprites', 'menu_lantern').setOrigin(0.5, 0), DEPTH.overlay + 0.3));
     this.clouds = [0, 1].map((i) => add(scene.add.image(30 + i * 100, 0, 'sprites', `cloud_${i}`).setAlpha(0.09), DEPTH.overlay));
-    this.gfx = add(scene.add.graphics());
+    this.gfx = add(scene.add.graphics(), DEPTH.overlay + 1.5);
     this.labels = STAGES.map((s) => add(pixelText(scene, 0, 0, s.name)));
     this.ship = add(scene.add.image(0, 0, 'sprites', SHIPS[scene.shipIndex].frame), DEPTH.overlay + 2);
     this.logo = add(scene.add.image(90, 0, 'sprites', 'logo'));
-    this.tagline = add(pixelText(scene, 90, 0, 'JAPONIA CZEKA').setTint(0xe6bc81));
-    this.caption = add(pixelText(scene, 90, 0, 'SIEDEM MIAST. JEDNA PODRÓŻ.').setTint(0x829fb2));
+    this.tagline = add(pixelText(scene, 90, 0, 'LEĆ PRZEZ JAPONIĘ').setTint(0xffdba8));
+    this.caption = add(pixelText(scene, 90, 0, 'SIEDEM MIAST. JEDNA PODRÓŻ.').setTint(0xc8ac85));
     this.heading = add(pixelText(scene, 90, 50, 'WYBIERZ MIASTO'));
-    this.newGame = add(pixelText(scene, 90, 0, 'NOWA GRA'));
-    this.stamps = add(pixelText(scene, 90, 0, 'PIECZĄTKI'));
+    this.newGame = add(pixelText(scene, 85, 0, 'WYRUSZ W PODRÓŻ'), DEPTH.overlay + 2);
+    this.stamps = add(pixelText(scene, 90, 0, 'PIECZĄTKI', 0.5, INK_FONT), DEPTH.overlay + 2);
+    this.yokai = add(pixelText(scene, 90, 0, 'ALBUM YOKAI', 0.5, INK_FONT), DEPTH.overlay + 2);
+    this.food = add(pixelText(scene, 90, 0, 'SMAKI JAPONII', 0.5, INK_FONT), DEPTH.overlay + 2);
+    this.menuButtons = [this.newGame, this.stamps, this.yokai, this.food];
+    this.cards = this.menuButtons.map((_, i) => add(scene.add.image(90, 0, 'sprites', `menu_${i ? 'paper' : 'start'}_off`)));
+    this.icons = ['stamp_icon', 'popcorn_0', 'food_momiji'].map((frame) => add(scene.add.image(29, 0, 'sprites', frame), DEPTH.overlay + 2));
+    this.icons[0].setTint(0xb53936);
+    const counts = [STAGES.filter((s) => hasStamp(s.id, true)).length, YOKAI.filter((e) => discoveries.has(e.id)).length, FOODS.filter((e) => discoveries.has(e.id)).length];
+    this.counts = [STAGES.length, YOKAI.length, FOODS.length].map((total, i) => add(pixelText(scene, 148, 0, `${counts[i]}/${total}`, 0.5, INK_FONT).setTint(0x76583d), DEPTH.overlay + 2));
+    this.titleDecor = [this.sky, this.cloth, this.evening, ...this.lanterns, ...this.cards, ...this.icons, ...this.counts];
     this.name = add(pixelText(scene, 90, 0, ''));
     this.subtitle = add(pixelText(scene, 90, 0, ''));
     this.next = add(pixelText(scene, 90, 0, 'DALEJ >'));
@@ -58,11 +76,21 @@ export class JourneyMenu {
     this.map.y = Math.round((H - MAP.h * scale) / 2);
     this.railTop = 80;
     this.railBottom = H - 100;
-    this.logo.y = Math.round(H * 0.29);
-    this.tagline.y = this.logo.y + 30;
-    this.caption.y = H - 40;
-    this.newGame.y = Math.round(H * 0.54);
-    this.stamps.y = this.newGame.y + 44;
+    const title = titleLayout(H);
+    this.titleLayout = title;
+    this.sky.setSize(VIEW.width, H);
+    this.cloth.y = title.artY + 174;
+    this.cloth.setSize(VIEW.width, H - this.cloth.y);
+    this.evening.y = title.artY;
+    this.lanterns.forEach((o, i) => o.y = title.artY + 46 + i * 8);
+    this.logo.y = title.logoY;
+    this.tagline.y = title.taglineY;
+    this.caption.y = title.captionY;
+    this.menuButtons.forEach((button, i) => {
+      button.y = title.buttons[i];
+      this.cards[i].y = button.y + 1;
+      if (i) { this.icons[i - 1].y = button.y; this.counts[i - 1].y = button.y; }
+    });
     this.name.y = H - 73;
     this.subtitle.y = H - 58;
     this.next.y = H - 30;
@@ -89,7 +117,10 @@ export class JourneyMenu {
     this.drag = null;
     const title = mode === 'title';
     const cities = mode === 'city';
-    for (const o of [this.logo, this.tagline, this.caption, this.newGame, this.stamps]) o.setVisible(title);
+    for (const o of [this.logo, this.tagline, this.caption, ...this.menuButtons]) o.setVisible(title);
+    for (const o of this.titleDecor) o.setVisible(title);
+    this.map.setVisible(cities || mode === 'backdrop');
+    this.clouds.forEach((o) => o.setVisible(cities));
     for (const o of [this.heading, this.name, this.subtitle, this.next, ...this.labels]) o.setVisible(cities);
     this.ship.setVisible(title || cities).setDepth(DEPTH.overlay + (title ? 0.5 : 2));
     if (cities) this.ship.setRotation(0);
@@ -129,8 +160,8 @@ export class JourneyMenu {
   pointerDown(p) {
     if (this.mode === 'title') {
       if (p.x < 14 || p.x > 166) return;
-      if (Math.abs(p.y - this.newGame.y) <= 18) this.scene.openCities();
-      else if (Math.abs(p.y - this.stamps.y) <= 18) this.scene.openBook();
+      const i = this.menuButtons.findIndex((b) => Math.abs(p.y - b.y) <= 15);
+      if (i >= 0) { this.focus = i; this.activate(); }
       return;
     }
     if (p.y < 28 && p.x < 60) return this.scene.showTitle();
@@ -150,12 +181,17 @@ export class JourneyMenu {
 
   pointerMove(p) {
     if (this.mode === 'title' && p.x >= 14 && p.x <= 166) {
-      if (Math.abs(p.y - this.newGame.y) <= 18) this.focus = 0;
-      else if (Math.abs(p.y - this.stamps.y) <= 18) this.focus = 1;
+      const i = this.menuButtons.findIndex((b) => Math.abs(p.y - b.y) <= 15);
+      if (i >= 0) this.focus = i;
     }
     if (this.drag === p.id && p.isDown) this.slide(p.y);
   }
   pointerUp(p) { if (this.drag === p.id) this.drag = null; }
+  activate() {
+    if (this.focus === 0) this.scene.openCities();
+    else if (this.focus === 1) this.scene.openBook();
+    else this.scene.openCollection(this.focus === 2 ? 'yokai' : 'food');
+  }
   remember() { try { localStorage.setItem(CITY_KEY, STAGES[this.index].id); } catch { /* private mode */ } }
 
   update(dt) {
@@ -164,11 +200,14 @@ export class JourneyMenu {
     this.layoutLabels();
     if (!this.flight && this.mode === 'city') { const p = this.city(this.index); this.ship.setPosition(p.x, p.y); }
     this.clouds.forEach((c, i) => c.setPosition(((this.time * (2 + i) + i * 100) % 240) - 30, this.H * (0.35 + i * 0.25)));
-    this.newGame.setTint(this.focus === 0 ? 0xffe080 : 0xb0aec0);
-    this.stamps.setTint(this.focus === 1 ? 0xffe080 : 0xb0aec0);
+    this.menuButtons.forEach((button, i) => {
+      button.setTint(i === 0 ? 0xfff1c9 : this.focus === i ? 0xa4322d : 0x47372f);
+      const frame = `menu_${i ? 'paper' : 'start'}_${this.focus === i ? 'on' : 'off'}`;
+      if (this.cards[i].frame.name !== frame) this.cards[i].setFrame(frame);
+    });
     const g = this.gfx.clear();
     if (this.mode === 'backdrop') return;
-    STAGES.forEach((_, i) => {
+    if (this.mode === 'city') STAGES.forEach((_, i) => {
       const p = this.city(i), selected = i === this.index && this.mode === 'city';
       g.fillStyle(selected ? 0xffe080 : 0x83a9bc, this.mode === 'title' ? 0.45 : 1).fillCircle(p.x, p.y, selected ? 3 : 2);
       if (selected) g.lineStyle(1, 0xffe080, 0.7).strokeCircle(p.x, p.y, 5 + Math.sin(this.time * 5));
@@ -176,34 +215,34 @@ export class JourneyMenu {
     });
     if (this.mode === 'title') {
       const appear = Math.min(1, this.modeTime / 0.6);
-      this.logo.setAlpha(appear).setY(Math.round(this.H * 0.29 + Math.sin(this.time * 1.6) * 2));
+      this.logo.setAlpha(appear).setY(this.titleLayout.logoY);
       this.tagline.setAlpha(appear * (0.85 + Math.sin(this.time * 2) * 0.15));
-      // A quiet flight over the full-width atlas, behind the menu cards.
+      this.lanterns.forEach((o, i) => o.setRotation(Math.sin(this.time * 1.4 + i * 2) * 0.055));
+      // A small ship crosses the mountain vista, above the menu cards.
       const t = (this.time * 0.045) % 1;
-      const x = -18 + t * 216, y = this.H * 0.42 - Math.sin(t * Math.PI) * 62;
-      this.ship.setPosition(Math.round(x), Math.round(y)).setRotation(Math.atan2(-62 * Math.PI * Math.cos(t * Math.PI), 216) + Math.PI / 2).setAlpha(0.8);
+      const x = -18 + t * 216, y = this.titleLayout.artY + 135 - Math.sin(t * Math.PI) * 24;
+      this.ship.setPosition(Math.round(x), Math.round(y)).setRotation(Math.atan2(-24 * Math.PI * Math.cos(t * Math.PI), 216) + Math.PI / 2).setAlpha(0.9);
       for (let n = 1; n <= 14; n++) {
         const u = t - n * 0.009;
         if (u < 0) continue;
-        g.fillStyle(0xd8c9a4, (1 - n / 15) * 0.35).fillRect(Math.round(-18 + u * 216), Math.round(this.H * 0.42 - Math.sin(u * Math.PI) * 62), 1, 1);
+        g.fillStyle(0xffd5a0, (1 - n / 15) * 0.35).fillRect(Math.round(-18 + u * 216), Math.round(this.titleLayout.artY + 135 - Math.sin(u * Math.PI) * 24), 1, 1);
       }
       for (let n = 0; n < 18; n++) {
         const x = (n * 47 + Math.sin(this.time * 0.4 + n) * 5 + 180) % 180;
-        const y = (n * 71 - this.time * (2 + n % 3) + this.H * 100) % this.H;
-        g.fillStyle(0xffdfb0, 0.12 + (Math.sin(this.time * 2 + n) + 1) * 0.12).fillRect(Math.round(x), Math.round(y), 1, 1);
+        const y = (n * 71 + this.time * (4 + n % 3)) % this.H;
+        // Sakura petals fall mostly at the edges, keeping text clear.
+        if (x < 14 || x > 166 || y < this.titleLayout.start - 20)
+          g.fillStyle(n % 2 ? 0xffc7ca : 0xe99dac, 0.65).fillRect(Math.round(x), Math.round(y), 2, 1);
       }
-      g.lineStyle(1, 0xcba671, 0.6).lineBetween(56, this.tagline.y + 14, 124, this.tagline.y + 14);
-      for (const [i, text] of [this.newGame, this.stamps].entries()) {
+      for (const [i, text] of this.menuButtons.entries()) {
         const active = this.focus === i;
         const reveal = Math.max(0, Math.min(1, (this.modeTime - i * 0.1) / 0.4));
         text.setAlpha(reveal);
-        g.fillStyle(0x050e1b, 0.65 * reveal).fillRoundedRect(16, text.y - 16, 152, 38, 5);
-        g.fillStyle(active ? 0x253c50 : 0x102438, 0.95 * reveal).fillRoundedRect(14, text.y - 19, 152, 38, 5);
-        g.lineStyle(1, active ? 0xffdf9a : 0x4d7188, reveal).strokeRoundedRect(14, text.y - 19, 152, 38, 5);
-        if (active) {
-          const offset = Math.round(Math.sin(this.time * 5) * 2);
-          g.fillStyle(0xffdf9a, reveal).fillTriangle(24 + offset, text.y - 3, 24 + offset, text.y + 3, 28 + offset, text.y);
-          g.lineStyle(1, 0xffdf9a, 0.4 + Math.sin(this.time * 3) * 0.15).lineBetween(43, text.y + 14, 137, text.y + 14);
+        this.cards[i].setAlpha(reveal);
+        if (i) { this.icons[i - 1].setAlpha(reveal); this.counts[i - 1].setAlpha(reveal); }
+        if (active && i === 0) {
+          const offset = Math.round(Math.sin(this.time * 5) * 1);
+          g.fillStyle(0xffe4ad, reveal).fillTriangle(154 + offset, text.y - 3, 154 + offset, text.y + 3, 158 + offset, text.y);
         }
       }
       return;

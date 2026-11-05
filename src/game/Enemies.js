@@ -322,6 +322,7 @@ export class Enemies {
       }
     }
     s.score.kill(e.def);
+    s.discoverEnemy(e);
     if (e.type === 'decoy') {
       // a fake tanuki turns back into leaves
       s.fx.leaves(e.x, e.y, 16);

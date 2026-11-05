@@ -19,6 +19,8 @@ import { Score } from '../game/Score.js';
 import { ShipSelect } from '../game/ShipSelect.js';
 import { INK, PALE, StampBook, hasStamp, pressStamp, stampFrame } from '../game/Stamps.js';
 import { Waves } from '../game/Waves.js';
+import { DiscoveryBook, DiscoveryNotice, FoodTrail, discoveries } from '../game/Discoveries.js';
+import { yokaiForEnemy } from '../data/discoveries.js';
 import { isEasy, rules } from '../difficulty.js';
 import { getLang, setLang, t } from '../i18n.js';
 import { canInstall, install } from '../pwa.js';
@@ -124,6 +126,8 @@ export class Stage extends Phaser.Scene {
     this.music = getMusic(this);
     this.sfx = this.music.sfx;
     this.hud = new Hud(this);
+    this.discoveryNotice = new DiscoveryNotice(this);
+    this.foodTrail = new FoodTrail(this);
     this.debug = new Debug(this);
     // Hiroshima: the moment of silence over the Peace Park (no shooting, the paper cranes dance)
     this.ceasefire = false;
@@ -156,7 +160,7 @@ export class Stage extends Phaser.Scene {
     if (WEAPONS[q.get('weapon')]) this.player.weapon = q.get('weapon');
     if (q.get('power')) this.player.level = Phaser.Math.Clamp(Number(q.get('power')), 1, PLAYER.maxPower);
 
-    this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,K,L,I,G,ESC,P,ENTER,SPACE');
+    this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,K,L,I,G,Y,F,ESC,P,ENTER,SPACE');
     this.input.on('pointerdown', this.onPointerDown, this);
     this.input.on('pointermove', (p) => {
       if (this.state === 'city' || this.state === 'title') this.journey.pointerMove(p);
@@ -236,6 +240,19 @@ export class Stage extends Phaser.Scene {
     this.book = null;
     this.state = 'title';
     this.showTitle();
+  }
+
+  openCollection(kind) {
+    this.hud.closePanel();
+    this.journey.setMode('backdrop');
+    this.state = 'book';
+    this.book = new DiscoveryBook(this, kind);
+  }
+
+  discoverEnemy(enemy, bossDefeated = false) {
+    if (this.state !== 'play') return;
+    const entry = yokaiForEnemy(this.stage.id, enemy, bossDefeated);
+    if (entry && discoveries.discover(entry.id)) this.discoveryNotice.add(entry);
   }
 
   openSelect() {
@@ -345,6 +362,7 @@ export class Stage extends Phaser.Scene {
 
   /** Called by Enemies when every part of the stage boss is destroyed. */
   onBossDefeated() {
+    this.discoverEnemy({ type: 'boss' }, true);
     this.freeze(0.45);
     this.bossDown = true;
     this.bossClearT = 3;
@@ -517,7 +535,10 @@ export class Stage extends Phaser.Scene {
       if (this.hud.hitInstall(p)) return install().then(() => this.state === 'title' && this.showTitle());
       return this.journey.pointerDown(p);
     }
-    if (this.state === 'book') return this.book.hitTurn(p) || this.closeBook();
+    if (this.state === 'book') {
+      if (this.book.pointer) return this.book.pointer(p);
+      return this.book.hitTurn(p) || this.closeBook();
+    }
     if (this.state === 'select') {
       if (this.select.hitMode(p)) return this.select.toggleMode();
       const i = this.select.hit(p);
@@ -557,10 +578,13 @@ export class Stage extends Phaser.Scene {
     if (down(k.G)) this.debug.toggle();
     if (this.state === 'title') {
       if (down(k.K)) this.openBook();
+      else if (down(k.Y)) this.openCollection('yokai');
+      else if (down(k.F)) this.openCollection('food');
       else if (down(k.L)) this.toggleLang();
       else if (down(k.I) && canInstall()) install().then(() => this.state === 'title' && this.showTitle());
-      else if (down(k.UP) || down(k.DOWN) || down(k.W) || down(k.S)) this.journey.focus = 1 - this.journey.focus;
-      else if (confirm || bomb) this.journey.focus === 0 ? this.openCities() : this.openBook();
+      else if (down(k.UP) || down(k.W)) this.journey.focus = (this.journey.focus + 3) % 4;
+      else if (down(k.DOWN) || down(k.S)) this.journey.focus = (this.journey.focus + 1) % 4;
+      else if (confirm || bomb) this.journey.activate();
     } else if (this.state === 'city') {
       if (down(k.UP) || down(k.W) || down(k.LEFT) || down(k.A)) this.journey.step(-1);
       if (down(k.DOWN) || down(k.S) || down(k.RIGHT) || down(k.D)) this.journey.step(1);
@@ -610,6 +634,7 @@ export class Stage extends Phaser.Scene {
     const dt = Math.min(delta / 1000, 1 / 20);
     this.handleKeys();
     this.hud.update(dt);
+    this.discoveryNotice.update(dt);
     if (this.paused) return;
     if (this.freezeT > 0) {
       if ((this.freezeT -= dt) <= 0) {
@@ -685,6 +710,7 @@ export class Stage extends Phaser.Scene {
     this.enemies.update(dt);
     this.bullets.update(dt, this.H);
     this.updatePickups(dt);
+    this.foodTrail.update(dt);
     this.fx.update(dt, this.parallax);
     if (playing) this.collide();
 

@@ -81,6 +81,47 @@ otwiera ikona w lewym górnym rogu ekranu tytułowego albo klawisz K. Pieczątki
 gorących źródeł (Beppu), każda innym tuszem. Pieczątka zdobyta w trybie łatwym jest blada (w książeczce z
 podpisem „NA ŁATWYM” zamiast daty); to samo miasto przejście na normalnym odbija w pełnym kolorze.
 
+## Album yōkai i Smaki Japonii
+
+Menu główne ma ilustrację wieczornego matsuri: torii, Fudżi, pagodę, sakurę i kołyszące się lampiony.
+Statek przelatuje nad górą, a płatki opadają przy krawędziach. Czerwony przycisk „WYRUSZ W PODRÓŻ”
+prowadzi do mapy wyboru miasta; papierowe karty książeczek pokazują liczniki zebranych pamiątek.
+Tło i karty generuje `tools/art/menu.mjs`. `node tools/art/menu-preview.mjs` tworzy statyczne
+podglądy PL/EN dla ekranów 180×320 i 180×420 w `tools/preview/`.
+
+Na ekranie tytułowym są dwie dodatkowe książeczki: **ALBUM YOKAI** (klawisz Y) i **SMAKI JAPONII** (F).
+Menu obsługuje strzałki góra/dół i Enter oraz dotyk. W książeczkach lewo/prawo zmienia stronę,
+Esc lub przycisk WRÓĆ zamyka widok. Opisy i wskazówki działają po polsku i angielsku.
+
+Album ma 12 wpisów o folklorystycznych inspiracjach przeciwników: kitsune, chōchin-obake, tanuki,
+Kyūbi, shisa, Yuki-onna, kappa, Raijū, maneki-neko, oni, Heike-gani i Sankibō/tengu. Pierwsze pokonanie
+właściwego przeciwnika odblokowuje ilustrację i krótką opowieść. Boss wymaga pełnego zwycięstwa
+(np. obu shisa); zniszczenie części bossa lub kopii tanuki nie wystarcza. Album odróżnia yōkai,
+strażników, talizmany i legendy. Nieodkryte strony podpowiadają miasto oraz cel.
+
+Przysmaki to 14 osobnych znajdziek, po dwie na miasto. Pojawiają się raz na przelot, przy ustalonych
+punktach mapy (`u` i `x` w `src/data/discoveries.js`), po czym powoli opadają i dryfują ku środkowi.
+Złota obwódka odróżnia je od przeciwników. Pierwsze zebranie zapisuje wpis natychmiast i daje
+1000 × mnożnik punktów; następne 250 × mnożnik. Pominięte jedzenie czeka na kolejny przelot.
+Pauza zatrzymuje znajdźki. Śmierć ani bomba nie odbierają odkryć; oba poziomy trudności korzystają
+ze wspólnego dziennika, również w uruchomieniach z parametrami debugowania.
+
+Zapis: `shmupjp.discoveries.v1` w localStorage. Jeśli przeglądarka blokuje zapis, odkrycia zostają
+w pamięci bieżącej sesji. Powiadomienia czekają na koniec kart miasta/bossa i nie zasłaniają ostrzeżeń.
+Grafiki potraw generuje `tools/art/foods.mjs`; książeczki i znajdźki obsługuje `src/game/Discoveries.js`.
+
+`npm test` sprawdza zapis/odczyt, odblokowania, kompletność grafik, zbieranie i pomijanie potraw,
+pauzę, kontynuację, kolejkę powiadomień oraz układ PL/EN przy wysokościach 320 i 420. Generuje też
+podglądy książeczek w `tools/preview/`. To testy logiki i układu z adapterem sceny, nie test przeglądarkowy.
+
+Punkty odniesienia do opisów: [japońska agencja turystyki — dziewięcioogoniasty lis](https://www.mlit.go.jp/tagengo-db/en/R2-00679.html),
+[Okinawa — shisa i kultura duchowa](https://visitokinawajapan.com/discover/traditional-culture/okinawa-spiritual-culture/),
+[Miyajima — sanktuaria góry Misen i tengu](https://visit-miyajima-japan.com/en/culture-and-heritage/spiritual-heritage-temples-shrines/sur-le-mont-misen.html),
+[katalog Yale — Heike-gani](https://japanesehistory.yale.edu/sites/default/files/samurai_great_peace_exhibition_catalog_-_watermarked.pdf),
+[JNTO — regionalne potrawy](https://www.japan.travel/en/local-specialities/local-foods/),
+[Okinawa — kuchnia regionalna](https://visitokinawajapan.com/discover/food-and-longevity/okinawan-food-culture/).
+Opisy rozdzielają motywy tradycyjne od ich interpretacji w grze.
+
 ## Zakończenie
 
 Po wynikach ostatniego miasta gra się nie urywa: przychodzi zakończenie w pięciu scenach, każdą można przewinąć

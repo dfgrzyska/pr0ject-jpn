@@ -12,6 +12,8 @@ import { hiroshimaSprites } from './hiroshima/sprites.mjs';
 import { stampSprites } from './stamps.mjs';
 import { fxSprites } from './fx.mjs';
 import { logoSprites } from './logo.mjs';
+import { foodSprites } from './foods.mjs';
+import { menuSprites } from './menu.mjs';
 
 const out = [];
 const add = (name, raster) => out.push({ name, raster });
@@ -269,6 +271,8 @@ hiroshimaSprites(add);
 for (const { name, raster } of stampSprites()) add(name, raster); // the stamp book
 for (const { name, raster } of fxSprites()) add(name, raster); // smoke, debris, scorch, glow, cracks, cloud shadows
 for (const { name, raster } of logoSprites()) add(name, raster); // the logo, the cities' seals
+for (const { name, raster } of foodSprites()) add(name, raster);
+for (const { name, raster } of menuSprites()) add(name, raster);
 
 // ---------------------------------------------------------------- pickups
 const PICKUP = [

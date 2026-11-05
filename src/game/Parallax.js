@@ -201,40 +201,29 @@ export class Parallax {
       } else this.bitsLive[j++] = b;
     }
     this.bitsLive.length = j;
-    // Kyoto only: the ship kicks up a slipstream of petals; elsewhere it just parts the falling leaves
+    // Kyoto only: a light wake during deliberate maneuvers. Ambient leaves still part above.
     if (pl && !pl.entering && this.nearKind === 'sakura') {
       const spd = Math.hypot(pl.vx || 0, pl.vy || 0);
-      const canopy = pl.x < 44 || pl.x > VIEW.width - 44 ? 14 : 0;
-      const rate = 8 + canopy + Math.min(36, spd * 0.32 + Math.abs(pl.bank) * 20);
-      if (Math.random() < dt * rate) {
+      const rate = 8 + Math.min(36, spd * 0.32 + Math.abs(pl.bank) * 20);
+      // Previously each successful roll emitted TWO petals. One at 0.8 of the old
+      // probability retains 40% of the count (60% less), even on slower frames.
+      const chance = Math.min(1, dt * rate) * 2 * 0.4;
+      if (spd >= 32 && Math.random() < chance) {
         const side = Math.random() < 0.5 ? -1 : 1;
-        const b = this.bit(
-          `${leafPrefix}${Math.floor(Math.random() * 4)}`,
-          pl.x + side * (5 + Math.random() * 5),
-          pl.y - 2 + Math.random() * 8,
-          36 + Math.random() * 34,
-          side * (68 + Math.random() * 55) - (pl.vx || 0) * 0.25,
-          this.nearKind === 'momiji' ? 1 : 0,
-          14 + Math.random() * 6,
-          Math.random() * 3,
-          0.055,
-        );
-        b.setAlpha(0.88);
-        const s2 = -side;
         const wp = this.scene.fx.part(
           this.scene.fx.parts,
           `${leafPrefix}${Math.floor(Math.random() * 4)}`,
-          pl.x + s2 * (6 + Math.random() * 4),
+          pl.x + side * (6 + Math.random() * 4),
           pl.y + 2,
         );
-        wp.vx = s2 * (75 + Math.random() * 60) - (pl.vx || 0) * 0.3;
-        wp.vy = 28 + Math.random() * 38;
-        wp.drag = 1.5;
-        wp.g = 18;
-        wp.spin = s2 * (9 + Math.random() * 7);
-        wp.life = wp.max = 0.55 + Math.random() * 0.25;
-        wp.a0 = 0.92;
-        wp.setScale(1.15);
+        wp.vx = side * (40 + Math.random() * 28) - (pl.vx || 0) * 0.15;
+        wp.vy = 20 + Math.random() * 22;
+        wp.drag = 2;
+        wp.g = 12;
+        wp.spin = side * (4 + Math.random() * 4);
+        wp.life = wp.max = 0.4 + Math.random() * 0.2;
+        wp.a0 = 0.65;
+        wp.setScale(1);
       }
     }
   }

@@ -3,6 +3,7 @@ import { isEasy, rules } from '../difficulty.js';
 import { FONT } from '../scenes/Boot.js';
 import { getLang, tr } from '../i18n.js';
 import { canInstall } from '../pwa.js';
+import { landmarkAt } from '../data/landmarks.js';
 
 const W = VIEW.width;
 // Line pitch for panels: 7px glyphs + raised Polish accents need 14px to never touch the line above.
@@ -54,6 +55,9 @@ export class Hud {
     // the stamp still to be won in this city: its seal under the lives, fading away after a death or a bomb
     this.stampIcon = scene.add.image(7, 30, 'sprites', 'stamp_icon').setDepth(d).setVisible(false);
     this.stampFade = 0;
+    this.placeBand = scene.add.rectangle(W / 2, 0, W - 8, 15, 0x0b0a12, 0.7).setDepth(d).setVisible(false);
+    this.placeName = this.text(W / 2, 0, '').setDepth(d + 1).setTint(0xffe4ad).setVisible(false);
+    this.placeLabel = '';
     this.boss = scene.add.graphics().setDepth(d);
     this.banner = this.text(W / 2, 0, '', 0.5).setDepth(d + 1);
     this.bannerSub = this.text(W / 2, 0, '', 0.5).setDepth(d + 1);
@@ -88,6 +92,8 @@ export class Hud {
     this.weapon.setPosition(8, H - 8);
     this.pips.forEach((p, i) => p.setPosition(18 + i * 5, H - 8));
     this.bombBtn.setPosition(W - 18, H - 18);
+    this.placeBand.y = H - 43;
+    this.placeName.y = H - 43;
     this.banner.y = Math.round(H * 0.36);
     this.bannerSub.y = Math.round(H * 0.36) + LINE;
   }
@@ -225,6 +231,20 @@ export class Hud {
 
   update(dt) {
     const s = this.scene;
+    const u = s.parallax.stripU(this.H / 2);
+    const place = landmarkAt(s.stage.id, u);
+    const showPlace = s.state === 'play' && !s.paused && !!place && this.cardT <= 0 && this.sealT <= 0;
+    this.placeBand.setVisible(showPlace);
+    this.placeName.setVisible(showPlace);
+    if (showPlace) {
+      if (this.placeLabel !== place[2]) {
+        this.placeLabel = place[2];
+        this.placeName.setText(this.placeLabel);
+      }
+      const alpha = Math.min(1, (u - place[0]) / 24, (place[1] - u) / 24);
+      this.placeBand.setAlpha(alpha);
+      this.placeName.setAlpha(alpha);
+    }
     const p = s.player;
     const sc = Math.min(99999999, s.score.score);
     if (sc !== this.lastScore) {
