@@ -4,7 +4,7 @@
 import { Raster, fbm } from '../lib/raster.mjs';
 import { KANJI } from './kanji.mjs';
 
-const SEALS = { stage1: '京都', stage2: '沖縄', stage3: '札幌', stage4: '鹿児島', stage5: '大阪', stage6: '別府', stage7: '広島' };
+const SEALS = { stage1: '京都', stage2: '沖縄', stage3: '札幌', stage4: '鹿児島', stage5: '大阪', stage6: '別府', stage7: '広島', stage8: '長崎' };
 
 /** A seal: a block with a rim, the kanji cut out of it; the ink catches the paper unevenly. */
 function seal(text, seed) {

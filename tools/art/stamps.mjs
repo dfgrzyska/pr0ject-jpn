@@ -310,7 +310,20 @@ function hiroshima(name = 'HIROSZIMA') {
 }
 
 export function stampSprites() {
+  const nagasaki = new Raster(S, S);
+  ring(nagasaki, MID, MID, 26, 2);
+  for (const [x, h] of [[11, 9], [19, 15], [28, 11], [37, 8]]) {
+    nagasaki.rect(x, 32 - h, 7, h, 0xffffff);
+    for (let y = 33 - h; y < 30; y += 3) for (let xx = x + 1; xx < x + 6; xx += 3) off(nagasaki, xx, y);
+  }
+  nagasaki.line(9, 33, 45, 33, 0xffffff);
+  nagasaki.line(12, 35, 42, 35, 0xffffff);
+  nagasaki.line(29, 9, 29, 16, 0xffffff);
+  nagasaki.line(29, 9, 40, 16, 0xffffff);
+  nagasaki.line(29, 9, 19, 16, 0xffffff);
+  nameBand(nagasaki, 'NAGASAKI', 38, 47, (x, y) => Math.hypot(x - MID, y - MID) < 24);
   const out = [
+    { name: 'stamp_stage8', raster: nagasaki },
     { name: 'stamp_stage1', raster: kyoto() },
     { name: 'stamp_stage1_en', raster: kyoto('KYOTO') },
     { name: 'stamp_stage2', raster: okinawa() },

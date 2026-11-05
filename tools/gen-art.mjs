@@ -17,6 +17,7 @@ import * as sapporo from './art/sapporo/index.mjs';
 import * as kagoshima from './art/kagoshima/index.mjs';
 import * as osaka from './art/osaka/index.mjs';
 import * as beppu from './art/beppu/index.mjs';
+import * as nagasaki from './art/nagasaki/index.mjs';
 import * as hiroshima from './art/hiroshima/index.mjs';
 
 // background generators per stage (id = folder under public/assets/bg/)
@@ -28,6 +29,7 @@ const STAGES = [
   { id: 'stage5', art: osaka },
   { id: 'stage6', art: beppu },
   { id: 'stage7', art: hiroshima },
+  { id: 'stage8', art: nagasaki },
 ];
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -106,6 +108,11 @@ for (const { id, art } of STAGES) {
     write(`bg/${id}/props.json`, Buffer.from(JSON.stringify(mid.props.json)));
     mid.meta.props = mid.props.props;
     if (preview) writeFileSync(join(previewDir, `${id}_props_x4.png`), mid.props.raster.scaled(4, 0x30304a).toPNG());
+  }
+  if (art.buildPanorama) {
+    const panorama = art.buildPanorama();
+    mid.meta.panorama = Object.keys(panorama);
+    for (const [name, raster] of Object.entries(panorama)) write(`bg/${id}/view_${name}.png`, raster.toPNG());
   }
   write(`bg/${id}/meta.json`, Buffer.from(JSON.stringify(mid.meta)));
   if (preview) {

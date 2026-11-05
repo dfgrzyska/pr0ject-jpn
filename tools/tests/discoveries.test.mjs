@@ -11,7 +11,7 @@ import { buildFont, FONT } from '../art/font.mjs';
 import { Raster, rgb } from '../lib/raster.mjs';
 
 const art = new Map(buildSprites().map(({ name, raster }) => [name, raster]));
-const stages = Array.from({ length: 7 }, (_, i) => JSON.parse(readFileSync(new URL(`../../src/data/stage${i + 1}.json`, import.meta.url))));
+const stages = Array.from({ length: 8 }, (_, i) => JSON.parse(readFileSync(new URL(`../../src/data/stage${i + 1}.json`, import.meta.url))));
 let language = 'pl';
 class Item {
   constructor(scene, kind, x = 0, y = 0, frame = '') {

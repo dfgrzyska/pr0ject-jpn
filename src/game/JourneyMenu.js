@@ -39,7 +39,7 @@ export class JourneyMenu {
     this.ship = add(scene.add.image(0, 0, 'sprites', SHIPS[scene.shipIndex].frame), DEPTH.overlay + 2);
     this.logo = add(scene.add.image(90, 0, 'sprites', 'logo'));
     this.tagline = add(pixelText(scene, 90, 0, 'LEĆ PRZEZ JAPONIĘ').setTint(0xffdba8));
-    this.caption = add(pixelText(scene, 90, 0, 'SIEDEM MIAST. JEDNA PODRÓŻ.').setTint(0xc8ac85));
+    this.caption = add(pixelText(scene, 90, 0, 'OSIEM MIAST. JEDNA PODRÓŻ.').setTint(0xc8ac85));
     this.heading = add(pixelText(scene, 90, 50, 'WYBIERZ MIASTO'));
     this.newGame = add(pixelText(scene, 85, 0, 'WYRUSZ W PODRÓŻ'), DEPTH.overlay + 2);
     this.stamps = add(pixelText(scene, 90, 0, 'PIECZĄTKI', 0.5, INK_FONT), DEPTH.overlay + 2);
@@ -252,7 +252,7 @@ export class JourneyMenu {
     g.fillStyle(0x132942).fillRoundedRect(153 + railOffset, this.railTop - 17, 25, this.railBottom - this.railTop + 34, 5);
     g.lineStyle(1, 0x66869e).lineBetween(166 + railOffset, this.railTop, 166 + railOffset, this.railBottom);
     NORTH_TO_SOUTH.forEach((i, k) => {
-      const y = this.railTop + k * (this.railBottom - this.railTop) / 6;
+      const y = this.railTop + k * (this.railBottom - this.railTop) / Math.max(1, NORTH_TO_SOUTH.length - 1);
       g.fillStyle(i === this.index ? 0xffe080 : 0x66869e).fillCircle(166 + railOffset, y, i === this.index ? 6 : 2);
       if (i === this.index) g.lineStyle(1, 0x0c1830).lineBetween(163 + railOffset, y, 169 + railOffset, y);
     });

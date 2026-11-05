@@ -86,7 +86,10 @@ export class Parallax {
 
   update(dt, scrolling, H) {
     if (scrolling) {
-      this.time = Math.min(this.time + dt, this.maxTime);
+      const scenic = this.scene.stage.panorama;
+      const gate = scenic && !this.scene.bossDown ? (scenic.gate - this.anchor) / this.speed.mid : this.maxTime;
+      const rate = scenic && this.uTop >= scenic.reveal ? .12 : 1;
+      this.time = Math.min(this.time + dt * rate, this.maxTime, gate);
       this.farTime += dt;
     }
     this.uTop = Math.round(this.anchor + this.time * this.speed.mid);
@@ -142,7 +145,7 @@ export class Parallax {
     else if (this.nearKind === 'ash') this.spawnAsh(dt, fall, H);
     else if (this.nearKind === 'steam') this.spawnSteam(dt, fall);
     else if (this.nearKind === 'momiji') this.spawnMomiji(dt, fall, scrolling);
-    else if (this.nearKind === 'osaka') {
+    else if (this.nearKind === 'osaka' || this.nearKind === 'harbor') {
       if (this.time < this.nightFrom) this.spawnTropic(dt, fall, scrolling);
     }
     else this.spawnSakura(dt, fall, scrolling);

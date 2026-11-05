@@ -8,6 +8,7 @@ import { kyubiSprites } from './kyoto/kyubi.mjs';
 import { kagoshimaSprites } from './kagoshima/sprites.mjs';
 import { osakaSprites } from './osaka/sprites.mjs';
 import { beppuSprites } from './beppu/sprites.mjs';
+import { nagasakiSprites } from './nagasaki/sprites.mjs';
 import { hiroshimaSprites } from './hiroshima/sprites.mjs';
 import { stampSprites } from './stamps.mjs';
 import { fxSprites } from './fx.mjs';
@@ -268,6 +269,7 @@ kagoshimaSprites(add);
 osakaSprites(add);
 beppuSprites(add);
 hiroshimaSprites(add);
+for (const { name, raster } of nagasakiSprites()) add(name, raster);
 for (const { name, raster } of stampSprites()) add(name, raster); // the stamp book
 for (const { name, raster } of fxSprites()) add(name, raster); // smoke, debris, scorch, glow, cracks, cloud shadows
 for (const { name, raster } of logoSprites()) add(name, raster); // the logo, the cities' seals

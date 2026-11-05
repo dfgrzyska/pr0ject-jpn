@@ -10,6 +10,7 @@ import { sapporo } from './enemies/sapporo.js';
 import { kagoshima } from './enemies/kagoshima.js';
 import { osaka } from './enemies/osaka.js';
 import { beppu } from './enemies/beppu.js';
+import { nagasaki } from './enemies/nagasaki.js';
 import { hiroshima } from './enemies/hiroshima.js';
 // the two halves of a burst volcanic bomb
 const FRAG = { hp: 1, weight: 0, score: 50, radius: 3, explosion: 's' };
@@ -180,6 +181,7 @@ export class Enemies {
         e.setScale(1.3).setAlpha(0.8); // tinted warm every frame: this steam is hot (the background plumes are white)
         break;
       case 'boss':
+        if (w.boss === 'jaodori') return this.spawnJaodori(w, base);
         if (w.boss === 'oni') return this.spawnOni(w, base);
         if (w.boss === 'volcano') return this.spawnVolcano(w, base);
         if (w.boss === 'tako') return this.spawnTako(w, base);
@@ -379,6 +381,7 @@ export class Enemies {
   updateBossGroup(dt) {
     const g = this.bossGroup;
     if (!g || g.defeated) return;
+    if (g.kind === 'jaodori') return this.updateJaodori(g, dt);
     if (g.kind === 'kuma') return this.updateKuma(g, dt);
     if (g.kind === 'volcano') return this.updateVolcano(g, dt);
     if (g.kind === 'tako') return this.updateTako(g, dt);
@@ -578,6 +581,10 @@ export class Enemies {
   }
 
   remove(e) {
+    if (e.group?.kind === 'jaodori') {
+      for (const p of e.group.body) this.segPool.kill(p);
+      this.segPool.kill(e.group.pearl);
+    }
     if (e.wounds) for (const w of e.wounds) this.woundPool.kill(w);
     e.wounds = null;
     if (e.head) this.heads.kill(e.head);
@@ -610,7 +617,8 @@ export class Enemies {
           this.shooter(e, dt, b);
           break;
         case 'diver':
-          if (e.path === 'glide') this.glide(e, dt);
+          if (this.skin.nagasaki) this.hata(e, dt);
+          else if (e.path === 'glide') this.glide(e, dt);
           else if (e.path === 'submerge') this.kappa(e, dt);
           else this.diver(e, dt);
           break;
@@ -623,6 +631,7 @@ export class Enemies {
           else if (e.kind === 'raiju') this.raiju(e, dt, b);
           else if (e.kind === 'bunraku') this.bunraku(e, dt, b);
           else if (e.kind === 'wani') this.wani(e, dt, b);
+          else if (e.kind === 'oranda') this.oranda(e, dt, b);
           else if (e.kind === 'heikegani') this.updateHeike(e, dt, b);
           else this.heavyUpdate(e, dt, b);
           break;
@@ -807,6 +816,7 @@ export class Enemies {
   }
 
   shooter(e, dt, b) {
+    if (this.skin.nagasaki) return this.biidoro(e, dt, b);
     if (e.oyster) return this.oysterShooter(e, dt, b);
     if (e.lantern && e.armor > 0) {
       // the ice cracks as it takes hits, the candle flickers inside
@@ -1084,4 +1094,4 @@ export class Enemies {
 }
 
 // each city's enemies and bosses live in its own module (src/game/enemies/): their methods join the class here
-Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima);
+Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki);

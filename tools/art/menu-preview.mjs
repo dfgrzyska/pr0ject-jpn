@@ -45,7 +45,7 @@ for (const H of [320, 420]) for (const lang of ['pl', 'en']) {
       text(['0/7', '0/12', '0/14'][i - 1], 148, y, 0x76583d, false);
     } else { canvas.line(154, y - 3, 157, y, 0xffe4ad); canvas.line(157, y, 154, y + 3, 0xffe4ad); }
   });
-  text(lang === 'pl' ? 'SIEDEM MIAST. JEDNA PODRÓŻ.' : 'SEVEN CITIES. ONE JOURNEY.', 90, p.captionY, 0xc8ac85);
+  text(lang === 'pl' ? 'OSIEM MIAST. JEDNA PODRÓŻ.' : 'EIGHT CITIES. ONE JOURNEY.', 90, p.captionY, 0xc8ac85);
   text(lang === 'pl' ? 'STRZAŁKI / ENTER' : 'ARROWS / ENTER', 90, p.hintY, 0x9aaec2);
   writeFileSync(`tools/preview/menu-${H}-${lang}.png`, canvas.scaled(3).toPNG());
 }

@@ -16,6 +16,7 @@ const BLAST = {
 // Each city's bits in an explosion (by the stage's near layer): sakura petals in Kyoto, spray over Okinawa,
 // ice in Sapporo, ash and embers at Sakurajima, neon sparks in Osaka, steam in Beppu.
 const BITS = {
+  harbor: { frames: ['dot_1', 'drop_0'], tints: [0xe8b76a, 0x8ac5d1], speed: 65, life: 0.5, drag: 2.2, g: 0 },
   sakura: { frames: ['petal_0', 'petal_1', 'petal_2', 'petal_3'], speed: 55, life: 1.1, drag: 1.8, g: 16 },
   tropic: { frames: ['drop_0', 'drop_1', 'drop_1'], speed: 75, life: 0.5, drag: 2.6, g: 0 },
   snow: { frames: ['shard_0', 'shard_1', 'shard_2'], speed: 85, life: 0.6, drag: 2.4, g: 0 },

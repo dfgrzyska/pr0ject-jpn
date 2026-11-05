@@ -6,6 +6,7 @@ import stage3 from './stage3.json';
 import stage4 from './stage4.json';
 import stage5 from './stage5.json';
 import stage6 from './stage6.json';
+import stage8 from './stage8.json';
 import stage7 from './stage7.json';
 
-export const STAGES = [stage1, stage2, stage3, stage4, stage5, stage6, stage7];
+export const STAGES = [stage1, stage2, stage3, stage4, stage5, stage6, stage7, stage8];

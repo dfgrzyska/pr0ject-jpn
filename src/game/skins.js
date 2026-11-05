@@ -3,6 +3,15 @@
 // Sapporo adds mechanics on top: flocks with a bonus, ice armour, gliding divers, lobbing turrets,
 // snowploughs and its own miniboss patterns (kind).
 export const SKINS = {
+  nagasaki: {
+    nagasaki: true,
+    popcorn: { frame: 'n_lantern_0', anim: 'n_lantern' },
+    shooter: { frame: 'n_biidoro_0', anim: 'n_biidoro' },
+    diver: { frame: 'n_hata_0', anim: 'n_hata' },
+    carrier: { frame: 'n_castella_{c}_0', anim: 'n_castella_{c}' },
+    heavy: { frame: 'n_oranda_0', anim: 'n_oranda', kind: 'oranda' },
+    turret: { base: 'n_winch_base', head: 'n_winch_', wreck: 'n_winch_wreck', pattern: 'tide' },
+  },
   kyoto: {
     popcorn: { frame: 'popcorn_0', anim: 'popcorn' },
     shooter: { frame: 'shooter_0', anim: 'shooter' },

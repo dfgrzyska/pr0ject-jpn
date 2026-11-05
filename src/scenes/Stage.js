@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { NagasakiView } from '../game/NagasakiView.js';
 import { getMusic } from '../audio/Music.js';
 import { DEPTH, GRAZE, PLAYER, SCORE, SHIPS, VIEW, WEAPONS } from '../config.js';
 import { STAGES } from '../data/stages.js';
@@ -131,6 +132,7 @@ export class Stage extends Phaser.Scene {
     this.debug = new Debug(this);
     // Hiroshima: the moment of silence over the Peace Park (no shooting, the paper cranes dance)
     this.ceasefire = false;
+    this.scenicView = this.stage.panorama ? new NagasakiView(this) : null;
     this.interlude = this.stage.interlude ? new Interlude(this, this.stage.interlude) : null;
     this.music.duck?.(1);
     // the sprite pools made ahead (the most the busiest stages need, with some to spare), so a fight never has
@@ -366,6 +368,11 @@ export class Stage extends Phaser.Scene {
     this.freeze(0.45);
     this.bossDown = true;
     this.bossClearT = 3;
+    if (this.scenicView) {
+      this.ceasefire = true;
+      for (const e of this.enemies.live) if (!e.dead && e.type !== 'boss') this.enemies.remove(e);
+      this.enemies.pool.sweep();
+    }
     this.player.bombs = 1; // the bomb refills after a boss
     this.bullets.cancelAll(this.fx);
     this.fx.flash(0.6, 0.6);
@@ -712,10 +719,11 @@ export class Stage extends Phaser.Scene {
     this.updatePickups(dt);
     this.foodTrail.update(dt);
     this.fx.update(dt, this.parallax);
+    if (playing) this.scenicView?.update(dt);
     if (playing) this.collide();
 
     if (playing && this.stage.boss) {
-      if (this.bossDown && (this.bossClearT -= dt) <= 0) this.stageClear();
+      if (this.bossDown && (this.scenicView ? this.scenicView.done : (this.bossClearT -= dt) <= 0)) this.stageClear();
     } else if (playing && this.t >= this.stage.end && this.waves.done && (this.enemies.count() === 0 || this.t > this.stage.end + 12))
       this.stageClear();
   }
@@ -736,6 +744,7 @@ export class Stage extends Phaser.Scene {
   /** Music follows the stage: its time schedule, switching to the heavy / boss themes when they come. */
   stageSong() {
     const m = this.stage.music;
+    if (this.bossDown && m.night) return m.night;
     const g = this.enemies.bossGroup;
     if ((g && !g.defeated) || this.waves.upcoming('boss', this.t, 3)) return m.boss ?? m.heavy;
     // a heavy may bring its own theme (wave field music), otherwise the stage's heavy theme

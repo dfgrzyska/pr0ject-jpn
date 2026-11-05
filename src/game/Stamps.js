@@ -20,6 +20,7 @@ const PER_PAGE = 6;
 
 /** Each city's ink. */
 export const INK = {
+  stage8: 0x466c9a,
   stage1: 0xd8402a,
   stage2: 0x1a8a9a,
   stage3: 0x2a5aa8,

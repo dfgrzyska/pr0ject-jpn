@@ -13,6 +13,7 @@ const PAPER = 0xf0e4c8;
 // 7 px under its body, outer ones first, the right-hand ones mirrored)
 const KYUBI = [0, 8, 1, 7, 2, 6, 3, 5, 4].map((i) => [`kyubi_tail_${Math.min(i, 8 - i)}_${i % 3}`, 0, 7, i > 4]);
 const BOSSES = {
+  stage8: [['n_segment', -22, 4], ['n_segment', 22, 4], ['n_ja_0', 0, 0]],
   stage1: [...KYUBI, ['kyubi_idle', 0, 0]],
   stage2: [['shisa_a_0', -24, 0], ['shisa_un_0', 24, 0]],
   stage3: [['kuma_0', 0, 0]],

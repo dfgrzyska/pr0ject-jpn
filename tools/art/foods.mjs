@@ -8,7 +8,13 @@ export function foodSprites() {
     const cream = 0xffe3a0, brown = 0x995022, gold = 0xe8a644, white = 0xfff6db, green = 0x58a84a;
     r.ellipse(10, 15, 9, 3, 0x24324a);
     r.ellipse(10, 14, 8, 3, white);
-    if (id === 'yatsuhashi') {
+    if (id === 'castella') {
+      r.rect(3, 6, 14, 9, cream); r.rect(3, 5, 14, 3, brown); r.line(9, 8, 9, 14, gold);
+    } else if (id === 'champon') {
+      r.ellipse(10, 12, 8, 5, 0x4b879d); r.ellipse(10, 9, 8, 4, cream);
+      for (const x of [5, 8, 11, 14]) { r.line(x, 7, x + 2, 11, gold); r.set(x, 8, green); }
+      r.disc(13, 8, 2, 0xee9e8e);
+    } else if (id === 'yatsuhashi') {
       for (let y = 3; y <= 14; y++) r.rect(10 - Math.floor((y - 3) * 0.7), y, 1 + Math.floor((y - 3) * 0.7) * 2, 1, y === 14 ? brown : cream);
       r.line(10, 5, 15, 13, gold);
     } else if (id === 'inari' || id === 'karukan') {

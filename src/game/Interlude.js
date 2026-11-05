@@ -46,6 +46,7 @@ export class Interlude {
     this.active = true;
     this.t0 = t;
     s.ceasefire = true;
+    if (this.cfg.water) s.player.shots.clear();
     s.bullets.cancelAll(s.fx);
     if (this.cfg.title) s.hud.show(this.cfg.title, this.cfg.sub ?? '', 3.6);
     s.sfx.bell?.();
@@ -67,7 +68,7 @@ export class Interlude {
     for (let i = 0; i < this.n; i++) {
       const [x, y] = origins[i] ?? [mx + (Math.random() - 0.5) * 6, my + Math.random() * 4];
       const c = this.pool.spawn('orizuru_0', x, y);
-      c.col = COLORS[i % COLORS.length];
+      c.col = this.cfg.water ? [0xe1f4f2, 0xa4cbdc, 0xffffff][i % 3] : COLORS[i % COLORS.length];
       c.setTint(c.col).setAlpha(0);
       c.px = x;
       c.py = y;

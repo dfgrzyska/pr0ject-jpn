@@ -17,6 +17,7 @@ function queueStage(scene, id) {
   load.setPath('assets/');
   if (!tex.exists(`far_${id}`)) load.image(`far_${id}`, `bg/${id}/far.png`);
   const rest = (meta) => {
+    for (const name of meta.panorama ?? []) if (!tex.exists(`view_${id}_${name}`)) load.image(`view_${id}_${name}`, `bg/${id}/view_${name}.png`);
     for (let i = 0; i < meta.chunks; i++) if (!tex.exists(`mid_${id}_${i}`)) load.image(`mid_${id}_${i}`, `bg/${id}/mid_${String(i).padStart(2, '0')}.png`);
     if (meta.props && !tex.exists(`props_${id}`)) load.atlas(`props_${id}`, `bg/${id}/props.png`, `bg/${id}/props.json`);
   };
@@ -32,7 +33,7 @@ function queueStage(scene, id) {
 export function stageReady(scene, id) {
   const meta = scene.cache.json.get(`bg_${id}`);
   const tex = scene.textures;
-  return Boolean(meta) && tex.exists(`far_${id}`) && (!meta.props || tex.exists(`props_${id}`)) && [...Array(meta.chunks).keys()].every((i) => tex.exists(`mid_${id}_${i}`));
+  return Boolean(meta) && (meta.panorama ?? []).every(name => tex.exists(`view_${id}_${name}`)) && tex.exists(`far_${id}`) && (!meta.props || tex.exists(`props_${id}`)) && [...Array(meta.chunks).keys()].every((i) => tex.exists(`mid_${id}_${i}`));
 }
 
 export class Boot extends Phaser.Scene {
@@ -119,6 +120,8 @@ export class Boot extends Phaser.Scene {
     anim('mudboil', ['mudboil_0', 'mudboil_1'], 5);
     for (const c of ['red', 'blue', 'green']) anim(`oke_${c}`, [`oke_${c}_0`, `oke_${c}_1`], 3);
     for (const c of ['red', 'blue', 'green']) anim(`ramen_${c}`, [`ramen_${c}_0`, `ramen_${c}_1`], 4);
+    for (const name of ['n_lantern', 'n_biidoro', 'n_hata', 'n_oranda', 'n_ja']) anim(name, [name + '_0', name + '_1'], 5);
+    for (const c of ['red', 'blue', 'green']) anim('n_castella_' + c, ['n_castella_' + c + '_0', 'n_castella_' + c + '_1'], 5);
     // stage 7 (Hiroshima & Miyajima)
     anim('tsuru', ['tsuru_0', 'tsuru_1'], 7);
     anim('shamoji', ['shamoji_0', 'shamoji_1'], 6);
