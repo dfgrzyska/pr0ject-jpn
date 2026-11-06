@@ -280,7 +280,8 @@ export const nagasaki = {
     e.play('n_ja'); g.parts.push(e); g.maxTotal = e.maxHp;
     if (rise) e.setScale(0.3).setAlpha(0);
     // Decorative puppet body has no collision: the clearly exposed head is the target.
-    g.body = Array.from({ length: 9 }, () => this.segPool.spawn('n_segment', 90, rise ? y0 + 6 : -60).setAlpha(rise ? 0 : 1));
+    g.body = Array.from({ length: 9 }, (_, i) => this.segPool.spawn('n_segment', 90, rise ? y0 + 6 : -60)
+      .setDepth(DEPTH.air - .1 - i * .001).setAlpha(rise ? 0 : 1));
     g.pearl = this.segPool.spawn('n_pearl', 90, rise ? y0 + 4 : -40).setDepth(DEPTH.air - .05).setAlpha(rise ? 0 : 1);
     g.y0 = y0;
     this.bossGroup = g;
@@ -305,41 +306,52 @@ export const nagasaki = {
       if (e.y >= 72) e.state = 'fight';
     } else {
       g.ft += dt;
-      e.x = 90 + Math.sin(g.ft * .64) * 53;
-      e.y = 73 + Math.sin(g.ft * 1.1) * 14;
+      e.x = 90 + Math.sin(g.ft * .65) * 39;
+      e.y = 72 + Math.sin(g.ft * 1.1) * 9;
     }
-    g.pearl.setPosition(e.x + Math.cos(g.t * 1.3) * 27 * size, e.y + 28 * size).setScale(size).setAlpha(e.alpha);
+    e.setRotation(Math.cos(g.ft * .65) * .22 * Math.min(1, g.ft));
+    g.pearl.setPosition(e.x + Math.cos(g.ft * .65) * 20 * size, e.y + 29 * size).setScale(size).setAlpha(e.alpha);
     for (let i = 0; i < g.body.length; i++) {
-      const p = g.body[i], target = i ? g.body[i - 1] : e;
-      p.x += (target.x - p.x) * Math.min(1, dt * 9);
-      p.y += (target.y - 5 * size - p.y) * Math.min(1, dt * 9);
-      p.setScale((1 - i * .045) * size).setAlpha(e.alpha);
+      // Delayed head trajectory and a travelling ripple keep the puppet long and articulated.
+      // Analytic offsets also keep its shape stable at different frame rates and during the rise.
+      const p = g.body[i], lag = g.ft - (i + 1) * .16;
+      const dx = (Math.sin(lag * .65) - Math.sin(g.ft * .65)) * 39 + Math.sin(g.t * 2 - i * .55) * 7;
+      const dy = -12 - i * 7 + (Math.sin(lag * 1.1) - Math.sin(g.ft * 1.1)) * 9;
+      p.setPosition(e.x + dx * size, e.y + dy * size);
+      p.setScale((1 - i * .035) * size).setAlpha(e.alpha);
     }
     if (e.state !== 'fight' || !this.canFire(e)) return;
     g.timer -= dt;
     const b = this.scene.bullets;
+    const mx = e.x - Math.sin(e.rotation) * 18;
+    const my = e.y + Math.cos(e.rotation) * 18;
+    if (g.phase % 3 !== 2 && g.step === 0) {
+      this.tele.lineStyle(1, 0xf2c35e, .35 + .25 * Math.sin(g.t * 12) ** 2);
+      this.tele.strokeCircle(mx, my, 8 + Math.max(0, g.timer) * 4);
+    }
     if (g.phase % 3 === 2 && g.step === 0) {
       const lane = 30 + (Math.floor(g.t / 2) % 3) * 60;
       if (g.lane == null) g.lane = lane;
       this.tele.lineStyle(2, 0x92d8b5, .5);
-      this.tele.lineBetween(g.lane, 100, g.lane, this.scene.H);
+      this.tele.lineBetween(g.lane - 22, 100, g.lane - 22, this.scene.H);
+      this.tele.lineBetween(g.lane + 22, 100, g.lane + 22, this.scene.H);
     }
     if (g.timer > 0) return;
     if (g.phase % 3 === 0) {
-      b.fan(g.pearl.x, g.pearl.y, this.aimAt(g.pearl), 5, .72, slow);
-      g.timer = .8;
-      if (++g.step >= 5) { g.phase++; g.step = 0; g.timer = 1.2; }
+      b.fan(mx, my, this.aimAt(e, mx - e.x, my - e.y), 5, .76, slow);
+      g.timer = .65;
+      if (++g.step >= 3) { g.phase++; g.step = 0; g.timer = 1.2; }
     } else if (g.phase % 3 === 1) {
-      for (const side of [-1, 1]) b.shot('eb_s', e.x + side * 13, e.y + 12,
-        DOWN + side * (.3 + Math.sin(g.step * .25) * .6), normal, 1.8, { wig: .22, wf: 3 });
-      g.timer = .18;
-      if (++g.step >= 20) { g.phase++; g.step = 0; g.timer = 1.4; g.lane = null; }
+      for (const side of [-1, 1]) b.shot('eb_s', mx + side * 8, my,
+        DOWN + side * (.25 + Math.sin(g.step * .5) * .2), normal, 1.8);
+      g.timer = .2;
+      if (++g.step >= 12) { g.phase++; g.step = 0; g.timer = 1.4; g.lane = null; }
     } else {
       // Fixed wide safe lane, announced before the first row. No aiming after commitment.
       const n = volley(11);
       for (let i = 0; i < n; i++) {
         const x = 10 + i * 160 / (n - 1);
-        if (Math.abs(x - g.lane) > 19) b.shot('eb_s', x, 10, DOWN, slow, 1.8);
+        if (Math.abs(x - g.lane) > 22) b.shot('eb_s', x, 10, DOWN, slow, 1.8);
       }
       g.timer = .75;
       if (++g.step >= 3) { g.phase++; g.step = 0; g.timer = 1.5; }

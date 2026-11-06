@@ -26,6 +26,7 @@ import { fileURLToPath } from 'node:url';
 import { Raster, fbm, rng, bayer, scaleColor, rgb } from '../../lib/raster.mjs';
 import { crownPixels, rampColor } from '../nature.mjs';
 import { PropKit, Window, puff, todGrade, tintTable, planTraffic } from '../props.mjs';
+import { drawLionHall } from './lion-hall.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -2049,66 +2050,17 @@ export function buildMid() {
       {
         const cx = 90;
         const yb = Y(5244);
-        const top = yb - 54;
+        const top = yb - 79;
         objects.push({
           y: yb + 4,
           shadow: () => {
             for (let y = top + 6; y < yb + 8; y++) for (let x = cx - 26; x < cx + 40; x++) if (((x - cx - 8) / 34) ** 2 + ((y - (top + yb) / 2 - 6) / 30) ** 2 < 1) img.tint(x, y, 0.55);
           },
           draw: () => {
-            img.rect(cx - 30, yb - 4, 60, 8, STONE[1]);
-            img.rect(cx - 30, yb - 4, 60, 1, STONE[3]);
-            const midY = top + 28;
-            // the curly mane
-            for (let y = top; y < yb - 2; y++)
-              for (let x = cx - 32; x <= cx + 32; x++) {
-                const e = ((x - cx) / 32) ** 2 + ((y - midY) / 26) ** 2;
-                if (e > 1) continue;
-                const curl = fbm(x, y, { seed: 65, scale: 2.2 });
-                let c = e > 0.62 ? (curl > 0.55 ? 0x2a6a34 : curl > 0.4 ? 0x1e4a26 : 0x14341a) : x < cx - 4 ? 0x4a9a52 : 0x3a8444;
-                if (e > 0.62 && curl > 0.72) c = C.gold;
-                img.set(x, y, c);
-              }
-            // the brows, the eyes, the nose
-            for (const s of [-1, 1]) {
-              const ex = cx + s * 11;
-              const ey = top + 18;
-              for (let k = -6; k <= 6; k++) img.set(ex + k, ey - 5 - Math.round(Math.abs(k) * 0.3) + (s * k > 0 ? 0 : 1), C.gold);
-              img.ellipse(ex, ey, 6, 4.5, C.gold);
-              img.ellipse(ex, ey, 5, 3.5, 0xf8f4ec);
-              img.disc(ex + s, ey, 2, 0x1a1418);
-              img.set(ex + s - 1, ey - 1, 0xffffff);
-              glow(ex, ey, 0xfff8e0, 0.5);
-            }
-            img.ellipse(cx, top + 27, 6, 4, 0x2e7238);
-            img.ellipse(cx - 1, top + 26, 3, 2, 0x5aaa62);
-            img.set(cx - 3, top + 29, 0x14341a);
-            img.set(cx + 3, top + 29, 0x14341a);
-            // the mouth, open wide, with the stage inside it
-            for (let y = top + 33; y < yb - 4; y++)
-              for (let x = cx - 22; x <= cx + 22; x++) {
-                const e = ((x - cx) / 22) ** 2 + ((y - (top + 43)) / 10) ** 2;
-                if (e > 1) continue;
-                img.set(x, y, y > yb - 10 ? (x & 1 ? 0xb8925e : 0xa07c50) : e > 0.7 ? 0x8a1a1a : 0x4a0a10);
-              }
-            for (let x = cx - 20; x <= cx + 20; x++) {
-              img.set(x, top + 33 + (x % 3 === 0 ? 1 : 0), 0xf8f4ec);
-              img.set(x, top + 34 + (x % 3 === 0 ? 1 : 0), x % 3 === 0 ? 0xf8f4ec : 0x8a1a1a);
-              img.set(x, yb - 11 - (x % 3 === 1 ? 1 : 0), 0xf8f4ec);
-            }
-            for (const s of [-1, 1]) {
-              img.rect(cx + s * 17 - (s > 0 ? 1 : 0), top + 34, 2, 4, C.gold);
-              img.rect(cx + s * 17 - (s > 0 ? 1 : 0), yb - 15, 2, 4, C.gold);
-            }
-            for (let x = cx - 14; x <= cx + 14; x += 4) glow(x, yb - 12, 0xffd8a0, 0.7);
-            pool(cx, yb - 12, 26, 0xffc070, 0.4);
-            // the little tiled roof over the head
-            for (let j = 0; j < 5; j++) img.rect(cx - 16 + j * 2, top - 1 - j, 32 - j * 4, 1, j === 0 ? TILE[3] : TILE[1 + (j & 1)]);
-            glow(cx - 16, top - 1, C.gold, 0.8);
-            glow(cx + 15, top - 1, C.gold, 0.8);
+            drawLionHall(img, cx, yb);
           },
         });
-        reserveRect(cx - 34, top - 8, 68, yb - top + 14);
+        reserveRect(cx - 41, top - 8, 82, yb - top + 14);
         for (const s of [-1, 1]) {
           chochin(cx + s * 36, yb - 30, 0xff5a30);
           chochin(cx + s * 36, yb - 20, 0xfff0d0);
@@ -2693,6 +2645,22 @@ export function buildMid() {
   objects.sort((a, b) => a.y - b.y);
   for (const o of objects) o.draw();
 
+  // The approach ends at a paved T-junction, with stairs to both canal walks.
+  // A continuous quay wall makes the turn into the canal explicit.
+  {
+    const u = DOTONBORI[0];
+    for (let v = u - 3; v < u + 30; v++)
+      for (let x = 56; x < 124; x++) img.set(x, Y(v), (x + v) % 7 === 0 ? 0x77756c : 0x969186);
+    for (const x of [58, 121]) {
+      for (let v = u + 10; v < u + 30; v += 3) img.rect(x - 2, Y(v), 5, 1, 0xd0c8b4);
+    }
+    img.line(64, Y(u + 29), 179, Y(u + 29), 0x4b4d4c);
+    img.line(64, Y(u + 27), 179, Y(u + 27), 0xc8c4b2);
+    for (let x = 64; x < 180; x += 7) img.rect(x, Y(u + 31), 2, 5, 0xb4b5a8);
+    // Sidewalks lead around the corner instead of projecting the street into water.
+    for (const x of [83, 97]) img.line(x, Y(u - 25), x, Y(u + 20), 0xb8b4a6);
+  }
+
   // turret pads: a lacquered shop stand where a beckoning cat sits
   for (const p of pads) {
     const y = Y(p.u);
@@ -2751,6 +2719,8 @@ export function buildMid() {
     letters.forEach((glyph, i) => {
       for (let p = 0; p < 15; p++) if (glyph[p] === '1') img.set(x + 4 + i * 4 + p % 3, y + 45 + Math.floor(p / 3), 0xdb2638);
     });
+    // Put the opaque board above animated facade lights, not only in the static strip.
+    kit.loop(x - 2, U(y - 2), [kit.frame(img.crop(x - 2, y - 2, 32, 57))], { fps: 1, d: 2, fx: 0 });
   }
   // neon reflections dancing on the dark water near lit banks: the same streaks in two jittered frames
   // for each stretch of water, alternating (live)

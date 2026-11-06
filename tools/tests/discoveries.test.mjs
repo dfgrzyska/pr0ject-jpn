@@ -115,9 +115,22 @@ test('notices queue, wait for boss cards, pause and hide outside gameplay', () =
   const s = scene(); const notice = new DiscoveryNotice(s); notice.add(YOKAI[0]); notice.add(YOKAI[1]);
   s.hud.cardT = 2; notice.update(1); assert.equal(notice.queue.length, 2); assert(!notice.band.visible);
   s.hud.cardT = 0; notice.update(0); assert.equal(notice.name.text, 'KITSUNE');
+  assert.equal(notice.label.text, 'POKONANO · NOWY WPIS');
   s.paused = true; notice.update(5); assert.equal(notice.time, 2.8); assert(!notice.band.visible);
   s.paused = false; notice.update(3); assert.equal(notice.name.text, 'CHOCHIN-OBAKE');
   s.state = 'clear'; notice.update(0); assert(!notice.band.visible);
+});
+
+test('a Kyoto sweet unlocks only the dish, never Kitsune', () => {
+  const s = scene('stage1');
+  const trail = new FoodTrail(s);
+  const foxBefore = discoveries.has('kitsune');
+  s.top = 386;
+  Object.assign(s.player, { x: 38, y: 36 });
+  trail.update(0);
+  assert(discoveries.has('yatsuhashi'));
+  assert.equal(discoveries.has('kitsune'), foxBefore);
+  assert.deepEqual(s.discoveryNotice.messages.map(e => e.id), ['yatsuhashi']);
 });
 
 test('journal locking, page wrap, touch navigation, destruction and PL/EN layout at both sizes', () => {
@@ -136,6 +149,9 @@ test('journal locking, page wrap, touch navigation, destruction and PL/EN layout
       for (let i = 0; i < book.entries.length; i++) {
         book.index = i; book.layout(H);
         assert(book.art.visible);
+        assert(book.art.width * book.art.scaleX <= 70, `${kind}/${i} illustration too wide`);
+        assert(book.art.height * book.art.scaleY <= 55, `${kind}/${i} illustration too tall`);
+        assert.equal(book.art.scaleX, book.art.scaleY, 'illustrations retain their proportions');
         assert(book.story.y + book.story.height <= book.hint.y - 4, `${kind}/${i}/${lang} story overlaps controls`);
         for (const line of book.story.text.split('\n')) assert(line.length <= 25);
         for (const ch of book.story.text) assert(ch === '\n' || chars.includes(ch), `missing glyph ${ch}`);

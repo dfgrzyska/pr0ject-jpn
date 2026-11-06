@@ -49,7 +49,7 @@
     "u": 4818,
     "n": 18,
     "water": true,
-    "title": "MODLITWA O POKÓJ",
+    "title": "CHWILA PAMIĘCI",
     "sub": "NAGASAKI · 9 SIERPNIA 1945"
   },
   "music": {
@@ -125,6 +125,12 @@
     {"t":72,"type":"shooter","x":55,"pattern":"fan"},
     {"t":74,"type":"popcorn","x":130,"path":"sine","count":5},
     {"t":79,"type":"heavy","x":90,"hp":560,"card":["ORANDA-BUNE","HOLENDERSKI STATEK KUNCHI"]},
+    {"t":110,"type":"popcorn","x":50,"path":"sine","count":5},
+    {"t":113,"type":"popcorn","x":130,"path":"sine","count":5},
+    {"t":116,"type":"shooter","x":55,"pattern":"fan"},
+    {"t":119,"type":"diver","x":125,"count":2},
+    {"t":122,"type":"popcorn","x":90,"path":"row","count":5},
+    {"t":125,"type":"shooter","x":125,"pattern":"fan"},
     {"t":128,"type":"carrier","x":90,"color":"blue"},
     {"t":128.5,"type":"turret","x":90},
     {"t":130,"type":"popcorn","x":56,"path":"row","count":5},

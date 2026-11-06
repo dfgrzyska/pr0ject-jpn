@@ -39,7 +39,7 @@ export class DiscoveryNotice {
       this.time = Math.max(0, this.time - dt);
       if (!this.time && this.queue.length) {
         const { entry, food } = this.queue.shift();
-        this.label.setText(food ? words('NOWY PRZYSMAK!', 'NEW LOCAL DISH!') : words('NOWY WPIS W ALBUMIE!', 'NEW ALBUM ENTRY!'));
+        this.label.setText(food ? words('ZEBRANO PRZYSMAK!', 'LOCAL DISH COLLECTED!') : words('POKONANO · NOWY WPIS', 'DEFEATED · NEW ENTRY'));
         this.name.setText(entry.name);
         this.time = 2.8;
       }
@@ -152,7 +152,8 @@ export class DiscoveryBook {
     this.title.setText(food ? words('SMAKI JAPONII', 'TASTES OF JAPAN') : words('ALBUM YOKAI', 'YOKAI ALBUM')).setPosition(90, 24);
     this.count.setText(`${this.entries.filter((entry) => discoveries.has(entry.id)).length} / ${this.entries.length}`).setPosition(90, 43);
     this.art.setFrame(e.frame).setPosition(90, 87).setVisible(known).setScale(1);
-    this.art.setScale(Math.min(3, Math.floor(58 / Math.max(this.art.width, this.art.height)) || 1));
+    const fit = Math.min(70 / this.art.width, 55 / this.art.height);
+    this.art.setScale(fit < 1 ? fit : Math.min(3, Math.floor(fit)));
     this.secret.setPosition(90, 87).setVisible(!known);
     this.name.setText(known ? e.name : '???').setPosition(90, 128);
     this.city.setText(`${city.name}${food ? ` / ${e.place}` : ''}`).setPosition(90, 143);

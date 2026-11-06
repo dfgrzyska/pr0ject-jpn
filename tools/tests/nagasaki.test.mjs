@@ -50,6 +50,16 @@ test('Nagasaki assets, music, landmarks and the quiet memorial interval', () => 
   for (let i = 1; i < lm.length; i++) assert.equal(lm[i][0], lm[i - 1][1], lm[i][2]);
 });
 
+test('Meganebashi keeps regular waves throughout the bridge approach', () => {
+  const start = timeAt(3660);
+  const end = timeAt(4270);
+  const waves = stage.waves.filter(w => w.t >= start && w.t <= end);
+  assert(waves.length >= 6);
+  const times = [start, ...waves.map(w => w.t), end];
+  for (let i = 1; i < times.length; i++) assert(times[i] - times[i - 1] <= 4);
+  assert(!waves.some(w => w.type === 'heavy' || w.type === 'boss'));
+});
+
 test('the dragon comes once the climb has crested Inasa and the view has risen', () => {
   const boss = stage.waves.find((w) => w.type === 'boss');
   const crest = timeAt(stage.panorama.ridge + 1);
@@ -266,4 +276,73 @@ test('glass volley visibly pauses before turning and stops firing during ceasefi
   for (let i = 0; i < 300; i++) nagasaki.biidoro.call(context, e, 0.02, b);
   assert.equal(e.state, 'leave');
   assert.equal(shots.length, 15);
+});
+
+function dragon(H = 320) {
+  const sprite = (x, y, props = {}) => ({
+    x, y, alpha: 1, rotation: 0, hp: 1000, ...props,
+    play() { return this; }, setDepth() { return this; },
+    setPosition(x, y) { Object.assign(this, { x, y }); return this; },
+    setRotation(rotation) { this.rotation = rotation; return this; },
+    setScale(scale) { this.scale = scale; return this; },
+    setAlpha(alpha) { this.alpha = alpha; return this; },
+  });
+  const shots = [], warnings = [];
+  const pool = { spawn: (frame, x, y, props) => sprite(x, y, props) };
+  const ctx = {
+    ...nagasaki, pool, segPool: pool,
+    scene: { H, stage: { panorama: true }, player: { x: 90, y: H - 30 } },
+    canFire() { return !this.scene.ceasefire; },
+    aimAt(e, dx, dy) { return Math.atan2(this.scene.player.y - e.y - dy, this.scene.player.x - e.x - dx); },
+    tele: { lineStyle() {}, strokeCircle() {}, lineBetween(...line) { warnings.push(line); } },
+  };
+  const head = ctx.spawnJaodori({}, { hp: 1000, maxHp: 1000 });
+  const g = ctx.bossGroup;
+  const record = (kind, x, y, ...args) => shots.push({ kind, x, y, args, phase: g.phase % 3, lane: g.lane, t: g.t, hx: head.x, hy: head.y, rot: head.rotation });
+  ctx.scene.bullets = { fan: (...args) => record('fan', ...args), shot: (frame, ...args) => record('shot', ...args) };
+  const run = (seconds, fps = 60) => { for (let i = 0; i < Math.round(seconds * fps); i++) ctx.updateJaodori(g, 1 / fps); };
+  return { ctx, g, head, shots, warnings, run };
+}
+
+test('Ja-odori rises harmlessly, keeps a long body and stable movement across frame rates', () => {
+  const results = [];
+  for (const fps of [30, 60, 120]) {
+    const d = dragon();
+    d.run(2, fps);
+    assert.equal(d.head.state, 'rise'); assert(d.head.pass && d.head.harmless);
+    assert.equal(d.shots.length, 0);
+    d.run(4, fps);
+    assert.equal(d.head.state, 'fight'); assert(!d.head.pass && !d.head.harmless);
+    assert(d.head.y - d.g.body.at(-1).y > 55, 'body must not collapse into the head');
+    assert(d.g.body.every(p => Number.isFinite(p.x + p.y) && p.alpha === 1));
+    results.push(d.head.x);
+  }
+  assert(Math.max(...results) - Math.min(...results) < 1);
+});
+
+test('Ja-odori fires three mouth fans, twelve paired waves, then three rows with a fixed safe corridor', () => {
+  for (const H of [320, 420]) {
+    const d = dragon(H);
+    for (let i = 0; i < 1800 && d.g.phase < 3; i++) d.run(1 / 60);
+    assert.equal(d.g.phase, 3, 'the full attack cycle completes');
+    const fans = d.shots.filter(s => s.kind === 'fan');
+    assert.equal(fans.length, 3);
+    for (const s of fans) {
+      assert(Math.abs(s.x - (s.hx - Math.sin(s.rot) * 18)) < .001);
+      assert(Math.abs(s.y - (s.hy + Math.cos(s.rot) * 18)) < .001);
+    }
+    const streams = d.shots.filter(s => s.phase === 1);
+    assert.equal(streams.length, 24);
+    assert(streams[0].t - fans.at(-1).t >= 1.19, 'breathing room between attacks');
+    const rows = d.shots.filter(s => s.phase === 2);
+    assert.equal(new Set(rows.map(s => s.t)).size, 3);
+    assert.equal(new Set(rows.map(s => s.lane)).size, 1);
+    assert(rows.every(s => Math.abs(s.x - s.lane) > 22));
+    assert(rows[0].t - streams.at(-1).t >= 1.39, 'corridor is announced before firing');
+    assert(d.warnings.some(line => line[3] === H));
+    d.ctx.scene.ceasefire = true;
+    const count = d.shots.length, timer = d.g.timer;
+    d.run(3);
+    assert.equal(d.shots.length, count); assert.equal(d.g.timer, timer);
+  }
 });

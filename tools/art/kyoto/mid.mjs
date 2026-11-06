@@ -1771,6 +1771,47 @@ export function buildMid() {
     const seed = Math.floor(rand() * 1e9);
     const cx = Math.round(x);
     const cy = Math.round(y);
+    if (kind === 'bamboo') {
+      const h = 45 + seed % 19;
+      const lean = seed % 5 - 2;
+      const stalk = (yy) => cx + Math.round(lean * (cy - yy) / h);
+      const put = (x, y, c, leaf = false) => {
+        if (x < 0 || x >= W || y < 0 || y >= L || isRes(x, y)) return;
+        img.set(x, y, c);
+        if (leaf) canopy[y * W + x] = 1;
+      };
+      return {
+        y: cy,
+        shadow: () => {
+          for (let j = 0; j < h; j++) if (!isRes(cx + 3, cy - j)) img.tint(cx + 3, cy - j, 0.7);
+        },
+        draw: () => {
+          for (let yy = cy - h; yy <= cy; yy++) {
+            const x = stalk(yy);
+            put(x - 1, yy, 0x294a32);
+            put(x, yy, 0x6e9550);
+            put(x + 1, yy, 0x9eb76b);
+            if ((cy - yy + seed) % 8 === 0) {
+              for (let dx = -1; dx <= 2; dx++) put(x + dx, yy, 0xc2c58a);
+              put(x, yy + 1, 0x3a6039);
+            }
+          }
+          // Fine pointed leaves, leaving the lower culm visible between nodes.
+          for (let j = 0; j < 2; j++) for (const side of [-1, 1]) {
+            const by = cy - h + j * 4;
+            for (let k = 1; k <= 5; k++) {
+              const x = stalk(by) + side * k;
+              const y = by - Math.floor(k / 3);
+              put(x, y, 0x71944c, true);
+              if (k % 2 === 0) for (let q = 1; q < 4; q++) {
+                put(x + side * q, y + q, q === 1 ? 0xa7bc68 : 0x527b3d, true);
+                put(x + side * q, y - q, 0x86a855, true);
+              }
+            }
+          }
+        },
+      };
+    }
     const px = () => crownPixels(kind, cx, cy, r, rng(seed), seed & 1023);
     const off = Math.round(2 + r * 0.25);
     return {
@@ -1814,6 +1855,7 @@ export function buildMid() {
       if (u < SANDO[1] && !(u >= SANDO[0] && (ix < 18 || ix > 162))) continue;
       if (u >= 5000 && u < 5560) continue;
       if (rand() < (kind === 'bamboo' ? 0.02 : 0.12)) continue; // occasional gap in the canopy
+      if (kind === 'bamboo' && gy % 36 !== 0) { rand(); continue; } // preserve the seed stream outside the grove
       objects.push(treeObj(kind, x, y, r));
     }
 

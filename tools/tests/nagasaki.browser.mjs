@@ -43,6 +43,26 @@ try {
         await page.evaluate(() => game.loop.stop());
       }
     }
+    const fight = await page.evaluate(() => {
+      const s = game.scene.getScene('Stage');
+      const phases = new Set();
+      let frames = 0;
+      while (s.enemies.bossGroup.phase < 3 && frames++ < 1800) {
+        s.enemies.bossGroup.parts[0].hp = 1e6;
+        s.update(0, 1000 / 60);
+        phases.add(s.enemies.bossGroup.phase % 3);
+      }
+      return { state: s.state, phase: s.enemies.bossGroup.phase, phases: [...phases],
+        body: s.enemies.bossGroup.body.length,
+        length: s.enemies.bossGroup.parts[0].y - s.enemies.bossGroup.body.at(-1).y };
+    });
+    assert.equal(fight.state, 'play'); assert.equal(fight.phase, 3);
+    assert.deepEqual([...fight.phases].sort(), [0, 1, 2]);
+    assert.equal(fight.body, 9); assert(fight.length > 55);
+    await page.evaluate(() => { game.scene.getScene('Stage').paused = true; game.loop.start(game.step.bind(game)); });
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: `tools/preview/nagasaki-dragon-${H}.png` });
+    await page.evaluate(() => { game.loop.stop(); game.scene.getScene('Stage').paused = false; });
     const defeated = await page.evaluate(() => {
       const s = game.scene.getScene('Stage');
       let frames = 0;
@@ -79,6 +99,20 @@ try {
       return { state: s.state, done: s.scenicView.done, paused };
     });
     assert.deepEqual(clear, { state: 'clear', done: true, paused: true });
+    await page.reload();
+    await page.waitForFunction(() => window.game?.scene.getScene('Stage')?.state === 'title');
+    const illustration = await page.evaluate(async () => {
+      const { discoveries } = await import('/src/game/Discoveries.js');
+      discoveries.discover('oranda');
+      const s = game.scene.getScene('Stage');
+      s.openCollection('yokai');
+      s.book.index = s.book.entries.findIndex(e => e.id === 'oranda');
+      s.book.layout(s.H);
+      return { width: s.book.art.displayWidth, height: s.book.art.displayHeight, visible: s.book.art.visible };
+    });
+    assert(illustration.visible && illustration.width <= 70 && illustration.height <= 55);
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: `tools/preview/oranda-album-${H}.png` });
     assert.deepEqual(errors, []);
     console.log(`Nagasaki ${H}: route, float, memorial, the rising view, the dragon, victory, pause and clear passed.`);
     await page.close();
