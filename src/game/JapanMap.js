@@ -77,8 +77,11 @@ export class JapanMap {
     for (const l of this.labels) {
       const [x, y] = this.city(l.k);
       const [, , dx, dy] = this.stages[this.order[l.k]].map;
-      l.text.setPosition(x + dx, y + dy);
-      l.shadow.setPosition(x + dx + 1, y + dy + 1);
+      // (kept on the screen whole: a city at the edge of the map must not lose half its name)
+      const half = Math.ceil(l.text.width / 2);
+      const tx = Math.max(half + 1, Math.min(W - half - 2, x + dx));
+      l.text.setPosition(tx, y + dy);
+      l.shadow.setPosition(tx + 1, y + dy + 1);
       this.seals[l.k]?.setPosition(x + (dx < 0 ? 7 : -7), y - 6);
     }
   }
