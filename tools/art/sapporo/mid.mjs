@@ -112,6 +112,9 @@ export function buildMid() {
   const lights = []; // emissive pixels, painted after the grade
   const lightsFine = []; // the same, single fine pixels
   const roofEdges = []; // [x, u, w] of the tin roofs' lower eaves (snow slides off them, live)
+  const beacons = []; // [x, u] of the red aviation lights on the tall roofs (they blink, live)
+  const neonSigns = []; // [x, u, h, colour] of the vertical neon signs (they flicker, live)
+  const yards = []; // [x, u, w] of the suburb's front yards (children play in some, live)
   const pools = []; // additive light pools, after the grade
   const glow = (x, y, c, a = 1) => lights.push([Math.round(x), Math.round(y), c, a]);
   const glowPx = (X, Yy, c, a = 1) => lightsFine.push([Math.round(X), Math.round(Yy), c, a]);
@@ -451,6 +454,10 @@ export function buildMid() {
     for (let i = 0; i < neon; i++) signs.push({ x: x + 1 + Math.floor((i + 0.5) * (w / neon)) - 1, c: rand.pick(NEON), h: Math.max(3, faceH - 2 - Math.floor(rand() * 3)) });
     const board = opt.billboard ? { c: rand.pick(NEON), w: Math.min(w - 4, 10 + Math.floor(rand() * 10)) } : null;
     const orr = rng(x * 131 + y);
+    // what kind of building this is (its own random numbers, so the layout stays as it was): offices, a
+    // department store, a hotel, a multi-storey car park, a stepped tower, a convenience store
+    const kr = orr();
+    const type = opt.wall ? 'office' : opt.neon ? (kr < 0.55 ? 'office' : kr < 0.8 ? 'hotel' : 'dept') : w <= 24 && kr < 0.16 ? 'konbini' : kr < 0.38 ? 'office' : kr < 0.54 && w >= 24 ? 'dept' : kr < 0.68 ? 'hotel' : kr < 0.82 ? 'parking' : 'tower';
     const X0 = x * S;
     const X1 = (x + w) * S;
     const Y0 = y * S;
@@ -465,7 +472,10 @@ export function buildMid() {
             img.px(X, Yy, e === 0 ? scaleColor(wall, 0.6) : e < 3 ? (e === 1 ? scaleColor(wall, 0.95) : C.snow[3]) : snowPx(X, Yy, 0.55, 0.4, 9));
           }
         if (w * h > 900) {
-          for (const [ax, ay] of [[x + 1, y + 1], [x + w - 2, y + 1]]) glow(ax, ay, 0xff3a2a);
+          for (const [ax, ay] of [[x + 1, y + 1], [x + w - 2, y + 1]]) {
+            glow(ax, ay, 0xff3a2a);
+            beacons.push([ax, U(ay)]);
+          }
           if (orr() < 0.5) {
             // the helipad: a ring and the H swept clear of snow
             const HX = (x + w / 2) * S;
@@ -544,6 +554,114 @@ export function buildMid() {
         const FY1 = (y + h + faceH) * S;
         for (let Yy = FY0; Yy < FY1; Yy++) for (let X = X0; X < X1; X++) img.px(X, Yy, Yy === FY0 ? scaleColor(wall, 0.6) : X === X1 - 1 ? scaleColor(wall, 0.8) : (Yy - FY0) % 6 === 0 ? scaleColor(wall, 0.9) : wall);
         for (let r = y + h + 2; r < y + h + faceH - 1; r += 2) windowsRow(x + 2, x + w - 2, r, litP, 2, opt.cool);
+        // each kind made itself known: its roof and its front
+        const inner = (fn) => {
+          for (let Yy = Y0 + 4; Yy < Y1 - 4; Yy++) for (let X = X0 + 4; X < X1 - 4; X++) {
+            const c = fn(X, Yy);
+            if (c !== null) img.px(X, Yy, c);
+          }
+        };
+        if (type === 'parking') {
+          // the top deck of a car park: tarmac swept in lanes, parking bays, cars under snow, the ramp down
+          inner((X, Yy) => {
+            const lx = X - X0 - 4;
+            const ly = Yy - Y0 - 4;
+            if (lx % 15 === 0 && (ly % 40 < 16 || ly % 40 > 24)) return 0xd8dce4;
+            if (ly % 40 >= 16 && ly % 40 <= 24) return hashPx(X, Yy, 81) < 0.2 ? C.snow[2] : 0x5a5c64; // (the lane)
+            return fbm(X * 0.3, Yy * 0.3, { seed: 82, scale: 3 }) > 0.6 ? C.snow[3] : 0x6a6c74;
+          });
+          for (let Yy = Y0 + 5; Yy < Y1 - 20; Yy += 40)
+            for (let X = X0 + 6; X < X1 - 16; X += 15) {
+              if (orr() < 0.35) continue;
+              const c = orr.pick([0x2a2a30, 0xe0e0e8, 0x8a2a2a, 0x3a5a9a, 0xe8c030]);
+              for (let j = 0; j < 14; j++) for (let i = 0; i < 9; i++) if (!((i === 0 || i === 8) && (j === 0 || j === 13))) img.px(X + i, Yy + j, j > 3 && j < 10 && i > 0 && i < 8 ? C.snow[3] : i === 0 ? scaleColor(c, 1.15) : i === 8 ? scaleColor(c, 0.7) : c);
+            }
+          for (let j = 0; j < 18; j++) for (let i = 0; i < 12; i++) img.px(X1 - 16 + i, Y1 - 22 + j, (j + i) % 4 === 0 ? 0x4a4c54 : 0x7a7c84);
+          for (let Yy = FY0 + 2; Yy < FY1; Yy++)
+            for (let X = X0 + 1; X < X1 - 1; X++) {
+              const k = (Yy - FY0 - 2) % 9;
+              if (k < 3) img.px(X, Yy, k === 0 ? scaleColor(wall, 1.1) : wall);
+              else img.px(X, Yy, 0x1a1c24);
+              if (k === 6 && X % 14 < 9 && orr() < 0.03) {
+                glowPx(X, Yy, 0xfff4d0);
+                glowPx(X + 5, Yy, 0xfff4d0);
+              }
+            }
+        } else if (type === 'dept') {
+          // a department store: a glass atrium in the roof, the great billboard, display windows along the
+          // street, a long banner hanging down the corner with its name
+          const AX = X0 + Math.floor((X1 - X0) * 0.25);
+          const AW = Math.floor((X1 - X0) * 0.4);
+          const AY = Y0 + Math.floor((Y1 - Y0) * 0.45);
+          for (let j = 0; j < 21; j++) for (let i = 0; i < AW; i++) {
+            const c = i % 7 === 0 || j % 7 === 0 ? 0x9aa4b8 : j < 3 ? C.snow[3] : 0x4a6a8a;
+            if (c === 0x4a6a8a) glowPx(AX + i, AY + j, (i + j) % 5 ? 0x8ab0d8 : 0xc8e0f8, 0.7);
+            else img.px(AX + i, AY + j, c);
+          }
+          for (let Yy = FY1 - 9; Yy < FY1 - 1; Yy++) for (let X = X0 + 3; X < X1 - 3; X++) glowPx(X, Yy, (X - X0) % 18 < 2 ? 0x8a8070 : (X * 7 + Yy * 3) % 23 === 0 ? 0x2a2026 : 0xfff0d8, 0.95);
+          const bc = orr.pick([0xe83a3a, 0x2a6ad0, 0x2a9a5a, 0xe8a020]);
+          for (let Yy = FY0 + 2; Yy < FY1 - 10; Yy++) for (let i = 0; i < 7; i++) img.px(X1 - 10 + i, Yy, i === 0 || i === 6 ? scaleColor(bc, 0.7) : bc);
+          for (let k = FY0 + 4; k + 5 < FY1 - 10; k += 7) glyph(X1 - 9, k, 5, 0xffffff, orr);
+          if (!board) {
+            const BX = X0 + 6;
+            const BY = Y0 + 6;
+            const BW = Math.min(X1 - X0 - 12, 60);
+            for (let j = 0; j < 14; j++) for (let i = 0; i < BW; i++) img.px(BX + i, BY + j, 0x14101a);
+            for (let i = 0; i < BW; i += 2) {
+              glowPx(BX + i, BY, bc);
+              glowPx(BX + BW - 1 - i, BY + 13, bc);
+            }
+            for (let k = 0; k * 6 + 8 < BW; k++) glyph(BX + 4 + k * 6, BY + 4, 5, 0xffffff, orr);
+          }
+        } else if (type === 'hotel') {
+          // a hotel: its name in great lit letters on a frame along the roof, balconies down the front with
+          // their rails, the canopy over the doors lit with a row of bulbs
+          const LX = X0 + 6;
+          const LY = Y1 - 14;
+          for (let i = 0; i < X1 - X0 - 12; i++) img.px(LX + i, LY + 10, 0x3a3a44);
+          const lc = orr.pick([0xfff0c0, 0xff7ab0, 0x60e0ff, 0xffd040]);
+          for (let k = 0; k * 8 + 6 < X1 - X0 - 12; k++) glyph(LX + k * 8, LY, 7, lc, orr);
+          for (let Yy = FY0 + 4; Yy < FY1 - 4; Yy += 6) for (let X = X0 + 2; X < X1 - 2; X++) img.px(X, Yy, X % 3 === 0 ? 0xd8dce4 : 0xa8acb8);
+          const CXh = Math.round((X0 + X1) / 2);
+          for (let j = 0; j < 4; j++) for (let i = -10; i <= 10; i++) img.px(CXh + i, FY1 - 2 + j, j === 0 ? C.snow[3] : 0x6a1a2a);
+          for (let i = -9; i <= 9; i += 3) glowPx(CXh + i, FY1 + 2, 0xfff0c0);
+          pool(x + w / 2, y + h + faceH + 3, 10, C.warm, 0.4);
+        } else if (type === 'tower') {
+          // a stepped tower: the upper block set back from the edges, its own parapet and snow, a lit crown
+          const ins = Math.floor(Math.min(X1 - X0, Y1 - Y0) * 0.22);
+          shadowPx(X0 + ins + 6, Y0 + ins + 6, X1 - X0 - 2 * ins, Y1 - Y0 - 2 * ins, 0.7);
+          for (let Yy = Y0 + ins; Yy < Y1 - ins; Yy++)
+            for (let X = X0 + ins; X < X1 - ins; X++) {
+              const e = Math.min(X - X0 - ins, X1 - ins - 1 - X, Yy - Y0 - ins, Y1 - ins - 1 - Yy);
+              img.px(X, Yy, e < 2 ? (e === 0 ? scaleColor(wall, 0.65) : C.snow[3]) : snowPx(X, Yy, 0.68, 0.3, 83));
+            }
+          // the upper block's own front over the lower roof: concrete bands, a row of windows lit and dark
+          for (let Yy = Y1 - ins; Yy < Y1 - ins + 9 && Yy < Y1 - 2; Yy++)
+            for (let X = X0 + ins; X < X1 - ins; X++) {
+              const fy = Yy - (Y1 - ins);
+              const win = fy >= 3 && fy <= 6 && (X - X0 - ins) % 5 > 0 && (X - X0 - ins) % 5 < 4;
+              if (win) {
+                if (hashPx(Math.floor(X / 5), Yy >> 3, 84) < 0.6) glowPx(X, Yy, opt.cool ? C.cool : C.warm, 0.85);
+                else img.px(X, Yy, 0x22242e);
+              } else img.px(X, Yy, fy === 0 ? scaleColor(wall, 0.6) : X === X1 - ins - 1 ? scaleColor(wall, 0.8) : wall);
+            }
+          glowPx((X0 + X1) >> 1, Y0 + ins + 2, 0xff3a2a);
+          beacons.push([x + w / 2, U(y + ins / S + 1)]);
+        } else if (type === 'konbini') {
+          // a convenience store: the bright shop front all glass, the stripes of its colours along the fascia,
+          // the sign, bicycles parked outside
+          const sc = orr.pick([[0x2a9a5a, 0xe8a030], [0x2a6ad0, 0xe83a3a], [0xe86a20, 0x2a9a5a]]);
+          for (let Yy = FY0 + 2; Yy < FY1; Yy++)
+            for (let X = X0 + 1; X < X1 - 1; X++) {
+              const fy = Yy - FY0 - 2;
+              if (fy < 2) img.px(X, Yy, sc[0]);
+              else if (fy < 3) img.px(X, Yy, sc[1]);
+              else if (fy < 4) img.px(X, Yy, 0xf4f4f0);
+              else glowPx(X, Yy, (X - X0) % 12 === 0 ? 0xa8b0b8 : (X * 5 + Yy) % 17 === 0 ? orr.pick([0xd83a3a, 0xe8c040, 0x3a6ad0]) : 0xf8fbff, 0.95);
+            }
+          for (let k = 0; k < 3; k++) for (let j = 0; j < 4; j++) img.px(X0 + 5 + k * 4, FY1 + 1 + j, j === 0 || j === 3 ? 0x1a1a20 : orr.pick([0xc83a2a, 0xe8e8e8, 0x3a6aa8]));
+          pool(x + w / 2, y + h + faceH + 3, 12, 0xe8f4ff, 0.45);
+        }
         for (const s of signs) {
           // a vertical neon sign: a column of characters in its lit frame
           const SX = s.x * S - 1;
@@ -555,6 +673,7 @@ export function buildMid() {
             glowPx(SX + 5, SY + j, s.c, 0.9);
           }
           for (let k = 0; k + 4 < s.h * S; k += 5) glyph(SX + 1, SY + 1 + k, 4, k % 10 ? 0xffffff : s.c, orr);
+          neonSigns.push([s.x, U(y + h + 1), s.h, s.c]);
           pool(s.x + 0.5, y + h + faceH + 2, 9, s.c, 0.35);
         }
         if (board) {
@@ -1055,6 +1174,14 @@ export function buildMid() {
         img.px(X + i, Yy + j, col);
       }
     for (const i of [1, 7]) glowPx(X + i, Yy + 14, 0xffffff);
+    if (u > SUSUKINO[0]) {
+      // (in Susukino the queue is taxis: a lit sign on the roof, the stripe along the doors)
+      for (let i = 3; i < 6; i++) glowPx(X + i, Yy + 6, 0xffe060);
+      for (let j = 3; j < 12; j++) {
+        img.px(X, Yy + j, 0xe8c040);
+        img.px(X + 8, Yy + j, 0xe8c040);
+      }
+    }
     pool(x, y + 6, 6, 0xfff4d0, 0.4);
   }
 
@@ -2639,6 +2766,141 @@ export function buildMid() {
     if (plumes.length) kit.spot(plumes, spindrift, { rate: plumes.length * 0.08, fps: 7, a: 0.8 });
   }
 
+  // ------------------------------------------------------------ more of the city: Susukino's sign tower and crowds, the ski
+  // jump's cauldron and judges' tower, light arches over Ōdōri, the suburb's yards
+  {
+    const mr = rng(7401);
+    // Susukino crossing: a sign tower on the corner roof, panels of light stacked on a steel frame, chasing
+    // bulbs round them, the crowd waiting at the corners
+    {
+      const TX = 118 * S;
+      const TY = Y(3400) * S;
+      objects.push({
+        y: Y(3360),
+        draw: () => {
+          for (let j = 0; j < 96; j++) for (const i of [0, 1, 46, 47]) img.px(TX + i, TY + j, 0x3a3a44);
+          for (let j = 0; j < 96; j += 8) for (let i = 0; i < 48; i++) img.px(TX + i, TY + j, 0x2a2a34);
+          for (let p = 0; p < 4; p++) {
+            const PY = TY + 4 + p * 23;
+            const c = NEON[(p * 3 + 1) % NEON.length];
+            for (let j = 0; j < 20; j++) for (let i = 3; i < 45; i++) img.px(TX + i, PY + j, 0x14101a);
+            for (let i = 3; i < 45; i += 2) {
+              glowPx(TX + i, PY, c);
+              glowPx(TX + 47 - i, PY + 19, c);
+            }
+            for (let j = 0; j < 20; j += 2) {
+              glowPx(TX + 3, PY + j, c);
+              glowPx(TX + 44, PY + j, c);
+            }
+            if (p % 2) for (let j = 4; j < 16; j++) for (let i = 8; i < 20; i++) if (Math.hypot(i - 14, j - 10) < 6) glowPx(TX + i, PY + j, (i + j) % 3 ? mr.pick(NEON) : 0xffffff, 0.95);
+            for (let k = 0; k < 4; k++) glyph(TX + (p % 2 ? 22 : 8) + k * 6, PY + 7, 5, k % 2 ? 0xffffff : c, mr);
+          }
+          pool(124, Y(3380), 30, 0xff70c0, 0.3);
+        },
+      });
+      for (let k = 0; k < 70; k++) {
+        const cx = mr() < 0.5 ? 78 : 102;
+        const cu = mr() < 0.5 ? 3340 : 3360;
+        personPx(Math.round((cx + (mr() - 0.5) * 10) * S), Math.round(Y(cu + (mr() - 0.5) * 6) * S), mr);
+      }
+    }
+    // Ōkurayama: the Olympic cauldron of 1972 on its plinth by the stands, flame burning (live), the judges'
+    // tower beside the landing hill, floodlight masts round the stadium
+    {
+      const CXc = 24 * S;
+      const CYc = Y(232) * S;
+      objects.push({
+        y: Y(226),
+        shadow: () => shadowPx(CXc + 3, CYc + 6, 18, 18, 0.55),
+        draw: () => {
+          for (let j = 0; j < 18; j++) for (let i = 0; i < 18; i++) img.px(CXc + i - 3, CYc + j, j < 2 ? 0xffffff : j % 6 === 0 ? 0x6a6c78 : i < 2 ? 0x9aa0ac : 0x7a808c);
+          for (let j = -6; j < 0; j++) for (let i = -2 - (j + 6); i < 14 + (j + 6); i++) img.px(CXc + i, CYc + j, j === -6 ? 0xc8a050 : i < 3 ? 0xa88a40 : 0x8a6a2a);
+        },
+      });
+      const flame = [0, 1, 2, 3].map((k) => {
+        const out = new HiCanvas(6, 6);
+        const fr = rng(k + 91);
+        for (let t = 0; t < 5; t++) {
+          const h = 7 + Math.floor(fr() * 7);
+          const tx = 4 + t * 2 + Math.floor(fr() * 2);
+          for (let j = 0; j < h; j++) {
+            const q = j / h;
+            out.px(tx + Math.round(Math.sin(j * 0.6 + k) * q), 17 - j, q < 0.3 ? 0xd8401a : q < 0.6 ? 0xff8a20 : q < 0.85 ? 0xffc850 : 0xfff4c0);
+          }
+        }
+        return kit.frame(out);
+      });
+      kit.loop(23, 232 + 7, flame, { fps: 8, fx: 1 });
+      pool(26, Y(236), 16, 0xff9040, 0.4);
+      // the judges' tower: a glass box on a concrete column, the judges' heads at the window
+      const JX = 128 * S;
+      const JY = Y(330) * S;
+      objects.push({
+        y: Y(300),
+        shadow: () => shadowPx(JX + 9, JY + 9, 30, 90, 0.5),
+        draw: () => {
+          for (let j = 24; j < 90; j++) for (let i = 9; i < 21; i++) img.px(JX + i, JY + j, i === 9 ? 0x9aa0ac : i === 20 ? 0x5a5e6a : 0x7a7e8a);
+          for (let j = 0; j < 24; j++)
+            for (let i = 0; i < 30; i++) {
+              if (j < 4) img.px(JX + i, JY + j, j < 2 ? 0xffffff : 0x5a5e6a);
+              else if (i < 2 || i > 27 || j > 21) img.px(JX + i, JY + j, 0x4a4e5a);
+              else glowPx(JX + i, JY + j, j > 12 && j < 15 && i % 5 === 2 ? 0x2a2026 : 0xbcd8f0, 0.85);
+            }
+        },
+      });
+      for (const [fx, fu] of [[40, 248], [140, 248], [40, 108], [140, 108]]) {
+        objects.push({
+          y: Y(fu) + 2,
+          draw: () => {
+            const X = fx * S;
+            const Yy = Y(fu) * S;
+            for (let j = -24; j < 3; j++) img.px(X + 4, Yy + j, 0x5a5e6a);
+            for (let j = 0; j < 6; j++) for (let i = 0; i < 9; i++) img.px(X + i, Yy - 30 + j, j === 0 || j === 5 || i === 0 || i === 8 ? 0x3a3e4a : 0x1a1c24);
+            for (let j = 1; j < 5; j++) for (let i = 1; i < 8; i++) glowPx(X + i, Yy - 30 + j, 0xffffff, i % 2 ? 1 : 0.8);
+            pool(fx + 1.5, Y(fu) - 8, 40, 0xeef4ff, 0.18);
+          },
+        });
+      }
+    }
+    // light arches over the walkways of Ōdōri park at the start of every block: bulbs strung on a frame
+    for (let i = 0; i < ODORI_CROSS.length - 1; i++) {
+      const u = ODORI_CROSS[i] + 13;
+      const c = NEON[(i * 2) % NEON.length];
+      for (const [x0, x1] of [[20, 44], [136, 160]]) {
+        for (let X = x0 * S; X < x1 * S; X++) {
+          const t = (X - x0 * S) / ((x1 - x0) * S);
+          const Yy = Math.round(Y(u) * S - Math.sin(t * Math.PI) * 8);
+          img.px(X, Yy, 0x3a3a44);
+          if (X % 3 === 0) glowPx(X, Yy + 1, X % 6 ? c : 0xffffff);
+        }
+        for (const px of [x0, x1]) for (let j = -2; j < 3; j++) img.px(px * S, Y(u) * S + j, 0x3a3a44);
+      }
+      pool(32, Y(u), 14, c, 0.3);
+      pool(148, Y(u), 14, c, 0.3);
+    }
+    // the suburb's front yards: snow fences of orange mesh, a shed, garden lamps, a sled left out
+    for (const [x, u, w] of roofEdges) {
+      if (u < SUBURB[0] + 20 || u > CENTER[0] - 20) continue;
+      const yr = rng(x * 37 + u);
+      const Yy = Y(u - 7) * S;
+      const X = x * S;
+      if (yr() < 0.35) for (let i = 0; i < w * S; i++) {
+        img.px(X + i, Yy + 6, (i + Math.floor(Yy / 2)) % 2 ? 0xe86a20 : 0xc85010);
+        if (i % 6 === 0) img.px(X + i, Yy + 5, 0x3a3a44);
+      }
+      if (yr() < 0.3) {
+        const SX = X + w * S - 14;
+        for (let j = 0; j < 10; j++) for (let i = 0; i < 12; i++) img.px(SX + i, Yy - 8 + j, j < 3 ? C.snow[3] : i === 0 ? 0x8a7a6a : 0x6a5a4a);
+      }
+      if (yr() < 0.5) {
+        glowPx(X + 4, Yy + 2, C.warm);
+        pool(x + 1.5, U(Yy / S) < 0 ? 0 : Yy / S + 1, 5, C.warm, 0.3);
+      }
+      if (yr() < 0.2) for (let j = 0; j < 4; j++) for (let i = 0; i < 6; i++) img.px(X + 10 + i, Yy + 1 + j, j === 0 ? 0xf05a4a : 0xd83a2a);
+      if (yr() < 0.25) yards.push([x, u, w]);
+    }
+  }
+
   // ------------------------------------------------------------ vegetation
   const kindsAt = (u) => {
     if (u < JUMP[1]) return { p: 0.9, fir: 0.82 };
@@ -2852,6 +3114,97 @@ export function buildMid() {
       const parts = wins.filter(() => fr() < 0.22).map(([x, u]) => [0, x, u, fr() * 20]);
       if (parts.length) kit.wave([f], parts, { w: 0.12, a0: 0, a1: 1, pw: 7, d: 0.05 });
     }
+  }
+
+  // the red aviation lights blink, the neon signs flicker and fail and catch, the candles in the snow lanterns
+  // breathe, the traffic lights at the centre's crossings change, children play in the suburb's yards (live)
+  {
+    const lr = rng(7501);
+    const beacon = [0, 1].map((on) => {
+      const out = new HiCanvas(3, 3);
+      if (on) for (const [i, j, a] of [[4, 4, 1], [3, 4, 0.6], [5, 4, 0.6], [4, 3, 0.6], [4, 5, 0.6]]) out.px(i, j, 0xff3a2a, a);
+      return kit.frame(out);
+    });
+    for (const [x, u] of beacons) kit.loop(x - 1, u + 1, beacon, { seq: [1, 1, 0, 0, 0, 0], fps: 3, ph: lr(), fx: 1 });
+    const strip = (h, c) => {
+      const out = new HiCanvas(2, h);
+      for (let j = 0; j < h * S; j++) {
+        out.px(0, j, c, 0.6);
+        out.px(5, j, c, 0.6);
+      }
+      return kit.frame(out);
+    };
+    for (const [x, u, h, c] of neonSigns) {
+      if (lr() < 0.5) continue;
+      kit.loop(x, u, [strip(h, c), strip(h, 0x14101a)], { seq: lr() < 0.5 ? [0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0] : [0, 0, 0, 0, 1, 0, 0, 0], fps: 6, ph: lr(), fx: 1 });
+    }
+    const candle = (() => {
+      const out = new HiCanvas(3, 3);
+      for (let j = 0; j < 9; j++) for (let i = 0; i < 9; i++) {
+        const d = Math.hypot(i - 4, j - 4) / 4.5;
+        if (d < 1) out.px(i, j, 0xffb050, (1 - d) ** 2 * 0.8);
+      }
+      return kit.frame(out);
+    })();
+    const parts = [];
+    for (let u = ODORI[0] + 16; u < ODORI[1]; u += 12) {
+      if (ODORI_CROSS.some((c) => Math.abs(u - c) < 14)) continue;
+      for (const x of [38, 142]) parts.push([0, x - 1.5, u + 1.5, lr() * 6]);
+    }
+    for (let i = 0; i < parts.length; i += 40) kit.wave([candle], parts.slice(i, i + 40), { w: 7, a0: 0.1, a1: 0.6, pw: 1.5 });
+    const signal = (lit) => {
+      const out = new HiCanvas(2, 3);
+      for (let j = 0; j < 7; j++) for (let i = 0; i < 4; i++) out.px(i, j, 0x1a1a20);
+      const lamp = [[1, 1, 0x40ff80], [1, 3, 0xffc030], [1, 5, 0xff3a2a]][lit];
+      out.px(lamp[0], lamp[1], lamp[2]);
+      out.px(lamp[0] + 1, lamp[1], lamp[2]);
+      out.px(lamp[0], lamp[1] - 1, lamp[2], 0.6);
+      for (let i = 0; i < 4; i++) out.px(i, 0, C.snow[3]);
+      return kit.frame(out);
+    };
+    const sig = [signal(0), signal(1), signal(2)];
+    for (const u of STREETS) {
+      if (u < CENTER[0] || u > RIVER[0]) continue;
+      for (const [ax, hw] of AVENUES) {
+        const w = ax === 90 ? 10 : hw;
+        const ph = lr();
+        kit.loop(ax - w - 2, u + 10, sig, { seq: [0, 0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2], fps: 1, ph, fx: 1 });
+        kit.loop(ax + w + 1, u - 6, sig, { seq: [2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 1], fps: 1, ph, fx: 1 });
+      }
+    }
+    const kid = (c, f) => {
+      const out = new HiCanvas(3, 3);
+      for (const [i, j, k] of [[3, 0, 0xd83a3a], [4, 0, 0xd83a3a], [3, 1, 0xe8c0a0], [4, 1, 0xe8c0a0]]) out.px(i, j, k);
+      for (let j = 2; j < 6; j++) for (let i = 2; i < 6; i++) out.px(i, j, i === 5 ? scaleColor(c, 0.75) : c);
+      out.px(f ? 1 : 6, f ? 2 : 3, c);
+      out.px(f ? 3 : 4, 6, 0x2a2a34);
+      out.px(f ? 7 : 0, f ? 1 : 2, 0xffffff); // (a snowball)
+      return frameAt(out, 1700);
+    };
+    for (const [x, u, w] of yards) {
+      const c = lr.pick([0x3a6ad0, 0xe8a030, 0x5aaa6a, 0xe86a9a]);
+      kit.wander(x + w / 2, u - 8, Math.max(2, w / 2 - 3), 1.5, [kid(c, 0), kid(c, 1)], { n: 2, sp: 4, idle: 0.5, turn: 'flip', fps: 4 });
+    }
+  }
+
+  // the shadows of the clouds drifting over the city, at the fine resolution: soft-edged instead of dithered
+  // (the game takes these in place of its shared ones when the stage has them)
+  for (const [i, w, h, lobes, seed] of [
+    [0, 96, 56, [[30, 30, 26, 20], [56, 24, 30, 20], [74, 34, 20, 16]], 41],
+    [1, 80, 44, [[26, 22, 22, 16], [52, 20, 24, 17]], 57],
+  ]) {
+    const out = new HiCanvas(w, h);
+    for (let FYr = 0; FYr < h * S; FYr++)
+      for (let FXr = 0; FXr < w * S; FXr++) {
+        const x = FXr / S;
+        const y = FYr / S;
+        let v = 0;
+        for (const [cx, cy, rx, ry] of lobes) v = Math.max(v, 1 - Math.hypot((x - cx) / rx, (y - cy) / ry));
+        v += (fbm(x, y, { seed, scale: 14, octaves: 4 }) - 0.5) * 0.35;
+        const a = Math.max(0, Math.min(1, (v - 0.02) / 0.22));
+        if (a > 0) out.px(FXr, FYr, 0x000000, a);
+      }
+    kit.frame(out, `cshadow_${i}`);
   }
 
   const chunks = [];
