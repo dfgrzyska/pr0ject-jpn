@@ -17,6 +17,8 @@ export class Parallax {
     this.anchor = stage.scroll.anchor;
     this.length = meta.length;
     this.chunkH = meta.chunkHeight;
+    this.artScale = meta.artScale ?? 1;
+    const invScale = 1 / this.artScale;
     // the scroll stops at the end of the strip, or where the stage says (Kyoto: with the 大 on the screen)
     this.maxTime = ((stage.scroll.stop ?? meta.length) - this.anchor) / this.speed.mid;
     this.time = 0;
@@ -28,11 +30,12 @@ export class Parallax {
     this.far = scene.add
       .tileSprite(0, 0, VIEW.width, VIEW.maxHeight, farKey)
       .setOrigin(0, 0)
+      .setTileScale(invScale, invScale)
       .setDepth(DEPTH.far);
     this.farH = scene.textures.get(farKey).getSourceImage().height;
     this.chunks = [];
     for (let i = 0; i < meta.chunks; i++)
-      this.chunks.push(scene.add.image(0, 0, `mid_${stage.id}_${i}`).setOrigin(0, 0).setDepth(DEPTH.mid).setVisible(false));
+    this.chunks.push(scene.add.image(0, 0, `mid_${stage.id}_${i}`).setOrigin(0, 0).setScale(invScale).setDepth(DEPTH.mid).setVisible(false));
 
     // the small drifting bits (ash, embers, snowflakes, petals) are blitter bobs: hundreds at once in a blizzard
     // or an ash storm, each far lighter than a sprite and the same to look at; the big ones (clouds, mist, steam
@@ -54,10 +57,14 @@ export class Parallax {
     this.embersFrom = stage.embersFrom ?? Infinity; // stage time from which embers rise
     this.nightFrom = stage.nightFrom ?? Infinity; // Osaka: clouds and gulls by day, a clear night sky after
     this.dark = stage.dark ?? [[0, 0]]; // how dark the city is along the strip: [u, 0..1]
-    // the shadows of clouds drifting over the land, fading out as night falls
+    // the shadows of clouds drifting over the land, fading out as night falls (a stage drawn finer than the
+    // game brings its own, soft-edged, among its moving parts)
+    const propsKey = `props_${stage.id}`;
+    const fine = this.artScale > 1 && scene.textures.exists(propsKey) && scene.textures.get(propsKey).has('cshadow_0');
     this.clouds = [0, 1].map((i) =>
       scene.add
-        .image(Math.random() * VIEW.width, -40 - i * 260, 'sprites', `cshadow_${i}`)
+        .image(Math.random() * VIEW.width, -40 - i * 260, fine ? propsKey : 'sprites', `cshadow_${i}`)
+        .setScale(fine ? invScale : 1)
         .setDepth(DEPTH.ground + 0.45)
         .setAlpha(0)
         .setFlipX(Math.random() < 0.5),
@@ -99,7 +106,7 @@ export class Parallax {
       this.time = Math.min(this.time + dt * this.rate(), this.maxTime);
       this.farTime += dt;
     }
-    this.uTop = Math.round(this.anchor + this.time * this.speed.mid);
+    this.uTop = Math.round((this.anchor + this.time * this.speed.mid) * this.artScale) / this.artScale;
 
     const top = this.length - this.uTop; // strip y at the top of the screen
     for (let i = 0; i < this.chunks.length; i++) {
@@ -109,7 +116,7 @@ export class Parallax {
       img.setVisible(vis);
       if (vis) img.y = y;
     }
-    this.far.tilePositionY = -(Math.round(this.farTime * this.speed.far) % this.farH);
+    this.far.tilePositionY = -(Math.round(this.farTime * this.speed.far * this.artScale) % this.farH);
 
     this.props.update(dt, H);
     this.updateNear(dt, scrolling, H);
@@ -138,8 +145,8 @@ export class Parallax {
     for (const c of this.clouds) {
       c.y += scroll + 6 * dt;
       c.x += 3 * dt;
-      if (c.y - c.height / 2 > H || c.x - c.width / 2 > VIEW.width) {
-        c.setPosition(-20 + Math.random() * (VIEW.width + 20), -c.height / 2 - Math.random() * 220).setFlipX(Math.random() < 0.5);
+      if (c.y - c.displayHeight / 2 > H || c.x - c.displayWidth / 2 > VIEW.width) {
+        c.setPosition(-20 + Math.random() * (VIEW.width + 20), -c.displayHeight / 2 - Math.random() * 220).setFlipX(Math.random() < 0.5);
       }
       c.setAlpha(a);
     }

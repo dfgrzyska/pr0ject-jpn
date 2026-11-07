@@ -27,6 +27,8 @@ export class Props {
     this.key = `props_${id}`;
     this.dispersePuffs = id === 'stage6'; // Only Beppu's hot-spring steam reacts to the ship.
     this.px = parallax;
+    this.artScale = meta.artScale ?? 1;
+    this.baseScale = 1 / this.artScale;
     const off = new URLSearchParams(location.search).has('noprops') || !scene.textures.exists(this.key);
     this.list = off ? [] : (meta.props ?? []).map((p) => this.prepare(p));
     this.tints = meta.tint ?? null;
@@ -70,9 +72,13 @@ export class Props {
     const frame = this.scene.textures.get(this.key).getFrameNames()[0];
     for (const [d, n] of peak) {
       const spare = [];
-      for (let i = 0; i < Math.min(n, 320); i++) spare.push(this.scene.add.image(0, 0, this.key, frame).setDepth(d).setVisible(false));
+      for (let i = 0; i < Math.min(n, 320); i++) spare.push(this.scene.add.image(0, 0, this.key, frame).setScale(this.baseScale).setDepth(d).setVisible(false));
       this.free.set(d, spare);
     }
+  }
+
+  snap(v) {
+    return Math.round(v * this.artScale) / this.artScale;
   }
 
   prepare(src) {
@@ -116,7 +122,7 @@ export class Props {
 
   img(p, frame, ox = 0.5, oy = 0.5, depth = p.depth) {
     const o = this.free.get(depth)?.pop() ?? this.scene.add.image(0, 0, this.key, frame).setDepth(depth);
-    o.setTexture(this.key, frame).setOrigin(ox, oy).setAlpha(1).setRotation(0).setFlipX(false).setVisible(true);
+    o.setTexture(this.key, frame).setOrigin(ox, oy).setScale(this.baseScale).setAlpha(1).setRotation(0).setFlipX(false).setVisible(true);
     if (p.tint && this.tints) o.setTint(this.tintAt(p.u ?? p.pts?.[0][1] ?? 0));
     else o.clearTint();
     return o;
@@ -238,14 +244,14 @@ export class Props {
         const own = frames[i % frames.length];
         this.setFrame(o, Array.isArray(own) ? own[step % own.length] : own);
       } else this.setFrame(o, frames[step % frames.length]);
-      o.setPosition(Math.round(x), this.px.screenY(Math.round(u))).setAlpha(this.alphaOf(p));
+      o.setPosition(this.snap(x), this.px.screenY(this.snap(u))).setAlpha(this.alphaOf(p));
       if (p.wake && moving) {
         const tr = (p.trail[i] ??= { x, u });
         if (Math.hypot(x - tr.x, u - tr.u) >= p.wake.every) {
           tr.x = x;
           tr.u = u;
           const w = this.img(p, p.wake.f[0], 0.5, 0.5, p.depth - 0.01).setRotation(Math.atan2(-du, dx));
-          this.parts.push({ o: w, kind: 'once', p, f: p.wake.f, x: Math.round(x), u: Math.round(u), t: 0, dur: p.wake.life ?? 1.5, a: 0.8 });
+          this.parts.push({ o: w, kind: 'once', p, f: p.wake.f, x: this.snap(x), u: this.snap(u), t: 0, dur: p.wake.life ?? 1.5, a: 0.8 });
         }
       }
     }
@@ -256,7 +262,7 @@ export class Props {
     for (let i = 0; i < p.n; i++) {
       const a = this.time * p.w + (i * TAU) / p.n;
       const o = p.objs[i];
-      o.setPosition(Math.round(p.x + Math.cos(a) * p.r), Math.round(cy + Math.sin(a) * p.ry)).setAlpha(this.alphaOf(p));
+      o.setPosition(this.snap(p.x + Math.cos(a) * p.r), this.snap(cy + Math.sin(a) * p.ry)).setAlpha(this.alphaOf(p));
       if (p.tc) o.setTint(p.tc[(Math.floor(this.time * p.tw) + i) % p.tc.length]);
     }
   }
@@ -308,7 +314,7 @@ export class Props {
       if (p.turn === 'rot') o.setRotation(-a.h);
       else if (p.turn === 'flip') o.setFlipX(Math.cos(a.h) < 0);
       this.setFrame(o, p.f[a.wait > 0 ? 0 : Math.floor(this.time * p.fps + i) % p.f.length]);
-      o.setPosition(Math.round(a.x), this.px.screenY(Math.round(a.u))).setAlpha(this.alphaOf(p));
+      o.setPosition(this.snap(a.x), this.px.screenY(this.snap(a.u))).setAlpha(this.alphaOf(p));
     }
   }
 
@@ -322,8 +328,8 @@ export class Props {
         r = q;
         break;
       }
-      const x = Math.round(r[0] + Math.random() * r[2]);
-      const u = Math.round(r[1] - Math.random() * r[3]);
+      const x = this.snap(r[0] + Math.random() * r[2]);
+      const u = this.snap(r[1] - Math.random() * r[3]);
       this.parts.push({ o: this.img(p, p.f[0]), kind: 'once', p, f: p.f, x, u, t: 0, dur: p.f.length / p.fps, a: p.a ?? 1, fixed: true });
     }
   }
@@ -382,7 +388,7 @@ export class Props {
         const stage = p.f[Math.min(p.f.length - 1, Math.floor(k * p.f.length * 1.2))];
         this.setFrame(o, stage[q.v % stage.length]);
         const a = Math.min(1, k * 8) * (k < 0.5 ? 1 : 1 - (k - 0.5) / 0.5) * p.a * this.fade;
-        o.setPosition(Math.round(q.x + q.dx), Math.round(y - q.rise)).setAlpha(a);
+        o.setPosition(this.snap(q.x + q.dx), this.snap(y - q.rise)).setAlpha(a);
       } else {
         // a wake or a one-shot animation, fixed to the ground
         const i = Math.min(q.f.length - 1, Math.floor(k * q.f.length));

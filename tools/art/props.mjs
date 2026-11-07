@@ -216,11 +216,13 @@ export function puff(r, seed, ramp) {
 
 /** Collects frames and props for one stage (its own random numbers, so the strip's art stays as it was). */
 export class PropKit {
-  constructor(seed) {
+  constructor(seed, { artScale = 1, atlasWidth } = {}) {
     this.frames = new Map();
     this.props = [];
     this.n = 0;
     this.rand = rng(seed);
+    this.artScale = artScale;
+    this.atlasWidth = atlasWidth ?? null;
   }
 
   /** Register a frame (a Raster); returns its name. */
@@ -231,7 +233,7 @@ export class PropKit {
 
   size(name) {
     const r = this.frames.get(name);
-    return [r.w, r.h];
+    return [r.w / this.artScale, r.h / this.artScale];
   }
 
   maxSize(names) {
@@ -332,7 +334,14 @@ export class PropKit {
   pack() {
     if (!this.props.length) return null;
     const entries = [...this.frames].map(([name, raster]) => ({ name, raster }));
-    const { raster, json } = packAtlas(entries, 256, 1, 'props.png');
+    const padding = this.artScale > 1 ? 2 : 1;
+    const maxW = Math.max(...entries.map((e) => e.raster.w));
+    let width = this.atlasWidth ?? (this.artScale > 1 ? Math.max(1024, 1 << Math.ceil(Math.log2(maxW + padding * 2))) : 256);
+    let { raster, json } = packAtlas(entries, width, padding, 'props.png');
+    while (!this.atlasWidth && raster.h > 2048 && width < 2048) {
+      width *= 2;
+      ({ raster, json } = packAtlas(entries, width, padding, 'props.png'));
+    }
     this.props.sort((a, b) => a.e[0] - b.e[0]);
     return { raster, json, props: this.props };
   }

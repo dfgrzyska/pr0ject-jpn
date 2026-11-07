@@ -1,7 +1,8 @@
 // Generates all pixel art into public/assets.
-//   node tools/gen-art.mjs            -> assets
-//   node tools/gen-art.mjs --preview  -> also writes upscaled previews to tools/preview/
-//   node tools/gen-art.mjs --only=stage2  -> sprites + font + only that stage's backgrounds
+//   node tools/gen-art.mjs                -> all shared + stage assets
+//   node tools/gen-art.mjs --preview      -> also writes previews to tools/preview/
+//   node tools/gen-art.mjs --only=stage1  -> only that stage's backgrounds & props (leaves shared assets untouched)
+//   node tools/gen-art.mjs --only=shared  -> only shared sprites, icons, font, map & ending
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -45,6 +46,7 @@ const write = (rel, buf) => {
   console.log('  ', rel, `${(buf.length / 1024).toFixed(1)} KB`);
 };
 
+if (!only || only === 'shared') {
 console.log('sprites');
 const { raster: atlas, json } = packAtlas(buildSprites(), 256);
 write('sprites.png', atlas.toPNG());
@@ -89,6 +91,7 @@ const ending = buildEnding();
 write('ending.png', ending.toPNG());
 write('ending_clouds.png', buildEndingClouds().toPNG());
 if (preview) writeFileSync(join(previewDir, 'ending_x2.png'), ending.scaled(2).toPNG());
+}
 
 for (const { id, art } of STAGES) {
   if (only && only !== id) continue;
@@ -97,17 +100,20 @@ for (const { id, art } of STAGES) {
   const far = art.buildFar();
   write(`bg/${id}/far.png`, far.toPNG());
   const mid = art.buildMid();
-  // the strip goes out in four tall pieces: fewer files to fetch and fewer textures than the 512 px chunks
-  const pieces = Math.ceil(mid.strip.h / MID_PIECE);
-  for (let i = 0; i < pieces; i++) write(`bg/${id}/mid_${String(i).padStart(2, '0')}.png`, mid.strip.crop(0, i * MID_PIECE, mid.strip.w, MID_PIECE).toPNG());
+  const artScale = mid.meta.artScale ?? 1;
+  // 1x stages go out in four 1792px pieces; 3x stages use eight 896-unit (2688px) pieces to stay well under 4096px WebGL limits
+  const chunkHeight = artScale > 1 ? 896 : MID_PIECE;
+  const chunkPx = chunkHeight * artScale;
+  const pieces = Math.ceil(mid.strip.h / chunkPx);
+  for (let i = 0; i < pieces; i++) write(`bg/${id}/mid_${String(i).padStart(2, '0')}.png`, mid.strip.crop(0, i * chunkPx, mid.strip.w, chunkPx).toPNG());
   for (const f of readdirSync(join(assets, 'bg', id))) if (/^mid_\d+\.png$/.test(f) && Number(f.slice(4, 6)) >= pieces) rmSync(join(assets, 'bg', id, f));
-  Object.assign(mid.meta, { chunkHeight: MID_PIECE, chunks: pieces });
+  Object.assign(mid.meta, { chunkHeight, chunks: pieces });
   if (mid.props) {
     // the moving parts: their frames, and where they go and how they move (in meta.json)
     write(`bg/${id}/props.png`, mid.props.raster.toPNG());
     write(`bg/${id}/props.json`, Buffer.from(JSON.stringify(mid.props.json)));
     mid.meta.props = mid.props.props;
-    if (preview) writeFileSync(join(previewDir, `${id}_props_x4.png`), mid.props.raster.scaled(4, 0x30304a).toPNG());
+    if (preview) writeFileSync(join(previewDir, `${id}_props_x4.png`), mid.props.raster.scaled(artScale > 1 ? 1 : 4, 0x30304a).toPNG());
   }
   if (art.buildPanorama) {
     const panorama = art.buildPanorama();
@@ -116,7 +122,7 @@ for (const { id, art } of STAGES) {
   }
   write(`bg/${id}/meta.json`, Buffer.from(JSON.stringify(mid.meta)));
   if (preview) {
-    writeFileSync(join(previewDir, `${id}_far_x2.png`), far.scaled(2).toPNG());
+    writeFileSync(join(previewDir, `${id}_far_x2.png`), far.scaled(artScale > 1 ? 1 : 2).toPNG());
     // full mid strip composited over the far layer, split in a few columns for viewing
     const { composite } = await import('./art/preview.mjs');
     composite(mid, far, previewDir, id);

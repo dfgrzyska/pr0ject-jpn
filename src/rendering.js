@@ -1,8 +1,9 @@
 import { RENDER_SCALE } from './config.js';
 
-/** Preserve Phaser's old safe rounding for unscaled, unrotated legacy sprites.
- * Phaser 4's safeAuto only rounds a unit matrix; camera zoom otherwise disables it.
- * High-resolution art scaled down to logical units still uses Phaser's native rounding.
+/** Preserve crisp pixel-grid vertex rounding under a zoomed camera:
+ * - legacy 1x art (`scale = 1`) snaps to `RENDER_SCALE` (3 px) steps;
+ * - native 540px art (`scale = 1 / RENDER_SCALE`) snaps to 1 px buffer steps with exact integer frame size
+ *   (Phaser 4's Float32 `cmm[0] === 1` check misses `3 * Math.fround(1 / 3)`).
  */
 export function installLegacyPixelGrid(renderer) {
   for (const name of ['TransformerImage', 'TransformerTileSprite']) {
@@ -11,10 +12,20 @@ export function installLegacyPixelGrid(renderer) {
     node.run = function (context, object, ...args) {
       run.call(this, context, object, ...args);
       const m = this._calcMatrix.matrix;
-      if (context.camera.zoom !== RENDER_SCALE ||
-          m[0] !== RENDER_SCALE || m[1] !== 0 || m[2] !== 0 || m[3] !== RENDER_SCALE ||
-          !object.willRoundVertices(context.camera, true)) return;
-      for (let i = 0; i < 8; i++) this.quad[i] = Math.round(this.quad[i] / RENDER_SCALE) * RENDER_SCALE;
+      if (context.camera.zoom !== RENDER_SCALE || m[1] !== 0 || m[2] !== 0 || !object.willRoundVertices(context.camera, true)) return;
+      if (m[0] === RENDER_SCALE && m[3] === RENDER_SCALE) {
+        for (let i = 0; i < 8; i++) this.quad[i] = Math.round(this.quad[i] / RENDER_SCALE) * RENDER_SCALE;
+      } else if (Math.abs(Math.abs(m[0]) - 1) < 1e-4 && Math.abs(Math.abs(m[3]) - 1) < 1e-4) {
+        const q = this.quad;
+        const dx = Math.round(q[4] - q[0]);
+        const dy = Math.round(q[3] - q[1]);
+        const x0 = Math.round(q[0]);
+        const y0 = Math.round(q[1]);
+        q[0] = q[2] = x0;
+        q[4] = q[6] = x0 + dx;
+        q[1] = q[7] = y0;
+        q[3] = q[5] = y0 + dy;
+      }
     };
   }
 }
