@@ -52,6 +52,7 @@ const ALLEY = 3590; // Susukino ramen alley
 const TRAM_U = 3230; // the streetcar's street in Susukino
 const ODORI_CROSS = [5000, 5200, 5400, 5600, 5800, 6000, 6160, 6380, 6600, 6820];
 const ODORI_SIDE = [14, 166]; // streets along both sides of the park
+const PARK_SIZE = { board: [8, 5], bench: [8, 3], tent: [8, 9], kitchen: [7, 15], kiosk: [8, 7], bins: [8, 3], mini: [8, 8] }; // (w, h of the things along the park's edges)
 
 const C = {
   snow: [0xa4aec6, 0xbec8da, 0xd6dcea, 0xecf0f8],
@@ -115,6 +116,9 @@ export function buildMid() {
   const beacons = []; // [x, u] of the red aviation lights on the tall roofs (they blink, live)
   const neonSigns = []; // [x, u, h, colour] of the vertical neon signs (they flicker, live)
   const yards = []; // [x, u, w] of the suburb's front yards (children play in some, live)
+  const statues = []; // [cx, by, w, h, tint] of the ice sculptures (their ropes, plaques and admirers)
+  const parkItems = []; // [x, y, w, h] of the things along the festival park's edges (the festoons go round them)
+  let bigAirAt = null; // [cx, y] of the big-air ramp (its riders, live)
   const pools = []; // additive light pools, after the grade
   const glow = (x, y, c, a = 1) => lights.push([Math.round(x), Math.round(y), c, a]);
   const glowPx = (X, Yy, c, a = 1) => lightsFine.push([Math.round(X), Math.round(Yy), c, a]);
@@ -327,15 +331,20 @@ export function buildMid() {
             const north = Yy < RID;
             const metal = north ? scaleColor(roof, 1.15) : roof;
             const seam = (X - X0) % 4 === 0;
-            const tongue = fbm(X * 0.5, Yy * 0.16, { seed, scale: 4, octaves: 2 }) + (north ? 0.08 : -0.05) + (Yy - RY0 < 3 ? 0.2 : 0);
-            let c = tongue > 0.4 ? snowPx(X, Yy, north ? 0.7 : 0.55, 0.3, seed & 255) : seam ? scaleColor(metal, 0.8) : (X - X0) % 4 === 1 ? scaleColor(metal, 1.1) : metal;
-            if (tongue > 0.4 && tongue < 0.44) c = 0xc8d0e0; // (the soft edge of the snow)
+            // (how far down the slope the snow still lies: a blanket from the ridge, its lower edge wavy where
+            // it has slid off, lumps left on the bare metal below it, the far slope mostly covered)
+            const rel = north ? (RID - Yy) / Math.max(1, RID - RY0) : (Yy - RID) / Math.max(1, RY1 - RID);
+            const line = (north ? 0.82 : 0.5) + (fbm(X * 0.07, seed * 0.01, { seed: seed & 255, scale: 3 }) - 0.5) * 0.8 + (fbm(X * 0.5, Yy * 0.3, { seed: (seed + 1) & 255, scale: 2 }) - 0.5) * 0.1;
+            const lump = rel > line + 0.06 && hashPx(X >> 1, Yy >> 1, seed & 255) < 0.04;
+            let c = rel < line || lump ? snowPx(X, Yy, north ? 0.72 : 0.58, 0.28, seed & 255) : seam ? scaleColor(metal, 0.78) : (X - X0) % 4 === 1 ? scaleColor(metal, 1.12) : metal;
+            if (rel >= line && rel < line + 0.07) c = rel < line + 0.035 ? 0xd4dae6 : scaleColor(metal, 0.7); // (the snow's rounded edge, its shadow on the metal)
             if (X === X0 || X === X1 - 1) c = scaleColor(c, 0.8);
             img.px(X, Yy, c);
           }
         for (let X = X0; X < X1; X++) {
           img.px(X, RID, scaleColor(roof, 0.65));
           img.px(X, RID - 1, C.snow[3]);
+          if ((X - X0) % 9 < 6) img.px(X, RY1 - 5, 0x8a8c96); // (the snow guard along the eave)
         }
         // the cornice of snow over the eave and the icicles hanging from it
         for (let X = X0; X < X1; X++) {
@@ -395,6 +404,26 @@ export function buildMid() {
         img.discPx((x + w / 2) * S, (y + h / 2) * S, 1.5, 0x7a8294);
         for (let Yy = (y + h) * S; Yy < (y + h + 4) * S; Yy++) for (let X = X0 + S; X < (x + w - 1) * S; X++) img.px(X, Yy, Yy < (y + h) * S + 2 ? 0x3a3238 : (Yy % 2 ? scaleColor(wall, 0.9) : wall));
         windowsRow(x + 2, x + w - 2, y + h + 2, litP, 3);
+        const ar = rng(x * 71 + y);
+        if (w >= 14 && ar() < 0.45) {
+          // an apartment block: the upper storey's front over the roof's edge, its balconies with rails and snow
+          // on them, doors in a row, the steel stair going up at the end
+          const AY = (y + h - 5) * S;
+          for (let Yy = AY; Yy < (y + h) * S; Yy++)
+            for (let X = X0 + S; X < (x + w - 1) * S; X++) {
+              const fy = Yy - AY;
+              img.px(X, Yy, fy < 1 ? 0x6a6c74 : fy === 1 ? 0xffffff : fy < 9 ? ((X - X0) % 12 < 2 ? 0x8a8c96 : fy === 8 ? 0xb8bcc8 : wall) : fy < 12 ? (X % 2 ? 0x9a9ca6 : C.snow[3]) : 0x3a3238);
+              if (fy > 2 && fy < 8 && (X - X0) % 12 > 3 && (X - X0) % 12 < 9) {
+                if (hashPx(Math.floor((X - X0) / 12), y, 102) < litP) glowPx(X, Yy, C.warm, 0.9);
+                else img.px(X, Yy, 0x2a2c36);
+              }
+            }
+          const SXs = (x + w - 1) * S;
+          for (let j = 0; j < 18; j++) {
+            img.px(SXs + Math.floor(j / 2), AY + j, 0x5a5c66);
+            img.px(SXs + Math.floor(j / 2) + 1, AY + j, j % 3 ? 0x8a8c96 : C.snow[3]);
+          }
+        }
       },
     });
     reserveRect(x - 1, y - 1, w + 2, h + 6);
@@ -661,6 +690,39 @@ export function buildMid() {
             }
           for (let k = 0; k < 3; k++) for (let j = 0; j < 4; j++) img.px(X0 + 5 + k * 4, FY1 + 1 + j, j === 0 || j === 3 ? 0x1a1a20 : orr.pick([0xc83a2a, 0xe8e8e8, 0x3a6aa8]));
           pool(x + w / 2, y + h + faceH + 3, 12, 0xe8f4ff, 0.45);
+        } else if (type === 'office' && (X1 - X0) > 50) {
+          // the plant on an office roof: pipes run along it with snow on top, a cooling tower turning, a
+          // satellite dish, the roof hatch
+          const pr2 = rng(x * 17 + y * 3);
+          const PYp = Y0 + 8 + Math.floor(pr2() * (Y1 - Y0 - 16));
+          const PL = Math.floor((X1 - X0) * (0.3 + pr2() * 0.4));
+          const PX = X0 + 6 + Math.floor(pr2() * (X1 - X0 - PL - 12));
+          for (let i = 0; i < PL; i++) {
+            img.px(PX + i, PYp, C.snow[3]);
+            img.px(PX + i, PYp + 1, 0x8a8c96);
+            img.px(PX + i, PYp + 2, 0x5a5c66);
+            img.px(PX + i, PYp + 3, 0x101018, 0.35);
+            if (i % 12 === 0) for (let j = 0; j < 4; j++) img.px(PX + i, PYp + j, 0x3a3c46);
+          }
+          const TXc = X0 + 12 + Math.floor(pr2() * (X1 - X0 - 24));
+          const TYc = Y0 + 12 + Math.floor(pr2() * (Y1 - Y0 - 24));
+          shadowPx(TXc - 5, TYc - 5, 13, 13, 0.7);
+          for (let j = -8; j <= 8; j++)
+            for (let i = -8; i <= 8; i++) {
+              const d = Math.hypot(i, j);
+              if (d > 8.3) continue;
+              const a = Math.atan2(j, i);
+              img.px(TXc + i, TYc + j, d > 7 ? (i + j < 0 ? 0xc8ccd8 : 0x6a6c78) : d < 1.5 ? 0x8a8c96 : Math.abs(Math.sin(a * 3)) < 0.35 ? 0x5a5c68 : 0x22242c);
+            }
+          if (pr2() < 0.6) {
+            const DX = X0 + 8 + Math.floor(pr2() * (X1 - X0 - 16));
+            const DY = Y0 + 6 + Math.floor(pr2() * 8);
+            for (let j = -3; j <= 3; j++) for (let i = -3; i <= 3; i++) if (i * i + j * j < 11) img.px(DX + i, DY + j, i + j < -1 ? 0xffffff : 0xd0d4de);
+            img.px(DX + 2, DY + 2, 0x3a3c46);
+          }
+          const HX = X1 - 14;
+          const HY = Y1 - 14;
+          for (let j = 0; j < 6; j++) for (let i = 0; i < 6; i++) img.px(HX + i, HY + j, j < 2 ? C.snow[3] : i === 5 ? 0x4a4c56 : 0x7a7c86);
         }
         for (const s of signs) {
           // a vertical neon sign: a column of characters in its lit frame
@@ -1752,8 +1814,14 @@ export function buildMid() {
       img.fine(hx - 30, Y(hu + 36), W - hx + 30, 66, (FXr, FYr, x, y) => {
         const e = ((x - hx) / 28) ** 2 + ((L - y - hu) / 32) ** 2;
         if (e >= 1) return null;
-        const lit = 0.55 + (L - y - hu) / 64 - (x - hx) / 90;
-        let c = rampColor(C.snow, Math.max(0.2, Math.min(1, lit + (fbm(FXr, FYr, { seed: 59, scale: 3 }) - 0.5) * 0.15)), FXr, FYr);
+        const dxh = (x - hx) / 28;
+        const duh = (L - y - hu) / 32;
+        const lit = 0.62 + (duh - dxh) * 0.45 * Math.sqrt(1 - Math.min(1, e)) - e * 0.25;
+        let c = rampColor(C.snow, Math.max(0.05, Math.min(1, lit + (fbm(FXr, FYr, { seed: 59, scale: 3 }) - 0.5) * 0.12)), FXr, FYr);
+        const shade = Math.max(0, dxh - duh) * Math.min(1, e * 1.4);
+        c = mix(c, 0x4a5478, Math.min(0.6, shade * 0.55)); // (the side away from the light in its own shade)
+        if (e > 0.9) c = mix(c, 0x6a7090, 0.4); // (its foot)
+        if (hashPx(FXr >> 1, FYr >> 1, 60) < 0.03 && e > 0.3) c = C.snow[1]; // (footprints all over it)
         const run = Math.min(Math.abs(x - hx + 8), Math.abs(x - hx - 4));
         if (run < 1) c = run < 0.4 ? 0xb8c0d0 : rampColor(C.packed, 0.75, FXr, FYr); // the worn runs, polished in the middle
         return c;
@@ -1789,30 +1857,16 @@ export function buildMid() {
   // ------------------------------------------------------------ F. Ōdōri park: the Snow Festival
   {
     const [o0, o1] = ODORI;
-    for (const x of ODORI_SIDE) vRoad(x, 6, o0, o1 + 20, false);
+    for (const x of ODORI_SIDE) vRoad(x, 4, o0, o1 + 20, false);
     for (const u of ODORI_CROSS) hRoad(u, 6, 0, W, false);
     for (const u of ODORI_CROSS) for (const x of [26, 154]) streetLamp(x, Y(u + 10), true);
-    // building fronts at both edges of the screen
-    for (let u = o0; u < PLAZA[1]; u += 40) {
-      for (const x of [0, 174]) {
-        const c = rand.pick(NEON);
-        // a building's front at the edge of the screen: storeys of windows, a vertical sign by the corner
-        const X0 = x * S;
-        const Y0 = Y(u + 38) * S;
-        for (let j = 0; j < 38 * S; j++) for (let i = 0; i < 6 * S; i++) img.px(X0 + i, Y0 + j, j % 9 === 0 ? 0x3a3c48 : (x ? i === 0 : i === 6 * S - 1) ? 0x4a4c58 : 0x2a2c36);
-        for (let k = 3; k < 36; k += 3) {
-          const col = rand() < 0.3 ? c : C.warm;
-          const WX = (x + (x ? 1 : 4)) * S - 2;
-          const WY = Y(u + k) * S - 1;
-          for (let j = 0; j < 4; j++) for (let i = 0; i < 6; i++) glowPx(WX + i, WY + j, i === 2 || j === 1 ? scaleColor(col, 0.8) : col, 0.95);
-        }
+    // (the buildings along the side streets are drawn further on; the random numbers the old fronts took are
+    // still drawn here so the rest of the park stays where it was)
+    for (let u = o0; u < PLAZA[1]; u += 40)
+      for (let k = 0; k < 2; k++) {
+        rand.pick(NEON);
+        for (let w = 3; w < 36; w += 3) rand();
       }
-    }
-    // festoon lights along the park paths
-    for (let u = o0; u < o1; u++) {
-      if (ODORI_CROSS.some((c) => Math.abs(u - c) < 10)) continue;
-      if (u % 5 === 0) for (const x of [24, 156]) glow(x, Y(u), NEON[(u / 5) % NEON.length], 0.9);
-    }
     const blockAt = (i) => [ODORI_CROSS[i] + 10, ODORI_CROSS[i + 1] - 10];
 
     // 1: the ice sculpture garden: a dragon, a pair of swans, a fish owl, a fox, an orca and a crab, and a row
@@ -1911,6 +1965,41 @@ export function buildMid() {
       iceStatue(112, Y(b0 + 156), 32, 28, ORCA, 0xff9ad0);
       crowd(30, Y(b1), 120, b1 - b0, 70);
     }
+    // the park's edges between the walkways and the side streets: the festival's map boards, benches under snow,
+    // souvenir tents, kitchen cars with their queues, hot-drink kiosks, sorting bins, the citizens' small snow
+    // sculptures
+    for (let i = 0; i < ODORI_CROSS.length - 1; i++) {
+      const [b0, b1] = blockAt(i);
+      for (const side of [0, 1]) {
+        const pr = rng(9101 + i * 7 + side * 3);
+        const x = side ? 148 : 24;
+        let u = b0 + 14;
+        let first = true;
+        while (u < b1 - 6) {
+          const k = first ? 'board' : pr.pick(['bench', 'bench', 'tent', 'tent', 'kitchen', 'kiosk', 'bins', 'mini', 'mini', 'mini']);
+          const [w, h] = PARK_SIZE[k];
+          if (u + h > b1 - 2) break;
+          const y = Y(u + h);
+          if (anyRes(x, y - 1, w, h + 2)) {
+            u += 4;
+            continue;
+          }
+          parkItem(k, x, y, side, pr);
+          first = false;
+          u += h + 6 + Math.floor(pr() * 10);
+        }
+      }
+    }
+    // festoon lights strung along the park paths on their wire, round the tents and boards
+    for (let u = o0; u < o1; u++) {
+      if (ODORI_CROSS.some((c) => Math.abs(u - c) < 10)) continue;
+      for (const x of [24, 156]) {
+        if (parkItems.some(([ix, iy, iw, ih]) => x >= ix - 1 && x <= ix + iw && Y(u) >= iy - 2 && Y(u) <= iy + ih + 2)) continue;
+        for (let j = 0; j < S; j++) img.px(x * S + 1, Y(u) * S + j, 0x2a2a34, 0.7);
+        if (u % 5 === 0) glow(x, Y(u), NEON[(u / 5) % NEON.length], 0.9);
+        if (u % 30 === 0) for (let j = -1; j < 2; j++) for (let i = 0; i < 3; i++) img.px(x * S + i, Y(u) * S + j, j < 0 ? C.snow[3] : 0x3a3c48);
+      }
+    }
     // snow lanterns (yuki-toro) lining the walkways
     for (let u = o0 + 16; u < o1; u += 12) {
       if (ODORI_CROSS.some((c) => Math.abs(u - c) < 14)) continue;
@@ -1939,7 +2028,7 @@ export function buildMid() {
   // ------------------------------------------------------------ G. TV Tower plaza, the bear sculpture's pedestal
   {
     const [g0] = PLAZA;
-    for (const x of ODORI_SIDE) vRoad(x, 6, g0, L, false);
+    for (const x of ODORI_SIDE) vRoad(x, 4, g0, L, false);
     // packed snow from the park's last cross street on (below it the park's own ground, so the sculptures
     // and kamakura at the park's end don't sit in patches of it)
     for (let u = Math.max(g0 + 10, ODORI[1]); u < L; u++)
@@ -1950,7 +2039,16 @@ export function buildMid() {
             for (let i = 0; i < S; i++) {
               const FXr = x * S + i;
               const FYr = y * S + j;
-              img.px(FXr, FYr, hashPx(FXr >> 1, FYr >> 1, 38) < 0.04 ? 0x9a968e : rampColor(C.packed, 0.55 + fbm(FXr / S, FYr / S, { seed: 37, scale: 7 }) * 0.45 + (hashPx(FXr, FYr, 39) - 0.5) * 0.15, FXr, FYr));
+              // granite setts in running bond, snow lying in the joints and in drifts over them, swept clear
+              // where the crowds walk
+              const row = Math.floor(FYr / 6);
+              const bx = FXr + (row % 2) * 6;
+              const sn = fbm(FXr / S, FYr / S, { seed: 37, scale: 7 }) + (hashPx(FXr, FYr, 39) - 0.5) * 0.12;
+              let c;
+              if (sn > 0.5) c = snowPx(FXr, FYr, 0.5, 0.4, 36);
+              else if (FYr % 6 === 0 || bx % 12 === 0) c = sn > 0.42 ? C.snow[1] : mix(C.packed[0], 0x5a5c6c, 0.4);
+              else c = rampColor(C.packed, 0.35 + hashPx(Math.floor(bx / 12), row, 40) * 0.35 + (sn - 0.3) * 0.9 + (hashPx(FXr, FYr, 41) - 0.5) * 0.15, FXr, FYr);
+              img.px(FXr, FYr, c);
             }
       }
     // pedestal: stepped snow platform with floodlights
@@ -2104,6 +2202,7 @@ export function buildMid() {
       },
     });
     reserveRect(x0 - 2, y0 - 2, w + 4, h + 9);
+    statues.push([cx, by, w, h, tint]);
   }
   /** A row of clear ice blocks with fish frozen inside them (salmon, sea bream, a squid, a crab), lit from below. */
   function fishBlocks(cx, by, n) {
@@ -2542,39 +2641,438 @@ export function buildMid() {
     return 0;
   }
   function bigAir(cx, y) {
-    // the big-air ramp: a steel scaffold tower in its bracing, the in-run of snow with lamps down both sides,
-    // the kicker, the landing widening below with its coloured line, banners, the crowd at the barriers
-    objects.push({
-      y: y + 150,
-      shadow: () => shadowRect(cx + 8, y + 6, 14, 150, 0.55),
-      draw: () => {
-        for (let Yy = y * S; Yy < (y + 70) * S; Yy++)
-          for (let i = 0; i < 14 * S; i++) {
-            const X = (cx - 7) * S + i;
-            const k = (Yy - y * S) % 18;
-            if (i < 3 || i > 14 * S - 4) img.px(X, Yy, k < 2 || Math.abs((i < 3 ? i : 14 * S - 1 - i) * 6 - k) < 2 ? 0x9aa0ae : 0x5a5e6a);
-            else if (i < 9 || i > 14 * S - 10) img.px(X, Yy, Yy % 2 ? C.snow[3] : C.snow[2]);
-            else img.px(X, Yy, (i === 16 || i === 25) ? 0xb8d0e8 : hashPx(X, Yy, 52) < 0.04 ? 0xffffff : C.snow[3]);
-          }
-        for (let Yy = y * S; Yy < (y + 70) * S; Yy += 30) {
-          glowPx((cx - 7) * S, Yy, 0xffffff);
-          glowPx((cx + 7) * S - 1, Yy + 15, 0xffffff);
-        }
-        for (let j = 0; j < 12; j++) for (let i = 0; i < 16 * S; i++) img.px((cx - 8) * S + i, (y + 70) * S + j, j < 2 ? 0xffffff : j < 8 ? C.snow[3] : C.snow[1]);
-        for (let Yy = (y + 80) * S; Yy < (y + 150) * S; Yy++) {
-          const hw = (10 + (Yy / S - y - 80) * 0.3) * S;
-          for (let X = Math.round(cx * S - hw); X < cx * S + hw; X++) {
-            const e = Math.min(X - (cx * S - hw), cx * S + hw - X);
-            img.px(X, Yy, e < 3 ? (Yy % 12 < 6 ? 0xe83a2a : 0xf4f4f8) : Math.abs(Yy - (y + 82) * S) < 2 ? 0x30a0ff : Yy % 3 === 0 ? C.snow[2] : C.snow[3]);
-          }
-        }
-        pool(cx, y + 74, 22, 0x60b0ff, 0.45);
-        pool(cx, y + 120, 30, 0xffffff, 0.25);
-      },
-    });
-    reserveRect(cx - 24, y - 2, 48, 154);
+    // the big-air ramp: the start deck up on its scaffold with the hut and the riders waiting, the in-run between
+    // its rails hung with sponsors' boards, groomed in corduroy, the kicker with its blue lip, the landing
+    // widening below with dye lines and a logo sprayed on it, A-boards along it, the finish arch; grandstands
+    // packed either side, a big screen and the DJ's stage beside the in-run
+    bigAirAt = [cx, y];
+    const CL = [0xd83a3a, 0x2a6ad0, 0xe8c030, 0x2a9a5a, 0xff5ab0, 0xf4f4f8];
+    const lr = rng(5501);
     crowd(26, y + 100, 30, 50, 50);
     crowd(124, y + 100, 30, 50, 50);
+    objects.push({
+      y: y + 150,
+      shadow: () => {
+        shadowRect(cx + 12, y - 4, 7, 80, 0.5);
+        shadowRect(cx - 12, y + 72, 26, 3, 0.7);
+      },
+      draw: () => {
+        const X0 = (cx - 12) * S;
+        const X1 = (cx + 12) * S;
+        // the scaffold either side of the in-run: standards, ledgers every lift, braces in X, shade under the deck
+        for (let Yy = (y - 2) * S; Yy < (y + 72) * S; Yy++)
+          for (let X = X0; X < X1; X++) {
+            if (X >= (cx - 7) * S && X < (cx + 7) * S) continue;
+            const bay = X < cx * S ? X - X0 : X1 - 1 - X;
+            const k = (Yy - (y - 2) * S) % 18;
+            const t = (bay % 7) / 7;
+            if (bay === 0 || bay === 7 || bay === 14) img.px(X, Yy, bay === 14 ? 0xb8bcc8 : 0x8a8e9a);
+            else if (k < 2) img.px(X, Yy, k ? 0x5a5e6a : 0x9a9eaa);
+            else if (Math.abs(t * 18 - k) < 1.1 || Math.abs((1 - t) * 18 - k) < 1.1) img.px(X, Yy, 0x6a6e7a);
+            else if (hashPx(X, Yy, 53) < 0.05) img.px(X, Yy, C.snow[2]);
+            else img.tintPx(X, Yy, 0.62);
+          }
+        // the start deck: grating with snow on it, the railing round it, the hut where the riders wait warm
+        for (let Yy = (y - 10) * S; Yy < y * S; Yy++)
+          for (let X = X0; X < X1; X++) {
+            const i = X - X0;
+            const j = Yy - (y - 10) * S;
+            let c = (i + j) % 4 === 0 ? 0x5a5e6a : 0x7a7e8a;
+            if (fbm(X * 0.3, Yy * 0.3, { seed: 54, scale: 3 }) > 0.52) c = C.snow[3];
+            if (j < 2 || i < 2 || i > X1 - X0 - 3) c = j === 0 || i === 0 ? 0xffffff : 0x4a4e5a;
+            img.px(X, Yy, c);
+          }
+        for (let j = 0; j < 16; j++)
+          for (let i = 0; i < 18; i++) {
+            const HX = X0 + 3 + i;
+            const HY = (y - 9) * S + j;
+            if (j < 7) img.px(HX, HY, j < 5 ? (j === 0 ? 0xffffff : C.snow[3]) : 0x4a3a2e);
+            else if (j > 8 && j < 13 && i > 3 && i < 14) glowPx(HX, HY, j === 9 ? 0xffd080 : 0xfff0d0, 0.9);
+            else img.px(HX, HY, i % 3 === 0 ? 0x6a4a34 : 0x8a6244);
+          }
+        // the in-run between its rails, the sponsors' boards along them, the groomed snow and two tracks down it
+        for (let Yy = y * S; Yy < (y + 70) * S; Yy++)
+          for (let X = (cx - 7) * S; X < (cx + 7) * S; X++) {
+            const i = X - (cx - 7) * S;
+            const e = Math.min(i, 14 * S - 1 - i);
+            const dy = Yy - y * S;
+            let c;
+            if (e < 3) c = e === 0 ? 0x3a3e4a : e === 1 ? 0x9aa0ae : 0xe0e4ec;
+            else if (e < 6) {
+              const b = Math.floor(dy / 21);
+              c = dy % 21 < 2 ? 0x22222a : CL[(b + (i < 21 ? 0 : 3)) % CL.length];
+              if (dy % 21 > 5 && dy % 21 < 16 && (dy + e) % 3 === 0) c = c === 0xf4f4f8 ? 0xd83a3a : 0xffffff;
+            } else {
+              c = dy % 3 === 0 ? C.snow[2] : C.snow[3];
+              if (Math.abs(i - 17) < 1 || Math.abs(i - 24) < 1) c = 0xb4cce4;
+              if (hashPx(X, Yy, 52) < 0.02) c = 0xffffff;
+            }
+            img.px(X, Yy, c);
+          }
+        for (let Yy = y * S + 6; Yy < (y + 70) * S; Yy += 24) {
+          glowPx((cx - 7) * S + 1, Yy, 0xffffff);
+          glowPx((cx + 7) * S - 2, Yy + 12, 0xffffff);
+        }
+        // the start gate's banner across the top, the riders waiting their turn with their boards
+        for (let X = (cx - 7) * S; X < (cx + 7) * S; X++)
+          for (let j = 0; j < 6; j++) img.px(X, y * S - 3 + j, j === 0 ? 0xffffff : j === 5 ? 0x22222a : (j === 2 || j === 3) && X % 4 === 0 ? 0xffffff : 0xd83a3a);
+        for (const [k, bc] of [[0, 0x30c0ff], [1, 0xff5ab0], [2, 0xe8c030]]) {
+          const RX = (cx + 1) * S + k * 9;
+          const RY = (y - 8) * S;
+          for (let j = 0; j < 12; j++) for (let i = 0; i < 3; i++) img.px(RX + 5 + i, RY + j, j === 0 || j === 11 ? scaleColor(bc, 0.7) : bc);
+          personPx(RX, RY + 3, rng(k + 91));
+        }
+        // the kicker: the in-run curving up into it, the blue lip, red-and-white edges
+        for (let j = 0; j < 36; j++)
+          for (let i = 0; i < 16 * S; i++) {
+            const e = Math.min(i, 16 * S - 1 - i);
+            let c = j < 2 ? 0xffffff : j < 28 ? (j % 3 ? C.snow[3] : C.snow[2]) : j < 31 ? 0x30a0ff : C.snow[1];
+            if (e < 2) c = (j >> 2) % 2 ? 0xe83a2a : 0xf4f4f8;
+            img.px((cx - 8) * S + i, (y + 70) * S + j, c);
+          }
+        // the landing: corduroy, a blue line at the knuckle, dye lines down it, a logo sprayed in the snow,
+        // the red-and-white edges and A-boards outside them
+        for (let Yy = (y + 82) * S; Yy < (y + 150) * S; Yy++) {
+          const dy = Yy / S - y - 82;
+          const hw = (10 + dy * 0.3) * S;
+          for (let X = Math.round(cx * S - hw) - 6; X < cx * S + hw + 6; X++) {
+            const e = Math.min(X - (cx * S - hw), cx * S + hw - X);
+            let c;
+            if (e < 0) {
+              const b = Math.floor(Yy / 15);
+              c = Yy % 15 < 2 ? 0x22222a : CL[(b + (X < cx * S ? 1 : 4)) % CL.length];
+              if (Yy % 15 > 4 && Yy % 15 < 11 && (Yy + X) % 3 === 0) c = c === 0xf4f4f8 ? 0x2a6ad0 : 0xffffff;
+              if (e < -4) c = 0x2a2c36;
+            } else if (e < 3) c = Yy % 12 < 6 ? 0xe83a2a : 0xf4f4f8;
+            else {
+              c = Yy % 3 === 0 ? C.snow[2] : C.snow[3];
+              if (dy < 4) c = dy < 1 ? C.snow[0] : C.snow[1];
+              else if (Math.abs(dy - 5) < 0.6) c = 0x30a0ff;
+              else if (dy > 10 && (dy - 10) % 14 < 0.5 && X % 6 < 4) c = 0x6ab0ff;
+              const rr = Math.hypot(X / S - cx, (Yy / S - y - 118) * 1.4);
+              if (Math.abs(rr - 9) < 0.8 || (rr < 5.5 && Math.abs(X / S - cx) < 0.7)) c = mix(c, 0xff5ab0, 0.55);
+            }
+            img.px(X, Yy, c);
+          }
+        }
+        // the finish arch, inflated, across the foot of the landing
+        const AY = (y + 143) * S;
+        for (const s of [-1, 1]) {
+          const PX = Math.round(cx * S + s * 33 * S);
+          for (let j = -7; j <= 7; j++) for (let i = -7; i <= 7; i++) if (i * i + j * j < 50) img.px(PX + i, AY + j, i * i + j * j < 20 ? (i + j < 0 ? 0xff6a5a : 0xd83a2a) : 0xa82a20);
+        }
+        for (let X = (cx - 33) * S; X < (cx + 33) * S; X++)
+          for (let j = -3; j < 4; j++) img.px(X, AY + j, j === -3 ? 0xffffff : j === 3 ? 0x8a2a20 : Math.abs(j) < 2 && X % 5 < 2 && Math.abs(X - cx * S) < 60 ? 0xffffff : 0xd83a2a);
+        // a rider sliding out at the bottom, his board kicking up snow
+        personPx((cx + 6) * S, (y + 130) * S, lr);
+        for (let i = 0; i < 12; i++) img.px((cx + 4) * S + i, (y + 136) * S, 0x30c0ff);
+        for (let k = 0; k < 10; k++) img.px((cx + 2) * S - k, (y + 136) * S + (k % 3) - 1, 0xffffff, 0.8 - k * 0.07);
+        pool(cx, y + 74, 22, 0x60b0ff, 0.45);
+        pool(cx, y + 120, 30, 0xffffff, 0.25);
+        pool(cx, y - 4, 14, 0xffd8a0, 0.3);
+      },
+    });
+    reserveRect(cx - 24, y - 12, 48, 164);
+    // the grandstands: tiered rows rising away from the landing, packed, the stairs between, the rail along the
+    // front hung with banners, floodlights on the back corners
+    for (const [sx, outer] of [[27, -1], [123, 1]]) {
+      const sw = 30;
+      const sy = y + 96;
+      const sh = 52;
+      objects.push({
+        y: sy + sh,
+        shadow: () => shadowRect(sx + 3, sy + 3, sw, sh, 0.55),
+        draw: () => {
+          const PAL = [0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0x2a2a34, 0x3a3a4a, 0x5a3a2a, 0x3a6a4a, 0x2a3040, 0x8a4ab0, 0x2a2a34, 0x4a3a2a];
+          const X0 = sx * S;
+          const Y0 = sy * S;
+          const FW = sw * S;
+          const FH = sh * S;
+          for (let j = 0; j < FH; j++)
+            for (let i = 0; i < FW; i++) {
+              const X = X0 + i;
+              const Yy = Y0 + j;
+              const fromLanding = outer < 0 ? FW - 1 - i : i;
+              const back = FW - 1 - fromLanding;
+              let c;
+              if (j < 2 || j > FH - 3 || back < 3) c = j < 1 || back === 0 ? C.snow[3] : 0x4a4c58;
+              else if (fromLanding < 4) {
+                const b = Math.floor(j / 18);
+                c = fromLanding === 0 ? 0x9a9ca8 : j % 18 < 2 ? 0x22222a : CL[(b + (outer < 0 ? 2 : 0)) % CL.length];
+                if (fromLanding > 1 && j % 18 > 4 && j % 18 < 14 && j % 2 === 0) c = 0xffffff;
+              } else if (j % 33 < 4) c = j % 33 === 0 ? 0x9a9ca6 : 0x6e707a;
+              else {
+                const r = (fromLanding - 4) % 4;
+                if (r === 0) c = 0x24262e;
+                else {
+                  const p = hashPx(Math.floor(i / 2), Math.floor(j / 2), 77 + sx);
+                  if (r !== 3 && p < 0.78) {
+                    c = p < 0.14 ? 0xe8c0a0 : PAL[Math.floor(hashPx(Math.floor(i / 2), Math.floor(j / 2), 79 + sx) * PAL.length)];
+                    if (p < 0.012) glowPx(X, Yy, 0xd8ecff);
+                  } else c = p < 0.86 ? C.snow[3] : 0x5a5c68;
+                }
+              }
+              img.px(X, Yy, c);
+            }
+          for (const FY of [Y0 + 3, Y0 + FH - 6]) {
+            const FX = outer < 0 ? X0 + 1 : X0 + FW - 5;
+            for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) glowPx(FX + i, FY + j, (i + j) % 3 ? 0xffffff : 0xe8f0ff);
+            pool(FX / S + 1, FY / S + 1, 28, 0xe8f0ff, 0.22);
+          }
+        },
+      });
+      reserveRect(sx, sy - 1, sw, sh + 2);
+    }
+    // the big screen beside the in-run: the live picture of a rider in the air against the sky, LIVE in red
+    {
+      const sx = 40;
+      const sy = y + 14;
+      objects.push({
+        y: sy + 18,
+        shadow: () => shadowRect(sx + 3, sy + 3, 22, 16, 0.55),
+        draw: () => {
+          const X0 = sx * S;
+          const Y0 = sy * S;
+          for (const lx of [10, 54]) for (let j = 42; j < 54; j++) for (let i = 0; i < 2; i++) img.px(X0 + lx + i, Y0 + j, 0x3a3c48);
+          for (let j = 0; j < 44; j++)
+            for (let i = 0; i < 66; i++) {
+              const X = X0 + i;
+              const Yy = Y0 + j;
+              if (j < 2) img.px(X, Yy, j ? C.snow[3] : 0xffffff);
+              else if (i < 2 || i > 63 || j < 4 || j > 41) img.px(X, Yy, 0x14141a);
+              else {
+                const slope = j > 30 - (i - 2) * 0.25;
+                let c = slope ? (j % 3 ? 0xf0f4fa : 0xd8e0ec) : mix(0x1a3a8a, 0x6ab0f0, (j - 4) / 30);
+                const rx = i - 34;
+                const ry = j - 16;
+                if (Math.abs(rx - ry * 0.4) < 7 && Math.abs(ry + rx * 0.2) < 1.2) c = 0x30c0ff;
+                if (rx * rx + (ry + 4) * (ry + 4) < 10) c = 0xf07a20;
+                if (rx * rx + (ry + 9) * (ry + 9) < 4) c = 0xf4f4f8;
+                if (i > 4 && i < 8 && j > 5 && j < 9) c = 0xff3030;
+                if (i > 9 && i < 22 && j > 5 && j < 9 && (i + j) % 2 === 0) c = 0xffffff;
+                glowPx(X, Yy, c, 0.92);
+              }
+            }
+          pool(sx + 11, sy + 10, 20, 0x80b8ff, 0.3);
+        },
+      });
+      reserveRect(sx - 1, sy - 1, 24, 20);
+    }
+    // the DJ's stage: its truss hung with lamps, the decks lit, the speaker stacks, a crowd dancing before it
+    {
+      const sx = 110;
+      const sy = y + 30;
+      objects.push({
+        y: sy + 20,
+        shadow: () => shadowRect(sx + 3, sy + 3, 30, 20, 0.55),
+        draw: () => {
+          const X0 = sx * S;
+          const Y0 = sy * S;
+          for (let j = 0; j < 60; j++)
+            for (let i = 0; i < 90; i++) {
+              const X = X0 + i;
+              const Yy = Y0 + j;
+              const truss = i < 3 || i > 86 || j < 3;
+              if (truss) img.px(X, Yy, (i + j) % 3 === 0 ? 0xd8dce4 : 0x6a6e7a);
+              else if (j < 5) img.px(X, Yy, 0x22222a);
+              else if ((i < 16 || i > 73) && j > 20) {
+                const li = i < 16 ? i - 3 : i - 74;
+                const lj = (j - 21) % 13;
+                img.px(X, Yy, Math.hypot(li - 6, lj - 6) < 4.5 ? (Math.hypot(li - 6, lj - 6) < 2 ? 0x4a4c56 : 0x2a2c34) : 0x14141a);
+              } else if (j > 26 && j < 38 && i > 26 && i < 64) {
+                img.px(X, Yy, j === 27 ? 0x5a5c68 : 0x18181e);
+                if (j > 29 && j < 35 && (Math.hypot(i - 35, j - 32) < 3 || Math.hypot(i - 55, j - 32) < 3)) glowPx(X, Yy, (i + j) % 2 ? 0x40e8ff : 0x2a2c34);
+                if (j > 29 && j < 35 && i > 42 && i < 48 && (i + j) % 2) glowPx(X, Yy, 0xff4aa8);
+              } else img.px(X, Yy, j % 6 === 0 ? 0x2e2e38 : 0x3a3a46);
+            }
+          personPx(X0 + 44, Y0 + 18, rng(97), { coat: 0x2a2a34, hat: 0xe8e8f0 });
+          for (let i = 6; i < 86; i += 6) glowPx(X0 + i, Y0 + 1, NEON[(i / 6) % NEON.length]);
+          pool(sx + 15, sy + 14, 20, 0xb46cff, 0.4);
+          pool(sx + 15, sy + 26, 16, 0x40e8ff, 0.3);
+        },
+      });
+      reserveRect(sx - 1, sy - 1, 32, 22);
+      for (let k = 0; k < 26; k++) {
+        const px = sx + lr() * 30;
+        const py = sy + 22 + lr() * 16;
+        if (!isRes(px, py)) personPx(Math.round(px * S), Math.round(py * S), rng(k * 13 + 5));
+      }
+    }
+  }
+  /**
+   * A thing along the festival park's edge, x, y its top left (logical), side 1 on the right (its open side
+   * faces the walkway): the festival's map board, a bench under snow, a souvenir tent, a kitchen car with its
+   * queue, a hot-drink kiosk, the sorting bins, a small snow sculpture made by the citizens.
+   */
+  function parkItem(k, x, y, side, pr) {
+    const [w, h] = PARK_SIZE[k];
+    const X = x * S;
+    const Yy = y * S;
+    const FW = w * S;
+    const FH = h * S;
+    const mx = (i) => (side ? FW - 1 - i : i);
+    const P = (i, j, c, a) => img.px(X + mx(i), Yy + j, c, a);
+    const G = (i, j, c, a = 1) => glowPx(X + mx(i), Yy + j, c, a);
+    const fsn = (i, j, seed, t) => fbm((X + i) * 0.4, (Yy + j) * 0.4, { seed, scale: 3 }) > t;
+    parkItems.push([x, y, w, h]);
+    reserveRect(x, y - 1, w, h + 2);
+    const ir = rng(x * 53 + y);
+    const draw = {
+      board() {
+        // the festival's map: posts, a frame with snow on top, the title in red, the park drawn in white on
+        // blue with the venues in colours, a lamp shining on it
+        for (let j = 0; j < 12; j++)
+          for (let i = 0; i < 24; i++) {
+            if (j < 2) {
+              if (i > 0 && i < 23) P(i, j, j ? C.snow[2] : 0xffffff);
+            } else if (i === 0 || i === 23 || j === 2 || j === 11) P(i, j, 0x2a2c38);
+            else if (j < 5) G(i, j, j === 3 && i % 3 === 0 && i > 2 && i < 21 ? 0xffffff : 0xd83a3a, 0.95);
+            else G(i, j, j >= 6 && j <= 8 && i >= 3 && i <= 20 ? (i % 4 === 0 ? 0xb8cce8 : 0xf0f4fa) : 0x2a5aa0, 0.9);
+          }
+        for (const [i, j, c] of [[5, 7, 0xffd040], [9, 7, 0xff5a8a], [13, 6, 0x5ae0ff], [17, 8, 0x7aff8a], [19, 9, 0xffffff], [4, 9, 0xffffff], [11, 9, 0xffd040]]) G(i, j, c);
+        for (const pi of [5, 18]) for (let j = 12; j < 15; j++) P(pi, j, 0x3a3c48);
+        pool(x + 4, y + 3, 5, 0xe8f0ff, 0.25);
+      },
+      bench() {
+        // a park bench under its cushion of snow, the backrest and a slat or two showing, the iron legs
+        for (let j = 0; j < 9; j++)
+          for (let i = 1; i < 23; i++) {
+            let c = null;
+            if (j < 3) c = j === 0 ? C.snow[3] : i % 5 === 0 ? 0x2a2a30 : 0x5a4232;
+            else if (j < 8) c = fsn(i, j, 91, 0.4) || j === 3 ? (j === 7 ? C.snow[1] : C.snow[3]) : j % 2 ? 0x8a6444 : 0x6e4e34;
+            else if (i < 3 || i > 20) c = 0x22222a;
+            if (c !== null) P(i, j, c);
+          }
+      },
+      tent() {
+        // a souvenir tent: the canopy with its ridge, snow on the north slope, the scalloped valance in its
+        // colour, the counter of wares lit by a string of bulbs, a paper lantern, shoppers
+        const c = ir.pick([0xd83a3a, 0x2a6ad0, 0x2a9a5a, 0xe8a030, 0x8a4ab0]);
+        for (let j = 0; j < 18; j++)
+          for (let i = 0; i < 24; i++) {
+            const north = j < 7;
+            let col = fsn(i, j, 93, north ? 0.3 : 0.62) ? (north ? 0xffffff : C.snow[2]) : north ? 0xf4f2ee : i % 6 === 0 ? 0xc8c4bc : 0xdcd8d0;
+            if (j === 7) col = 0xa8a49c;
+            if (i === 0 || i === 23) col = scaleColor(col, 0.85);
+            P(i, j, col);
+          }
+        for (let i = 0; i < 24; i++) {
+          const d = Math.abs((i % 6) - 2.5);
+          for (let j = 18; j < (d > 2 ? 20 : 21); j++) P(i, j, Math.floor(i / 6) % 2 ? c : scaleColor(c, 0.78));
+        }
+        for (let j = 21; j < 27; j++)
+          for (let i = 1; i < 23; i++) {
+            if (j === 21) {
+              P(i, j, 0x5a4a3a);
+              continue;
+            }
+            const ware = (i * 7 + j * 3) % 11;
+            G(i, j, ware < 2 ? 0xff7ab0 : ware < 4 ? 0xffe070 : ware < 5 ? 0x7ad0ff : ware < 7 ? 0xfff4e0 : 0x8a6a4a, 0.85);
+          }
+        for (let i = 2; i < 23; i += 5) G(i, 20, 0xffd890);
+        for (let j = 22; j < 26; j++) for (let i = 0; i < 2; i++) G(i, j, j === 22 || j === 25 ? 0x6a2a1a : 0xff6a3a);
+        pool(x + 4, y + 9, 7, 0xffc080, 0.35);
+        for (let k = 0; k < 2; k++) if (ir() < 0.7) personPx(X + mx(4 + k * 10) - (side ? 3 : 0), Yy + 30, ir);
+      },
+      kitchen() {
+        // a kitchen car: the nose to the north, windscreen, the box with snow on its roof and a vent, its
+        // livery, the hatch open on the walkway's side with its flap up and the counter lit, the menu board, a
+        // queue waiting, steam from the hotplate
+        const c = ir.pick([0xe8c030, 0xd83a3a, 0x3a9ad0, 0xf0f0f0, 0x5aaa5a]);
+        for (let j = 0; j < 45; j++)
+          for (let i = 0; i < 21; i++) {
+            if ((i < 1 || i > 19) && (j < 2 || j > 42)) continue;
+            let col;
+            if (j < 4) col = j === 0 ? 0x2a2a30 : scaleColor(c, 0.9);
+            else if (j < 9) col = i < 2 || i > 18 ? scaleColor(c, 0.8) : j === 4 ? 0x5a6a80 : 0x2a3a50;
+            else if (j < 13) col = j === 12 ? scaleColor(c, 0.7) : c;
+            else {
+              if (i < 2 || i > 18) col = j % 8 < 4 ? c : scaleColor(c, 0.8);
+              else col = fsn(i, j, 94, 0.45) ? 0xffffff : 0xd8dce4;
+              if (j > 18 && j < 23 && i > 6 && i < 14) col = (i + j) % 2 ? 0x6a6c74 : 0x8a8c94;
+            }
+            P(i, j, col);
+          }
+        for (let j = 16; j < 38; j++) {
+          for (let i = 21; i < 25; i++) P(i, j, j === 16 || j === 37 ? 0x3a3a44 : i === 21 ? C.snow[3] : scaleColor(c, 0.9));
+          G(20, j, 0xfff0c8);
+          G(19, j, 0xffe0a0, 0.7);
+        }
+        for (let j = 40; j < 46; j++) for (let i = 22; i < 27; i++) {
+          if (j === 40) P(i, j, C.snow[3]);
+          else G(i, j, (i + j) % 2 ? 0xfff4d0 : 0x2a2a30, 0.9);
+        }
+        for (let k = 0; k < 2 + Math.floor(ir() * 4); k++) personPx(X + mx(27 + (k % 2)) - (side ? 3 : 0), Yy + 18 + k * 7, ir);
+        pool(x + (side ? -1 : 8), y + 9, 8, 0xffd8a0, 0.4);
+        kit.emit(x + (side ? 0 : 7), U(y + 9), steam, { rate: 1.3, life: [1.4, 2.2], vy: 6, sx: 1, wf: 0.6, a: 0.4, tint: 1 });
+      },
+      kiosk() {
+        // a hot-drink kiosk: its snowy roof and eaves, the lit window over the counter with the cups, the
+        // lanterns, a red banner on its pole beside it
+        for (let j = 0; j < 10; j++) for (let i = 0; i < 24; i++) P(i, j, j < 6 ? (fsn(i, j, 95, 0.32) ? 0xffffff : C.snow[3]) : j < 9 ? 0x6a4a34 : 0x3a2a20);
+        for (let j = 10; j < 21; j++)
+          for (let i = 1; i < 23; i++) {
+            if (j >= 12 && j <= 17 && i >= 4 && i <= 19) G(i, j, j === 12 ? 0xffd080 : (i * 3 + j) % 7 === 0 ? 0xc87a3a : 0xfff0d0, 0.9);
+            else P(i, j, i === 1 || i === 22 ? 0x4a3226 : i % 3 === 0 ? 0x7a5a3e : 0x8a6a4a);
+          }
+        for (const i of [3, 20]) for (let j = 10; j < 13; j++) G(i, j, j === 10 ? 0x6a2a1a : 0xff6040);
+        for (let j = 2; j < 22; j++) P(-2, j, 0x3a3a44);
+        for (let j = 3; j < 17; j++) for (let i = -6; i < -2; i++) P(i, j, j % 4 === 0 ? 0xffffff : 0xd83a3a);
+        pool(x + 4, y + 7, 7, 0xffb070, 0.35);
+        if (ir() < 0.8) personPx(X + mx(10) - (side ? 3 : 0), Yy + 23, ir);
+      },
+      bins() {
+        // the sorting bins: burnable, plastic, cans, bottles, each lid its colour, snow on them, a sign over
+        const lid = [0xd83a3a, 0xe8c030, 0x3a6ad0, 0x3a9a5a];
+        for (let k = 0; k < 4; k++)
+          for (let j = 0; j < 8; j++)
+            for (let i = 0; i < 5; i++) P(k * 6 + 1 + i, j + 1, j < 2 ? (j === 0 ? 0xffffff : C.snow[3]) : j < 4 ? lid[k] : j === 7 ? 0x22222a : i === 0 ? 0x9a9ca4 : 0x7a7c84);
+        for (let i = 1; i < 24; i++) P(i, 0, i % 6 === 0 ? 0x22222a : 0xe8ecf4);
+      },
+      mini() {
+        // a small snow sculpture the citizens made: a bear, a daruma, a penguin, a cat or an owl on its block,
+        // carved, shaded from the lamp, its name on a stake
+        const kind = ir.pick(['bear', 'daruma', 'penguin', 'cat', 'owl']);
+        const SH = {
+          bear: [[12, 11, 7, 6.5], [6, 5, 2.6, 2.6], [18, 5, 2.6, 2.6]],
+          daruma: [[12, 11, 7.5, 8]],
+          penguin: [[12, 13, 6, 6.5], [12, 6, 4.5, 4]],
+          cat: [[12, 12, 7, 6], [7, 6, 2.2, 2.8], [17, 6, 2.2, 2.8]],
+          owl: [[12, 11, 6.5, 8], [8, 3, 1.6, 2.4], [16, 3, 1.6, 2.4]],
+        }[kind];
+        const FEAT = {
+          bear: [[9, 10, 0x2a2a34], [15, 10, 0x2a2a34], [12, 13, 0x2a2a34], [13, 13, 0x2a2a34], [6, 5, 0x8a94b0], [18, 5, 0x8a94b0]],
+          daruma: [[10, 8, 0x2a2a34], [14, 8, 0x2a2a34], [9, 6, 0x2a2a34], [10, 6, 0x2a2a34], [14, 6, 0x2a2a34], [15, 6, 0x2a2a34], [11, 12, 0xa82a2a], [12, 12, 0xa82a2a], [13, 12, 0xa82a2a]],
+          penguin: [[10, 5, 0x2a2a34], [14, 5, 0x2a2a34], [12, 7, 0xe8a030], [13, 7, 0xe8a030], [10, 19, 0xe8a030], [14, 19, 0xe8a030]],
+          cat: [[9, 11, 0x3a8a4a], [15, 11, 0x3a8a4a], [12, 13, 0xe88a9a], [4, 13, 0x8a94b0], [5, 13, 0x8a94b0], [6, 14, 0x8a94b0], [18, 14, 0x8a94b0], [19, 13, 0x8a94b0], [20, 13, 0x8a94b0]],
+          owl: [[9, 8, 0x2a2a34], [15, 8, 0x2a2a34], [12, 11, 0xe8a030], [8, 7, 0xffffff], [16, 7, 0xffffff]],
+        }[kind];
+        const inside = (fx, fy) => SH.some(([cx, cy, rx, ry]) => ((fx - cx) / rx) ** 2 + ((fy - cy) / ry) ** 2 <= 1);
+        for (let j = 18; j < 24; j++) for (let i = 2; i < 22; i++) P(i, j, j === 18 ? 0xffffff : j < 21 ? C.snow[3] : i === 2 ? C.snow[2] : C.snow[1]);
+        const RED = [0x7a1a1a, 0xa82a2a, 0xd04a3a, 0xe87a6a];
+        for (let j = 0; j < 19; j++)
+          for (let i = 0; i < 24; i++) {
+            const fx = i + 0.5;
+            const fy = j + 0.5;
+            if (!inside(fx, fy)) continue;
+            const edge = !inside(fx - 1, fy) || !inside(fx + 1, fy) || !inside(fx, fy - 1) || !inside(fx, fy + 1);
+            const lit = (-(fx - 12) - (fy - 10)) / 14;
+            let col;
+            if (edge) col = lit > 0 ? 0xffffff : 0x8a94b0;
+            else if (kind === 'daruma' && !(((fx - 12) / 4) ** 2 + ((fy - 9) / 3.2) ** 2 <= 1)) col = rampColor(RED, 0.55 + lit * 0.5, X + i, Yy + j);
+            else if (kind === 'penguin' && Math.abs(fx - 12) > 3 && fy > 8) col = rampColor([0x2a2a34, 0x3a3a48, 0x4a4a5a, 0x5a5a6a], 0.5 + lit * 0.5, X + i, Yy + j);
+            else col = rampColor(C.snow, 0.6 + lit * 0.45 + (hashPx(X + i, Yy + j, 96) - 0.5) * 0.12, X + i, Yy + j);
+            P(i, j, col);
+          }
+        for (const [i, j, c] of FEAT) P(i, j, c);
+        for (let j = 17; j < 24; j++) P(23, j, 0x6a5a48);
+        for (let j = 17; j < 20; j++) for (let i = 20; i < 23; i++) P(i, j, 0xf4f0e6);
+        G(1, 22, 0xffffff);
+        G(2, 22, 0xe8f0ff, 0.7);
+        pool(x + 4, y + 5, 6, 0xc8e0ff, 0.3);
+      },
+    }[k];
+    objects.push({ y: y + h, shadow: () => shadowPx(X + 4, Yy + 4, FW, FH, 0.6), draw });
   }
   function stall(x, y) {
     // a festival stall: a striped awning with snow on it, the counter lit by a string of bulbs, steaming pots
@@ -2890,7 +3388,18 @@ export function buildMid() {
       }
       if (yr() < 0.3) {
         const SX = X + w * S - 14;
-        for (let j = 0; j < 10; j++) for (let i = 0; i < 12; i++) img.px(SX + i, Yy - 8 + j, j < 3 ? C.snow[3] : i === 0 ? 0x8a7a6a : 0x6a5a4a);
+        if (hashPx(x, u, 103) < 0.55) {
+          // a kamaboko garage: the barrel roof of corrugated steel, lit on its crown, snow on the top, the door
+          const gc = hashPx(u, x, 104) < 0.5 ? 0x8a3a2a : 0x3a5a7a;
+          for (let j = 0; j < 12; j++)
+            for (let i = 0; i < 16; i++) {
+              const t = j / 11;
+              let c = t < 0.25 ? C.snow[3] : scaleColor(gc, 1.25 - t * 0.6);
+              if (t >= 0.25 && i % 3 === 0) c = scaleColor(c, 0.85);
+              if (i === 0 || i === 15) c = 0x3a3a44;
+              img.px(SX - 2 + i, Yy - 10 + j, c);
+            }
+        } else for (let j = 0; j < 10; j++) for (let i = 0; i < 12; i++) img.px(SX + i, Yy - 8 + j, j < 3 ? C.snow[3] : i === 0 ? 0x8a7a6a : 0x6a5a4a);
       }
       if (yr() < 0.5) {
         glowPx(X + 4, Yy + 2, C.warm);
@@ -2898,6 +3407,941 @@ export function buildMid() {
       }
       if (yr() < 0.2) for (let j = 0; j < 4; j++) for (let i = 0; i < 6; i++) img.px(X + 10 + i, Yy + 1 + j, j === 0 ? 0xf05a4a : 0xd83a2a);
       if (yr() < 0.25) yards.push([x, u, w]);
+    }
+  }
+
+  // ------------------------------------------------------------ Ōdōri's side streets: the buildings along them, their
+  // shops and signs, the heated pavements, the subway's entrances; the sculptures' ropes and admirers; the TV Tower
+  // plaza's fountain, barriers, flags and broadcast vans; the traffic, the riders and the searchlights (live)
+  {
+    const hr = rng(9301);
+    const segs = [];
+    for (let i = 0; i < ODORI_CROSS.length - 1; i++) segs.push([ODORI_CROSS[i] + 10, ODORI_CROSS[i + 1] - 10, i]);
+    segs.push([ODORI_CROSS[ODORI_CROSS.length - 1] + 10, L, ODORI_CROSS.length - 1]);
+    // the pavements: heated, so bare and wet, tiles in a grid, the shop lights shining in them, a kerb of snow
+    for (const [s0, s1] of segs)
+      for (const side of [0, 1]) {
+        img.fine(side ? 170 : 8, Y(s1), 2, s1 - s0, (FXr, FYr) => {
+          const kerb = side ? FXr === 170 * S : FXr === 8 * S + 5;
+          if (kerb) return hashPx(FXr, FYr >> 1, 87) < 0.7 ? 0xe8ecf4 : C.snow[2];
+          if (fbm(FXr * 0.2, FYr * 0.2, { seed: 88, scale: 3 }) > 0.72) return C.snow[2];
+          const grid = FXr % 3 === 0 || FYr % 3 === 0;
+          const sheen = hashPx(FXr, FYr, 89);
+          return grid ? 0x3a3c46 : sheen < 0.06 ? 0x8a8ea0 : sheen < 0.5 ? 0x4c4e5a : 0x52545f;
+        });
+        for (let u = s0 + 4; u < s1 - 4; u += 7) if (hr() < 0.35) personPx((side ? 170 : 8) * S + 1, Y(u) * S, rng(u * 3 + side));
+      }
+    // a building along the street: its snowy roof inside the parapet, the rooftop units, a water tank, a
+    // billboard; its front to the south with the storeys of windows, the shop at its foot (the awning, the lit
+    // glass, its sign), a neon sign hanging out over the pavement
+    const building = (side, u, h, faceH) => {
+      const X0 = side ? 172 * S : 0;
+      const X1 = side ? W * S : 8 * S;
+      const RY0 = Y(u + faceH + h) * S;
+      const RY1 = Y(u + faceH) * S;
+      const FY1 = Y(u) * S;
+      const wall = hr.pick(C.concrete.slice(1));
+      const shopC = hr.pick([0xd83a3a, 0x2a6ad0, 0x2a9a5a, 0xe8a030, 0x8a4ab0, 0x22222a]);
+      const glass = hr.pick([0xfff0d0, 0xf4f8ff, 0xffe0b0]);
+      const cool = hr() < 0.4;
+      const unitAt = RY0 + 6 + Math.floor(hr() * Math.max(1, RY1 - RY0 - 20));
+      const tankAt = hr() < 0.35 && RY1 - RY0 > 40 ? RY0 + 8 + Math.floor(hr() * (RY1 - RY0 - 30)) : -1;
+      const board = h >= 18 && hr() < 0.35 ? hr.pick(NEON) : null;
+      const sign = hr() < 0.5 ? { c: hr.pick(NEON), h: Math.min(h - 2, 8 + Math.floor(hr() * 8)) } : null;
+      const br = rng(u * 7 + side);
+      objects.push({
+        y: Y(u),
+        shadow: () => shadowPx(side ? X0 : X0 + 7, RY0 + 7, X1 - X0, FY1 - RY0, 0.55),
+        draw: () => {
+          for (let Yy = RY0; Yy < RY1; Yy++)
+            for (let X = X0; X < X1; X++) {
+              const ex = side ? X - X0 : X1 - 1 - X;
+              const e = Math.min(ex, Yy - RY0, RY1 - 1 - Yy);
+              img.px(X, Yy, e === 0 ? scaleColor(wall, 0.6) : e === 1 ? scaleColor(wall, 1.12) : e === 2 ? C.snow[3] : snowPx(X, Yy, 0.6, 0.35, 85));
+            }
+          // a unit with its fan grille, its shadow
+          {
+            const UX = side ? X0 + 11 : X0 + 4;
+            shadowPx(UX + 2, unitAt + 2, 9, 7, 0.7);
+            for (let j = 0; j < 7; j++)
+              for (let i = 0; i < 9; i++) {
+                let c = j < 2 ? C.snow[3] : i === 0 ? 0x9a9ca4 : i === 8 ? 0x5a5c64 : 0x7a7c84;
+                if (j > 2 && Math.hypot(i - 4, j - 4) < 2.3) c = (i + j) % 2 ? 0x4a4c54 : 0x6a6c74;
+                img.px(UX + i, unitAt + j, c);
+              }
+          }
+          if (tankAt >= 0) {
+            const TX = side ? X0 + 7 : X1 - 8;
+            for (let j = -5; j <= 5; j++)
+              for (let i = -5; i <= 5; i++) {
+                const d = Math.hypot(i, j);
+                if (d < 5.2) img.px(TX + i, tankAt + j, d > 4.2 ? 0x5a5c68 : i + j < -2 ? 0xffffff : d < 1.5 ? 0x8a8c98 : C.snow[3]);
+              }
+          }
+          if (RY1 - RY0 > 66) {
+            // the stair hut onto the roof: its own snowy top, the door with a lamp over it, an aerial
+            const HX = side ? X1 - 11 : X0 + 2;
+            const HY = RY1 - 22;
+            shadowPx(HX + 3, HY + 3, 9, 10, 0.7);
+            for (let j = 0; j < 10; j++)
+              for (let i = 0; i < 9; i++) img.px(HX + i, HY + j, j < 4 ? (j ? C.snow[3] : 0xffffff) : i > 2 && i < 6 && j > 5 ? 0x3a3226 : i === 8 ? scaleColor(wall, 0.7) : wall);
+            glowPx(HX + 4, HY + 5, C.warm);
+            for (let j = 0; j < 9; j++) img.px(HX + 1, HY - j, 0x8a8c98);
+            for (let i = -2; i <= 2; i++) img.px(HX + 1 + i, HY - 6, 0x8a8c98);
+          }
+          if (board) {
+            // a billboard on the roof: its frame of chasing bulbs, the lit picture, a line of characters
+            const BW = 12;
+            const BH = Math.min(30, RY1 - RY0 - 10);
+            const BX = side ? X0 + 3 : X1 - 3 - BW;
+            const BY = RY0 + 5;
+            for (let j = 0; j < BH; j++)
+              for (let i = 0; i < BW; i++) {
+                if (i === 0 || i === BW - 1 || j === 0 || j === BH - 1) {
+                  if ((i + j) % 2) glowPx(BX + i, BY + j, board);
+                  else img.px(BX + i, BY + j, 0x14101a);
+                } else glowPx(BX + i, BY + j, mix(board, 0x14101a, 0.55 + 0.3 * Math.sin(j * 0.4)), 0.9);
+              }
+            for (let k = 0; k + 6 < BH; k += 6) glyph(BX + 3, BY + 3 + k, 5, 0xffffff, br);
+            pool((BX + BW / 2) / S, (BY + BH / 2) / S, 10, board, 0.3);
+          }
+          // icicles from the roof's edge down the front
+          for (let X = X0; X < X1; X++) {
+            const n = hashPx(X, RY1, 86) < 0.35 ? 1 + Math.floor(hashPx(X, RY1, 87) * 4) : 0;
+            for (let k = 0; k < n; k++) img.px(X, RY1 + k, k === n - 1 ? 0xc8e0f4 : 0xf0f8ff);
+          }
+          // the front: concrete bands, windows lit and dark, the shop at its foot
+          for (let Yy = RY1; Yy < FY1; Yy++)
+            for (let X = X0; X < X1; X++) {
+              const fy = Yy - RY1;
+              const fb = FY1 - 1 - Yy;
+              const lx = X - X0;
+              const edge = side ? lx === 0 : X === X1 - 1;
+              if (fb < 8) {
+                if (fb === 7) img.px(X, Yy, 0xffffff);
+                else if (fb >= 5) img.px(X, Yy, Math.floor(lx / 3) % 2 ? (fb === 6 ? scaleColor(shopC, 1.1) : shopC) : fb === 6 ? 0xffffff : 0xe8e8ec);
+                else if (fb === 0) img.px(X, Yy, 0x22222a);
+                else if (lx % 6 === 0) img.px(X, Yy, 0x5a5c66);
+                else glowPx(X, Yy, (X * 5 + Yy * 3) % 13 === 0 ? scaleColor(shopC, 1.2) : (X + Yy) % 7 === 0 ? 0x6a5a4a : glass, 0.92);
+              } else if (fy < 1 || edge) img.px(X, Yy, scaleColor(wall, fy < 1 ? 0.6 : 0.82));
+              else if (fy % 6 >= 2 && fy % 6 <= 4 && lx % 5 >= 1 && lx % 5 <= 3 && fb > 9) {
+                if (hashPx(Math.floor(X / 5), Math.floor(Yy / 6), 84 + side) < 0.5) glowPx(X, Yy, cool ? C.cool : C.warm, 0.9);
+                else img.px(X, Yy, 0x22242e);
+              } else img.px(X, Yy, fy % 6 === 0 ? scaleColor(wall, 0.9) : wall);
+            }
+          pool(side ? 171 : 9, Y(u) - 1, 6, glass, 0.4);
+          if (sign) {
+            // the vertical sign hanging out over the pavement: its characters in its lit frame
+            const SX = side ? 170 * S : 8 * S;
+            const SH = sign.h * S;
+            const SY = Math.floor(Math.max(RY0 + 4, FY1 - 8 - SH) / S) * S;
+            for (let j = 0; j < SH; j++) {
+              for (let i = 0; i < 6; i++) img.px(SX + i, SY + j, 0x14101a);
+              glowPx(SX, SY + j, sign.c, 0.9);
+              glowPx(SX + 5, SY + j, sign.c, 0.9);
+            }
+            for (let k = 0; k + 4 < SH; k += 5) glyph(SX + 1, SY + 1 + k, 4, k % 10 ? 0xffffff : sign.c, br);
+            neonSigns.push([SX / S, U(SY / S), sign.h, sign.c]);
+            pool((SX + 3) / S, (SY + SH / 2) / S, 9, sign.c, 0.35);
+          }
+        },
+      });
+    };
+    // an entrance down to the subway: a glass canopy on its frame over the stairs, lit, snow on its top, the
+    // station's sign on its post in the line's colour
+    const subway = (side, u, lineC) => {
+      const X0 = side ? 172 * S : 0;
+      const X1 = side ? W * S : 8 * S;
+      const Y0 = Y(u + 12) * S;
+      const Y1 = Y(u) * S;
+      objects.push({
+        y: Y(u),
+        shadow: () => shadowPx(side ? X0 : X0 + 5, Y0 + 5, X1 - X0, Y1 - Y0, 0.6),
+        draw: () => {
+          for (let Yy = Y0; Yy < Y1; Yy++)
+            for (let X = X0; X < X1; X++) {
+              const lx = X - X0;
+              const ly = Yy - Y0;
+              if (ly < 2) img.px(X, Yy, ly ? C.snow[3] : 0xffffff);
+              else if (lx % 6 === 0 || ly % 8 === 2 || ly === Y1 - Y0 - 1) img.px(X, Yy, 0x5a6070);
+              else glowPx(X, Yy, ly % 3 === 0 ? 0x7890b0 : 0xc0d8f0, 0.6);
+            }
+          const SX = side ? 170 * S + 1 : 8 * S;
+          const SY = Y1 - 14;
+          for (let j = 0; j < 7; j++)
+            for (let i = 0; i < 5; i++) {
+              const d = Math.hypot(i - 2, j - 3);
+              glowPx(SX + i, SY + j, d < 1.3 ? 0xffffff : lineC, 0.95);
+            }
+          for (let j = 7; j < 12; j++) img.px(SX + 2, SY + j, 0x3a3c48);
+          pool(side ? 173 : 7, Y(u) - 4, 8, 0xc0d8f0, 0.4);
+        },
+      });
+    };
+    const LINES = [0x2aa04a, 0xf08a20, 0x2a8ad8];
+    for (const [s0, s1, i] of segs)
+      for (const side of [0, 1]) {
+        let u = s0;
+        if ((i + side) % 3 === 1) {
+          subway(side, u, LINES[(i + side) % 3]);
+          u += 14;
+        }
+        while (u < s1 - 8) {
+          const faceH = 5 + Math.floor(hr() * 4);
+          let h = 12 + Math.floor(hr() * 22);
+          if (u + faceH + h > s1) h = s1 - u - faceH;
+          if (h < 6) break;
+          building(side, u, h, faceH);
+          u += h + faceH + (hr() < 0.3 ? 3 : 0);
+        }
+      }
+  }
+
+  // the ice sculptures: a rope on posts round each one, a plaque with its name, the LED lamps at its foot,
+  // admirers along the rope with their phones up
+  {
+    const qr = rng(9401);
+    for (const [cx, by, w, h, tint] of statues) {
+      const x0 = Math.round(cx - w / 2) - 3;
+      const x1 = Math.round(cx + w / 2) + 3;
+      const fy = by + 4;
+      const ty = by - 5 - Math.round(h * 0.45);
+      const front = !anyRes(x0, by + 3, x1 - x0 + 1, 4);
+      const left = !anyRes(x0, ty, 1, fy - ty);
+      const right = !anyRes(x1, ty, 1, fy - ty);
+      const n = front ? 2 + Math.floor(qr() * 4) : 0;
+      const fans = [];
+      for (let k = 0; k < n; k++) fans.push([(x0 + 2 + qr() * (x1 - x0 - 6)) * S, qr() < 0.6, rng(cx * 31 + k)]);
+      if (front) reserveRect(x0, by + 3, x1 - x0 + 1, 6);
+      objects.push({
+        y: fy + 1,
+        draw: () => {
+          const rope = (ax, ay, bx, byy) => {
+            const len = Math.max(Math.abs(bx - ax), Math.abs(byy - ay));
+            for (let k = 0; k <= len; k++) {
+              const t = k / len;
+              img.px(Math.round(ax + (bx - ax) * t), Math.round(ay + (byy - ay) * t + (ay === byy ? Math.sin(t * Math.PI) * 2 : 0)), (k >> 1) % 2 ? 0xf4f4f4 : 0xd83a2a);
+            }
+          };
+          const post = (x, y) => {
+            for (let j = -4; j < 2; j++) for (let i = 0; i < 2; i++) img.px(x * S + i, y * S + j, j === -4 ? 0xffffff : i ? 0x2a2c36 : 0x5a5c68);
+            img.px(x * S + 2, y * S + 1, 0x101018, 0.4);
+          };
+          const posts = [];
+          if (front) {
+            for (let x = x0; x < x1; x += 6) posts.push(x);
+            posts.push(x1);
+            for (let k = 0; k + 1 < posts.length; k++) rope(posts[k] * S + 1, fy * S - 3, posts[k + 1] * S + 1, fy * S - 3);
+          }
+          for (const [ok, x] of [[left, x0], [right, x1]]) {
+            if (!ok) continue;
+            rope(x * S + 1, ty * S - 3, x * S + 1, fy * S - 3);
+            for (let y = fy - 6; y > ty; y -= 6) post(x, y);
+            post(x, ty);
+          }
+          for (const x of posts) post(x, fy);
+          // the LED lamps under the block, turned up at the ice
+          for (const k of [-0.32, 0, 0.32]) {
+            const LX = Math.round((cx + k * w) * S) - 2;
+            const LY = (by + 1) * S;
+            for (let j = 0; j < 3; j++) for (let i = 0; i < 5; i++) img.px(LX + i, LY + j, j === 0 ? 0x3a3c48 : 0x1a1a22);
+            glowPx(LX + 1, LY, tint);
+            glowPx(LX + 2, LY, 0xffffff);
+            glowPx(LX + 3, LY, tint);
+          }
+          if (front) {
+            // the plaque on its stake: the sculpture's name, lit
+            const PX = cx * S - 7;
+            const PY = (fy + 1) * S;
+            for (let j = 0; j < 6; j++) for (let i = 0; i < 14; i++) {
+              if (i === 0 || i === 13 || j === 0 || j === 5) img.px(PX + i, PY + j, j === 0 ? 0xffffff : 0x2a2c38);
+              else glowPx(PX + i, PY + j, (i + j * 3) % 4 === 0 && j > 1 && j < 4 ? 0x2a3a5a : 0xe8f0fa, 0.9);
+            }
+            for (let j = 6; j < 9; j++) img.px(PX + 7, PY + j, 0x3a3c48);
+            for (const [X, phone, pr] of fans) {
+              personPx(Math.round(X), (fy + 2) * S, pr);
+              if (phone) glowPx(Math.round(X) + 1, (fy + 2) * S - 4, 0xd8ecff);
+            }
+          }
+        },
+      });
+    }
+  }
+
+  // the TV Tower plaza: footings for the tower's legs, the glass entrance between them, the tower lit up;
+  // barriers round the bear's pedestal, flags along the plaza, a frozen fountain, broadcast vans with their dishes
+  {
+    const pc = 7038;
+    const py = Y(pc);
+    objects.push({
+      y: 109,
+      draw: () => {
+        for (const LX of [90 - 22, 90 + 22]) {
+          const FX = LX * S - 6;
+          const FYr = 102 * S;
+          for (let j = 0; j < 12; j++) for (let i = 0; i < 13; i++) img.px(FX + i, FYr + j, j < 3 ? (j ? C.snow[3] : 0xffffff) : i === 0 ? 0x9a9ca6 : i === 12 ? 0x5a5c66 : 0x7a7c86);
+        }
+        // the entrance hall: snow on its flat roof, the glass front lit, the doors, flags either side
+        const X0 = 78 * S;
+        const Y0 = 96 * S;
+        for (let j = 0; j < 36; j++)
+          for (let i = 0; i < 72; i++) {
+            const X = X0 + i;
+            const Yy = Y0 + j;
+            if (j < 18) img.px(X, Yy, j < 2 ? (j ? C.snow[2] : 0x5a5c66) : j > 15 ? 0x4a4c56 : snowPx(X, Yy, 0.65, 0.3, 97));
+            else if (i % 9 === 0 || j === 18 || j === 35) img.px(X, Yy, 0x4a4e5a);
+            else glowPx(X, Yy, i > 30 && i < 42 && j > 24 ? 0xffe8c0 : (i + j) % 11 === 0 ? 0xc8a070 : 0xfff0d0, 0.9);
+          }
+        for (const [i, c] of [[-6, 0xd83a3a], [76, 0x2a6ad0]]) {
+          for (let j = 0; j < 30; j++) img.px(X0 + i, Y0 + 4 + j, 0xb8bcc8);
+          for (let j = 0; j < 8; j++) for (let k = 1; k < 9; k++) img.px(X0 + i + k, Y0 + 4 + j, j === 0 ? scaleColor(c, 1.15) : c);
+        }
+        pool(90, 110, 18, 0xffd8a0, 0.4);
+      },
+    });
+    // the tower lit up: warm floods on the legs, cool on the deck, its red lights (they blink, live)
+    pool(90, 70, 30, 0xff9a50, 0.22);
+    pool(90, 30, 20, 0xa0c0ff, 0.25);
+    beacons.push([80, U(19)], [100, U(19)]);
+    // the barriers in front of the pedestal, where the crowd waits for the bear
+    objects.push({
+      y: py + 25,
+      draw: () => {
+        for (let X = 30 * S; X < 150 * S; X++) {
+          const seg = Math.floor((X - 30 * S) / 24);
+          const k = (X - 30 * S) % 24;
+          if (k === 23) continue;
+          const Yb = (py + 23) * S;
+          img.px(X, Yb, hashPx(X, Yb, 98) < 0.5 ? 0xffffff : 0xb8bcc8);
+          img.px(X, Yb + 4, 0x8a8c98);
+          if (k % 2 === 0) for (let j = 1; j < 4; j++) img.px(X, Yb + j, 0x6a6c78);
+          if (k === 1 || k === 21) for (let j = 4; j < 7; j++) img.px(X, Yb + j, 0x3a3c48);
+          if (seg % 3 === 1 && k > 6 && k < 17) for (let j = 1; j < 4; j++) img.px(X, Yb + j, j === 2 ? 0xffffff : 0x2a6ad0);
+        }
+        // the searchlights' housings either side of the pedestal, their lenses blazing
+        for (const bx of [40, 140]) {
+          const X = bx * S;
+          const Yb = (py + 8) * S;
+          for (let j = -5; j <= 5; j++) for (let i = -5; i <= 5; i++) {
+            const d = Math.hypot(i, j);
+            if (d < 5.5) img.px(X + i, Yb + j, d > 4.5 ? 0x2a2c36 : j < -1 ? C.snow[3] : 0x4a4c58);
+          }
+          for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) if (i * i + j * j < 6) glowPx(X + i, Yb + j, 0xffffff);
+          pool(bx, py + 8, 10, 0xe8f0ff, 0.35);
+        }
+      },
+    });
+    // the flags along the plaza on their masts (they fly, live)
+    const flagC = [0xd83a3a, 0x2a6ad0, 0xe8c030, 0x2a9a5a, 0xf4f4f8, 0xff5ab0];
+    const flags = [];
+    for (let k = 0; k < 6; k++) {
+      const x = 34 + k * 22 + (k > 2 ? 4 : 0);
+      const y = Y(6842);
+      if (isRes(x, y)) continue;
+      flags.push([x, y, flagC[k]]);
+      objects.push({
+        y: y + 1,
+        shadow: () => shadowRect(x + 1, y + 1, 1, 1, 0.5),
+        draw: () => {
+          for (let j = -2; j < 2; j++) for (let i = -1; i < 2; i++) img.px(x * S + i, y * S + j, j === -2 ? 0xffffff : 0x9a9ca8);
+          for (let k2 = 0; k2 < 14; k2++) img.px(x * S + 2 + k2, y * S + 2 + Math.round(k2 * 0.5), 0x101018, 0.35);
+        },
+      });
+    }
+    // the frozen fountain: its granite rim with snow on it, the ice of the basin cracked and dusted, the jets
+    // frozen into a column of icicles over the bowl, blue lamps under the ice
+    {
+      const fx = 90;
+      const fu = 6884;
+      const fyy = Y(fu);
+      if (!anyRes(fx - 13, fyy - 13, 26, 26)) {
+        objects.push({
+          y: fyy + 12,
+          shadow: () => shadowRect(fx - 10, fyy - 10, 24, 24, 0.75),
+          draw: () => {
+            const CX = fx * S;
+            const CY = fyy * S;
+            for (let j = -39; j <= 39; j++)
+              for (let i = -39; i <= 39; i++) {
+                const d = Math.hypot(i, j);
+                if (d > 38.5) continue;
+                const X = CX + i;
+                const Yy = CY + j;
+                let c;
+                if (d > 33) c = j < -2 && fbm(X * 0.4, Yy * 0.4, { seed: 99, scale: 3 }) > 0.35 ? 0xffffff : d > 37 ? 0x4a4a56 : i + j < 0 ? 0x9a98a4 : 0x7a7884;
+                else if (d > 12) {
+                  c = fbm(X * 0.2, Yy * 0.2, { seed: 100, scale: 4 }) > 0.6 ? C.snow[3] : (Math.abs(Math.sin(Math.atan2(j, i) * 5 + d * 0.3)) < 0.06 ? 0xe8f4ff : 0x8ab4d8);
+                  if (d < 16) c = mix(c, 0x60a8ff, 0.3);
+                } else if (d > 9) c = d > 11 ? 0x5a5a66 : 0xa8a6b2;
+                else {
+                  const a = Math.atan2(j, i);
+                  const spoke = Math.abs(Math.sin(a * 6)) < 0.25;
+                  c = spoke ? (d < 3 ? 0xffffff : 0xd8ecff) : d < 4 ? 0xb8d8f4 : 0x90bce4;
+                }
+                if (d <= 33 && d > 12) glowPx(X, Yy, c, 0.55);
+                else img.px(X, Yy, c);
+              }
+            for (let k = 0; k < 8; k++) glowPx(CX + Math.round(Math.cos(k * 0.785) * 20), CY + Math.round(Math.sin(k * 0.785) * 20), 0x60c0ff);
+            pool(fx, fyy, 16, 0x60b0ff, 0.4);
+          },
+        });
+        reserveRect(fx - 13, fyy - 13, 26, 26);
+      }
+    }
+    // people strolling over the plaza, round the fountain, taking pictures of the tower
+    {
+      const wr = rng(9601);
+      for (let k = 0; k < 70; k++) {
+        const x = 28 + wr() * 124;
+        const y = Y(6832 + wr() * 160);
+        const pr = rng(k * 41 + 7);
+        if (isRes(x, y) || isRes(x + 1, y + 2)) continue;
+        personPx(Math.round(x * S), Math.round(y * S), pr);
+        if (wr() < 0.25) glowPx(Math.round(x * S) + 1, Math.round(y * S) - 4, 0xd8ecff);
+      }
+    }
+    // broadcast vans at the plaza's edge: white boxes with the station's stripe, a dish on each roof, cables
+    for (const [vx, vu, c] of [[26, 6900, 0xd83a3a], [148, 6958, 0x2a6ad0]]) {
+      const vy = Y(vu + 15);
+      if (anyRes(vx, vy - 1, 7, 17)) continue;
+      reserveRect(vx, vy - 1, 7, 17);
+      objects.push({
+        y: vy + 15,
+        shadow: () => shadowRect(vx + 1.5, vy + 1.5, 7, 15, 0.6),
+        draw: () => {
+          const X = vx * S;
+          const Yy = vy * S;
+          for (let j = 0; j < 45; j++)
+            for (let i = 0; i < 21; i++) {
+              if ((i < 1 || i > 19) && (j < 2 || j > 42)) continue;
+              let col = j < 3 ? 0x2a2a30 : j < 9 ? (i < 2 || i > 18 ? 0xd8dce4 : 0x2a3a50) : i < 2 || i > 18 ? (j % 10 < 5 ? c : 0xf4f4f8) : hashPx(X + i, Yy + j, 101) < 0.08 ? C.snow[2] : 0xf0f2f6;
+              img.px(X + i, Yy + j, col);
+            }
+          for (let j = -7; j <= 7; j++)
+            for (let i = -7; i <= 7; i++) {
+              const d = Math.hypot(i, j * 1.1);
+              if (d < 7.5) img.px(X + 10 + i, Yy + 26 + j, d > 6.5 ? 0x7a7c88 : i + j < -3 ? 0xffffff : 0xd0d4dc);
+            }
+          for (let k = 0; k < 6; k++) img.px(X + 10 + k, Yy + 26 - k, 0x4a4c58);
+          glowPx(X + 16, Yy + 20, 0xff3030);
+          for (let k = 0; k < 30; k++) img.px(X + (vx < 90 ? 21 + k : -1 - k), Yy + 40 + Math.round(Math.sin(k * 0.3) * 2), 0x1a1a22);
+        },
+      });
+    }
+
+    // ---- the live parts of the festival's end
+    const lr = rng(9501);
+    // flags flying
+    for (const [x, y, c] of flags) {
+      const fl = [0, 1, 2].map((p) => {
+        const r = new HiCanvas(5, 3);
+        for (let i = 0; i < 13; i++) {
+          const wv = Math.round(Math.sin(i * 0.6 + p * 2.1) * 1.2);
+          for (let j = 0; j < 6; j++) r.px(1 + i, 1 + j + wv, j === 0 ? scaleColor(c, 1.15) : i > 10 ? scaleColor(c, 0.8) : c);
+        }
+        return frameAt(r, U(y));
+      });
+      kit.loop(x, U(y) + 2, fl, { fps: 5, ph: lr() });
+    }
+    // the searchlights either side of the pedestal sweeping the sky over the plaza
+    const beams = [];
+    for (let k = 0; k < 9; k++) {
+      const ang = -0.6 + k * 0.15;
+      const r = new HiCanvas(48, 48);
+      for (let FYr = 0; FYr < 144; FYr++)
+        for (let FXr = 0; FXr < 144; FXr++) {
+          const dx = FXr - 72;
+          const dy = 143 - FYr;
+          const d = Math.hypot(dx, dy);
+          if (d < 4 || d > 140) continue;
+          const da = Math.abs(Math.atan2(dx, dy) - ang);
+          const wdt = 0.05 + 0.02 * (d / 140);
+          if (da < wdt) r.px(FXr, FYr, 0xe8f0ff, 0.2 * (1 - d / 140) * (1 - da / wdt));
+        }
+      beams.push(kit.frame(r));
+    }
+    for (const [bx, ph] of [[40, 0], [140, 0.5]]) kit.loop(bx - 24, U(py + 8 - 48), beams, { seq: [0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1], fps: 3, ph, d: 0.6 });
+    // cars up and down the side streets (clear of where the snowplough comes down them)
+    {
+      const carBody = (r, w, h, c, along, down) => {
+        for (let j = 0; j < h; j++)
+          for (let i = 0; i < w; i++) {
+            if ((i === 0 || i === w - 1) && (j === 0 || j === h - 1)) continue;
+            const a = along === 'x' ? i : down ? j : h - 1 - j;
+            const n = along === 'x' ? w : h;
+            let col = (along === 'x' ? j : i) === 0 ? scaleColor(c, 1.18) : (along === 'x' ? j === h - 1 : i === w - 1) ? scaleColor(c, 0.72) : c;
+            if (a >= n * 0.62 && a < n * 0.72) col = 0x2a3a50;
+            else if (a >= n * 0.25 && a < n * 0.62) col = hashPx(i, j, n) < 0.75 ? C.snow[3] : C.snow[2];
+            else if (a >= n * 0.18 && a < n * 0.25) col = 0x3a4a5e;
+            r.px(i, j, col);
+          }
+      };
+      const carV = (c, down) => {
+        const r = new HiCanvas(3, 5);
+        carBody(r, 9, 15, c, 'y', down);
+        return frameAt(r, 6400, down ? [[0, 4, 0xfff4d0, 0.6], [2, 4, 0xfff4d0, 0.6], [0, 0, 0xff3020, 0.7], [2, 0, 0xff3020, 0.7]] : [[0, 4, 0xff3020, 0.7], [2, 4, 0xff3020, 0.7], [0, 0, 0xfff4d0, 0.6], [2, 0, 0xfff4d0, 0.6]]);
+      };
+      const carH = (c) => {
+        const r = new HiCanvas(5, 3);
+        carBody(r, 15, 9, c, 'x');
+        return frameAt(r, 6400, [[4, 0, 0xfff4d0, 0.5], [4, 2, 0xfff4d0, 0.5], [0, 0, 0xff3020, 0.55], [0, 2, 0xff3020, 0.55]]);
+      };
+      const cols = [0xe8c030, 0x2a2a30, 0xe0e0e8, 0x8a2a2a, 0x3a5a9a];
+      const T = L + 10;
+      for (const [pts, down, s0] of [
+        [[[-8, 5803], [12, 5803], [12, T]], false, 0.1],
+        [[[16, T], [16, 5797], [-8, 5797]], true, 0.55],
+        [[[188, 5797], [164, 5797], [164, T]], false, 0.35],
+        [[[168, T], [168, 5803], [188, 5803]], true, 0.8],
+      ])
+        kit.path(pts, cols.map(carH), { sp: 12, n: 4, gap: 330, turn: 'flip', fu: cols.map((c) => carV(c, false)), fd: cols.map((c) => carV(c, true)), cars: 1, s0 });
+    }
+    // people along the pavements
+    {
+      const walker = (c, hat, f) => {
+        const r = new HiCanvas(2, 4);
+        r.px(1, 0, hat);
+        r.px(2, 0, hat);
+        r.px(1, 1, 0xe8c0a0);
+        r.px(2, 1, 0xe8c0a0);
+        for (let j = 2; j < 7; j++) for (let i = 0; i < 4; i++) r.px(i, j, i === 3 ? scaleColor(c, 0.75) : c);
+        r.px(f ? 1 : 2, 7, 0x2a2a34);
+        r.px(f ? 2 : 1, 8, 0x1a1418);
+        for (let i = 1; i < 5; i++) r.px(i, 10, 0x101018, 0.35);
+        return frameAt(r, 6400);
+      };
+      for (const [x, up] of [[9, 1], [9.4, 0], [171, 1], [170.6, 0]]) {
+        const c = lr.pick([0xd04040, 0x3a6ad0, 0x2a2a34, 0xe8e8f0, 0x5a3a2a, 0xe8c040]);
+        const hat = lr.pick([0xd83a3a, 0xe8e0d0, 0x2a2a34, 0x3a8ad0]);
+        const pts = up ? [[x, ODORI[0] + 10], [x, L + 4]] : [[x, L + 4], [x, ODORI[0] + 10]];
+        kit.path(pts, [walker(c, hat, 0), walker(c, hat, 1)], { sp: 3, n: 8, gap: 270, mode: 'wrap', turn: 'none', fps: 3, s0: lr() });
+      }
+    }
+    // the big-air riders: dropping in from the deck, down the in-run, over the kicker and out on the landing
+    if (bigAirAt) {
+      const [cx, y] = bigAirAt;
+      const rider = (c, f) => {
+        const r = new HiCanvas(3, 6);
+        for (let j = 2; j < 16; j++) for (let i = 3; i < 6; i++) r.px(i + (f && j > 8 ? 1 : 0), j, j === 2 || j === 15 ? scaleColor(c, 0.7) : c);
+        for (let j = 5; j < 12; j++) for (let i = 2; i < 7; i++) if (!(j === 5 && (i === 2 || i === 6))) r.px(i, j, i === 6 ? 0x2a2a34 : j < 7 ? 0xf4f4f8 : 0x3a3a48);
+        r.px(4, 4, 0x2a2a34);
+        r.px(f ? 1 : 7, 8, 0x3a3a48);
+        for (let i = 2; i < 8; i++) r.px(i + 2, 17, 0x101018, 0.3);
+        return frameAt(r, U(y + 70));
+      };
+      const pts = [[cx - 1, U(y - 6)], [cx - 1, U(y + 72)], [cx, U(y + 84)], [cx + 3, U(y + 130)], [cx + 14, U(y + 140)]];
+      kit.path(pts, [rider(0x30c0ff, 0), rider(0x30c0ff, 1)], { sp: 30, n: 1, mode: 'wrap', turn: 'none', fps: 2, s0: 0.2 });
+      kit.path(pts.map(([x, u]) => [x + 1, u]), [rider(0xff5ab0, 0), rider(0xff5ab0, 1)], { sp: 30, n: 1, mode: 'wrap', turn: 'none', fps: 2, s0: 0.7 });
+      // the DJ's lamps changing colour along the truss
+      const bar = [0, 1, 2].map((p) => {
+        const r = new HiCanvas(30, 1);
+        for (let i = 2; i < 88; i += 3) r.px(i, 1, NEON[(Math.floor(i / 3) + p * 2) % NEON.length], (i / 3 + p) % 3 === 0 ? 1 : 0.4);
+        return kit.frame(r);
+      });
+      kit.loop(110, U(y + 30), bar, { fps: 4, ph: 0.3, fx: 1 });
+    }
+  }
+
+  // ------------------------------------------------------------ more of the river, Nakajima park and the jump: paths and
+  // stairs on the embankments, swans in the open water, ice slabs and fox tracks, piers and people on the
+  // bridges; the Kitara hall's curved glass, a tea garden with snow lanterns and roped pines; the spectators
+  // lining the landing hill, camera towers, fire drums (some of it live)
+  {
+    const vr = rng(9701);
+    const [r0, r1] = RIVER;
+    const ch = (x) => (r0 + r1) / 2 + 22 * Math.sin(x / 34 + 1) + 8 * Math.sin(x / 13);
+    const cw = (x) => 4 + 2 * Math.sin(x / 21);
+    const onBridge = (x) => Math.abs(x - 90) < 13 || Math.abs(x - 30) < 9;
+    // paths along the tops of both embankments, trodden, lamps along them, benches, stairs down to the ice
+    for (const [pu, dir] of [[r0 + 7, 1], [r1 - 7, -1]]) {
+      img.fine(0, Y(pu + 1.2), W, 2.4, (FXr, FYr, x, y) => {
+        if (onBridge(x)) return null;
+        const a = Math.abs(L - y - pu);
+        if (a > 1.1) return null;
+        if (a > 0.85) return C.snow[3];
+        return hashPx(FXr >> 1, FYr >> 1, 105) < 0.06 ? 0x8a867e : rampColor(C.packed, 0.5 + fbm(FXr / S, FYr / S, { seed: 106, scale: 3 }) * 0.4, FXr, FYr);
+      });
+      for (let x = 8; x < W; x += 28) {
+        if (onBridge(x) || onBridge(x + 4)) continue;
+        const X = x * S;
+        const Yy = Y(pu + dir * 2) * S;
+        for (let j = -9; j < 1; j++) img.px(X, Yy + j, 0x4a4c58);
+        for (let i = -2; i <= 2; i++) img.px(X + i, Yy - 10, i ? 0x3a3c46 : 0x6a6c78);
+        glowPx(X, Yy - 9, 0xfff0c8);
+        glowPx(X - 1, Yy - 9, 0xfff0c8, 0.6);
+        glowPx(X + 1, Yy - 9, 0xfff0c8, 0.6);
+        pool(x, Y(pu), 10, C.lamp, 0.35);
+      }
+      for (const x of dir > 0 ? [58, 138] : [48, 122]) {
+        if (onBridge(x)) continue;
+        // stone steps down the slope from the path to the ice, snow on their treads, a rail
+        for (let k = 0; k < 7; k++) {
+          const su = pu + dir * (2 + k);
+          for (let j = 0; j < S; j++)
+            for (let i = 0; i < 6 * S; i++) img.px((x - 3) * S + i, Y(su) * S + j, j === (dir > 0 ? S - 1 : 0) ? 0x5a6074 : hashPx(i, k * 3 + j, 107) < 0.4 ? C.snow[3] : 0x9aa0b4);
+          img.px((x + 3) * S, Y(su) * S, 0x3a3c46);
+          img.px((x + 3) * S, Y(su) * S + 1, 0x8a8c96);
+        }
+      }
+      for (const x of dir > 0 ? [110, 170] : [10, 150]) {
+        if (onBridge(x)) continue;
+        const X = (x - 4) * S;
+        const Yy = Y(pu + dir * 2.5) * S;
+        for (let j = 0; j < 7; j++)
+          for (let i = 0; i < 22; i++) {
+            if (j >= 5 && i >= 2 && i <= 19) continue;
+            img.px(X + i, Yy + j, j < 2 ? C.snow[3] : j < 5 ? (hashPx(i, j, 108) < 0.5 ? C.snow[2] : j % 2 ? 0x7a5a3a : 0x6a4a30) : 0x22222a);
+          }
+      }
+    }
+    // ice slabs heaved up along the open water, their broken edges catching the light
+    for (let k = 0; k < 26; k++) {
+      const x = 4 + vr() * 172;
+      if (onBridge(x)) continue;
+      const side = vr() < 0.5 ? -1 : 1;
+      const u = ch(x) + side * (cw(x) + 1.5 + vr() * 2.5);
+      const ang = (vr() - 0.5) * 1.4;
+      const lw = 3 + vr() * 4;
+      const lh = 1.4 + vr() * 1.2;
+      const CX = x * S;
+      const CY = Y(u) * S;
+      const ca = Math.cos(ang);
+      const sa = Math.sin(ang);
+      for (let j = -12; j <= 12; j++)
+        for (let i = -12; i <= 12; i++) {
+          const a = (i * ca + j * sa) / S;
+          const b = (-i * sa + j * ca) / S;
+          if (Math.abs(a) < lw / 2 && Math.abs(b) < lh / 2) {
+            const edge = b < -lh / 2 + 0.4;
+            img.px(CX + i, CY + j, edge ? 0xf4fbff : Math.abs(b) > lh / 2 - 0.35 ? 0x7a98b8 : hashPx(CX + i, CY + j, 109) < 0.3 ? 0xc8dcec : C.ice[3]);
+          } else if (Math.abs(a) < lw / 2 + 0.3 && b > lh / 2 && b < lh / 2 + 0.9) img.px(CX + i, CY + j, 0x101828, 0.3);
+        }
+    }
+    // a fox's tracks across the snow on the ice, from the bank to the water's edge and away
+    for (const [x0, dir] of [[52, 1], [150, -1]]) {
+      let x = x0;
+      for (let u = r0 + 12; u < ch(x0) - cw(x0) - 1; u += 1.4) {
+        x += Math.sin(u * 0.15) * 0.5 * dir;
+        const side = Math.round(u / 1.4) % 2 ? 1 : -1;
+        img.px(Math.round(x * S + side * 2), Y(u) * S, 0x8a96b4);
+        img.px(Math.round(x * S + side * 2) + 1, Y(u) * S, 0x9aa6c4);
+      }
+    }
+    // the piers under the bridges where they stand in the channel, rings of ice round them
+    for (const [bx, hw] of [[90, 10], [30, 6]]) {
+      const pu = ch(bx);
+      for (const s2 of [-1, 1]) {
+        const PX = (bx + s2 * (hw + 2.5)) * S;
+        const PY = Y(pu) * S;
+        objects.push({
+          y: Y(r0) + 0.2,
+          draw: () => {
+            for (let j = -9; j <= 9; j++)
+              for (let i = -9; i <= 9; i++) {
+                const d = Math.hypot(i * 1.3, j);
+                if (d > 9) continue;
+                img.px(PX + i, PY + j, d > 7.5 ? 0xe8f4ff : d > 6 ? 0xb8d0e4 : i * s2 < 0 ? 0x8a8e9c : 0x5a5e6c);
+              }
+          },
+        });
+      }
+      // people crossing on the bridge's pavements
+      for (let u = r0 + 4; u < r1 - 4; u += 9)
+        for (const s2 of [-1, 1]) if (vr() < 0.4) {
+          const pr = rng(u * 5 + bx + s2);
+          objects.push({ y: Y(r0) + 0.3, draw: () => personPx(Math.round((bx + s2 * (hw - 0.7)) * S) - 1, Y(u) * S, pr) });
+        }
+    }
+    // whooper swans and mallards on the open water, drifting about (live)
+    {
+      const swan = (f) => {
+        const r = new HiCanvas(4, 3);
+        for (let j = 0; j < 9; j++)
+          for (let i = 0; i < 12; i++) {
+            const d = ((i - 6) / 5.5) ** 2 + ((j - 5) / 3.2) ** 2;
+            if (d < 1) r.px(i, j, j < 4 ? 0xffffff : i > 8 ? 0xd8e0ec : 0xf4f6fa);
+          }
+        for (let j = 0; j < 4; j++) r.px(f ? 2 : 9, j + 1, 0xffffff);
+        r.px(f ? 1 : 10, 1, 0xf0d040);
+        r.px(f ? 0 : 11, 1, 0x1a1a20);
+        for (let i = 1; i < 11; i++) r.px(i, 8, 0x0a1420, 0.4);
+        return frameAt(r, r0 + 90);
+      };
+      const duck = (male) => {
+        const r = new HiCanvas(2, 2);
+        for (let j = 1; j < 5; j++) for (let i = 0; i < 6; i++) if (!((i === 0 || i === 5) && (j === 1 || j === 4))) r.px(i, j, male ? (j < 3 ? 0x8a7a6a : 0x6a5a4a) : j < 3 ? 0x9a7a5a : 0x7a5a3a);
+        r.px(4, 0, male ? 0x2a6a3a : 0x7a5a3a);
+        r.px(5, 0, male ? 0x2a6a3a : 0x7a5a3a);
+        r.px(5, 1, 0xe8c040);
+        return frameAt(r, r0 + 90);
+      };
+      for (const x of [20, 66, 118, 160]) {
+        if (onBridge(x)) continue;
+        kit.wander(x, ch(x) + 0.5, 5, 0.6, [swan(0), swan(1)], { n: 2, sp: 1.2, idle: 0.6, turn: 'flip', fps: 1 });
+      }
+      for (const x of [44, 104, 140]) kit.wander(x, ch(x) + 0.5, 4, 0.5, [duck(1), duck(0)], { n: 2, sp: 1.5, idle: 0.5, turn: 'flip', fps: 1 });
+    }
+    // joggers and walkers along the embankment paths (live)
+    {
+      const walker = (c, hat, f) => {
+        const r = new HiCanvas(2, 4);
+        r.px(1, 0, hat);
+        r.px(2, 0, hat);
+        r.px(1, 1, 0xe8c0a0);
+        r.px(2, 1, 0xe8c0a0);
+        for (let j = 2; j < 7; j++) for (let i = 0; i < 4; i++) r.px(i, j, i === 3 ? scaleColor(c, 0.75) : c);
+        r.px(f ? 1 : 2, 7, 0x2a2a34);
+        r.px(f ? 2 : 1, 8, 0x1a1418);
+        for (let i = 1; i < 5; i++) r.px(i, 10, 0x101018, 0.35);
+        return frameAt(r, r0);
+      };
+      for (const [pu, dirx] of [[r0 + 7, 1], [r1 - 7, -1]]) {
+        const c = vr.pick([0xd04040, 0x3a6ad0, 0xe8c040, 0x2a2a34]);
+        const hat = vr.pick([0xd83a3a, 0xe8e0d0, 0x3a8ad0]);
+        const pts = dirx > 0 ? [[-6, pu + 1.5], [186, pu + 1.5]] : [[186, pu + 1.5], [-6, pu + 1.5]];
+        kit.path(pts, [walker(c, hat, 0), walker(c, hat, 1)], { sp: 4, n: 3, gap: 70, turn: 'flip', fps: 4, s0: vr() });
+      }
+    }
+  }
+
+  // Nakajima park: the Kitara concert hall's oval roof and its curved glass front; a tea garden behind a bamboo
+  // fence, the tea house under its snow, snow-viewing lanterns lit, pines held up by ropes (yukitsuri)
+  {
+    const x = 18;
+    const y = Y(4860);
+    objects.push({
+      y: y + 44.5,
+      draw: () => {
+        const X0 = x * S;
+        const X1 = (x + 56) * S;
+        const Y0 = y * S;
+        const Y1 = (y + 36) * S;
+        // the low roofs round the hall, snow on them
+        for (let Yy = Y0; Yy < Y1; Yy++)
+          for (let X = X0; X < X1; X++) {
+            const e = Math.min(X - X0, X1 - 1 - X, Yy - Y0);
+            img.px(X, Yy, e === 0 ? 0x5a5c66 : e === 1 ? 0xa8acb8 : snowPx(X, Yy, 0.62, 0.3, 110));
+          }
+        // the hall's oval roof: metal in ribs from its crown, snow lying on the far half
+        const HX = (x + 24) * S;
+        const HY = (y + 15) * S;
+        for (let j = -42; j <= 42; j++)
+          for (let i = -66; i <= 66; i++) {
+            const d = (i / 66) ** 2 + (j / 42) ** 2;
+            if (d > 1) continue;
+            const a = Math.atan2(j, i);
+            let c = d > 0.92 ? 0x4a4c58 : Math.abs(Math.sin(a * 12)) < 0.1 ? 0x8a8e9c : rampColor([0x8a8e9c, 0x9a9eac, 0xaaaebc, 0xbcc0ce], 0.5 + (-i - j) / 130 - d * 0.3, HX + i, HY + j);
+            if (d < 0.9 && fbm((HX + i) * 0.15, (HY + j) * 0.15, { seed: 111, scale: 3 }) > 0.5 - (-j / 42) * 0.35 + d * 0.1) c = snowPx(HX + i, HY + j, 0.7, 0.28, 111);
+            img.px(HX + i, HY + j, c);
+          }
+        // the curved glass front sweeping round the south side, the foyer lit warm with people in it
+        for (let X = X0 + 4; X < X1 - 4; X++) {
+          const t = (X - (X0 + X1) / 2) / ((X1 - X0) / 2);
+          const top = Y1 - 26 + Math.round(t * t * 14);
+          for (let Yy = top; Yy < Y1; Yy++) {
+            if (Yy === top) img.px(X, Yy, 0xffffff);
+            else if ((X - X0) % 7 === 0 || (Yy - top) % 6 === 0) img.px(X, Yy, 0x6a7080);
+            else glowPx(X, Yy, hashPx(X >> 1, Yy >> 1, 112) < 0.05 ? 0x3a2a26 : 0xfff0d4, 0.85);
+          }
+        }
+        // the front: glass all the way along, the canopy over the doors
+        for (let Yy = Y1; Yy < (y + 44) * S; Yy++)
+          for (let X = X0; X < X1; X++) {
+            const fy = Yy - Y1;
+            if (fy < 2) img.px(X, Yy, fy ? C.snow[3] : 0x4a4c56);
+            else if ((X - X0) % 6 === 0) img.px(X, Yy, 0x5a6070);
+            else glowPx(X, Yy, fy > 16 && Math.abs(X - (X0 + X1) / 2) < 18 ? 0xffe8c0 : 0xf4f8ff, 0.88);
+          }
+        for (let X = (x + 20) * S; X < (x + 36) * S; X++) for (let j = 0; j < 4; j++) img.px(X, (y + 41) * S + j, j === 0 ? 0xffffff : 0x3a3c46);
+        pool(x + 28, y + 47, 24, 0xffe8c0, 0.4);
+      },
+    });
+    // the tea garden: wherever the park leaves room for it
+    const spots = [[124, 4540], [118, 4050], [24, 4290], [56, 4120], [120, 4760]];
+    const spot = spots.find(([gx, gu]) => !anyRes(gx - 1, Y(gu + 27), 36, 29));
+    if (spot) {
+      const [gx, gu] = spot;
+      const gy = Y(gu + 26);
+      reserveRect(gx - 1, gy - 1, 36, 29);
+      objects.push({
+        y: gy + 26,
+        shadow: () => shadowRect(gx + 2, gy + 2, 34, 26, 0.85),
+        draw: () => {
+          const X0 = gx * S;
+          const Y0 = gy * S;
+          const FW = 34 * S;
+          const FH = 26 * S;
+          // the snow inside, untrodden but for the stepping stones, a little pond frozen over
+          for (let j = 0; j < FH; j++)
+            for (let i = 0; i < FW; i++) {
+              const X = X0 + i;
+              const Yy = Y0 + j;
+              const fence = i < 3 || i > FW - 4 || j < 3 || j > FH - 4;
+              if (fence) {
+                const k = i < 3 || i > FW - 4 ? j : i;
+                img.px(X, Yy, (i < 1 || j < 1) ? C.snow[3] : k % 6 === 0 ? 0x6a5a3a : k % 6 < 3 ? 0xa8945e : 0x8a7a4a);
+                continue;
+              }
+              const pd = ((i - 70) / 16) ** 2 + ((j - 58) / 9) ** 2;
+              if (pd < 1) img.px(X, Yy, pd > 0.75 ? 0x6a7088 : rampColor(C.ice, 0.5 + fbm(X * 0.2, Yy * 0.2, { seed: 113, scale: 3 }) * 0.4, X, Yy));
+              else img.px(X, Yy, snowPx(X, Yy, 0.66, 0.3, 114));
+            }
+          // stepping stones from the gate to the tea house
+          for (let k = 0; k < 6; k++) {
+            const SX = X0 + 14 + k * 8;
+            const SY = Y0 + FH - 10 - k * 4;
+            for (let j = -2; j <= 2; j++) for (let i = -3; i <= 3; i++) if (i * i / 9 + j * j / 4 < 1) img.px(SX + i, SY + j, j < 0 ? 0xc8ccd8 : 0x7a7c88);
+          }
+          for (let j = 0; j < 6; j++) img.px(X0 + 12 + j, Y0 + FH - 2, 0x3a2a1a); // (the gate in the fence)
+          // the tea house: its thatch under a thick rounded cap of snow, the eaves, the paper doors lit
+          const TX = X0 + 54;
+          const TY = Y0 + 10;
+          for (let j = 0; j < 30; j++)
+            for (let i = 0; i < 42; i++) {
+              const X = TX + i;
+              const Yy = TY + j;
+              if (j < 20) {
+                const cap = ((i - 21) / 21) ** 2 + ((j - 10) / 11) ** 2;
+                img.px(X, Yy, cap < 0.8 ? rampColor(C.snow, 0.95 - (i + j) / 120, X, Yy) : j > 16 ? 0x5a4a32 : 0x7a6a48);
+              } else if (j < 22) img.px(X, Yy, 0x2a2018);
+              else if (i % 7 === 0 || j === 26) img.px(X, Yy, 0x4a3a28);
+              else glowPx(X, Yy, (i + j) % 3 ? 0xfff0d0 : 0xf0dcb0, 0.9);
+            }
+          pool(gx + 25, gy + 14, 9, 0xffe0b0, 0.4);
+          // snow-viewing lanterns: the broad hat heaped with snow, the light box lit, the curved legs
+          for (const [lx, ly] of [[X0 + 24, Y0 + 20], [X0 + 46, Y0 + 54]]) {
+            for (let j = -5; j <= 5; j++) for (let i = -8; i <= 8; i++) if (i * i / 64 + j * j / 25 < 1) img.px(lx + i, ly + j, j < 0 ? 0xffffff : C.snow[2]);
+            for (let j = 6; j < 9; j++) for (let i = -2; i <= 2; i++) glowPx(lx + i, ly + j, 0xffb860);
+            for (let j = 9; j < 13; j++) {
+              img.px(lx - 4 - (j - 9), ly + j, 0x5a5c66);
+              img.px(lx + 4 + (j - 9), ly + j, 0x5a5c66);
+            }
+            pool(lx / S, (ly + 7) / S, 6, 0xffb060, 0.4);
+          }
+          // pines held up by ropes from a pole at their crown
+          for (const [px2, py2, R] of [[X0 + 22, Y0 + 52, 13], [X0 + 88, Y0 + 60, 10]]) {
+            for (let j = -R; j <= R; j++)
+              for (let i = -R; i <= R; i++) {
+                const d = Math.hypot(i, j);
+                if (d > R) continue;
+                const clump = fbm((px2 + i) * 0.35, (py2 + j) * 0.35, { seed: 115, scale: 2 });
+                let c = clump > 0.55 ? (i + j < 0 ? 0x4a7a5a : 0x2a5a3a) : clump > 0.35 ? 0x1e4a2c : 0x14301e;
+                if (clump > 0.62 && i + j < R * 0.3) c = 0xf0f4fa;
+                img.px(px2 + i, py2 + j, c);
+              }
+            for (let k = 0; k < 14; k++) {
+              const a = (k / 14) * Math.PI * 2;
+              for (let t = 1; t <= R + 2; t++) img.px(Math.round(px2 + Math.cos(a) * t), Math.round(py2 + Math.sin(a) * t * 0.9), 0xd8c890, t < R ? 0.85 : 1);
+            }
+            for (let j = -2; j <= 1; j++) for (let i = -1; i <= 1; i++) img.px(px2 + i, py2 + j, 0xb8a060);
+          }
+        },
+      });
+    }
+  }
+
+  // the sledging hill: parents waiting at its foot, sleds left about, a floodlight on its pole for the evening
+  {
+    const hx = 150;
+    const hu = 4262;
+    const kr = rng(9851);
+    for (let k = 0; k < 9; k++) {
+      const x = hx - 26 + kr() * 30;
+      const y = Y(hu - 30 - kr() * 6);
+      if (isRes(x, y + 4)) continue;
+      personPx(Math.round(x * S), Math.round(y * S), rng(k * 19 + 3));
+    }
+    for (let k = 0; k < 5; k++) {
+      const SX = Math.round((hx - 22 + kr() * 26) * S);
+      const SY = Math.round(Y(hu - 26 - kr() * 4) * S);
+      const c = kr.pick([0xd83a2a, 0x3a6ad0, 0xe8c030]);
+      for (let j = 0; j < 7; j++) for (let i = 0; i < 4; i++) if (!((j === 0 || j === 6) && (i === 0 || i === 3))) img.px(SX + i, SY + j, j === 0 ? scaleColor(c, 1.2) : i === 3 ? scaleColor(c, 0.7) : c);
+    }
+    streetLamp(hx - 30, Y(hu + 10), false);
+    pool(hx - 6, Y(hu), 26, 0xe8f0ff, 0.25);
+  }
+
+  // the landing hill's spectators: crowds along both sides behind a snow fence, flags waved over them, a camera
+  // tower on each side, fire drums to warm their hands at (the smoke rises, live)
+  {
+    const cx = 90;
+    const sr = rng(9801);
+    const FL = [0xd83a3a, 0x2a6ad0, 0xf4f4f8, 0xe8c030, 0x2a9a5a];
+    for (const s2 of [-1, 1]) {
+      for (let u = 244; u < 500; u += 3) {
+        const t = (u - 235) / 287;
+        const hw = 28 - t * 13;
+        const fx = cx + s2 * (hw + 6);
+        const y = Y(u);
+        // the orange snow fence just outside the boards
+        for (let j = 0; j < S; j++) img.px(Math.round(fx * S), y * S + j, (y * S + j) % 2 ? 0xe86a20 : 0xc85010);
+        // the crowd behind it, two or three deep
+        for (let k = 0; k < 3; k++) if (sr() < 0.55 - k * 0.12) personPx(Math.round((fx + s2 * (1.5 + k * 1.8)) * S) - 1, y * S + Math.floor(sr() * 3), rng(u * 13 + k * 7 + s2));
+        if (sr() < 0.08) {
+          // a flag on its pole, waved
+          const c = sr.pick(FL);
+          const PX = Math.round((fx + s2 * 2.5) * S);
+          for (let j = 0; j < 10; j++) img.px(PX, y * S - 10 + j, 0x8a8c96);
+          for (let j = 0; j < 5; j++) for (let i = 0; i < 7; i++) img.px(PX + 1 + i, y * S - 10 + j + (i > 3 ? 1 : 0), j === 0 ? scaleColor(c, 1.15) : c === 0xf4f4f8 && Math.hypot(i - 3, j - 2.5) < 1.6 ? 0xd83a3a : c);
+        }
+        reserveRect(Math.min(fx, fx + s2 * 6), y - 1, 6, 3);
+      }
+      // the camera tower: a scaffold with the platform, the cameraman and the camera, its lamp
+      {
+        const u = 380;
+        const hw = 28 - ((u - 235) / 287) * 13;
+        const tx = cx + s2 * (hw + 16);
+        const ty = Y(u);
+        if (Math.abs(tx - (140 - ((u - 200) / 735) * 20)) > 9) {
+          reserveRect(tx - 4, ty - 4, 9, 9);
+          objects.push({
+            y: ty + 4,
+            shadow: () => shadowRect(tx - 1, ty - 1, 9, 9, 0.55),
+            draw: () => {
+              const X0 = (tx - 4) * S;
+              const Y0 = (ty - 4) * S;
+              for (let j = 0; j < 24; j++)
+                for (let i = 0; i < 24; i++) {
+                  const e = Math.min(i, j, 23 - i, 23 - j);
+                  img.px(X0 + i, Y0 + j, e < 2 ? (e === 0 ? 0x3a3c46 : 0x9a9ca8) : (i + j) % 6 === 0 || (i - j + 24) % 6 === 0 ? 0x6a6c78 : (j < 4 ? C.snow[3] : 0x5a5e6a));
+                }
+              personPx(X0 + 8, Y0 + 9, rng(tx));
+              for (let j = 0; j < 4; j++) for (let i = 0; i < 6; i++) img.px(X0 + 12 + (s2 < 0 ? 0 : -8) + i, Y0 + 9 + j, i === 5 ? 0x5a5c66 : 0x22222a);
+              glowPx(X0 + 12 + (s2 < 0 ? 5 : -8), Y0 + 10, 0xff3030);
+            },
+          });
+        }
+      }
+      // fire drums
+      for (const u of [300, 450]) {
+        const hw = 28 - ((u - 235) / 287) * 13;
+        const dx = cx + s2 * (hw + 13);
+        const dy = Y(u);
+        if (Math.abs(dx - (140 - ((u - 200) / 735) * 20)) < 7) continue; // (clear of the chairlift)
+        reserveRect(dx - 2, dy - 2, 4, 4);
+        objects.push({
+          y: dy + 2,
+          draw: () => {
+            const X = dx * S;
+            const Yy = dy * S;
+            for (let j = -4; j <= 4; j++)
+              for (let i = -4; i <= 4; i++) {
+                const d = Math.hypot(i, j);
+                if (d < 4.5) {
+                  if (d > 3.3) img.px(X + i, Yy + j, 0x3a3236);
+                  else glowPx(X + i, Yy + j, d < 1.5 ? 0xfff0a0 : (i + j) % 2 ? 0xff8a20 : 0xe85010);
+                }
+              }
+            pool(dx, dy, 12, 0xff9a40, 0.5);
+          },
+        });
+        kit.emit(dx, U(dy) + 1, smoke, { rate: 1, life: [1.8, 2.6], vy: 5, sx: 0.6, wf: 1, a: 0.4, tint: 1 });
+        for (let k = 0; k < 4; k++) {
+          const a = k * 1.6 + 0.4;
+          const pr = rng(u * 3 + k + s2);
+          personPx(Math.round((dx + Math.cos(a) * 3.2) * S) - 1, Math.round((dy + Math.sin(a) * 3.2) * S) - 2, pr);
+        }
+      }
     }
   }
 
