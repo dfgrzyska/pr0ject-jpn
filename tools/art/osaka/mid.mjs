@@ -506,6 +506,77 @@ export function buildMid() {
               }
           }
         }
+        // what the roof is used for (its own random numbers, so the layout stays as it was): a terrace garden, the
+        // top deck of a car park, a tower's stepped crown, a beer garden under lanterns
+        {
+          const kind = br();
+          const big = w >= 16 && h >= 12 && style !== 'warehouse' && style !== 'shop';
+          const IX0 = X0 + 6;
+          const IX1 = X1 - 6;
+          const IY0 = Y0 + 6;
+          const IY1 = Y1 - 6;
+          if (big && !tall && kind < 0.18) {
+            // a terrace garden: lawn in beds edged with timber, shrubs, a pergola's slats, benches, a path
+            for (let Yy = IY0; Yy < IY1; Yy++)
+              for (let X = IX0; X < IX1; X++) {
+                const bx = (X - IX0) % 18;
+                const by = (Yy - IY0) % 15;
+                let c;
+                if (bx < 2 || by < 2) c = bx === 0 || by === 0 ? 0x8a6a48 : 0xb8b0a0;
+                else {
+                  c = rampColor(C.grass, 0.35 + fbm(X * 0.3, Yy * 0.3, { seed: 79, scale: 2 }) * 0.5, X, Yy);
+                  if (fbm(X * 0.45, Yy * 0.45, { seed: 80, scale: 2 }) > 0.64) c = (X + Yy) % 3 ? 0x2a5a2a : 0x4a8a3e;
+                }
+                img.px(X, Yy, c);
+              }
+            for (let X = IX0; X < IX0 + 15 && X < IX1; X++) for (let Yy = IY0; Yy < IY0 + 12 && Yy < IY1; Yy += 3) img.px(X, Yy, 0xd8c8a8);
+          } else if (big && !tall && kind < 0.32) {
+            // the top deck of a car park: lanes, bays painted on the deck, cars parked, the ramp's opening
+            for (let Yy = IY0; Yy < IY1; Yy++)
+              for (let X = IX0; X < IX1; X++) {
+                const lx = X - IX0;
+                const ly = (Yy - IY0) % 30;
+                let c = hashPx(X, Yy, 83) < 0.1 ? 0x5a5a62 : 0x6a6a72;
+                if (ly >= 12 && ly <= 17) c = 0x5a5a62;
+                else if (lx % 12 === 0) c = 0xe8e4dc;
+                img.px(X, Yy, c);
+              }
+            for (let Yy = IY0 + 1; Yy < IY1 - 12; Yy += 30)
+              for (let X = IX0 + 2; X < IX1 - 9; X += 12) {
+                if (br() < 0.3) continue;
+                const cc = br.pick(CARS);
+                for (let j = 0; j < 11; j++) for (let i = 0; i < 8; i++) if (!((i === 0 || i === 7) && (j === 0 || j === 10))) img.px(X + i, Yy + j, j > 2 && j < 4 ? 0x2a3440 : j > 7 && j < 9 ? 0x34404c : i === 0 ? scaleColor(cc, 1.2) : i === 7 ? scaleColor(cc, 0.7) : cc);
+              }
+            for (let j = 0; j < 12; j++) for (let i = 0; i < 15; i++) img.px(IX1 - 16 + i, IY1 - 13 + j, (i + j) % 4 === 0 ? 0x3a3a42 : 0x4a4a52);
+          } else if (big && tall && kind < 0.4) {
+            // a stepped crown: the upper block set back, its own parapet, a band of light round its top
+            const ins = Math.floor(Math.min(X1 - X0, Y1 - Y0) * 0.22);
+            for (let Yy = Y0 + ins; Yy < Y1 - ins; Yy++)
+              for (let X = X0 + ins; X < X1 - ins; X++) {
+                const e = Math.min(X - X0 - ins, X1 - ins - 1 - X, Yy - Y0 - ins, Y1 - ins - 1 - Yy);
+                img.px(X, Yy, e === 0 ? scaleColor(roof, 1.3) : e === 1 ? scaleColor(roof, 0.75) : scaleColor(roof, 1.06));
+              }
+            for (let Yy = Y1 - ins; Yy < Y1 - ins + 8 && Yy < Y1 - 2; Yy++)
+              for (let X = X0 + ins; X < X1 - ins; X++) {
+                const fy = Yy - (Y1 - ins);
+                if (fy >= 3 && fy <= 5 && (X - X0) % 4 < 3) lamp(X, Yy, (X >> 3) % 2 ? C.cool : C.warm);
+                else img.px(X, Yy, fy === 0 ? scaleColor(wall, 0.6) : wall);
+              }
+          } else if (big && !tall && kind < 0.45 && n > 0.2) {
+            // a beer garden for the evening: tables under strings of lanterns, people at them
+            for (let Yy = IY0; Yy < IY1; Yy++) for (let X = IX0; X < IX1; X++) img.px(X, Yy, (X + Yy) % 6 === 0 ? 0x7a5a3a : 0x8a6a48);
+            for (let Yy = IY0 + 6; Yy < IY1 - 6; Yy += 15) {
+              for (let X = IX0; X < IX1; X++) img.px(X, Yy + Math.round(Math.sin((X - IX0) * 0.2) * 1.5), 0x2a2224);
+              for (let X = IX0 + 2; X < IX1; X += 6) glowPx(X, Yy + 2, (X >> 2) % 2 ? 0xff5a30 : 0xffe0a0, 0.95);
+              for (let X = IX0 + 4; X < IX1 - 10; X += 18) {
+                for (let j = 0; j < 4; j++) for (let i = 0; i < 9; i++) img.px(X + i, Yy + 6 + j, 0xd8c8a8);
+                personPx(X - 3, Yy + 7, br);
+                personPx(X + 10, Yy + 7, br);
+              }
+            }
+            pool(x + w / 2, y + h / 2, Math.min(w, h) * 0.6, 0xffb060, 0.3);
+          }
+        }
         if (heli) {
           // the helipad: its painted ring and H, the edge lights
           const HX = (x + Math.floor(w / 2)) * S + 1;
@@ -2178,6 +2249,10 @@ export function buildMid() {
         img.rect(x + 8, y + 3, 20, 3, 0xf2f0ea);
         img.rect(x + 8, y + 4, 20, 1, 0xd02a2a);
         for (let j = 0; j < 6; j++) img.line(x + 8 + j * 4, y + 22, x + 4 + j * 5 + (wave && j % 2 ? 2 : 0) - (wave && !(j % 2) ? 1 : 0), y + 32 - (wave && j % 2 ? 1 : 0), 0xc8362a);
+        // (fine: a gleam on the head, suckers in rows along the arms, the headband's knot)
+        for (let k2 = 0; k2 < 6; k2++) for (let q = 1; q < 8; q++) if (q % 2) img.px(Math.round((x + 8 + k2 * 4 + (x + 4 + k2 * 5 - x - 8 - k2 * 4) * (q / 9)) * S), Math.round((y + 22 + 10 * (q / 9)) * S) + 1, 0xf8c8b0);
+        for (let j = -3; j <= 3; j++) img.px((x + 13) * S + j, (y + 6) * S + Math.abs(j) - 3, 0xffd0c0);
+        for (const [i, j] of [[0, 0], [1, 1], [-1, 1], [0, 2], [2, 2], [-2, 2]]) img.px((x + 28) * S + i, (y + 4) * S + j, 0xf2f0ea);
         pool(x + 18, y + 14, 20, 0xff6040, 0.4);
       } else if (kind === 'ball') {
         for (let k = 0; k < 3; k++) {
@@ -2186,6 +2261,18 @@ export function buildMid() {
           img.line(x + 4 + k * 10, y + 10, x + 12 + k * 10, y + 14, 0xf4f0e0);
           img.set(x + 8 + k * 10, y + 9, 0x3a8a3a);
         }
+        // (fine: sauce in a glossy drizzle, mayonnaise zigzags, bonito flakes and green nori on each ball)
+        for (let k2 = 0; k2 < 3; k2++) {
+          const BX = (x + 8 + k2 * 10) * S;
+          const BY = (y + 12) * S;
+          for (let i = -12; i <= 12; i++) {
+            img.px(BX + i, BY - 4 + Math.round(Math.sin(i * 0.7) * 2), 0x5a2a12);
+            if (i % 3 === 0) img.px(BX + i, BY + 2 + (i % 2), 0xfff8e8);
+          }
+          for (let q = 0; q < 6; q++) img.px(BX - 6 + q * 2, BY - 8 + (q % 2) * 2, q % 2 ? 0xe8a868 : 0xc88848);
+          img.px(BX + 3, BY - 1, 0x2a6a2a);
+          img.px(BX - 4, BY + 4, 0x2a6a2a);
+        }
         pool(x + 18, y + 12, 18, 0xffb040, 0.35);
       } else if (kind === 'gyoza') {
         for (let k = 0; k < 3; k++) {
@@ -2193,12 +2280,22 @@ export function buildMid() {
           img.ellipse(x + 7 + k * 9, y + 11, 2, 4, 0xfff0d0);
           for (let j = 0; j < 4; j++) img.set(x + 6 + k * 9 + j, y + 6, 0xd8b880);
         }
+        // (fine: the pleats along each dumpling's edge, the crisp brown base)
+        for (let k2 = 0; k2 < 3; k2++) {
+          const GX = (x + 8 + k2 * 9) * S;
+          for (let j = -18; j <= 18; j += 4) img.px(GX + 12, (y + 12) * S + j, 0xc8a070);
+          for (let i = -12; i <= 12; i++) img.px(GX + i, (y + 18) * S + Math.round(Math.abs(i) * 0.1), 0xa86a30);
+        }
         pool(x + 16, y + 12, 18, 0xffe080, 0.35);
       } else if (kind === 'sushi') {
         img.rect(x + 4, y + 10, 26, 8, 0xf8f4ec);
         img.rect(x + 2, y + 5, 30, 7, 0xff7a4a);
         for (let k = 0; k < 6; k++) img.set(x + 4 + k * 5, y + 8, 0xffffff);
         img.rect(x + 14, y + 5, 4, 13, 0x1a2a1a);
+        // (fine: the grains of rice, the white streaks of fat in the salmon, the nori's sheen)
+        for (let Yf = (y + 12) * S; Yf < (y + 18) * S; Yf++) for (let X = (x + 4) * S; X < (x + 30) * S; X++) if (hashPx(X, Yf, 76) < 0.25) img.px(X, Yf, 0xe0dcd0);
+        for (let q = 0; q < 8; q++) for (let i = 0; i < 6; i++) img.px((x + 3) * S + q * 11 + i, (y + 6) * S + i, 0xffc8a8);
+        for (let Yf = (y + 5) * S; Yf < (y + 18) * S; Yf += 3) img.px((x + 15) * S, Yf, 0x3a5a3a);
         pool(x + 17, y + 12, 18, 0xff8a60, 0.35);
       } else if (kind === 'crab') {
         img.ellipse(x + 20, y + 14, 12, 8, 0xd83a2a);
@@ -2211,6 +2308,13 @@ export function buildMid() {
           if (wave) img.set(x + 20 + s * (15 + wave), y - 3, 0x1a1a1a);
           img.disc(x + 20 + s * 4, y + 6, 1.5, 0x1a1a1a);
         }
+        // (fine: bumps on the shell, the joints of the legs, a gleam)
+        for (let q = 0; q < 18; q++) {
+          const a = q * 2.4;
+          const rr = 3 + (q % 4) * 2.5;
+          img.px(Math.round((x + 20 + Math.cos(a) * rr) * S), Math.round((y + 14 + Math.sin(a) * rr * 0.6) * S), q % 2 ? 0xf8907a : 0xa82418);
+        }
+        for (let i = -6; i <= 2; i++) img.px((x + 17) * S + i, (y + 10) * S - Math.abs(i + 2) * 0.3, 0xffb0a0);
         pool(x + 20, y + 12, 22, 0xff5030, 0.4);
       } else {
         img.disc(x + 16, y + 12, 12, 0xd8302a);
@@ -2254,9 +2358,18 @@ export function buildMid() {
       for (let u = u0; u < u1; u++)
         for (let x = x0; x < x1; x++) {
           if (isRes(x, Y(u)) || W_(x, Y(u))) continue;
-          const row = Math.floor(u / 5);
-          const joint = u % 5 === 0 || (x + row * 7) % 9 === 0;
-          img.set(x, Y(u), joint ? STONE[0] : rampColor(STONE, 0.35 + fbm(x, u, { seed: 61, scale: 3 }) * 0.5, x, Y(u)));
+          // (fine: slabs of every length in courses, hairline joints, each slab its own tone, worn smooth)
+          const base = 0.35 + fbm(x, u, { seed: 61, scale: 3 }) * 0.5;
+          for (let j = 0; j < S; j++)
+            for (let i = 0; i < S; i++) {
+              const X = x * S + i;
+              const Yf = Y(u) * S + j;
+              const row = Math.floor(Yf / 10);
+              const off = Math.floor(hashPx(row, 0, 64) * 20);
+              const slab = Math.floor((X + off) / (14 + Math.floor(hashPx(row, 1, 65) * 10)));
+              const joint = Yf % 10 === 0 || (X + off) % (14 + Math.floor(hashPx(row, 1, 65) * 10)) === 0;
+              img.px(X, Yf, joint ? STONE[0] : rampColor(STONE, base + (hashPx(slab, row, 66) - 0.5) * 0.25 + (hashPx(X, Yf, 67) - 0.5) * 0.1, X, Yf));
+            }
         }
     };
     const gravelGround = (x0, x1, u0, u1, seed = 62) => {
@@ -2264,11 +2377,58 @@ export function buildMid() {
     };
     /** Red and white paper lanterns hanging under eaves: the light of old Osaka streets. */
     const chochin = (x, y, c = 0xff5a30) => {
-      img.set(x, y, c);
-      img.set(x, y + 1, scaleColor(c, 0.7));
-      glow(x, y, c, 0.9);
-      glow(x, y + 1, 0xffd080, 0.6);
+      const X = x * S;
+      const Yy = y * S;
+      for (let j = 0; j < 6; j++)
+        for (let i = -1; i <= 2; i++) {
+          if ((j === 0 || j === 5) && (i === -1 || i === 2)) continue;
+          if (j === 0 || j === 5) img.px(X + i, Yy + j, 0x1a1418);
+          else glowPx(X + i, Yy + j, j % 2 ? c : scaleColor(c, 0.82), i === -1 || i === 2 ? 0.75 : 0.95);
+        }
+      glowPx(X, Yy + 2, 0xffe0a0, 0.8);
+      img.px(X, Yy - 1, 0x2a2224);
+      glow(x, y + 1, c, 0.35);
       pool(x, y + 2, 6, c, 0.22);
+    };
+    /** A hip roof of kawara tiles in fine pixels: rows of round tiles on the slopes, courses on the hips, the
+     * ridge with its onigawara ends, the eave line of tile ends over the drip. */
+    const hipRoofPx = (x, y, w, roofH, ridge, hi, ramp) => {
+      const X0 = x * S;
+      const X1 = (x + w) * S;
+      const Y0 = y * S;
+      const Y1 = (y + roofH) * S;
+      const RY = ridge * S + 1;
+      const HI = hi * S;
+      for (let Yy = Y0; Yy < Y1; Yy++) {
+        const north = Yy <= RY;
+        const t = north ? (RY - Yy) / Math.max(1, RY - Y0) : (Yy - RY) / Math.max(1, Y1 - 1 - RY);
+        const inset = HI * (1 - t);
+        for (let X = X0; X < X1; X++) {
+          const lx = X - X0;
+          const rx = X1 - 1 - X;
+          if ((lx < 2 || rx < 2) && Yy < Y0 + 2) continue;
+          const hip = lx < inset || rx < inset;
+          let c = lx < inset ? ramp[3] : rx < inset ? ramp[0] : north ? ramp[2] : ramp[1];
+          if (hip) {
+            if ((Yy - Y0) % 3 === 0) c = scaleColor(c, 0.82);
+            if (Math.abs(lx - inset) < 1 || Math.abs(rx - inset) < 1) c = scaleColor(ramp[3], 1.15); // (the hip ridge)
+          } else {
+            const k = X % 3;
+            c = k === 0 ? scaleColor(c, 1.14) : k === 2 ? scaleColor(c, 0.8) : c;
+            if ((Yy - Y0) % 4 === 0) c = scaleColor(c, 0.88);
+          }
+          img.px(X, Yy, c);
+        }
+      }
+      for (let X = X0 + HI; X < X1 - HI; X++) {
+        img.px(X, RY, scaleColor(ramp[3], 1.2));
+        img.px(X, RY + 1, scaleColor(ramp[0], 0.8));
+      }
+      for (const ox of [X0 + HI - 2, X1 - HI - 1]) for (let j = -2; j <= 1; j++) for (let i = 0; i < 3; i++) img.px(ox + i, RY + j, j < 0 ? scaleColor(ramp[3], 1.25) : ramp[0]);
+      for (let X = X0; X < X1; X++) {
+        img.px(X, Y1 - 2, X % 3 === 0 ? 0xb8bcc4 : scaleColor(ramp[3], 1.05));
+        img.px(X, Y1 - 1, ramp[0]);
+      }
     };
     /** A traditional two-storey house with a tiled hip roof, a lattice front, noren, lanterns and a lit sign. */
     const oldHouse = (x, y, w, roofH, faceH, opt = {}) => {
@@ -2283,40 +2443,44 @@ export function buildMid() {
         y: y + roofH + faceH,
         shadow: () => shadowRect(x + 3, y + 3, w, roofH + faceH, 0.55),
         draw: () => {
-          for (let yy = y; yy < y + roofH; yy++) {
-            const north = yy <= ridge;
-            const t = north ? (ridge - yy) / Math.max(1, ridge - y) : (yy - ridge) / Math.max(1, y + roofH - 1 - ridge);
-            const inset = hi * (1 - t);
-            for (let xx = x; xx < x + w; xx++) {
-              const lx = xx - x;
-              const rx = x + w - 1 - xx;
-              let c = lx < inset ? ramp[3] : rx < inset ? ramp[0] : north ? ramp[2] : ramp[1];
-              if (lx < inset || rx < inset ? (yy - y) % 2 === 0 : (xx - x) % 2 === 0) c = scaleColor(c, 0.86);
-              img.set(xx, yy, c);
-            }
-          }
-          for (let xx = x + hi; xx < x + w - hi; xx++) img.set(xx, ridge, scaleColor(ramp[3], 1.15));
-          for (let xx = x; xx < x + w; xx++) img.set(xx, y + roofH - 1, ramp[0]);
-          img.clear(x, y);
-          img.clear(x + w - 1, y);
+          hipRoofPx(x, y, w, roofH, ridge, hi, ramp);
           const fy = y + roofH;
-          for (let yy = fy; yy < fy + faceH; yy++)
-            for (let xx = x + 1; xx < x + w - 1; xx++) {
-              const upper = yy - fy < Math.ceil(faceH / 2);
-              let c = (xx - x) % 2 === 0 ? WOOD[0] : upper ? WOOD[2] : WOOD[1];
-              if (yy === fy) c = 0x15100c;
-              img.set(xx, yy, c);
+          const FX0 = (x + 1) * S;
+          const FX1 = (x + w - 1) * S;
+          const FY0 = fy * S;
+          const FH = faceH * S;
+          for (let j = 0; j < FH; j++)
+            for (let X = FX0; X < FX1; X++) {
+              const Yy = FY0 + j;
+              const upper = j < Math.ceil(FH / 2);
+              let c;
+              if (j < 2) c = j === 0 ? 0x15100c : 0x2a1e16;
+              else if (upper) c = (X - FX0) % 3 === 0 ? WOOD[0] : j === 2 ? WOOD[1] : (X - FX0) % 9 < 6 && j > 3 ? 0xd8ccb0 : WOOD[2]; // (plaster and the mushiko slats upstairs)
+              else if ((X - FX0) % 2 === 0) c = WOOD[0]; // (the koshi lattice)
+              else {
+                glowPx(X, Yy, C.warm, 0.35 + (j === FH - 2 ? 0.2 : 0));
+                continue;
+              }
+              img.px(X, Yy, c);
             }
-          // warm light through the lattice, the noren in the doorway, lanterns either side
-          for (let xx = x + 2; xx < x + w - 2; xx += 2) glow(xx, fy + 1, C.warm, 0.35);
-          img.rect(nx, fy + 1, 6, Math.max(1, faceH - 2), noren);
-          img.rect(nx, fy + 1, 6, 1, scaleColor(noren, 1.3));
+          // the noren over the doorway: its cloth split in three, a pale crest on it
+          for (let j = 0; j < Math.max(3, FH - 5); j++)
+            for (let i = 0; i < 18; i++) {
+              if (j > 4 && i % 6 === 5) continue;
+              img.px(nx * S + i, FY0 + 3 + j, j === 0 ? scaleColor(noren, 1.3) : (i % 6 === 2 && j === 3) ? 0xf0e8d8 : noren);
+            }
           chochin(nx - 2, fy + 1, lamp);
           chochin(nx + 7, fy + 1, lamp);
           if (sign) {
             // a vertical signboard, lit from inside
-            const sx = x + w - 3;
-            for (let j = 0; j < Math.max(3, faceH + 2); j++) glow(sx, fy - 1 + j, j % 2 ? 0xfff4d8 : 0xffe0a0, 0.85);
+            const SX = (x + w - 3) * S;
+            const sr = rng(x * 7 + y);
+            for (let j = 0; j < Math.max(3, faceH + 2) * S; j++) {
+              img.px(SX - 1, (fy - 1) * S + j, 0x2a1e16);
+              img.px(SX + 3, (fy - 1) * S + j, 0x2a1e16);
+              for (let i = 0; i < 3; i++) glowPx(SX + i, (fy - 1) * S + j, 0xfff4d8, 0.9);
+            }
+            for (let k = 0; k + 3 < Math.max(3, faceH + 2) * S; k += 4) glyph(SX, (fy - 1) * S + k + 1, 3, 0x2a1a14, sr, (gx, gy, gc) => img.px(gx, gy, gc));
           }
         },
       });
@@ -2349,39 +2513,34 @@ export function buildMid() {
         y: y + roofH + faceH,
         shadow: () => shadowRect(x + 5, y + 5, w, roofH + faceH, 0.5),
         draw: () => {
-          for (let yy = y; yy < y + roofH; yy++) {
-            const north = yy <= ridge;
-            const t = north ? (ridge - yy) / Math.max(1, ridge - y) : (yy - ridge) / Math.max(1, y + roofH - 1 - ridge);
-            const inset = hi * (1 - t);
-            for (let xx = x; xx < x + w; xx++) {
-              const lx = xx - x;
-              const rx = x + w - 1 - xx;
-              let c = lx < inset ? ramp[3] : rx < inset ? ramp[0] : north ? ramp[2] : ramp[1];
-              if (lx < inset || rx < inset ? (yy - y) % 2 === 0 : (xx - x) % 3 === 0) c = scaleColor(c, 0.85);
-              img.set(xx, yy, c);
-            }
-          }
-          for (let xx = x; xx < x + w; xx++) {
-            img.set(xx, y + roofH - 2, ramp[3]);
-            img.set(xx, y + roofH - 1, ramp[0]);
-          }
-          img.clear(x, y);
-          img.clear(x + w - 1, y);
-          for (let xx = x + hi; xx < x + w - hi; xx++) img.set(xx, ridge, 0x1c1418);
+          hipRoofPx(x, y, w, roofH, ridge, hi, ramp);
           for (const gx of [x + hi, x + w - hi - 1]) {
-            img.set(gx, ridge, C.gold);
-            img.set(gx, ridge - 1, C.goldHi);
+            img.px(gx * S + 1, ridge * S, C.gold);
+            img.px(gx * S + 1, ridge * S - 1, C.goldHi);
+            img.px(gx * S + 1, ridge * S - 2, C.gold);
           }
           const fy = y + roofH;
-          for (let yy = fy; yy < fy + faceH; yy++)
-            for (let xx = x + 1; xx < x + w - 1; xx++) {
-              const k = (xx - x - 1) % 8;
-              const upper = yy - fy < Math.ceil(faceH / 2);
-              let c = k < 2 ? (k === 0 ? VERM[0] : VERM[1]) : opt.gold ? (upper ? C.gold : 0xa87a22) : upper ? 0xe9e2d0 : VERM[1];
-              if (yy === fy) c = 0x1a1210;
-              img.set(xx, yy, c);
+          const FX0 = (x + 1) * S;
+          const FX1 = (x + w - 1) * S;
+          const FY0 = fy * S;
+          const FH = faceH * S;
+          for (let j = 0; j < FH; j++)
+            for (let X = FX0; X < FX1; X++) {
+              const k = (X - FX0) % 24;
+              const upper = j < Math.ceil(FH / 2);
+              let c;
+              if (j < 2) c = 0x1a1210;
+              else if (j < 5) c = (X % 4 < 2) ? 0x2a6a5a : C.gold; // (the painted bracket band)
+              else if (k < 4) c = k === 0 ? scaleColor(VERM[0], 1.15) : k === 3 ? VERM[2] : VERM[0];
+              else if (opt.gold) c = upper ? ((X + j) % 5 === 0 ? C.goldHi : C.gold) : 0xa87a22;
+              else if (upper) c = (X + j) % 23 === 0 ? 0xd8d0bc : 0xe9e2d0;
+              else c = (X - FX0) % 3 === 0 || (j - 5) % 4 === 0 ? VERM[2] : VERM[1]; // (latticed doors)
+              img.px(X, FY0 + j, c);
             }
-          if (opt.door !== false) img.rect(x + Math.floor(w / 2) - 3, fy + 1, 6, faceH - 1, opt.gate ? 0x140c0a : 0x3a2418);
+          if (opt.door !== false) {
+            const DX = (x + Math.floor(w / 2) - 3) * S;
+            for (let j = 3; j < FH; j++) for (let i = 0; i < 18; i++) img.px(DX + i, FY0 + j, opt.gate ? 0x140c0a : i % 3 === 0 ? 0x2a1810 : 0x3a2418);
+          }
           // floodlights: the eave line and the posts catch the light
           for (let xx = x + 1; xx < x + w - 1; xx += 2) glow(xx, y + roofH - 2, 0xffd8a0, 0.35);
           for (let xx = x + 1; xx < x + w - 1; xx += 8) glow(xx, fy + 2, 0xffb070, 0.6);
@@ -2497,12 +2656,25 @@ export function buildMid() {
           if (x < 0 || x >= W || isRes(x, y)) continue;
           const e = ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 + (fbm(x, y, { seed: 69, scale: 10 }) - 0.5) * 0.3;
           if (e >= 1.16) continue;
-          if (e > 1) img.set(x, y, rampColor(STONE, 0.3 + fbm(x, y, { seed: 70, scale: 2 }) * 0.6, x, y));
-          else {
-            const n = fbm(x * 0.7, y * 1.5, { seed: 71, scale: 8, octaves: 2 });
-            img.set(x, y, n > 0.7 && (x + y) % 2 ? 0x4a7a8a : rampColor([0x0e2028, 0x14303a, 0x1c3e4a, 0x2a5060], 0.1 + n * 0.5, x, y));
-            water[y * W + x] = 1;
-          }
+          // (fine: the rim of rounded stones, the dark water with ripples catching the lanterns, a lily pad or two)
+          for (let j = 0; j < S; j++)
+            for (let i = 0; i < S; i++) {
+              const X = x * S + i;
+              const Yf = y * S + j;
+              const ef = ((X + 0.5) / S - cx) ** 2 / (rx * rx) + ((Yf + 0.5) / S - cy) ** 2 / (ry * ry) + (fbm(x, y, { seed: 69, scale: 10 }) - 0.5) * 0.3;
+              if (ef >= 1.16) continue;
+              if (ef > 1) {
+                const st = hashPx(Math.floor(X / 4), Math.floor(Yf / 3), 70);
+                img.px(X, Yf, (X % 4 === 0 || Yf % 3 === 0) ? STONE[0] : rampColor(STONE, 0.3 + st * 0.6, X, Yf));
+              } else {
+                const n = fbm(x * 0.7, y * 1.5, { seed: 71, scale: 8, octaves: 2 });
+                let c = rampColor([0x0e2028, 0x14303a, 0x1c3e4a, 0x2a5060], 0.1 + n * 0.5 + (ef > 0.9 ? -0.1 : 0), X, Yf);
+                if (Math.sin(X * 0.8 + Yf * 0.2 + n * 9) > 0.93 && hashPx(X >> 2, Yf, 75) < 0.45) c = 0x4a7a8a;
+                if (fbm(X * 0.15, Yf * 0.15, { seed: 72, scale: 2 }) > 0.8 && ef < 0.8) c = hashPx(X, Yf, 73) < 0.2 ? 0x5a8a4a : 0x3a6a3a;
+                img.px(X, Yf, c);
+              }
+            }
+          if (e <= 1) water[y * W + x] = 1;
           reserved[y * W + x] = 1;
         }
     };
@@ -2856,16 +3028,33 @@ export function buildMid() {
               const y = Y(u);
               const near = u <= crest;
               const t = near ? (u - b0) / (crest - b0) : 1;
-              for (let x = 84; x <= 96; x++) {
-                if (x === 84 || x === 96) img.set(x, y, u % 6 === 0 ? 0xf06a40 : VERM[0]); // the lacquered rails
-                else img.set(x, y, near ? (u % 3 === 0 ? 0x7a4e32 : scaleColor(0xa8764a, 0.8 + t * 0.35)) : u % 2 ? 0x4a3022 : 0x5e3e2a); // the planks
-              }
-              img.set(83, y, VERM[2]);
-              img.set(97, y, VERM[2]);
+              // (fine: the planks across, their joints, lit more as the slope rises; the lacquered rails, posts with
+              // gold caps every few steps, their shadows on the deck)
+              for (let j = 0; j < S; j++)
+                for (let X = 83 * S; X < 98 * S; X++) {
+                  const Yf = y * S + j;
+                  const lx = X - 83 * S;
+                  let c;
+                  if (lx < 2 || lx > 42) c = VERM[2];
+                  else if (lx < 5 || lx > 39) c = lx === 3 || lx === 41 ? 0xf06a40 : VERM[0];
+                  else {
+                    c = near ? scaleColor(0xa8764a, 0.8 + t * 0.35) : (u % 2 ? 0x4a3022 : 0x5e3e2a);
+                    if (Yf % 3 === 0) c = scaleColor(c, 0.7);
+                    if (hashPx(X, Yf, 74) < 0.06) c = scaleColor(c, 1.1);
+                    if (lx === 5 || lx === 39) c = scaleColor(c, 0.75);
+                  }
+                  img.px(X, Yf, c);
+                }
+              if (u % 5 === 0)
+                for (const PX of [84 * S, 96 * S + 2]) {
+                  img.px(PX, y * S - 1, VERM[0]);
+                  img.px(PX, y * S - 2, C.gold);
+                  glowPx(PX, y * S - 3, C.goldHi, 0.5);
+                }
               if (u % 10 === 0) for (const x of [84, 96]) glow(x, y, 0xffd8a0, 0.6);
             }
             // its red sides mirrored in the still pond either side
-            for (let u = b0 + 6; u < b1 - 6; u++) for (const x of [81, 99]) img.set(x, Y(u), VERM[1], 0.35);
+            for (let FYr = Y(b1 - 6) * S; FYr < Y(b0 + 6) * S; FYr++) for (const X of [81 * S + 1, 99 * S + 1]) if (Math.sin(FYr * 0.7) > -0.4) img.px(X + Math.round(Math.sin(FYr * 0.31)), FYr, VERM[1], 0.4);
           },
         });
         crowd(86, Y(6058), 8, 56, 14, true);
