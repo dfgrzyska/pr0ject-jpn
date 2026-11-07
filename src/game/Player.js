@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BEANS, BOMB, DEPTH, GRAZE, HEAT, PLAYER, SHIPS, VIEW, WEAPONS } from '../config.js';
+import { BEANS, BOMB, DEPTH, FROST, GRAZE, HEAT, PLAYER, SHIPS, VIEW, WEAPONS } from '../config.js';
 import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
 
@@ -21,6 +21,8 @@ export class Player {
     this.shots = new Pool(scene, DEPTH.playerShot);
     // Setsubun: two beans circling the ship while it has beans to throw (blinking as they run out)
     this.beanOrbit = [0, 1].map(() => scene.add.image(0, 0, 'sprites', 'ps_bean').setDepth(DEPTH.player + 0.02).setVisible(false));
+    // Sapporo: Yuki-onna's frost, the block of ice the ship is caught in when it freezes over
+    this.iceBlock = scene.add.image(0, 0, 'sprites', 'ice_block').setDepth(DEPTH.player + 0.08).setVisible(false);
 
     this.setShip(SHIPS[1]);
     this.bombs = 1;
@@ -38,6 +40,9 @@ export class Player {
     this.heatOn = false; // the stage has steam: the HUD shows the heat gauge
     this.beanT = 0; // s left of Setsubun beans
     this.grazeCharge = 0; // grazes towards the next bomb (while the bomb is spent)
+    this.frost = 0; // Sapporo: Yuki-onna's freezing mist frosts the ship over, slowing it (see FROST)
+    this.frozen = 0; // s left caught in a block of ice, unable to move
+    this.pull = null; // { x, y, k }: a wind dragging the ship towards a point at k px/s (set every frame)
     this.drag = null;
     this.god = false;
     this.x = VIEW.width / 2;
@@ -63,6 +68,7 @@ export class Player {
     if (!v) this.muzzle.setVisible(false);
     if (!v) this.noseGlow?.setVisible(false);
     if (!v) this.beanOrbit?.forEach((b) => b.setVisible(false));
+    if (!v) this.iceBlock?.setVisible(false);
   }
 
   /** Fly in from the bottom edge. */
@@ -75,6 +81,8 @@ export class Player {
     this.bombs = 1;
     this.heat = 0;
     this.jam = 0;
+    this.frost = 0;
+    this.frozen = 0;
     this.bank = 0;
     this.thrust = 0;
     this.prevX = this.x;
@@ -123,6 +131,16 @@ export class Player {
       if (this.respawnTimer <= 0 && this.lives > 0) this.spawn();
     }
     let bank = 0;
+    // frost thaws by itself; a frozen ship breaks out of its ice after a moment
+    if (this.frozen > 0) {
+      this.frozen -= dt;
+      if (this.frozen <= 0) {
+        this.frost = FROST.after;
+        this.scene.fx.shards(this.x, this.y, 10, true);
+        this.scene.sfx.explode('s');
+      }
+    } else this.frost = Math.max(0, this.frost - FROST.thaw * dt);
+    const slowK = this.frozen > 0 ? 0 : 1 - this.frost * FROST.slow;
     if (this.alive) {
       if (this.entering > 0) {
         this.entering = Math.max(0, this.entering - dt);
@@ -138,8 +156,8 @@ export class Player {
         if (keys.UP.isDown || keys.W.isDown) ay -= 1;
         if (keys.DOWN.isDown || keys.S.isDown) ay += 1;
         const len = Math.hypot(ax, ay) || 1;
-        this.x += (ax / len) * this.ship.speed * dt;
-        this.y += (ay / len) * this.ship.speed * dt;
+        this.x += (ax / len) * this.ship.speed * slowK * dt;
+        this.y += (ay / len) * this.ship.speed * slowK * dt;
         bank = ax;
         this.clamp();
       }
@@ -147,7 +165,7 @@ export class Player {
         const dx = this.tx - this.x;
         const dy = this.ty - this.y;
         const d = Math.hypot(dx, dy);
-        const step = this.ship.dragSpeed * dt;
+        const step = this.ship.dragSpeed * slowK * dt;
         if (d <= step) {
           this.x = this.tx;
           this.y = this.ty;
@@ -158,6 +176,23 @@ export class Player {
         // bank from recent horizontal finger motion
         const vx = this.x - (this.prevX ?? this.x);
         bank = Math.abs(vx) > 0.3 ? Math.sign(vx) : 0;
+      }
+      // a wind dragging the ship along (Yuki-onna's whirling blizzard): the finger's target drifts with it, so
+      // the ship has to be flown out against it
+      if (this.pull && this.entering <= 0) {
+        const { x, y, k } = this.pull;
+        const ddx = x - this.x;
+        const ddy = y - this.y;
+        const d = Math.hypot(ddx, ddy);
+        if (d > 6) {
+          const mx = (ddx / d) * k * dt;
+          const my = (ddy / d) * k * dt;
+          this.x += mx;
+          this.y += my;
+          this.tx = Phaser.Math.Clamp(this.tx + mx, 6, VIEW.width - 6);
+          this.ty = Phaser.Math.Clamp(this.ty + my, 14, this.scene.H - 10);
+          this.clamp();
+        }
       }
       const dx = this.x - (this.prevX ?? this.x);
       this.prevX = this.x;
@@ -215,7 +250,21 @@ export class Player {
     // hot guns glow orange; jammed ones blink grey
     if (this.jam > 0) this.sprite.setTint(Math.floor(this.jam * 10) % 2 ? 0x9a9a9a : 0xffffff);
     else if (this.heat >= HEAT.boostAt) this.sprite.setTint(0xffc8a0);
+    else if (this.frozen > 0) this.sprite.setTint(0xa8d8ff);
+    else if (this.frost > 0.12) this.sprite.setTint(Phaser.Display.Color.GetColor(255 - this.frost * 90, 255 - this.frost * 40, 255));
     else this.sprite.clearTint();
+    this.iceBlock.setVisible(this.alive && this.frozen > 0).setPosition(this.x, this.y + 1);
+    if (this.alive && this.frost > 0.3 && Math.random() < dt * 30 * this.frost) {
+      const fx = this.scene.fx;
+      const p = fx.part(fx.parts, 'flake_1', this.x + (Math.random() - 0.5) * 14, this.y + (Math.random() - 0.5) * 12);
+      p.vx = (Math.random() - 0.5) * 10;
+      p.vy = 6 + Math.random() * 10;
+      p.drag = 0;
+      p.life = p.max = 0.4 + Math.random() * 0.3;
+      p.a0 = 0.9;
+      p.setTint(0xe8f6ff);
+    }
+    this.pull = null;
     this.updateShots(dt);
   }
 
@@ -318,6 +367,21 @@ export class Player {
       this.jam = rules().heatJam;
       fx.text(this.x, this.y - 18, 'PRZEGRZANIE!', 1.4, 0xff6a50);
       this.scene.sfx.explode('s');
+    }
+  }
+
+  /** Sapporo: standing in Yuki-onna's freezing mist frosts the ship over; frosted through, it freezes solid. */
+  frostUpdate(dt, inMist) {
+    if (!this.alive || this.frozen > 0 || !inMist) return;
+    const was = this.frost;
+    this.frost = Math.min(1, this.frost + (FROST.rise + FROST.thaw) * dt);
+    const fx = this.scene.fx;
+    if (was < 0.5 && this.frost >= 0.5) fx.text(this.x, this.y - 18, 'SZRON!', 1, 0xc8ecff);
+    if (this.frost >= 1) {
+      this.frozen = FROST.frozen;
+      fx.text(this.x, this.y - 18, 'ZAMARZNIĘTY!', 1.4, 0x9ad8ff);
+      fx.shards(this.x, this.y, 6, true);
+      this.scene.sfx.bossHit?.(true);
     }
   }
 

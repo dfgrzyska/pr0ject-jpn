@@ -240,6 +240,49 @@ export function sapporoSprites(add) {
   // ------------------------------------------------------------ bullets
   add('eb_ice', raw(['..kkk..', '.kkckk.', 'kkcwckk', 'kcwxwck', 'kkcwckk', '.kkckk.', '..kkk..']));
   add('icicle', raw(['kkkkk', 'kccwk', 'kcwck', 'kcwck', '.kck.', '.kwk.', '.kck.', '.kck.', '..k..']));
+
+  // ------------------------------------------------------------ Yuki-onna's ice: the crystals her snowflakes
+  // freeze into (they stop shots both ways; a cracked one is about to burst), the block a frozen ship is caught in
+  for (let f = 0; f < 2; f++) {
+    const W2 = 15;
+    const H2 = 17;
+    const r = new Raster(W2, H2);
+    const fill = Array.from({ length: H2 }, () => new Array(W2).fill(null));
+    // three prisms with pointed tips: a tall one in the middle, two shorter leaning out
+    for (const [cx, base, h, hw, lean] of [[7.5, 16, 15, 2.8, 0], [3.6, 16, 9, 2.1, -0.28], [11.4, 16, 10, 2.1, 0.3]])
+      for (let y = 0; y < H2; y++)
+        for (let x = 0; x < W2; x++) {
+          const t = (base - (y + 0.5)) / h;
+          if (t < 0 || t > 1) continue;
+          const c = cx + lean * (base - y);
+          const w = hw * Math.min(1, (1 - t) * 3.2);
+          const dx = x + 0.5 - c;
+          if (Math.abs(dx) > w) continue;
+          fill[y][x] = dx < -w * 0.35 ? 0xe8fbff : dx < 0.2 ? 0x9cd8f4 : dx < w * 0.6 ? 0x3fb6e8 : 0x1c6ab0;
+        }
+    if (f) for (const [x, y] of [[6, 5], [7, 6], [7, 7], [8, 8], [7, 9], [6, 10], [3, 11], [4, 12], [11, 10], [12, 11]]) if (fill[y][x] !== null) fill[y][x] = 0x120e1a;
+    for (let y = 0; y < H2; y++)
+      for (let x = 0; x < W2; x++) {
+        if (fill[y][x] !== null) r.set(x, y, fill[y][x]);
+        else if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([i, j]) => fill[y + j]?.[x + i] != null)) r.set(x, y, 0x120e1a);
+      }
+    r.set(7, 2, 0xffffff);
+    r.set(6, 4, 0xffffff);
+    add(`ice_crystal_${f}`, r);
+  }
+  {
+    const r = new Raster(17, 19);
+    for (let y = 0; y < 19; y++)
+      for (let x = 0; x < 17; x++) {
+        const e = Math.min(x, y, 16 - x, 18 - y);
+        if (e === 0 && (x === 0 || x === 16) && (y === 0 || y === 18)) continue;
+        if (e === 0) r.set(x, y, 0xe8f8ff, 0.95);
+        else if (e === 1) r.set(x, y, x < 4 || y < 4 ? 0xffffff : 0x8cc8ee, 0.75);
+        else r.set(x, y, (x + y) % 7 === 0 ? 0xffffff : 0xb8e4fa, x + y < 12 ? 0.42 : 0.3);
+      }
+    for (const [x, y] of [[4, 6], [5, 7], [6, 7], [11, 12], [12, 11], [12, 13]]) r.set(x, y, 0xffffff, 0.9);
+    add('ice_block', r);
+  }
   {
     const m = new Mask(7, 13);
     for (let y = 2; y <= 11; y++) {

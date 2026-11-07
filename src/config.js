@@ -148,6 +148,15 @@ export const HEAT = {
   jam: 1.8, // s without firing after overheating
 };
 
+// Sapporo miniboss: Yuki-onna's freezing mist frosts the ship over (it slows), frosted through it freezes solid
+export const FROST = {
+  rise: 0.55, // per second inside the mist
+  thaw: 0.3, // per second outside it
+  slow: 0.55, // speed lost at full frost
+  frozen: 0.9, // s caught in the ice
+  after: 0.35, // frost left on breaking out
+};
+
 // Beppu boss: Setsubun beans thrown alongside the normal weapon (only beans really hurt the oni)
 export const BEANS = {
   time: 9, // s of beans per masu box

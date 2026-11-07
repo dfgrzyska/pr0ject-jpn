@@ -6,7 +6,7 @@ import { SKINS } from './skins.js';
 import { slow, normal, fast, DOWN, TAU, EXTRAS } from './enemies/shared.js';
 import { DAIMONJI, kyoto } from './enemies/kyoto.js';
 import { okinawa } from './enemies/okinawa.js';
-import { sapporo } from './enemies/sapporo.js';
+import { sapporo, YUKI } from './enemies/sapporo.js';
 import { kagoshima } from './enemies/kagoshima.js';
 import { osaka } from './enemies/osaka.js';
 import { beppu } from './enemies/beppu.js';
@@ -145,6 +145,7 @@ export class Enemies {
         if (look.kind === 'bunraku') this.spawnKuroko(e, base);
         if (look.kind === 'oranda') this.spawnOranda(e, base);
         if (look.kind === 'wani') Object.assign(e, { y: -40, radius: 11, segs: [{ x: 0, y: 0, r: 9 }, { x: 0, y: 0, r: 8 }] });
+        if (look.kind === 'yukionna') Object.assign(e, { hp: YUKI.hp, maxHp: YUKI.hp, kuroko: [], mists: [], seeds: [] });
         break;
       case 'turret': {
         // spawns just above the screen and stays glued to the mid layer
@@ -290,6 +291,14 @@ export class Enemies {
 
   destroy(e, byBomb = false) {
     const s = this.scene;
+    if (e.kind === 'yukimirror') {
+      this.mirrorDown(e);
+      return;
+    }
+    if (e.type === 'crystal') {
+      this.crystalDown(e, byBomb);
+      return;
+    }
     if (e.group?.kind === 'kuma' && e.role !== 'body') {
       this.kumaPartDown(e);
       return;
@@ -594,6 +603,7 @@ export class Enemies {
     e.burnt = null;
     if (e.decoys) this.dropDecoys(e);
     if (e.kind === 'yukionna' || (e.group?.kind === 'sankibo' && e.role === 'body')) this.scene.parallax.windTarget = 0; // blizzard / Tengu gale dies down
+    if (e.kind === 'yukionna') this.yukiCleanup(e); // her mist, the whiteout, the whirlwind's drag
     if (e.group?.kind === 'kyubi' && e.role === 'body') for (const tl of e.group.tails) this.tailPool.kill(tl);
     if (e === this.heavy) this.heavy = null;
     if (e.oni) e.setCrop(); // pooled: the next enemy must not come out cropped
