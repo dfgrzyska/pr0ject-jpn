@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { keepForOffline } from '../pwa.js';
+import { installLegacyPixelGrid } from '../rendering.js';
 
 export const FONT = 'pixel';
 /** The same letters without their dark outline: print on light paper (the stamp book). */
@@ -54,6 +55,8 @@ export class Boot extends Phaser.Scene {
   }
 
   create() {
+    installLegacyPixelGrid(this.game.renderer);
+    this.load.on('complete', this.releaseUnusedStages, this);
     keepForOffline(); // what every city shares is in now
     const meta = this.cache.json.get('fontMeta');
     // Phaser 4: Parse returns the whole cache entry ({ data, texture, frame })
@@ -144,6 +147,20 @@ export class Boot extends Phaser.Scene {
     if (!this.load.isLoading() && this.load.list.size) {
       this.load.once('complete', keepForOffline);
       this.load.start();
+    }
+  }
+
+  retainStages(ids) {
+    this.retainedStages = new Set(ids);
+    this.releaseUnusedStages();
+  }
+
+  releaseUnusedStages() {
+    if (!this.retainedStages) return;
+    // Keep metadata and shared atlases/fonts; remove GPU textures, including late downloads.
+    for (const key of this.textures.getTextureKeys()) {
+      const city = /^(?:far|mid|props|view)_(stage\d+)(?:_|$)/.exec(key)?.[1];
+      if (city && !this.retainedStages.has(city)) this.textures.remove(key);
     }
   }
 }

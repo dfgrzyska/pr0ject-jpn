@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { NagasakiView } from '../game/NagasakiView.js';
 import { getMusic } from '../audio/Music.js';
-import { DEPTH, GRAZE, PLAYER, SCORE, SHIPS, VIEW, WEAPONS } from '../config.js';
+import { DEPTH, GRAZE, PLAYER, RENDER_SCALE, SCORE, SHIPS, VIEW, WEAPONS } from '../config.js';
 import { STAGES } from '../data/stages.js';
 import { Bullets } from '../game/Bullets.js';
 import { Enemies } from '../game/Enemies.js';
@@ -26,6 +26,7 @@ import { isEasy, rules } from '../difficulty.js';
 import { getLang, setLang, t } from '../i18n.js';
 import { canInstall, install } from '../pwa.js';
 import { stageReady } from './Boot.js';
+import { configureCamera } from '../rendering.js';
 
 const HI_KEY = 'shmupjp.hiscore'; // (easy keeps its own record, .easy)
 const SHIP_KEY = 'shmupjp.ship';
@@ -82,12 +83,18 @@ export class Stage extends Phaser.Scene {
   }
 
   create(data = {}) {
+    this.H = this.scale.height / RENDER_SCALE;
+    configureCamera(this.cameras.main);
+    this.scale.on('resize', this.onResize, this);
+    this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
+    // The previous scene's objects have been destroyed before create runs.
+    this.scene.get('Boot').retainStages(this.order.slice(this.pos, this.pos + 2).map(i => STAGES[i].id));
     if (!stageReady(this, this.stage.id)) {
       // this city's backgrounds are still on their way: wait for them (update), then begin again
       this.state = 'loading';
       this.loadingData = data;
       this.scene.get('Boot').fetch([this.stage.id]);
-      pixelText(this, VIEW.width / 2, Math.round(this.scale.height / 2), 'WCZYTYWANIE...').setTint(0xb0aec0);
+      this.loadingLabel = pixelText(this, VIEW.width / 2, Math.round(this.H / 2), 'WCZYTYWANIE...').setTint(0xb0aec0);
       return;
     }
     // debug: ?t=120 starts at 120 s, ?god = invulnerable, ?weapon=laser&power=5, ?ship=oni
@@ -101,7 +108,6 @@ export class Stage extends Phaser.Scene {
     this.contT = 0; // easy: the continue countdown after a game over
     this.bossDown = false;
     this.bossClearT = 0;
-    this.H = this.scale.height;
     this.state = 'title';
     this.paused = false;
     this.pauseMenu = null;
@@ -163,17 +169,16 @@ export class Stage extends Phaser.Scene {
     if (q.get('power')) this.player.level = Phaser.Math.Clamp(Number(q.get('power')), 1, PLAYER.maxPower);
 
     this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,K,L,I,G,Y,F,ESC,P,ENTER,SPACE');
-    this.input.on('pointerdown', this.onPointerDown, this);
+    this.input.on('pointerdown', (p) => this.onPointerDown(this.logicalPointer(p)));
     this.input.on('pointermove', (p) => {
+      p = this.logicalPointer(p);
       if (this.state === 'city' || this.state === 'title') this.journey.pointerMove(p);
       else if (this.state === 'play' && !this.paused) this.player.dragMove(p);
     });
     this.input.on('pointerup', (p) => { this.player.endDrag(p); this.journey?.pointerUp(p); });
     this.input.on('pointerupoutside', (p) => { this.player.endDrag(p); this.journey?.pointerUp(p); });
-    this.scale.on('resize', this.onResize, this);
     this.game.events.on('hidden', this.onHidden, this);
     this.events.once('shutdown', () => {
-      this.scale.off('resize', this.onResize, this);
       this.game.events.off('hidden', this.onHidden, this);
     });
 
@@ -197,9 +202,9 @@ export class Stage extends Phaser.Scene {
     } else this.showTitle();
   }
 
-  /** Bring in the other cities' backgrounds while this one is played, the next city first. */
+  /** Keep only the next city's backgrounds ready in advance. */
   loadAhead() {
-    this.scene.get('Boot').fetch([...this.order.slice(this.pos + 1), ...this.order.slice(0, this.pos)].map((i) => STAGES[i].id));
+    this.scene.get('Boot').fetch(this.order.slice(this.pos + 1, this.pos + 2).map((i) => STAGES[i].id));
   }
 
   // ---------------------------------------------------------------- flow
@@ -527,6 +532,11 @@ export class Stage extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------- input
+  logicalPointer(p) {
+    // Screen coordinates, independent of camera shake; never mutate Phaser's pointer.
+    return { x: p.x / RENDER_SCALE, y: p.y / RENDER_SCALE, id: p.id, isDown: p.isDown };
+  }
+
   onPointerDown(p) {
     if (this.paused) return this.pauseMenu?.pointer(p);
     if (this.state === 'select' && p.x < 60 && p.y < 28) return this.openCities();
@@ -615,8 +625,12 @@ export class Stage extends Phaser.Scene {
   }
 
   onResize(size) {
-    this.H = size.height;
-    this.cameras.resize(VIEW.width, this.H);
+    this.H = size.height / RENDER_SCALE;
+    this.cameras.resize(size.width, size.height);
+    if (this.state === 'loading') {
+      this.loadingLabel.setY(Math.round(this.H / 2));
+      return;
+    }
     this.hud.layout(this.H);
     this.journey?.layout(this.H);
     this.pauseMenu?.layout(this.H);

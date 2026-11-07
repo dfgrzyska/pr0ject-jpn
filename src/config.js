@@ -6,6 +6,9 @@ export const VIEW = {
   maxHeight: 420, // 9:21
 };
 
+// Render pixels per gameplay unit; VIEW and all gameplay coordinates stay unchanged.
+export const RENDER_SCALE = 3;
+
 export const DEPTH = {
   far: 0,
   mid: 1,
