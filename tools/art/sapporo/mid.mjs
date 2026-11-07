@@ -3305,31 +3305,85 @@ export function buildMid() {
     // Ōkurayama: the Olympic cauldron of 1972 on its plinth by the stands, flame burning (live), the judges'
     // tower beside the landing hill, floodlight masts round the stadium
     {
-      const CXc = 24 * S;
-      const CYc = Y(232) * S;
+      const CXF = 39 * S; // the bowl's axis (fine): on the snow between the valley and the outrun
+      const PY = Y(220) * S; // the top of the plinth (fine)
+      const RIM = PY - 18; // the rim's centre line (fine; a whole logical row, so the flame lines up exactly)
+      const BRONZE = [0x4a3418, 0x6a4a22, 0x8a6a2a, 0xb08a3a, 0xd8b060];
       objects.push({
-        y: Y(226),
-        shadow: () => shadowPx(CXc + 3, CYc + 6, 18, 18, 0.55),
+        y: Y(214),
+        shadow: () => shadowPx(CXF - 10, PY + 4, 30, 18, 0.55),
         draw: () => {
-          for (let j = 0; j < 18; j++) for (let i = 0; i < 18; i++) img.px(CXc + i - 3, CYc + j, j < 2 ? 0xffffff : j % 6 === 0 ? 0x6a6c78 : i < 2 ? 0x9aa0ac : 0x7a808c);
-          for (let j = -6; j < 0; j++) for (let i = -2 - (j + 6); i < 14 + (j + 6); i++) img.px(CXc + i, CYc + j, j === -6 ? 0xc8a050 : i < 3 ? 0xa88a40 : 0x8a6a2a);
+          // the plinth: three granite steps with snow on their treads
+          for (let st = 0; st < 3; st++) {
+            const hw = 15 - st * 3;
+            const top = PY + 12 - st * 6;
+            for (let j = 0; j < 6; j++)
+              for (let i = -hw; i < hw; i++) {
+                let c = j < 2 ? (j === 0 ? 0xffffff : C.snow[3]) : i < -hw + 2 ? 0x9aa0ac : i >= hw - 2 ? 0x5a606c : 0x7a808c;
+                if (j >= 2 && (i + hw) % 7 === 0) c = 0x5a606c;
+                img.px(CXF + i, top + j, c);
+              }
+          }
+          // the stem and the bowl widening to its rim, bronze lit from the left
+          for (let Yy = RIM; Yy < PY; Yy++) {
+            const t = (Yy - RIM) / (PY - RIM); // 0 at the rim, 1 at the plinth
+            const hw = t < 0.5 ? 11 - t * 2 * 7 : 3;
+            for (let i = -Math.round(hw); i < Math.round(hw); i++) {
+              const k = (i + hw) / (2 * hw);
+              img.px(CXF + i, Yy, rampColor(BRONZE, 0.85 - k * 0.7 + (Yy % 3 === 0 && t < 0.5 ? 0.08 : 0), CXF + i, Yy));
+            }
+          }
+          // the rim's far half and the glowing bed inside it
+          for (let j = -4; j <= 4; j++)
+            for (let i = -12; i <= 12; i++) {
+              const e = (i / 12) ** 2 + (j / 4) ** 2;
+              if (e > 1) continue;
+              if (e > 0.62 && j <= 0) img.px(CXF + i, RIM + j, j < -2 ? BRONZE[4] : BRONZE[3]);
+              else if (e <= 0.62) glowPx(CXF + i, RIM + j, e < 0.3 ? 0xffe890 : 0xff9a30, 0.95);
+            }
+          pool(39, Y(222), 18, 0xff9040, 0.45);
         },
       });
-      const flame = [0, 1, 2, 3].map((k) => {
-        const out = new HiCanvas(6, 6);
-        const fr = rng(k + 91);
-        for (let t = 0; t < 5; t++) {
-          const h = 7 + Math.floor(fr() * 7);
-          const tx = 4 + t * 2 + Math.floor(fr() * 2);
+      reserveRect(31, Y(238), 17, 26);
+      const flame = [0, 1, 2, 3, 4, 5].map((k) => {
+        // tongues of fire from the bed, the tallest in the middle, swaying, white-hot at the core and red at
+        // the edges; embers flying off the tips; the bowl's front lip over their feet
+        const out = new HiCanvas(10, 14);
+        const fr = rng(k * 7 + 91);
+        const CX = 15;
+        const BASE = 36;
+        for (let t = 0; t < 7; t++) {
+          const bx = CX + (t - 3) * 2.6 + (fr() - 0.5) * 1.5;
+          const centre = 1 - Math.abs(t - 3) / 3.5;
+          const h = 10 + centre * 18 + fr() * 6 + Math.sin(k * 1.3 + t) * 3;
+          const bw = 2.4 + centre * 2;
+          const ph = fr() * 6;
           for (let j = 0; j < h; j++) {
             const q = j / h;
-            out.px(tx + Math.round(Math.sin(j * 0.6 + k) * q), 17 - j, q < 0.3 ? 0xd8401a : q < 0.6 ? 0xff8a20 : q < 0.85 ? 0xffc850 : 0xfff4c0);
+            const w = bw * (1 - q) ** 0.75;
+            const sway = Math.sin(q * 3.2 + k * 1.1 + ph) * q * 3;
+            for (let i = Math.floor(-w); i <= w; i++) {
+              const X = Math.round(bx + i + sway);
+              const Yy = BASE - j;
+              const edge = Math.abs(i) / Math.max(0.6, w);
+              const heat = (1 - q) * 0.75 + centre * 0.35 - edge * 0.5;
+              const c = heat > 0.8 ? 0xfffbe0 : heat > 0.6 ? 0xffe070 : heat > 0.38 ? 0xffa030 : heat > 0.18 ? 0xf06018 : 0xc83a14;
+              out.px(X, Yy, c, q > 0.85 ? 0.75 : 1);
+            }
           }
         }
+        for (let e = 0; e < 4; e++) out.px(Math.round(CX + (fr() - 0.5) * 16), Math.round(BASE - 26 - fr() * 10), fr() < 0.5 ? 0xffe070 : 0xff8a30);
+        // the front lip of the rim, lit by the fire
+        for (let j = 0; j <= 5; j++)
+          for (let i = -12; i <= 12; i++) {
+            const e = (i / 12) ** 2 + (j / 4) ** 2;
+            if (e > 1 || e < 0.62) continue;
+            out.px(CX + i, BASE + j, j > 3 ? 0x6a4a22 : j > 1 ? 0xb08a3a : 0xe8c070);
+          }
         return kit.frame(out);
       });
-      kit.loop(23, 232 + 7, flame, { fps: 8, fx: 1 });
-      pool(26, Y(236), 16, 0xff9040, 0.4);
+      kit.loop(34, 238, flame, { fps: 9, fx: 1 });
+      kit.emit(39, 238, smoke, { rate: 0.8, life: [1.6, 2.4], vy: 6, sx: 0.8, wf: 1, a: 0.3, tint: 1 });
       // the judges' tower: a glass box on a concrete column, the judges' heads at the window
       const JX = 128 * S;
       const JY = Y(330) * S;
