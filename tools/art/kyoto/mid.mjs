@@ -23,7 +23,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Raster, fbm, rng, bayer, scaleColor, rgb } from '../../lib/raster.mjs';
+import { Raster, fbm, rng, bayer, scaleColor, rgb, mix } from '../../lib/raster.mjs';
 import { crownPixels, grade, rampColor } from '../nature.mjs';
 import { PropKit, puff, tintTable } from '../props.mjs';
 import { HiCanvas, hashPx } from '../hires.mjs';
@@ -362,7 +362,7 @@ export function buildMid() {
     for (let X = KX0; X < KX1; X++) {
       const e = Math.min(X - KX0, KX1 - 1 - X) / span;
       const lift = e < 0.08 ? Math.round((0.08 - e) * 30 * (pw > 1 ? 1.4 : 0.9)) : 0;
-      for (let j = 0; j < kb; j++) put(X, Y0 - lift + j, j === 0 ? 0x4a3a3e : C.K);
+      for (let j = 0; j < kb; j++) put(X, Y0 - lift + j, hashPx(X, Y0 + j, 99) < (tone < 0.92 ? 0.16 : 0.05) ? (j === 0 ? 0x5a6a3a : 0x3a4a2a) : j === 0 ? 0x4a3a3e : C.K); // (moss on the older ones)
       for (let j = 0; j < kf; j++) put(X, Y0 - lift + kb + j, j === 0 ? HI : j < kf - 1 ? R1 : R2);
     }
     if (plaque) {
@@ -697,6 +697,13 @@ export function buildMid() {
               if ((Yy - RIDGE) % 5 === 4 && !north) c = scaleColor(c, 0.8);
               if ((RIDGE - Yy) % 5 === 4 && north) c = scaleColor(c, 0.84);
             }
+            // the weather on it: the slope lit towards the ridge, streaks where the rain runs off, moss where it
+            // stays damp (the north side, the hips, along the eave), lichen
+            c = scaleColor(c, north ? 1.03 : 1.07 - t * 0.17);
+            if (fbm(X * 0.7, Yy * 0.06, { seed: 24, scale: 3 }) > 0.7) c = scaleColor(c, 0.86);
+            const damp = (north ? 0.3 : 0) + (t > 0.72 ? (t - 0.72) * 1.6 : 0) + (hipL || hipR ? 0.12 : 0);
+            if (fbm(X * 0.3, Yy * 0.3, { seed: 25, scale: 3, octaves: 2 }) + damp * 0.35 > 0.86) c = mix(c, bark ? 0x4a5a30 : 0x55643c, 0.5);
+            else if (hashPx(X, Yy, 26) < 0.01) c = bark ? 0x9a9a7a : 0xa8aca0;
             img.px(X, Yy, c);
           }
         }
@@ -827,7 +834,22 @@ export function buildMid() {
           for (let j = 0; j < 9; j++) img.px(MX, FY0 + 2 + j, j % 2 ? 0xe8d8a0 : 0xf4f0e6);
           img.discPx(MX + 0.5, FY0 + 2.5, 1.5, C.gold);
         }
-        void hr;
+        // rain chains (kusari-doi) hanging from the front corners of the bigger halls into stone basins
+        if (style !== 'machiya' && w >= 24 && faceH >= 4)
+          for (const CXc of [X0 + S + 2, X1 - S - 3]) {
+            for (let Yy = RY1 - 2; Yy < FY1 + 2; Yy++) img.px(CXc, Yy, (Yy >> 1) % 2 ? C.gold : 0x6a5a2a);
+            for (let i = -2; i <= 2; i++) img.px(CXc + i, FY1 + 2, i === -2 ? C.stone[3] : C.stone[1]);
+            img.px(CXc, FY1 + 3, C.water[2]);
+          }
+        // now and then a pigeon or a crow resting on the ridge
+        if (w > 20 && hr() < 0.3) {
+          const BX = X0 + HI + 4 + Math.floor(hr() * Math.max(1, X1 - X0 - 2 * HI - 10));
+          const crowOn = hr() < 0.4;
+          const body = crowOn ? 0x141216 : 0x8a8e98;
+          for (const [i, j] of [[0, -2], [1, -2], [2, -2], [3, -2], [0, -3], [1, -3], [2, -3], [3, -3], [4, -3]]) img.px(BX + i, RIDGE + j, body);
+          img.px(BX + 4, RIDGE - 4, crowOn ? 0x141216 : 0x5a8a7a);
+          img.px(BX + 5, RIDGE - 4, crowOn ? 0x3a3436 : 0xd8b8a8);
+        }
       },
     });
     reserveRect(x - 2, y - 2, w + 4, roofH + faceH + 4);
@@ -964,6 +986,319 @@ export function buildMid() {
       },
     });
     reserveRect(cx - w0 / 2 - 8, top - 16, w0 + 16, y0 - top + 22);
+  };
+  // ---- the great buildings, each drawn for itself (fine pixels throughout)
+  /**
+   * A roof of cypress bark in 3/4 view between fine X0..X1, Y0 (back edge) .. Y1 (the eave at its middle):
+   * the short back slope, the ridge, the long front slope lit towards the top, hips at the sides, the eave
+   * sweeping up at the corners (sori), the bark laid in fine wavy courses, rain streaks, moss along the eave
+   * and the hips, the thick layered edge (koba) and under it the vermilion rafter ends with gold caps.
+   * Returns eaveAt(X): the eave's fine row at X.
+   */
+  const barkRoofPx = (X0, X1, Y0, Y1, ridge, hipW, o = {}) => {
+    const { lift = 10, curve = 0.3, seed = 1, ridgeGold = true, tiles = false } = o; // (tiles: round tiles instead of bark)
+    const R = tiles ? C.roofTileDark : C.roofBark;
+    const CXr = (X0 + X1) / 2;
+    const half = (X1 - X0) / 2;
+    const eaveAt = (X) => {
+      const e = (Math.abs(X - CXr) - half * (1 - curve)) / (half * curve);
+      return Y1 - Math.round(e > 0 ? e * e * lift : 0);
+    };
+    for (let X = X0; X < X1; X++) {
+      const EY = eaveAt(X);
+      for (let Yy = Y0; Yy <= EY; Yy++) {
+        const north = Yy <= ridge;
+        const t = north ? (ridge - Yy) / Math.max(1, ridge - Y0) : (Yy - ridge) / Math.max(1, EY - ridge);
+        const inset = hipW * (1 - t);
+        const lx = X - X0;
+        const rx = X1 - 1 - X;
+        if (north && (lx < inset * 0.6 || rx < inset * 0.6)) continue; // (the back slope narrower: the gables)
+        const hipL = lx < inset;
+        const hipR = rx < inset;
+        let c = hipL ? R[3] : hipR ? R[0] : north ? R[2] : rampColor(R, 0.98 - t * 0.6, X, Yy);
+        if (!north && t < 0.12 && !hipL && !hipR) c = scaleColor(c, 1.12 - t); // (the sun on the top of the slope)
+        const wave = Math.round(Math.sin(X * 0.11 + seed) * 1.2);
+        if (tiles && !hipL && !hipR) {
+          const k = (X - X0) % 4;
+          c = k === 0 ? scaleColor(c, 0.7) : k === 1 ? scaleColor(c, 1.16) : k === 3 ? scaleColor(c, 0.88) : c;
+          if ((Yy - ridge) % 5 === 4) c = scaleColor(c, 0.82);
+        } else if ((hipL || hipR ? (hipL ? lx : rx) + Yy : Yy + wave) % 3 === 0) c = scaleColor(c, 0.84);
+        if (hashPx(X, Yy, seed + 3) < 0.04) c = scaleColor(c, 1.14);
+        if (fbm(X * 0.7, Yy * 0.05, { seed: seed + 5, scale: 3 }) > 0.7) c = scaleColor(c, 0.85);
+        const damp = (t > 0.75 && !north ? (t - 0.75) * 1.8 : 0) + (hipL || hipR ? 0.15 : 0) + (north ? 0.2 : 0);
+        if (fbm(X * 0.28, Yy * 0.28, { seed: seed + 7, scale: 3, octaves: 2 }) + damp * 0.4 > 0.84) c = mix(c, 0x4a5a30, 0.5);
+        if (EY - Yy < 6 && !north) {
+          if (tiles) c = EY - Yy === 0 ? 0x1a1618 : EY - Yy < 3 ? ((X - X0) % 4 === 1 ? 0x8a8692 : (X - X0) % 4 === 3 ? R[1] : R[3]) : R[1]; // (the round tile ends)
+          else c = EY - Yy === 0 ? 0x3a2a26 : EY - Yy < 2 ? 0x8a7468 : EY - Yy < 4 ? (X % 4 === 0 ? 0x5a4a44 : 0x7a6660) : 0x6a5650; // (the koba)
+        }
+        img.px(X, Yy, c);
+      }
+      // the rafter ends under the eave: vermilion with gold caps, the shadow between
+      for (let j = 1; j < 5; j++) {
+        const k = (X - X0) % 6;
+        img.px(X, EY + j, j === 4 ? 0x100a08 : k < 3 ? (j === 1 && k === 1 ? C.goldHi : j === 1 ? C.gold : k === 0 ? 0xf06a40 : C.R1) : 0x1a1210);
+      }
+    }
+    // the hip ridges (sumi-mune) running down from the ridge's ends to the corners, the end tiles on them
+    for (let Yy = ridge; Yy < Y1; Yy++) {
+      const t = (Yy - ridge) / Math.max(1, Y1 - ridge);
+      const inset = hipW * (1 - t);
+      for (const [HX, s] of [[X0 + inset, 1], [X1 - 1 - inset, -1]]) {
+        const RXh = Math.round(HX);
+        if (Yy > eaveAt(RXh) - 4) continue;
+        img.px(RXh - s, Yy, 0x5a4a4e);
+        img.px(RXh, Yy, C.K);
+        img.px(RXh + s, Yy, 0x2a2024);
+        img.px(RXh + 2 * s, Yy, 0x120c0e);
+      }
+    }
+    for (const [CXh, s] of [[X0 + 1, 1], [X1 - 2, -1]]) {
+      const EY = eaveAt(CXh + s * 4);
+      for (let j = -6; j < 0; j++) for (let i = 0; i < 5; i++) img.px(CXh + s * i, EY + j, j === -6 ? C.goldHi : i === 0 ? 0x8a6a2a : C.gold);
+    }
+    // the ridge: a heavy bark ridge with its gold fittings and the ornate end pieces
+    const RX0 = Math.round(X0 + hipW * 0.6);
+    const RX1 = Math.round(X1 - hipW * 0.6);
+    for (let X = RX0; X < RX1; X++) {
+      for (let j = -4; j <= 2; j++) img.px(X, ridge + j, j === -4 ? 0x5a4a4e : j === -3 ? 0x3a2e32 : j === 2 ? 0x120c0e : C.K);
+      if (ridgeGold && (X - RX0) % 18 < 3) for (let j = -3; j <= 1; j++) img.px(X, ridge + j, j === -3 ? C.goldHi : C.gold);
+    }
+    for (const EX of [RX0 - 4, RX1 - 2])
+      for (let j = -8; j <= 2; j++)
+        for (let i = 0; i < 6; i++) if (!(j < -5 && (i === 0 || i === 5))) img.px(EX + i, ridge + j, j < -6 ? C.goldHi : i === 0 || j === -8 ? C.goldHi : (i + j) % 3 === 0 ? 0x8a6a2a : C.gold);
+    return eaveAt;
+  };
+  /** A bronze hanging lantern (tsuri-dōrō): its little roof, the pierced fire box lit from inside, the chain. */
+  const hangingLantern = (X, Yy) => {
+    img.px(X + 2, Yy - 2, 0x3a4a40);
+    img.px(X + 2, Yy - 1, 0x3a4a40);
+    for (let i = 0; i < 5; i++) img.px(X + i, Yy, i === 0 ? 0x7a9a7a : 0x4a6a5a);
+    for (let j = 1; j < 6; j++)
+      for (let i = 0; i < 5; i++) {
+        const win = i > 0 && i < 4 && j > 1 && j < 5 && (i + j) % 2 === 0;
+        img.px(X + i, Yy + j, win ? 0xffd890 : i === 0 ? 0x5a7a6a : 0x2e4a40);
+        if (win) glowPx(X + i, Yy + j, 0xffd890, 0.8);
+      }
+    img.px(X + 2, Yy + 6, 0x3a4a40);
+  };
+  /** The Rōmon: the two-storey tower gate, its great bark roof with a front gable, brackets and a balcony
+   * round the upper storey, the zuishin guardians seated in their niches either side of the passage.
+   * o.tiles: a tiled roof; o.guards: 'nio' for the two fierce Niō standing in a temple gate's niches. */
+  const romon = (x, y, w, roofH, faceH, o = {}) => {
+    rand.pick([0]); // (the same two draws hall() would make, so the trees elsewhere keep their places)
+    rand();
+    const X0 = x * S;
+    const X1 = (x + w) * S;
+    const Y0 = y * S;
+    const RY1 = Y0 + roofH * S - 22;
+    const WX0 = X0 + 18;
+    const WX1 = X1 - 18;
+    const FB = (y + roofH + faceH) * S;
+    objects.push({
+      y: y + roofH + faceH,
+      shadow: () => shadowPx(X0 + 12, Y0 + 15, X1 - X0, FB - Y0, 0.5),
+      draw: () => {
+        // the lower storey first (the roof overhangs it): five bays between round vermilion posts
+        const LY0 = RY1 + 30;
+        for (let Yy = LY0; Yy < FB; Yy++)
+          for (let X = WX0; X < WX1; X++) {
+            const bw = (WX1 - WX0) / 5;
+            const bay = Math.floor((X - WX0) / bw);
+            const k = (X - WX0) - bay * bw;
+            const fy = Yy - LY0;
+            let c;
+            if (k < 7) c = roundShade(0xf06a40, C.R1, C.R3, Math.floor(k), 7);
+            else if (fy < 3) c = fy === 0 ? 0x140c0a : C.R2; // (the head beam)
+            else if (bay === 2) c = fy < 10 ? (k > bw / 2 - 12 && k < bw / 2 + 12 ? (fy > 3 && fy < 9 ? (fy % 2 && (Math.floor(k) % 4 === 0) ? C.goldHi : C.K) : C.K) : C.R2) : mix(0x140c0a, 0x3a2a20, (fy - 10) / (FB - LY0 - 10)); // (the passage, its gold-lettered plaque)
+            else if (bay === 1 || bay === 3) {
+              // the niches: a lattice in front of the seated guardians
+              const sx = bay === 1 ? 0 : 1;
+              const fx = k - 7 - (bw - 7) / 2;
+              const fyy = fy - 6;
+              let g = 0x24160e;
+              if (o.guards === 'nio' && fyy > -3 && fyy < 30 && Math.abs(fx) < 11) {
+                // a Niō: topknot, a glaring face, the bare muscled chest, arms flung out, the skirt and the sash
+                const body = sx ? 0x5a4a5a : 0x9a3a28;
+                const shade = scaleColor(body, 0.65);
+                if (fyy < 0) g = Math.abs(fx) < 2 ? 0x141014 : g;
+                else if (fyy < 6) g = Math.abs(fx) < 3.5 ? (fyy === 2 && Math.abs(fx) > 0.5 && Math.abs(fx) < 2.5 ? 0xf4f0e6 : fyy === 4 && !sx && Math.abs(fx) < 1.5 ? 0x2a0a08 : body) : g;
+                else if (fyy < 18) g = Math.abs(fx) < 7 - (fyy > 14 ? 2 : 0) ? ((Math.round(fx) + fyy) % 5 === 0 ? shade : fx < -2 ? scaleColor(body, 1.15) : body) : fyy < 11 && Math.abs(fx) < 10.5 ? body : g;
+                else if (fyy < 20) g = Math.abs(fx) < 6 ? C.R1 : g;
+                else g = Math.abs(fx) < 7 - (fyy - 20) * 0.2 ? (Math.round(fx + fyy) % 4 === 0 ? 0x9a9488 : 0xc8c2b4) : Math.abs(fx) < 9 && fyy < 24 ? 0xe8e0c8 : g;
+              } else if (o.guards !== 'nio' && fyy > 0 && fyy < 28 && Math.abs(fx) < 9) {
+                if (fyy < 4) g = Math.abs(fx) < 3 ? 0x141014 : g; // (the court hat)
+                else if (fyy < 8) g = Math.abs(fx) < 3 ? (sx ? 0xf0d8c0 : 0xd8603a) : g; // (the face)
+                else if (fyy < 24) g = Math.abs(fx) < 8 - (fyy < 12 ? 3 : 0) ? (sx ? 0x1e1a24 : 0xb8302a) : g; // (the robes)
+                else g = Math.abs(fx) < 8 ? 0x5a4a3a : g;
+                if (fyy > 8 && fyy < 22 && Math.round(fx) === (sx ? -7 : 7)) g = 0xc8a050; // (the bow)
+              }
+              c = Math.floor(k) % 4 === 0 ? 0x3a1a10 : g;
+            } else c = fy < 14 ? (fy % 7 === 6 ? C.R2 : C.white) : (fy % 3 === 0 ? C.R3 : C.R2);
+            if (k < 7 && (fy === 2 || fy === 3)) c = C.gold; // (the gold fittings at the post heads)
+            img.px(X, Yy, c);
+          }
+        for (let X = WX0 - 4; X < WX1 + 4; X++) for (let j = 0; j < 4; j++) img.px(X, FB + j, j === 0 ? C.stone[3] : j === 3 ? C.stone[0] : C.stone[1]);
+        // the lanterns in the outer bays, white with a red band and their name in black
+        if (FB - LY0 > 28) for (const LX of [WX0 + 22, WX1 - 28]) {
+          const LY = LY0 + 10;
+          for (let j = 0; j < 14; j++)
+            for (let i = 0; i < 7; i++) {
+              if ((j === 0 || j === 13) && (i === 0 || i === 6)) continue;
+              img.px(LX + i, LY + j, j < 2 || j > 11 ? 0x1a1418 : j === 2 || j === 11 ? C.R1 : i === 0 ? 0xc8c0b0 : 0xf4f0e6);
+            }
+          glyph(LX + 2, LY + 4, 3, 0x1a1418, rng(LX));
+          glyph(LX + 2, LY + 8, 3, 0x1a1418, rng(LX + 1));
+        }
+        // the pent roof between the storeys
+        for (let X = WX0 - 8; X < WX1 + 8; X++) for (let j = 0; j < 10; j++) img.px(X, RY1 + 20 + j, j === 0 ? 0x8a7468 : j > 7 ? (j === 9 ? 0x120c0e : 0x5a4a44) : (X + j) % 3 === 0 ? C.roofBark[1] : C.roofBark[2]);
+        // the upper storey: the bracket sets (green, white, vermilion, gold) and the balcony railing
+        for (let X = WX0 + 4; X < WX1 - 4; X++) {
+          const k = (X - WX0) % 12;
+          for (let j = 0; j < 8; j++) img.px(X, RY1 + 5 + j, j < 3 ? (k < 4 ? 0x2e6a4a : k < 8 ? C.white : C.R1) : j < 5 ? (k % 6 < 3 ? C.R2 : 0x2e6a4a) : k === 5 ? C.gold : C.R1);
+          img.px(X, RY1 + 14, C.R1);
+          img.px(X, RY1 + 15, k % 4 === 0 ? C.R3 : 0x2a1810);
+          img.px(X, RY1 + 16, k % 4 === 0 ? C.R3 : 0x2a1810);
+          img.px(X, RY1 + 17, 0x140c0a);
+          if (k === 0) {
+            img.px(X, RY1 + 13, C.goldHi);
+            img.px(X, RY1 + 14, C.gold);
+          }
+        }
+        // the great roof, then the front gable (chidori-hafu) rising out of it
+        const RH = RY1 - Y0;
+        const ridge = Y0 + Math.round(RH * 0.2);
+        barkRoofPx(X0, X1, Y0, RY1, ridge, Math.round((X1 - X0) * 0.2), { lift: Math.max(5, Math.round(RH * 0.09)), curve: 0.32, seed: 11 + x, tiles: o.tiles });
+        const GCX = (X0 + X1) / 2;
+        const GB = ridge + Math.round(RH * 0.46);
+        const GT = ridge + Math.round(RH * 0.16);
+        const GW = (X1 - X0) * 0.17;
+        const GR = Math.max(6, Math.round(RH * 0.1));
+        for (let Yy = GT; Yy < GB; Yy++) {
+          const hw = ((Yy - GT) / (GB - GT)) * GW;
+          for (let X = Math.round(GCX - hw); X <= GCX + hw; X++) {
+            const e = hw - Math.abs(X - GCX);
+            let c = e < 2 ? C.K : e < 4 ? (Yy % 5 === 0 ? C.goldHi : C.gold) : e < 6 ? C.R2 : (Yy - GT) % 6 === 0 ? 0xd8d0be : C.white;
+            if (Yy > GB - 7) c = Yy === GB - 1 ? 0x140c0a : Yy > GB - 3 ? C.R3 : C.R1;
+            img.px(X, Yy, c);
+          }
+        }
+        // its gable ornament (gegyo) in gold, the roof of the gable sloping back into the main roof
+        for (let j = 0; j < 9; j++) for (let i = -3 + Math.floor(j / 3); i <= 3 - Math.floor(j / 3); i++) img.px(Math.round(GCX) + i, GT + 6 + j, j < 2 ? C.goldHi : C.gold);
+        for (let Yy = GT - GR; Yy < GT + 2; Yy++) {
+          const hw = GW * 0.17 + ((Yy - (GT - GR)) / (GR + 2)) * GW * 0.87;
+          for (let X = Math.round(GCX - hw); X <= GCX + hw; X++) {
+            const top = Yy === GT - GR;
+            img.px(X, Yy, top ? 0x5a4a4e : Math.abs(X - GCX) > hw - 3 ? C.K : (Yy + Math.round(Math.sin(X * 0.11) * 1.2)) % 3 === 0 ? 0x4a3a3e : C.roofBark[2]);
+          }
+        }
+        // bronze lanterns hanging from the corners of the eave
+        for (const HX of w > 50 ? [X0 + 26, X1 - 31, WX0 + 40, WX1 - 45] : [X0 + 12, X1 - 17]) hangingLantern(HX, RY1 + 5);
+      },
+    });
+    reserveRect(x - 2, y - 2, w + 4, roofH + faceH + 4);
+  };
+  /** The honden: the main sanctuary under its great nagare-zukuri roof (the front slope sweeping far out over
+   * the steps), gold fittings on the ridge, a row of bronze lanterns hanging along the eave, vermilion posts
+   * and lattice shutters, the shimenawa rope across the front with its paper streamers.
+   * o.wood: a temple's main hall instead (plain hinoki posts and boards, two great paper lanterns at the door). */
+  const honden = (x, y, w, roofH, faceH, o = {}) => {
+    const P = o.wood ? [C.wood[3], C.wood[2], C.wood[0]] : [0xf06a40, C.R1, C.R3];
+    rand.pick([0]); // (as hall() would)
+    rand();
+    const X0 = x * S;
+    const X1 = (x + w) * S;
+    const Y0 = y * S;
+    const RY1 = (y + roofH) * S - 4;
+    const FB = (y + roofH + faceH) * S;
+    objects.push({
+      y: y + roofH + faceH,
+      shadow: () => shadowPx(X0 + 12, Y0 + 15, X1 - X0, FB - Y0, 0.5),
+      draw: () => {
+        // the front: posts, lattice shutters with gold corners, the open middle bay with the altar's gold
+        const FY0 = RY1 + 4;
+        const WX0 = X0 + 12;
+        const WX1 = X1 - 12;
+        for (let Yy = FY0; Yy < FB; Yy++)
+          for (let X = WX0; X < WX1; X++) {
+            const k = (X - WX0) % 34;
+            const bay = Math.floor((X - WX0) / 34);
+            const fy = Yy - FY0;
+            const mid = Math.abs(X - (X0 + X1) / 2) < 30;
+            let c;
+            if (k < 6) c = roundShade(P[0], P[1], P[2], k, 6);
+            else if (fy < 3) c = fy === 0 ? 0x140c0a : o.wood ? C.wood[1] : C.R2;
+            else if (mid) c = fy < 12 ? mix(0x2a1a10, 0x8a6a2a, ((X * 7 + fy * 3) % 11) / 20) : fy < 16 ? (X % 3 ? C.gold : 0x8a6a2a) : 0x1a100a;
+            else if (o.wood) c = k % 5 === 0 ? C.hinoki[0] : hashPx(X >> 2, Yy >> 3, 98) < 0.3 ? C.hinoki[2] : C.hinoki[1]; // (the boards)
+            else c = (k % 4 === 2 || fy % 4 === 2) ? 0x2a1208 : C.R1; // (the shitomi lattice)
+            if (!mid && k >= 6 && (k === 7 || k === 33) && (fy === 4 || fy === FB - FY0 - 2)) c = C.gold;
+            if (bay % 2 && !mid && k > 6 && fy > 3 && fy < 6) c = C.gold;
+            img.px(X, Yy, c);
+          }
+        // the roof
+        const ridge = Y0 + 20;
+        const eaveAt = barkRoofPx(X0, X1, Y0, RY1, ridge, 40, { lift: 14, curve: 0.25, seed: 31 });
+        // the karahafu over the steps: the cusped, curving gable board of the front porch
+        const KCX = (X0 + X1) / 2;
+        const KY = RY1 - 10;
+        for (let X = Math.round(KCX - 46); X <= KCX + 46; X++) {
+          const t = (X - KCX) / 46;
+          const arch = Math.round(KY - 12 * Math.cos(t * Math.PI * 0.5) ** 1.5 + (Math.abs(t) > 0.8 ? (Math.abs(t) - 0.8) * 20 : 0));
+          for (let j = 0; j < 7; j++) img.px(X, arch + j, j < 2 ? C.K : j < 4 ? (X % 6 === 0 ? C.goldHi : C.gold) : j < 6 ? P[1] : P[2]);
+          for (let Yy = arch + 7; Yy < eaveAt(X) + 1; Yy++) img.px(X, Yy, Yy % 4 === 0 ? 0xd8d0be : C.white);
+        }
+        for (let j = 0; j < 8; j++) for (let i = -2; i <= 2; i++) img.px(Math.round(KCX) + i, KY - 12 + j, j < 2 ? C.goldHi : C.gold);
+        // the bronze lanterns all along the eave
+        for (let HX = X0 + 16; HX < X1 - 20; HX += 24) if (Math.abs(HX - KCX) > 50) hangingLantern(HX, eaveAt(HX) + 6);
+        // the shimenawa: a thick twisted straw rope sagging across the front, paper streamers hanging off it (or,
+        // at a temple, the two great paper lanterns either side of the door)
+        if (o.wood)
+          for (const LX of [KCX - 40, KCX + 30]) {
+            const LY = FY0 + 4;
+            for (let j = 0; j < 20; j++)
+              for (let i = 0; i < 11; i++) {
+                const e = ((i - 5) / 5.5) ** 2 + ((j - 10) / 10.5) ** 2;
+                if (e > 1 && j > 1 && j < 18) continue;
+                img.px(Math.round(LX) + i, LY + j, j < 2 || j > 17 ? 0x1a1418 : j === 2 || j === 17 ? C.R1 : i < 3 ? 0xd8d0c0 : 0xf4f0e6);
+              }
+            glyph(Math.round(LX) + 3, LY + 5, 5, 0x1a1418, rng(LX));
+            glyph(Math.round(LX) + 3, LY + 11, 5, 0x1a1418, rng(LX + 3));
+          }
+        else for (let X = WX0 + 6; X < WX1 - 6; X++) {
+          const t = ((X - WX0) % 68) / 68;
+          const Yy = FY0 + 4 + Math.round(Math.sin(t * Math.PI) * 3);
+          img.px(X, Yy, Math.floor(X / 3) % 2 ? 0xe8d8a0 : 0xc8b070);
+          img.px(X, Yy + 1, 0xa8904e);
+          if ((X - WX0) % 34 === 17) for (let j = 2; j < 8; j++) img.px(X + (j % 2) - (j % 4 === 3 ? 1 : 0), Yy + j, 0xffffff);
+        }
+        for (let X = WX0 - 4; X < WX1 + 4; X++) for (let j = 0; j < 4; j++) img.px(X, FB + j, j === 0 ? C.stone[3] : j === 3 ? C.stone[0] : C.stone[1]);
+      },
+    });
+    reserveRect(x - 2, y - 2, w + 4, roofH + faceH + 4);
+  };
+  /** The worship hall's porch roof (kōhai) in front of the sanctuary: a curving karahafu of bark, gold at its
+   * tip, on four vermilion posts. */
+  const kohai = (x, y, w, roofH) => {
+    rand.pick([0]); // (as hall() would)
+    rand();
+    const X0 = x * S;
+    const X1 = (x + w) * S;
+    const Y0 = y * S;
+    const Y1 = (y + roofH) * S;
+    objects.push({
+      y: y + roofH,
+      shadow: () => shadowPx(X0 + 9, Y0 + 9, X1 - X0, Y1 - Y0, 0.5),
+      draw: () => {
+        for (const PX of [X0 + 6, X0 + 30, X1 - 36, X1 - 12]) for (let j = 0; j < 8; j++) for (let i = 0; i < 4; i++) img.px(PX + i, Y1 - 2 + j, roundShade(0xf06a40, C.R1, C.R3, i, 4));
+        barkRoofPx(X0, X1, Y0, Y1 - 6, Y0 + 8, 18, { lift: 6, curve: 0.4, seed: 41, ridgeGold: true });
+        const CXk = (X0 + X1) / 2;
+        for (let X = X0 + 8; X < X1 - 8; X++) {
+          const t = (X - CXk) / ((X1 - X0) / 2 - 8);
+          const arch = Math.round(Y1 - 10 - 7 * Math.cos(t * Math.PI * 0.5) ** 2);
+          for (let j = 0; j < 4; j++) img.px(X, arch + j, j < 1 ? C.K : j < 3 ? C.gold : C.R1);
+        }
+      },
+    });
+    reserveRect(x - 2, y - 2, w + 4, roofH + 4);
   };
   const tree = (kind, x, y, r) => objects.push(treeObj(kind, x, y, r));
 
@@ -1191,7 +1526,7 @@ export function buildMid() {
       reserveRect(x - 2, y - 2, 44, 34);
     }
     // Yasaka shrine's vermilion west gate closing the street at the top
-    hall(54, Y(536), 72, 24, 12, 'gate');
+    romon(54, Y(536), 72, 24, 12);
     lantern(48, Y(500));
     lantern(130, Y(500));
     machiyaRows(0, 76, 4, k0 - 2);
@@ -1307,6 +1642,13 @@ export function buildMid() {
             glow(101, y - 1, 0xfff0c8, 0.7);
           }
         }
+        // the people crossing on its pavements (drawn with the bridge, so it doesn't hide them)
+        const pr = rng(5401);
+        for (let k = 0; k < 34; k++) {
+          const X = (pr() < 0.5 ? 82 + pr() * 6 : 93 + pr() * 6) * S;
+          const Yy = (Y(KAMO[1] + 2) + pr() * (KAMO[1] - KAMO[0] + 2)) * S;
+          personPx(Math.round(X), Math.round(Yy), pr() < 0.2 ? { maiko: true, kimono: pr.pick(KIMONO), orn: true, obi: 0xe8c040 } : { coat: pr.pick([0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0x3a3a4a]), hair: 0x2a2024, face: pr() < 0.5, legs: 0x2a2a34 });
+        }
       },
     });
     crowd(81, Y(KAMO[1] + 4), 18, KAMO[1] - KAMO[0] + 8, 30, true, 0.2);
@@ -1325,15 +1667,26 @@ export function buildMid() {
             if (mat < 30 && u > KAMO[0] + 3 && u < w0 + 3) return mat % 15 === 0 || FYr % 12 === 0 ? 0x2a3424 : FYr % 2 ? 0x8a8456 : 0x7a7448; // (tatami, their dark borders)
             return FYr % 2 ? C.hinoki[1] : C.hinoki[2];
           });
-          for (let x = x0 + 2; x < x1 - 2; x += 6) {
-            const TX = x * S;
-            const TY = Y(KAMO[0] + 8) * S;
-            for (let i = 0; i < 9; i++) for (let j = 0; j < 5; j++) img.px(TX + i, TY + j, j === 0 ? C.wood[3] : C.wood[0]);
-            img.px(TX + 2, TY + 2, 0xf4f0e6);
-            img.px(TX + 5, TY + 1, 0xc83a2a);
-            img.px(TX + 6, TY + 3, 0x3a6a3a);
-            chochin(x + 1, Y(w0 + 3), 0xf0e0c0);
+          // on each mat a low lacquered table set with dishes, cushions round it, the diners sitting on them
+          const dr = rng(x0 * 13 + 7);
+          for (let BX = x0 * S + 2; BX < x1 * S - 34; BX += 36) {
+            const TX = BX + 11;
+            const TY = Y(w0 - 2) * S + 2;
+            for (const [cx, cy] of [[TX - 4, TY + 1], [TX + 14, TY + 1], [TX + 2, TY - 5], [TX + 8, TY + 8]]) for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) img.px(cx + i, cy + j, j === 0 ? 0x4a5aa0 : 0x2a3a7a);
+            for (let i = 0; i < 12; i++) for (let j = 0; j < 7; j++) img.px(TX + i, TY + j, j === 0 ? 0x5a2a20 : j === 6 ? 0x140808 : 0x2a1210);
+            for (const [i, j, c] of [[2, 2, 0xf4f0e6], [3, 2, 0xf4f0e6], [6, 3, 0xc83a2a], [9, 2, 0x3a6a3a], [5, 4, 0xe8c040], [8, 4, 0xf4f0e6]]) img.px(TX + i, TY + j, c);
+            for (const [cx, cy] of [[TX - 4, TY + 1], [TX + 14, TY + 1], [TX + 2, TY - 5], [TX + 8, TY + 8]]) {
+              if (dr() < 0.25) continue;
+              const c = dr() < 0.4 ? dr.pick(KIMONO) : dr.pick([0x3a3a4a, 0xe8e8f0, 0x3a6ad0, 0xd04040]);
+              for (let i = 0; i < 3; i++) {
+                img.px(cx + i, cy - 3, 0x2a2024);
+                img.px(cx + i, cy - 2, i === 1 ? 0xe8c0a0 : 0x2a2024);
+                img.px(cx + i, cy - 1, i === 2 ? scaleColor(c, 0.75) : c);
+                img.px(cx + i, cy, i === 2 ? scaleColor(c, 0.75) : c);
+              }
+            }
           }
+          for (let x = x0 + 2; x < x1 - 2; x += 6) chochin(x + 1, Y(w0 + 3), 0xf0e0c0);
         },
       });
     crowd(2, Y(w0 + 2), 72, 12, 24, true);
@@ -1440,7 +1793,7 @@ export function buildMid() {
       const post = FYr % 12 < 3;
       return post ? (FYr % 12 === 0 ? C.K : k < 2 ? 0xf06a40 : k < 4 ? C.R1 : C.R3) : k < 2 ? C.R1 : k < 4 ? C.R2 : 0x3a1a10;
     });
-    hall(46, Y(1214), 88, 52, 11, 'gate'); // Rōmon
+    romon(46, Y(1214), 88, 52, 11);
     fox(64, Y(1142), false);
     fox(111, Y(1142), true);
     lantern(74, Y(1260));
@@ -1448,6 +1801,40 @@ export function buildMid() {
     // the gravel of the courtyard raked in fine grooves either side of the walk
     for (let FYr = Y(1830) * S; FYr < Y(1218) * S; FYr += 4)
       for (let FXr = 15 * S; FXr < 166 * S; FXr++) if (FXr < 81 * S || FXr > 99 * S) img.tintPx(FXr, FYr, 0.88);
+    // the courtyard worn by the visitors: paler packed tracks across the gravel from the walk to the halls,
+    // the water basin, the stage and the racks; stepping stones to the side halls' doors
+    const track = (x0, u0, x1, u1, hw) =>
+      img.fine(Math.min(x0, x1) - hw - 1, Y(Math.max(u0, u1)) - hw - 1, Math.abs(x1 - x0) + hw * 2 + 2, Math.abs(u1 - u0) + hw * 2 + 2, (FXr, FYr, x, y) => {
+        const ax = x - x0;
+        const ay = L - y - u0;
+        const bx = x1 - x0;
+        const by = u1 - u0;
+        const t = Math.max(0, Math.min(1, (ax * bx + ay * by) / (bx * bx + by * by || 1)));
+        const d = Math.hypot(ax - bx * t, ay - by * t);
+        if (d > hw + (hashPx(FXr >> 1, FYr >> 1, 95) - 0.5) * 1.5) return null;
+        return [hashPx(FXr, FYr, 96) < 0.06 ? C.gravel[2] : 0x9a927e, 0.55 * (1 - d / (hw + 1))];
+      });
+    const stepping = (x0, u0, x1, u1) => {
+      const n = Math.max(2, Math.round(Math.hypot(x1 - x0, u1 - u0) / 4.5));
+      for (let k = 0; k <= n; k++) {
+        const t = k / n;
+        const CX = (x0 + (x1 - x0) * t) * S;
+        const CY = Y(u0 + (u1 - u0) * t) * S;
+        for (let j = -4; j <= 4; j++)
+          for (let i = -6; i <= 6; i++) {
+            const e = (i / 6.2) ** 2 + (j / 4.2) ** 2 + (hashPx(i + k * 31, j, 97) - 0.5) * 0.15;
+            if (e <= 1) img.px(Math.round(CX + i), Math.round(CY + j), e > 0.75 ? C.stone[0] : i + j < -3 ? C.stone[3] : C.stone[2]);
+          }
+      }
+    };
+    track(98, 1290, 120, 1283, 3);
+    track(98, 1366, 128, 1372, 3.5);
+    track(82, 1418, 54, 1418, 3);
+    track(98, 1497, 130, 1497, 3);
+    track(82, 1560, 40, 1600, 2.5);
+    track(98, 1650, 150, 1640, 2.5);
+    stepping(80, 1316, 44, 1316);
+    stepping(100, 1396, 138, 1396);
     hall(22, Y(1352), 40, 26, 7, 'shrine');
     hall(118, Y(1432), 40, 26, 7, 'shrine');
     hall(112, Y(1298), 18, 10, 4, 'shrine'); // (the roof over the chōzuya)
@@ -1602,8 +1989,8 @@ export function buildMid() {
       img.discPx(x * S + 45, (y + 6) * S, 2, 0xd8c8a0);
       reserveRect(x - 1, y - 1, 32, 20);
     }
-    hall(34, Y(1572), 112, 50, 10, 'shrine'); // honden
-    hall(72, Y(1508), 36, 12, 0, 'shrine');
+    honden(34, Y(1572), 112, 50, 10);
+    kohai(72, Y(1508), 36, 12);
     path(1600, 1700, () => 90, 8, 'stairs');
     hall(24, Y(1690), 34, 20, 6, 'shrine');
     hall(124, Y(1740), 34, 20, 6, 'shrine');
@@ -1644,6 +2031,14 @@ export function buildMid() {
     tunnel(2144, 2576, (u) => pathX(u) + split(u), 5, 13);
     for (let u = 2230; u < 2490; u++) reserveRect(pathX(u) - 4, Y(u), 9, 1);
     tunnel(2580, 2690, pathX, 6, 14);
+    // at each mouth of the tunnels: a pair of stone lanterns and a pair of foxes keeping watch
+    for (const [u, fx] of [[1832, pathX], [2588, pathX], [2696, pathX], [2136, (uu) => pathX(uu) - split(uu)], [2136, (uu) => pathX(uu) + split(uu)]]) {
+      const cx = Math.round(fx(u));
+      for (const s of [-1, 1]) {
+        if (!isRes(cx + s * 13, Y(u)) && img.alpha(cx + s * 13, Y(u))) lantern(cx + s * 13 - 1, Y(u) - 2);
+        if (!isRes(cx + s * 19, Y(u) + 3) && img.alpha(cx + s * 19, Y(u) + 3)) fox(cx + s * 19 - 2, Y(u) + 1, s > 0);
+      }
+    }
     // stone monuments with offering torii on the slopes
     for (const side of [-1, 1])
       for (let u = 1900; u < 2660; u += 9 + Math.floor(rand() * 6)) {
@@ -1865,6 +2260,10 @@ export function buildMid() {
         });
         for (let u = 3326; u <= 3446; u += 8)
           for (const PX of [81 * S, 99 * S]) for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) img.px(PX + i, Y(u) * S + j, j === 0 ? C.wood[3] : C.wood[0]);
+        // people strolling over it, rickshaws' passengers looking at the river (drawn with the bridge)
+        const pr = rng(5402);
+        for (let k = 0; k < 30; k++)
+          personPx(Math.round((84 + pr() * 12) * S), Math.round((Y(3444) + pr() * 116) * S), pr() < 0.25 ? { maiko: true, kimono: pr.pick(KIMONO), orn: pr() < 0.5, obi: 0xf4f0e6 } : { coat: pr.pick([0xd04040, 0x3a6ad0, 0xe8e8f0, 0x3a3a4a, 0x6aaa5a]), hair: 0x2a2024, face: pr() < 0.5, legs: 0x2a2a34 });
       },
     });
     crowd(84, Y(3446), 12, 120, 30, true, 0.2);
@@ -2281,7 +2680,7 @@ export function buildMid() {
     // the gate courtyard: the vermilion Niōmon, the west gate, the three-storey pagoda
     fillGround(0, Y(5560), W, 140, C.gravel, 44, 6);
     path(5400, 5426, () => 90, 10, 'stairs');
-    hall(58, Y(5470), 64, 24, 10, 'gate'); // Niōmon
+    romon(58, Y(5470), 64, 24, 10, { tiles: true, guards: 'nio' }); // Niōmon
     // the komainu guardians in front of it: stone lion-dogs with curled manes, one with its mouth open
     // (a), one with it shut (un)
     const komainu = (x, y, flip) => {
@@ -2310,7 +2709,7 @@ export function buildMid() {
     };
     komainu(68, Y(5432), false);
     komainu(108, Y(5432), true);
-    hall(14, Y(5520), 34, 16, 8, 'gate'); // Saimon
+    romon(14, Y(5520), 34, 16, 8, { tiles: true }); // Saimon
     hall(110, Y(5536), 18, 12, 6, 'shrine'); // the bell tower
     for (let u = 5440; u < 5550; u += 18) {
       lantern(52, Y(u));
@@ -2387,6 +2786,16 @@ export function buildMid() {
             return ((FXr + (Math.floor(fy / 4) * 37)) % 61 === 0) ? C.hinoki[0] : hashPx(FXr >> 3, fy >> 2, 60) < 0.25 ? C.hinoki[3] : hashPx(FXr, FYr, 61) < 0.05 ? C.hinoki[1] : C.hinoki[2];
           });
           for (let FXr = x0 * S; FXr < x1 * S; FXr++) for (let j = 1; j < 10; j++) img.tintPx(FXr, Y(lat0) * S + j, 0.7 + j * 0.03);
+          // the visitors on the deck, crowding the rail for the view over the valley
+          const vr = rng(5757);
+          for (let k = 0; k < 110; k++) {
+            const nearRail = k < 45;
+            const X = Math.round((x0 + 3 + vr() * (x1 - x0 - 6)) * S);
+            const Yy = nearRail ? Y(deck0 + 4) * S - Math.floor(vr() * 6) : Math.round((Y(deck1 - 3) + vr() * (deck1 - deck0 - 10)) * S);
+            const maiko = vr() < 0.25;
+            if (maiko) personPx(X, Yy, { maiko: true, kimono: vr.pick(KIMONO), orn: vr() < 0.5, obi: vr.pick([0xe8c040, 0x2a2a6a, 0xf4f0e6, 0xc83a3a]) });
+            else personPx(X, Yy, { coat: vr.pick([0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0x6aaa5a, 0x3a3a4a, 0x2a3040]), hair: vr.pick([0x2a2024, 0x1a1418, 0x3a2a20]), face: vr() < 0.5, legs: 0x2a2a34 });
+          }
         },
       });
       reserveRect(x0, Y(deck1), x1 - x0, deck1 - lat0);
@@ -2395,7 +2804,7 @@ export function buildMid() {
       hall(x0, Y(deck1 + 14), 20, 10, 4, 'hondo');
       hall(x1 - 20, Y(deck1 + 14), 20, 10, 4, 'hondo');
       // the main hall: a vast cypress-bark roof over plain wood
-      hall(30, Y(5812), 120, 40, 10, 'hondo');
+      honden(30, Y(5812), 120, 40, 10, { wood: true });
     }
     // Okunoin's small stage and the Jishu love shrine
     hall(126, Y(5900), 44, 16, 6, 'hondo');
@@ -3353,6 +3762,8 @@ export function buildMid() {
       return kit.frame(gradeAt(out, 3790));
     });
     kit.spot([[30, 3850, 60, 110]], rings, { rate: 0.6, fps: 5, a: 0.8 });
+    // and the gold leaf of the pavilion catching the sun
+    kit.spot([[38, 3918, 44, 26]], glint, { rate: 1.6, fps: 10, a: 1 });
 
     // the wind through the cherries: gusts running over the crowns, the blossom turning paler where it
     // passes (live), and petals let go, drifting down to the ground below the trees (live)
