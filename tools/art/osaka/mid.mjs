@@ -23,14 +23,16 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Raster, fbm, rng, bayer, scaleColor, rgb } from '../../lib/raster.mjs';
+import { Raster, fbm, rng, bayer, scaleColor, rgb, mix } from '../../lib/raster.mjs';
 import { crownPixels, rampColor } from '../nature.mjs';
 import { PropKit, Window, puff, todGrade, tintTable, planTraffic } from '../props.mjs';
 import { drawLionHall } from './lion-hall.mjs';
+import { HiCanvas, hashPx } from '../hires.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
 export const W = 180;
+export const S = 3; // fine pixels per logical one: drawn 540 px wide, laid out in the game's 180
 export const CHUNK = 512;
 export const CHUNKS = 14;
 export const L = CHUNK * CHUNKS;
@@ -87,7 +89,7 @@ const smooth = (a, b, x) => {
 export function buildMid() {
   const stage = JSON.parse(readFileSync(join(root, 'src', 'data', 'stage5.json'), 'utf8'));
   const { mid: V, anchor } = stage.scroll;
-  let img = new Raster(W, L);
+  let img = new HiCanvas(W, L, S);
   const rand = rng(5505);
   const Y = (u) => Math.round(L - u);
   const U = (y) => L - y;
@@ -104,10 +106,13 @@ export function buildMid() {
   };
   const objects = [];
   const lights = [];
+  const lightsFine = []; // single fine pixels lit after the grade: lamp panes, sparks, neon strokes
   const pools = [];
-  const kit = new PropKit(5515); // the moving parts
+  const kit = new PropKit(5515, { artScale: S }); // the moving parts
+  const frame0 = kit.frame.bind(kit);
+  kit.frame = (r, name) => frame0(r.hi ?? r, name); // (frames are drawn on HiCanvases)
   // steam off the stalls' takoyaki and yakisoba griddles (live)
-  const stallSteam = [2, 3, 4].map((r) => [0, 1].map((v) => kit.frame(puff(r, r * 23 + v, [0xa8a8b0, 0xc8c8d0, 0xe4e4ea, 0xffffff]))));
+  const stallSteam = [2, 3, 4].map((r) => [0, 1].map((v) => kit.frame(puff(r * S, r * 23 + v, [0xa8a8b0, 0xc8c8d0, 0xe4e4ea, 0xffffff]))));
   const tod = todGrade(TOD, smooth);
   /**
    * Draw with the stage's own helpers into a frame at (x0, y0) (strip pixels): graded for its place, lit
@@ -117,16 +122,19 @@ export function buildMid() {
   const capture = (x0, y0, w, h, draw, opt = {}) => {
     const keep = img;
     const nl = lights.length;
+    const nf = lightsFine.length;
     const np = pools.length;
-    img = new Window(x0, y0, w, h);
+    img = new HiCanvas(w, h, S, x0, y0);
     draw();
     const out = img;
     img = keep;
     const lit = lights.splice(nl);
+    const litFine = lightsFine.splice(nf);
     const cast = opt.pools ? pools.slice(np) : pools.splice(np);
     tod.frame(out, opt.u ?? U(y0 + h / 2));
     for (const pl of cast) applyPool(out, pl);
-    for (const [x, y, c, a] of lit) out.set(x, y, c, a);
+    for (const [x, y, c, a] of lit) out.light(x, y, c, a);
+    for (const [X, Yy, c, a] of litFine) out.px(X, Yy, c, a);
     return kit.frame(out);
   };
   // neon that comes alive at night: tubes lighting letter by letter, billboards chasing (frames shared)
@@ -137,7 +145,7 @@ export function buildMid() {
       tubes.set(
         h,
         Array.from({ length: h }, (_, j) => {
-          const out = new Raster(2, h);
+          const out = new HiCanvas(2, h);
           for (let k = j; k < h; k++) for (const i of [0, 1]) out.set(i, k, NEON_OFF[i]);
           return kit.frame(out);
         }),
@@ -150,7 +158,7 @@ export function buildMid() {
       boards.set(
         w,
         [0, 1, 2].map((p) => {
-          const out = new Raster(w, 6);
+          const out = new HiCanvas(w, 6);
           for (let i = 0; i < w; i++) if ((i + p) % 3 === 0) for (const yy of [0, 5]) out.set(i, yy, NEON_OFF[0]);
           return kit.frame(out);
         }),
@@ -158,20 +166,22 @@ export function buildMid() {
     return boards.get(w);
   };
   const glow = (x, y, c, a = 1) => lights.push([Math.round(x), Math.round(y), c, a]);
+  const glowPx = (X, Yy, c, a = 1) => lightsFine.push([Math.round(X), Math.round(Yy), c, a]);
   const pool = (x, y, r, c, k = 0.5) => pools.push({ x, y, r, c, k });
   /** Add a pool of light (after the grade): brightens the pixels around (x, y). */
   const applyPool = (target, { x, y, r, c, k }) => {
     const [cr, cg, cb] = rgb(c);
-    for (let yy = Math.floor(y - r); yy <= y + r; yy++)
-      for (let xx = Math.floor(x - r); xx <= x + r; xx++) {
-        const i = target.idx(xx, yy);
-        if (i < 0 || !target.data[i + 3]) continue;
-        const dd = Math.hypot(xx + 0.5 - x, yy + 0.5 - y) / r;
+    const CX = x * S;
+    const CY = y * S;
+    const R = r * S;
+    for (let FYr = Math.floor(CY - R); FYr <= CY + R; FYr++)
+      for (let FXr = Math.floor(CX - R); FXr <= CX + R; FXr++) {
+        const q = target.rgbaPx(FXr, FYr);
+        if (!q || !q[3]) continue;
+        const dd = Math.hypot(FXr + 0.5 - CX, FYr + 0.5 - CY) / R;
         if (dd >= 1) continue;
         const f = (1 - dd) ** 1.6 * k;
-        target.data[i] += cr * f;
-        target.data[i + 1] += cg * f;
-        target.data[i + 2] += cb * f;
+        target.setRGBAPx(FXr, FYr, Math.min(255, q[0] + cr * f), Math.min(255, q[1] + cg * f), Math.min(255, q[2] + cb * f), q[3]);
       }
   };
   const shadowRect = (x, y, w, h, f = 0.6) => {
@@ -204,7 +214,18 @@ export function buildMid() {
         water[y * W + x] = 1;
         continue;
       }
-      img.set(x, y, rampColor(C.walk, 0.3 + fbm(x, y, { seed: 11, scale: 6, octaves: 2 }) * 0.6, x, y));
+      // (paving slabs: two logical pixels a slab, the joints dark, a grain of light and dark specks)
+      const base = 0.3 + fbm(x, y, { seed: 11, scale: 6, octaves: 2 }) * 0.6;
+      for (let j = 0; j < S; j++)
+        for (let i = 0; i < S; i++) {
+          const X = x * S + i;
+          const Yf = y * S + j;
+          const row = Math.floor(Yf / 6);
+          const joint = Yf % 6 === 0 || (X + (row % 2) * 3) % 6 === 0;
+          const g = hashPx(X, Yf, 12);
+          const slab = hashPx(Math.floor((X + (row % 2) * 3) / 6), row, 13);
+          img.px(X, Yf, joint ? scaleColor(rampColor(C.walk, base, X, Yf), 0.93) : rampColor(C.walk, base + (slab - 0.5) * 0.12 + (g - 0.5) * 0.1, X, Yf));
+        }
     }
   }
   // stone embankments along every water edge
@@ -212,30 +233,57 @@ export function buildMid() {
     for (let x = 0; x < W; x++) {
       if (water[y * W + x]) continue;
       const edge = water[(y - 1) * W + x] || water[(y + 1) * W + x] || (x > 0 && water[y * W + x - 1]) || (x < W - 1 && water[y * W + x + 1]);
-      if (edge) img.set(x, y, C.stone[(x + y) % 3 === 0 ? 1 : 2]);
-      // the embankment wall seen below a bank (water to the south)
-      if (y + 2 < L && !water[y * W + x] && water[(y + 1) * W + x]) img.set(x, y + 1, (x >> 1) % 2 ? C.stone[0] : C.stone[1]);
+      if (edge)
+        for (let j = 0; j < S; j++)
+          for (let i = 0; i < S; i++) {
+            // (the coping stones along the edge: long blocks, their joints, a lit arris)
+            const X = x * S + i;
+            const Yf = y * S + j;
+            const joint = (X + Math.floor(Yf / 3) * 4) % 9 === 0;
+            img.px(X, Yf, joint ? C.stone[0] : hashPx(X, Yf, 14) < 0.2 ? C.stone[3] : C.stone[(x + y) % 3 === 0 ? 1 : 2]);
+          }
+      // the embankment wall seen below a bank (water to the south): coursed blocks, a wet dark line at the foot
+      if (y + 2 < L && !water[y * W + x] && water[(y + 1) * W + x])
+        for (let j = 0; j < S; j++)
+          for (let i = 0; i < S; i++) {
+            const X = x * S + i;
+            const Yf = (y + 1) * S + j;
+            const joint = j === 0 || (X + (j > 1 ? 3 : 0)) % 7 === 0;
+            img.px(X, Yf, j === S - 1 ? 0x1e2a2e : joint ? C.stone[0] : hashPx(X, Yf, 15) < 0.25 ? C.stone[2] : C.stone[1]);
+          }
     }
   const W_ = (x, y) => x >= 0 && x < W && y >= 0 && y < L && water[y * W + x];
 
   // ------------------------------------------------------------ helpers
-  const roadPx = (x, y, across, hw, lanes = true, overWater = false) => {
+  const roadPx = (x, y, across, hw, lanes = true, overWater = false, horiz = false) => {
     if (W_(x, y) && !overWater) return;
-    const a = Math.abs(across);
-    let c;
-    if (a > hw + 0.5) c = rampColor(C.paving, fbm(x, y, { seed: 33, scale: 3 }), x, y);
-    else if (a > hw - 0.5) c = 0x8a8a8e;
-    else c = rampColor(C.asphalt, fbm(x, y, { seed: 31, scale: 4, octaves: 2 }), x, y);
-    if (lanes && a <= hw - 1 && Math.abs(a - hw / 2) < 0.5 && Math.floor(y / 3) % 2 && hw > 4) c = 0xd8d4c8;
-    if (lanes && a < 0.6 && hw > 6) c = 0xe0b040; // yellow centre line
-    img.set(x, y, c);
+    for (let j = 0; j < S; j++)
+      for (let i = 0; i < S; i++) {
+        const X = x * S + i;
+        const Yf = y * S + j;
+        const af = across + (horiz ? -((j + 0.5) / S - 0.5) : (i + 0.5) / S - 0.5);
+        const along = horiz ? X : Yf;
+        const a = Math.abs(af);
+        let c;
+        if (a > hw + 0.5) {
+          const joint = (horiz ? Yf : X) % 6 === 0 || along % 9 === 0;
+          c = joint ? scaleColor(C.paving[0], 0.9) : rampColor(C.paving, fbm(x, y, { seed: 33, scale: 3 }) + (hashPx(X, Yf, 34) - 0.5) * 0.25, X, Yf);
+        } else if (a > hw - 0.5) c = a > hw + 0.17 ? 0xb4b2ac : a > hw - 0.17 ? 0x8a8a8e : 0x2e2e34; // (the kerb, lit; the gutter)
+        else {
+          c = rampColor(C.asphalt, fbm(x, y, { seed: 31, scale: 4, octaves: 2 }) + (hashPx(X, Yf, 32) - 0.5) * 0.35, X, Yf);
+          if (fbm(X * 0.08, Yf * 0.08, { seed: 35, scale: 3 }) > 0.72) c = scaleColor(c, 0.88); // (patched asphalt)
+          if (lanes && hw > 4 && Math.abs(a - hw / 2) < 0.2 && along % 18 < 9) c = 0xd8d4c8;
+          if (lanes && hw > 6 && Math.abs(a - 0.25) < 0.14) c = 0xe0b040; // the double yellow centre line
+        }
+        img.px(X, Yf, c);
+      }
   };
   const vRoad = (cx, hw, u0, u1, lanes = true) => {
     for (let u = u0; u < u1; u++) for (let x = Math.floor(cx - hw - 2); x <= cx + hw + 1; x++) roadPx(x, Y(u), x + 0.5 - cx, hw, lanes);
     reserveRect(cx - hw - 3, Y(u1), hw * 2 + 6, u1 - u0);
   };
   const hRoad = (uc, hw, x0 = 0, x1 = W, lanes = true) => {
-    for (let u = Math.floor(uc - hw - 2); u <= uc + hw + 1; u++) for (let x = x0; x < x1; x++) roadPx(x, Y(u), u + 0.5 - uc, hw, lanes);
+    for (let u = Math.floor(uc - hw - 2); u <= uc + hw + 1; u++) for (let x = x0; x < x1; x++) roadPx(x, Y(u), u + 0.5 - uc, hw, lanes, false, true);
     reserveRect(x0, Y(uc + hw + 3), x1 - x0, hw * 2 + 6);
   };
   /** Zebra crossings on a vertical road just before and after a cross street (sides: -1 south, 1 north). */
@@ -243,7 +291,7 @@ export function buildMid() {
     for (const s of sides) {
       const u0 = uc + s * (hwc + 3);
       for (let k = 0; k < 4; k++)
-        for (let x = Math.ceil(cx - hw + 1); x < cx + hw; x++) if (x % 2 === 0) img.set(x, Y(u0 + s * k), 0xe8e8e0);
+        for (let X = Math.ceil(cx - hw + 1) * S; X < (cx + hw) * S; X++) if (X % 6 < 4) for (let j = 0; j < S; j++) if (hashPx(X, Y(u0 + s * k) * S + j, 36) > 0.12) img.px(X, Y(u0 + s * k) * S + j, 0xe8e8e0);
     }
   };
   /** A traffic light on a corner: the post at (x, y), its head showing c towards the junction's middle (x 90). */
@@ -256,7 +304,7 @@ export function buildMid() {
   /** A zebra crossing over a horizontal street (centre uc, half width hw), four pixels wide from x0. */
   const hCrossing = (uc, hw, x0) => {
     for (let x = x0; x < x0 + 4; x++)
-      for (let u = Math.ceil(uc - hw + 1); u < uc + hw; u++) if (u % 2 === 0) img.set(x, Y(u), 0xe8e8e0);
+      for (let FYr = Y(uc + hw - 1) * S; FYr < Y(Math.ceil(uc - hw + 1)) * S; FYr++) if (FYr % 6 < 4) for (let i = 0; i < S; i++) if (hashPx(x * S + i, FYr, 37) > 0.12) img.px(x * S + i, FYr, 0xe8e8e0);
   };
   const car = (x, y, vertical, color = rand.pick(CARS)) => {
     const w = vertical ? 4 : 7;
@@ -265,13 +313,33 @@ export function buildMid() {
       y: y + h,
       shadow: () => shadowRect(x + 1, y + 1, w, h, 0.6),
       draw: () => {
-        img.rect(x, y, w, h, color);
-        img.rect(x + (vertical ? 0 : 2), y + (vertical ? 2 : 0), vertical ? w : 3, vertical ? 3 : h, scaleColor(color, 1.15));
-        if (vertical) img.rect(x, y + 1, w, 1, 0x2a3440);
-        else img.rect(x + 1, y, 1, h, 0x2a3440);
+        // (fine: rounded body lit along one side, the bonnet, windscreen, roof, rear window, mirrors)
+        const FW = w * S;
+        const FH = h * S;
+        const X0 = x * S;
+        const Y0 = y * S;
+        for (let j = 0; j < FH; j++)
+          for (let i = 0; i < FW; i++) {
+            if ((i === 0 || i === FW - 1) && (j === 0 || j === FH - 1)) continue;
+            const a = vertical ? j : FW - 1 - i; // along, from the front
+            const n = vertical ? FH : FW;
+            const side = vertical ? i : j;
+            const sn = vertical ? FW : FH;
+            let c = side === 0 ? scaleColor(color, 1.2) : side === sn - 1 ? scaleColor(color, 0.7) : color;
+            if (a >= n * 0.22 && a < n * 0.34) c = 0x2a3440; // windscreen
+            else if (a >= n * 0.34 && a < n * 0.7 && side > 0 && side < sn - 1) c = scaleColor(color, 1.12); // roof
+            else if (a >= n * 0.7 && a < n * 0.8) c = 0x34404c; // rear window
+            img.px(X0 + i, Y0 + j, c);
+          }
+        if (vertical) {
+          img.px(X0 - 1, Y0 + Math.round(FH * 0.3), scaleColor(color, 0.8));
+          img.px(X0 + FW, Y0 + Math.round(FH * 0.3), scaleColor(color, 0.8));
+        }
         if (night(U(y)) > 0.3) {
-          glow(x + (vertical ? 0 : w - 1), y + (vertical ? h - 1 : 0), 0xfff0c8, 0.8);
-          glow(x + (vertical ? w - 1 : w - 1), y + (vertical ? h - 1 : h - 1), 0xfff0c8, 0.8);
+          const lights = vertical ? [[1, FH - 1], [FW - 2, FH - 1]] : [[FW - 1, 1], [FW - 1, FH - 2]];
+          for (const [i, j] of lights) glowPx(X0 + i, Y0 + j, 0xfff0c8, 0.9);
+          const tails = vertical ? [[1, 0], [FW - 2, 0]] : [[0, 1], [0, FH - 2]];
+          for (const [i, j] of tails) glowPx(X0 + i, Y0 + j, 0xff3020, 0.8);
         }
       },
     });
@@ -288,13 +356,15 @@ export function buildMid() {
       for (let u = u0; u < u1; u++) {
         const y = Y(u);
         for (let x = x0; x <= x1; x++) {
-          if (x === x0 || x === x1) img.set(x, y, u % 3 ? C.stone[2] : C.stone[3]);
+          if (x === x0 || x === x1) for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) img.px(x * S + i, y * S + j, (y * S + j) % 6 === 0 ? C.stone[3] : i === (x === x0 ? 0 : S - 1) ? C.stone[0] : i === 1 ? C.stone[3] : C.stone[2]);
           else roadPx(x, y, x + 0.5 - cx, hw, true, true); // (the deck, over the water)
         }
         if (lamps && u % 14 === 0)
           for (const px of [x0, x1]) {
             img.set(px, y, 0x3a3a40);
-            glow(px, y - 1, 0xfff0c8);
+            for (let i = -1; i <= 1; i++) img.px(px * S + 1 + i, (y - 1) * S + 1, 0x2a2a30);
+            glowPx(px * S + 1, (y - 1) * S, 0xfff8d8);
+            glow(px, y - 1, 0xfff0c8, 0.5);
             pool(px, y, 8, C.lamp, 0.3 * night(u) + 0.05);
           }
       }
@@ -331,8 +401,8 @@ export function buildMid() {
     const tall = faceH >= 20;
     const heli = tall && w >= 22 && h >= 18 && rand() < 0.4;
     const mast = tall && !heli && rand() < 0.6;
-    const lit = [];
-    for (let k = 0; k < 400; k++) lit.push(rand() < litP);
+    const lit_ = [];
+    for (let k = 0; k < 400; k++) lit_.push(rand() < litP);
     const litFloors = [];
     for (let k = 0; k < 40; k++) litFloors.push(rand() < litP * 0.8);
     const signs = [];
@@ -354,111 +424,227 @@ export function buildMid() {
       y: y + h + faceH,
       shadow: () => shadowRect(x + off, y + off, w, h + faceH, 0.5),
       draw: () => {
-        // roof and parapet
-        for (let yy = y; yy < y + h; yy++)
-          for (let xx = x; xx < x + w; xx++) {
-            let c = roof;
-            if (yy === y || xx === x) c = scaleColor(roof, 1.2);
-            else if (xx === x + w - 1 || yy === y + h - 1) c = scaleColor(roof, 0.75);
-            else if (yy === y + 1 || xx === x + 1) c = scaleColor(roof, 0.85);
-            else if (fbm(xx, yy, { seed: 7, scale: 3 }) > 0.68) c = scaleColor(roof, 0.94);
-            img.set(xx, yy, c);
+        const X0 = x * S;
+        const X1 = (x + w) * S;
+        const Y0 = y * S;
+        const Y1 = (y + h) * S;
+        const br = rng(x * 131 + y * 7);
+        const glowing = n > 0.25; // (after dark the lit windows shine, painted after the grade)
+        const lamp = (X, Yy, c, a = 0.92) => (glowing ? glowPx(X, Yy, c, a) : img.px(X, Yy, scaleColor(c, 0.92)));
+        // the roof: a membrane in panels with their seams and stains, the parapet's coping lit on the north
+        // and west, its shadow inside
+        for (let Yy = Y0; Yy < Y1; Yy++)
+          for (let X = X0; X < X1; X++) {
+            const e = Math.min(X - X0, Yy - Y0);
+            const e2 = Math.min(X1 - 1 - X, Y1 - 1 - Yy);
+            let c;
+            if (e < 2) c = scaleColor(roof, e === 0 ? 1.25 : 1.12);
+            else if (e2 < 2) c = scaleColor(roof, e2 === 0 ? 0.62 : 0.78);
+            else if (e === 2) c = scaleColor(roof, 0.8);
+            else {
+              c = roof;
+              if ((X - X0) % 15 === 0 || (Yy - Y0) % 12 === 0) c = scaleColor(roof, 1.06);
+              if (fbm(X * 0.15, Yy * 0.15, { seed: 7, scale: 3 }) > 0.66) c = scaleColor(roof, 0.92);
+              const g = hashPx(X, Yy, 8);
+              if (g < 0.06) c = scaleColor(c, 0.9);
+              else if (g > 0.96) c = scaleColor(c, 1.08);
+            }
+            img.px(X, Yy, c);
           }
         for (const [kind, ix, iy] of items) {
+          const IX = ix * S;
+          const IY = iy * S;
           if (kind === 'ac') {
+            // outdoor units in a row: the casing, the fan behind its grille, the pipes, their shadows
             for (let k = 0; k < 3; k++) {
-              img.rect(ix + k * 3, iy, 2, 2, 0xb8bcc0);
-              img.set(ix + k * 3, iy + 2, 0x4a4e54);
+              const UX = IX + k * 9;
+              for (let j = 0; j < 8; j++)
+                for (let i = 0; i < 7; i++) {
+                  if (j === 7) {
+                    img.px(UX + i + 1, IY + j, 0x101018, 0.4);
+                    continue;
+                  }
+                  const d = Math.hypot(i - 3, j - 3.5);
+                  img.px(UX + i, IY + j, i === 0 || j === 0 ? 0xdadee2 : i === 6 || j === 6 ? 0x7a7e84 : d < 2.6 ? (d < 1 ? 0x8a8e94 : (i + j) % 2 ? 0x3a3e44 : 0x5a5e64) : 0xbcc0c4);
+                }
             }
+            for (let k = 0; k < 20; k++) img.px(IX + 3 + k, IY - 2, 0x6a6e74);
           } else if (kind === 'tank') {
-            img.disc(ix + 2, iy + 2, 2.2, 0xc8ccd0);
-            img.set(ix + 1, iy + 1, 0xf4f6f8);
-            img.set(ix + 3, iy + 3, 0x6a6e74);
+            // a water tank on its stand: the drum lit from the top left, its rim, the ladder up the side
+            for (let j = -7; j <= 7; j++)
+              for (let i = -7; i <= 7; i++) {
+                const d = Math.hypot(i, j);
+                if (d > 6.8) continue;
+                img.px(IX + 6 + i, IY + 6 + j, d > 5.8 ? 0x6a6e74 : i + j < -5 ? 0xf4f6f8 : i + j > 5 ? 0x9a9ea4 : 0xc8ccd0);
+              }
+            for (let j = 0; j < 8; j++) img.px(IX + 13, IY + 3 + j, j % 2 ? 0x5a5e64 : 0x8a8e94);
+            for (let i = 0; i < 12; i++) img.px(IX + 2 + i, IY + 13, 0x101018, 0.4);
           } else if (kind === 'hut') {
-            img.rect(ix, iy, 7, 4, scaleColor(roof, 1.1));
-            img.rect(ix, iy + 4, 7, 2, scaleColor(wall, 0.85));
-            img.set(ix + 2, iy + 5, 0x2a2a30);
+            // a stair hut: its own roof with a lip, the wall, the steel door and a lamp over it
+            for (let j = 0; j < 18; j++)
+              for (let i = 0; i < 21; i++) {
+                let c;
+                if (j < 12) c = j === 0 || i === 0 ? scaleColor(roof, 1.25) : i === 20 || j === 11 ? scaleColor(roof, 0.75) : scaleColor(roof, 1.08);
+                else c = i > 6 && i < 12 && j > 13 ? 0x3a3e46 : i === 20 ? scaleColor(wall, 0.7) : j === 12 ? scaleColor(wall, 0.6) : scaleColor(wall, 0.88);
+                img.px(IX + i, IY + j, c);
+              }
+            lamp(IX + 9, IY + 13, C.warm);
           } else if (kind === 'solar') {
-            img.rect(ix, iy, 8, 4, 0x2a3a6a);
-            for (let k = 0; k < 8; k += 2) img.rect(ix + k, iy, 1, 4, 0x4a6aa0);
+            // solar panels: cells in a grid in their frames, the sky in the glass
+            for (let j = 0; j < 12; j++)
+              for (let i = 0; i < 24; i++) img.px(IX + i, IY + j, i % 6 === 0 || j % 6 === 0 ? 0x8a9ab8 : (i + j) % 5 === 0 ? 0x4a6aa8 : 0x26366a);
           } else if (kind === 'garden') {
-            fill(ix, iy, 9, 5, C.grass, 77, 2);
-            img.set(ix + 3, iy + 2, 0x2a5a2a);
+            // a roof garden: lawn, shrubs in clumps, a path of stepping stones, a bench
+            for (let j = 0; j < 15; j++)
+              for (let i = 0; i < 27; i++) {
+                const X = IX + i;
+                const Yy = IY + j;
+                let c = rampColor(C.grass, 0.4 + fbm(X * 0.3, Yy * 0.3, { seed: 77, scale: 2 }) * 0.5, X, Yy);
+                if (fbm(X * 0.4, Yy * 0.4, { seed: 78, scale: 2 }) > 0.62) c = (i + j) % 3 ? 0x2a5a2a : 0x3e7a3a;
+                if (j === 7 && i % 4 < 2) c = 0xb8b2a4;
+                img.px(X, Yy, c);
+              }
           }
         }
         if (heli) {
-          const hx = x + Math.floor(w / 2);
-          const hy = y + Math.floor(h / 2);
-          img.disc(hx, hy, Math.min(w, h) / 2 - 2, 0x5a5e66);
-          for (let a = 0; a < Math.PI * 2; a += 0.15) img.set(Math.round(hx + Math.cos(a) * (Math.min(w, h) / 2 - 3)), Math.round(hy + Math.sin(a) * (Math.min(w, h) / 2 - 3)), 0xe8e0c8);
-          img.rect(hx - 2, hy - 2, 1, 5, 0xe8e0c8);
-          img.rect(hx + 2, hy - 2, 1, 5, 0xe8e0c8);
-          img.rect(hx - 1, hy, 3, 1, 0xe8e0c8);
+          // the helipad: its painted ring and H, the edge lights
+          const HX = (x + Math.floor(w / 2)) * S + 1;
+          const HY = (y + Math.floor(h / 2)) * S + 1;
+          const R = (Math.min(w, h) / 2 - 2) * S;
+          for (let j = -R; j <= R; j++)
+            for (let i = -R; i <= R; i++) {
+              const d = Math.hypot(i, j);
+              if (d > R) continue;
+              img.px(HX + i, HY + j, Math.abs(d - (R - 3)) < 0.8 ? 0xe8e0c8 : d > R - 1 ? 0x3a3e44 : 0x5a5e66);
+            }
+          for (let k = -7; k <= 7; k++) {
+            img.px(HX - 5, HY + k, 0xe8e0c8);
+            img.px(HX - 4, HY + k, 0xe8e0c8);
+            img.px(HX + 4, HY + k, 0xe8e0c8);
+            img.px(HX + 5, HY + k, 0xe8e0c8);
+          }
+          for (let k = -4; k <= 4; k++) img.px(HX + k, HY, 0xe8e0c8);
+          for (let k = 0; k < 8; k++) glowPx(HX + Math.round(Math.cos((k * Math.PI) / 4) * R), HY + Math.round(Math.sin((k * Math.PI) / 4) * R), 0x80ff80, 0.8);
         }
         if (mast) {
-          img.rect(x + w - 5, y + 2, 1, 6, 0x9a9ea4);
-          glow(x + w - 5, y + 1, 0xff3a2a);
+          // a radio mast with its cross-arms, the red light on top
+          const MX = (x + w - 5) * S + 1;
+          for (let j = 0; j < 20; j++) img.px(MX, (y + 2) * S + j, j % 4 ? 0x9a9ea4 : 0xd8dce0);
+          for (const j of [5, 11]) for (let i = -3; i <= 3; i++) img.px(MX + i, (y + 2) * S + j, 0x8a8e94);
+          glowPx(MX, (y + 2) * S - 1, 0xff3a2a);
+          glow(x + w - 5, y + 1, 0xff3a2a, 0.4);
         }
-        if (tall) for (const [ax, ay] of [[x, y], [x + w - 1, y]]) glow(ax, ay, 0xff3a2a, 0.9);
-        // the front
-        const fy = y + h;
-        for (let yy = fy; yy < fy + faceH; yy++) {
-          const r = yy - fy;
-          const floor = Math.floor((r - 1) / 3);
-          for (let xx = x; xx < x + w; xx++) {
-            const cx = xx - x;
-            let c;
+        if (tall) for (const [ax, ay] of [[X0 + 1, Y0 + 1], [X1 - 2, Y0 + 1]]) glowPx(ax, ay, 0xff3a2a);
+        // the front: floors of windows (frames, sills, panes lit or dark, curtains, a plant or a figure at the
+        // glass), the curtain walls' mullions and floor bands, brick courses round arched windows, corrugated
+        // warehouse sheeting and its loading doors
+        const FY0 = Y1;
+        const FH = faceH * S;
+        for (let r = 0; r < FH; r++) {
+          const Yy = FY0 + r;
+          const floor = Math.floor(Math.max(0, r - 3) / 9);
+          const rr = (r - 3 + 900) % 9;
+          for (let X = X0; X < X1; X++) {
+            const cx = X - X0;
+            const fw = X1 - X0;
+            let c = null;
+            let lit = false;
             if (style === 'glass') {
-              // curtain wall: mullions, a sky reflection streak, whole floors lit at night
-              const streak = Math.abs(((cx + r * 0.6) % 22) - 6) < 2;
-              c = cx % 3 === 0 ? scaleColor(wall, 0.72) : scaleColor(wall, (streak ? 1.25 : 1) * (1.12 - (r / faceH) * 0.25));
-              if (r % 3 === 0) c = scaleColor(wall, 0.8);
-              if (r > 0 && r % 3 !== 0 && cx % 3 !== 0 && litFloors[floor % 40] && lit[(floor * 7 + cx) % 400]) c = (floor & 1) ? C.cool : C.warm;
+              const streak = Math.abs(((cx + r * 0.6) % 66) - 18) < 6;
+              c = scaleColor(wall, (streak ? 1.25 : 1) * (1.12 - (r / FH) * 0.25));
+              if (cx % 6 === 0) c = scaleColor(wall, 0.7);
+              if (rr === 0) c = scaleColor(wall, 0.78);
+              if (r > 2 && rr !== 0 && cx % 6 !== 0 && litFloors[floor % 40] && lit_[(floor * 7 + Math.floor(cx / 3)) % 400]) {
+                lit = true;
+                c = floor & 1 ? C.cool : C.warm;
+                if (rr === 1 && cx % 6 === 3) c = 0xffffff; // (the ceiling lights)
+              }
             } else if (style === 'brick') {
-              c = (cx + (r >> 1)) % 3 === 0 ? C.brick[0] : C.brick[1];
-              if (r % 4 === 0) c = 0xe8e0d0;
-              if (r % 4 === 2 && cx % 4 === 2) c = lit[(floor * 5 + cx) % 400] ? C.warm : 0x2a2a30;
+              const course = Math.floor(r / 3);
+              c = (cx + (course % 2) * 4) % 8 === 0 || r % 3 === 0 ? 0xc8b8a0 : hashPx(X, Yy, 16) < 0.2 ? C.brick[0] : C.brick[1];
+              if (r % 12 === 0) c = 0xe8e0d0;
+              const wx = cx % 12;
+              if (rr >= 2 && rr <= 7 && wx >= 4 && wx <= 8 && cx > 2 && cx < fw - 3) {
+                if (rr === 2 && (wx === 4 || wx === 8)) c = C.brick[1];
+                else if (wx === 4 || wx === 8 || rr === 7) c = 0xf0ece0;
+                else if (lit_[(floor * 5 + Math.floor(cx / 12)) % 400]) {
+                  lit = true;
+                  c = wx === 6 ? 0xe8c070 : C.warm;
+                } else c = rr === 3 && wx === 5 ? 0x6a7a8a : 0x2a2a30;
+              }
             } else if (style === 'warehouse') {
-              c = cx % 2 ? wall : scaleColor(wall, 0.88);
-              if (r >= faceH - 5 && cx % 12 > 3 && cx % 12 < 9) c = 0x3a3a40; // loading doors
+              c = cx % 2 ? wall : scaleColor(wall, 0.86);
+              if (r >= FH - 15 && cx % 36 > 9 && cx % 36 < 27) c = (r - (FH - 15)) % 3 === 0 ? 0x4a4a52 : 0x3a3a40;
+              if (r === 4 && cx % 18 === 6) {
+                lit = glowing;
+                c = C.lamp;
+              }
             } else {
-              c = wall;
-              if (r % 3 === 2 && cx > 0 && cx < w - 1 && cx % 3 !== 0) c = lit[(floor * 11 + cx) % 400] ? (cx & 2 ? C.warm : C.cool) : style === 'shop' ? 0x3a3038 : 0x2e3846;
+              c = r < 2 ? scaleColor(wall, 1.05) : wall;
+              if (hashPx(X, Yy, 17) < 0.04) c = scaleColor(c, 0.94);
+              const wx = cx % 6;
+              if (rr === 7 && cx > 1 && cx < fw - 2) c = scaleColor(wall, 1.12); // (the sills)
+              if (rr >= 2 && rr <= 6 && cx > 2 && cx < fw - 3 && wx >= 1 && wx <= 4) {
+                const on = lit_[(floor * 11 + Math.floor(cx / 3)) % 400];
+                if (rr === 2 || wx === 1 || wx === 4) c = scaleColor(wall, 0.72);
+                else if (on) {
+                  lit = true;
+                  c = (cx & 8 ? C.warm : C.cool);
+                  const k = hashPx(Math.floor(cx / 6), floor, 18 + x);
+                  if (k < 0.3 && rr <= 4) c = scaleColor(c, 0.82); // (a curtain half drawn)
+                  if (k > 0.85 && rr >= 4 && wx === 2) c = 0x2a2a30; // (someone at the window)
+                } else {
+                  c = style === 'shop' ? 0x3a3038 : 0x2e3846;
+                  if (rr === 3 && wx === 3) c = 0x5a6a7a; // (the sky in the glass)
+                }
+              }
             }
-            if (xx === x) c = scaleColor(c, 1.08);
-            if (xx === x + w - 1) c = scaleColor(c, 0.78);
+            if (X === X0) c = scaleColor(c, 1.08);
+            if (X >= X1 - 2) c = scaleColor(c, X === X1 - 1 ? 0.7 : 0.85);
             if (r === 0) c = scaleColor(wall, 0.55);
-            img.set(xx, yy, c);
+            if (lit && !(X === X0 || X >= X1 - 2 || r === 0)) lamp(X, Yy, c);
+            else img.px(X, Yy, c);
           }
         }
         if (style === 'shop' || opt.awning) {
-          // shop fronts: a striped awning and lit windows on the street
-          const ay = fy + faceH - 4;
-          for (let xx = x + 1; xx < x + w - 1; xx++) {
-            img.set(xx, ay, (xx >> 1) % 2 ? awn : 0xf0ece0);
-            img.set(xx, ay + 1, scaleColor(awn, 0.7));
+          // shop fronts: the striped awning with its scalloped edge, its shadow, the lit shop window under it
+          const AY = (y + h + faceH - 4) * S;
+          for (let X = X0 + 3; X < X1 - 3; X++) {
+            const st = Math.floor((X - X0) / 3) % 2;
+            for (let j = 0; j < 5; j++) img.px(X, AY + j, j === 0 ? scaleColor(st ? awn : 0xf0ece0, 1.1) : st ? awn : 0xf0ece0);
+            if ((X - X0) % 3 !== 1) img.px(X, AY + 5, st ? scaleColor(awn, 0.7) : 0xc8c4b8);
+            img.px(X, AY + 6, 0x101018, 0.5);
+            for (let j = 7; j < 11; j++) lamp(X, AY + j, (X - X0) % 9 === 0 ? 0x6a5a4a : hashPx(X, j, 19) < 0.15 ? br.pick([0xff7a8a, 0x7ad0ff, 0xffe070]) : C.warm, 0.5 + n * 0.45);
           }
-          for (let xx = x + 2; xx < x + w - 2; xx += 3) glow(xx, ay + 2, C.warm, 0.4 + n * 0.6);
         }
-        for (const s of signs) {
-          for (let k = 0; k < s.h; k++) {
-            glow(s.x, fy + 1 + k, k % 3 === 2 ? 0xffffff : s.c);
-            glow(s.x + 1, fy + 1 + k, s.c, 0.8);
+        for (const sg of signs) {
+          // a vertical neon sign: its characters in a dark frame, the tubes along its edges
+          const SX = sg.x * S - 1;
+          const SY = (y + h + 1) * S;
+          const SH = sg.h * S;
+          for (let j = 0; j < SH; j++) {
+            for (let i = 1; i < 5; i++) img.px(SX + i, SY + j, 0x14101a);
+            glowPx(SX, SY + j, sg.c, 0.95);
+            glowPx(SX + 5, SY + j, sg.c, 0.95);
           }
-          pool(s.x + 0.5, fy + faceH + 2, 9, s.c, 0.35);
+          for (let k = 0; k + 4 < SH; k += 5) glyph(SX + 1, SY + 1 + k, 4, k % 10 ? 0xffffff : sg.c, br);
+          pool(sg.x + 0.5, y + h + faceH + 2, 9, sg.c, 0.35);
         }
         if (board) {
-          const bx = x + Math.floor((w - board.w) / 2);
-          const by = y + 2;
-          img.rect(bx, by + 1, board.w, 4, 0x14101a);
-          img.rect(bx + 1, by + 6, 1, 2, 0x5a5a60);
-          img.rect(bx + board.w - 2, by + 6, 1, 2, 0x5a5a60);
-          for (let i = 0; i < board.w; i++) {
-            glow(bx + i, by, board.c);
-            glow(bx + i, by + 5, board.c);
-            if (i > 0 && i < board.w - 1 && (i * 7 + by) % 3) glow(bx + i, by + 2 + (i % 2), (i >> 2) % 2 ? 0xffffff : board.c2);
-          }
-          pool(bx + board.w / 2, by + 3, board.w * 0.7, board.c, 0.3);
+          // a rooftop billboard: a frame of chasing bulbs, the lit picture, a line of characters, its legs
+          const BX = (x + Math.floor((w - board.w) / 2)) * S;
+          const BY = (y + 2) * S;
+          const BW = board.w * S;
+          for (let j = 0; j < 18; j++)
+            for (let i = 0; i < BW; i++) {
+              if (j === 0 || j === 17 || i === 0 || i === BW - 1) {
+                if ((i + j) % 2) glowPx(BX + i, BY + j, board.c);
+                else img.px(BX + i, BY + j, 0x14101a);
+              } else glowPx(BX + i, BY + j, mix(board.c2, 0x14101a, 0.35 + 0.35 * Math.sin(i * 0.25 + j * 0.3)), 0.92);
+            }
+          for (let k = 0; k * 6 + 8 < BW; k++) glyph(BX + 4 + k * 6, BY + 6, 5, 0xffffff, br);
+          for (const lx of [3, BW - 4]) for (let j = 18; j < 24; j++) img.px(BX + lx, BY + j, 0x5a5a60);
+          pool(BX / S + board.w / 2, BY / S + 3, board.w * 0.7, board.c, 0.3);
         }
       },
     });
@@ -503,15 +689,15 @@ export function buildMid() {
     const seed = Math.floor(src() * 1e9);
     const cx = Math.round(x);
     const cy = Math.round(y);
-    const px = () => crownPixels(kind, cx, cy, r, rng(seed), seed & 1023);
-    const off = Math.round(2 + r * 0.3);
+    const px = () => crownPixels(kind, cx * S + 1, cy * S + 1, r * S, rng(seed), seed & 1023);
+    const off = Math.round((2 + r * 0.3) * S);
     objects.push({
       y: cy + r * 0.6,
       shadow: () => {
-        for (const p of px()) img.tint(p.x + off, p.y + off + 1, 0.55);
+        for (const p of px()) img.tintPx(p.x + off, p.y + off + S, 0.55);
       },
       draw: () => {
-        for (const p of px()) img.set(p.x, p.y, p.c);
+        for (const p of px()) img.px(p.x, p.y, p.c);
       },
     });
   };
@@ -520,14 +706,42 @@ export function buildMid() {
     glow(x, y + 1, 0xffd080, 0.8);
     pool(x, y + 1, 5, c, 0.3);
   };
+  /** A written character from afar: strokes in an s x s box at fine (X, Y), lit after the grade. */
+  const glyph = (X, Yy, sz, c, r, put = (gx, gy, gc) => glowPx(gx, gy, gc)) => {
+    for (let k = 0; k < sz; k++) {
+      put(X + k, Yy, c);
+      if (r() < 0.5) put(X + k, Yy + sz - 1, c);
+    }
+    const vx = X + 1 + Math.floor(r() * Math.max(1, sz - 2));
+    for (let k = 0; k < sz; k++) put(vx, Yy + k, c);
+    if (r() < 0.6) for (let k = 0; k < sz - 1; k++) put(X + k, Yy + Math.floor(sz / 2), c);
+  };
+  /** A person seen from above in fine pixels: hair or a hat, the face, shoulders and arms, legs, a shadow. */
+  const personPx = (X, Yy, pr, o = {}) => {
+    const coat = o.coat ?? pr.pick([0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0xff7ab0, 0x6aaa5a, 0x3a3a4a]);
+    const hair = o.hat ? pr.pick([0xe8e0d0, 0xd8b070, 0x2a2a34, 0xc83a3a]) : pr.pick([0x1a1418, 0x2a2024, 0x3a2a20, 0x5a3a28, 0xb88a50]);
+    for (let i = 0; i < 4; i++) img.px(X + i, Yy + 5, 0x141824, 0.4);
+    img.px(X, Yy - 2, hair);
+    img.px(X + 1, Yy - 2, scaleColor(hair, 1.2));
+    img.px(X + 2, Yy - 2, hair);
+    img.px(X, Yy - 1, 0xe8c0a0);
+    img.px(X + 1, Yy - 1, 0xf0d0b0);
+    img.px(X + 2, Yy - 1, o.hat ? hair : 0xe0b898);
+    for (let j = 0; j < 3; j++) for (let i = -1; i < 4; i++) if (!(j === 2 && (i < 0 || i > 2))) img.px(X + i, Yy + j, i < 0 || i > 2 ? scaleColor(coat, 0.75) : i === 0 ? scaleColor(coat, 1.15) : coat);
+    const leg = pr() < 0.5 ? 0x2a2a3a : 0x4a4a5a;
+    img.px(X, Yy + 3, leg);
+    img.px(X + 2, Yy + 3, leg);
+    img.px(X, Yy + 4, 0x1a1418);
+    img.px(X + 2, Yy + 4, 0x1a1418);
+  };
   const crowd = (x0, y0, w, h, n, any = false, src = rand) => {
     for (let i = 0; i < n; i++) {
       const x = Math.round(x0 + src() * w);
       const y = Math.round(y0 + src() * h);
       if (!any && (isRes(x, y) || W_(x, y))) continue;
-      img.set(x + 1, y + 1, 0x1e1e26, 0.45);
-      img.set(x, y, src() < 0.5 ? src.pick([0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0xff7ab0, 0x6aaa5a]) : 0x3a3a4a);
-      img.set(x, y - 1, src() < 0.2 ? 0xe8e0d0 : 0x2a2024);
+      const coat = src() < 0.5 ? src.pick([0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0xff7ab0, 0x6aaa5a]) : 0x3a3a4a;
+      const hat = src() < 0.2;
+      personPx(x * S, y * S, rng(x * 977 + y * 13), { coat, hat });
     }
   };
 
@@ -544,72 +758,109 @@ export function buildMid() {
     };
     /** Moat water, painted: green and still, the walls reflected darker along the far bank. */
     const moat = (x0, x1, u0, u1) => {
-      for (let u = u0; u < u1; u++)
-        for (let x = x0; x < x1; x++) {
-          const y = Y(u);
-          let c = rampColor(C.moat, 0.25 + fbm(x, u * 2, { seed: 24, scale: 9, octaves: 2 }) * 0.55, x, y);
-          if (u > u1 - 6) c = scaleColor(c, 0.75); // the wall's reflection under the far bank
-          if (fbm(x * 2, u, { seed: 25, scale: 3 }) > 0.8 && (x + u) % 2) c = scaleColor(c, 1.25);
-          // the white walls mirrored under the far bank, rafts of fallen petals drifting
-          if (u === u1 - 3 && fbm(x, u, { seed: 30, scale: 2 }) > 0.35) c = scaleColor(c, 1.6);
-          const raft = fbm(x * 0.7, u * 1.4, { seed: 29, scale: 7, octaves: 2 });
-          if (raft > 0.66 && raft - 0.66 > bayer(x, y) * 0.2) c = raft > 0.72 && (x + y) % 2 ? 0xffe4ee : 0xf2b8cc;
-          img.set(x, y, c);
-        }
+      // (fine: the still green water, ripples catching the light, the white walls mirrored under the far bank,
+      // rafts of fallen petals drifting, each petal a pixel or two)
+      img.fine(x0, Y(u1) + 1, x1 - x0, u1 - u0, (X, Yf) => {
+        const x = X / S;
+        const u = L - Yf / S;
+        let c = rampColor(C.moat, 0.25 + fbm(x, u * 2, { seed: 24, scale: 9, octaves: 2 }) * 0.55 + (fbm(X * 0.3, Yf, { seed: 26, scale: 2 }) - 0.5) * 0.12, X, Yf);
+        if (u > u1 - 6) c = scaleColor(c, 0.75);
+        if (Math.sin(X * 0.7 + Yf * 0.3 + fbm(x, u, { seed: 25, scale: 4 }) * 8) > 0.94) c = scaleColor(c, 1.25);
+        if (u > u1 - 3.4 && u < u1 - 2.4 && fbm(x, u, { seed: 30, scale: 2 }) > 0.35) c = scaleColor(c, 1.6);
+        const raft = fbm(x * 0.7, u * 1.4, { seed: 29, scale: 7, octaves: 2 });
+        const p = hashPx(X, Yf, 27);
+        if (raft > 0.64 && p < (raft - 0.64) * 5) c = p < (raft - 0.64) * 2 ? 0xffe4ee : 0xf2b8cc;
+        else if (raft > 0.6 && p > 0.985) c = 0xf2b8cc;
+        return c;
+      });
       reserveRect(x0, Y(u1), x1 - x0, u1 - u0);
     };
     /** The visible south face of an ishigaki wall: huge fitted stones, long corner stones, lit top edge. */
     const stoneFace = (x0, x1, uTop, h) => {
       const yTop = Y(uTop);
       const r = rng(Math.floor(rand() * 1e9));
-      for (let row = 0; row * 3 < h; row++) {
-        let x = x0 - Math.floor(r() * 4);
-        const rh = Math.min(3, h - row * 3);
-        while (x < x1) {
-          const sw = 3 + Math.floor(r() * 4);
-          const c = C.ishi[1 + Math.floor(r() * 3)];
+      const FX0 = x0 * S;
+      const FX1 = x1 * S;
+      const FY0 = yTop * S;
+      const FH = h * S;
+      for (let FYr = 0; FYr < FH; ) {
+        const rh = Math.min(FH - FYr, 6 + Math.floor(r() * 5));
+        let X = FX0 - Math.floor(r() * 12);
+        while (X < FX1) {
+          const sw = 9 + Math.floor(r() * 12);
+          const base = C.ishi[1 + Math.floor(r() * 3)];
+          const mossy = r() < 0.2;
           for (let j = 0; j < rh; j++)
             for (let i = 0; i < sw; i++) {
-              const xx = x + i;
-              if (xx < x0 || xx >= x1) continue;
-              let cc = c;
-              if (i === sw - 1 || j === rh - 1) cc = C.ishi[0];
-              else if (j === 0 || i === 0) cc = scaleColor(c, 1.12);
-              // the face darkens towards the water, moss in the joints
-              cc = scaleColor(cc, 1.05 - ((row * 3 + j) / Math.max(1, h)) * 0.25);
-              if ((i === sw - 1 || j === rh - 1) && r() < 0.18) cc = r() < 0.5 ? 0x4a6a3a : 0x5a7a44;
-              img.set(xx, yTop + row * 3 + j, cc);
+              const XX = X + i;
+              const YY = FY0 + FYr + j;
+              if (XX < FX0 || XX >= FX1) continue;
+              let cc;
+              if (((i === 0 || i === sw - 1) && (j === 0 || j === rh - 1)) || i === sw - 1 || j === rh - 1) cc = mossy && hashPx(XX, YY, 71) < 0.5 ? (hashPx(XX, YY, 74) < 0.5 ? 0x4a6a3a : 0x5a7a44) : C.ishi[0];
+              else if (j === 0 || i === 0) cc = scaleColor(base, 1.14);
+              else cc = scaleColor(base, 1 + (hashPx(XX, YY, 72) - 0.5) * 0.14 - (i / sw) * 0.06);
+              img.px(XX, YY, scaleColor(cc, 1.05 - ((FYr + j) / Math.max(1, FH)) * 0.25));
             }
-          x += sw;
+          X += sw;
+        }
+        FYr += rh;
+      }
+      for (const side of [0, 1]) {
+        const CX0 = side ? FX1 - 15 : FX0;
+        for (let FYc = 0; FYc < FH; FYc++) {
+          const long = Math.floor(FYc / 8) % 2;
+          const len = long ? 15 : 9;
+          const jj = FYc % 8;
+          for (let i = 0; i < 15; i++) {
+            const li = side ? 14 - i : i;
+            if (li >= len) continue;
+            img.px(CX0 + i, FY0 + FYc, jj === 7 || li === len - 1 ? C.ishi[0] : jj === 0 ? C.ishi[4] : C.ishi[long ? 3 : 2]);
+          }
         }
       }
-      // the battered corners: long and short stones alternating (sangi-zumi)
-      for (const cx of [x0, x1 - 5])
-        for (let j = 0; j < h; j++) {
-          const long = Math.floor(j / 3) % 2;
-          for (let i = 0; i < 5; i++) if (long || i < 3 || cx !== x0) img.set(cx + (cx === x0 ? i : 4 - i), yTop + j, j % 3 === 2 ? C.ishi[0] : C.ishi[long ? 4 : 3]);
-        }
-      img.rect(x0, yTop, x1 - x0, 1, C.ishi[4]);
+      for (let X = FX0; X < FX1; X++) {
+        img.px(X, FY0, C.ishi[4]);
+        img.px(X, FY0 + 1, scaleColor(C.ishi[4], 0.92));
+      }
       reserveRect(x0, yTop, x1 - x0, h);
     };
     /** White tamon wall along the top of a stone wall: dark tiled roof, plaster with loopholes. */
     const tamon = (x0, x1, y) => {
-      for (let xx = x0; xx < x1; xx++) {
-        img.set(xx, y, C.tileRoof[3]);
-        img.set(xx, y + 1, (xx & 1) ? C.tileRoof[1] : C.tileRoof[2]);
-        img.set(xx, y + 2, C.tileRoof[0]);
-        img.set(xx, y + 3, C.plaster[2]);
-        img.set(xx, y + 4, (xx - x0) % 7 === 3 ? 0x2a2a30 : C.plaster[1]);
-        img.set(xx, y + 5, C.plaster[0]);
-      }
+      for (let X = x0 * S; X < x1 * S; X++)
+        for (let j = 0; j < 18; j++) {
+          const Yy = y * S + j;
+          const lx = X - x0 * S;
+          let c;
+          if (j < 9) c = j === 0 ? C.tileRoof[3] : j === 8 ? C.tileRoof[0] : j === 7 ? (X % 3 === 0 ? 0xb8bcc4 : C.tileRoof[0]) : X % 3 === 0 ? C.tileRoof[3] : X % 3 === 1 ? C.tileRoof[1] : C.tileRoof[2];
+          else if (j === 9) c = 0x2a2a30;
+          else {
+            c = j < 17 ? C.plaster[2] : C.plaster[0];
+            const lh = lx % 21;
+            const tri = Math.floor(lx / 21) % 2;
+            if (!tri && j >= 12 && j <= 14 && lh >= 9 && lh <= 11) c = 0x2a2a30;
+            if (tri && ((j === 12 && lh === 10) || (j === 13 && lh >= 9 && lh <= 11) || (j === 14 && lh >= 8 && lh <= 12))) c = 0x2a2a30;
+            if (hashPx(X, Yy, 73) < 0.04) c = scaleColor(c, 0.95);
+          }
+          img.px(X, Yy, c);
+        }
     };
     /** A long two-storey tamon-yagura along the wall top: tiled roof, rows of windows. */
     const tamon2 = (x0, x1, y) => {
-      for (let xx = x0; xx < x1; xx++) {
-        for (let j = 0; j < 4; j++) img.set(xx, y + j, j === 0 ? C.tileRoof[3] : j === 3 ? C.tileRoof[0] : (xx + j) & 1 ? C.tileRoof[1] : C.tileRoof[2]);
-        for (let j = 4; j < 9; j++) img.set(xx, y + j, j === 4 ? 0x2a2a30 : (xx - x0) % 5 === 2 && (j === 6 || j === 7) ? 0x22222a : j === 8 ? C.plaster[0] : C.plaster[2]);
-      }
-      img.rect(x0, y + 4, x1 - x0, 1, scaleColor(C.plaster[0], 0.7));
+      for (let X = x0 * S; X < x1 * S; X++)
+        for (let j = 0; j < 27; j++) {
+          const Yy = y * S + j;
+          const lx = X - x0 * S;
+          let c;
+          if (j < 12) c = j === 0 ? C.tileRoof[3] : j === 11 ? C.tileRoof[0] : j === 10 ? (X % 3 === 0 ? 0xb8bcc4 : C.tileRoof[0]) : X % 3 === 0 ? C.tileRoof[3] : X % 3 === 1 ? C.tileRoof[1] : C.tileRoof[2];
+          else if (j < 14) c = j === 12 ? 0x2a2a30 : scaleColor(C.plaster[0], 0.7);
+          else {
+            c = j > 24 ? C.plaster[0] : C.plaster[2];
+            const lw = lx % 15;
+            if (j >= 17 && j <= 22 && lw >= 5 && lw <= 10) c = lw % 2 ? 0x22222a : 0x4a4a52; // (a latticed window)
+            if (hashPx(X, Yy, 75) < 0.04) c = scaleColor(c, 0.95);
+          }
+          img.px(X, Yy, c);
+        }
     };
     /** A turret (yagura): white walls, grey tiled roofs with lifted corners; the big ones get three tiers and a gable. */
     const yagura = (cx, yBase, w, tiers = 2, roofRamp = C.tileRoof) => {
@@ -619,31 +870,51 @@ export function buildMid() {
         shadow: () => shadowRect(cx - w / 2 + 5, yBase - tiers * 9 + 5, w, tiers * 9, 0.5),
         draw: () => {
           let y = yBase;
+          const CXf = Math.round(cx * S);
           for (let t = 0; t < tiers; t++) {
             const ww = w - t * 6;
             const x0 = Math.round(cx - ww / 2);
-            // wall
-            for (let yy = y - 5; yy < y; yy++)
-              for (let xx = x0 + 1; xx < x0 + ww - 1; xx++) img.set(xx, yy, xx === x0 + ww - 2 ? C.plaster[0] : (xx - x0) % 4 === 2 && yy === y - 3 ? 0x2a2a30 : yy === y - 1 ? C.plaster[0] : C.plaster[2]);
-            // roof above it, wider than the wall, corners lifted
-            const ry = y - 5;
-            for (let j = 0; j < 4; j++) {
+            const WX0 = (x0 + 1) * S;
+            const WX1 = (x0 + ww - 1) * S;
+            for (let Yy = (y - 5) * S; Yy < y * S; Yy++)
+              for (let X = WX0; X < WX1; X++) {
+                const ly = Yy - (y - 5) * S;
+                const lx = X - WX0;
+                let c = X >= WX1 - 4 ? C.plaster[0] : ly >= 13 ? C.plaster[0] : C.plaster[2];
+                if (ly >= 4 && ly <= 9 && lx % 12 >= 4 && lx % 12 <= 8 && lx > 3 && X < WX1 - 6) c = lx % 2 ? 0x22222a : 0x4a4a52;
+                if (ly === 0) c = 0x6a6a70;
+                img.px(X, Yy, c);
+              }
+            const ry = (y - 5) * S;
+            for (let j = 0; j < 12; j++) {
               const inset = j;
-              for (let xx = x0 - 1 + inset; xx < x0 + ww + 1 - inset; xx++) img.set(xx, ry - 1 - j, xx - x0 < inset + 1 ? roofRamp[3] : x0 + ww - xx < inset + 2 ? roofRamp[0] : j === 0 ? roofRamp[2] : roofRamp[1]);
+              const RX0 = (x0 - 1) * S + inset;
+              const RX1 = (x0 + ww + 1) * S - inset;
+              for (let X = RX0; X < RX1; X++) {
+                const lx = X - RX0;
+                const rx = RX1 - 1 - X;
+                let c = lx < 3 ? roofRamp[3] : rx < 3 ? roofRamp[0] : j < 2 ? (j === 0 ? roofRamp[0] : X % 3 === 0 ? 0xb8bcc4 : roofRamp[1]) : X % 3 === 0 ? roofRamp[3] : X % 3 === 1 ? roofRamp[2] : roofRamp[1];
+                img.px(X, ry - 1 - j, c);
+              }
             }
-            img.set(x0 - 2, ry - 2, roofRamp[3]);
-            img.set(x0 + ww + 1, ry - 2, roofRamp[0]);
+            // the lifted corners curling up at the eaves
+            for (let k = 0; k < 4; k++) {
+              img.px((x0 - 1) * S - 1 - k, ry - 2 - k, roofRamp[3]);
+              img.px((x0 + ww + 1) * S + k, ry - 2 - k, roofRamp[0]);
+            }
             if (t === 0) {
               // a triangular gable with a gold crest on the lowest roof, gold tips on the corners
-              for (let j = 0; j < 4; j++) for (let xx = Math.round(cx) - 3 + j; xx <= Math.round(cx) + 3 - j; xx++) img.set(xx, ry - 1 - j, Math.abs(xx - cx) >= 3 - j ? roofRamp[3] : C.plaster[2]);
-              img.set(Math.round(cx), ry - 2, C.gold);
-              img.set(x0 - 2, ry - 3, C.gold);
-              img.set(x0 + ww + 1, ry - 3, C.gold);
+              for (let j = 0; j < 11; j++)
+                for (let X = CXf - 10 + j; X <= CXf + 10 - j; X++) img.px(X, ry - 1 - j, Math.abs(X - CXf) >= 9 - j ? roofRamp[3] : j < 3 ? C.plaster[0] : C.plaster[2]);
+              for (const [i, j] of [[0, -4], [-1, -5], [1, -5], [0, -6]]) img.px(CXf + i, ry + j, C.gold);
+              img.px((x0 - 1) * S - 5, ry - 6, C.gold);
+              img.px((x0 + ww + 1) * S + 4, ry - 6, C.gold);
             }
-            y = ry - 4;
+            y = Math.round((ry - 12) / S);
           }
-          img.set(Math.round(cx) - 2, y, C.gold);
-          img.set(Math.round(cx) + 1, y, C.gold);
+          // the ridge on top and its two little golden fish
+          for (let X = CXf - 6; X <= CXf + 6; X++) img.px(X, y * S + 2, roofRamp[3]);
+          for (const sx of [-6, 5]) for (const [i, j, c] of [[0, 0, C.gold], [0, -1, C.goldHi], [sx < 0 ? -1 : 1, -2, C.gold]]) img.px(CXf + sx + i, y * S + 1 + j, c);
         },
       });
     };
@@ -681,7 +952,7 @@ export function buildMid() {
           stoneFace(cx - 46, cx + 46, uBase, 18);
           img.rect(cx - 46, y0 - 12, 92, 1, C.ishi[4]);
           // stone steps up the face to the entrance, and the small entrance keep beside the main one
-          for (let j = 0; j < 18; j++) img.rect(cx - 5, y0 + j, 10, 1, j % 2 ? C.ishi[3] : C.ishi[1]);
+          for (let FYr = y0 * S; FYr < (y0 + 18) * S; FYr++) for (let X = (cx - 5) * S; X < (cx + 5) * S; X++) img.px(X, FYr, FYr % 4 === 0 ? C.ishi[4] : FYr % 4 === 3 ? C.ishi[0] : X === (cx - 5) * S || X === (cx + 5) * S - 1 ? C.ishi[1] : C.ishi[3]);
           for (let yy = y0 - 12; yy < y0; yy++) for (let xx = cx + 40; xx < cx + 58; xx++) img.set(xx, yy, rampColor(C.gravel, 0.5, xx, yy));
           stoneFace(cx + 40, cx + 58, uBase, 12);
           for (let yy = y0 - 10; yy < y0 - 2; yy++) for (let xx = cx + 42; xx < cx + 56; xx++) img.set(xx, yy, xx > cx + 53 ? C.plaster[0] : (xx - cx) % 4 === 0 && yy === y0 - 6 ? 0x22222a : C.plaster[1]);
@@ -697,101 +968,144 @@ export function buildMid() {
             parts.push({ i, ww, wallTop, wallBot: y });
             y = wallTop - roofH[i] + 2;
           }
+          const CXf = cx * S;
+          // a gold tiger on the top floor's black lacquer (or a crane on the panels between)
+          const tiger = (px, py) =>
+            (((px - 6) / 4.2) ** 2 + ((py - 4) / 1.6) ** 2 <= 1) || ((px - 10.5) ** 2 + (py - 2.5) ** 2 <= 2.3) || (py === 6 && (px === 4 || px === 8)) || (px === 1 && py >= 2 && py <= 4) || (px === 2 && py === 2);
+          const craneAt = (px, py) => (py === 3 && px >= 1 && px <= 11 && Math.abs(px - 6) > 1) || (py === 2 && (px === 2 || px === 10)) || (px === 6 && py >= 2 && py <= 5) || (px === 7 && py === 1);
           // walls first, top to bottom, then roofs top to bottom
           for (let k = parts.length - 1; k >= 0; k--) {
             const { i, ww, wallTop, wallBot } = parts[k];
-            const x0 = cx - ww / 2;
             const top = i === parts.length - 1;
-            for (let yy = wallTop; yy < wallBot; yy++)
-              for (let xx = Math.round(x0); xx < Math.round(x0 + ww); xx++) {
-                const lx = xx - Math.round(x0);
-                let c = lx < 2 ? C.plaster[2] : lx > ww - 4 ? C.plaster[0] : C.plaster[1];
+            const FXa = Math.round(cx - ww / 2) * S;
+            const FXb = Math.round(cx + ww / 2) * S;
+            const fw = FXb - FXa;
+            for (let Yy = wallTop * S; Yy < wallBot * S; Yy++)
+              for (let X = FXa; X < FXb; X++) {
+                const lx = X - FXa;
+                const ly = Yy - wallTop * S;
+                let c = lx < 4 ? C.plaster[2] : lx > fw - 8 ? C.plaster[0] : C.plaster[1];
+                if (hashPx(X, Yy, 81) < 0.05) c = scaleColor(c, 0.96);
                 if (top) {
-                  // the top floor: black lacquer with gold tigers and cranes, a balcony rail
-                  c = (lx % 7 === 3 && (yy - wallTop) % 5 < 3) || (lx % 7 === 2 && (yy - wallTop) % 5 === 1) || (lx % 7 === 4 && (yy - wallTop) % 5 === 1) ? C.gold : (lx % 7 === 0 ? 0x2a2630 : 0x1a181e);
-                  if (yy === wallBot - 2) c = (lx & 1) ? C.gold : 0x8a2a20;
-                } else if ((yy - wallTop) % 4 === 2 && lx % 4 === 2 && lx > 1 && lx < ww - 2) c = 0x22222a; // windows
-                else if ((yy - wallTop) % 4 === 3 && lx % 4 === 2 && lx > 1 && lx < ww - 2) c = 0x5a5a62;
-                else if ((yy - wallTop) % 4 === 1 && lx % 4 === 2 && lx > 1 && lx < ww - 2) c = 0xb89040; // brass window heads
-                img.set(xx, yy, c);
+                  // the top floor: black lacquer panels framed in gold, gold tigers and cranes, the balcony rail
+                  const pnl = lx % 21;
+                  const pi = Math.floor(lx / 21);
+                  c = pnl === 0 ? C.gold : pnl === 1 ? 0x8a6a20 : 0x1a181e;
+                  if (pnl > 2 && pnl < 20 && ly > 3 && ly < 26) {
+                    const px = pnl - 4;
+                    const py = ly - 10;
+                    if ((pi % 2 ? craneAt(px, py) : tiger(px, py)) && px >= 0 && px <= 13) c = (px + py) % 3 ? C.gold : C.goldHi;
+                  }
+                  if (ly >= wallBot * S - wallTop * S - 6) {
+                    const rr = ly - (wallBot * S - wallTop * S - 6);
+                    c = rr < 2 ? 0xb8382a : rr === 2 || rr === 5 ? 0x8a2a20 : lx % 4 === 0 ? C.gold : 0x3a1a18;
+                  }
+                } else {
+                  // windows under brass heads: dark lattice, a sill below
+                  const wx = lx % 12;
+                  const wy = ly % 12;
+                  if (lx > 5 && lx < fw - 7 && wx >= 4 && wx <= 8) {
+                    if (wy === 3) c = 0xb89040;
+                    else if (wy >= 4 && wy <= 8) c = wx % 2 ? 0x22222a : 0x3a3a44;
+                    else if (wy === 9) c = 0x5a5a62;
+                  }
+                }
+                img.px(X, Yy, c);
               }
-            if (top) {
-              // the balcony runs right round the top floor, red rail on gold posts
-              for (let xx = Math.round(x0) - 3; xx < Math.round(x0 + ww) + 3; xx++) {
-                img.set(xx, wallBot - 1, (xx & 1) ? 0x9a2a20 : C.gold);
-                img.set(xx, wallBot - 3, 0xb8382a);
+            if (top)
+              for (let X = FXa - 9; X < FXb + 9; X++) {
+                // the balcony running right round the top floor: red rail on gold posts, its shadow
+                const by = wallBot * S;
+                img.px(X, by - 1, X % 4 === 0 ? C.gold : 0x9a2a20);
+                img.px(X, by - 2, X % 4 === 0 ? C.gold : 0x5a1a18);
+                img.px(X, by - 8, 0xd8483a);
+                img.px(X, by - 7, 0xb8382a);
               }
-            }
           }
           for (let k = parts.length - 1; k >= 0; k--) {
             const { i, ww, wallTop } = parts[k];
             const above = parts[i + 1];
-            const rh = roofH[i];
-            const eave = wallTop + 1; // eave line just over the top of this floor's wall
-            const topW = above ? above.ww : ww - 8;
-            const botW = ww + 8;
+            const rhF = roofH[i] * S;
+            const eave = (wallTop + 1) * S + 2;
+            const topW = (above ? above.ww : ww - 8) * S;
+            const botW = (ww + 8) * S;
             // the shadow under the eave on the wall below
-            for (let xx = Math.round(cx - ww / 2); xx < Math.round(cx + ww / 2); xx++) img.tint(xx, eave + 1, 0.72);
-            for (let j = 0; j < rh; j++) {
-              const yy = eave - j;
-              const t = j / Math.max(1, rh - 1); // 0 at the eave, 1 at the top
+            for (let X = Math.round(cx - ww / 2) * S; X < Math.round(cx + ww / 2) * S; X++) for (let j = 1; j < 4; j++) img.tintPx(X, eave + j, 0.82 - (3 - j) * 0.06);
+            for (let jf = 0; jf < rhF; jf++) {
+              const Yy = eave - jf;
+              const t = jf / Math.max(1, rhF - 1);
               const hw = (botW / 2) * (1 - t) ** 0.6 + (topW / 2) * (1 - (1 - t) ** 0.6);
-              for (let xx = Math.round(cx - hw); xx < Math.round(cx + hw); xx++) {
-                const lx = xx - (cx - hw);
-                const rx = cx + hw - xx;
-                const hip = Math.max(0, 3 - j);
-                let c = lx < hip + 2 ? C.copper[3] : rx < hip + 2 ? C.copper[0] : j === 0 ? C.copper[4] : (xx & 1) ? C.copper[1] : C.copper[2];
-                if (j === 1 && (xx & 1)) c = C.gold; // gold-tipped eave tiles
-                img.set(xx, yy, c);
+              const XL = Math.round(CXf - hw);
+              const XR = Math.round(CXf + hw);
+              for (let X = XL; X < XR; X++) {
+                const lx = X - XL;
+                const rx = XR - 1 - X;
+                let c;
+                if (lx < 4) c = lx < 2 ? C.copper[4] : C.copper[3];
+                else if (rx < 4) c = rx < 2 ? scaleColor(C.copper[0], 0.85) : C.copper[0];
+                else if (jf < 2) c = jf === 0 ? C.copper[0] : C.copper[4];
+                else if (jf === 2) c = X % 3 === 0 ? C.gold : C.copper[1]; // the gold-faced ends of the round tiles
+                else {
+                  c = X % 3 === 0 ? C.copper[3] : X % 3 === 1 ? C.copper[2] : C.copper[1];
+                  if (t > 0.6) c = scaleColor(c, 1.05);
+                  if (hashPx(X, Yy, 82) < 0.05) c = C.copper[4]; // (verdigris)
+                }
+                img.px(X, Yy, c);
               }
-              if (j === 0) {
-                // lifted corners
-                img.set(Math.round(cx - hw) - 1, yy - 1, C.copper[4]);
-                img.set(Math.round(cx + hw), yy - 1, C.copper[2]);
-                img.set(Math.round(cx - hw) - 1, yy - 2, C.gold);
-                img.set(Math.round(cx + hw), yy - 2, C.gold);
+              // the hip ridges running up from the corners
+              if (jf > 3) {
+                img.px(XL + 4, Yy, C.copper[4]);
+                img.px(XL + 5, Yy, C.copper[3]);
+                img.px(XR - 5, Yy, C.copper[1]);
+                img.px(XR - 6, Yy, C.copper[0]);
               }
-              if (j > 0) {
-                // the hip ridges running up from the corners
-                img.set(Math.round(cx - hw) + 1, yy, C.copper[4]);
-                img.set(Math.round(cx + hw) - 2, yy, C.copper[1]);
-              }
+              // the lifted corners curling up, gold at their tips
+              if (jf === 0)
+                for (let q = 0; q < 6; q++) {
+                  img.px(XL - 1 - q, Yy - 1 - Math.floor(q * 0.8), C.copper[4]);
+                  img.px(XR + q, Yy - 1 - Math.floor(q * 0.8), C.copper[1]);
+                  if (q === 5) {
+                    img.px(XL - 1 - q, Yy - 2 - Math.floor(q * 0.8), C.gold);
+                    img.px(XR + q, Yy - 2 - Math.floor(q * 0.8), C.gold);
+                  }
+                }
             }
-            // gables on the south face: a curved kara-hafu low down, triangular chidori-hafu above
-            const gw = Math.min(18, Math.round(ww * 0.3));
-            if (i < parts.length - 1) {
-              for (let j = 0; j < gw / 2 + 1; j++) {
-                const yy = eave - 1 - j - (i === 0 ? 0 : 1);
-                const half = i === 0 ? gw / 2 - Math.round((j * j) / (gw / 2)) : gw / 2 - j;
+            // gables on the south face: a curved kara-hafu low down, triangular chidori-hafu above, the gold
+            // crests at their apexes; little side gables on the bigger roofs
+            const gw = Math.min(18, Math.round(ww * 0.3)) * S;
+            const gable = (gx, half0, curved, yb) => {
+              for (let j = 0; j < half0 + 2; j++) {
+                const half = curved ? half0 - Math.round((j * j) / half0) : half0 - j;
                 if (half < 0) break;
-                for (let xx = Math.round(cx - half); xx <= Math.round(cx + half); xx++) {
-                  const edge = Math.abs(xx - cx) >= half - 1;
-                  img.set(xx, yy, edge ? C.copper[4] : j < 2 ? C.plaster[2] : C.plaster[1]);
+                for (let X = gx - half; X <= gx + half; X++) {
+                  const edge = Math.abs(X - gx) >= half - 2;
+                  img.px(X, yb - j, edge ? (Math.abs(X - gx) >= half - 1 ? C.copper[4] : C.copper[2]) : j < 4 ? C.plaster[2] : (X + j) % 6 === 0 ? 0xc8c0a8 : C.plaster[1]);
                 }
               }
-              img.set(Math.round(cx), eave - 3 - (i === 0 ? 0 : 1), C.gold);
-              img.set(Math.round(cx), eave - 4 - (i === 0 ? 0 : 1), C.goldHi);
-              // little side gables on the bigger roofs
-              if (ww > 45)
-                for (const s of [-1, 1]) {
-                  const gx = Math.round(cx + s * ww * 0.33);
-                  for (let j = 0; j < 5; j++) for (let xx = gx - 4 + j; xx <= gx + 4 - j; xx++) img.set(xx, eave - 1 - j, Math.abs(xx - gx) >= 4 - j ? C.copper[4] : j < 2 ? C.plaster[2] : C.plaster[1]);
-                  img.set(gx, eave - 3, C.gold);
-                  img.set(gx, eave - 4, C.goldHi);
-                }
+              const ay = yb - Math.round(half0 * (curved ? 0.6 : 0.85));
+              for (const [i, j, c] of [[0, 0, C.gold], [-1, 1, C.gold], [1, 1, C.gold], [0, 2, C.goldHi], [-2, 2, 0x8a6a20], [2, 2, 0x8a6a20], [0, -1, C.goldHi]]) img.px(gx + i, ay + j, c);
+              glowPx(gx, ay - 1, C.goldHi, 0.45);
+            };
+            if (i < parts.length - 1) {
+              gable(CXf, gw / 2, i === 0, eave - 3 - (i === 0 ? 0 : S));
+              if (ww > 45) for (const sd of [-1, 1]) gable(Math.round(CXf + sd * ww * 0.33 * S), 12, false, eave - 3);
             }
           }
-          // the top roof's ridge with the two golden shachihoko
+          // the top roof's ridge with the two golden shachihoko, tails up
           const topWall = parts[parts.length - 1].wallTop;
-          const ridgeY = topWall + 1 - roofH[roofH.length - 1] + 1;
-          img.rect(cx - 9, ridgeY, 18, 1, C.copper[4]);
-          for (const s of [-1, 1]) {
-            const fx = Math.round(cx + s * 9) - (s > 0 ? 1 : 0);
-            img.set(fx, ridgeY - 1, C.gold);
-            img.set(fx, ridgeY - 2, C.goldHi);
-            img.set(fx + s, ridgeY - 3, C.gold);
-            glow(fx, ridgeY - 2, C.goldHi, 0.6);
+          const ridgeY = (topWall + 1 - roofH[roofH.length - 1] + 1) * S;
+          for (let X = CXf - 27; X <= CXf + 27; X++) {
+            img.px(X, ridgeY, C.copper[4]);
+            img.px(X, ridgeY + 1, C.copper[2]);
+            img.px(X, ridgeY + 2, C.copper[0]);
           }
+          for (const sd of [-1, 1]) {
+            const FX = CXf + sd * 27;
+            const fish = [[0, 0], [0, -1], [sd * -1, -1], [0, -2], [sd * -1, -2], [sd * -1, -3], [sd * -2, -3], [sd * -2, -4], [sd * -1, -5], [sd * -3, -5], [sd * -2, -6], [sd, 0], [sd, -1]];
+            for (const [i, j] of fish) img.px(FX + i, ridgeY + j, j < -3 ? C.goldHi : C.gold);
+            glowPx(FX - sd, ridgeY - 3, C.goldHi, 0.6);
+          }
+          glow(cx, ridgeY / S - 2, C.goldHi, 0.25);
         },
       });
       reserveRect(cx - 48, y0 - 116, 96, 136);
@@ -849,7 +1163,7 @@ export function buildMid() {
       });
     // live: swans gliding about the moats, koi in the Nishinomaru pond
     const swanF = (() => {
-      const out = new Raster(6, 3);
+      const out = new HiCanvas(6, 3);
       out.rect(0, 0, 4, 3, 0xf8f8f4);
       out.rect(0, 2, 4, 1, 0xd8dcd8);
       out.set(0, 0, 0xe8ece8);
@@ -861,7 +1175,7 @@ export function buildMid() {
     kit.wander(90, 580, 84, 11, [swanF], { n: 2, sp: 3, idle: 0.3 });
     for (const [body, tail] of [[0xf06a20, 0xc84a18], [0xf8f4f0, 0xe83a2a], [0xf0b030, 0xc88a20]]) {
       const koi = (flick) => {
-        const out = new Raster(4, 3);
+        const out = new HiCanvas(4, 3);
         out.rect(1, 1, 3, 1, body);
         out.set(3, 1, scaleColor(body, 1.1));
         out.set(0, flick ? 0 : 2, tail);
@@ -1126,7 +1440,7 @@ export function buildMid() {
     // flocks of pigeons pecking on the plazas take off all at once, wheel and scatter (live)
     {
       const flock = [0, 1, 2, 3, 4, 5].map((k) => {
-        const r = new Raster(19, 15);
+        const r = new HiCanvas(19, 15);
         for (let i = 0; i < 9; i++) {
           const a = i * 0.7 + 0.4;
           const d = 1.5 + (i % 3) + k * 1.6;
@@ -1252,14 +1566,14 @@ export function buildMid() {
     }
     // river cruise boats and a water bus going up and down both rivers (live), bow to the right
     for (const [u, c, sp, right] of [[1338, 0xe8e4dc, 8, true], [1323, 0x3a6aa8, 6, false], [1944, 0xe8e4dc, 7, false], [1930, 0x3a6aa8, 5, true]]) {
-      const out = new Raster(20, 7);
+      const out = new HiCanvas(20, 7);
       out.rect(0, 0, 20, 7, c);
       out.rect(3, 2, 14, 3, 0x5a7aa0);
       out.rect(3, 2, 14, 1, 0xa8c8e0);
       out.rect(18, 0, 2, 7, scaleColor(c, 0.8));
       const boatF = kit.frame(tod.frame(out, u));
       const wakeF = [0, 1, 2].map((k) => {
-        const w = new Raster(1, 9 + k * 4);
+        const w = new HiCanvas(1, 9 + k * 4);
         w.set(0, 0, 0xeaf0f0);
         w.set(0, 8 + k * 4, 0xeaf0f0);
         return kit.frame(tod.frame(w, u));
@@ -1289,7 +1603,7 @@ export function buildMid() {
       const cols = [0xe8e8ec, 0x2a2a30, 0xc03a30, 0x3a5a9a, 0x9aa0a8, 0xe8d8a0, 0x4a7a5a];
       const carF = (c, dir) => {
         const side = dir === 'side';
-        const r = new Raster(side ? 5 : 3, side ? 3 : 5);
+        const r = new HiCanvas(side ? 5 : 3, side ? 3 : 5);
         r.rect(0, 0, r.w, r.h, c);
         if (side) {
           r.rect(1, 0, 3, 3, scaleColor(c, 1.15)); // the roof
@@ -1341,7 +1655,7 @@ export function buildMid() {
     // live: trains pulling in under the roof, waiting at the platforms and pulling out again
     for (const [u, c, from, s0] of [[2716, 0xe8e8e8, -1, 0.2], [2732, 0xf0a020, 1, 0.7], [2748, 0x3a8a5a, -1, 0.95], [2764, 0xe8e8e8, 1, 0.45]]) {
       const coach = (nose) => {
-        const out = new Raster(24, 5);
+        const out = new HiCanvas(24, 5);
         out.rect(0, 0, 24, 5, c);
         out.rect(0, 3, 24, 1, scaleColor(c, 0.7));
         for (let xx = 2; xx < 22; xx += 3) out.rect(xx, 1, 2, 1, 0x3a5a7a);
@@ -1422,7 +1736,7 @@ export function buildMid() {
         }),
       );
       kit.loop(cx - 18, U(cy - 18), wheel, { fps: 2, ph: 0, d: 0.05 });
-      const gondola = new Raster(2, 2);
+      const gondola = new HiCanvas(2, 2);
       gondola.rect(0, 0, 2, 2, 0xf0ece4);
       gondola.set(1, 1, 0xc8c4bc);
       kit.orbit(cx, U(cy) - 1, 16, [kit.frame(tod.frame(gondola, U(cy)))], { n: 16, w: ((Math.PI * 2) / 16 / 4) * 2, d: 0.06 });
@@ -1477,32 +1791,58 @@ export function buildMid() {
           for (let k = 0; k < 74; k++) shadowRect(cx + 8 + Math.floor(k * 0.45), top + k + 8, 9, 1, 0.55);
         },
         draw: () => {
-          // the octagonal deck
-          img.rect(cx - 11, top, 22, 15, 0xb8b4ac);
-          img.rect(cx - 11, top, 22, 2, 0xe0dcd4);
-          img.rect(cx + 9, top, 2, 15, 0x8a8680);
-          img.rect(cx - 12, top + 2, 1, 11, 0xd0ccc4);
-          for (let xx = cx - 10; xx < cx + 10; xx += 2) glow(xx, top + 9, 0xffe8a0);
-          img.rect(cx - 2, top - 8, 4, 8, 0xc8c4bc);
-          glow(cx, top - 9, 0xff3a2a);
-          // the sign band and the light-up clock face
-          img.rect(cx - 13, top + 15, 26, 9, 0x1a1a24);
-          for (let xx = cx - 12; xx < cx + 12; xx++) if ((xx + top) % 3) glow(xx, top + 18, NEON[(xx >> 2) % NEON.length]);
-          for (let xx = cx - 12; xx < cx + 12; xx++) glow(xx, top + 21, 0xffffff, 0.5);
-          img.disc(cx, top + 6, 3, 0xf0ece4);
-          img.set(cx, top + 5, 0x2a2a30);
-          pool(cx, top + 20, 26, 0xffa040, 0.35);
-          for (let yy = top + 24; yy < top + 84; yy++) {
-            const hw = 8 + (yy - top - 24) * 0.2;
-            for (const s of [-1, 1]) {
-              img.set(Math.round(cx + s * hw), yy, 0x9a9aa0);
-              img.set(Math.round(cx + s * (hw - 1)), yy, 0x6a6a72);
-              if ((yy - top) % 8 === 0) glow(Math.round(cx + s * hw), yy, 0xfff0c0);
+          // the octagonal deck: the roof with its rim, the band of windows lit, the rail, the clock face
+          const CXf = cx * S;
+          const T = top * S;
+          for (let j = 0; j < 45; j++)
+            for (let i = -33; i < 33; i++) {
+              const cut = Math.max(0, 6 - Math.min(j, 44 - j)) + 0;
+              if (Math.abs(i) > 33 - cut) continue;
+              let c = i < -28 ? 0xe0dcd4 : i > 26 ? 0x8a8680 : 0xb8b4ac;
+              if (j < 4) c = j === 0 ? 0xf0ece4 : 0xd8d4cc;
+              else if (j >= 24 && j <= 31) {
+                if (j === 24 || j === 31) c = 0x6a6660;
+                else if ((i + 33) % 5 === 0) c = 0x5a5650;
+                else {
+                  glowPx(CXf + i, T + j, (i + j) % 7 === 0 ? 0xffffff : 0xffe8a0, 0.9);
+                  continue;
+                }
+              } else if (j === 36) c = 0x5a5650;
+              img.px(CXf + i, T + j, c);
             }
-            const k = (yy - top - 24) % 10;
-            img.set(Math.round(cx - hw + (k / 10) * hw * 2), yy, 0x6a6a72);
-            img.set(Math.round(cx + hw - (k / 10) * hw * 2), yy, 0x6a6a72);
-            if (k === 0) for (let xx = Math.round(cx - hw); xx <= cx + hw; xx++) img.set(xx, yy, 0x7a7a82);
+          for (let j = -24; j < 0; j++) for (let i = -5; i < 6; i++) img.px(CXf + i, T + j, i < -3 ? 0xe8e4dc : i > 3 ? 0x9a968e : 0xc8c4bc);
+          glowPx(CXf, T - 26, 0xff3a2a);
+          glowPx(CXf, T - 25, 0xff6a50, 0.7);
+          for (let j = -8; j <= 8; j++)
+            for (let i = -8; i <= 8; i++) {
+              const d = Math.hypot(i, j);
+              if (d <= 8) img.px(CXf + i, T + 15 + j, d > 7 ? 0x5a5650 : 0xf4f0e8);
+            }
+          for (let k = 0; k < 5; k++) img.px(CXf, T + 15 - k, 0x2a2a30);
+          for (let k = 0; k < 4; k++) img.px(CXf + k, T + 15, 0x2a2a30);
+          // the sign band: a dark board, running neon above, a white line of characters under it
+          for (let j = 45; j < 72; j++) for (let i = -39; i < 39; i++) img.px(CXf + i, T + j, j === 45 || j === 71 ? 0x3a3a44 : 0x1a1a24);
+          for (let i = -38; i < 38; i++) if ((i + 40) % 3) glowPx(CXf + i, T + 50, NEON[((i + 40) >> 3) % NEON.length]);
+          const tr = rng(3290);
+          for (let k = 0; k < 12; k++) glyph(CXf - 36 + k * 6, T + 56, 5, 0xffffff, tr);
+          for (let i = -38; i < 38; i++) if (i % 2) glowPx(CXf + i, T + 66, 0xffd040, 0.8);
+          pool(cx, top + 20, 26, 0xffa040, 0.35);
+          // the legs: four steel columns spreading down, braced in X between their belts, lamps up them
+          for (let FYr = (top + 24) * S; FYr < (top + 84) * S; FYr++) {
+            const hw = (8 + (FYr / S - top - 24) * 0.2) * S;
+            for (const sd of [-1, 1]) {
+              const X = Math.round(CXf + sd * hw);
+              img.px(X, FYr, 0xb8b8c0);
+              img.px(X - sd, FYr, 0x9a9aa0);
+              img.px(X - 2 * sd, FYr, 0x6a6a72);
+              if (FYr % 24 === 0) glowPx(X, FYr, 0xfff0c0);
+              const XI = Math.round(CXf + sd * hw * 0.45);
+              img.px(XI, FYr, 0x7a7a82);
+            }
+            const k = (FYr - (top + 24) * S) % 30;
+            img.px(Math.round(CXf - hw + (k / 30) * hw * 2), FYr, 0x6a6a72);
+            img.px(Math.round(CXf + hw - (k / 30) * hw * 2), FYr, 0x6a6a72);
+            if (k < 2) for (let X = Math.round(CXf - hw); X <= CXf + hw; X++) img.px(X, FYr, k ? 0x5a5a62 : 0x8a8a92);
           }
         },
       });
@@ -1767,7 +2107,7 @@ export function buildMid() {
     {
       const er = rng(5501);
       const walker = (c, f, u) => {
-        const r = new Raster(2, 4);
+        const r = new HiCanvas(2, 4);
         r.set(0, 0, 0x2a2026);
         r.set(0, 1, c);
         r.set(0, 2, f ? scaleColor(c, 0.8) : c);
@@ -1803,7 +2143,7 @@ export function buildMid() {
         }
       });
       const wakeF = [0, 1, 2].map((k) => {
-        const w = new Raster(1, 15 + k * 4);
+        const w = new HiCanvas(1, 15 + k * 4);
         w.set(0, 0, 0xeaf0f0);
         w.set(0, 14 + k * 4, 0xeaf0f0);
         return kit.frame(tod.frame(w, u0));
@@ -2072,14 +2412,27 @@ export function buildMid() {
           for (let k = parts.length - 1; k >= 0; k--) {
             const { ww, wallTop, wallBot } = parts[k];
             const x0 = Math.round(cx - ww / 2);
-            for (let yy = wallTop; yy < wallBot; yy++)
-              for (let xx = x0; xx < x0 + ww; xx++) {
-                const lx = xx - x0;
-                let c = lx % 5 === 0 ? VERM[1] : (yy - wallTop) % 4 === 1 && lx % 5 === 2 ? 0xe9e2d0 : lx < 2 ? VERM[0] : VERM[1];
-                if (lx === ww - 1) c = VERM[2];
-                img.set(xx, yy, c);
-              }
-            for (let xx = x0; xx < x0 + ww; xx += 3) glow(xx, wallBot - 2, 0xffb070, 0.45);
+            {
+              const FX0 = x0 * S;
+              const FW = ww * S;
+              const FY0 = wallTop * S;
+              const FH = (wallBot - wallTop) * S;
+              const bay = Math.round(FW / 3);
+              for (let j = 0; j < FH; j++)
+                for (let i = 0; i < FW; i++) {
+                  const X = FX0 + i;
+                  const Yy = FY0 + j;
+                  const post = i % bay < 3 || i >= FW - 3;
+                  let c;
+                  if (j < 3) c = j === 0 ? 0x2a2026 : 0xe9e2d0; // (the bracket band under the eave)
+                  else if (post) c = i % bay === 0 || i < 2 ? VERM[0] : i >= FW - 2 ? VERM[2] : VERM[1];
+                  else if (j === FH - 1) c = VERM[2];
+                  else if (Math.floor(i / bay) === 1 && j > 5) c = (i + j) % 4 === 0 ? C.gold : (i % 3 ? 0x8a2a20 : 0x6a1a18); // (the studded doors)
+                  else c = (j - 3) % 7 === 0 ? VERM[0] : (i % 4 === 0 || (j - 3) % 7 === 3) && j > 4 ? 0xe9e2d0 : (i + j) % 2 ? VERM[1] : scaleColor(VERM[1], 0.88); // (vermilion panels, white lattice)
+                  img.px(X, Yy, c);
+                }
+              for (let i = 3; i < FW; i += 6) glowPx(FX0 + i, FY0 + FH - 4, 0xffb070, 0.7);
+            }
           }
           for (let k = parts.length - 1; k >= 0; k--) {
             const { ww, wallTop } = parts[k];
@@ -2087,21 +2440,42 @@ export function buildMid() {
             const eave = wallTop + 1;
             const botW = ww + 14;
             const topW = above ? above.ww : 6;
-            for (let xx = Math.round(cx - ww / 2); xx < Math.round(cx + ww / 2); xx++) img.tint(xx, eave + 1, 0.7);
-            for (let j = 0; j < roofH; j++) {
-              const t = j / Math.max(1, roofH - 1);
-              const hw = (botW / 2) * (1 - t) ** 0.55 + (topW / 2) * (1 - (1 - t) ** 0.55);
-              for (let xx = Math.round(cx - hw); xx < Math.round(cx + hw); xx++) {
-                const lx = xx - (cx - hw);
-                const rx = cx + hw - xx;
-                img.set(xx, eave - j, lx < 3 ? TILE[3] : rx < 3 ? TILE[0] : j === 0 ? TILE[3] : (xx & 1) ? TILE[1] : TILE[2]);
+            for (let X = Math.round(cx - ww / 2) * S; X < Math.round(cx + ww / 2) * S; X++) for (let q = 1; q < 4; q++) img.tintPx(X, eave * S + S + q, 0.75);
+            const CXf = cx * S;
+            const rhF = roofH * S;
+            const eF = eave * S + 2;
+            for (let jf = 0; jf < rhF; jf++) {
+              const t = jf / Math.max(1, rhF - 1);
+              const hw = ((botW / 2) * (1 - t) ** 0.55 + (topW / 2) * (1 - (1 - t) ** 0.55)) * S;
+              const XL = Math.round(CXf - hw);
+              const XR = Math.round(CXf + hw);
+              for (let X = XL; X < XR; X++) {
+                const lx = X - XL;
+                const rx = XR - 1 - X;
+                let c;
+                if (lx < 4) c = lx < 2 ? scaleColor(TILE[3], 1.1) : TILE[3];
+                else if (rx < 4) c = TILE[0];
+                else if (jf < 2) c = jf === 0 ? TILE[0] : scaleColor(TILE[3], 1.1);
+                else if (jf === 2) c = X % 3 === 0 ? 0xb8b8c0 : TILE[1];
+                else c = X % 3 === 0 ? TILE[3] : X % 3 === 1 ? TILE[2] : TILE[1];
+                img.px(X, eF - jf, c);
               }
-              if (j === 0) {
-                img.set(Math.round(cx - hw) - 1, eave - 1, TILE[3]);
-                img.set(Math.round(cx + hw), eave - 1, TILE[1]);
-                glow(Math.round(cx - hw) - 1, eave - 2, C.gold, 0.8); // bells on the corners
-                glow(Math.round(cx + hw), eave - 2, C.gold, 0.8);
+              if (jf > 3) {
+                img.px(XL + 4, eF - jf, scaleColor(TILE[3], 1.15));
+                img.px(XR - 5, eF - jf, TILE[0]);
               }
+              if (jf === 0)
+                for (let q = 0; q < 7; q++) {
+                  img.px(XL - 1 - q, eF - 1 - Math.floor(q * 0.9), TILE[3]);
+                  img.px(XR + q, eF - 1 - Math.floor(q * 0.9), TILE[1]);
+                  if (q === 6) {
+                    // the bronze bells hanging from the corners, catching the floodlight
+                    for (const BX of [XL - 1 - q, XR + q]) {
+                      img.px(BX, eF - Math.floor(q * 0.9), 0x6a5a30);
+                      glowPx(BX, eF - Math.floor(q * 0.9) + 1, C.gold, 0.85);
+                    }
+                  }
+                }
             }
           }
           for (let j = 0; j < 18; j++) img.set(Math.round(cx), top + 2 - j, j % 2 ? 0x8a6a3a : C.gold);
@@ -2759,7 +3133,22 @@ export function buildMid() {
       reserveRect(0, Y(q1), 17, q1 - q0);
       const cols = [0xc84a30, 0x2a5a9a, 0x3a8a5a, 0xd8a030, 0x8a8a92, 0x6a3a8a];
       for (let u = q0 + 6; u < q1 - 6; u += 5)
-        for (const x of [1, 6]) if ((u + x) % 7) img.rect(x, Y(u), 4, 4, cols[(u * 3 + x) % cols.length]);
+        for (const x of [1, 6])
+          if ((u + x) % 7) {
+            const c = cols[(u * 3 + x) % cols.length];
+            const X0 = x * S;
+            const Y0 = Y(u) * S;
+            for (let j = 0; j < 12; j++)
+              for (let i = 0; i < 12; i++) {
+                let cc = i % 2 ? c : scaleColor(c, 0.82); // (the corrugations)
+                if (j === 0) cc = scaleColor(c, 1.25);
+                if (j === 11 || i === 11) cc = scaleColor(c, 0.6);
+                if (j >= 9 && j < 11) cc = (i % 3 === 0 ? 0x2a2a30 : scaleColor(c, 0.7)); // (the door end, its bars)
+                if (j === 5 && hashPx(u, x, 5522) < 0.5) cc = 0xe8e4dc; // (a painted band)
+                img.px(X0 + i, Y0 + j, cc);
+              }
+            img.px(X0 + 12, Y0 + 12, 0x101018, 0.4);
+          }
       for (const u of [6700, 6870, 7040]) {
         const y = Y(u);
         objects.push({
@@ -2768,19 +3157,25 @@ export function buildMid() {
             for (let x = 16; x < 44; x++) img.tint(x + 3, y + 7, 0.6);
           },
           draw: () => {
-            img.rect(2, y - 4, 2, 12, 0x3a3e46); // the legs on their rails
-            img.rect(12, y - 4, 2, 12, 0x3a3e46);
-            img.rect(0, y, 46, 3, 0x5a6a7a); // the boom out over the water
-            for (let x = 1; x < 46; x += 3) img.set(x, y + 1, 0x2a3440);
-            img.rect(0, y, 46, 1, 0x8a9aaa);
-            img.rect(20, y + 3, 4, 2, 0xd8d4c8); // the trolley and its cab
+            for (const lx of [2, 12])
+              for (let FYr = (y - 4) * S; FYr < (y + 8) * S; FYr++)
+                for (let i = 0; i < 6; i++) img.px(lx * S + i, FYr, i === 0 || i === 5 ? 0x5a6270 : (FYr + i) % 6 === 0 || (FYr - i) % 6 === 0 ? 0x4a525e : null ?? 0x2a2e36);
+            for (let X = 0; X < 46 * S; X++)
+              for (let j = 0; j < 9; j++) {
+                const k = X % 9;
+                const c = j === 0 ? 0xa8b8c8 : j === 8 ? 0x3a4450 : Math.abs(k - j) < 1 || Math.abs(8 - k - j) < 1 ? 0x6a7a8a : k === 0 ? 0x5a6a7a : null;
+                if (c !== null) img.px(X, y * S + j, c);
+              }
+            for (let j = 0; j < 7; j++) for (let i = 0; i < 12; i++) img.px(60 + i, (y + 3) * S + j, j === 0 ? 0xf0ece0 : i === 11 ? 0x8a8a90 : 0xd8d4c8);
+            glowPx(62, (y + 3) * S + 3, 0xfff0c8);
+            glowPx(66, (y + 3) * S + 3, 0xfff0c8);
             glow(45, y, 0xff3020);
             glow(1, y - 4, 0xff3020);
           },
         });
       }
       const tug = (up) => {
-        const r = new Raster(7, 13);
+        const r = new HiCanvas(7, 13);
         for (let j = 0; j < 12; j++) {
           const w = (up ? j < 3 : j > 8) ? 3 : 5;
           r.rect(Math.floor((7 - w) / 2), j, w, 1, j % 4 === 0 ? 0x1a1a20 : 0x2a2a30);
@@ -2792,12 +3187,119 @@ export function buildMid() {
         return kit.frame(tod.frame(r, 6900, [[3, up ? 0 : 12, 0xffffff, 0.9]]));
       };
       const wakeT = [0, 1, 2].map((k) => {
-        const w = new Raster(1, 11 + k * 4);
+        const w = new HiCanvas(1, 11 + k * 4);
         w.set(0, 0, 0xeaf0f0);
         w.set(0, 10 + k * 4, 0xeaf0f0);
         return kit.frame(tod.frame(w, 6900));
       });
       for (const [x, s0] of [[156, 0.2], [170, 0.75]]) kit.path([[x, 6600], [x, 7120]], [tug(true)], { sp: 6, mode: 'pp', hold: 4, turn: 'none', fu: [tug(true)], fd: [tug(false)], wake: { f: wakeT, every: 3, life: 2 }, s0 });
+    }
+    // a container ship moored at the terminal under the cranes: the hull, the bridge and funnel aft, the deck
+    // stacked with containers, the mooring lines, its lights
+    {
+      const sx0 = 18;
+      const sx1 = 42;
+      const [s0, s1] = [6650, 6990];
+      objects.push({
+        y: Y(s1) - 1,
+        shadow: () => shadowRect(sx0 + 3, Y(s1) + 3, sx1 - sx0, s1 - s0, 0.6),
+        draw: () => {
+          const X0 = sx0 * S;
+          const X1 = sx1 * S;
+          const Y0 = Y(s1) * S;
+          const Y1 = Y(s0) * S;
+          const cx = (X0 + X1) / 2;
+          const sr = rng(6650);
+          for (let Yy = Y0; Yy < Y1; Yy++) {
+            const t = (Yy - Y0) / (Y1 - Y0);
+            const bow = t < 0.08 ? (t / 0.08) ** 0.6 : 1; // (the bow narrows towards the top)
+            const hw = ((X1 - X0) / 2) * bow;
+            for (let X = Math.round(cx - hw); X < cx + hw; X++) {
+              const e = Math.min(X - (cx - hw), cx + hw - X);
+              let c = e < 2 ? 0x1a1a22 : e < 4 ? 0xb8302a : 0x2a3a5a; // (the black hull, red boot-topping, the deck)
+              if (e >= 4 && Yy % 3 === 0 && t > 0.1 && t < 0.88) c = 0x34466a;
+              img.px(X, Yy, c);
+            }
+          }
+          // the stacks of containers on deck, in bays
+          const cols = [0xc84a30, 0x2a5a9a, 0x3a8a5a, 0xd8a030, 0x8a8a92, 0x6a3a8a, 0xe8e4dc];
+          for (let Yy = Y0 + 36; Yy < Y1 - 120; Yy += 21)
+            for (let X = X0 + 8; X < X1 - 8; X += 7) {
+              const c = sr.pick(cols);
+              for (let j = 0; j < 19; j++) for (let i = 0; i < 6; i++) img.px(X + i, Yy + j, j === 0 ? scaleColor(c, 1.25) : i === 5 ? scaleColor(c, 0.6) : j % 2 ? c : scaleColor(c, 0.86));
+            }
+          // the bridge house and funnel aft, windows lit
+          const BY = Y1 - 110;
+          for (let j = 0; j < 42; j++)
+            for (let X = X0 + 6; X < X1 - 6; X++) {
+              const lx = X - X0 - 6;
+              let c = j < 3 ? 0xf4f4f0 : X >= X1 - 9 ? 0x9a9aa0 : 0xe0e0dc;
+              if (j > 6 && j % 8 < 3 && lx % 4 < 2) {
+                glowPx(X, BY + j, 0xffe8b0, 0.9);
+                continue;
+              }
+              img.px(X, BY + j, c);
+            }
+          for (let j = 0; j < 18; j++) for (let i = 0; i < 14; i++) img.px(cx - 7 + i, BY + 54 + j, j < 3 ? 0x1a1a20 : i < 3 ? 0xe86a3a : 0xd84a2a);
+          glowPx(cx, Y0 + 6, 0xffffff);
+          glowPx(X0 + 4, BY - 4, 0xff3020);
+          glowPx(X1 - 5, BY - 4, 0x30ff60);
+          for (const t of [0.15, 0.85]) for (let k = 0; k < 6; k++) img.px(X0 - k * 2, Math.round(Y0 + (Y1 - Y0) * t) + k, 0xd8d0b0);
+          pool(sx0 + 12, Y(s0) - 36, 16, 0xffe8b0, 0.3);
+        },
+      });
+      reserveRect(sx0, Y(s1), sx1 - sx0, s1 - s0);
+    }
+    // the breakwater across the top of the bay: a wall heaped with tetrapods, the red lighthouse at its end
+    {
+      const bu = 7148;
+      const by = Y(bu);
+      objects.push({
+        y: by + 6,
+        shadow: () => shadowRect(98, by + 3, 82, 5, 0.6),
+        draw: () => {
+          for (let X = 96 * S; X < W * S; X++)
+            for (let j = 0; j < 15; j++) {
+              const Yy = by * S + j;
+              let c = j < 6 ? (j === 0 ? 0xb8b4ac : 0x8a8680) : j === 6 ? 0x4a4844 : null;
+              if (j > 6) {
+                // tetrapods: grey four-legged blocks heaped along the foot, lit on top, shadowed between
+                const k = (X + Math.floor(j / 4) * 5) % 10;
+                c = k < 6 ? (j % 4 === 0 ? 0xc8c4bc : 0x9a968e) : k < 8 ? 0x6a6660 : null;
+              }
+              if (c !== null) img.px(X, Yy, c);
+            }
+          const LX = 102 * S;
+          for (let j = 0; j < 30; j++)
+            for (let i = -6; i <= 6; i++) {
+              const r = 6 - j * 0.08;
+              if (Math.abs(i) > r) continue;
+              img.px(LX + i, by * S - 24 + j, Math.floor(j / 6) % 2 ? 0xf0ece4 : i < -2 ? 0xe8504a : 0xc83a30);
+            }
+          for (let i = -4; i <= 4; i++) img.px(LX + i, by * S - 25, 0x2a2a30);
+          glowPx(LX, by * S - 27, 0xfff0c0);
+        },
+      });
+      reserveRect(96, by - 9, 84, 14);
+      // its lamp flashes, the buoys' lights blink (live)
+      const flash = [0, 1].map((on) => {
+        const r = new HiCanvas(5, 5);
+        if (on) for (let j = 0; j < 15; j++) for (let i = 0; i < 15; i++) {
+          const d = Math.hypot(i - 7, j - 7);
+          if (d < 7) r.px(i, j, 0xfff4c0, (1 - d / 7) ** 1.5);
+        }
+        return kit.frame(r);
+      });
+      kit.loop(100, U(by - 11), flash, { seq: [1, 0, 0, 0, 0, 0, 0, 0], fps: 4, ph: 0.1, fx: 1 });
+      const buoy = (c) => [0, 1].map((on) => {
+        const r = new HiCanvas(3, 4);
+        for (let j = 3; j < 11; j++) for (let i = 2; i < 7; i++) if (Math.hypot(i - 4.5, j - 7) < 3.2) r.px(i, j, i < 4 ? scaleColor(c, 1.2) : c);
+        r.px(4, 2, 0x3a3a40);
+        r.px(4, 1, on ? 0xffffff : 0x5a5a60);
+        for (let i = 1; i < 8; i++) r.px(i, 10, 0xc8e0e8, 0.4);
+        return kit.frame(tod.frame(r, 6900));
+      });
+      for (const [x, u, c, ph] of [[64, 6640, 0xd83a2a, 0], [118, 6640, 0x2aa04a, 0.5], [70, 6980, 0xd83a2a, 0.25], [128, 7060, 0x2aa04a, 0.75]]) kit.loop(x, u, buoy(c), { seq: [1, 0, 0, 0], fps: 2, ph });
     }
     // Minato Ōhashi: the red truss bridge across the harbour mouth, a chain of lights along it
     objects.push({
@@ -2870,28 +3372,84 @@ export function buildMid() {
       }
   }
 
+  // ------------------------------------------------------------ texture for what is still drawn in whole blocks
+  // (lawns, gravel, the moats and ponds, plain walls and roofs): each uniform 3 x 3 block gets the grain of
+  // its material, worked out from its colour: blades of grass and their shade, gravel's specks, ripples
+  // catching the light on water, a fleck of weathering on stone and plaster
+  {
+    const d = img.hi.data;
+    const FW = W * S;
+    for (let y = 0; y < L; y++)
+      for (let x = 0; x < W; x++) {
+        const p0 = ((y * S) * FW + x * S) * 4;
+        if (!d[p0 + 3]) continue;
+        const r0 = d[p0];
+        const g0 = d[p0 + 1];
+        const b0 = d[p0 + 2];
+        let same = true;
+        for (let j = 0; j < S && same; j++)
+          for (let i = 0; i < S; i++) {
+            const p = ((y * S + j) * FW + x * S + i) * 4;
+            if (d[p] !== r0 || d[p + 1] !== g0 || d[p + 2] !== b0 || d[p + 3] !== 255) {
+              same = false;
+              break;
+            }
+          }
+        if (!same) continue;
+        const green = g0 > r0 + 12 && g0 > b0 + 4;
+        const wet = b0 > r0 + 10 && g0 > r0 && b0 < 140 && g0 < 140;
+        const sat = Math.max(r0, g0, b0) - Math.min(r0, g0, b0);
+        for (let j = 0; j < S; j++)
+          for (let i = 0; i < S; i++) {
+            const X = x * S + i;
+            const Yf = y * S + j;
+            const h = hashPx(X, Yf, 61);
+            let k = 1;
+            if (green) {
+              // blades: a lit tip over a shaded root, pairs of pixels down the slope of the lawn
+              const blade = hashPx(X, Math.floor(Yf / 2), 62);
+              k = blade < 0.22 ? (Yf % 2 ? 0.86 : 1.14) : h < 0.1 ? 0.92 : h > 0.93 ? 1.08 : 1;
+            } else if (wet) {
+              // ripples: short bright strokes across, darker troughs
+              const rip = Math.sin(X * 0.9 + Yf * 0.25 + hashPx(Math.floor(X / 6), Yf, 63) * 3);
+              k = rip > 0.92 ? 1.22 : rip < -0.9 ? 0.86 : 1;
+            } else if (sat < 30) {
+              k = h < 0.08 ? 0.9 : h > 0.95 ? 1.1 : 1; // (grey: specks of grit and weathering)
+            } else k = h < 0.05 ? 0.93 : h > 0.97 ? 1.06 : 1;
+            if (k === 1) continue;
+            const p = (Yf * FW + X) * 4;
+            d[p] = Math.min(255, d[p] * k);
+            d[p + 1] = Math.min(255, d[p + 1] * k);
+            d[p + 2] = Math.min(255, d[p + 2] * k);
+          }
+      }
+  }
+
   // ------------------------------------------------------------ time of day, then the lights
   const tint = TOD.map(([, , t]) => rgb(t));
-  for (let y = 0; y < L; y++) {
-    const u = U(y);
-    let i = 0;
-    while (i < TOD.length - 2 && u >= TOD[i + 1][0]) i++;
-    const t = smooth(TOD[i][0], TOD[i + 1][0], u);
-    const mul = TOD[i][1].map((m, k) => m + (TOD[i + 1][1][k] - m) * t);
-    const tc = tint[i].map((c, k) => c + (tint[i + 1][k] - c) * t);
-    const amt = TOD[i][3] + (TOD[i + 1][3] - TOD[i][3]) * t;
-    for (let x = 0; x < W; x++) {
-      const p = (y * W + x) * 4;
-      const d = img.data;
-      if (!d[p + 3]) continue;
-      for (let k = 0; k < 3; k++) {
-        const v = d[p + k] * mul[k];
-        d[p + k] = v + (tc[k] - v) * amt;
+  {
+    const d = img.hi.data;
+    const row = W * S * 4;
+    for (let FYr = 0; FYr < L * S; FYr++) {
+      const u = L - (FYr + 0.5) / S;
+      let i = 0;
+      while (i < TOD.length - 2 && u >= TOD[i + 1][0]) i++;
+      const t = smooth(TOD[i][0], TOD[i + 1][0], u);
+      const mul = TOD[i][1].map((m, k) => m + (TOD[i + 1][1][k] - m) * t);
+      const tc = tint[i].map((c, k) => c + (tint[i + 1][k] - c) * t);
+      const amt = TOD[i][3] + (TOD[i + 1][3] - TOD[i][3]) * t;
+      for (let p = FYr * row; p < (FYr + 1) * row; p += 4) {
+        if (!d[p + 3]) continue;
+        for (let k = 0; k < 3; k++) {
+          const v = d[p + k] * mul[k];
+          d[p + k] = v + (tc[k] - v) * amt;
+        }
       }
     }
   }
   for (const pl of pools) applyPool(img, pl);
-  for (const [x, y, c, a] of lights) img.set(x, y, c, a);
+  for (const [x, y, c, a] of lights) img.light(x, y, c, a);
+  for (const [X, Yy, c, a] of lightsFine) img.px(X, Yy, c, a);
   // Glico's illuminated running man beside Ebisu-bashi: blue board, red sun,
   // white running kit and the unmistakable raised arms. Draw after the night grade.
   {
@@ -2941,7 +3499,7 @@ export function buildMid() {
       y1 = Math.max(y1, y + 7);
     }
     const frames = [0, 1].map((f) => {
-      const out = new Window(x0, y0, x1 - x0 + 1, y1 - y0 + 1);
+      const out = new HiCanvas(x1 - x0 + 1, y1 - y0 + 1, S, x0, y0);
       for (const [x, y, c] of list)
         for (let k = 2 + f; k < 7 + f; k += 2) {
           const xx = x + (f ? ((x * 7 + y * 3 + k) % 3) - 1 : 0);
@@ -2965,14 +3523,61 @@ export function buildMid() {
       byStretch.get(k).push([x, u]);
     }
     for (const [k, wins] of byStretch) {
-      const dark = new Raster(1, 1);
+      const dark = new HiCanvas(1, 1);
       dark.set(0, 0, 0x2a2c38);
       const f = kit.frame(tod.frame(dark, k * 256 + 128));
       kit.wave([f], wins.map(([x, u]) => [0, x, u, fr() * 20]), { w: 0.12, a0: 0, a1: 1, pw: 7, d: 0.05 });
     }
   }
 
+  // ------------------------------------------------------------ live: glints dancing on the rivers, the canal and the
+  // bay; gulls wheeling over the harbour; the clouds' shadows drifting over the city, soft-edged
+  {
+    const gr = rng(5601);
+    const glint = [1, 2, 3, 2, 1].map((g) => {
+      const r = new HiCanvas(2, 2);
+      for (let k = -g; k <= g; k++) {
+        r.px(3 + k, 3, 0xf4fbff, 1 - Math.abs(k) / (g + 1));
+        if (Math.abs(k) < g) r.px(3, 3 + k, 0xf4fbff, 0.7 - Math.abs(k) / (g + 1));
+      }
+      return kit.frame(r);
+    });
+    const spots = [];
+    for (let k = 0; k < 900 && spots.length < 160; k++) {
+      const x = 2 + gr() * (W - 4);
+      const y = gr() * L;
+      if (W_(Math.floor(x), Math.floor(y)) && W_(Math.floor(x) + 1, Math.floor(y) + 1)) spots.push([x, U(y), 2, 2]);
+    }
+    for (let i = 0; i < spots.length; i += 20) kit.spot(spots.slice(i, i + 20), glint, { rate: 1.2, fps: 10 });
+    const gull = (f) => {
+      const r = new HiCanvas(4, 2);
+      const wing = f ? [[0, 2], [1, 1], [2, 1], [3, 2], [5, 2], [6, 1], [7, 1], [8, 2]] : [[0, 1], [1, 2], [2, 2], [3, 2], [5, 2], [6, 2], [7, 2], [8, 1]];
+      for (const [i, j] of wing) r.px(i + 1, j + 1, 0xf4f4f0);
+      r.px(5, 2, 0xd8d8d0);
+      r.px(5, 3, 0x9a9a92);
+      return kit.frame(r);
+    };
+    for (const [x, u] of [[90, 6720], [130, 6950], [70, 7080]]) kit.wander(x, u, 30, 24, [gull(0), gull(1)], { n: 3, sp: 14, idle: 0, turn: 'flip', fps: 3, d: 1.2 });
+  }
+  for (const [i, w, h, lobes, seed] of [
+    [0, 96, 56, [[30, 30, 26, 20], [56, 24, 30, 20], [74, 34, 20, 16]], 41],
+    [1, 80, 44, [[26, 22, 22, 16], [52, 20, 24, 17]], 57],
+  ]) {
+    const out = new HiCanvas(w, h);
+    for (let FYr = 0; FYr < h * S; FYr++)
+      for (let FXr = 0; FXr < w * S; FXr++) {
+        const x = FXr / S;
+        const y = FYr / S;
+        let v = 0;
+        for (const [cx, cy, rx, ry] of lobes) v = Math.max(v, 1 - Math.hypot((x - cx) / rx, (y - cy) / ry));
+        v += (fbm(x, y, { seed, scale: 14, octaves: 4 }) - 0.5) * 0.35;
+        const a = Math.max(0, Math.min(1, (v - 0.02) / 0.22));
+        if (a > 0) out.px(FXr, FYr, 0x000000, a);
+      }
+    kit.frame(out, `cshadow_${i}`);
+  }
+
   const chunks = [];
   for (let i = 0; i < CHUNKS; i++) chunks.push(img.crop(0, i * CHUNK, W, CHUNK));
-  return { strip: img, chunks, props: kit.pack(), meta: { width: W, chunkHeight: CHUNK, chunks: CHUNKS, length: L, tint: tintTable(L, tod.white) } };
+  return { strip: img.hi, chunks, props: kit.pack(), meta: { width: W, artScale: S, chunkHeight: CHUNK, chunks: CHUNKS, length: L, tint: tintTable(L, tod.white) } };
 }
