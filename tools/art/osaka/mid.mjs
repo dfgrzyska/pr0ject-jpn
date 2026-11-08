@@ -2713,17 +2713,35 @@ export function buildMid() {
     const stoneLantern = (x, y, lit = true) => {
       objects.push({
         y: y + 5,
-        shadow: () => shadowRect(x + 1, y + 2, 4, 4, 0.55),
+        shadow: () => shadowRect(x + 2, y + 4, 3, 2, 0.68),
         draw: () => {
-          img.rect(x, y + 2, 3, 3, STONE[1]);
-          img.rect(x, y + 2, 3, 1, STONE[2]);
-          img.rect(x - 1, y, 5, 2, STONE[0]);
-          img.rect(x, y, 3, 1, STONE[2]);
-          img.set(x + 1, y - 1, STONE[2]);
+          // a Kasuga lantern: the footing, the round post with its collar, the fire box with a lit window on its face,
+          // the curling hat, the jewel on top; moss on the old stone; the light on the ground in front
+          const X = x * S + 4; // (its axis)
+          const Yy = y * S;
+          const mossy = (a, b) => hashPx(X + a, Yy + b, 73) < 0.09;
+          for (let j = 11; j < 16; j++) for (let i = -5; i <= 5; i++) img.px(X + i, Yy + j, mossy(i, j) ? 0x4a6a3a : j === 11 ? STONE[3] : i < -2 ? STONE[2] : i > 2 ? STONE[0] : STONE[1]);
+          for (let j = 6; j < 11; j++) for (let i = -2; i <= 2; i++) img.px(X + i, Yy + j, mossy(i, j) ? 0x4a6a3a : i < -1 ? STONE[3] : i > 0 ? STONE[0] : STONE[2]);
+          for (let i = -4; i <= 4; i++) img.px(X + i, Yy + 6, i < 0 ? STONE[3] : STONE[1]);
+          for (let j = 1; j < 6; j++)
+            for (let i = -3; i <= 3; i++) {
+              const win = lit && j > 1 && j < 5 && Math.abs(i) < 2;
+              if (win) glowPx(X + i, Yy + j, j === 3 && i === 0 ? 0xfffbe0 : 0xffc860, 0.99);
+              else img.px(X + i, Yy + j, i < -2 ? STONE[3] : i > 2 ? STONE[0] : STONE[1]);
+            }
+          for (let j = -3; j < 1; j++) {
+            const hw = 2 + (j + 3) * 1.6;
+            for (let i = -hw; i <= hw; i++) {
+              const I = Math.round(i);
+              img.px(X + I, Yy + j, mossy(I, j) ? 0x5a7a44 : j === 0 ? STONE[0] : I < 0 ? STONE[3] : STONE[2]);
+            }
+          }
+          img.px(X - 7, Yy - 1, STONE[3]);
+          img.px(X + 7, Yy - 1, STONE[2]);
+          for (const [i, j] of [[0, -4], [-1, -5], [0, -5], [1, -5], [0, -6]]) img.px(X + i, Yy + j, j === -6 ? STONE[3] : STONE[2]);
           if (lit) {
-            img.set(x + 1, y + 3, 0xffd27a);
-            glow(x + 1, y + 3, 0xffd27a);
-            pool(x + 1, y + 4, 6, 0xffc070, 0.25);
+            glow(x + 1, y + 1, 0xffd27a, 0.55);
+            pool(x + 1, y + 5, 7, 0xffc070, 0.36);
           }
         },
       });
@@ -2844,24 +2862,26 @@ export function buildMid() {
           shadowRect(cx - Math.round(span / 2) + 3, foot + 1, span + 6, 2, 0.75);
         },
         draw: () => {
+          const LIT = [0x8a8478, 0xb8b0a0, 0xd8d0c0, 0xf4ecdc];
+          const put = (X, Yy, c) => glowPx(X, Yy, c, 0.97);
           const NY = TOP + Math.round(H * 0.28);
-          for (let X = -HS - PW / 2 - 4; X <= HS + PW / 2 + 4; X++) for (let j = 0; j < 4; j++) img.px(CX + Math.round(X), NY + j, j === 0 ? STONE[3] : j === 3 ? STONE[0] : STONE[2]);
+          for (let X = -HS - PW / 2 - 4; X <= HS + PW / 2 + 4; X++) for (let j = 0; j < 4; j++) put(CX + Math.round(X), NY + j, j === 0 ? LIT[3] : j === 3 ? LIT[0] : LIT[2]);
           for (const sd of [-1, 1])
             for (let Yy = TOP + 4; Yy < FOOT; Yy++) {
               const P = CX + sd * HS - (PW >> 1);
               for (let i = 0; i < PW; i++) {
                 const t = i / (PW - 1);
-                let c = t < 0.2 ? STONE[2] : t < 0.45 ? STONE[3] : t < 0.75 ? STONE[2] : STONE[0];
+                let c = t < 0.2 ? LIT[2] : t < 0.45 ? LIT[3] : t < 0.75 ? LIT[1] : LIT[0];
                 if (hashPx(P + i, Yy, 61) < 0.08) c = scaleColor(c, 0.88);
-                img.px(P + i, Yy, c);
+                put(P + i, Yy, c);
               }
-              if (FOOT - Yy < 4) for (let i = -2; i < PW + 2; i++) img.px(P + i, Yy, FOOT - Yy === 3 ? STONE[3] : STONE[1]);
+              if (FOOT - Yy < 4) for (let i = -2; i < PW + 2; i++) put(P + i, Yy, FOOT - Yy === 3 ? LIT[3] : LIT[1]);
             }
           for (let X = -KL; X <= KL; X++) {
             const l = Math.round(4 * (Math.abs(X) / KL) ** 2.6);
-            for (let j = 0; j < 7; j++) img.px(CX + X, TOP + j - l, j === 0 ? 0xc8c8cc : j < 3 ? STONE[3] : j < 6 ? STONE[2] : STONE[0]);
+            for (let j = 0; j < 7; j++) put(CX + X, TOP + j - l, j === 0 ? 0xffffff : j < 3 ? LIT[3] : j < 6 ? LIT[2] : LIT[0]);
           }
-          for (let j = 7; j < NY - TOP; j++) for (let X = -3; X <= 3; X++) img.px(CX + X, TOP + j, X === -3 ? STONE[3] : X === 3 ? STONE[0] : STONE[2]);
+          for (let j = 7; j < NY - TOP; j++) for (let X = -3; X <= 3; X++) put(CX + X, TOP + j, X === -3 ? LIT[3] : X === 3 ? LIT[0] : LIT[2]);
         },
       });
       warm(cx, foot - 1, span * 0.9, 0.3);
@@ -3655,6 +3675,12 @@ export function buildMid() {
     {
       const [m0, m1] = SUMI;
       gravelGround(0, W, m0, m1, 68);
+      for (let Yr = Y(m1) * S; Yr < Y(m0) * S; Yr++)
+        for (let X = 0; X < W * S; X++) {
+          const n = hashPx(X, Yr, 76);
+          if (n < 0.08) img.tintPx(X, Yr, 1.2);
+          else if (n < 0.17) img.tintPx(X, Yr, 0.84);
+        }
       ishidatami(82, 98, m0, 5998);
       // the great stone torii at the entrance
       {
@@ -4106,9 +4132,20 @@ export function buildMid() {
             if (Math.abs(d - 18) < 1 || Math.abs(d - 30) < 1) c = 0xc8a860;
             else if (d > 18 && d < 30 && (ray + Math.floor(d / 4)) % 4 === 0) c = 0x4a6a9a;
             img.px(X, Yr, c);
-          } else if (Math.floor(y) % 26 === 0 || Math.floor(y) % 26 === 1) {
-            const w = Math.round(Math.sin(X * 0.11) * 2);
-            img.px(X, Yr, (Yr + w) % 6 < 2 ? 0x8a94ac : 0xa8aebe);
+          } else if (Math.floor(y) % 40 < 2) {
+            // the long bands of pale granite across the waterfront, a lamp let into them every so often
+            img.px(X, Yr, Yr % 6 === 0 ? 0x8a8ea0 : (X >> 3) % 2 ? 0xb8bccc : 0xa8acbc);
+            if (X % 72 === 36 && Yr % 6 === 3) glowPx(X, Yr, 0xfff0c0, 1);
+          } else {
+            // herringbone: little brick pavers in pairs at right angles, each its own shade, worn pale where most walk
+            const cell = ((X >> 3) + (Yr >> 3)) % 2;
+            const brick = cell ? Math.floor((X + (Yr >> 3) * 4) / 8) * 7 + (Yr >> 2) * 131 : Math.floor((Yr + (X >> 3) * 4) / 8) * 7 + (X >> 2) * 131;
+            const joint = cell ? Yr % 4 === 0 : X % 4 === 0;
+            const tone = hashPx(brick, 3, 78);
+            const worn = Math.abs(x - 90) < 44 ? 1.08 : 1;
+            let c = joint ? 0x4e4a58 : tone < 0.33 ? 0x8a8290 : tone < 0.66 ? 0x7a7484 : tone < 0.9 ? 0x968c94 : 0xa08a84;
+            if (hashPx(X, Yr, 79) < 0.05) c = scaleColor(c, 0.9);
+            img.px(X, Yr, scaleColor(c, worn));
           }
         }
       // a fountain plaza between the turret stands, its jets lit from below
@@ -4315,7 +4352,10 @@ export function buildMid() {
                 if (e % 16 < 2) c = 0x7a9ac0;
                 else if ((i + j) % 12 === 0) c = scaleColor(c, 1.2);
                 if (tier === 2 && (i % 12 < 2 || j % 12 < 2)) c = 0xa8d0f0;
-                img.px(X0 + i, Y0 + j, c);
+                // (the steps of the roof picked out in light, the glass of the top lantern glowing)
+                if (e % 16 < 2) glowPx(X0 + i, Y0 + j, e % 16 === 0 ? 0xd8f0ff : 0x7ab0e0, 0.95);
+                else if (tier === 2) glowPx(X0 + i, Y0 + j, i % 12 < 2 || j % 12 < 2 ? 0xe8f8ff : (i >> 3) % 3 ? 0x4a9ad8 : 0x6ab8e8, 0.95);
+                else img.px(X0 + i, Y0 + j, c);
               }
             for (let i = 0; i < FW; i++) for (let j = 0; j < 3; j++) img.px(X0 + i, Y0 + j, j ? 0x7a9ac0 : 0xc8d8e8);
             // the glass band, lit from inside, its mullions, the people behind it
@@ -4478,6 +4518,115 @@ export function buildMid() {
           if (i % 10 === 0) for (const [a, b] of [[0, 1], [1, 1], [0, 2], [1, 2]]) strand.px(i + a, j + b, (i >> 2) % 3 ? 0xfff0b0 : 0xff9a6a);
         }
         kit.loop(0, u, [kit.frame(strand)], { fps: 1, d: 0.1 });
+      }
+      // --- what a waterfront is furnished with: a bus shelter with its queue, a line of drink machines burning in the
+      // dark, racks of hire bikes, planters with their benches, a zebra across the road, a bronze whale shark to be
+      // photographed with
+      for (let Yr = (Y(6218) - 4) * S; Yr < (Y(6218) + 5) * S; Yr++) for (let X = 82 * S; X < 98 * S; X++) if ((X >> 2) % 2) img.px(X, Yr, 0xd8d8e0);
+      {
+        const X = 104 * S;
+        const Yy = Y(6228) * S;
+        objects.push({
+          y: Y(6228) + 6,
+          shadow: () => shadowRect(106, Y(6228) + 3, 26, 4, 0.6),
+          draw: () => {
+            for (let j = 0; j < 8; j++) for (let i = 0; i < 78; i++) glowPx(X + i, Yy + j, j === 0 ? 0xffffff : j === 7 ? 0x4a5060 : i % 13 === 0 ? 0x7a8090 : 0xa8c8e0, 0.92);
+            for (let j = 8; j < 14; j++) for (let i = 0; i < 78; i++) if (i < 2 || i > 75) glowPx(X + i, Yy + j, 0x6a7080, 0.95);
+            for (let j = 8; j < 18; j++) for (let i = 80; i < 88; i++) glowPx(X + i, Yy + j, j < 12 ? 0x2a6ac8 : 0xf4f4f8, 0.97);
+          },
+        });
+        warm(117, Y(6228) + 4, 18, 0.45, 0xe8f0ff);
+        for (let k = 0; k < 10; k++) folk(106 + k * 2.4, Y(6228) + 7 + (k % 2));
+        for (const x of [40, 136]) {
+          chochin(x, Y(6226), 0xfff0d0);
+          warm(x, Y(6224), 12, 0.35);
+        }
+      }
+      for (const [x0, n] of [[4, 6], [150, 6]]) {
+        const y = Y(6238);
+        objects.push({
+          y: y + 7,
+          shadow: () => shadowRect(x0 + 1, y + 2, n * 4 + 1, 7, 0.6),
+          draw: () => {
+            const gr = rng(x0);
+            for (let k = 0; k < n; k++) {
+              const c = gr.pick([0xd83a2a, 0x2a6ad0, 0xf4f4f0, 0x2aa05a, 0xe8c040]);
+              const X = (x0 + k * 4) * S;
+              for (let j = 0; j < 21; j++)
+                for (let i = 0; i < 11; i++) {
+                  let col = j < 2 ? 0xf8f8f8 : c;
+                  if (j > 3 && j < 12 && i > 0 && i < 10) col = (j % 3 === 0 ? 0x1a1a22 : gr() < 0.5 ? 0xfff0c0 : 0xd8e8f8);
+                  if (j > 15 && j < 19 && i > 2 && i < 8) col = 0x141418;
+                  glowPx(X + i, y * S + j, col, 0.97);
+                }
+            }
+          },
+        });
+        warm(x0 + n * 2, y + 8, n * 3.5, 0.5, 0xe8f0ff);
+        knot(x0 + n * 2, y + 11, n * 2, 2, 5);
+      }
+      for (const [x0, u] of [[8, 6372], [130, 6372]]) {
+        const y = Y(u);
+        objects.push({
+          y: y + 4,
+          draw: () => {
+            const gr = rng(x0 + 1);
+            for (let k = 0; k < 12; k++) {
+              const X = x0 * S + k * 8;
+              const c = gr.pick([0xd83a2a, 0x2a6ad0, 0xf4f4f0, 0x1a1a22, 0xe8c040]);
+              for (let j = 0; j < 12; j++) img.px(X, y * S + j, j < 3 || j > 9 ? 0x1a1a20 : c);
+              for (let i = -2; i <= 2; i++) img.px(X + i, y * S + 5, 0x6a6a74);
+            }
+            for (let i = 0; i < 96; i++) img.px(x0 * S + i, y * S + 8, 0x9a9aa4);
+          },
+        });
+      }
+      const planter = (x, y) => {
+        objects.push({
+          y: y + 4,
+          shadow: () => shadowRect(x + 2, y + 2, 14, 3, 0.6),
+          draw: () => {
+            const X = x * S;
+            const Yy = y * S;
+            const gr = rng(x * 7 + y);
+            for (let j = 3; j < 12; j++) for (let i = 0; i < 42; i++) img.px(X + i, Yy + j, j === 3 ? 0xc8c4bc : j < 8 ? 0x9a968e : 0x6a665e);
+            for (let j = -3; j < 5; j++)
+              for (let i = 2; i < 40; i++) {
+                const n = gr();
+                if (n < 0.7) glowPx(X + i, Yy + j, n < 0.1 ? 0xff7ab0 : n < 0.2 ? 0xffe060 : n < 0.27 ? 0xffffff : (i + j) % 3 ? 0x4a9a4a : 0x2a6a34, 0.92);
+              }
+            for (let i = 0; i < 42; i++) for (let j = 12; j < 16; j++) img.px(X + i, Yy + j, j === 12 ? 0xa87c50 : j > 14 ? 0x2a1e18 : i % 7 === 0 ? 0x46301f : 0x7a5835);
+          },
+        });
+        warm(x + 7, y + 5, 9, 0.3);
+        for (let k = 0; k < 3; k++) if (fr() < 0.7) folk(x + 2 + k * 5, y + 4);
+      };
+      for (const [x, u] of [[72, 6244], [94, 6244], [72, 6276], [94, 6276], [6, 6280], [160, 6280], [6, 6256], [160, 6256], [36, 6300], [128, 6358], [36, 6358]]) planter(x, Y(u));
+      {
+        const x = 12;
+        const y = Y(6350);
+        objects.push({
+          y: y + 15,
+          shadow: () => shadowRect(x + 3, y + 10, 28, 5, 0.55),
+          draw: () => {
+            const X = x * S;
+            const Yy = y * S;
+            for (let j = 33; j < 45; j++) for (let i = 0; i < 90; i++) img.px(X + i, Yy + j, j === 33 ? STONE[3] : j < 39 ? STONE[2] : STONE[1]);
+            for (let i = 0; i < 84; i++) {
+              const t = i / 84;
+              const hw = t < 0.2 ? 6 + t * 40 : 14 * (1 - (t - 0.2) * 1.05);
+              const dy = Math.round(Math.sin(t * 3.4) * 6);
+              for (let j = -hw; j <= hw; j++) {
+                const J = Math.round(j);
+                const spot = hashPx(i >> 1, (J + 30) >> 1, 93) < 0.2 && J < 3;
+                glowPx(X + 84 - i, Yy + 16 + J + dy, spot ? 0xd8c090 : J < -4 ? 0x7a6a3a : J > 4 ? 0x4a3e24 : 0x5e4e2c, 0.97);
+              }
+            }
+            for (let j = -12; j <= 12; j++) for (let i = 0; i < 6; i++) glowPx(X + i + Math.round(Math.abs(j) * 0.5), Yy + 16 + j - 2, 0x5e4e2c, 0.97);
+          },
+        });
+        warm(x + 15, y + 12, 22, 0.45);
+        knot(x + 15, y + 19, 12, 2, 10);
       }
       // --- the crowd out for the evening, and everything that moves
       for (let k = 0; k < 150; k++) folk(4 + fr() * 172, Y(6340 + fr() * 86));
@@ -4764,26 +4913,147 @@ export function buildMid() {
       y: Y(6560) + 8,
       shadow: () => shadowRect(0, Y(6560) + 9, W, 4, 0.5),
       draw: () => {
-        const y = Y(6560);
-        for (let x = 0; x < W; x++) {
-          img.set(x, y, 0xe8504a);
-          img.set(x, y + 7, 0xa8302a);
-          for (let j = 1; j < 7; j++) img.set(x, y + j, (x + j) % 8 === 0 || (x - j) % 8 === 0 ? 0xc83a30 : j === 3 || j === 4 ? 0x3a3a42 : 0x5a1a18);
-          if (x % 5 === 0) {
-            glow(x, y, 0xfff0d0, 0.8);
-            glow(x, y + 7, 0xffc070, 0.6);
+        // the road on its deck, the red truss rising either side with its web of diagonals, portal frames across
+        // the road at the great piers, a chain of lamps along the top chords
+        const y0 = Y(6560) * S;
+        for (let X = 0; X < W * S; X++) {
+          for (let j = 0; j < 27; j++) {
+            let c;
+            if (j < 3 || j > 23) c = j === 0 || j === 26 ? 0xff7060 : j === 1 || j === 25 ? 0xe8402a : 0x8a2018; // (the chords)
+            else if (j < 7 || j > 19) {
+              const k = (X + (j < 7 ? j : -j) * 3 + 2400) % 24;
+              c = k < 3 ? 0xd83a2a : 0x3a1a1c; // (the web)
+            } else {
+              c = hashPx(X, j, 89) < 0.1 ? 0x3e3e48 : 0x34343c;
+              if (j === 13 && X % 18 < 10) c = 0xd8d0a0;
+              if ((j === 7 || j === 19)) c = 0xb8b8c0;
+            }
+            glowPx(X, y0 + j, c, 0.96);
+          }
+          if (X % 24 === 0) {
+            for (const j of [-1, 27]) {
+              glowPx(X, y0 + j, 0xfff4c8, 1);
+              glowPx(X + 1, y0 + j, 0xfff4c8, 1);
+            }
           }
         }
         for (const tx of [40, 140]) {
-          img.rect(tx - 2, y - 10, 5, 18, 0xc83a30);
-          glow(tx, y - 11, 0xff3a2a);
+          const X = tx * S;
+          for (let j = -32; j < 38; j++)
+            for (let i = -10; i <= 10; i++) {
+              if (j > -2 && j < 28 && Math.abs(i) < 6) continue; // (the road passes through)
+              glowPx(X + i, y0 + j, i < -7 ? 0xff7060 : i > 6 ? 0x8a2018 : (j + 40) % 12 < 2 ? 0x8a2018 : 0xd83a2a, 0.97);
+            }
+          for (let i = -2; i <= 2; i++) for (let j = -35; j < -32; j++) glowPx(X + i, y0 + j, 0xff3a2a, 1);
         }
+        for (let x = 0; x < W; x += 5) glow(x, Y(6560), 0xfff0d0, 0.5);
       },
     });
+    {
+      // (live) the traffic over the bridge, head and tail lamps burning; its lights broken on the water beneath
+      const car = (c) => {
+        const out = new HiCanvas(7, 4);
+        for (let j = 1; j < 10; j++) for (let i = 0; i < 18; i++) if (!((i === 0 || i === 17) && (j === 1 || j === 9))) out.px(i, j, (i > 4 && i < 8) || (i > 11 && i < 14) ? 0x26303a : j < 3 ? scaleColor(c, 1.2) : j > 7 ? scaleColor(c, 0.7) : c);
+        tod.frame(out, 6556);
+        for (const j of [2, 8]) {
+          out.px(18, j, 0xfff4c8);
+          out.px(19, j, 0xfff4c8);
+          out.px(0, j, 0xff3a2a);
+        }
+        return kit.frame(out);
+      };
+      for (const [lane, dir, sp, c] of [[6557, 1, 30, 0xe8e8ec], [6557, 1, 30, 0x3a4a6a], [6557, 1, 30, 0xa83a2a], [6554, -1, 26, 0x2a2a30], [6554, -1, 26, 0xc8c8cc], [6554, -1, 26, 0xe8c040]]) {
+        kit.path(dir > 0 ? [[-24, lane], [204, lane]] : [[204, lane], [-24, lane]], [car(c)], { sp, turn: 'flip', fps: 1, s0: fr(), d: 0.12 });
+      }
+      for (let n = 0; n < 60; n++) {
+        const x = Math.floor(fr() * W);
+        pool(x, Y(6548) + Math.floor(fr() * 10), 4, 0xfff0c0, 0.12);
+      }
+    }
     for (const [x, u] of [[30, 6700], [150, 6820], [70, 7000], [130, 7080]]) {
       img.disc(x, Y(u), 2, 0xd8402a);
       glow(x, Y(u) - 1, 0xff6040);
       pool(x, Y(u), 8, 0xff6040, 0.3);
+    }
+    // the harbour cruiser (live), its decks lit and full of people, going out past the breakwater with a long wake; lit
+    // sailing boats tacking; and far over the bay, soft and low so as not to take the eye off the fight, fireworks
+    {
+      const cruiser = capture(0, 400, 56, 16, () => {
+        const OY = 400 * S;
+        const FW = 56 * S;
+        const CY = OY + 24;
+        const beam = (t) => 20 * (t < 0.62 ? 1 : Math.max(0, 1 - ((t - 0.62) / 0.38) ** 1.7));
+        for (let i = 0; i < FW; i++) {
+          const t = i / FW;
+          const hw = beam(t);
+          for (let j = -Math.round(hw); j <= Math.round(hw); j++) {
+            const e = hw - Math.abs(j); // (in from the rail)
+            let c;
+            if (e < 1) c = 0x1e4a8a; // (the hull's blue sheer line)
+            else if (e < 3) c = j < 0 ? 0xffffff : 0xc8ccd8; // (the rail)
+            else if (e < 6) c = (i + 200) % 8 < 2 ? 0x9a7a4a : 0xb89060; // (the teak of the promenade deck)
+            else if (t < 0.8) c = e < 8 ? (j < 0 ? 0xf8f8fc : 0xb8bcc8) : 0xe8e8f0; // (the deckhouse's white)
+            else c = (i + j * 3) % 9 < 2 ? 0x9a7a4a : 0xb89060;
+            // two rows of lit windows along each side of the deckhouse
+            if (t < 0.8 && t > 0.03 && e >= 8 && e < 10 && i % 7 < 4) c = hashPx(i >> 3, j > 0 ? 1 : 0, 96) < 0.12 ? 0x4a5a6a : 0xffe8a0;
+            // the upper deck, narrower, cream, with its own windows and a sun deck on top
+            if (t > 0.14 && t < 0.68 && e >= 12) c = e < 14 ? 0xffffff : (i % 9 < 5 && e < 16 ? 0xfff4c0 : 0xd8d4c8);
+            glowPx(i, CY + j, c, 0.97);
+          }
+        }
+        // the funnel in the company's red and black
+        for (let j = -6; j <= 6; j++) for (let i = -6; i <= 6; i++) if (i * i + j * j < 38) glowPx(52 + i, CY + j, i * i + j * j < 12 ? 0x1a1a22 : j < -1 ? 0xff5a40 : 0xd8302a, 0.99);
+        // the wheelhouse's window band, the anchor deck at the bow, orange lifeboats along each side
+        for (let j = -8; j <= 8; j++) for (let i = 0; i < 4; i++) glowPx(112 + i, CY + j, i < 2 ? 0x8ad0f0 : 0x2a4a6a, 0.98);
+        for (const sd of [-1, 1])
+          for (let k = 0; k < 6; k++) for (let i = 0; i < 7; i++) for (let j = 0; j < 3; j++) glowPx(22 + k * 14 + i, CY + sd * 14 + j - 1, j === 0 ? 0xffa050 : 0xe8701a, 0.98);
+        // passengers along the rails, on the sun deck
+        for (let k = 0; k < 44; k++) {
+          const t = fr() * 0.86;
+          const sd = fr() < 0.5 ? -1 : 1;
+          const J = sd * (17 - Math.floor(fr() * 3));
+          const X = Math.round(t * FW);
+          const c = fr.pick([0xd04040, 0x3a6ad0, 0xe8c040, 0x2a2a30, 0xff7ab0]);
+          glowPx(X, CY + J, c, 0.98);
+          glowPx(X, CY + J + 1, 0xe8c0a0, 0.98);
+        }
+        // red and white flags strung from bow to stern
+        for (let i = 4; i < FW - 16; i += 6) glowPx(i, CY + (Math.floor(i / 6) % 2 ? -1 : 1), Math.floor(i / 6) % 2 ? 0xff5a40 : 0xffffff, 0.98);
+      }, { u: 6640 });
+      const wakeF = [2, 3, 4].map((k) => {
+        const out = new HiCanvas(k + 3, k + 3);
+        const r = ((k + 3) * S) / 2;
+        for (let j = -r; j < r; j++) for (let i = -r; i < r; i++) if (Math.hypot(i, j) < r && hashPx(i + k, j, 94) < 0.3) out.px(r + i, r + j, 0xd8e8f0, 0.55);
+        return kit.frame(out);
+      });
+      kit.path([[-40, 6640], [220, 6640]], [cruiser], { sp: 5, turn: 'flip', fps: 1, s0: 0.3, wake: { f: wakeF, every: 5, life: 2.4 }, d: 0.1 });
+      const sail = capture(0, 440, 9, 10, () => {
+        const OY = 440 * S;
+        for (let j = 18; j < 28; j++) {
+          const hw = 12 * Math.sqrt(1 - ((j - 23) / 6) ** 2 * 0.9);
+          for (let i = -hw; i <= hw; i++) glowPx(13 + Math.round(i), OY + j, j < 20 ? 0xf8f4ec : 0x7a5a3a, 0.96);
+        }
+        for (let j = 2; j < 22; j++) for (let k = 0; k < j * 0.5; k++) glowPx(13 + 1 + Math.round(k), OY + j, j % 5 === 0 ? 0xc8c8d0 : 0xf8f8fc, 0.96);
+        for (let j = 0; j < 24; j++) glowPx(13, OY + j, 0x4a3a2a, 0.98);
+        glowPx(13, OY - 1, 0xff3a2a, 1);
+      }, { u: 6800 });
+      for (const [u, x0, x1, s0] of [[6780, -20, 200, 0.2], [6880, 200, -20, 0.6], [6490, -20, 200, 0.8]]) kit.path([[x0, u], [x1, u + 6]], [sail], { sp: 7, turn: 'flip', fps: 1, s0, d: 0.1 });
+      const burst = (c1, c2) =>
+        [3, 6, 9, 12, 14, 15].map((r, k) => {
+          const R = 16;
+          const out = new HiCanvas(R, R);
+          const fade = 1 - k / 7;
+          for (let a = 0; a < 24; a++) {
+            const t = (a / 24) * Math.PI * 2;
+            for (let q = 0; q < 3; q++) {
+              const d = (r - q * 1.1) * S * 0.5;
+              out.px(Math.round(24 + Math.cos(t) * d), Math.round(24 + Math.sin(t) * d), q ? c2 : c1, fade * (1 - q * 0.3));
+            }
+          }
+          return kit.frame(out);
+        });
+      for (const [c1, c2] of [[0xfff4c0, 0xffb040], [0xffffff, 0x8ad0ff], [0xffe0a0, 0xff8a50]]) kit.spot([[12, 6960, 140, 300]], burst(c1, c2), { rate: 0.2, fps: 7, a: 0.62, d: 0.49 });
+      knot(146, Y(6432) + 3, 10, 2, 16);
     }
     // fishing boats under bright lamps drifting on the swell, a pleasure boat hung with red lanterns
     // gliding along the quay (live; their light pools stay painted on the water)
