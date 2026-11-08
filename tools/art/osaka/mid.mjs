@@ -2237,15 +2237,36 @@ export function buildMid() {
     for (const [x, u0, u1, s0] of [[84, d0 + 330, d0 + 620, 0.3], [72, d0 + 660, d0 + 920, 0.8], [96, d0 + 960, d0 + 1150, 0.1]]) {
       const pr = rng(u0);
       const boatF = capture(x, Y(u0), 12, 22, () => {
-        img.rect(x, Y(u0), 12, 22, 0xe8e4dc);
-        img.rect(x + 2, Y(u0) + 3, 8, 16, 0x5a8ab0);
-        for (let k = 0; k < 4; k++) glow(x + 3 + k * 2, Y(u0) + 10, 0xffe0a0);
-        for (let k = 0; k < 10; k++) {
-          const px = x + 2 + Math.floor(pr() * 8);
-          const py = Y(u0) + 4 + Math.floor(pr() * 14);
-          img.set(px, py, pr() < 0.5 ? [0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0][Math.floor(pr() * 4)] : 0x3a3a4a);
-          img.set(px, py - 1, 0x2a2026);
+        // a long open tour boat from above: a pointed bow going north, white gunwales, benches in rows full of people,
+        // paper lanterns along each side, the helmsman at the stern, the awning's rail
+        const X0 = x * S;
+        const Y0 = Y(u0) * S;
+        const FW = 12 * S;
+        const FH = 22 * S;
+        for (let j = 0; j < FH; j++) {
+          const t = j / FH;
+          const hw = (FW / 2) * (t < 0.22 ? Math.sqrt(t / 0.22) : t > 0.92 ? 0.84 : 1);
+          for (let i = -hw; i < hw; i++) {
+            const e = hw - Math.abs(i);
+            const c = e < 1 ? 0x2a4a7a : e < 3 ? (i < 0 ? 0xffffff : 0xc8ccd8) : j % 9 < 2 ? 0x7a5835 : 0x9a7040;
+            glowPx(X0 + FW / 2 + Math.round(i), Y0 + j, c, 0.97);
+          }
         }
+        for (let row = 0; row < 6; row++)
+          for (const sd of [-1, 1])
+            for (let k = 0; k < 2; k++) {
+              const PX = X0 + FW / 2 + sd * (4 + k * 6) - 1;
+              const PY = Y0 + 16 + row * 8;
+              const coat = [0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0x3a3a4a, 0xff7ab0][Math.floor(pr() * 6)];
+              for (let a = 0; a < 3; a++) {
+                glowPx(PX + a, PY, 0x2a2024, 0.98);
+                glowPx(PX + a, PY + 1, 0xe8c0a0, 0.98);
+                for (let b = 2; b < 5; b++) glowPx(PX + a, PY + b, coat, 0.98);
+              }
+            }
+        for (let k = 0; k < 6; k++)
+          for (const sd of [-1, 1])
+            for (let j = 0; j < 4; j++) for (let a = 0; a < 3; a++) glowPx(X0 + FW / 2 + sd * (FW / 2 - 2) + a - 1, Y0 + 14 + k * 8 + j, j === 0 || j === 3 ? 0x1a1414 : k % 2 ? 0xff6a3a : 0xfff0c8, 0.99);
       });
       const wakeF = [0, 1, 2].map((k) => {
         const w = new HiCanvas(1, 15 + k * 4);
@@ -3111,6 +3132,168 @@ export function buildMid() {
       for (let k = 0; k < 70; k++) folk(2 + fr() * 176, Y(u0 + 3 + fr() * 24));
       const ws = walkers(4935);
       for (const [a, b] of [[[4, 4926], [176, 4926]], [[176, 4932], [4, 4932]]]) kit.path([a, b], fr.pick(ws), { sp: 3.2, n: 4, gap: 44, mode: 'pp', hold: 2, turn: 'none', fps: 3, s0: fr() });
+    }
+    // Dōtonbori's walks and bridges, redrawn: boards and paving, a rail along the water with its lamps, the shop fronts
+    // burning behind them; the three bridges in stone, thick with people; landings with moored boats; the paper
+    // lanterns set adrift on the canal (tōrō nagashi); Kuidaore Tarō drumming; the Kinryū dragon coiled on its wall
+    {
+      const [d0, d1] = DOTONBORI;
+      const wood = (X, Yr) => {
+        const plank = Yr >> 2;
+        return Yr % 4 === 0 ? 0x4a3a2a : hashPx(plank, X >> 4, 111) < 0.5 ? 0x8a6a48 : hashPx(plank, X >> 4, 112) < 0.5 ? 0x7a5c3e : 0x967454;
+      };
+      for (let Yr = Y(d1 - 30) * S; Yr < Y(d0 + 30) * S; Yr++)
+        for (const [x0, x1] of [[56, 64], [116, 124]]) {
+          const u = L - Yr / S;
+          if (x0 < 64 ? u >= d1 - 50 : u < d0 + 50) continue;
+          for (let X = x0 * S; X < x1 * S; X++) {
+            const lx = X - x0 * S;
+            const toWater = x0 < 64 ? x1 * S - 1 - X : lx;
+            let c = wood(X, Yr);
+            if (toWater < 2) c = toWater === 0 ? 0xe8e0d0 : 0x6a5a48; // (the handrail)
+            else if (toWater < 4 && Yr % 15 < 2) c = 0x4a4a54; // (its posts)
+            img.px(X, Yr, c);
+          }
+          // the shop fronts at the back of the walk: lit windows, noren, a bar's door
+          const back = x0 < 64 ? 54 * S : 124 * S;
+          for (let i = 0; i < 6; i++) {
+            const bay = Math.floor(Yr / 72);
+            const k = Yr % 72;
+            const col = [0xc8a878, 0xb89868, 0xa88878, 0xc8b898][Math.floor(hashPx(bay, x0, 113) * 4)];
+            const mull = k % 12 < 2;
+            if (k < 3) glowPx(back + i, Yr, 0x1a1414, 0.92);
+            else if (k < 9 && hashPx(bay, x0, 114) < 0.4) glowPx(back + i, Yr, (i + k) % 4 === 0 ? 0x1a1414 : hashPx(bay, x0, 117) < 0.5 ? 0xa83a2a : 0x2a4a7a, 0.9);
+            else glowPx(back + i, Yr, mull || i === 0 ? 0x2a1e18 : col, 0.84);
+          }
+        }
+      for (let u = d0 + 56; u < d1 - 56; u += 8)
+        for (const x of [59, 120]) warm(x, Y(u), 9, 0.26);
+      for (let k = 0; k < 220; k++) {
+        const left = fr() < 0.5;
+        folk(left ? 57 + fr() * 5 : 117 + fr() * 5, Y(d0 + 54 + fr() * (d1 - d0 - 108)));
+      }
+      // the bridges
+      for (const u of [d0 + 300, d0 + 640, d0 + 940]) {
+        for (let Yr = Y(u + 8) * S; Yr < Y(u - 7) * S; Yr++)
+          for (let X = 54 * S; X < 126 * S; X++) {
+            const row = Yr - Y(u + 8) * S;
+            const rows = (Y(u - 7) - Y(u + 8)) * S;
+            let c;
+            if (row < 4 || row >= rows - 7) {
+              // the stone parapets, with their balusters, the bridge's face below the south one
+              c = row === 0 || row === rows - 7 ? 0xd8d4c8 : row < 4 || row < rows - 4 ? (X % 12 < 3 ? 0x8a8678 : 0xa8a498) : 0x5a5650;
+            } else {
+              const brick = (X + (((Yr >> 2) & 1) ? 4 : 0)) >> 3;
+              c = Yr % 4 === 0 || (X + (((Yr >> 2) & 1) ? 4 : 0)) % 8 === 0 ? 0x5a5650 : hashPx(brick, Yr >> 2, 115) < 0.5 ? 0x9a9488 : 0x8a8478;
+            }
+            img.px(X, Yr, c);
+          }
+        for (const X of [54 * S, 88 * S, 92 * S, 126 * S - 4])
+          for (let j = -6; j < 6; j++) {
+            glowPx(X + 1, Y(u + 8) * S + j + 2, 0x4a4a54, 0.98);
+            glowPx(X + 1, Y(u - 7) * S + j - 5, 0x4a4a54, 0.98);
+          }
+        for (let X = 58 * S; X < 122 * S; X += 18) {
+          for (const Yy of [Y(u + 8) * S + 1, Y(u - 7) * S - 6]) for (const [i, j] of [[0, 0], [1, 0], [0, 1], [1, 1]]) glowPx(X + i, Yy + j, 0xfff4c8, 1);
+        }
+        warm(90, Y(u), 42, 0.42);
+        const n = u === d0 + 640 ? 140 : 50;
+        for (let k = 0; k < n; k++) folk(56 + fr() * 68, Y(u - 5 + fr() * 11));
+      }
+      // floating landings with a moored boat and people waiting
+      for (const [u, left] of [[d0 + 450, true], [d0 + 800, false], [d0 + 1040, true]]) {
+        const X0 = (left ? 64 : 100) * S;
+        const Yy = Y(u) * S;
+        for (let j = 0; j < 36; j++)
+          for (let i = 0; i < 48; i++) {
+            const e = Math.min(i, 47 - i, j, 35 - j);
+            img.px(X0 + i, Yy + j, e < 2 ? 0x3a3a44 : j % 4 === 0 ? 0x4a3a2a : (i >> 3) % 2 ? 0x8a6a48 : 0x7a5c3e);
+          }
+        for (let k = 0; k < 8; k++) folk((X0 + 6 + (k % 4) * 9) / S, (Yy + 6 + (k >> 2) * 12) / S);
+        chochin((X0 + 2) / S, Yy / S, 0xfff0d0);
+        chochin((X0 + 44) / S, Yy / S, 0xfff0d0);
+        warm((X0 + 24) / S, (Yy + 18) / S, 12, 0.45);
+      }
+      // Kuidaore Tarō, drumming away in his red and white stripes and round glasses, outside his restaurant (live)
+      {
+        const x = 131;
+        const y = Y(d0 + 668);
+        const taro = [0, 1].map((beat) =>
+          capture(x - 7, y - 4, 16, 18, () => {
+            const CX = x * S;
+            const Yy = y * S;
+            for (let j = 0; j < 7; j++) for (let i = -6; i <= 6; i++) if ((i / 6.3) ** 2 + ((j - 3) / 3.5) ** 2 <= 1) glowPx(CX + i, Yy + j, j < 2 ? 0xd83a2a : i < -2 ? 0xffe0c0 : 0xf0c8a0, 0.99);
+            for (const sd of [-1, 1]) {
+              for (let j = 3; j < 6; j++) for (let i = 1; i < 5; i++) glowPx(CX + sd * i, Yy + j, 0x141418, 0.99);
+              glowPx(CX + sd * 3, Yy + 4, 0xffffff, 0.99);
+            }
+            for (let j = 7; j < 25; j++) for (let i = -7; i <= 7; i++) glowPx(CX + i, Yy + j, j > 20 ? 0x1a1a22 : Math.floor((j + 3) / 3) % 2 ? 0xf4f0e6 : 0xd83a2a, 0.99);
+            for (let j = 10; j < 19; j++) for (let i = -9; i <= 9; i++) if ((i / 9.5) ** 2 + ((j - 14) / 5.5) ** 2 <= 1) glowPx(CX + i, Yy + j, (i / 9.5) ** 2 + ((j - 14) / 5.5) ** 2 > 0.6 ? 0xe8c040 : 0xf8f0d8, 0.99);
+            for (const sd of [-1, 1]) {
+              const up = (beat ? sd > 0 : sd < 0) ? -6 : 0;
+              for (let k = 0; k < 9; k++) glowPx(CX + sd * (12 - k), Yy + 11 + up + (up ? k * 0.6 : 0), 0xd8b070, 0.99);
+            }
+            for (let j = 25; j < 33; j++) for (let i = -9; i <= 9; i++) glowPx(CX + i, Yy + j, j === 25 ? 0xfff0c8 : 0x7a5835, 0.97);
+          }, { u: d0 + 668 }),
+        );
+        kit.loop(x - 7, U(y - 4), taro, { fps: 3, d: 0.3 });
+        warm(x, y + 11, 14, 0.5);
+        knot(x - 9, y + 12, 2.5, 4, 7);
+      }
+      // the great green dragon of the Kinryū ramen shop, coiling across the shop's wall (live: it breathes)
+      {
+        const x = 128;
+        const y = Y(d0 + 852);
+        const dragon = [0, 1, 2].map((k) =>
+          capture(x, y - 6, 46, 32, () => {
+            const OX = x * S;
+            const OY = (y + 8) * S;
+            for (let i = 0; i < 118; i++) {
+              const t = i / 118;
+              const cy = Math.sin(t * Math.PI * 2.4 + k * 0.5) * 22;
+              const hw = 7 + Math.sin(t * Math.PI) * 5 - t * 3;
+              for (let j = -hw; j <= hw; j++) {
+                const scale = ((i >> 2) + (Math.round(j) >> 1)) % 2;
+                const J = Math.round(j);
+                glowPx(OX + 14 + i, OY + Math.round(cy) + J, J > hw * 0.5 ? 0xe8d860 : J < -hw * 0.6 ? 0xa8e870 : scale ? 0x3aa848 : 0x2a8a3a, 0.98);
+              }
+              if (i % 8 === 0) for (let q = 1; q < 6; q++) glowPx(OX + 14 + i, OY + Math.round(cy) - hw - q, 0xd83a2a, 0.98); // (the crest)
+            }
+            // the head, roaring back at the crowd, gold whiskers, red tongue, a pearl
+            const HY = OY + Math.round(Math.sin(k * 0.5) * 22);
+            for (let j = -14; j <= 14; j++) for (let i = -2; i <= 22; i++) if (((i - 10) / 12) ** 2 + (j / 14) ** 2 <= 1) glowPx(OX + i, HY + j, j > 3 ? 0xe8d860 : i < 7 ? 0x4ac858 : 0x2a8a3a, 0.99);
+            for (let i = 0; i < 12; i++) for (let j = 4; j < 9; j++) glowPx(OX + i - 1, HY + j, j > 6 ? 0xffe0d0 : 0xd8201a, 0.99);
+            for (const [i, j] of [[8, -6], [9, -6], [8, -5], [9, -5]]) glowPx(OX + i, HY + j, 0xff3a2a, 1);
+            for (const sd of [-1, 1]) for (let q = 0; q < 14; q++) glowPx(OX + 16 + q, HY + sd * (11 + q), 0xe8c040, 0.98); // (horns)
+            for (let q = 0; q < 16; q++) glowPx(OX - q, HY + 9 + Math.round(Math.sin(q * 0.4 + k) * 3), 0xfff0a0, 0.98); // (a whisker)
+          }, { u: d0 + 852 }),
+        );
+        kit.loop(x, U(y - 6), dragon, { fps: 2, seq: [0, 1, 2, 1], d: 0.3 });
+        warm(x + 22, y + 12, 28, 0.42, 0x9affa0);
+      }
+      // the paper lanterns adrift on the water, a few at a time between each pair of bridges, flickering
+      {
+        const drift = [0, 1].map((k) => {
+          const out = new HiCanvas(3, 3);
+          for (let j = 1; j < 7; j++) for (let i = 2; i < 7; i++) out.px(i, j, j === 1 ? 0x2a1a14 : k && j === 3 ? 0xfff8d0 : 0xffd060);
+          for (let i = 1; i < 8; i++) out.px(i, 7, 0x7a5835);
+          return kit.frame(out);
+        });
+        for (const [a, b] of [[d0 + 54, d0 + 292], [d0 + 310, d0 + 632], [d0 + 650, d0 + 932], [d0 + 950, d1 - 52]])
+          for (const x of [70, 79, 90, 101, 110]) kit.path([[x, b], [x, a]], drift, { sp: 1.8 + fr() * 0.8, n: 2, gap: (b - a) / 2, mode: 'wrap', turn: 'none', fps: 2, s0: fr(), d: 0.01, fx: 1, a: 0.9 });
+      }
+      // the bare corner of the square by the turn: cobbles, tubs of bamboo, a line of people for the boats
+      for (let Yr = Y(4892) * S; Yr < Y(4826) * S; Yr++)
+        for (let X = 12 * S; X < 54 * S; X++) {
+          const row = Yr >> 2;
+          const XX = X + (row % 2) * 4;
+          const joint = Yr % 4 === 0 || XX % 8 === 0;
+          const tone = hashPx(XX >> 3, row, 116);
+          if (isRes(X / S, Yr / S) && !img.alphaPx(X, Yr)) continue;
+          if (X < 36 * S && Yr < Y(4860) * S) continue;
+          img.px(X, Yr, joint ? 0x4e4e5a : tone < 0.4 ? 0x70707c : tone < 0.8 ? 0x7c7c88 : 0x8a8a94);
+        }
+      for (let k = 0; k < 26; k++) folk(14 + fr() * 40, Y(4832 + fr() * 56));
     }
     // under Tsūtenkaku: the square between its legs, the golden Billiken in his shrine, the angry chef of the
     // kushikatsu shops with his forks, stalls, the crowd; the district's name on arches across the avenue
