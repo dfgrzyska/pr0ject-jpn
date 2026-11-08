@@ -103,6 +103,7 @@ export function buildMid() {
   // clear of the random trees (ground = true): where the extra detail can still go
   const occ = new Uint8Array(W * L);
   const laneMargin = new Uint8Array(W * L);
+  const houseList = [];
   const reserveRect = (x0, y0, w, h, ground = false) => {
     for (let y = Math.max(0, Math.floor(y0)); y < Math.min(L, y0 + h); y++)
       for (let x = Math.max(0, Math.floor(x0)); x < Math.min(W, x0 + w); x++) {
@@ -1024,6 +1025,7 @@ export function buildMid() {
         }
       },
     });
+    if (w <= 34) houseList.push([x, y, w, roofH, faceH]);
     for (let yy = y - 2; yy < y + roofH + faceH + 2; yy++)
       for (let xx = x - 2; xx < x + w + 2; xx++) {
         if (xx < 0 || xx >= W || yy < 0 || yy >= L) continue;
@@ -1374,6 +1376,7 @@ export function buildMid() {
         for (const HX of w > 50 ? [X0 + 26, X1 - 31, WX0 + 40, WX1 - 45] : [X0 + 12, X1 - 17]) hangingLantern(HX, RY1 + 5);
       },
     });
+    if (w <= 34) houseList.push([x, y, w, roofH, faceH]);
     for (let yy = y - 2; yy < y + roofH + faceH + 2; yy++)
       for (let xx = x - 2; xx < x + w + 2; xx++) {
         if (xx < 0 || xx >= W || yy < 0 || yy >= L) continue;
@@ -1459,6 +1462,7 @@ export function buildMid() {
         for (let X = WX0 - 4; X < WX1 + 4; X++) for (let j = 0; j < 4; j++) img.px(X, FB + j, j === 0 ? C.stone[3] : j === 3 ? C.stone[0] : C.stone[1]);
       },
     });
+    if (w <= 34) houseList.push([x, y, w, roofH, faceH]);
     for (let yy = y - 2; yy < y + roofH + faceH + 2; yy++)
       for (let xx = x - 2; xx < x + w + 2; xx++) {
         if (xx < 0 || xx >= W || yy < 0 || yy >= L) continue;
@@ -4132,6 +4136,7 @@ export function buildMid() {
       const knot = (cx, y, rx, ry, n, o = {}) => {
         for (let k = 0; k < n; k++) kfolk(cx + near() * rx, y + near() * ry, o);
       };
+      const trailMask = new Uint8Array(W * L);
       /** A winding gravel trail through [x, u] points, its edges worn, reserved so the trees leave it open. */
       const trail = (pts, hw = 2.2) => {
         for (let i = 1; i < pts.length; i++) {
@@ -4154,6 +4159,11 @@ export function buildMid() {
                 img.px(CX + a, CY + j, d > R - 1.5 ? scaleColor(c, 0.74) : c);
               }
             reserveRect(Math.floor(cx - hw - 1), Math.floor(Y(cu) - hw - 1), Math.ceil(hw * 2 + 3), Math.ceil(hw * 2 + 3), true);
+            for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+              const tx = Math.round(cx) + dx;
+              const ty = Math.round(Y(cu)) + dy;
+              if (tx >= 0 && tx < W && ty >= 0 && ty < L) trailMask[ty * W + tx] = 1;
+            }
           }
         }
         // somebody walking it, and a stone lantern here and there along it
@@ -4504,33 +4514,49 @@ export function buildMid() {
       // their mooring posts, the old fisherman with cormorants and his fire basket (live)
       {
         for (let X = 0; X < W * S; X++) {
-          const Yc = Math.round(Y(3398 + (X / S - 90) * 0.1) * S);
+          const Yc = Math.round(Y(3398 + (X / S - 90) * 0.1) * S + Math.sin(X * 0.031) * 4 + Math.sin(X * 0.11) * 2);
           if (X > 80 * S && X < 100 * S) continue;
           for (let j = -6; j < 16; j++) {
             const n = hashPx(X >> 1, j, 8101);
             if (j < 0 && n < 0.5 + j * 0.08) img.px(X, Yc + j, 0xd8ecf0, 0.5);
-            else if (j >= 0 && j < 4) img.px(X, Yc + j, n < 0.8 ? 0xf8fcff : 0xc8e0e8);
+            else if (j >= 0 && j < 4 && hashPx(X >> 3, j >> 1, 8104) > 0.18) img.px(X, Yc + j, n < 0.7 ? 0xf0f8fc : 0xb8d8e0);
             else if (j >= 4 && n < 0.5 - j * 0.03) img.px(X, Yc + j, n < 0.2 ? 0xf0f8fc : 0xa8d0d8, 0.8);
           }
         }
         const rowboat = (x, y, c) =>
           objects.push({
-            y: y + 8,
+            y: y + 9,
             draw: () => {
               const X = x * S;
               const Yy = y * S;
-              for (let j = 0; j < 27; j++) {
-                const hw = j < 6 ? 1 + j * 0.9 : 6;
+              const H = 27;
+              for (let j = 0; j < H; j++) {
+                const t = (j - H / 2 + 0.5) / (H / 2);
+                const hw = 8.5 * Math.sqrt(Math.max(0, 1 - t ** 4 * (t < 0 ? 1 : 0.7)));
                 for (let i = -hw; i <= hw; i++) {
+                  const I = Math.round(i);
                   const e = hw - Math.abs(i);
-                  img.px(X + Math.round(i), Yy + j, e < 1 ? scaleColor(c, 0.6) : e < 2 ? (i < 0 ? 0xf4f0e6 : 0xc8c4b8) : j % 7 < 2 ? 0x7a5835 : 0x9a7040);
+                  let col;
+                  if (e < 1.2) col = scaleColor(c, I < 0 ? 1.15 : 0.7); // (the painted gunwale)
+                  else if (e < 2.4) col = I < 0 ? 0xf4f0e6 : 0xc8c4b8;
+                  else col = j % 3 === 0 ? 0x7a5835 : 0x9a7040; // (the floorboards)
+                  img.px(X + I, Yy + j, col);
                 }
               }
-              for (let j = 27; j < 33; j++) img.px(X, Yy + j, 0xc8b888);
+              for (const j of [8, 18]) for (let i = -6; i <= 6; i++) for (let a = 0; a < 2; a++) img.px(X + i, Yy + j + a, a ? 0x8a6a48 : 0xd8b888); // (the thwarts)
+              for (const sd of [-1, 1]) for (let q = 0; q < 16; q++) img.px(X + sd * 2, Yy + 5 + q, 0xd8c8a0); // (the oars shipped)
+              for (let j = H; j < H + 7; j++) img.px(X + (j % 2), Yy + j, 0xc8b888); // (the painter, to the landing)
             },
           });
-        for (const [x0, x1] of [[6, 76], [104, 176]])
-          for (let x = x0; x < x1; x += 8) rowboat(x, Y(3350) + Math.floor(kr() * 3), kr.pick([0x2a5ab0, 0xc8302a, 0x2a8a6a, 0xe8c040]));
+        for (const [x0, x1] of [[4, 78], [102, 176]]) {
+          // the landing: planks on posts along the bank
+          const ly = Y(3340) * S;
+          for (let j = 0; j < 15; j++)
+            for (let X = x0 * S; X < x1 * S; X++) img.px(X, ly + j, j === 0 ? 0x4a3a2a : j === 14 ? 0x2a1e14 : (X >> 2) % 7 === 0 ? 0x5e4229 : (X >> 3) % 2 ? 0x9a7a54 : 0x8a6c48);
+          for (let X = x0 * S; X < x1 * S; X += 27) for (let j = -4; j < 18; j++) for (let a = 0; a < 3; a++) img.px(X + a, ly + j, a ? 0x46301f : 0x7a5835);
+          for (let k = 0; k < 8; k++) kfolk(x0 + kr() * (x1 - x0), Y(3340) + 2);
+          for (let x = x0 + 5; x < x1 - 4; x += 8) rowboat(x, Y(3352) + Math.floor(kr() * 3), kr.pick([0x2a5ab0, 0xc8302a, 0x2a8a6a, 0xe8c040]));
+        }
         const ukai = [0, 1, 2].map((k) => {
           const out = new HiCanvas(30, 12);
           const OY = 18;
@@ -4589,6 +4615,102 @@ export function buildMid() {
         const pts = [];
         for (let u = 6310; u < 6870; u += 18) pts.push([90 + 10 * Math.sin((u - 6300) / 110) - 2, u]);
         kit.path(pts, [walker(0), walker(1)], { sp: 2.6, n: 6, gap: 80, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0: 0.1 });
+      }
+      // --- every house its own: the tiles older or newer, and what is on its roof: a cat asleep on the ridge, a drying
+      // rack with the washing out, a skylight, moss on the north slope, a bonsai shelf
+      for (const [x, y, w, roofH, faceH] of houseList) {
+        const hr = rng(x * 131 + y * 17);
+        const f0 = 0.84 + hr() * 0.32;
+        const warm = hr() < 0.3;
+        const kind = Math.floor(hr() * 7);
+        const seed = Math.floor(hr() * 1e6);
+        objects.push({
+          y: y + roofH + faceH + 0.01,
+          draw: () => {
+            const X0 = x * S;
+            const Y0 = y * S;
+            const FW = w * S;
+            const FH = roofH * S;
+            const gr = rng(seed);
+            for (let j = 0; j < FH; j++)
+              for (let i = 0; i < FW; i++) {
+                const q = img.rgbaPx(X0 + i, Y0 + j);
+                if (!q || !q[3]) continue;
+                const mottled = f0 * (hashPx((X0 + i) >> 3, (Y0 + j) >> 2, seed & 255) < 0.08 ? 0.88 : 1);
+                img.setRGBAPx(X0 + i, Y0 + j, Math.min(255, q[0] * mottled * (warm ? 1.07 : 1)), Math.min(255, q[1] * mottled), Math.min(255, q[2] * mottled * (warm ? 0.93 : 1)), q[3]);
+              }
+            const mx = X0 + 8 + Math.floor(gr() * Math.max(1, FW - 24));
+            const my = Y0 + 6 + Math.floor(gr() * Math.max(1, FH - 18));
+            if (kind === 0) {
+              // a cat on the ridge, its tail hanging down the tiles
+              const c = gr.pick([0x1a1a20, 0xf0ece4, 0xd88a3a]);
+              const RY = Y0 + 4;
+              for (const [i, j] of [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [1, -1], [2, -1], [3, -1], [4, -1], [4, -2], [5, -2], [5, -1], [6, -1], [5, -3], [7, -3]]) img.px(mx + i, RY + j, c);
+              for (let q = 1; q < 5; q++) img.px(mx - 1, RY + q, c);
+            } else if (kind === 1) {
+              // the monohoshi: a drying rack on legs, the washing out
+              for (let i = 0; i < 24; i++) for (const j of [0, 8]) img.px(mx + i, my + j, 0x8a6a48);
+              for (const i of [0, 23]) for (let j = 0; j < 12; j++) img.px(mx + i, my + j, 0x5e4229);
+              for (let k = 0; k < 4; k++) {
+                const c = gr.pick([0xf4f4f0, 0x3a6ad0, 0xe8c8c8, 0xd8d8a8, 0xc83a3a]);
+                for (let j = 1; j < 8; j++) for (let i = 0; i < 4; i++) img.px(mx + 2 + k * 5 + i, my + j, i === 3 ? scaleColor(c, 0.8) : c);
+              }
+            } else if (kind === 2) {
+              for (let j = 0; j < 8; j++) for (let i = 0; i < 12; i++) img.px(mx + i, my + j, j === 0 || i === 0 || i === 11 || j === 7 ? 0x4a3a2a : (i >> 1) % 3 === 0 ? 0x8ab0c0 : 0xb8d8e4);
+            } else if (kind === 3) {
+              for (let n = 0; n < 40; n++) {
+                const a = Math.floor(gr() * 18);
+                const b = Math.floor(gr() * 10);
+                img.px(mx + a, my + b, gr() < 0.5 ? 0x4a6a3a : 0x5e7e44);
+              }
+            } else if (kind === 4) {
+              for (let i = 0; i < 16; i++) for (let j = 0; j < 2; j++) img.px(mx + i, my + 4 + j, j ? 0x46301f : 0x8a6a48);
+              for (const k of [1, 7, 12]) {
+                for (let a = 0; a < 3; a++) img.px(mx + k + a, my + 3, 0x7a4a2a);
+                for (let j = -3; j < 3; j++) for (let a = -1; a < 4; a++) if (a * a + j * j < 14) img.px(mx + k + a, my + j, (a + j) % 2 ? 0x3a6a34 : 0x5a8a44);
+              }
+            }
+          },
+        });
+      }
+      // --- the woods' main paths: bamboo fences along both sides, open at the trails and the side ways; stalls where the
+      // visitors stop; more of them walking
+      const fencePath = (u0, u1, fx, gaps = []) => {
+        for (let Yr = Y(u1) * S; Yr < Y(u0) * S; Yr++) {
+          const u = L - Yr / S;
+          if (gaps.some(([a, b]) => u > a && u < b)) continue;
+          for (const sd of [-1, 1]) {
+            const x = fx(u) + sd * 6.6;
+            const lx = Math.round(x + sd * 3);
+            const yy = Math.floor(Yr / S);
+            if (lx >= 0 && lx < W && yy >= 0 && yy < L && trailMask[yy * W + lx]) continue;
+            const X = Math.round(x * S);
+            const post = Yr % 21 < 3;
+            for (let i = -1; i <= 2; i++) if (X + i >= 0 && X + i < W * S) img.px(X + i, Yr, post ? (i < 1 ? 0x8a6a48 : 0x46301f) : i === 0 ? (Yr % 5 === 0 ? 0x5a6a30 : 0xb8c078) : i === 1 ? 0x7a8a48 : i === -1 ? 0xd0d890 : 0x34401c);
+          }
+        }
+      };
+      const kinkakuX = () => 140;
+      const ryoanX = (u) => 140 + 30 * smooth(4420, 4600, u);
+      const mountX = (u) => 90 + 12 * Math.sin(((u - 5930) * Math.PI) / 185);
+      fencePath(3510, 4410, kinkakuX, [[3530, 3578], [3936, 4008], [4255, 4276], [4380, 4412]]);
+      fencePath(4430, 4690, ryoanX);
+      fencePath(5940, 6290, mountX);
+      for (const [u0, u1, fx, n] of [[3510, 4410, kinkakuX, 180], [4430, 4880, ryoanX, 90], [5940, 6290, mountX, 70]]) {
+        for (let k = 0; k < n; k++) {
+          const u = u0 + kr() * (u1 - u0);
+          kfolk(fx(u) + (kr() - 0.5) * 8, Y(u));
+        }
+        const pts = [];
+        for (let u = u0 + 4; u < u1 - 4; u += 16) pts.push([fx(u) + 2, u]);
+        kit.path(pts, kr.pick(strollers), { sp: 3, n: 4, gap: 70, mode: 'pp', hold: 2, turn: 'none', fps: 3, s0: kr() });
+      }
+      for (const [x, u, kind] of [[150, 3852, 'dango'], [150, 4062, 'ramune'], [114, 3952, 'kitsune'], [150, 4316, 'taiyaki'], [116, 6020, 'yakitori'], [60, 6118, 'dango']]) {
+        const y = Y(u);
+        if (free(x, y, 18, 12)) {
+          stall(x, y, kind);
+          knot(x + 9, y + 15, 8, 2, 7);
+        }
       }
     }
   }
