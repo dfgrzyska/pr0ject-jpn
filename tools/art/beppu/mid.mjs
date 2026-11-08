@@ -477,6 +477,69 @@ export function buildMid() {
       img.px(X, Y1 - 1, ramp[0]);
     }
   };
+  /** The hot-spring mark at fine (X, Yy), big (11 px) or small (7 px): three wavy threads of steam over a bath. */
+  const onsenMark = (X, Yy, c, big = true, put = (px, py, pc) => img.px(px, py, pc)) => {
+    const n = big ? 11 : 7;
+    const threads = big ? [2, 5, 8] : [1, 3, 5];
+    const h = big ? 6 : 4;
+    for (const t of threads)
+      for (let j = 0; j < h; j++) {
+        put(X + t + (j % 4 < 2 ? 0 : 1), Yy + j, c);
+        if (big) put(X + t + (j % 4 < 2 ? 0 : 1) - 1, Yy + j, c);
+      }
+    const a = (n - 1) / 2;
+    const R = a;
+    const ry = big ? 3 : 2;
+    for (let i = 0; i <= n * 3; i++) {
+      const t = (i / (n * 3)) * Math.PI;
+      put(X + Math.round(a + Math.cos(t) * R), Yy + h - 1 + Math.round(Math.sin(t) * ry), c);
+    }
+  };
+  /** A signboard with the mark on two posts at (x, y); lit once it gets dark. */
+  const signPost = (x, y, c = 0xc8302a) => {
+    const X = Math.round(x * S);
+    const Yy = Math.round(y * S);
+    objects.push({
+      y: y + 1,
+      shadow: () => {
+        for (let k = 0; k < 14; k++) for (let t = -2; t <= 2; t++) img.tintPx(X + 6 + k, Yy + 1 + Math.floor(k * 0.55) + t, 0.74);
+      },
+      draw: () => {
+        for (const i of [1, 13]) for (let j = -5; j < 1; j++) img.px(X + i, Yy + j, 0x3a2a1c);
+        const lit = L - y > 2500;
+        for (let j = -19; j < -4; j++)
+          for (let i = -1; i < 16; i++) {
+            const e = i === -1 || i === 15 || j === -19 || j === -5;
+            if (e) img.px(X + i, Yy + j, 0x2a1e18);
+            else if (lit) glowPx(X + i, Yy + j, c, 0.96);
+            else img.px(X + i, Yy + j, c);
+          }
+        onsenMark(X + 2, Yy - 17, 0xfff8e8, true, lit ? (px, py, pc) => glowPx(px, py, pc, 1) : (px, py, pc) => img.px(px, py, pc));
+      },
+    });
+    if (x >= 0 && x < W && y >= 0 && y < L) reserved[Math.floor(y) * W + Math.floor(x)] = 1;
+    if (L - y > 2500) pool(x + 2.5, y, 7, c, 0.14);
+  };
+  /** A board with the mark up on a roof's ridge at (x, y) (a bath house among the homes). */
+  const roofSign = (x, y, sort, c = 0xc8302a) => {
+    const X = Math.round(x * S);
+    const Yy = Math.round(y * S);
+    objects.push({
+      y: sort + 0.05,
+      draw: () => {
+        for (const i of [2, 10]) for (let j = -3; j < 2; j++) img.px(X + i, Yy + j, 0x2a2a30);
+        const lit = L - y > 2500;
+        for (let j = -14; j < -2; j++)
+          for (let i = 0; i < 13; i++) {
+            const e = i === 0 || i === 12 || j === -14 || j === -3;
+            if (e) img.px(X + i, Yy + j, 0x2a1e18);
+            else if (lit) glowPx(X + i, Yy + j, c, 0.96);
+            else img.px(X + i, Yy + j, c);
+          }
+        onsenMark(X + 1, Yy - 13, 0xfff8e8, true, lit ? (px, py, pc) => glowPx(px, py, pc, 1) : (px, py, pc) => img.px(px, py, pc));
+      },
+    });
+  };
   /** A rectangle of window in a wall: frame, glass or a lit paper screen, mullion. */
   const windowPx = (X, Yy, w, h, on, seed) => {
     for (let j = 0; j < h; j++)
@@ -635,6 +698,11 @@ export function buildMid() {
               if (j > 3 && i % 6 === 5) continue;
               img.px(nx + i, FY0 + 2 + j, j === 0 ? scaleColor(opt.noren, 1.3) : i % 6 === 2 && j === 2 ? 0xf0e8d8 : opt.noren);
             }
+          if (w > 16) {
+            const BX = (x + 2) * S;
+            for (let j = 0; j < 9; j++) for (let i = 0; i < 9; i++) img.px(BX + i, FY0 + 2 + j, i === 0 || j === 0 || i === 8 || j === 8 ? 0x2a1e18 : 0xc8302a);
+            onsenMark(BX + 1, FY0 + 3, 0xfff8e8, false);
+          }
           glowPx(nx + 21, FY0 + 3, 0xff7a4a, 0.9);
           glowPx(nx + 21, FY0 + 4, 0xffb060, 0.9);
           glowPx(nx - 4, FY0 + 3, 0xff7a4a, 0.9);
@@ -745,7 +813,10 @@ export function buildMid() {
             img.px(X, Yy, c);
           }
         const fy = y + h;
-        for (const [kind, ix, iy] of items) rooftop(kind, ix * S, iy * S, roof, wall);
+        for (const [kind, ix, iy] of items) {
+          if (opt.bigMark && ix + 9 > x + Math.floor(w / 2) - 9 && ix < x + Math.floor(w / 2) + 9) continue;
+          rooftop(kind, ix * S, iy * S, roof, wall);
+        }
         const FY0 = fy * S;
         const FH = faceH * S;
         const FLOOR = 9;
@@ -780,7 +851,30 @@ export function buildMid() {
           const SH = Math.min(faceH - 3, 16) * S;
           const sr = rng(seed + 3);
           for (let j = 0; j < SH; j++) for (let i = 0; i < 9; i++) img.px(SX + i, FY0 + 6 + j, i === 0 || i === 8 || j === 0 || j === SH - 1 ? scaleColor(opt.sign, 0.7) : opt.sign);
-          for (let k = 0; k + 7 < SH; k += 8) glyph(SX + 2, FY0 + 8 + k, 5, 0xf8f4ec, sr);
+          onsenMark(SX + 1, FY0 + 8, 0xf8f4ec, false);
+          for (let k = 9; k + 7 < SH; k += 8) glyph(SX + 2, FY0 + 8 + k, 5, 0xf8f4ec, sr);
+        }
+        if (opt.bigMark) {
+          // the great mark on the roof: a red hoarding on a steel frame
+          const BX = (x + Math.floor(w / 2) - 8) * S;
+          const BY = (y + 1) * S;
+          const lit2 = L - y > 2500;
+          for (let j = 0; j < 8; j++) for (let i = 0; i < 48; i++) if ((i + j) % 6 === 0 || j === 7) img.px(BX + i, BY + 30 + j, 0x4a4e54);
+          for (let j = 0; j < 30; j++)
+            for (let i = 0; i < 48; i++) {
+              const e = i < 2 || i > 45 || j < 2 || j > 27;
+              if (e) img.px(BX + i, BY + j, 0x8a1e18);
+              else if (lit2) glowPx(BX + i, BY + j, 0xd8302a, 0.96);
+              else img.px(BX + i, BY + j, 0xd8302a);
+            }
+          // (the mark itself, large)
+          const put = lit2 ? (px, py, pc) => glowPx(px, py, pc, 1) : (px, py, pc) => img.px(px, py, pc);
+          for (const t of [14, 23, 32])
+            for (let j = 0; j < 15; j++) for (let w2 = 0; w2 < 3; w2++) put(BX + t + w2 + Math.round(Math.sin(j * 0.6) * 1.6), BY + 4 + j, 0xfff8e8);
+          for (let i = 0; i <= 80; i++) {
+            const a = (i / 80) * Math.PI;
+            for (let w2 = 0; w2 < 3; w2++) put(BX + 24 + Math.round(Math.cos(a) * (17 - w2 * 0.4)), BY + 18 + Math.round(Math.sin(a) * (7 - w2 * 0.4)), 0xfff8e8);
+          }
         }
         if (opt.door !== false) {
           // the glass doors under a canopy
@@ -1970,6 +2064,7 @@ export function buildMid() {
     reserveRect(66, Y(350), 58, 30);
     house(70, Y(346), 50, 15, 6, { ramp: ROOF.dark, hip: true, wood: true, noren: 0x2b3c78 });
     crowd(70, Y(323), 48, 2, 6, true, { yukata: true });
+    signPost(66, Y(320));
     plume(76, Y(342), 1.1);
     plume(112, Y(344), 0.9);
     // the jetty out over the sand and into the water, anglers along it, a dinghy tied up at its end
@@ -2085,9 +2180,9 @@ export function buildMid() {
       for (const cx of [38, 142]) zebra(cx * S, Y(398) * S, (cx + 8) * S, Y(386) * S, true);
     }
     // tall hotels along the bay with gardens and pools in between
-    block(4, Y(560), 46, 18, 34, { roof: 0xc4beb2, wall: 0xece6da, balcony: true, sign: 0xc8302a, items: ['ac', 'tank', 'hut', 'bath'] });
+    block(4, Y(560), 46, 18, 34, { roof: 0xc4beb2, wall: 0xece6da, balcony: true, sign: 0xc8302a, bigMark: true, items: ['ac', 'tank', 'bath'] });
     block(62, Y(600), 54, 20, 40, { roof: 0xaaa6a0, wall: 0xf2efe8, balcony: true, items: ['ac', 'hut', 'tank', 'garden', 'bath'] });
-    block(128, Y(552), 48, 16, 30, { roof: 0xb8b0a4, wall: 0xe0d6c4, sign: 0x2a6ac8, items: ['ac', 'ac', 'tank', 'bath'] });
+    block(128, Y(552), 48, 16, 30, { roof: 0xb8b0a4, wall: 0xe0d6c4, sign: 0x2a6ac8, bigMark: true, items: ['ac', 'tank', 'bath'] });
     // the hotels' pools: blue tiles and lane ropes, loungers and umbrellas on the deck, swimmers (live)
     for (const [x, u] of [[10, 450], [130, 448]]) {
       const y = Y(u);
@@ -2657,11 +2752,44 @@ export function buildMid() {
       img.fine(x + 2, y + 38, 40, 7, (X, Yr) => (X % 10 === 0 || Yr % 6 === 0 ? 0x6a665e : rampColor(C.stone, 0.45 + hashPx(X >> 2, Yr >> 2, 98) * 0.3, X, Yr)));
       reserveRect(x + 2, y + 38, 40, 7);
       crowd(x + 6, y + 40, 32, 3, 7, true, { yukata: true });
+      signPost(x + 42, y + 44);
       plume(x + 6, y + 2, 1.3);
       plume(x + 40, y + 4, 1);
     }
+    // people and bicycles along the cross streets, up to the avenue and back: its traffic has the crossing
+    {
+      const cyclist = (c, f, u) => {
+        const out = new HiCanvas(5, 3);
+        for (let i = 1; i < 14; i++) out.px(i, 5, i === 1 || i === 13 ? 0x1a1a20 : 0x3a3a42);
+        out.px(2, 4, 0x1a1a20);
+        out.px(12, 4, 0x1a1a20);
+        for (let i = 5; i < 9; i++) out.px(i, 4, 0x8a8a90);
+        for (let j = 1; j < 4; j++) for (let i = 6; i < 9; i++) out.px(i, j, i === 8 ? scaleColor(c, 0.8) : c);
+        out.px(7, 0, 0x2a2024);
+        out.px(8, 0, 0x2a2024);
+        out.px(f ? 6 : 8, 5, 0x2a2a34);
+        out.px(11, 3, 0x8a8a90);
+        for (let i = 4; i < 11; i++) out.px(i, 7, 0x101418, 0.3);
+        return kit.frame(tod.frame(out, u));
+      };
+      const pr = rng(6741);
+      for (const u of [1300, 1560, 1820, 2064]) {
+        for (const [x0, x1] of [[-8, 72], [108, 188]]) {
+          const c = pr.pick([0x3a6ad0, 0xe8e8f0, 0xc83a2a, 0x2a2a30]);
+          const ou = pr() < 0.5 ? 2 : -3;
+          kit.path([[x0, u + ou], [x1, u + ou]], [cyclist(c, 0, u), cyclist(c, 1, u)], { sp: 11 + pr() * 4, mode: 'pp', hold: 1, turn: 'flip', fps: 4, s0: pr() });
+          for (let k = 0; k < 2; k++) {
+            const p = pr.pick(COATS);
+            const off = pr() < 0.5 ? 6 : -5;
+            kit.path([[x0, u + off], [x1, u + off]], [stepper(p, 0, u), stepper(p, 1, u)], { sp: 3.5 + pr(), mode: 'pp', hold: 2, turn: 'none', fps: 3, s0: pr() });
+          }
+        }
+      }
+      kit.path([[2, 1421], [80, 1421]], [stepper(0x2b3c78, 0, 1424, true), stepper(0x2b3c78, 1, 1424, true)], { sp: 3, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0: 0.3 });
+      kit.path([[8, 1427], [78, 1427]], [cyclist(0xe8c040, 0, 1424), cyclist(0xe8c040, 1, 1424)], { sp: 9, mode: 'pp', hold: 1, turn: 'flip', fps: 4, s0: 0.6 });
+    }
     // a few taller hotels and inns downtown
-    if (!anyRes(2, Y(1760), 40, 44)) block(2, Y(1760), 40, 16, 26, { balcony: true, sign: 0xc8302a, items: ['ac', 'tank', 'bath'] });
+    if (!anyRes(2, Y(1760), 40, 44)) block(2, Y(1760), 40, 16, 26, { balcony: true, sign: 0xc8302a, bigMark: true, items: ['ac', 'tank', 'bath'] });
     town(1060, 1300, { pBlock: 0.4, pPark: 0.06 });
     town(1306, 1560, { pBlock: 0.35, pPark: 0.04 });
     town(1566, 1820, { pBlock: 0.3 });
@@ -2830,6 +2958,7 @@ export function buildMid() {
     // Ideyu-zaka: the old stone-paved lane winding up the slope, its setts worn, lanterns on posts along it, the hot
     // water's two lagged pipes running up one side
     const laneX = (u) => dodge(64 + 12 * Math.sin(u / 95 + 0.6), u, 6);
+    const stairMask = new Uint8Array(W * L); // (ways up the slope: where a terrace wall meets one, it turns into steps)
     {
       for (let Yr = Y(KANNAWA[1]) * S; Yr < Y(KANNAWA[0]) * S; Yr++) {
         const u = L - (Yr + 0.5) / S;
@@ -2861,7 +2990,10 @@ export function buildMid() {
         img.px(Xp + 3, Yr, 0x2e4a66);
         if (Yr % 24 === 0) for (let i = -1; i < 5; i++) img.px(Xp + i, Yr, 0x2a2622);
       }
-      for (let u = KANNAWA[0]; u < KANNAWA[1]; u++) reserveRect(laneX(u) - 8, Y(u), 16, 1);
+      for (let u = KANNAWA[0]; u < KANNAWA[1]; u++) {
+        reserveRect(laneX(u) - 8, Y(u), 16, 1);
+        for (let x = Math.floor(laneX(u) - 5); x <= laneX(u) + 5; x++) if (x >= 0 && x < W) stairMask[Y(u) * W + x] = 1;
+      }
       for (let u = KANNAWA[0]; u < KANNAWA[1]; u++)
         if (u % 34 === 0) {
           // a lantern on its post each side
@@ -2931,7 +3063,33 @@ export function buildMid() {
         crowd(x - 5, y + 4, 10, 3, 3, true, { yukata: true });
       }
     }
-    for (const u of [2380, 2700, 3010]) hRoad(u, 3);
+    /** A road along the contour of the slope, bending round the stands and vents; returns where it runs at x. */
+    const contourRoad = (uc, hw, ph) => {
+      const at = (x) => {
+        let u = uc + 8 * Math.sin(x / 37 + ph);
+        for (const o of [...pads, ...vents]) {
+          const dx = Math.abs(x - o.x);
+          const du = u - o.u;
+          if (dx < 44 && Math.abs(du) < 26) u += (du === 0 ? 1 : Math.sign(du)) * (26 - Math.abs(du)) * smooth(44, 16, dx);
+        }
+        return u;
+      };
+      for (let X = 0; X < W * S; X++) {
+        const x = (X + 0.5) / S;
+        const c = at(x);
+        for (let Yr = Math.round((L - c - hw - 2) * S); Yr < Math.round((L - c + hw + 2) * S); Yr++) roadPx(X, Yr, L - (Yr + 0.5) / S - c, hw, true, X);
+      }
+      for (let x = 0; x < W; x++) reserveRect(x, Y(at(x) + hw + 3), 1, hw * 2 + 6);
+      // the zebra where the old lane crosses it
+      const lx = laneX(uc);
+      for (let X = Math.round((lx - 7) * S); X < Math.round((lx + 7) * S); X++) {
+        if (X % 7 >= 4) continue;
+        const c = at((X + 0.5) / S);
+        for (let Yr = Math.round((L - c - hw + 0.4) * S); Yr < Math.round((L - c + hw - 0.4) * S); Yr++) if (hashPx(X, Yr, 38) > 0.08) img.px(X, Yr, 0xd4d4cc);
+      }
+      return at;
+    };
+    const kRoads = [contourRoad(2380, 3, 0.4), contourRoad(2700, 3, 2.2), contourRoad(3010, 3, 4.4)];
     // the steam kitchen (jigoku-mushi): food cooked in stone boxes over the vents, steam from each lid
     {
       const x = 104;
@@ -2952,6 +3110,7 @@ export function buildMid() {
       for (let i = 0; i < 40 * S; i++) for (let j = 0; j < 3; j++) img.px((x + 3) * S + i, (y + 21) * S + j, j === 0 ? 0xa0805a : 0x5e4430);
       reserveRect(x, y + 20, 46, 14);
       crowd(x + 2, y + 30, 42, 3, 10, true, { yukata: true });
+      signPost(x - 2, y + 28);
     }
     // a foot bath under an open shelter: the slats of its roof, people sitting along both edges, feet in the milky water
     {
@@ -2976,6 +3135,7 @@ export function buildMid() {
       crowd(x, y + 12, 30, 1, 9, true, { yukata: true });
       reserveRect(x - 2, y - 3, 34, 19);
       plume(x + 15, y + 6, 0.9, { front: true });
+      signPost(x - 5, y + 14, 0x2a6ac8);
       objects.push({
         y: y + 20,
         draw: () => {
@@ -2994,6 +3154,7 @@ export function buildMid() {
     for (const [x, u, w] of [[4, 2620, 40], [128, 3080, 46], [100, 2260, 52]]) {
       if (anyRes(x, Y(u), w, 36)) continue;
       house(x, Y(u), w, 20, 6, { ramp: rand.pick([ROOF.dark, ROOF.kawara]), hip: true, wall: 0xeee6d6, noren: 0x2b3c78 });
+      roofSign(x + Math.floor(w / 2) - 2, Y(u) + 9, Y(u) + 26);
       garden(x + 4, Y(u) + 28, Math.round(w * 0.45), 10);
       rotenburo(x + 6 + Math.round(w * 0.45), Y(u) + 28, Math.round(w * 0.42), 12, rand.pick([C.milk, C.jade]), x + u);
     }
@@ -3034,6 +3195,7 @@ export function buildMid() {
         plume(x + 16, y + 22, 1.2, { front: true });
         plume(x + 30, y + 22, 0.9, { front: true });
         plume(x + 44, y + 16, 0.8, { front: true });
+        signPost(x + 2, y + 56);
       }
     }
     // a yuzamashi: a tall timber tower of bamboo where the scalding water runs down and cools, steam off it
@@ -3144,10 +3306,144 @@ export function buildMid() {
         }
     }
     const KR = [ROOF.kawara, ROOF.kawara, ROOF.dark, ROOF.dark, ROOF.brown, ROOF.blue];
-    town(KANNAWA[0] + 4, 2376, { roofH: [9, 13], maxW: 20, pBlock: 0.08, pGarden: 0.1, roofs: KR });
-    town(2386, 2696, { roofH: [9, 13], maxW: 20, pBlock: 0.08, pGarden: 0.1, roofs: [ROOF.kawara, ROOF.dark, ROOF.dark, ROOF.brown, ROOF.blue, ROOF.red] });
-    town(2706, 3006, { roofH: [9, 12], maxW: 20, pBlock: 0.1, pGarden: 0.12, roofs: [ROOF.kawara, ROOF.dark, ROOF.brown, ROOF.blue] });
-    town(3016, KANNAWA[1] - 6, { roofH: [9, 12], maxW: 18, pBlock: 0.06, pGarden: 0.18, roofs: [ROOF.kawara, ROOF.dark, ROOF.brown, ROOF.green] });
+    // the alleys climbing away from the old lane, narrow and crooked, until they meet a road or a garden wall
+    {
+      const ar = rng(6721);
+      for (const [u0, side, slope] of [[2190, 1, 0.3], [2230, -1, 0.25], [2330, -1, 0.4], [2445, 1, 0.2], [2478, -1, -0.2], [2580, 1, 0.35], [2650, -1, -0.3], [2772, 1, 0.3], [2840, -1, 0.35], [2930, 1, -0.2], [2960, -1, 0.2], [3060, 1, -0.2], [3200, 1, -0.15]]) {
+        const x0 = laneX(u0) + side * 7;
+        const pts = [];
+        for (let t = 0; t < 110; t += 1) {
+          const x = x0 + side * t;
+          const u = u0 + t * slope + 4 * Math.sin(t / 9 + u0) * Math.min(1, t / 12);
+          if (x < -2 || x > W + 2) break;
+          if (t > 7 && anyRes(x - 2, L - u - 2, 4, 4)) break;
+          pts.push([x, u]);
+        }
+        if (pts.length < 14) continue;
+        for (const pass of [0, 1])
+          for (const [x, u] of pts) {
+            const HW = pass ? 2.3 : 3;
+            for (let Yr = Math.floor((L - u - HW) * S); Yr <= (L - u + HW) * S; Yr++)
+              for (let X = Math.floor((x - HW) * S); X <= (x + HW) * S; X++) {
+                const d = Math.hypot((X + 0.5) / S - x, L - (Yr + 0.5) / S - u);
+                if (d > HW) continue;
+                if (!pass) {
+                  img.px(X, Yr, 0x3a3630);
+                  continue;
+                }
+                const row = Yr >> 2;
+                const XX = X + (row % 2) * 2;
+                img.px(X, Yr, Yr % 4 === 0 || XX % 5 === 0 ? 0x4e4a44 : rampColor(C.stone, 0.25 + hashPx(XX >> 2, row, 94) * 0.4, X, Yr));
+              }
+          }
+        for (const [x, u] of pts) {
+          reserveRect(x - 3, L - u - 3, 6, 6);
+          for (let yy = Math.floor(L - u - 2); yy <= L - u + 2; yy++) for (let xx = Math.floor(x - 2); xx <= x + 2; xx++) if (xx >= 0 && xx < W && yy >= 0 && yy < L) stairMask[yy * W + xx] = 1;
+        }
+        // a lantern and a few people along it, one strolling (live)
+        for (let k = 8; k < pts.length; k += 22) {
+          const [x, u] = pts[k];
+          glowPx(x * S + 7, (L - u) * S - 4, 0xffb868, 0.95);
+          glowPx(x * S + 7, (L - u) * S - 3, 0xff8a4a, 0.95);
+          pool(x + 2, L - u, 5, 0xff8a4a, 0.1);
+          folk(x + (ar() - 0.5) * 2, L - u, { yukata: ar() < 0.6 });
+        }
+        const walk2 = pts.filter((_, i) => i % 6 === 0).map(([x, u]) => [Math.round(x), Math.round(u) + 2]);
+        const c = ar.pick(YUKATA);
+        kit.path(walk2, [stepper(c, 0, u0, true), stepper(c, 1, u0, true)], { sp: 2.6, mode: 'pp', hold: 4, turn: 'none', fps: 3, s0: ar() });
+      }
+    }
+    // the terraces: walls of dressed stone following the slope, a step in the ground every few rows of houses, steps
+    // where they meet a way up
+    const contour = (x, k) => 9 * Math.sin(x / 41 + k * 1.3) + 4 * Math.sin(x / 15 + k * 2.1);
+    const wallsAt = [];
+    for (let u = 2152, k = 0; u < KANNAWA[1] - 20; u += 66, k++) {
+      const near = kRoads.some((at) => Math.abs(at(90) - u) < 18);
+      wallsAt.push([near ? u + 22 : u, k]);
+    }
+    for (const [u0, k] of wallsAt) {
+      for (let X = 0; X < W * S; X++) {
+        const x = (X + 0.5) / S;
+        const uw = u0 + contour(x, k);
+        const YT = Math.round((L - uw) * S);
+        for (let j = 0; j < 16; j++) {
+          const Yr = YT + j;
+          const cx = Math.floor(x);
+          const cy = Math.floor(Yr / S);
+          const res = reserved[cy * W + cx];
+          if (stairMask[cy * W + cx] && j < 12) {
+            img.px(X, Yr, j % 4 === 0 ? 0x3e3a34 : j % 4 === 1 ? 0xb0ac9e : rampColor(C.stone, 0.45, X, Yr));
+            continue;
+          }
+          if (res) continue;
+          if (j >= 12) {
+            img.tintPx(X, Yr, 0.6 + (j - 12) * 0.1);
+            continue;
+          }
+          const row = j >> 2;
+          const XX = X + (row % 2) * 6;
+          let c;
+          if (j < 2) c = j === 0 ? 0xc4c0b2 : 0xa8a498;
+          else if (j === 11) c = 0x2e2a26;
+          else if (j % 4 === 0 || XX % 12 === 0) c = 0x4a4640;
+          else c = rampColor(C.stone, 0.3 + hashPx(XX >> 3, row + k * 5, 95) * 0.4 + (hashPx(X >> 2, 3, k) < 0.12 ? -0.15 : 0), X, Yr);
+          if (j > 3 && hashPx(X >> 1, Yr >> 1, 96) < 0.05) c = 0x3e5a34; // (moss and ferns in its joints)
+          img.px(X, Yr, c);
+        }
+      }
+      for (let x = 0; x < W; x++) reserveRect(x, Y(u0 + contour(x + 0.5, k)) - 1, 1, 6);
+    }
+    // the houses in stepped, broken rows along each terrace
+    const slopeRows = (u0, u1, k, roofs) => {
+      let u = u0;
+      while (u < u1 - 14) {
+        const rh = 9 + Math.floor(rand() * 4);
+        const fh = 3 + Math.floor(rand() * 2);
+        const bh = rh + fh;
+        let x = -Math.floor(rand() * 8);
+        while (x < W - 5) {
+          let w = 11 + Math.floor(rand() * 9);
+          const uh = u + contour(x + w / 2, k) + (rand() - 0.5) * 5;
+          const y = Y(uh + bh);
+          if (anyRes(x, y, w, bh)) w = Math.floor(w / 2);
+          if (w >= 8 && !anyRes(x, y, w, bh)) {
+            const r = rand();
+            if (r < 0.13) garden(x, y, w, bh);
+            else if (r < 0.15 && w >= 14) parking(x, y, w, bh);
+            else if (r < 0.22 && w >= 14) block(x, y + bh - 8 - Math.min(rh, 14), w, Math.min(rh, 14), 8, { balcony: rand() < 0.5, items: ['ac', 'tank', 'bath'] });
+            else {
+              house(x, y, w, rh, fh, { roofs, plot: true });
+              if (w >= 14 && rand() < 0.14) roofSign(x + Math.floor(w / 2) - 2, y + Math.round(rh * 0.42), y + bh, rand() < 0.7 ? 0xc8302a : 0x2a6ac8);
+            }
+          }
+          x += w + 1 + Math.floor(rand() * 3);
+        }
+        u += bh + 6 + Math.floor(rand() * 3);
+      }
+    };
+    const stops = [KANNAWA[0] - 2, ...wallsAt.map(([u]) => u), KANNAWA[1] - 6];
+    stops.forEach((u, i) => {
+      if (i + 1 < stops.length) slopeRows(u + 9, stops[i + 1] - 1, Math.max(0, i - 1), i % 3 === 2 ? [ROOF.kawara, ROOF.dark, ROOF.brown, ROOF.blue, ROOF.red] : i % 3 === 1 ? KR : [ROOF.kawara, ROOF.dark, ROOF.brown, ROOF.green]);
+    });
+    // mist lying in the hollows of a morning, lifting slowly off the lanes
+    {
+      const mr2 = rng(6722);
+      for (let u = KANNAWA[0] + 40; u < KANNAWA[1]; u += 74) {
+        const x = 20 + mr2() * 140;
+        kit.emit(Math.round(x), u, [5, 6, 7].map(puffFrames), { rate: 0.55, life: [4.5, 6.5], vy: 2.4, sx: 26, wf: 0.7, a: 0.2, d: 1.1, tint: 1 });
+      }
+    }
+    // walkers along the contour roads
+    {
+      const wr = rng(6723);
+      for (const at of kRoads)
+        for (const [c, off, yk] of [[0x2b3c78, 5, true], [0xd04040, -5, false], [0xe8e0d0, 5, true]]) {
+          const pts = [];
+          for (let x = -8; x <= 188; x += 12) pts.push([x, Math.round(at(Math.max(0, Math.min(W - 1, x))) + off)]);
+          if (wr() < 0.5) pts.reverse();
+          kit.path(pts, [stepper(c, 0, 2700, yk), stepper(c, 1, 2700, yk)], { sp: 3.5, turn: 'none', fps: 3, s0: wr() });
+        }
+    }
     lanes(KANNAWA[0] + 4, KANNAWA[1] - 6, 1.1, { roofs: KR, yukata: 0.55 });
     // Kannawa's famous view: white plumes rising from between the roofs all over the slope
     plumes(KANNAWA[0], KANNAWA[1], 21, [1, 2.1]);
@@ -3599,6 +3895,94 @@ export function buildMid() {
     dress(8, 3560, 146, 3830);
     dress(8, 4040, 146, 4400);
     dress(52, 4404, 146, 4490);
+    // the souvenir row off the coach park: stalls of eggs and steamed buns, combs and hot-spring powder under their awnings, a
+    // paved street from the main path to the west, steam off the steamers; flags on from it to Kamado's gate
+    {
+      const U0 = 3944;
+      const HW = 6;
+      const xEnd = Math.round(eastX(U0)) - 4;
+      for (let Yr = Y(U0 + HW) * S; Yr < Y(U0 - HW) * S; Yr++)
+        for (let X = 6 * S; X < xEnd * S; X++) {
+          const row = Yr >> 3;
+          const XX = X + (row % 2) * 6;
+          const e = Math.min(Yr - Y(U0 + HW) * S, Y(U0 - HW) * S - 1 - Yr);
+          img.px(X, Yr, e < 2 ? 0x6e6a60 : Yr % 8 === 0 || XX % 12 === 0 ? 0x7e7a70 : rampColor(C.stone, 0.5 + hashPx(XX >> 3, row, 217) * 0.35, X, Yr));
+        }
+      reserveRect(6, Y(U0 + HW), xEnd - 6, HW * 2);
+      flags([[100, 3919], [100, U0 - 5]], 3);
+      flags([[122, U0 + 5], [122, 4006], [94, 4008]], 2.6);
+      const sr = rng(6731);
+      const stall = (x, y, north) => {
+        const aw = sr.pick([0xc83a2a, 0x2b3c78, 0x3a7a4a, 0xe8c040, 0xd86a2a]);
+        const X = x * S;
+        const Yy = y * S;
+        const goods = sr.pick([[0xf8f4ea, 0xe8e0d0], [0xd8a040, 0xb88a30], [0x6a9a5a, 0x4a7a3a], [0xe89aa0, 0xd87a84]]);
+        objects.push({
+          y: y + 8,
+          shadow: () => shadowRect(x + 1, y + 1, 14, 8, 0.66),
+          draw: () => {
+            for (let j = 0; j < 15; j++) for (let i = 0; i < 42; i++) img.px(X + i, Yy + j, j === 7 ? scaleColor((i >> 3) % 2 ? aw : 0xf4f0e6, 1.12) : (i >> 3) % 2 ? aw : 0xf4f0e6);
+            for (let i = 0; i < 42; i++) if (i % 8 < 4) img.px(X + i, Yy + 15, (i >> 3) % 2 ? scaleColor(aw, 0.7) : 0xc8c4b8);
+            for (let j = 16; j < 24; j++)
+              for (let i = 0; i < 42; i++) {
+                const shelf = j === 16 || i === 0 || i === 41;
+                img.px(X + i, Yy + j, shelf ? 0x5e4430 : (i + (j >> 1) * 3) % 5 < 3 ? ((i >> 1) + j) % 3 ? goods[0] : goods[1] : 0x76583e);
+              }
+          },
+        });
+        reserveRect(x, y, 14, 8);
+        void north;
+      };
+      let k = 0;
+      for (let x = 10; x < xEnd - 16; x += 16 + Math.floor(sr() * 4), k++) {
+        if (!anyRes(x, Y(U0 + HW + 9), 14, 8) && x + 14 < 92) stall(x, Y(U0 + HW + 9), true);
+        if (!anyRes(x, Y(U0 - HW) + 1, 14, 8)) stall(x, Y(U0 - HW) + 1, false);
+        if (k % 3 === 1) kit.emit(x + 6, U0 + HW + 4, [2, 3, 4].map(puffFrames), { rate: 1.3, life: [1.4, 2.2], vy: 6, sx: 2, wf: 0.6, a: 0.55, d: 1.1, tint: 1 });
+      }
+      for (let i = 0; i < 44; i++) folk(10 + sr() * (xEnd - 14), Y(U0 + (sr() - 0.5) * (HW * 1.6)), { yukata: sr() < 0.25 });
+      for (const [c, s0, yk] of [[0xd04040, 0.1, false], [0x3a6ad0, 0.4, false], [0x2b3c78, 0.6, true], [0xe8e8f0, 0.85, false]])
+        kit.path([[10, U0 + (s0 > 0.5 ? 3 : -2)], [xEnd, U0 + (s0 > 0.5 ? 3 : -2)]], [stepper(c, 0, U0, yk), stepper(c, 1, U0, yk)], { sp: 3.2, mode: 'pp', hold: 2, turn: 'none', fps: 3, s0 });
+      signPost(3, Y(U0 + HW) + 1);
+    }
+    /** A hill of hot rock: boulders piled up to a crest, salts and sulphur on them, steam from its cracks (Yama Jigoku). */
+    const rockHill = (cx, cu, rx, ry, seed) => {
+      const hr = rng(seed);
+      const cy = Y(cu);
+      img.fine(cx - rx - 2, cy - ry - 2, 2 * rx + 4, 2 * ry + 4, (X, Yr, x, y) => {
+        const e = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 + (fbm(x, y, { seed, scale: 6 }) - 0.5) * 0.3;
+        if (e > 1) return null;
+        const v = 0.2 + (1 - e) * 0.5 - ((x - cx) / rx + (y - cy) / ry) * 0.18;
+        const c = rampColor(C.rock, v + (hashPx(X >> 1, Yr >> 1, seed) - 0.5) * 0.3, X, Yr);
+        return hashPx(X, Yr, seed + 1) > 0.97 ? 0xd8ccb0 : c;
+      });
+      const stones = [];
+      for (let k = 0; k < (rx * ry) / 14; k++) {
+        const a = hr() * Math.PI * 2;
+        const d = Math.sqrt(hr()) * 0.92;
+        stones.push([cx + Math.cos(a) * d * rx, cy + Math.sin(a) * d * ry, 1 - d]);
+      }
+      stones.sort((a, b) => a[1] - b[1]);
+      stones.forEach(([x, y, h], k) => rockPx(x * S, y * S, 3 + hr() * 5 + h * 3, C.rock.map((c) => scaleColor(c, 0.85 + h * 0.4)), seed + k));
+      for (let y = Math.floor(cy - ry - 1); y <= cy + ry + 1; y++) for (let x = Math.floor(cx - rx - 1); x <= cx + rx + 1; x++) if (x >= 0 && x < W && ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 1.1) reserved[y * W + x] = 1;
+      for (let k = 0; k < 4; k++) {
+        const a = hr() * Math.PI * 2;
+        const d = hr() * 0.6;
+        const x = cx + Math.cos(a) * d * rx;
+        const y = cy + Math.sin(a) * d * ry;
+        for (let j = 0; j < 14; j++) img.px(Math.round(x * S + (hr() - 0.5) * 16), Math.round(y * S + (hr() - 0.5) * 10), 0xe8d860);
+        plume(x, y, 0.9 + hr() * 0.6, { front: true });
+      }
+    };
+    rockHill(28, 4446, 22, 34, 7111);
+    rockHill(134, 4600, 15, 26, 7112);
+    {
+      // the rail and the view from its foot
+      poolRail(28, 4446, 22, 34, 8);
+      flags([[28, 4408], [52, 4402], [100, 4402], [100, 4394]], 2.4);
+      poolRail(134, 4600, 15, 26, 5);
+      flags([[134, 4570], [Math.round(eastX(4566)), 4566]], 2.4);
+      signPost(46, Y(4410));
+    }
     // gift shops and trees between the hells
     for (let k = 0; k < 6; k++) {
       const x = 4 + rand() * 140;
@@ -3639,7 +4023,7 @@ export function buildMid() {
     }
     house(14, Y(3990), 46, 14, 6, { ramp: ROOF.kawara, hip: true, noren: 0x2b3c78 });
     house(76, Y(3984), 40, 13, 6, { ramp: ROOF.brown, hip: true, wood: true, noren: 0x8a2a2a });
-    block(8, Y(4600), 52, 18, 14, { roof: 0xb8b0a4, wall: 0xeee6d6, balcony: true, items: ['ac', 'bath', 'garden'] });
+    block(8, Y(4600), 52, 18, 14, { roof: 0xb8b0a4, wall: 0xeee6d6, balcony: true, bigMark: true, items: ['ac', 'bath', 'garden'] });
     house(70, Y(4590), 44, 15, 6, { ramp: ROOF.dark, hip: true, wall: 0xeee6d6, noren: 0x2b3c78 });
     rotenburo(74, Y(4590) + 23, 34, 12, C.milk, 402);
     parking(12, Y(4650), 70, 14);
@@ -4372,7 +4756,17 @@ export function buildMid() {
           img.px(X, YT + j, X % 60 === 0 ? 0x2a2a30 : c);
         }
     }
-    crowd(14, Y(t0 + 12), 152, 12, 70, true);
+    crowd(14, Y(t0 + 12), 152, 12, 130, true);
+    {
+      // the rope along the wall, a tea stall at the end of the benches
+      for (let X = 14 * S; X < 166 * S; X++) {
+        const k = X % 27;
+        img.px(X, Y(t0 + 15) * S + Math.round(Math.sin((k / 27) * Math.PI) * 2), 0xc8b878);
+        if (k === 0) for (let j = -4; j < 3; j++) img.px(X, Y(t0 + 15) * S + j, 0x3a2a1c);
+      }
+      house(148, Y(t0 + 2), 22, 8, 4, { ramp: ROOF.brown, hip: false, wood: true, noren: 0x8a1a1a });
+      crowd(146, Y(t0 + 2) + 13, 24, 2, 7, true);
+    }
     {
       const X = 80 * S;
       const Yy = (Y(t0 + 22) + 6) * S;
@@ -4428,6 +4822,25 @@ export function buildMid() {
     boards(pu + 52);
     crowd(10, Y(pu - 47), 160, 5, 50, true);
     crowd(10, Y(pu + 56), 160, 3, 20, true);
+    {
+      // the viewing deck out over the pond
+      const X0 = 106 * S;
+      const X1 = 122 * S;
+      const YT = Y(pu - 26) * S;
+      const YB = Y(pu - 48) * S;
+      for (let Yr = YT + 3; Yr < YB + 3; Yr++) for (let X = X0 + 3; X < X1 + 4; X++) img.tintPx(X, Yr, 0.68);
+      for (let Yr = YT; Yr < YB; Yr++)
+        for (let X = X0; X < X1; X++) {
+          const e = Math.min(X - X0, X1 - 1 - X, Yr - YT);
+          img.px(X, Yr, e < 2 ? 0x3a2a1c : Yr % 6 === 0 ? 0x4a3424 : hashPx(X >> 3, Yr >> 2, 133) < 0.5 ? C.wood[2] : C.wood[1]);
+        }
+      for (let X = X0; X < X1; X++) {
+        img.px(X, YT - 3, 0x8e6a4a);
+        img.px(X, YT - 2, 0x3a2a1c);
+        if (X % 9 === 0) for (let j = -2; j < 1; j++) img.px(X, YT + j, 0x3a2a1c);
+      }
+      for (let k = 0; k < 11; k++) folk(107 + (k * 37 % 13), Y(pu - 28 - (k * 17) % 18), { hat: k % 5 === 0 });
+    }
     house(110, Y(TATSUMAKI[1] + 110), 50, 13, 6, { ramp: ROOF.brown, hip: true, wood: true, noren: 0x8a1a1a });
     house(12, Y(TATSUMAKI[1] + 190), 40, 12, 5, { ramp: ROOF.kawara, hip: true, noren: 0x2b3c78 });
     const pathX = (u) => dodge(90 + 18 * Math.sin(u / 50), u, 4);
@@ -4469,6 +4882,36 @@ export function buildMid() {
       if (!anyRes(x, y, 22, 20)) {
         house(x, y, 22, 9, 4, { ramp: ROOF.red, hip: false, wood: true, noren: 0x8a1a1a });
         crowd(x, y + 15, 22, 3, 6, true);
+      }
+    }
+    {
+      // the old shop and bath house with its iron chimney, a mark on its roof, red clay ointment by the door
+      const x = 8;
+      const y = Y(pu - 94);
+      if (!anyRes(x, y, 46, 30)) {
+        house(x, y, 46, 18, 6, { ramp: ROOF.dark, hip: true, wood: true, noren: 0x8a1a1a });
+        roofSign(x + 20, y + 7, y + 24);
+        walk(Math.round(x + 22), Math.round(pathX(pu - 122)), pu - 124, pu - 120);
+        const CX = (x + 40) * S;
+        const CY = (y + 8) * S;
+        objects.push({
+          y: y + 24.1,
+          shadow: () => {
+            for (let k = 0; k < 90; k++) for (let t = -3; t <= 3; t++) img.tintPx(CX + 2 + k, CY + 8 + Math.floor(k * 0.55) + t, 0.74);
+          },
+          draw: () => {
+            for (let j = 0; j < 66; j++)
+              for (let i = -6; i <= 6; i++) {
+                let c = i < -3 ? 0x6a4a3a : i > 3 ? 0x2a1c16 : 0x4a3228;
+                if (j % 18 < 2) c = 0x1e1410;
+                img.px(CX + i, CY - j + 6, c);
+              }
+            img.discPx(CX, CY - 60, 6.4, 0x1a1210);
+            img.discPx(CX, CY - 60, 4, 0x0a0806);
+          },
+        });
+        kit.emit(x + 40, Math.round(U(y + 8)) + 20, [3, 4, 5, 6].map(puffFrames), { rate: 2.2, life: [3, 4], vy: 12, sx: 1, wf: 1, a: 0.74, d: 1.1, tint: 1 });
+        crowd(x + 10, y + 25, 26, 3, 7, true);
       }
     }
     for (let k = 0; k < 8; k++) plume(px + (rand() - 0.5) * 110, Y(pu) + (rand() - 0.5) * 56, 1 + rand() * 0.8);
