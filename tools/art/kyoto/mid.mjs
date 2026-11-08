@@ -102,6 +102,7 @@ export function buildMid() {
   // what actually stands on the ground (buildings, paths, water, pads), not counting whole courtyards kept
   // clear of the random trees (ground = true): where the extra detail can still go
   const occ = new Uint8Array(W * L);
+  const laneMargin = new Uint8Array(W * L);
   const reserveRect = (x0, y0, w, h, ground = false) => {
     for (let y = Math.max(0, Math.floor(y0)); y < Math.min(L, y0 + h); y++)
       for (let x = Math.max(0, Math.floor(x0)); x < Math.min(W, x0 + w); x++) {
@@ -1021,6 +1022,13 @@ export function buildMid() {
         }
       },
     });
+    for (let yy = y - 2; yy < y + roofH + faceH + 2; yy++)
+      for (let xx = x - 2; xx < x + w + 2; xx++) {
+        if (xx < 0 || xx >= W || yy < 0 || yy >= L) continue;
+        const foot = xx >= x && xx < x + w && yy >= y && yy < y + roofH + faceH;
+        if (foot) laneMargin[yy * W + xx] = 0;
+        else if (!isRes(xx, yy)) laneMargin[yy * W + xx] = 1;
+      }
     reserveRect(x - 2, y - 2, w + 4, roofH + faceH + 4);
   };
   /** A tiny inner garden (tsubo-niwa) between townhouses: moss, a maple or a pine, a stone lantern. */
@@ -1364,6 +1372,13 @@ export function buildMid() {
         for (const HX of w > 50 ? [X0 + 26, X1 - 31, WX0 + 40, WX1 - 45] : [X0 + 12, X1 - 17]) hangingLantern(HX, RY1 + 5);
       },
     });
+    for (let yy = y - 2; yy < y + roofH + faceH + 2; yy++)
+      for (let xx = x - 2; xx < x + w + 2; xx++) {
+        if (xx < 0 || xx >= W || yy < 0 || yy >= L) continue;
+        const foot = xx >= x && xx < x + w && yy >= y && yy < y + roofH + faceH;
+        if (foot) laneMargin[yy * W + xx] = 0;
+        else if (!isRes(xx, yy)) laneMargin[yy * W + xx] = 1;
+      }
     reserveRect(x - 2, y - 2, w + 4, roofH + faceH + 4);
   };
   /** The honden: the main sanctuary under its great nagare-zukuri roof (the front slope sweeping far out over
@@ -1442,6 +1457,13 @@ export function buildMid() {
         for (let X = WX0 - 4; X < WX1 + 4; X++) for (let j = 0; j < 4; j++) img.px(X, FB + j, j === 0 ? C.stone[3] : j === 3 ? C.stone[0] : C.stone[1]);
       },
     });
+    for (let yy = y - 2; yy < y + roofH + faceH + 2; yy++)
+      for (let xx = x - 2; xx < x + w + 2; xx++) {
+        if (xx < 0 || xx >= W || yy < 0 || yy >= L) continue;
+        const foot = xx >= x && xx < x + w && yy >= y && yy < y + roofH + faceH;
+        if (foot) laneMargin[yy * W + xx] = 0;
+        else if (!isRes(xx, yy)) laneMargin[yy * W + xx] = 1;
+      }
     reserveRect(x - 2, y - 2, w + 4, roofH + faceH + 4);
   };
   /** The worship hall's porch roof (kōhai) in front of the sanctuary: a curving karahafu of bark, gold at its
@@ -4086,6 +4108,337 @@ export function buildMid() {
         if (g % 2) fallen(fx - 18, near(26), fx + 34, near(32 + gr() * 6));
         if (g % 3 === 0) stack(Math.round((gx - 9) * S), near(30), 54);
       });
+    }
+    // ---- the sections' own life: clearings in the woods, each reached by a trail from the main path (sub-temples, tea
+    // houses, ponds, little shrines, picnics); Gion's lanes; the squares of the old town. The trees come after this and
+    // grow round whatever is here
+    {
+      const kr = rng(8101);
+      const COATS = [0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0x6aaa5a, 0xe07a30, 0x3a3a4a, 0x4a4038, 0x2a3040, 0x5a5a62];
+      const padClear = (x, y, r = 14) => !pads.some((p) => Math.hypot(p.x - x, Y(p.u) - y) < r);
+      const kfolk = (x, y, o = {}) => {
+        if (!padClear(x, y)) return;
+        const X = Math.round(x * S);
+        const Yy = Math.round(y * S);
+        const kim = o.kimono ?? kr() < 0.16;
+        const look = kim
+          ? { maiko: true, kimono: kr.pick(KIMONO), orn: kr() < 0.5, obi: kr.pick([0xe8c040, 0x2a2a6a, 0xf4f0e6, 0xc83a3a]) }
+          : { coat: o.coat ?? kr.pick(COATS), hair: kr.pick([0x2a2024, 0x1a1418, 0x3a2a20, 0x6a5a48]), face: kr() < 0.5, legs: kr.pick([0x2a2a34, 0x3a4a6a, 0x1a1a20]) };
+        objects.push({ y: (Yy + 5) / S, draw: () => personPx(X, Yy, look) });
+      };
+      const near = () => (kr() + kr() + kr() - 1.5) / 1.5;
+      const knot = (cx, y, rx, ry, n, o = {}) => {
+        for (let k = 0; k < n; k++) kfolk(cx + near() * rx, y + near() * ry, o);
+      };
+      /** A winding gravel trail through [x, u] points, its edges worn, reserved so the trees leave it open. */
+      const trail = (pts, hw = 2.2) => {
+        for (let i = 1; i < pts.length; i++) {
+          const [x0, u0] = pts[i - 1];
+          const [x1, u1] = pts[i];
+          const n = Math.ceil(Math.hypot(x1 - x0, u1 - u0) * 2);
+          for (let k = 0; k <= n; k++) {
+            const t = k / n;
+            const wob = Math.sin(t * 7 + i) * 1.2;
+            const cx = x0 + (x1 - x0) * t + (Math.abs(u1 - u0) > Math.abs(x1 - x0) ? wob : 0);
+            const cu = u0 + (u1 - u0) * t + (Math.abs(u1 - u0) > Math.abs(x1 - x0) ? 0 : wob);
+            const CX = Math.round(cx * S);
+            const CY = Math.round(Y(cu) * S);
+            const R = Math.round(hw * S);
+            for (let j = -R; j <= R; j++)
+              for (let a = -R; a <= R; a++) {
+                const d = Math.hypot(a, j);
+                if (d > R || !img.alphaPx(CX + a, CY + j)) continue;
+                const c = gravelPx(CX + a, CY + j);
+                img.px(CX + a, CY + j, d > R - 1.5 ? scaleColor(c, 0.74) : c);
+              }
+            reserveRect(Math.floor(cx - hw - 1), Math.floor(Y(cu) - hw - 1), Math.ceil(hw * 2 + 3), Math.ceil(hw * 2 + 3), true);
+          }
+        }
+        // somebody walking it, and a stone lantern here and there along it
+        const frames = kr.pick(strollers);
+        const len = pts.reduce((a, p, i) => a + (i ? Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0), 0);
+        if (len > 18) kit.path(pts, frames, { sp: 2.6 + kr() * 1.2, n: 1 + Math.floor(len / 40), gap: 34, mode: 'pp', hold: 2.5, turn: 'none', fps: 3, s0: kr() });
+      };
+      const stroller2 = (c, st, u) => {
+        const out = new HiCanvas(2, 4);
+        for (let i = 1; i < 3; i++) out.px(i, 0, 0x2a2024);
+        out.px(1, 1, 0x2a2024);
+        out.px(2, 1, 0xe8c0a0);
+        for (let j = 2; j < 6; j++) for (let i = 0; i < 4; i++) if (!(j > 4 && (i === 0 || i === 3))) out.px(i, j, i === 0 || i === 3 ? scaleColor(c, 0.75) : c);
+        out.px(st ? 1 : 2, 6, 0x2a2a34);
+        out.px(st ? 2 : 1, 7, 0x2a2a34);
+        for (let i = 2; i < 6; i++) out.px(i, 9, 0x101418, 0.4);
+        return kit.frame(gradeAt(out, u));
+      };
+      var strollers = [0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0x6aaa5a, ...KIMONO.slice(0, 3)].map((c) => [stroller2(c, 0, 4100), stroller2(c, 1, 4100)]);
+      /** A clearing: soft moss and fallen petals where the woods stand back. */
+      const clearing = (cx, cu, rx, ry, seed) => {
+        const cy = Y(cu);
+        img.fine(Math.floor(cx - rx - 2), Math.floor(cy - ry - 2), Math.ceil(rx * 2 + 4), Math.ceil(ry * 2 + 4), (FXr, FYr, x, y) => {
+          const e = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 + (fbm(x, y, { seed, scale: 7 }) - 0.5) * 0.35;
+          if (e >= 1 || !img.alphaPx(FXr, FYr)) return null;
+          const g = hashPx(FXr, FYr, seed);
+          if (g < 0.012) return 0xf0b8cc;
+          if (g < 0.02) return 0xd8cfa0;
+          return rampColor(C.moss, 0.42 + fbm(x, y, { seed: seed + 1, scale: 4 }) * 0.5 + (hashPx(FXr >> 1, FYr >> 1, seed + 2) - 0.5) * 0.18, FXr, FYr);
+        });
+        for (let y = Math.floor(cy - ry - 2); y <= cy + ry + 2; y++)
+          for (let x = Math.floor(cx - rx - 2); x <= cx + rx + 2; x++) if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 1.05) reserveRect(x, y, 1, 1, true);
+      };
+      const gravelYard = (x0, y0, w, h) =>
+        img.fine(x0, y0, w, h, (FXr, FYr) => {
+          const k = FYr % 4;
+          return k === 0 ? C.whiteGravel[0] : k === 1 ? C.whiteGravel[3] : hashPx(FXr, FYr, 83) < 0.1 ? C.whiteGravel[1] : C.whiteGravel[2];
+        });
+      const rock = (x, y, r) => boulderPx(x * S, y * S, r);
+      /** A sub-temple: its hall, raked gravel with a group of rocks, lanterns, visitors at the door. */
+      const subTemple = (cx, cu) => {
+        clearing(cx, cu, 27, 19, 8200 + cu);
+        hall(cx - 15, Y(cu + 13), 30, 12, 5, 'temple');
+        const yy = Y(cu + 13) + 18;
+        gravelYard(cx - 15, yy, 30, 12);
+        rock(cx - 8, yy + 5, 5);
+        rock(cx - 3, yy + 7, 3);
+        rock(cx + 8, yy + 6, 4);
+        reserveRect(cx - 16, yy, 32, 13);
+        for (const x of [cx - 19, cx + 18]) lantern(x, yy + 2);
+        knot(cx, yy - 1, 11, 1, 7);
+        knot(cx, yy + 15, 12, 1.5, 4);
+      };
+      /** A tea house, its bench under a red parasol, stepping stones, a stone basin, a bamboo fence. */
+      const teaHouse = (cx, cu) => {
+        clearing(cx, cu, 19, 14, 8300 + cu);
+        hall(cx - 9, Y(cu + 9), 18, 8, 4, 'hondo');
+        const yy = Y(cu + 9) + 12;
+        const X = cx * S;
+        objects.push({
+          y: yy + 6,
+          shadow: () => shadowPx(X - 18, yy * S + 2, 16, 8, 0.6),
+          draw: () => {
+            // the bench with its red felt, the great parasol
+            for (let j = 0; j < 7; j++) for (let i = -24; i < 0; i++) img.px(X + i, yy * S + 4 + j, j === 0 ? 0xf05a48 : j > 5 ? 0x8a1a14 : 0xd83a2a);
+            for (let j = -9; j <= 9; j++) for (let i = -16; i <= 16; i++) if ((i / 16) ** 2 + (j / 9) ** 2 < 1) img.px(X - 12 + i, yy * S - 6 + j, (Math.floor(Math.atan2(j * 1.8, i) * 2.6 + 9) % 2 ? 0xe8402e : 0xc8301e));
+            // the stone basin with its bamboo spout
+            for (let j = -4; j <= 4; j++) for (let i = -5; i <= 5; i++) if (i * i + j * j < 24) img.px(X + 16 + i, yy * S + 6 + j, i * i + j * j < 10 ? C.water[2] : C.stone[2]);
+            for (let i = 0; i < 9; i++) img.px(X + 16 + i, yy * S + 1, 0x8a9a4a);
+            // the bamboo fence behind it
+            for (let i = 8; i < 42; i++) for (let j = 0; j < 7; j++) img.px(X + i, Y(cu + 9) * S + 12 + j, i % 3 === 0 ? 0x5a4a28 : j === 3 ? 0x2a1e14 : 0xa89a58);
+          },
+        });
+        for (let k = 0; k < 3; k++) kfolk(cx - 8 + k * 2.4, yy - 1, { kimono: k === 1 });
+        for (let k = 0; k < 5; k++) {
+          const CX = cx * S - 2 + k * 2;
+          const CY = (yy + 7 + k * 2) * S;
+          for (let j = -3; j <= 3; j++) for (let i = -5; i <= 5; i++) if ((i / 5) ** 2 + (j / 3) ** 2 < 1) img.px(CX + i, CY + j, i + j < -2 ? C.stone[3] : C.stone[2]);
+        }
+      };
+      /** A pond with its koi, a little red bridge over the neck of it, lanterns, water lilies. */
+      const pondGarden = (cx, cu, rx, ry) => {
+        clearing(cx, cu, rx + 7, ry + 6, 8400 + cu);
+        pondAt(cx, cu, rx, ry, C.pond, 8500 + cu, C.stone);
+        const lr = rng(cu);
+        for (let n = 0; n < rx * 3; n++) {
+          const a = lr() * Math.PI * 2;
+          const q = 0.25 + lr() * 0.6;
+          const LX = Math.round((cx + Math.cos(a) * rx * q) * S);
+          const LY = Math.round((Y(cu) + Math.sin(a) * ry * q) * S);
+          for (let j = -2; j <= 2; j++) for (let i = -3; i <= 3; i++) if ((i / 3) ** 2 + (j / 2) ** 2 < 1) img.px(LX + i, LY + j, i < 0 ? 0x6ab85a : 0x3a8a44);
+          if (lr() < 0.3) img.px(LX, LY - 1, 0xffc0d8);
+        }
+        // the bridge across at the middle
+        const X0 = (cx - 3) * S;
+        for (let j = 0; j < (ry * 2 + 4) * S; j++) {
+          const Yy = (Y(cu) - ry - 2) * S + j;
+          for (let i = 0; i < 18; i++) img.px(X0 + i, Yy, i < 2 || i > 15 ? (j % 12 < 3 ? 0x1a1210 : C.R1) : j % 5 === 0 ? C.wood[1] : C.wood[3]);
+        }
+        const koiF = [0xf08a2a, 0xf4f0e6, 0xe84a2a].map((c) => {
+          const out = new HiCanvas(5, 2);
+          for (let i = 0; i < 12; i++) for (let j = 1; j < 5; j++) if (Math.abs(j - 2.5) < 2 - Math.abs(i - 5) * 0.28) out.px(i, j, (i >> 1) % 2 ? c : 0xf8f4ec);
+          return kit.frame(gradeAt(out, cu));
+        });
+        kit.wander(cx - rx * 0.5, cu, rx * 0.3, ry * 0.5, [koiF[0], koiF[1]], { n: 2, sp: 3, idle: 0.3, fps: 2 });
+        kit.wander(cx + rx * 0.5, cu, rx * 0.3, ry * 0.5, [koiF[2], koiF[1]], { n: 2, sp: 3, idle: 0.3, fps: 2 });
+        knot(cx, Y(cu) + ry + 4, rx * 0.7, 1.5, 7);
+      };
+      /** A little shrine: its hall, red torii one behind another up the path, foxes. */
+      const smallShrine = (cx, cu) => {
+        clearing(cx, cu, 17, 16, 8600 + cu);
+        hall(cx - 9, Y(cu + 12), 18, 9, 4, 'shrine');
+        for (const uu of [cu - 2, cu - 8]) gateSmall(cx, Y(uu), 4, false, { span: 8, h: 10, rope: false });
+        fox(cx - 13, Y(cu - 4), false);
+        fox(cx + 8, Y(cu - 4), true);
+        knot(cx, Y(cu - 10), 9, 1.5, 5);
+      };
+      const picnic = (cx, cu) => {
+        clearing(cx, cu, 14, 10, 8700 + cu);
+        for (const [dx, dy, c] of [[-9, -3, 0x3a72d8], [3, 0, kr() < 0.5 ? 0x3a72d8 : 0xe8d050]]) {
+          const X = (cx + dx) * S;
+          const Yy = (Y(cu) + dy) * S;
+          for (let j = 0; j < 15; j++) for (let i = 0; i < 21; i++) img.px(X + i, Yy + j, j === 7 || i === 10 ? scaleColor(c, 1.12) : j > 12 ? scaleColor(c, 0.7) : (i + j) % 4 === 0 ? scaleColor(c, 0.88) : c);
+          for (const [a, b, col] of [[7, 4, 0x8a1a14], [11, 4, 0x1a1414], [8, 8, 0xf4f0e6]]) for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) img.px(X + a + i, Yy + b + j, col);
+          for (const [a, b] of [[-1, -1], [16, -2], [-1, 9], [16, 8], [8, -3]]) kfolk((X + a) / S, (Yy + b) / S);
+        }
+      };
+
+      // --- the Golden Pavilion's woods
+      subTemple(48, 4122);
+      trail([[76, 4120], [104, 4112], [135, 4116]]);
+      teaHouse(28, 4018);
+      trail([[47, 4022], [78, 4040], [110, 4030], [135, 4032]]);
+      pondGarden(66, 4218, 20, 11);
+      trail([[90, 4220], [110, 4212], [135, 4212]]);
+      picnic(22, 4206);
+      smallShrine(166, 3986);
+      trail([[150, 3986], [146, 3986]]);
+      picnic(166, 3756);
+      teaHouse(164, 4160);
+      trail([[146, 4150], [150, 4155]]);
+      subTemple(68, 3640);
+      trail([[68, 3622], [62, 3600], [66, 3570]]);
+      picnic(30, 3640);
+      // --- Ryōan-ji's woods
+      subTemple(76, 4628);
+      trail([[104, 4624], [130, 4634], [164, 4632]]);
+      trail([[112, 4490], [130, 4494], [150, 4490]]);
+      picnic(20, 4566);
+      smallShrine(140, 4552);
+      trail([[150, 4552], [162, 4552]]);
+      teaHouse(30, 4600);
+      trail([[48, 4610], [58, 4620]]);
+      // --- the valley under Kiyomizu's stage
+      teaHouse(46, 5668);
+      trail([[90, 5562], [80, 5610], [66, 5650], [60, 5666]]);
+      smallShrine(120, 5640);
+      trail([[92, 5575], [108, 5610], [118, 5624]]);
+      // --- the way up the mountain
+      subTemple(146, 5992);
+      trail([[118, 5990], [104, 5990]]);
+      smallShrine(38, 6042);
+      trail([[54, 6042], [76, 6036], [97, 6040]]);
+      teaHouse(148, 6104);
+      trail([[130, 6104], [112, 6098], [97, 6100]]);
+      picnic(30, 6176);
+      smallShrine(44, 6262);
+      trail([[60, 6262], [74, 6256], [82, 6258]]);
+      subTemple(140, 6240);
+      trail([[112, 6236], [98, 6236]]);
+      for (const [u0, u1, fx] of [[3510, 4410, () => 140], [4430, 4690, (u) => 140 + 30 * smooth(4420, 4600, u)], [5940, 6290, (u) => 90 + 12 * Math.sin(((u - 5930) * Math.PI) / 185)]])
+        for (let u = u0; u < u1; u += 26)
+          for (const sd of [-1, 1]) {
+            const x = Math.round(fx(u) + sd * 8);
+            if (!isRes(x, Y(u)) && !isRes(x, Y(u) + 3)) lantern(x - 1, Y(u));
+          }
+
+      // --- Gion: the lanes paved in small setts, worn along the middle; people in them, bicycles, potted plants, wooden
+      // signs, lamps at the corners
+      const groundish = (X, Yr) => {
+        const q = img.rgbaPx(X, Yr);
+        return q && q[3] && q[0] > 0x30 && q[0] < 0x74 && Math.abs(q[0] - q[1]) < 11 && q[1] >= q[2] - 2 && q[1] - q[2] < 16;
+      };
+      const setts = (x0, x1, u0, u1, a, b, c, clear) => {
+        for (let Yr = Y(u1) * S; Yr < Y(u0) * S; Yr++)
+          for (let X = x0 * S; X < x1 * S; X++) {
+            if (clear(X / S, L - Yr / S) || !groundish(X, Yr)) continue;
+            const row = Yr >> 2;
+            const XX = X + (row % 2) * 3;
+            const joint = Yr % 4 === 0 || XX % 6 === 0;
+            const tone = hashPx(XX >> 2, row, 8801);
+            let col = joint ? c : tone < 0.5 ? a : b;
+            if (hashPx(X >> 3, Yr >> 3, 8802) < 0.06 && !joint) col = scaleColor(col, 0.86);
+            img.px(X, Yr, col);
+          }
+      };
+      const stairsX = (u) => 90 + 16 * Math.sin((u - 5000) / 60) * (1 - smooth(5320, 5400, u));
+      setts(0, W, 2, 540, 0x8c8678, 0x7e786c, 0x524c44, (x) => x > 75 && x < 105);
+      setts(0, W, 5000, 5424, 0x948e80, 0x867f72, 0x565046, (x, u) => Math.abs(x - stairsX(u)) < 11);
+      const laneOk = (x, y) => {
+        const i = Math.floor(y) * W + Math.floor(x);
+        return i >= 0 && i < W * L && (laneMargin[i] || !isRes(Math.floor(x), Math.floor(y)));
+      };
+      const lanes = (u0, u1, n, clear) => {
+        const spots = [];
+        for (let k = 0; k < n * 16 && spots.length < n + 70; k++) {
+          const x = 3 + kr() * 174;
+          const u = u0 + kr() * (u1 - u0);
+          const y = Y(u);
+          if (!clear(x, u) && laneOk(x, y) && laneOk(x, y + 2) && laneOk(x + 1, y) && laneOk(x, y - 1)) spots.push([x, y]);
+        }
+        return spots;
+      };
+      const dressed = (spots, n) =>
+        spots.slice(0, n).forEach(([x, y], k) => {
+          if (k % 6 === 0) {
+            // a bicycle, a tub of bamboo or a little signboard
+            const X = Math.round(x * S);
+            const Yy = Math.round(y * S);
+            const v = k % 18;
+            objects.push({
+              y: y + 2,
+              draw: () => {
+                if (v === 0) {
+                  for (const i of [0, 9]) for (let j = -2; j <= 2; j++) img.px(X + i, Yy + j, 0x1a1a22);
+                  for (let i = 0; i < 10; i++) img.px(X + i, Yy, 0xc83a2a);
+                  img.px(X + 7, Yy - 2, 0xa8a8b0);
+                } else if (v === 6) {
+                  for (let j = 0; j < 5; j++) for (let i = 0; i < 6; i++) img.px(X + i, Yy + j, j === 0 ? 0x7a5835 : 0x5e4229);
+                  for (let j = -8; j < 0; j++) for (let i = 1; i < 5; i++) if ((i + j) % 2 === 0) img.px(X + i, Yy + j, (j + 20) % 3 ? 0x4a8a3e : 0x2a5a2a);
+                } else {
+                  for (let j = -4; j < 6; j++) for (let i = 0; i < 6; i++) img.px(X + i, Yy + j, j === -4 || i === 0 || i === 5 ? 0x2a1e18 : 0xf0e8d8);
+                  glyph(X + 1, Yy - 2, 4, 0x1a1414, rng(k + X), (gx, gy, gc) => img.px(gx, gy, gc));
+                }
+              },
+            });
+          } else kfolk(x, y);
+        });
+      const gionSpots = lanes(4, 492, 560, (x) => x > 74 && x < 106);
+      dressed(gionSpots, 500);
+      const townSpots = lanes(5026, 5386, 330, (x, u) => Math.abs(x - stairsX(u)) < 12);
+      dressed(townSpots, 280);
+      const spots = [...gionSpots.slice(500), ...townSpots.slice(280)];
+      // the corners lit, red paper lanterns on brackets
+      for (const [x, y] of spots) lampPost(x, y);
+      function lampPost(x, y) {
+        const X = Math.round(x * S);
+        const Yy = Math.round(y * S);
+        objects.push({
+          y: y + 2,
+          draw: () => {
+            for (let j = -12; j < 4; j++) img.px(X, Yy + j, 0x2a2024);
+            for (let j = 0; j < 7; j++) for (let i = 0; i < 5; i++) if (!((j === 0 || j === 6) && (i === 0 || i === 4))) img.px(X + 1 + i, Yy - 12 + j, j === 0 || j === 6 ? 0x1a1414 : j % 2 ? 0xe8452a : 0xc8301e);
+          },
+        });
+      }
+      // --- the square before Yasaka's west gate: granite setts, stalls, cherries, the people gathering
+      for (const [x, u, kind] of [[8, 520, 'dango'], [30, 520, 'yakitori'], [132, 520, 'omamori'], [154, 520, 'taiyaki'], [20, 498, 'ramune'], [150, 498, 'kitsune']]) {
+        const y = Y(u);
+        if (free(x, y, 18, 12)) {
+          stall(x, y, kind);
+          knot(x + 9, y + 15, 8, 2, 7);
+        }
+      }
+      knot(90, Y(490), 22, 4, 26);
+      for (let k = 0; k < 60; k++) {
+        const x = 4 + kr() * 172;
+        const y = Y(494 + kr() * 44);
+        if (!isRes(Math.floor(x), Math.floor(y))) kfolk(x, y);
+      }
+      // --- the old town's two cross streets on the way up to Kiyomizu
+      for (const [u, list] of [[5020, [[6, 'dango'], [28, 'taiyaki'], [50, 'omamori'], [112, 'ramune'], [134, 'kitsune'], [156, 'yakitori']]], [5418, [[6, 'kitsune'], [30, 'dango'], [120, 'taiyaki'], [150, 'omamori']]]]) {
+        for (const [x, kind] of list) {
+          const y = Y(u);
+          if (free(x, y, 18, 12)) {
+            stall(x, y, kind);
+            knot(x + 9, y + 15, 8, 2, 6);
+          }
+        }
+        for (let k = 0; k < 70; k++) {
+          const x = 3 + kr() * 174;
+          const y = Y(u - 18 + kr() * 18);
+          if (!isRes(Math.floor(x), Math.floor(y))) kfolk(x, y);
+        }
+        const ws = strollers;
+        for (const [a, b] of [[[6, u - 14], [70, u - 14]], [[174, u - 10], [110, u - 10]]]) kit.path([a, b], kr.pick(ws), { sp: 3, n: 2, gap: 24, mode: 'pp', hold: 2, turn: 'none', fps: 3, s0: kr() });
+      }
     }
   }
 
