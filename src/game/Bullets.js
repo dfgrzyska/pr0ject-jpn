@@ -1,4 +1,4 @@
-import { DEPTH, FAIR } from '../config.js';
+import { DEPTH, FAIR, RENDER_SCALE } from '../config.js';
 import { rules, volley } from '../difficulty.js';
 import { Pool } from './Pool.js';
 
@@ -35,7 +35,14 @@ const ZONES = {
   fire: { warn: 0xffb050, fill: 0xd8461a, core: 0xffe08a }, // the Daimonji fire beds
 };
 
-const PLAIN = { ax: 0, ay: 0, maxV: Infinity, life: Infinity, safe: 0, frz: null, wig: 0, wf: 0, spin: false, age: 0, orb: null, link: null, lead: false, bounce: 0, grow: null, home: 0, grazed: false };
+// the standard bullets are fine-pixel art, shown at a third of their size: a flash as they are fired, then their
+// ring and core pulsing, each out of step with its neighbours (frames: the flash, then the pulse)
+const PULSE_RATE = 12.8; // frames per second, a pulse in 0.6 s
+const FLASH_TIME = 0.05; // s per flash frame
+const pulseFrames = (name) => [0, 1, 2].map((k) => `${name}_f${k}`).concat([0, 1, 2, 3, 4, 5, 6, 7].map((k) => `${name}_${k}`));
+const PULSES = { eb_s: pulseFrames('eb_s'), eb_m: pulseFrames('eb_m') };
+
+const PLAIN = { pulse: null, ax: 0, ay: 0, maxV: Infinity, life: Infinity, safe: 0, frz: null, wig: 0, wf: 0, spin: false, age: 0, orb: null, link: null, lead: false, bounce: 0, grow: null, home: 0, grazed: false };
 
 // Enemy bullets: bright core, dark outline, slow. Angle: radians, 0 = right, PI/2 = down.
 // Lobbed snowballs fly above everything, harmless, with a ring marking where they land.
@@ -77,6 +84,12 @@ export class Bullets {
       b.by = y;
     }
     if (b.spin) b.setRotation(angle - Math.PI / 2);
+    if (PULSES[frame]) {
+      b.pulse = PULSES[frame];
+      b.pulseAt = Math.random() * 8;
+      b.pulseFrame = 0;
+      b.setScale(1 / RENDER_SCALE).setFrame(b.pulse[0]);
+    }
     return b;
   }
 
@@ -172,6 +185,13 @@ export class Bullets {
   update(dt, H) {
     for (const b of this.pool.live) {
       b.age += dt;
+      if (b.pulse) {
+        const k = b.age < FLASH_TIME * 3 ? Math.floor(b.age / FLASH_TIME) : 3 + Math.floor(b.age * PULSE_RATE + b.pulseAt) % 8;
+        if (k !== b.pulseFrame) {
+          b.pulseFrame = k;
+          b.setFrame(b.pulse[k]);
+        }
+      }
       if (b.safe > 0) {
         b.safe -= dt;
         b.setAlpha(b.safe > 0 && Math.floor(b.safe * 12) % 2 ? 0.4 : 1);
@@ -371,7 +391,8 @@ export class Bullets {
         f.ang = Math.atan2(b.vy, b.vx) + f.turn;
         b.vx = 0;
         b.vy = 0;
-        b.setFrame(f.frame ?? 'eb_ice');
+        b.pulse = null; // (it hangs as a crystal, at the sprites' own scale)
+        b.setScale(1).setFrame(f.frame ?? 'eb_ice');
         b.radius = 2.2;
       }
     } else if (b.age >= f.at + f.hold) {

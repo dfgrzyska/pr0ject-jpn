@@ -292,8 +292,47 @@ for (const [col, mat] of [['red', 'R'], ['blue', 'B'], ['green', 'G']]) add(`pic
 
 // ---------------------------------------------------------------- bullets
 const raw = (rows) => renderMask(fromRows(rows), { outline: false });
-add('eb_s', raw(['.kkk.', 'kxvxk', 'kvwvk', 'kxvxk', '.kkk.']));
-add('eb_m', raw(['..kkk..', '.kxxxk.', 'kxvwvxk', 'kxwwwxk', 'kxvwvxk', '.kxxxk.', '..kkk..']));
+// the standard bullets, drawn in fine pixels (shown at a third of their size) so they stay crisp over the fine
+// backgrounds: a soft dark plate that dims what is under them, a dark hairline that holds on bright ground, a pale
+// ring that holds on dark ground, then the magenta body, which is the hit area, and the white core. The ring and the
+// core pulse; the size does not. Frames: eb_s_0..7 in flight, eb_s_f0..2 the flash as it is fired.
+const bulletArt = (R, body, core, draw) => {
+  const N = 2 * (R + 6);
+  const out = new Raster(N, N);
+  for (let y = 0; y < N; y++)
+    for (let x = 0; x < N; x++) {
+      const dx = x + 0.5 - N / 2;
+      const dy = y + 0.5 - N / 2;
+      const px = draw(Math.hypot(dx, dy), dx, dy);
+      if (px) out.setRGBA(x, y, px[0], px[1], px[2], px[3] ?? 255);
+    }
+  return out;
+};
+const lerp3 = (a, b, t) => [0, 1, 2].map((k) => Math.round(a[k] + (b[k] - a[k]) * t));
+const bulletFrame = (R, body, core, t, flash = 0) =>
+  bulletArt(R, body, core, (r, dx, dy) => {
+    const coreR = core * (0.86 + t * 0.26);
+    let px = null;
+    if (r > R + 2.5) px = null;
+    else if (r > R) px = [10, 6, 18, Math.round(90 * (1 - (r - R) / 2.5))];
+    else if (r > R - 1) px = [0x12, 0x0e, 0x1a];
+    else if (r > body) px = lerp3([0xee, 0x9c, 0xff], [255, 255, 255], t);
+    else if (r > coreR) px = dx + dy < -body * 0.4 ? [0xf4, 0x78, 0xff] : [0xe6, 0x3c, 0xff];
+    else px = [255, 255, 255];
+    if (!flash) return px;
+    // the flash: white over everything, spilling a little past the rim for an instant
+    const a = Math.max(0, 1 - r / (R + 5 * flash)) ** 0.5 * flash;
+    if (a <= 0) return px;
+    const base = px ?? [255, 255, 255, 0];
+    const baseA = (base[3] ?? 255) / 255;
+    const outA = a + baseA * (1 - a);
+    return [...lerp3(base, [255, 255, 255], a / outA), Math.round(outA * 255)];
+  });
+for (const [name, R, body, core] of [['eb_s', 8, 5.4, 3], ['eb_m', 11, 7.5, 4.4]]) {
+  for (let k = 0; k < 8; k++) add(`${name}_${k}`, bulletFrame(R, body, core, (1 + Math.cos((k / 8) * Math.PI * 2)) / 2));
+  [1, 0.65, 0.3].forEach((f, k) => add(`${name}_f${k}`, bulletFrame(R, body, core, 1, f)));
+  add(name, bulletFrame(R, body, core, 1));
+}
 add('ps_needle', raw(['.h.', 'yhy', 'yhy', 'yhy', 'oyo', '.o.', '.o.']));
 add('ps_spread', raw(['.oro.', 'orhro', 'rhhhr', 'orhro', '.oro.']));
 add('ps_laser_1', raw(['.c.', 'aca', 'aha', 'aha', 'aha', 'aha', 'aha', 'aha', 'aha', 'aha', 'aha', 'aca', '.a.', '.z.']));
