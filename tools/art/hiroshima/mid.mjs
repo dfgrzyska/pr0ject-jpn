@@ -3670,8 +3670,8 @@ export function buildMid() {
     ];
     for (const [rx, ru] of RAFTS) {
       const ry = Y(ru);
-      const rw = 11;
-      const rh = 13;
+      const rw = 7 + ((rx * 7 + ru) % 2);
+      const rh = 9 + ((rx * 3 + ru * 5) % 5);
       objects.push({
         y: ry + rh + 1,
         draw: () => {

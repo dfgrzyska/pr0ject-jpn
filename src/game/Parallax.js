@@ -423,9 +423,11 @@ export class Parallax {
     const s = this.snow;
     const breeze = Math.sin(this.farTime * 0.42) * 5;
     this.wind += (this.windTarget + breeze - this.wind) * Math.min(1, dt * 2.2);
+    // with Sankibō on the field the leaves thin out and fade: his red feathers must not get lost among them
+    const boss = this.scene.enemies?.live.some((e) => e.type === 'boss' && !e.dead);
     this.petalTimer -= dt;
     while (this.petalTimer <= 0) {
-      this.petalTimer += 1 / (4 + 22 * s);
+      this.petalTimer += 1 / ((4 + 22 * s) * (boss ? 0.35 : 1));
       const p = this.bit(
         `momiji_${Math.floor(Math.random() * 4)}`,
         Math.random() * 240 - 30,
@@ -437,7 +439,7 @@ export class Parallax {
         Math.random() * 4,
         0.14 + Math.random() * 0.24,
       );
-      p.setAlpha(0.82);
+      p.setAlpha(boss ? 0.55 : 0.82);
     }
     if (scrolling && this.time >= 65 && this.time <= 150) {
       this.gullTimer -= dt;
