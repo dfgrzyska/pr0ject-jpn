@@ -174,7 +174,7 @@ export class StampBook {
   }
 
   destroy() {
-    for (const o of [this.shade, this.page, this.title, this.rule, this.count, this.prevBtn, this.nextBtn, this.hint]) o.destroy();
+    for (const o of [this.shade, this.paper, this.page, this.title, this.rule, this.count, this.prevBtn, this.nextBtn, this.hint]) o.destroy();
     for (const s of this.slots) for (const o of [s.stamp, s.name, s.when]) o.destroy();
   }
 }
