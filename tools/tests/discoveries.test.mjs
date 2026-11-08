@@ -26,6 +26,8 @@ class Item {
   setScale(x, y = x) { this.scaleX = x; this.scaleY = y; return this; }
   setOrigin(x, y = x) { this.originX = x; this.originY = y; return this; }
   setPosition(x, y) { this.x = x; this.y = y; return this; }
+  setSize(w, h) { this.w = w; this.h = h; return this; }
+  setTileScale() { return this; }
   setText(t) { this.text = t; return this; }
   setFrame(f) { assert(art.has(f), `missing atlas frame ${f}`); this.frame = f; return this; }
   setLineSpacing() { return this; }
@@ -43,6 +45,7 @@ function scene(stage = 'stage1', H = 320) {
   s.add = {
     image: (x, y, texture, frame) => new Item(s, 'image', x, y, frame).setFrame(frame),
     graphics: () => new Item(s, 'graphics'),
+    tileSprite: (x, y, w, h) => Object.assign(new Item(s, 'rect', x, y), { w, h, color: 0xe8dcc0 }),
     rectangle: (x, y, w, h, color) => Object.assign(new Item(s, 'rect', x, y), { w, h, color }),
   };
   s.discoveryNotice = { messages: [], add(e) { this.messages.push(e); } };

@@ -11,7 +11,8 @@ import { Raster } from './lib/raster.mjs';
 import { buildSprites } from './art/sprites.mjs';
 import { buildFont, FONT } from './art/font.mjs';
 import { buildJapanMap } from './art/japan.mjs';
-import { buildEnding, buildEndingClouds } from './art/ending.mjs';
+import { menuAtlas, menuWaves, menuWashi } from './art/menu.mjs';
+import { buildEnding, buildEndingClouds, buildEndingNight } from './art/ending.mjs';
 import * as kyoto from './art/kyoto/index.mjs';
 import * as okinawa from './art/okinawa/index.mjs';
 import * as sapporo from './art/sapporo/index.mjs';
@@ -81,6 +82,15 @@ const asciiJson = (o) => JSON.stringify(o).replace(/[\u0080-￿]/g, (c) => `\\u$
 write('font.json', Buffer.from(asciiJson({ ...FONT, chars: font.chars })));
 if (preview) writeFileSync(join(previewDir, 'font_x4.png'), font.raster.scaled(4, 0x30304a).toPNG());
 
+console.log('menu');
+{
+  const { raster, json } = packAtlas(menuAtlas(), 1024, 2, 'menu.png');
+  write('menu.png', raster.toPNG());
+  write('menu.json', Buffer.from(JSON.stringify(json)));
+  write('menu_waves.png', menuWaves().toPNG());
+  write('menu_washi.png', menuWashi().toPNG());
+}
+
 console.log('map of Japan');
 const japan = buildJapanMap();
 write('japan.png', japan.toPNG());
@@ -90,7 +100,8 @@ console.log('ending');
 const ending = buildEnding();
 write('ending.png', ending.toPNG());
 write('ending_clouds.png', buildEndingClouds().toPNG());
-if (preview) writeFileSync(join(previewDir, 'ending_x2.png'), ending.scaled(2).toPNG());
+write('ending_night.png', buildEndingNight().toPNG());
+if (preview) writeFileSync(join(previewDir, 'ending_x1.png'), ending.toPNG());
 }
 
 for (const { id, art } of STAGES) {

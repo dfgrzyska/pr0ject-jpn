@@ -48,9 +48,13 @@ export class Boot extends Phaser.Scene {
     this.load.image('font', 'font.png');
     this.load.image('font_ink', 'font_ink.png');
     this.load.json('fontMeta', 'font.json');
-    this.load.image('japan', 'japan.png'); // the map between stages
+    this.load.image('japan', 'japan.png'); // the map between stages (at 540 px)
+    this.load.atlas('menu', 'menu.png', 'menu.json'); // the title screen (at 540 px)
+    this.load.image('menu_waves', 'menu_waves.png');
+    this.load.image('menu_washi', 'menu_washi.png'); // the paper of the books
     this.load.image('ending', 'ending.png'); // the ending's last picture (Fuji at sunrise)
     this.load.image('ending_clouds', 'ending_clouds.png');
+    this.load.image('ending_night', 'ending_night.png'); // the night behind the summary and the bosses' parade
     // the cities' backgrounds come later, one city at a time (queueStage)
   }
 
@@ -58,6 +62,7 @@ export class Boot extends Phaser.Scene {
     installLegacyPixelGrid(this.game.renderer);
     this.load.on('complete', this.releaseUnusedStages, this);
     keepForOffline(); // what every city shares is in now
+    this.textures.get('japan').setFilter(Phaser.Textures.FilterMode.LINEAR); // (the city menu shows it at 0.8)
     const meta = this.cache.json.get('fontMeta');
     // Phaser 4: Parse returns the whole cache entry ({ data, texture, frame })
     const font = (image) =>

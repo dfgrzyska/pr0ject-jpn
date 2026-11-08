@@ -75,6 +75,7 @@ export class StampBook {
     const stamps = loadStamps();
     const pale = loadStamps(true);
     this.shade = scene.add.rectangle(0, 0, W, VIEW.maxHeight, 0x0b0a12, 0.9).setOrigin(0, 0).setDepth(d);
+    this.paper = scene.add.tileSprite(5, 6, W - 10, 100, 'menu_washi').setOrigin(0, 0).setTileScale(1 / 3, 1 / 3).setDepth(d);
     this.page = scene.add.graphics().setDepth(d);
     // everything on the paper is printed in the ink font (the outlined one blots on a light page)
     const print = (str, tint) => pixelText(scene, W / 2, 0, str, 0.5, INK_FONT).setDepth(d + 2).setTint(tint);
@@ -125,7 +126,7 @@ export class StampBook {
     const g = this.page;
     g.clear();
     // the page: cream paper with a printed border
-    g.fillStyle(0xe8dcc0, 1).fillRect(5, top, W - 10, bottom - top);
+    this.paper.setPosition(5, top).setSize(W - 10, bottom - top);
     g.fillStyle(0xd8c8a4, 1).fillRect(5, bottom - 3, W - 10, 3);
     g.lineStyle(1, 0xb83a1a, 1).strokeRect(8.5, top + 3.5, W - 17, bottom - top - 8);
     this.title.setPosition(W / 2, top + 12);

@@ -1,4 +1,4 @@
-import { DEPTH, SHIPS, VIEW } from '../config.js';
+import { DEPTH, RENDER_SCALE, SHIPS, VIEW } from '../config.js';
 import { STAGES } from '../data/stages.js';
 import { MAP, project } from '../data/japan.js';
 import { pixelText } from './Hud.js';
@@ -9,6 +9,7 @@ import { discoveries } from './Discoveries.js';
 import { YOKAI, FOODS } from '../data/discoveries.js';
 import { hasStamp } from './Stamps.js';
 
+const FINE = 1 / RENDER_SCALE; // the menu's art and the map are drawn at 540 px
 const CITY_KEY = 'shmupjp.startCity';
 const NORTH_TO_SOUTH = STAGES.map((_, i) => i).sort((a, b) => STAGES[b].map[1] - STAGES[a].map[1]);
 export function lastCity() {
@@ -28,16 +29,16 @@ export class JourneyMenu {
     this.items = [];
     const add = (o, depth = DEPTH.overlay + 1) => { this.items.push(o); return o.setDepth(depth); };
     this.bg = add(scene.add.rectangle(0, 0, VIEW.width, VIEW.maxHeight, 0x0c1830).setOrigin(0), DEPTH.overlay);
-    this.map = add(scene.add.image(0, 0, 'japan').setOrigin(0).setScale(0.8), DEPTH.overlay);
+    this.map = add(scene.add.image(0, 0, 'japan').setOrigin(0).setScale(0.8 * FINE), DEPTH.overlay);
     this.sky = add(scene.add.rectangle(0, 0, VIEW.width, VIEW.maxHeight, 0x111b36).setOrigin(0), DEPTH.overlay + 0.04);
-    this.cloth = add(scene.add.tileSprite(0, 0, VIEW.width, VIEW.maxHeight, 'sprites', 'menu_waves').setOrigin(0), DEPTH.overlay + 0.05);
-    this.evening = add(scene.add.image(0, 0, 'sprites', 'menu_evening').setOrigin(0), DEPTH.overlay + 0.1);
-    this.lanterns = [24, 156].map((x) => add(scene.add.image(x, 0, 'sprites', 'menu_lantern').setOrigin(0.5, 0), DEPTH.overlay + 0.3));
+    this.cloth = add(scene.add.tileSprite(0, 0, VIEW.width, VIEW.maxHeight, 'menu_waves').setTileScale(FINE, FINE).setOrigin(0), DEPTH.overlay + 0.05);
+    this.evening = add(scene.add.image(0, 0, 'menu', 'evening').setOrigin(0).setScale(FINE), DEPTH.overlay + 0.1);
+    this.lanterns = [24, 156].map((x) => add(scene.add.image(x, 0, 'menu', 'lantern').setOrigin(0.5, 0).setScale(FINE), DEPTH.overlay + 0.3));
     this.clouds = [0, 1].map((i) => add(scene.add.image(30 + i * 100, 0, 'sprites', `cloud_${i}`).setAlpha(0.09), DEPTH.overlay));
     this.gfx = add(scene.add.graphics(), DEPTH.overlay + 1.5);
     this.labels = STAGES.map((s) => add(pixelText(scene, 0, 0, s.name)));
     this.ship = add(scene.add.image(0, 0, 'sprites', SHIPS[scene.shipIndex].frame), DEPTH.overlay + 2);
-    this.logo = add(scene.add.image(90, 0, 'sprites', 'logo'));
+    this.logo = add(scene.add.image(90, 0, 'menu', 'logo').setScale(FINE));
     this.tagline = add(pixelText(scene, 90, 0, 'LEĆ PRZEZ JAPONIĘ').setTint(0xffdba8));
     this.caption = add(pixelText(scene, 90, 0, 'OSIEM MIAST. JEDNA PODRÓŻ.').setTint(0xc8ac85));
     this.heading = add(pixelText(scene, 90, 50, 'WYBIERZ MIASTO'));
@@ -46,12 +47,13 @@ export class JourneyMenu {
     this.yokai = add(pixelText(scene, 90, 0, 'ALBUM YOKAI', 0.5, INK_FONT), DEPTH.overlay + 2);
     this.food = add(pixelText(scene, 90, 0, 'SMAKI JAPONII', 0.5, INK_FONT), DEPTH.overlay + 2);
     this.menuButtons = [this.newGame, this.stamps, this.yokai, this.food];
-    this.cards = this.menuButtons.map((_, i) => add(scene.add.image(90, 0, 'sprites', `menu_${i ? 'paper' : 'start'}_off`)));
-    this.icons = ['stamp_icon', 'popcorn_0', 'food_momiji'].map((frame) => add(scene.add.image(29, 0, 'sprites', frame), DEPTH.overlay + 2));
-    this.icons[0].setTint(0xb53936);
+    this.cards = this.menuButtons.map((_, i) => add(scene.add.image(90, 0, 'menu', `${i ? 'paper' : 'start'}_off`).setScale(FINE)));
+    this.icons = ['icon_stamp', 'icon_yokai', 'icon_food'].map((frame) => add(scene.add.image(29, 0, 'menu', frame).setScale(FINE), DEPTH.overlay + 2));
+    // Sakura petals, turning as they fall.
+    this.petals = Array.from({ length: 18 }, (_, n) => add(scene.add.image(0, 0, 'menu', `petal_${n % 2}`).setScale(FINE), DEPTH.overlay + 1.5));
     const counts = [STAGES.filter((s) => hasStamp(s.id, true)).length, YOKAI.filter((e) => discoveries.has(e.id)).length, FOODS.filter((e) => discoveries.has(e.id)).length];
     this.counts = [STAGES.length, YOKAI.length, FOODS.length].map((total, i) => add(pixelText(scene, 148, 0, `${counts[i]}/${total}`, 0.5, INK_FONT).setTint(0x76583d), DEPTH.overlay + 2));
-    this.titleDecor = [this.sky, this.cloth, this.evening, ...this.lanterns, ...this.cards, ...this.icons, ...this.counts];
+    this.titleDecor = [this.sky, this.cloth, this.evening, ...this.lanterns, ...this.cards, ...this.icons, ...this.counts, ...this.petals];
     this.name = add(pixelText(scene, 90, 0, ''));
     this.subtitle = add(pixelText(scene, 90, 0, ''));
     this.next = add(pixelText(scene, 90, 0, 'DALEJ >'));
@@ -64,7 +66,7 @@ export class JourneyMenu {
 
   city(i) {
     const [x, y] = project(...STAGES[i].map);
-    return { x: Math.round(x * this.map.scaleX), y: Math.round(y * this.map.scaleY + this.map.y) };
+    return { x: Math.round(x * this.map.scaleX * RENDER_SCALE), y: Math.round(y * this.map.scaleY * RENDER_SCALE + this.map.y) };
   }
 
   layout(H) {
@@ -72,7 +74,7 @@ export class JourneyMenu {
     this.bg.setSize(VIEW.width, H);
     const scale = this.mode === 'city' ? 0.8 : 1;
     this.scene.tweens.killTweensOf(this.map);
-    this.map.setScale(scale);
+    this.map.setScale(scale * FINE);
     this.map.y = Math.round((H - MAP.h * scale) / 2);
     this.railTop = 80;
     this.railBottom = H - 100;
@@ -81,7 +83,7 @@ export class JourneyMenu {
     this.sky.setSize(VIEW.width, H);
     this.cloth.y = title.artY + 174;
     this.cloth.setSize(VIEW.width, H - this.cloth.y);
-    this.evening.y = title.artY;
+    this.evening.y = title.artY - 60; // (the scene has 60 units of night sky above it)
     this.lanterns.forEach((o, i) => o.y = title.artY + 46 + i * 8);
     this.logo.y = title.logoY;
     this.tagline.y = title.taglineY;
@@ -128,7 +130,7 @@ export class JourneyMenu {
     this.hint.setVisible(title || cities);
     this.scene.tweens.killTweensOf(this.map);
     const scale = cities ? 0.8 : 1;
-    this.scene.tweens.add({ targets: this.map, scaleX: scale, scaleY: scale, y: Math.round((this.H - MAP.h * scale) / 2), alpha: title ? 0.58 : 1, duration: 450, ease: 'Sine.easeInOut' });
+    this.scene.tweens.add({ targets: this.map, scaleX: scale * FINE, scaleY: scale * FINE, y: Math.round((this.H - MAP.h * scale) / 2), alpha: title ? 0.58 : 1, duration: 450, ease: 'Sine.easeInOut' });
     this.name.setText(STAGES[this.index].name).setTint(0xffe080);
     this.subtitle.setText(tr(STAGES[this.index].subtitle));
     this.next.setTint(0xffe080);
@@ -202,7 +204,7 @@ export class JourneyMenu {
     this.clouds.forEach((c, i) => c.setPosition(((this.time * (2 + i) + i * 100) % 240) - 30, this.H * (0.35 + i * 0.25)));
     this.menuButtons.forEach((button, i) => {
       button.setTint(i === 0 ? 0xfff1c9 : this.focus === i ? 0xa4322d : 0x47372f);
-      const frame = `menu_${i ? 'paper' : 'start'}_${this.focus === i ? 'on' : 'off'}`;
+      const frame = `${i ? 'paper' : 'start'}_${this.focus === i ? 'on' : 'off'}`;
       if (this.cards[i].frame.name !== frame) this.cards[i].setFrame(frame);
     });
     const g = this.gfx.clear();
@@ -225,15 +227,16 @@ export class JourneyMenu {
       for (let n = 1; n <= 14; n++) {
         const u = t - n * 0.009;
         if (u < 0) continue;
-        g.fillStyle(0xffd5a0, (1 - n / 15) * 0.35).fillRect(Math.round(-18 + u * 216), Math.round(this.titleLayout.artY + 135 - Math.sin(u * Math.PI) * 24), 1, 1);
+        g.fillStyle(0xffd5a0, (1 - n / 15) * 0.35).fillRect(-18 + u * 216, this.titleLayout.artY + 135 - Math.sin(u * Math.PI) * 24, 0.67, 0.67);
       }
-      for (let n = 0; n < 18; n++) {
+      this.petals.forEach((o, n) => {
         const x = (n * 47 + Math.sin(this.time * 0.4 + n) * 5 + 180) % 180;
         const y = (n * 71 + this.time * (4 + n % 3)) % this.H;
-        // Sakura petals fall mostly at the edges, keeping text clear.
-        if (x < 14 || x > 166 || y < this.titleLayout.start - 20)
-          g.fillStyle(n % 2 ? 0xffc7ca : 0xe99dac, 0.65).fillRect(Math.round(x), Math.round(y), 2, 1);
-      }
+        // They fall mostly at the edges, keeping text clear.
+        const show = x < 14 || x > 166 || y < this.titleLayout.start - 20;
+        o.setVisible(show);
+        if (show) o.setPosition(x, y).setRotation(this.time * (0.7 + (n % 4) * 0.3) + n).setScale(FINE, FINE * (0.6 + 0.4 * Math.abs(Math.sin(this.time * 1.3 + n)))).setAlpha(0.8);
+      });
       for (const [i, text] of this.menuButtons.entries()) {
         const active = this.focus === i;
         const reveal = Math.max(0, Math.min(1, (this.modeTime - i * 0.1) / 0.4));

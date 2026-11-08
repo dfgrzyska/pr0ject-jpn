@@ -110,6 +110,7 @@ export class DiscoveryBook {
     const d = DEPTH.overlay + 4;
     const add = (o, z = d + 2) => { this.items.push(o); return o.setDepth(z); };
     this.shade = add(scene.add.rectangle(0, 0, VIEW.width, VIEW.maxHeight, 0x0b0a12, 0.95).setOrigin(0), d);
+    this.sheet = add(scene.add.tileSprite(5, 6, 170, 100, 'menu_washi').setOrigin(0).setTileScale(1 / 3, 1 / 3), d + 1);
     this.paper = add(scene.add.graphics(), d + 1);
     const print = (color = 0x392d28) => add(pixelText(scene, 90, 0, '', 0.5, INK_FONT).setTint(color));
     this.title = print(0xa8321a);
@@ -146,7 +147,7 @@ export class DiscoveryBook {
     const city = STAGES.find((s) => s.id === e.stage);
     const food = this.kind === 'food';
     const g = this.paper.clear();
-    g.fillStyle(0xe8dcc0).fillRect(5, 6, 170, H - 36);
+    this.sheet.setSize(170, H - 36);
     g.lineStyle(1, 0xa8321a).strokeRect(9, 10, 162, H - 44);
     g.lineStyle(1, 0xbba782).strokeRect(51, 55, 78, 63);
     this.title.setText(food ? words('SMAKI JAPONII', 'TASTES OF JAPAN') : words('ALBUM YOKAI', 'YOKAI ALBUM')).setPosition(90, 24);

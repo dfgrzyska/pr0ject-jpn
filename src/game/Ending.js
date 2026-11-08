@@ -1,4 +1,4 @@
-import { DEPTH, SHIPS, VIEW } from '../config.js';
+import { DEPTH, RENDER_SCALE, SHIPS, VIEW } from '../config.js';
 import { STAGES } from '../data/stages.js';
 import { isEasy } from '../difficulty.js';
 import { INK_FONT } from '../scenes/Boot.js';
@@ -8,7 +8,7 @@ import { INK } from './Stamps.js';
 
 const W = VIEW.width;
 const D = DEPTH.overlay + 2;
-const PAPER = 0xf0e4c8;
+const FINE = 1 / RENDER_SCALE; // its art is drawn at 540 px
 // the bosses as they stand in the parade: [frame, dx, dy, flip] round their centre (Kyūbi's tails fan out from
 // 7 px under its body, outer ones first, the right-hand ones mirrored)
 const KYUBI = [0, 8, 1, 7, 2, 6, 3, 5, 4].map((i) => [`kyubi_tail_${Math.min(i, 8 - i)}_${i % 3}`, 0, 7, i > 4]);
@@ -92,11 +92,12 @@ export class Ending {
   seals() {
     const s = this.scene;
     const H = this.H;
-    this.add(s.add.rectangle(0, 0, W, H, PAPER).setOrigin(0, 0).setDepth(D));
-    // fibres in the washi
+    // a sheet of washi, ruled in red, a gilt corner in each of its corners
+    this.add(s.add.tileSprite(0, 0, W, H, 'menu_washi').setTileScale(FINE, FINE).setOrigin(0, 0).setDepth(D));
     const g = this.add(s.add.graphics().setDepth(D + 0.5));
-    g.fillStyle(0xd8c8a8, 1);
-    for (let i = 0; i < 260; i++) g.fillRect((i * 73) % W, (i * 151) % H, 1 + (i % 3 === 0), 1);
+    g.lineStyle(0.67, 0xa8321a, 0.9).strokeRect(5, 5, W - 10, H - 10);
+    g.lineStyle(0.34, 0xa8321a, 0.7).strokeRect(7.33, 7.33, W - 14.66, H - 14.66);
+    g.lineStyle(0.34, 0xa8321a, 0.8).lineBetween(36, 25, W - 36, 25);
     this.text(W / 2, 16, 'PIECZĘCIE PODRÓŻY', 0x5a2a20, INK_FONT);
     const n = this.order.length;
     const rows = Math.ceil(n / 2);
@@ -107,11 +108,11 @@ export class Ending {
       const id = STAGES[i].id;
       const x = k === n - 1 && k % 2 === 0 ? W / 2 : k % 2 ? 134 : 46;
       const y = top + Math.floor(k / 2) * step;
-      const img = this.add(s.add.image(x, y, 'sprites', `seal_${id}`).setDepth(D + 2).setTint(INK[id]).setAlpha(0));
-      const size = img.width > 40 ? 1.5 : 2; // (Kagoshima's three kanji: a smaller seal, so it fits its column)
+      const img = this.add(s.add.image(x, y, 'menu', `seal_${id}`).setDepth(D + 2).setTint(INK[id]).setAlpha(0));
+      const size = img.width / 6 > 40 ? 1.5 / 6 : 2 / 6; // (Kagoshima's three kanji: a smaller seal, so it fits its column)
       const label = this.text(x, y + labelDy, STAGES[i].name, 0x3a2a24, INK_FONT).setVisible(false);
       const won = this.run.stamps.includes(id);
-      const mark = won ? this.add(s.add.image(x + Math.ceil(label.width / 2) + 7, y + labelDy, 'sprites', 'stamp_icon').setDepth(D + 3).setTint(INK[id]).setVisible(false)) : null;
+      const mark = won ? this.add(s.add.image(x + Math.ceil(label.width / 2) + 7, y + labelDy, 'menu', 'icon_stamp').setScale(FINE * 0.62).setDepth(D + 3).setVisible(false)) : null;
       return { img, label, mark, size, at: 0.6 + k * 0.5, done: false };
     });
     const got = this.run.stamps.length;
@@ -124,7 +125,8 @@ export class Ending {
     const s = this.scene;
     const r = this.run;
     const n = this.order.length;
-    this.add(s.add.rectangle(0, 0, W, this.H, 0x0c0e22).setOrigin(0, 0).setDepth(DEPTH.overlay - 0.5));
+    this.add(s.add.tileSprite(0, 0, W, this.H, 'ending_night').setTileScale(FINE, FINE).setOrigin(0, 0).setDepth(DEPTH.overlay - 0.5));
+    this.add(s.add.image(0, this.H, 'menu', 'night_ridge').setOrigin(0, 1).setScale(FINE).setDepth(DEPTH.overlay + 0.2));
     const hi = s.lastHi ?? { isNew: false, value: s.score.score };
     const min = Math.floor(r.time / 60);
     const sec = Math.floor(r.time % 60);
@@ -146,19 +148,18 @@ export class Ending {
       '',
       got >= n ? ['KOMPLET W JEDNEJ GRZE!', 0xffe080, 1, true] : r.deaths === 0 ? ['BEZ ANI JEDNEJ STRATY!', 0xffe080, 1, true] : isEasy() ? ['SPRÓBUJ NA NORMALNYM', 0x9cf09a] : '',
     ]);
+    s.hud.framePanel();
   }
 
   // ---------------------------------------------------------------- 4. the bosses passing by, like the credits
   parade() {
     const s = this.scene;
     const H = this.H;
-    this.add(s.add.rectangle(0, 0, W, H, 0x0a0c20).setOrigin(0, 0).setDepth(D));
-    const g = this.add(s.add.graphics().setDepth(D + 0.5));
-    for (let i = 0; i < 90; i++) {
-      g.fillStyle(0xffffff, i % 4 === 0 ? 0.8 : 0.35);
-      g.fillRect((i * 97) % W, (i * 211) % H, 1, 1);
-    }
-    this.add(s.add.rectangle(0, 0, W, 30, 0x0a0c20).setOrigin(0, 0).setDepth(D + 5));
+    this.night = this.add(s.add.tileSprite(0, 0, W, H, 'ending_night').setTileScale(FINE, FINE).setOrigin(0, 0).setDepth(D));
+    this.add(s.add.rectangle(0, 0, W, 28, 0x0a0c20, 0.92).setOrigin(0, 0).setDepth(D + 5));
+    const rule = this.add(s.add.graphics().setDepth(D + 5.5));
+    rule.lineStyle(0.67, 0xd8b878, 0.9).lineBetween(0, 28, W, 28);
+    rule.lineStyle(0.34, 0x8a7240, 0.9).lineBetween(0, 30, W, 30);
     this.add(pixelText(s, W / 2, 14, 'BOSSOWIE PODRÓŻY').setDepth(D + 6).setTint(0xffd6e5));
     this.groups = this.order.map((i, k) => {
       const st = STAGES[i];
@@ -178,8 +179,8 @@ export class Ending {
     const H = this.H;
     const top = Math.round((H - 420) / 2);
     this.add(s.add.rectangle(0, 0, W, H, 0x0c0e2c).setOrigin(0, 0).setDepth(D));
-    this.add(s.add.image(0, top, 'ending').setOrigin(0, 0).setDepth(D + 0.5));
-    this.clouds = this.add(s.add.tileSprite(0, top + 236, W, 34, 'ending_clouds').setOrigin(0, 0).setDepth(D + 0.6).setAlpha(0.85));
+    this.add(s.add.image(0, top, 'ending').setOrigin(0, 0).setScale(FINE).setDepth(D + 0.5));
+    this.clouds = this.add(s.add.tileSprite(0, top + 236, W, 34, 'ending_clouds').setTileScale(FINE, FINE).setOrigin(0, 0).setDepth(D + 0.6).setAlpha(0.85));
     // the ship flying past the mountain towards the sun, its engine burning
     const ship = SHIPS[s.shipIndex];
     this.ship = this.add(s.add.sprite(-20, H + 20, 'sprites', ship.frame).setDepth(D + 1));
@@ -187,9 +188,10 @@ export class Ending {
     this.flameY = ship.flameY;
     // petals drifting off the branch and the trees
     this.petals = [];
-    for (let i = 0; i < 22; i++) this.petals.push(this.add(s.add.image(0, 0, 'sprites', `petal_${i % 4}`).setDepth(D + 1.5)));
+    for (let i = 0; i < 22; i++) this.petals.push(this.add(s.add.image(0, 0, 'menu', `petal_${i % 2}`).setScale(FINE).setDepth(D + 1.5)));
     for (const p of this.petals) this.petal(p, true);
-    this.logo = this.add(s.add.image(W / 2, 26, 'sprites', 'logo').setDepth(D + 3).setAlpha(0));
+    this.logo = this.add(s.add.image(W / 2, 26, 'menu', 'logo').setDepth(D + 3).setAlpha(0));
+    this.ribbon = this.add(s.add.image(W / 2, 46, 'menu', 'ribbon').setScale(FINE).setDepth(D + 3).setAlpha(0));
     this.thanks = this.text(W / 2, 46, 'DZIĘKUJEMY ZA GRĘ', 0xffe8f0).setAlpha(0);
     this.hint = this.text(W / 2, H - 14, 'DOTKNIJ / ENTER', 0xffe080).setVisible(false);
     this.pressed = false;
@@ -240,6 +242,7 @@ export class Ending {
       if (this.t > 9) this.next();
     } else if (scene === 'parade') {
       const y0 = this.H + 60 - this.t * 34;
+      this.night.tilePositionY = -this.t * 12 * RENDER_SCALE; // (the sky further off than the bosses)
       this.groups.forEach((gr, k) => {
         const y = Math.round(y0 + k * 128);
         gr.c.y = y;
@@ -250,7 +253,7 @@ export class Ending {
       if (y0 + (this.groups.length - 1) * 128 + 70 < 20) this.next();
     } else if (scene === 'fuji') {
       const H = this.H;
-      this.clouds.tilePositionX += dt * 4;
+      this.clouds.tilePositionX += dt * 4 * RENDER_SCALE;
       // the ship's flight: up from the bottom left, past the mountain, away into the sunrise
       const f = Math.min(1, this.t / 7);
       const e = f * f * (3 - 2 * f);
@@ -269,13 +272,14 @@ export class Ending {
       }
       // the logo pressed on like a stamp, then the thanks, then the way back
       const k = Math.max(0, Math.min(1, (this.t - 1.2) / 0.22));
-      this.logo.setScale(1 + (1 - k * k) * 1.6).setAlpha(this.t < 1.2 ? 0 : Math.min(1, k * 2));
+      this.logo.setScale((1 + (1 - k * k) * 1.6) / 3).setAlpha(this.t < 1.2 ? 0 : Math.min(1, k * 2));
       if (k >= 1 && !this.pressed) {
         this.pressed = true;
         s.sfx.stamp();
         s.cameras.main.shake(140, 0.006);
       }
       this.thanks.setAlpha(Math.max(0, Math.min(1, (this.t - 2) / 0.8)));
+      this.ribbon.setAlpha(this.thanks.alpha);
       this.hint.setVisible(this.t > 3 && Math.floor(this.t * 2.5) % 2 === 0);
     }
   }

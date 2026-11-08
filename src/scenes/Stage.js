@@ -485,6 +485,7 @@ export class Stage extends Phaser.Scene {
         next ? [`DALEJ: ETAP ${this.pos + 2} - ${next.name}`, 0xffffff] : ['PODRÓŻ UKOŃCZONA!', 0xffe080],
         ['DOTKNIJ / ENTER', 0xffe080, 1, true],
       ]);
+      this.hud.framePanel();
       if (won) this.landStamp();
     });
   }

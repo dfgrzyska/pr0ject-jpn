@@ -74,7 +74,7 @@ export class Hud {
     // the city card at the start of a stage: the city's seal pressed on a slip of paper above its name (the
     // paper shows through the kanji cut out of it)
     this.sealPaper = scene.add.rectangle(W / 2, 0, 1, 1, 0xf0e4c8).setDepth(d + 1).setVisible(false);
-    this.seal = scene.add.image(W / 2, 0, 'sprites', 'seal_stage1').setDepth(d + 1).setVisible(false);
+    this.seal = scene.add.image(W / 2, 0, 'menu', 'seal_stage1').setDepth(d + 1).setVisible(false); // (drawn at 6x)
     this.sealT = 0;
     this.sealMax = 1;
     this.sealLanded = false;
@@ -136,7 +136,7 @@ export class Hud {
   /** The city card: its seal (the kanji of its name, in its ink) comes down with a thump over the stage's title. */
   cityCard(frame, tint, title, sub, time = 2.8) {
     this.seal.setFrame(frame).setTint(tint).setVisible(true).setAlpha(0);
-    this.sealPaper.setSize(this.seal.width - 2, this.seal.height - 2).setVisible(true).setAlpha(0);
+    this.sealPaper.setSize(this.seal.width / 6 - 2, this.seal.height / 6 - 2).setVisible(true).setAlpha(0);
     this.sealT = time;
     this.sealMax = time;
     this.sealLanded = false;
@@ -151,7 +151,7 @@ export class Hud {
     const y = Math.round(this.H * 0.36) - 34;
     const scale = 2 + 2.4 * (1 - k) ** 2;
     const a = el < 0.1 ? 0 : Math.min(1, k * 3, this.sealT / 0.4);
-    this.seal.setY(y).setScale(scale).setAlpha(a);
+    this.seal.setY(y).setScale(scale / 6).setAlpha(a);
     this.sealPaper.setPosition(W / 2, y).setScale(scale).setAlpha(a * 0.95);
     if (k >= 1 && !this.sealLanded) {
       this.sealLanded = true;
@@ -221,6 +221,19 @@ export class Hud {
       }
       y += height(line);
     }
+  }
+
+  /** A gilt frame round the open panel, for what closes a stage or the game. */
+  framePanel() {
+    const s = this.scene;
+    const H = this.H;
+    const d = DEPTH.overlay + 0.5;
+    const g = s.add.graphics().setDepth(d);
+    g.lineStyle(0.67, 0xd8b878, 0.9).strokeRect(6, 6, W - 12, H - 12);
+    g.lineStyle(0.34, 0x8a7240, 0.9).strokeRect(8.33, 8.33, W - 16.66, H - 16.66);
+    this.overlayItems.push(g);
+    for (const [x, y, fx, fy] of [[6, 6, false, false], [W - 6, 6, true, false], [6, H - 6, false, true], [W - 6, H - 6, true, true]])
+      this.overlayItems.push(s.add.image(x, y, 'menu', 'corner').setOrigin(fx ? 1 : 0, fy ? 1 : 0).setFlip(fx, fy).setScale(1 / 3).setDepth(d));
   }
 
   closePanel() {

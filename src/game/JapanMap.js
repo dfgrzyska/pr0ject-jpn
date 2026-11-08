@@ -1,4 +1,4 @@
-import { DEPTH, VIEW } from '../config.js';
+import { DEPTH, RENDER_SCALE, VIEW } from '../config.js';
 import { MAP, project } from '../data/japan.js';
 import { pixelText } from './Hud.js';
 import { INK, PALE, hasStamp } from './Stamps.js';
@@ -23,7 +23,7 @@ export class JapanMap {
     this.ready = false;
     const d = DEPTH.overlay + 2;
     this.bg = scene.add.rectangle(0, 0, W, VIEW.maxHeight, 0x0c1830).setOrigin(0, 0).setDepth(d);
-    this.img = scene.add.image(0, 0, 'japan').setOrigin(0, 0).setDepth(d);
+    this.img = scene.add.image(0, 0, 'japan').setOrigin(0, 0).setScale(1 / RENDER_SCALE).setDepth(d);
     this.gfx = scene.add.graphics().setDepth(d + 1);
     this.ship = scene.add.sprite(0, 0, 'sprites', scene.player.ship.frame).setDepth(d + 3);
     this.labels = order.map((i, k) => {
