@@ -258,9 +258,10 @@ export function buildMid() {
       // the forest floor: leaf litter, moss, dark earth
       let c = rampColor(C.forest, 0.2 + n * 0.7, X, Yr);
       const t = hashPx(X >> 1, Yr >> 1, 11);
-      if (t > 0.94) c = 0x4a3a22;
-      else if (t > 0.9) c = 0x5a4a28;
-      else if (t < 0.08) c = 0x2e4e2a;
+      if (t > 0.985) c = 0x4a3a22;
+      else if (t > 0.97) c = 0x3e3a22;
+      else if (t < 0.14) c = 0x2e4e2a;
+      else if (t < 0.24) c = 0x263e24;
       return c;
     }
     if (u < TATSUMAKI[1]) {
@@ -490,8 +491,57 @@ export function buildMid() {
         }
       }
   };
+  /** A house's plot at (x, y, w, h): a low block wall, gravel or moss inside, a yard in front as deep as the lane allows, the gate, the gutter outside. */
+  const plot = (x, y, w, h) => {
+    let depth = 0;
+    for (let d = 0; d < 4; d++) {
+      let ok = true;
+      for (let xx = x - 1; xx <= x + w; xx++) if (isRes(xx, y + h + d)) ok = false;
+      if (!ok) break;
+      depth = d + 1;
+    }
+    const X0 = (x - 1) * S;
+    const X1 = (x + w + 1) * S;
+    const Y0 = (y - 1) * S;
+    const Y1 = (y + h + depth) * S;
+    const GX = (x + Math.floor(w / 2)) * S;
+    const seed = x * 37 + y * 11;
+    const moss = hashPx(x, y, 777) < 0.45;
+    const inner = moss ? [0x3e5238, 0x4a6040, 0x567048] : [0x7e786c, 0x8c867a, 0x9a9488];
+    for (let Yr = Y0; Yr < Y1; Yr++)
+      for (let X = X0; X < X1; X++) {
+        const cx = Math.floor(X / S);
+        const cy = Math.floor(Yr / S);
+        if (isRes(cx, cy)) continue;
+        const e = Math.min(X - X0, X1 - 1 - X, Yr - Y0, Y1 - 1 - Yr);
+        if (e < 2) {
+          if (Yr >= Y1 - 2 && Math.abs(X - GX) < 5) img.px(X, Yr, 0x8a867a);
+          else img.px(X, Yr, e === 0 ? 0xb8b4a8 : (X + Yr) % 8 === 0 ? 0x6e6a60 : 0x8e8a7e);
+        } else {
+          const t = hashPx(X >> 1, Yr >> 1, seed);
+          img.px(X, Yr, rampColor(inner, t, X, Yr));
+        }
+      }
+    if (depth >= 2) {
+      // stepping stones from the gate to the door, a shrub each side, a bicycle's parking mark of oil
+      for (let k = 0; k < depth * S - 2; k += 4) img.discPx(GX + (k % 8 ? 1 : -1), (y + h) * S + 1 + k, 1.4, 0xb0ac9e);
+      for (const sx of [X0 + 6, X1 - 7]) {
+        img.discPx(sx, Y1 - 6, 2.8, 0x2a5a2a);
+        img.discPx(sx - 1, Y1 - 7, 1.6, 0x4e8a3e);
+      }
+    }
+    // gate posts, the gutter with its steel covers
+    for (const sx of [GX - 6, GX + 5]) img.rectPx(sx, Y1 - 3, 2, 3, 0x5a564e);
+    for (let X = X0; X < X1; X++) {
+      if (isRes(Math.floor(X / S), Math.floor((Y1 + 1) / S))) continue;
+      img.px(X, Y1, 0x34343a);
+      img.px(X, Y1 + 1, X % 7 === 0 ? 0x6a6a70 : 0x48484e);
+    }
+    reserveFoot(x - 1, y - 1, w + 2, h + 1 + depth, 1);
+  };
   /** Japanese house in 3/4 view: hip or gable roof of tiles or metal, plaster or wooden front with windows, life round it. */
   const house = (x, y, w, roofH, faceH, opt = {}) => {
+    if (opt.plot) plot(x, y, w, roofH + faceH);
     const ramp = opt.ramp ?? rand.pick(opt.roofs ?? [ROOF.kawara, ROOF.kawara, ROOF.dark, ROOF.brown, ROOF.blue, ROOF.red]);
     const hip = opt.hip ?? rand() < 0.65;
     const wall = opt.wall ?? rand.pick(C.walls);
@@ -1038,9 +1088,11 @@ export function buildMid() {
     bubbleSets.set(key, names);
     return names;
   };
+  const poolsMade = [];
   /** A hot-spring pool: an irregular pond deepening to its middle, a crust of salts, wet rock and boulders round it. It bubbles (live). */
   const hotPool = (cx, cu, rx, ry, ramp, seed, rim = C.rock) => {
     const mud = ramp === C.mud;
+    poolsMade.push({ cx, cu, rx, ry, ramp });
     kit.spot([[Math.round(cx - rx * 0.6), Math.round(cu + ry * 0.55), Math.round(rx * 1.2), Math.round(ry * 1.1)]], bubbleFrames(ramp), {
       rate: (rx * ry) / (mud ? 110 : 130),
       fps: mud ? 5 : 8,
@@ -1215,7 +1267,7 @@ export function buildMid() {
           if (r < pGarden) garden(x, y, w, bh);
           else if (r < pGarden + pPark && w >= 14) parking(x, y, w, bh);
           else if (r < pGarden + pPark + pBlock && w >= 14) block(x, y + bh - 8 - Math.min(rh, 14), w, Math.min(rh, 14), 8, { balcony: rand() < 0.5 });
-          else house(x, y, w, rh, fh, { roofs });
+          else house(x, y, w, rh, fh, { roofs, plot: true });
         }
         x += w + 1 + Math.floor(rand() * 2);
       }
@@ -1367,6 +1419,75 @@ export function buildMid() {
       folk(cx + Math.cos(a) * (rx + 4), cy + Math.sin(a) * (ry + 3.4) + 2.4);
     }
   };
+  /** A vent in the ground: a dark crack in a crust of sulphur, yellow going to orange at its edge, a thread of steam (live). */
+  const fumarole = (x, y, r = 3) => {
+    const CX = x * S;
+    const CY = y * S;
+    const R = r * S;
+    const seed = Math.floor(x * 13 + y);
+    for (let Yr = Math.floor(CY - R * 1.3); Yr <= CY + R * 1.3; Yr++)
+      for (let X = Math.floor(CX - R * 1.5); X <= CX + R * 1.5; X++) {
+        const d = Math.hypot((X - CX) / 1.2, Yr - CY) / R + (hashPx(X >> 1, Yr >> 1, seed) - 0.5) * 0.5;
+        if (d > 1) continue;
+        const g = hashPx(X, Yr, seed + 1);
+        // a thin wandering crack, hardly more than a shadow, in a crust of pale salts yellowing towards it
+        const crackY = Math.sin((X - CX) * 0.4 + seed) * 1.6 + Math.sin((X - CX) * 0.13) * 2;
+        const crack = Math.abs(Yr - CY - crackY) < 0.8 && Math.abs(X - CX) < R * 0.65;
+        let c = crack ? 0x4a4238 : d < 0.3 ? 0xdcc870 : d < 0.6 ? 0xd8cc98 : 0xc8bea0;
+        if (!crack && g > 0.92) c = 0xf0e8c8;
+        else if (!crack && g < 0.12) c = scaleColor(c, 0.88);
+        if (d > 0.6 && g < (d - 0.6) * 2.2) continue;
+        img.px(X, Yr, c);
+      }
+    reserveRect(x - r - 1, y - r - 1, 2 * r + 2, 2 * r + 2);
+    kit.emit(Math.round(x), Math.round(U(y)), [2, 3].map(puffFrames), { rate: 0.9, life: [1.2, 2], vy: 6, sx: 1, wf: 0.5, a: 0.5, d: 1.1, tint: 1 });
+  };
+  /** Scatter fumaroles over a rectangle's free ground. */
+  const fumaroles = (x0, u0, x1, u1, n, seed) => {
+    const fr = rng(seed);
+    for (let k = 0, made = 0; k < n * 12 && made < n; k++) {
+      const x = x0 + fr() * (x1 - x0);
+      const y = Y(u0 + fr() * (u1 - u0));
+      if (anyRes(x - 5, y - 5, 10, 10)) continue;
+      fumarole(x, y, 2 + fr() * 2.2);
+      made++;
+    }
+  };
+  /** The hot water running off the pools in this rectangle, a stained thread wandering away over the ground, salts along it. */
+  const runoffs = (x0, u0, x1, u1, seed) => {
+    const fr = rng(seed);
+    for (const { cx, cu, rx, ry, ramp } of poolsMade) {
+      if (cx < x0 || cx > x1 || cu < u0 || cu > u1) continue;
+      for (let n = 0; n < 2; n++) {
+        let a = fr() * Math.PI * 2;
+        let x = cx + Math.cos(a) * rx * 1.18;
+        let y = Y(cu) + Math.sin(a) * ry * 1.18;
+        const len = 36 + fr() * 70;
+        const trail = [];
+        for (let i = 0; i < len; i++) {
+          a += (fr() - 0.5) * 0.5;
+          x += Math.cos(a) * 0.5;
+          y += Math.sin(a) * 0.5;
+          if (x < x0 + 6 || x > x1 - 6 || L - y < u0 + 6 || L - y > u1 - 6) break;
+          if (i > 8 && isRes(x, y)) break;
+          trail.push([Math.round(x * S), Math.round(y * S), i]);
+        }
+        // (first the pale salts along its banks, then the water in them; thinner as it goes)
+        // (fading as it seeps away into the ground)
+        const stain = ramp === C.mud ? C.mud[1] : ramp[1];
+        trail.forEach(([X, Yr, i]) => {
+          const k = 1 - i / len;
+          if (i % 2 === 0) img.discPx(X, Yr, 1.3 + k * 1.6, 0xcfc8b0, 0.14 + k * 0.2);
+        });
+        trail.forEach(([X, Yr, i]) => {
+          const k = 1 - i / len;
+          if (i % 2 === 0) img.discPx(X, Yr, 0.8 + k * 0.8, stain, 0.16 + k * 0.42);
+        });
+        for (const [X, Yr] of trail) reserveRect(X / S - 1, Yr / S - 1, 2, 2);
+        // (the next things planted keep off it)
+      }
+    }
+  };
   /** A clump of flowering azalea at (x, y): a dark bush thick with blossom. */
   const azalea = (x, y, r, c = 0xe86a9a) => {
     const CX = x * S;
@@ -1486,14 +1607,14 @@ export function buildMid() {
     const lr = rng(u0 * 3 + 11);
     for (let y = Y(u1); y < Y(u0) - 12; y += 3)
       for (let x = 0; x < W - 8; x += 2) {
-        const w = 12 + Math.floor(lr() * 8);
-        const h = 13;
+        const w = 9 + Math.floor(lr() * 9);
+        const h = 12;
         if (x + w > W + 3 || anyRes(x - 1, y - 1, w + 2, h + 2)) continue;
         if (lr() < 0.2) garden(x, y, w, h);
         else if (lr() < 0.12) {
           // a small lot behind a low wall: a car, or a yard with a shed
           parking(x, y, w, h);
-        } else house(x, y, w, 9, 3, { roofs: o.roofs });
+        } else house(x, y, w, 9, 3, { roofs: o.roofs, plot: true });
         x += w;
       }
     const free = (x, y) => {
@@ -1553,6 +1674,24 @@ export function buildMid() {
       if (best && bd < 96) wire(poles[i], best);
     }
   };
+
+  // the turret stands and vents out in the town stand on small paved terraces with planters round them, not on the street
+  for (const p of [...pads, ...vents]) {
+    if (p.u < 404 || p.u > KANNAWA[1] || (p.u > 1832 && p.u < 2056) || (p.x === 90 && p.u < TOWN[1])) continue;
+    const y = Y(p.u);
+    img.fine(p.x - 17, y - 17, 34, 34, (X, Yr, xx, yy) => {
+      const d = Math.hypot(xx - p.x, yy - y);
+      if (d > 16.4) return null;
+      if (d > 15.8) return 0xb8b4a8;
+      if (d > 15.2) return 0x5e5a52;
+      const a = Math.atan2(yy - y, xx - p.x);
+      const ring = Math.floor(d / 2.4);
+      const joint = ((d % 2.4) < 0.3) || Math.abs(((a * (6 + ring * 2)) / Math.PI) % 1) < 0.08;
+      return joint ? 0x6e6a60 : rampColor(C.stone, 0.45 + hashPx(ring, Math.floor((a * (6 + ring * 2)) / Math.PI), p.x + p.u) * 0.3, X, Yr);
+    });
+    for (const [dx, dy] of [[-12, -12], [12, -12], [-12, 12], [12, 12]]) azalea(p.x + dx, y + dy, 2.6, rand.pick([0xe86a9a, 0xf0a0c0, 0xe8e8e8]));
+    reserveRect(p.x - 17, y - 17, 34, 34);
+  }
 
   // ------------------------------------------------------------ A. the bay, the sand baths, the seafront hotels
   {
@@ -1708,15 +1847,21 @@ export function buildMid() {
         const X = x * S;
         const Yr = y * S;
         // the mound of sand over the body, the trench's edge round it, a towel for a pillow, the head
-        img.fine(x - 3, y - 1, 7, 11, (Xx, Yy) => {
-          const dx = (Xx + 0.5 - X - 1.5) / 6.8;
-          const dy = (Yy + 0.5 - Yr - 12) / 12.5;
+        for (let Yy = Yr; Yy < Yr + 30; Yy++)
+          for (let Xx = X - 10; Xx < X + 14; Xx++) {
+            const dx = (Xx + 0.5 - X - 1.5 - 2) / 8.2;
+            const dy = (Yy + 0.5 - Yr - 14 - 2) / 14.5;
+            if (dx * dx + dy * dy < 1) img.tintPx(Xx, Yy, 0.72);
+          }
+        img.fine(x - 3, y, 7, 10, (Xx, Yy) => {
+          const dx = (Xx + 0.5 - X - 1.5) / 7.4;
+          const dy = (Yy + 0.5 - Yr - 14) / 13.5;
           const d = dx * dx + dy * dy;
           if (d > 1) return null;
           const h = 1 - d;
-          const v = 0.42 + h * 0.3 - dx * 0.34 - dy * 0.16;
-          const c = rampColor(C.sand, v + (hashPx(Xx, Yy, 41) - 0.5) * 0.25, Xx, Yy);
-          return d > 0.8 && hashPx(Xx, Yy, 42) < 0.5 ? null : c;
+          const v = 0.3 + h * 0.5 - dx * 0.45 - dy * 0.15;
+          const c = rampColor([0x2e2a26, 0x443e38, 0x544e46, 0x665e54], v + (hashPx(Xx, Yy, 41) - 0.5) * 0.18, Xx, Yy);
+          return hashPx(Xx, Yy, 42) > 0.97 ? 0x8a8276 : c;
         });
         for (let j = -2; j < 1; j++) for (let i = -2; i < 6; i++) img.px(X + i, Yr + j, j === -2 ? 0xd8d0c0 : 0xf4f0e6);
         img.discPx(X + 1.5, Yr - 1, 2.6, 0xe8c8a8);
@@ -1751,12 +1896,12 @@ export function buildMid() {
         });
       };
       const spots = [];
-      for (let row = 0; row < 3; row++)
-        for (let k = 0; k < 9; k++) {
-          const x = Math.round(9 + k * 19 + (br() - 0.5) * 4 + (row % 2) * 6);
+      for (let row = 0; row < 4; row++)
+        for (let k = 0; k < 11; k++) {
+          const x = Math.round(7 + k * 15.5 + (br() - 0.5) * 4 + (row % 2) * 6);
           const u = 262 + row * 24 + br() * 5;
           const y = Y(u);
-          if (STEPS.some((sx) => Math.abs(x - sx - 6) < 9) || x > W - 6 || (x > 138 && x < 166) || (row === 2 && x > 62 && x < 132)) continue;
+          if (STEPS.some((sx) => Math.abs(x - sx - 6) < 9) || x > W - 6 || (x > 138 && x < 166) || (row >= 2 && x > 60 && x < 132) || (row === 3 && (x < 40 || x > 118))) continue;
           if (br() < 0.2) continue;
           bury(x, y);
           parasol(x + 5, y - 4, br.pick([0xe04a3a, 0x3a7ad0, 0xf0b020, 0x3aa060, 0xd86aa0]));
@@ -1858,6 +2003,34 @@ export function buildMid() {
           const hw = Math.min(6, 1 + (27 - i) * 0.5);
           if (Math.abs(j - 5.5) <= hw) img.px(X + i, Yr + j, hw - Math.abs(j - 5.5) < 1 ? 0xf0ece4 : i % 7 ? 0x4a7aa8 : 0x3a5a7a);
         }
+    }
+    // the swimmers' line of buoys off the beach, its rope; the lifeguard's high chair
+    {
+      for (let x = 6; x < 146; x++) img.px(x * S, Y(174) * S, 0xe8e8e0, 0.55);
+      for (let x = 8; x < 146; x += 15) {
+        img.discPx(x * S, Y(174) * S, 3.2, 0xe87a20);
+        img.discPx(x * S - 1, Y(174) * S - 1, 1.4, 0xffc070);
+        for (let i = -4; i < 5; i++) img.px(x * S + i, Y(174) * S + 4, 0xe8f4f4, 0.5);
+      }
+      const x = 92;
+      const y = Y(238);
+      const X = x * S;
+      const Yy = y * S;
+      objects.push({
+        y: y + 2,
+        shadow: () => {
+          for (let k = 0; k < 30; k++) for (let t = -3; t <= 3; t++) img.tintPx(X + 3 + k, Yy + 3 + Math.floor(k * 0.55) + t, 0.7);
+        },
+        draw: () => {
+          for (const sx of [-5, 5]) for (let j = -20; j < 4; j++) img.px(X + sx, Yy + j, 0xe8e4d8);
+          for (const k of [-14, -6, 2]) for (let i = -5; i <= 5; i++) img.px(X + i, Yy + k, 0xc8c4b8);
+          for (let j = -26; j < -18; j++) for (let i = -6; i <= 6; i++) img.px(X + i, Yy + j, j < -24 ? 0xd8402e : 0xf4f0e6);
+          personPx(X - 1, Yy - 23, rng(9), { coat: 0xd8402e, hat: true });
+        },
+      });
+      reserveRect(x - 3, y - 8, 6, 10);
+      folk(100, y + 8);
+      folk(56, Y(250));
     }
     // the promenade's dressing, the coast road and the traffic on it
     {
@@ -2398,6 +2571,31 @@ export function buildMid() {
       }
       reserveRect(x - 1, Y(1550), 15, 240);
       for (let u = 1320; u < 1550; u += 40) glow(x + 6, Y(u), C.warm, 0.7);
+      {
+        const YW0 = Y(1436) * S;
+        const YW1 = Y(1426) * S;
+        const XW = 100 * S;
+        for (let Yr = YW0 + 4; Yr < YW1 + 8; Yr++) for (let X = XW; X < X0; X++) img.tintPx(X, Yr, Yr >= YW1 ? 0.62 : 1);
+        for (let Yr = YW0; Yr < YW1; Yr++)
+          for (let X = XW; X < X0; X++) {
+            const a = Yr - YW0;
+            const mid = Math.abs(a - 15) < 4;
+            img.px(X, Yr, a < 2 ? 0x8a8e94 : a > 27 ? 0x4a4e54 : (X - XW) % 24 < 2 ? 0x7a8088 : mid ? (Math.abs(a - 15) < 1 ? 0xe0ecf0 : 0xc8dce0) : a < 15 ? 0xd8dedc : 0xbcc4c2);
+          }
+        const r = rng(1431);
+        for (let Yr = YW0 - 2; Yr < YW1 + 2; Yr++) for (let i = 0; i < 6; i++) img.px(XW + i, Yr, i === 0 ? 0xe8e4d8 : i === 5 ? 0x2a2622 : 0xc8302a);
+        for (let k = 0; k < 4; k++) glyph(XW + 1, YW0 + 1 + k * 7, 4, 0xf8f4ec, r);
+        reserveRect(99, Y(1437), 16, 12);
+        crowd(99, Y(1426), 3, 3, 3, true);
+        // the shops' awnings stick out along the east flank
+        const aw = rng(1432);
+        for (let u = 1320; u < 1545; u += 18) {
+          const c = aw.pick([0xc8302a, 0x2a6ac8, 0xe8c040, 0x3a8a4a, 0xf0ece4]);
+          const YY = Y(u) * S;
+          for (let j = 0; j < 30; j++) for (let i = 0; i < 6; i++) img.px(X1 + i, YY + j, i === 5 ? scaleColor(c, 0.6) : (j >> 2) % 2 ? c : 0xf4f0e6);
+        }
+        reserveRect(127, Y(1550), 4, 240);
+      }
       crowd(x, Y(1308), 13, 2, 6, true);
       crowd(x, Y(1558), 13, 4, 7, true);
     }
@@ -3391,6 +3589,12 @@ export function buildMid() {
       kit.path(pts, [stepper(0xd04040, 0, 4450), stepper(0xd04040, 1, 4450)], { sp: 3.2, n: 2, gap: 90, turn: 'none', fps: 3, s0: 0.4 });
       for (const [x, u] of [[129, 4480], [100, 4467], [70, 4460], [64, 4436], [110, 4419], [131, 4430]]) crowd(x - 3, Y(u), 6, 2, 2, true);
     }
+    runoffs(30, 3330, 146, 3500, 6601);
+    runoffs(8, 3560, 146, 3830, 6602);
+    runoffs(8, 4040, 146, 4400, 6603);
+    fumaroles(36, 3340, 140, 3495, 5, 6604);
+    fumaroles(14, 3566, 140, 3825, 10, 6605);
+    fumaroles(14, 4046, 140, 4395, 12, 6606);
     dress(30, 3330, 146, 3500);
     dress(8, 3560, 146, 3830);
     dress(8, 4040, 146, 4400);
@@ -3572,6 +3776,40 @@ export function buildMid() {
       });
       reserveRect(x - 10, y - 22, 22, 32);
     }
+    // the belts of lawn and palms down the sides of the park, clipped hedges along them
+    {
+      const b0 = ONIYAMA[0] + 66;
+      const b1 = ONIYAMA[1] - 30;
+      for (const [x0, x1] of [[2, 15], [165, 178]]) {
+        img.fine(x0, Y(b1), x1 - x0, b1 - b0, (X, Yr, xx, yy) => {
+          const e = Math.min(xx - x0, x1 - xx, yy - Y(b1), Y(b0) - yy);
+          if (e < 0.5) return 0xb8b4a8;
+          if (e < 2) {
+            const t = hashPx(X >> 1, Yr >> 1, 215);
+            return t < 0.2 ? 0x4e7a44 : t < 0.65 ? 0x34603a : 0x2a4e30;
+          }
+          let c = rampColor(C.lawn, 0.3 + hashPx(X >> 2, Yr >> 2, 216) * 0.5, X, Yr);
+          if (hashPx(X, Yr, 217) > 0.995) c = 0xf4f0e0;
+          return c;
+        });
+        reserveRect(x0, Y(b1), x1 - x0, b1 - b0);
+        for (let u = b0 + 16, k = 0; u < b1 - 8; u += 34, k++) {
+          if (k % 3 === 2) azalea((x0 + x1) / 2, Y(u), 3.2, 0xe86a9a);
+          else tree(k % 2 ? 'palm' : 'broadleaf', (x0 + x1) / 2 + (k % 2 ? 1 : -1), Y(u), 5.5);
+        }
+      }
+      // the middle walk in red brick, a bed of flowers where the cross walks meet it
+      img.fine(85, Y(b1), 12, b1 - b0, (X, Yr) => {
+        const row = Yr >> 2;
+        const XX = X + (row % 2) * 4;
+        return Yr % 4 === 0 || XX % 8 === 0 ? 0x6a5a50 : rampColor([0x8a5a48, 0x9a6a54, 0xa87a60], hashPx(XX >> 3, row, 218), X, Yr);
+      });
+      for (let u = ONIYAMA[0] + 30; u < ONIYAMA[1] - 60; u += 72) {
+        const y = Y(u + 65);
+        azalea(88, y, 2.2, 0xf0a0c0);
+        azalea(94, y, 2.2, 0xe8e8e8);
+      }
+    }
     house(96, Y(ONIYAMA[0] + 40), 40, 12, 6, { ramp: ROOF.red, hip: true, wall: 0xe8e0d0, noren: 0x8a2a2a });
     crowd(96, Y(ONIYAMA[0] + 21), 40, 3, 8, true);
     const penWater = [0x2e4e42, 0x3e5e4e, 0x4e6e58, 0x6a8a6e];
@@ -3654,12 +3892,56 @@ export function buildMid() {
           hip(x0 + 34, y + 42);
         } else {
           for (let k = 0; k < 2; k++) croc(x0 + 14 + k * 26 + rand() * 6, y + 6 + rand() * 2, (rand() - 0.5) * 0.3 + (k ? Math.PI : 0), 18, k);
+          // more of them, along the south ledge and one or two half in the water, snouts on the kerb
+          if (pen % 2) croc(x0 + 18 + pr() * 22, y + 53, Math.PI + (pr() - 0.5) * 0.3, 20, 0);
+          if (pen % 3 === 0) croc(x0 + 40 - pr() * 8, y + 52, (pr() - 0.5) * 0.3, 16, 1);
+          if (pen % 4 === 1) croc(x0 + 12 + pr() * 6, y + 26 + pr() * 10, Math.PI / 2 + (pr() - 0.5) * 0.5, 15, 1);
+          if (pen % 4 === 3) croc(x0 + 50 - pr() * 6, y + 26 + pr() * 10, -Math.PI / 2 + (pr() - 0.5) * 0.5, 15, 0);
           // two more swim about the pool (live)
           kit.wander(x0 + 30, U(y + 31), 18, 11, [swimmer], { n: 2, sp: 3, idle: 0.5, turn: 'rot' });
         }
         reserveRect(x0 - 2, y - 2, 64, 62);
         plume(x0 + 16 + rand() * 28, y + 34, 1.1);
         crowd(x0, y + 59, 60, 2, 10, true);
+        // the pen's board on the rail, a pergola to wait under
+        {
+          const X = (x0 + 3) * S;
+          const Yy = (y + 58) * S;
+          const sr = rng(u + x0);
+          objects.push({
+            y: y + 60,
+            draw: () => {
+              for (let j = 0; j < 9; j++) for (let i = 0; i < 18; i++) img.px(X + i, Yy - 6 + j, i === 0 || i === 17 || j === 0 || j === 8 ? 0x2a1e18 : 0xf0e8d8);
+              for (let k = 0; k < 3; k++) glyph(X + 2 + k * 5, Yy - 4, 4, hippo ? 0x3a3a60 : 0x2a5a2a, sr);
+              for (const i of [3, 14]) for (let j = 3; j < 7; j++) img.px(X + i, Yy + j, 0x3a2a1c);
+            },
+          });
+          if (pen % 2 === 0) {
+            const PX0 = (x0 + 12) * S;
+            const PX1 = (x0 + 48) * S;
+            const PY0 = (y + 60) * S;
+            const PY1 = (y + 67) * S;
+            objects.push({
+              y: y + 68,
+              shadow: () => {
+                for (let Yr = PY0; Yr < PY1; Yr++) for (let X2 = PX0; X2 < PX1; X2++) img.tintPx(X2 + 5, Yr + 7, 0.7);
+              },
+              draw: () => {
+                for (let Yr = PY0; Yr < PY1; Yr++)
+                  for (let X2 = PX0; X2 < PX1; X2++) {
+                    const ridge = Math.abs(Yr - (PY0 + PY1) / 2) < 1;
+                    const c = (X2 >> 3) % 2 ? 0x3a7a5a : 0xe8e4d8;
+                    img.px(X2, Yr, ridge ? scaleColor(c, 1.1) : Yr < (PY0 + PY1) / 2 ? c : scaleColor(c, 0.8));
+                  }
+                for (let X2 = PX0; X2 < PX1; X2++) {
+                  img.px(X2, PY1, (X2 >> 3) % 2 ? 0x2a5a42 : 0xc8c4b8);
+                  if (X2 % 4 === 0) img.px(X2, PY1 + 1, (X2 >> 3) % 2 ? 0x2a5a42 : 0xc8c4b8);
+                }
+                for (const X2 of [PX0 + 1, PX1 - 2]) for (let j = 1; j < 6; j++) img.px(X2, PY1 + j, 0x3a3e44);
+              },
+            });
+          }
+        }
         // a keeper on the walkway, a fowl on the end of a long pole held over the pen for the show
         if (kind === 2 && !hippo) {
           const KX = (x0 + 30) * S;
@@ -3699,17 +3981,17 @@ export function buildMid() {
     }
     // the walks between the pens: planters of palms, benches, the route the visitors take (live)
     for (let u = ONIYAMA[0] + 30; u < ONIYAMA[1] - 60; u += 72) {
-      bench(3, Y(u + 30));
+      bench(17, Y(u + 30));
       bench(87, Y(u + 12));
       lampPost(90, Y(u + 40));
-      lampPost(166, Y(u + 20));
+      lampPost(162, Y(u + 20));
     }
     {
       const wr = rng(6681);
-      for (const [c, x] of [[0xd04040, 12], [0x3a6ad0, 91], [0xe8e8f0, 90], [0xe8c040, 165], [0x2b3c78, 12], [0x3a3a4a, 168]])
+      for (const [c, x] of [[0xd04040, 19], [0x3a6ad0, 91], [0xe8e8f0, 90], [0xe8c040, 161], [0x2b3c78, 20], [0x3a3a4a, 92]])
         kit.path([[x, ONIYAMA[0] + 40], [x + (wr() - 0.5) * 3, ONIYAMA[1] - 30]], [stepper(c, 0, 5000), stepper(c, 1, 5000)], { sp: 3.5, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0: wr() });
     }
-    for (let k = 0; k < 160; k++) {
+    for (let k = 0; k < 30; k++) {
       const x = rand() * W;
       const u = ONIYAMA[0] + rand() * 750;
       if (!anyRes(x - 3, Y(u) - 3, 6, 6)) tree(rand.pick(['palm', 'broadleaf', 'tiny', 'palm']), x, Y(u), 3 + rand() * 3);
@@ -3873,7 +4155,7 @@ export function buildMid() {
           if (e < 1 && !isRes(x, y)) {
             img.fine(x, y, 1, 1, (X, Yr) => {
               const t = hashPx(X, Yr, 152);
-              const c = rampColor(C.clay.map((v) => scaleColor(v, 0.9)), 0.3 + fbm(x, y, { seed: 152, scale: 3 }) * 0.5, X, Yr);
+              const c = rampColor([0x8a7458, 0x9a8468, 0xa89476, 0xb4a282], 0.25 + fbm(x, y, { seed: 152, scale: 3 }) * 0.6, X, Yr);
               return e > 0.86 && hashPx(X >> 1, Yr >> 1, 153) < (e - 0.86) * 7 ? 0x2e4e2a : t < 0.012 ? 0xd8b868 : t > 0.96 ? scaleColor(c, 0.8) : c;
             });
             reserved[y * W + x] = 1;
@@ -3882,27 +4164,33 @@ export function buildMid() {
       const pr = rng(6692);
       /** A macaque: sitting (with the red face up) or on all fours, in fine pixels. */
       const macaquePx = (X, Yy, big, target = img) => {
-        const f = big ? 0x7a5a3e : 0x8a6a4a;
-        const f2 = big ? 0x5a4030 : 0x6a4a32;
-        for (let i = 0; i < 6; i++) target.px(X - 1 + i, Yy + 5, 0x1e1a16, 0.4);
-        for (let j = 0; j < 5; j++) for (let i = 0; i < 5; i++) if (!(i === 0 && j === 0) && !(i === 4 && j === 0)) target.px(X + i - 1, Yy + j, i === 0 ? scaleColor(f, 1.16) : i === 4 ? f2 : f);
-        target.discPx(X + 1.5, Yy - 2, 2.4, f);
-        target.rectPx(X, Yy - 2, 3, 2, 0xe89a8a);
-        target.px(X, Yy - 2, 0x2a1a14);
-        target.px(X + 2, Yy - 2, 0x2a1a14);
-        target.px(X + 4, Yy + 4, f2);
-        target.px(X + 5, Yy + 4, f2);
+        const f = big ? 0x5e4c3c : 0x6e5a48;
+        const f2 = big ? 0x3e3026 : 0x4a3a2e;
+        for (let j = 0; j < 3; j++) for (let i = 0; i < 9; i++) target.px(X - 2 + i, Yy + 4 + j, 0x1e1a16, 0.32);
+        target.discPx(X + 2.2, Yy + 2, 3.2, f2);
+        target.discPx(X + 1.8, Yy + 1.6, 2.5, f);
+        target.discPx(X + 1, Yy + 0.8, 1.2, scaleColor(f, 1.25));
+        target.discPx(X + 2, Yy - 2.2, 2.4, f);
+        target.rectPx(X + 1, Yy - 3, 3, 2, 0xe88a7a);
+        target.px(X + 1, Yy - 3, 0x2a1a14);
+        target.px(X + 3, Yy - 3, 0x2a1a14);
+        for (let i = 0; i < 3; i++) target.px(X + 5 + i, Yy + 4 + (i >> 1), f2);
       };
-      for (let k = 0; k < 90; k++) {
-        const x = Math.round(cx + (pr() - 0.5) * 100);
-        const y = Math.round(Y(cu) + (pr() - 0.5) * 66);
+      // (in knots round the grain, grooming, the odd one by itself)
+      const knots = [];
+      for (let k = 0; k < 9; k++) knots.push([cx + (pr() - 0.5) * 84, Y(cu) + (pr() - 0.5) * 50]);
+      for (let k = 0; k < 110; k++) {
+        const kn = knots[k % knots.length];
+        const near = k % 5 === 0;
+        const x = Math.round(near ? cx + (pr() - 0.5) * 100 : kn[0] + (pr() + pr() - 1) * 16);
+        const y = Math.round(near ? Y(cu) + (pr() - 0.5) * 66 : kn[1] + (pr() + pr() - 1) * 11);
         if (((x - cx) / 54) ** 2 + ((y - Y(cu)) / 36) ** 2 > 0.9) continue;
         const big = pr() < 0.2;
         objects.push({ y: y + 2, draw: () => macaquePx(x * S, y * S, big) });
         if (pr() < 0.15) {
           // a mother with her baby on her back
           objects.push({ y: y + 2.1, draw: () => {
-            img.discPx(x * S + 2, y * S + 2, 1.4, 0x9a7a5a);
+            img.discPx(x * S + 2, y * S + 2, 1.4, 0x8a7460);
             img.px(x * S + 2, y * S + 1, 0xe89a8a);
           } });
         }
@@ -3924,6 +4212,14 @@ export function buildMid() {
           img.px(X + Math.round(Math.cos(a) * (6 + pr() * 14)), Yy + 4 + Math.round(Math.sin(a) * (4 + pr() * 9)), 0xe8d080);
         }
       } });
+      // grain scattered about the knots
+      for (const [kx, ky] of knots) for (let k = 0; k < 26; k++) img.px(Math.round((kx + (pr() + pr() - 1) * 10) * S), Math.round((ky + (pr() + pr() - 1) * 7) * S), 0xe8d890);
+      // the wardens' shed at the wood's edge
+      for (const [x, u] of [[6, 5806], [96, 5806], [8, 5716]])
+        if (!anyRes(x, Y(u), 22, 16)) {
+          house(x, Y(u), 20, 9, 4, { ramp: ROOF.green, hip: false, wood: true });
+          break;
+        }
       // a rail along the near side, visitors at it, and the walk to it from the stairs
       walk(112, Math.round(stairX(5722)), 5720, 5725);
       for (let X = 72 * S; X < 112 * S; X++) {
@@ -3948,10 +4244,26 @@ export function buildMid() {
       house(x, y, 16, 10, 8, { ramp: ROOF.dark, hip: true, wood: true });
       reserveRect(x - 1, y - 1, 18, 20);
     }
-    for (let k = 0; k < 700; k++) {
+    // ferns and bamboo grass on the floor of the wood
+    {
+      const fr = rng(6694);
+      for (let k = 0; k < 1100; k++) {
+        const x = fr() * W;
+        const y = Y(TAKASAKI[0] + fr() * (TAKASAKI[1] - TAKASAKI[0]));
+        if (isRes(x, y)) continue;
+        const X = Math.round(x * S);
+        const Yy = Math.round(y * S);
+        const c = fr() < 0.5 ? 0x3e6a34 : 0x2e5a2e;
+        for (let n = 0; n < 5; n++) {
+          const a = fr() * Math.PI * 2;
+          for (let t = 1; t < 4 + fr() * 2; t++) img.px(X + Math.round(Math.cos(a) * t), Yy + Math.round(Math.sin(a) * t * 0.7), t > 3 ? scaleColor(c, 1.2) : c);
+        }
+      }
+    }
+    for (let k = 0; k < 1500; k++) {
       const x = rand() * W;
       const u = TAKASAKI[0] + rand() * (TAKASAKI[1] - TAKASAKI[0]);
-      if (!anyRes(x - 3, Y(u) - 3, 6, 6)) tree(rand.pick(['broadleaf', 'broadleaf', 'cedar', 'cedar', 'bamboo', 'sakura', 'tiny']), x, Y(u), 4 + rand() * 4);
+      if (!anyRes(x - 3, Y(u) - 3, 6, 6)) tree(rand.pick(['broadleaf', 'broadleaf', 'broadleaf', 'cedar', 'cedar', 'cedar', 'bamboo', 'tiny', 'tiny', 'sakura']), x, Y(u), 4 + rand() * 4);
     }
     {
       // monkeys in the trees and on the stairs (they go over everything: drawn with the crowns already down)
@@ -3964,9 +4276,11 @@ export function buildMid() {
           draw: () => {
             const X = x * S;
             const Yy = y * S;
-            for (let j = 0; j < 5; j++) for (let i = 0; i < 5; i++) img.px(X + i, Yy + j, i === 0 ? 0x9a7a5a : i === 4 ? 0x5a4030 : 0x8a6a4a);
-            img.discPx(X + 2, Yy - 2, 2.2, 0x8a6a4a);
-            img.rectPx(X + 1, Yy - 2, 3, 2, 0xe89a8a);
+            img.discPx(X + 2, Yy + 2, 3, 0x5e4c3c);
+            img.discPx(X + 1.4, Yy + 1.4, 1.8, 0x7e6a56);
+            img.discPx(X + 2, Yy - 2, 2.2, 0x6e5a48);
+            img.rectPx(X + 1, Yy - 2, 3, 2, 0xd87a6a);
+            for (let j = 0; j < 4; j++) img.px(X + 5, Yy + 3 + j, 0x4a3a2e);
           },
         });
       }
@@ -4016,25 +4330,37 @@ export function buildMid() {
     objects.push({
       y: Y(6340) - 8,
       shadow: () => {
-        const X = 90 * S + 10;
-        const Yy = Y(6340) * S - 56;
-        for (let j = 0; j < 30; j++) for (let i = -42 + j * 0.3; i < 42 - j * 0.3; i++) img.tintPx(X + Math.round(i), Yy + j, 0.62);
+        const X = 90 * S + 8;
+        const Yy = Y(6340) * S - 58;
+        for (let j = 0; j < 36; j++) for (let i = -46 + j * 0.5; i < 46 - j * 0.5; i++) img.tintPx(X + Math.round(i), Yy + j, 0.68);
       },
       draw: () => {
         const X = 90 * S;
         const Yy = Y(6340) * S;
-        // a corbelled vault of big stones, stained by a hundred years of spray
-        for (let j = 0; j < 22; j++) {
-          const hw = 42 - j;
-          for (let i = -hw; i < hw; i++) {
-            const stone = hashPx((i + 60) >> 3, j >> 2, 125);
-            let c = rampColor(C.rock, j / 22 + stone * 0.3 - 0.1 - i * 0.002, X + i, Yy + j);
-            if (j % 5 === 0 || (i + (j >> 2) * 4) % 16 === 0) c = 0x3a3630;
-            if (hashPx(X + i, Yy + j, 126) < 0.08) c = 0xd8ccb0;
-            img.px(X + i, Yy - 66 + j, c);
+        // a corbelled vault of big stones, stained by a hundred years of spray, over the mouth of the geyser
+        const VY = Yy - 66;
+        for (let j = 0; j < 30; j++) {
+          const hw = 46 - j * 0.85;
+          for (let i = -Math.round(hw); i < hw; i++) {
+            const row = Math.floor(j / 6);
+            const XX = i + 60 + (row % 2) * 7;
+            const joint = j % 6 === 0 || XX % 14 === 0;
+            const tone = hashPx(XX >> 3 >> 1, row, 125);
+            let c = joint ? 0x4a4640 : rampColor(C.stone, 0.25 + tone * 0.4 + (1 - j / 30) * 0.25 - i * 0.003, X + i, VY + j);
+            const st = hashPx((X + i) >> 1, (VY + j) >> 1, 126);
+            if (!joint && st < 0.1) c = 0xd8ccb0;
+            else if (!joint && st > 0.93) c = scaleColor(c, 0.8);
+            if (Math.abs(i) >= hw - 1.5) c = i < 0 ? C.stone[3] : 0x4a4640;
+            img.px(X + i, VY + j, c);
           }
         }
-        for (const [ox, cc] of [[-42, C.rock[1]], [33, C.rock[0]]]) for (let j = 0; j < 18; j++) for (let i = 0; i < 9; i++) img.px(X + ox + i, Yy - 48 + j, j === 17 ? 0x1a1612 : (j >> 2) % 2 === 0 && i === 4 ? 0x3a3630 : cc);
+        // its two stone piers, down to the rim of the vent
+        for (const [ox, sh] of [[-34, 1], [27, 0]])
+          for (let j = 0; j < 24; j++)
+            for (let i = 0; i < 8; i++) {
+              const joint = j % 6 === 0 || i === 0 || i === 7;
+              img.px(X + ox + i, VY + 30 + j, joint ? 0x3a3630 : rampColor(C.stone, sh ? 0.55 : 0.3, X + ox + i, VY + 30 + j));
+            }
       },
     });
     // spectator benches below the pit, everyone waiting for the next eruption, the board with its time
@@ -4059,6 +4385,13 @@ export function buildMid() {
           for (const i of [8, 50]) for (let j = 15; j < 22; j++) img.px(X + i, Yy + j, 0x3a2a1c);
         },
       });
+    }
+    runoffs(12, t0 + 24, 168, t1 - 22, 6607);
+    fumaroles(16, t0 + 28, 164, t1 - 28, 14, 6608);
+    for (let k = 0; k < 40; k++) {
+      const x = 16 + rand() * 148;
+      const y = Y(t0 + 28 + rand() * (t1 - t0 - 56));
+      if (!anyRes(x - 3, y - 3, 6, 6)) rockPx(x * S, y * S, 2 + rand() * 5, C.rock, k);
     }
     // the walk round the pit's east wall, from the benches to the path up to Chinoike
     walk(160, W, t0 - 4, t0 + 1);
@@ -4139,6 +4472,12 @@ export function buildMid() {
       }
     }
     for (let k = 0; k < 8; k++) plume(px + (rand() - 0.5) * 110, Y(pu) + (rand() - 0.5) * 56, 1 + rand() * 0.8);
+    fumaroles(6, TATSUMAKI[1] + 14, 176, pu - 60, 8, 6609);
+    for (let k = 0; k < 40; k++) {
+      const x = 4 + rand() * 172;
+      const y = Y(TATSUMAKI[1] + 12 + rand() * (pu - TATSUMAKI[1] - 70));
+      if (!anyRes(x - 3, y - 3, 6, 6)) rockPx(x * S, y * S, 2 + rand() * 4, C.clay.map((c) => scaleColor(c, 0.75)), k);
+    }
     for (let k = 0; k < 110; k++) {
       const x = rand() * W;
       const u = TATSUMAKI[1] + 10 + rand() * (pu - TATSUMAKI[1] - 70);
