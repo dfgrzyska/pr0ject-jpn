@@ -442,12 +442,12 @@ export function makeCanvas(seed = 8080) {
     if (x >= 0 && x < W) k.reserve(x - 2, y - 2, 4, 4);
   };
   /** A clipped hedge between two u's: lit along its upper edge, a shade at its foot, a flower here and there. */
-  k.hedge = (x0, x1, u0, u1, seed2 = 1, flower = 0xe85a70) => {
+  k.hedge = (x0, x1, u0, u1, seed2 = 1, flower = 0xe85a70, rate = 0.988) => {
     img.fine(x0, Y(u1), x1 - x0, u1 - u0, (X, Yy, x, y) => {
       const t = (y - Y(u1)) / Math.max(1, u1 - u0);
       const g = hashPx(X >> 1, Yy >> 1, seed2);
       const c = rampColor(C.camphor, Math.max(0.05, Math.min(0.98, 0.92 - t * 0.75 + (g - 0.5) * 0.35)), X, Yy);
-      return hashPx(X, Yy, seed2 + 1) > 0.988 ? flower : c;
+      return hashPx(rate < 0.9 ? X >> 1 : X, rate < 0.9 ? Yy >> 1 : Yy, seed2 + 1) > rate ? (hashPx(X >> 1, Yy >> 1, seed2 + 2) < 0.3 ? 0xf8e0ea : flower) : c;
     });
     for (let X = x0 * S; X < x1 * S; X++) for (let j = 0; j < 4; j++) img.tintPx(X, Y(u0) * S + j, 0.66 + j * 0.07);
     k.reserve(x0, Y(u1), x1 - x0, u1 - u0);
@@ -1127,6 +1127,203 @@ export function makeCanvas(seed = 8080) {
         x += w + (opt.gap ?? 1);
       }
     }
+  };
+
+  /** Build in whatever room is left in a quarter: make(x, u, w, h) for each free plot, largest first. */
+  k.fillGaps = (x0, x1, u0, u1, make) => {
+    for (let u = u0; u < u1 - 9; u += 3)
+      for (let x = x0; x < x1 - 6; x += 2) {
+        let done = false;
+        for (const h of [17, 14, 11]) {
+          for (const w of [15, 11, 8]) {
+            if (x + w > x1 || u + h > u1) continue;
+            const y = Y(u + h);
+            if (k.anyRes(x, y, w, h) || k.anyWet(x, y, w, h)) continue;
+            make(x, u, w, h);
+            x += w;
+            done = true;
+            break;
+          }
+          if (done) break;
+        }
+      }
+  };
+
+  /** A small temple in its walled plot: a gate, a flagged way, the hall under its gable, lanterns, a tree, a few graves. */
+  k.smallTemple = (x, u, w = 30, h = 44, seed2 = 1, ramp = C.kawara) => {
+    if (k.anyRes(x, Y(u + h), w, h)) return false;
+    const yTop = Y(u + h);
+    k.fill(x, yTop, w, h, C.gravel, seed2 + 900, 3);
+    for (let X = x * S; X < (x + w) * S; X++) {
+      for (let j = 0; j < 4; j++) img.px(X, yTop * S + j, j < 1 ? C.kawara[3] : C.plaster[1]);
+      for (let j = 0; j < 6; j++) img.px(X, Y(u) * S - 6 + j, j < 2 ? C.kawara[3] : j < 3 ? C.kawara[1] : C.plaster[1]);
+    }
+    for (let Yy = yTop * S; Yy < Y(u) * S; Yy++) for (const X of [x * S, (x + w) * S - 3]) for (let i = 0; i < 3; i++) img.px(X + i, Yy, i < 1 ? C.kawara[3] : C.plaster[1]);
+    k.reserve(x, yTop, w, h);
+    const cx = x + Math.floor(w / 2);
+    img.fine(cx - 3, Y(u + h - 18), 6, h - 18, (X, Yy, xx, yy) => k.flagPx(X, Yy, xx, yy, C.plaza, seed2 + 901, 12));
+    k.house(x + 3, Y(u + h - 2), w - 6, 11, 7, 'jp', { wall: 0xe8e0d0, ramp, roof: { gable: 'tri', gw: 9, noshi: true }, bay: 5, reserve: false });
+    k.house(cx - 6, Y(u + 10), 12, 5, 4, 'jp', { wall: 0x6a4a32, ramp, reserve: false, bay: 4, doorX: 5 });
+    k.stoneLantern(cx - 5, u + 15, true);
+    k.stoneLantern(cx + 5, u + 15, true);
+    k.tree(x + 5, Y(u + 14), 3.6, C.pine, seed2 + 902, 'pine');
+    k.tree(x + w - 5, Y(u + 16), 4, C.camphor, seed2 + 903);
+    // a little plot of upright graves down one side
+    const X0 = (x + w - 9) * S;
+    for (let j = 0; j < 3; j++)
+      for (let i = 0; i < 4; i++) {
+        const X = X0 + i * 6;
+        const Yy = (Y(u + 8 + j * 4)) * S;
+        const hh = 7 + Math.floor(hashPx(i, j, seed2) * 4);
+        for (let q = 0; q < hh; q++) for (let e = 0; e < 4; e++) img.px(X + e, Yy - q, q === hh - 1 ? C.granite[4] : e < 1 ? C.granite[3] : e > 2 ? C.granite[0] : C.granite[2]);
+        img.px(X + 1, Yy + 1, 0x101418, 0.4);
+      }
+    return true;
+  };
+
+  /**
+   * An old quarter between x0..x1, u0..u1: not rows but a fabric. Lanes wander through it and join up; houses of different
+   * depths and fronts stand along them, roofs in several tiles, a storehouse or an apartment block among them; yards, a
+   * garden with its tree, a vegetable plot, a parked car; lamps at the lanes' corners. temples: [[x, u, w, h]].
+   */
+  k.oldTown = (x0, x1, u0, u1, seed2, opt = {}) => {
+    const g = rng(seed2);
+    const gi = (a, b) => a + Math.floor(g() * (b - a + 1));
+    const ALLEY = [0x46423c, 0x4e4a44, 0x56524a, 0x5e5a50];
+    const GREY = [0x2e3238, 0x3e434a, 0x50565e, 0x666c74, 0x828890];
+    const OLD = [0x34302e, 0x4a4440, 0x5e5650, 0x726a62, 0x8a827a];
+    img.fine(x0, Y(u1), x1 - x0, u1 - u0, (X, Yy, x, y) => {
+      if (k.isRes(x, y) || fineWater[Yy * FW + X]) return null;
+      const r = Math.floor(Yy / 3);
+      const XX = X + r * 2;
+      if (Yy % 3 === 0 && hashPx(XX >> 2, r, seed2 + 1) < 0.6) return scaleColor(ALLEY[0], 0.86);
+      return rampColor(ALLEY, 0.1 + hashPx(XX >> 3, r, seed2) * 0.5, X, Yy);
+    });
+    for (const [tx, tu, tw, th, ramp] of opt.temples ?? []) k.smallTemple(tx, tu, tw, th, seed2 + tx, ramp);
+    const lanePaint = (X, Yy) => k.settPx(X, Yy, seed2, C.stoneSet);
+    const lane = (pts, hw) => {
+      // only where it is free: a lane stops at a bridge, a temple, the river, and goes on beyond
+      let run = [];
+      const flush = () => {
+        if (run.length > 1) {
+          k.way(run, hw, { paint: lanePaint, kerb: scaleColor(C.stoneSet[0], 0.8) });
+          const m = run[Math.floor(run.length / 2)];
+          k.streetLamp(Math.round(m[0] + hw + 1), Math.round(m[1]), 0xffe0b0);
+        }
+        run = [];
+      };
+      for (const p of pts) {
+        const y = Y(p[1]);
+        if (k.anyRes(p[0] - hw - 2, y - hw - 2, hw * 2 + 4, hw * 2 + 4) || k.anyWet(p[0] - hw - 2, y - hw - 2, hw * 2 + 4, hw * 2 + 4)) flush();
+        else run.push(p);
+      }
+      flush();
+    };
+    const nV = Math.max(2, Math.round((x1 - x0) / 56));
+    for (let i = 0; i < nV; i++) {
+      let x = x0 + ((i + 0.5) * (x1 - x0)) / nV + gi(-5, 5);
+      const pts = [];
+      for (let u = u0 + 2; u <= u1 - 2; u += gi(12, 22)) {
+        pts.push([x, u]);
+        x += gi(-4, 4);
+      }
+      lane(pts, 1.5);
+    }
+    for (let u = u0 + gi(40, 70); u < u1 - 20; u += gi(70, 110)) {
+      let uu = u;
+      const pts = [];
+      for (let x = x0 + 2; x <= x1 - 2; x += gi(10, 18)) {
+        pts.push([x, uu]);
+        uu += gi(-2, 2);
+      }
+      lane(pts, 1.5);
+    }
+    const yard = (x, foot, w, h) => {
+      const kind = gi(0, 3);
+      const yTop = Y(foot + h);
+      if (kind === 0 || kind === 3) {
+        k.lawnFill(x, yTop, w, h, C.grass, seed2 + x);
+        k.tree(x + w / 2, Y(foot + h / 2), Math.min(w, h) * 0.34 + 1, g() < 0.3 ? C.pine : C.camphor, seed2 + x * 7 + foot, g() < 0.3 ? 'pine' : 'broadleaf');
+      } else if (kind === 1) {
+        img.fine(x, yTop, w, h, (X, Yy) => ((X >> 2) % 2 ? k.earthPx(X, Yy, 4) : hashPx(X >> 1, Yy >> 1, seed2) < 0.6 ? C.moss[3] : C.moss[2]));
+      } else {
+        img.fine(x, yTop, w, h, (X, Yy) => k.asphaltPx(X, Yy));
+        const c = CARS[gi(0, CARS.length - 1)];
+        for (let j = 0; j < 18; j++) for (let i = 0; i < 12; i++) img.px(x * S + 3 + i, yTop * S + 2 + j, i < 1 ? scaleColor(c, 1.16) : i > 10 ? scaleColor(c, 0.68) : (j > 3 && j < 7) || (j > 12 && j < 15) ? 0x2a3440 : c);
+      }
+      k.reserve(x, yTop, w, h);
+    };
+    let u = u0 + 1;
+    while (u + 11 <= u1) {
+      const rowH = gi(13, 20);
+      let x = x0 + gi(0, 3);
+      while (x < x1 - 5) {
+        let w = gi(8, 17);
+        if (x + w > x1) w = x1 - x;
+        if (w < 6) break;
+        const foot = u + gi(0, 2);
+        let h = rowH - gi(0, 3);
+        // a lane or the row before in the way: a shallower house, or move along
+        while (h >= 10 && (k.anyRes(x, Y(foot + h), w, h) || k.anyWet(x, Y(foot + h), w, h))) h -= 2;
+        if (h < 10) {
+          x += 3;
+          continue;
+        }
+        const yTop = Y(foot + h);
+        const t = g();
+        if (t < 0.1) {
+          yard(x, foot, w - 1, h);
+          x += w + 1;
+          continue;
+        }
+        if (t < 0.24 && h >= 12) {
+          k.house(x, yTop, w - 1, Math.max(6, h - 8), Math.min(8, h - 6), 'block', { roofC: C.roofs[gi(0, C.roofs.length - 1)], wall: C.walls[gi(0, C.walls.length - 1)], shop: g() < 0.5 });
+        } else if (t < 0.31 && w <= 13) {
+          // a white storehouse
+          const rh = Math.max(5, h - 8);
+          const fh = h - rh;
+          k.house(x, yTop, w - 1, rh, fh, 'jp', {
+            wall: 0xeeeae0,
+            ramp: C.kawara,
+            bay: 20,
+            door: false,
+            roof: { noshi: true },
+            extra: (by) => {
+              for (let X = x * S; X < (x + w - 1) * S; X++) for (let j = 0; j < 7; j++) img.px(X, by * S - 7 + j, (X + j) % 6 === 0 || (X - j) % 6 === 0 ? 0xe8e8e4 : 0x3e4450);
+              img.rectPx((x + w / 2 - 1) * S, (by - fh + 1) * S + 3, 5, 4, 0x14141a);
+            },
+          });
+        } else {
+          const rh = Math.round(h * (0.48 + g() * 0.2));
+          const r2 = g();
+          k.house(x, yTop, w - 1, rh, h - rh, 'jp', {
+            ramp: r2 < 0.5 ? C.kawara : r2 < 0.72 ? GREY : r2 < 0.86 ? OLD : r2 < 0.94 ? C.slate : C.redTile,
+            wall: [0xd8ccb4, 0xc8bca4, 0xb8ac94, 0xe4dccc, 0xa89a88, 0xc8b89c][gi(0, 5)],
+            noren: g() < 0.3 ? [0x2a4a8a, 0x8a2a2a, 0xe8d8b0, 0x3a6a4a][gi(0, 3)] : undefined,
+            bay: gi(3, 6),
+            door: g() < 0.7,
+            doorX: gi(1, Math.max(1, w - 5)),
+            roof: { gable: g() < 0.22 ? 'tri' : null, gw: 5, noshi: g() < 0.25, ridgeAt: 0.25 + g() * 0.16 },
+          });
+        }
+        x += w + gi(0, 1);
+      }
+      u += rowH + 2;
+    }
+    // every plot left over gets a small house or its yard, so the quarter closes up round its lanes
+    k.fillGaps(x0, x1, u0, u1, (x, uu, w, h) => {
+      if (g() < 0.1) return yard(x, uu, w - 1, h - 1);
+      const rh = Math.round(h * (0.5 + g() * 0.15));
+      const r2 = g();
+      k.house(x, Y(uu + h), w - 1, rh, h - rh, 'jp', {
+        ramp: r2 < 0.5 ? C.kawara : r2 < 0.75 ? GREY : r2 < 0.9 ? OLD : C.redTile,
+        wall: [0xd8ccb4, 0xc8bca4, 0xb8ac94, 0xe4dccc, 0xa89a88, 0xc8b89c][gi(0, 5)],
+        noren: g() < 0.2 ? [0x2a4a8a, 0x8a2a2a, 0xe8d8b0, 0x3a6a4a][gi(0, 3)] : undefined,
+        bay: gi(3, 5),
+        door: g() < 0.6,
+        doorX: gi(1, Math.max(1, w - 5)),
+      });
+    });
   };
 
   /** A plain modern block with a flat roof and lit windows (offices, apartments, warehouses). */

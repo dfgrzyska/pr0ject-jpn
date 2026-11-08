@@ -824,20 +824,127 @@ export function paintDejima(k) {
 
 // ---------------------------------------------------------------------------------------------- Shinchi
 export function paintShinchi(k) {
-  const { img, Y, kit, objects, glowPx } = k;
+  const { img, Y, kit, objects, glowPx, pool } = k;
   const R = rng(1698);
   const CROSS = STREETS.find((s) => s.u === 3330);
   const roofs = [C.chinaGreen, C.redTile, C.chinaGreen, C.kawara];
   // quadrants of shops: rows facing south, red and green, lanterns and signs, steam from the kitchens
-  const quads = [[33, 84, 2998, 3322], [100, 152, 2998, 3322], [33, 84, 3338, 3652], [100, 152, 3338, 3652]];
+  const quads = [[31, 84, 2998, 3322], [100, 151, 2998, 3322], [31, 84, 3338, 3652], [100, 151, 3338, 3652]];
+  // Minato Park at the corner of the quarter: the heart of the Lantern Festival. A paved square, a Chinese pavilion, a
+  // little stage, a wall of red lanterns and the great lantern figures standing on it
+  {
+    const px0 = 104;
+    const px1 = 150;
+    const pu0 = 3004;
+    const pu1 = 3064;
+    k.flagFill(px0, Y(pu1), px1 - px0, pu1 - pu0, [0x8a4a3a, 0x9a5a48, 0xaa6a56, 0xba7a64], 3005, 15);
+    k.reserve(px0, Y(pu1), px1 - px0, pu1 - pu0);
+    k.house(116, Y(pu1 - 2), 22, 10, 8, 'china', { ramp: C.chinaGreen, wall: 0xa8483a, reserve: false, doorX: 9 });
+    for (const [x, u] of [[108, 3020], [142, 3020], [108, 3046], [142, 3046]]) k.tree(x, Y(u), 3.6, CAMPHOR, x + u);
+    const figure = (x, u, c, kind) => {
+      objects.push({
+        y: Y(u) + 1,
+        shadow: () => k.shadowEllipse(x + 2, Y(u) + 1, 6, 2, 0.6),
+        draw: () => {
+          const X = x * S;
+          const Yb = Y(u) * S;
+          // its stand
+          for (let j = 0; j < 9; j++) {
+            img.px(X, Yb - j, 0x4a2a1c);
+            img.px(X + 1, Yb - j, 0x2e1a12);
+          }
+          for (let i = -6; i <= 6; i++) img.px(X + i, Yb, 0x4a2a1c);
+          if (kind === 1) {
+            // a tower of three gold lanterns, one above another
+            for (let t = 0; t < 3; t++) {
+              const cy = Yb - 15 - t * 15;
+              const R0 = 10 - t * 2;
+              for (let j = -6; j <= 6; j++)
+                for (let i = -R0; i <= R0; i++) {
+                  if ((i / R0) ** 2 + (j / 6.6) ** 2 > 1) continue;
+                  const rib = Math.abs(Math.round(i * 0.5)) % 2 === 0 && i % 4 === 0;
+                  glowPx(X + i, cy + j, rib ? 0xc87a18 : j < -2 ? 0xfff0a0 : 0xffc838, 0.96);
+                }
+              for (let i = -R0 + 2; i <= R0 - 2; i++) {
+                img.px(X + i, cy - 7, 0xc82a1a);
+                img.px(X + i, cy + 7, 0xc82a1a);
+              }
+            }
+          } else {
+            // a great round lantern: red paper, ribs, gold caps, a tassel
+            const cy = Yb - 27;
+            const R0 = 18;
+            for (let j = -16; j <= 16; j++)
+              for (let i = -R0; i <= R0; i++) {
+                const q = (i / R0) ** 2 + (j / 16.5) ** 2;
+                if (q > 1) continue;
+                const w = R0 * Math.sqrt(Math.max(0.01, 1 - (j / 16.5) ** 2));
+                const rib = Math.abs(((i / w) * 3 + 6) % 1) < 0.14;
+                const lit = 1 - q * 0.45;
+                const col = rib ? 0x8a1410 : (Math.floor((j + 20) / 5) % 2 ? c : scaleColor(c, 1.14));
+                glowPx(X + i, cy + j, scaleColor(col, lit + 0.1), 0.97);
+              }
+            for (const yy of [cy - 17, cy + 17]) for (let j = 0; j < 4; j++) for (let i = -8; i <= 8; i++) img.px(X + i, yy + j - 2, j < 1 ? C.goldHi : C.gold);
+            for (let j = 0; j < 9; j++) img.px(X, cy + 19 + j, 0xe8b830);
+            for (let i = -2; i <= 2; i++) img.px(X + i, cy + 28, 0xe8b830);
+          }
+          pool(x, Y(u) - 6, 11, c, 0.24);
+        },
+      });
+      k.reserve(x - 2, Y(u) - 2, 4, 4);
+    };
+    figure(112, 3032, 0xe8301e, 0);
+    figure(127, 3026, 0xffc040, 1);
+    figure(141, 3034, 0xe8301e, 0);
+    // strings of red lanterns across the square
+    for (const u of [3014, 3040, 3056]) {
+      for (let X = (px0 + 1) * S; X < (px1 - 1) * S; X += 9) {
+        const sag = Math.round(Math.sin(((X - px0 * S) / ((px1 - px0) * S)) * Math.PI) * 5);
+        const Yy = Y(u) * S + sag;
+        for (let j = 0; j < 7; j++) for (let i = -2; i <= 2; i++) if (Math.abs(i) < 3 - Math.abs(j - 3) * 0.3) k.glowPx(X + i, Yy + j, j === 0 || j === 6 ? C.gold : i < 0 ? 0xff7a5a : 0xe83a2a, 0.95);
+      }
+    }
+    k.crowd(px0 + 2, Y(pu1 - 16), px1 - px0 - 4, 44, 26);
+    k.strollers(127, 3024, 18, 12, 4);
+  }
+  // the alleys across the quarters: narrow lanes of setts, red lanterns on a wire overhead, little kitchens' back doors
+  for (const [ax0, ax1, au] of [[31, 84, 3092], [100, 151, 3126], [31, 84, 3212], [100, 151, 3246], [31, 84, 3430], [100, 151, 3412], [31, 84, 3544], [100, 151, 3530]]) {
+    const pts = [];
+    for (let x = ax0; x <= ax1; x += 8) pts.push([x, au + Math.sin(x * 0.2 + au) * 1.2]);
+    k.way(pts, 2.2, { paint: (X, Yy) => k.settPx(X, Yy, 33, C.stoneSet), kerb: null });
+    for (let X = (ax0 + 2) * S; X < (ax1 - 2) * S; X += 12) {
+      const Yy = Y(au) * S - 2;
+      img.px(X, Yy - 1, 0x2a2026);
+      for (let j = 0; j < 5; j++) for (let i = -1; i <= 1; i++) k.glowPx(X + i, Yy + j, j === 0 || j === 4 ? C.gold : 0xe8482a, 0.92);
+    }
+    k.crowd(ax0 + 2, Y(au) - 1, ax1 - ax0 - 4, 2, 5);
+  }
+  // along the river's west side: willows between stalls on the walk; a line of red lanterns
+  for (let u = 3010; u < 3650; u += 58) {
+    if (Math.abs(u - CROSS.u) < 16) continue;
+    objects.push({
+      y: Y(u) + 3,
+      shadow: () => k.shadowRect(29, Y(u + 6), 3, 7, 0.66),
+      draw: () => {
+        const X = 28 * S;
+        const Yy = Y(u + 6) * S;
+        for (let j = 0; j < 18; j++) for (let i = 0; i < 9; i++) img.px(X + i, Yy + j, i > 7 ? 0x6a1e16 : (j >> 2) % 2 ? 0xdc442e : 0xf0e8d8);
+        k.glowPx(X + 4, Yy + 9, 0xffd890, 0.9);
+      },
+    });
+  }
   for (const [qx0, qx1, qu0, qu1] of quads) {
     for (let u = qu0; u + 16 <= qu1; u += 24) {
       const h = Math.min(23, qu1 - u);
-      let x = qx0;
+      let x = qx0 + Math.floor(R() * 3);
       while (x < qx1 - 5) {
-        let w = 9 + Math.floor(R() * 9);
+        let w = 8 + Math.floor(R() * 11);
         if (qx1 - x - w < 7) w = qx1 - x;
         const yTop = Y(u + h);
+        if (k.anyRes(x, yTop, w, h)) {
+          x += 3;
+          continue;
+        }
         if (!k.anyRes(x, yTop, w, h)) {
           const tall = R() < 0.3;
           const style = tall ? 'block' : 'china';
@@ -884,6 +991,18 @@ export function paintShinchi(k) {
       }
     }
   }
+  for (const [qx0, qx1, qu0, qu1] of quads)
+    k.fillGaps(qx0, qx1, qu0, qu1, (x, u, w, h) => {
+      const rh = Math.round(h * 0.46);
+      const tall = R() < 0.22;
+      k.house(x, Y(u + h), w - 1, tall ? Math.max(6, h - 8) : rh, tall ? Math.min(8, h - 6) : h - rh, tall ? 'block' : 'china', {
+        ramp: R.pick(roofs),
+        wall: R.pick([0x8a3a32, 0xa8483a, 0x7a5a48, 0xd8c8a8, 0x6a7a6a, 0xc8a070]),
+        roofC: R.pick([0x6a6e74, 0x5a6068, 0x7a7068]),
+        noren: R.pick([0xc8302a, 0xe8b830, 0x2a6a4a]),
+        door: !tall,
+      });
+    });
   // the main street: strings of lanterns overhead, swaying gently; red pillars; steamers of kakuni-manju; crowds
   const string = [0, 1, 2].map((f) =>
     k.sprite(15, 8, 3300, (r) => {

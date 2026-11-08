@@ -15,7 +15,6 @@ import { tramStop } from './town.mjs';
 
 const WILLOW = [0x2a4a2a, 0x3a623a, 0x507a48, 0x6a9258];
 const CAMPHOR = [0x1a3422, 0x284a2c, 0x3a6236, 0x527c44];
-const SAKURA = [0x4a3040, 0x6a4256, 0x8e5a70, 0xb07a8e];
 const CEDAR = Object.assign([0x12261e, 0x1c382a, 0x2a4c38, 0x3e664c], { kind: 'cedar' });
 const ROAD_BRIDGES = [2990, 3660, 4060];
 
@@ -321,7 +320,7 @@ export function paintNakashima(k) {
     k.reserve(121, Y(4090), 12, 16);
     k.road([[127, 4066], [127, 4074]], 3, { side: 0, surface: C.stoneSet });
     for (const x of [116, 138]) k.stoneLantern(x, 4100, true);
-    k.grove(gx0 + 2, gx1 - 2, 4100, 4176, 10, [CAMPHOR, SAKURA], 4075, 3.5, 5);
+    k.grove(gx0 + 2, gx1 - 2, 4100, 4176, 10, [CAMPHOR, WILLOW], 4075, 3.5, 5);
     k.strollers(127, 4120, 12, 8, 3);
   }
   // ---- the Hamanomachi arcade: a glass-roofed shopping lane through the blocks south of the middle street
@@ -387,19 +386,10 @@ export function paintNakashima(k) {
   }
 
   // ---- the old town between the streets, on both sides of the river (houses keep clear of the channel)
-  const bands = [[3667, 3873], [3887, 4053], [4067, 4261]];
-  for (const [u0, u1] of bands) {
-    k.block(0, 150, u0 + 1, u1 - 1, () => (R() < 0.75 ? 'jp' : 'block'), {
-      rowH: 21,
-      w: [9, 16],
-      house: () => ({
-        noren: R() < 0.35 ? R.pick([0x2a4a8a, 0x8a2a2a, 0xe8d8b0, 0x3a6a4a]) : undefined,
-        roofC: R.pick(C.roofs),
-        wall: R.pick([0xd8ccb4, 0xc8bca4, 0xb8ac94, 0xe4dccc, 0xa89a88]),
-      }),
-    });
-  }
-  k.grove(0, 150, 3667, 4261, 30, [CAMPHOR, SAKURA], 3667, 3, 4.5);
+  k.oldTown(0, 150, 3668, 3872, 3668, { temples: [[84, 3680, 28, 40]] });
+  k.oldTown(0, 150, 3888, 4052, 3888, { temples: [[8, 3900, 30, 44], [118, 3960, 30, 42]] });
+  k.oldTown(0, 150, 4068, 4260, 4068, { temples: [[20, 4110, 30, 42, C.copper]] });
+  k.grove(0, 150, 3667, 4261, 30, [CAMPHOR, WILLOW, CAMPHOR], 3667, 3, 4.5);
   // the Meganebashi tram stop, the east verge
   tramStop(k, 3940, 3966);
   for (let u = 3670; u < 4260; u += 20) if (!k.anyRes(174, Y(u + 18), 6, 18)) k.house(174, Y(u + 18), 6, 8, 9, 'block', { roofC: 0x5a6068, plainRoof: true });
@@ -431,12 +421,66 @@ export function paintSuwa(k) {
     img.px(X + 1, Yy + 2, 0xe83a2a);
     glowPx(X + 1, Yy + 1, 0xffd090, 0.85);
   }
+  // the dance stage of the Kunchi in the middle of the ground: planks, a vermilion rail, four bamboo poles with the
+  // festival's banners, strings of lanterns from pole to pole
+  objects.push({
+    y: Y(4279),
+    shadow: () => k.shadowRect(76, Y(4296), 30, 16, 0.6),
+    draw: () => {
+      const X0 = 74 * S;
+      const Y0 = Y(4296) * S;
+      const WW = 32 * S;
+      const HH = 15 * S;
+      for (let j = 0; j < HH; j++)
+        for (let i = 0; i < WW; i++) {
+          const b = j >> 2;
+          const XX = i + b * 11;
+          let c = j % 4 === 3 ? C.wood[0] : XX % 30 === 0 ? C.wood[0] : rampColor(C.wood, 0.5 + hashPx(XX >> 3, b, 1630) * 0.45, X0 + i, Y0 + j);
+          const e = Math.min(i, WW - 1 - i, j, HH - 1 - j);
+          if (e < 2) c = e < 1 ? C.vermilion[3] : C.vermilion[1];
+          img.px(X0 + i, Y0 + j, c);
+        }
+      for (let i = 0; i < WW; i++) for (let j = 0; j < 6; j++) img.px(X0 + i, Y0 + HH + j, j < 1 ? 0x141014 : i % 18 < 2 ? C.vermilion[1] : 0x2a1e1a);
+      for (const [px, py] of [[X0, Y0], [X0 + WW - 1, Y0], [X0, Y0 + HH], [X0 + WW - 1, Y0 + HH]]) {
+        for (let j = 0; j < 36; j++) {
+          img.px(px, py - j, 0xc8b878);
+          img.px(px + 1, py - j, 0x8a7a48);
+        }
+        for (let j = 3; j < 24; j++) for (let i = 2; i < 8; i++) img.px(px + i, py - 36 + j, (j >> 2) % 2 ? 0xf0ece0 : 0xc8302a);
+      }
+    },
+  });
+  k.reserve(74, Y(4296), 32, 18);
+  for (const [x0, x1] of [[56, 72], [108, 124]]) {
+    for (let x = x0; x < x1; x += 8) {
+      // a stall: its striped awning, the counter, a lamp
+      objects.push({
+        y: Y(4278) + 3,
+        shadow: () => k.shadowRect(x + 1, Y(4284), 7, 6, 0.62),
+        draw: () => {
+          const X = x * S;
+          const Yy = Y(4284) * S;
+          for (let j = 0; j < 12; j++) for (let i = 0; i < 21; i++) img.px(X + i, Yy + j, j > 10 ? 0x6a1e16 : (i >> 2) % 2 ? 0xdc442e : 0xf0e8d8);
+          for (let j = 12; j < 18; j++) for (let i = 1; i < 20; i++) img.px(X + i, Yy + j, j === 12 ? 0x2a1a12 : (i >> 2) % 3 ? 0x6a4a30 : 0xffc880);
+          glowPx(X + 10, Yy + 13, 0xffd890, 0.9);
+        },
+      });
+    }
+    k.reserve(x0, Y(4284), x1 - x0, 8);
+  }
+  k.crowd(56, Y(4280), 68, 5, 18);
+  for (let X = 58 * S; X < 122 * S; X += 15) {
+    const sag = Math.round(Math.sin(((X - 58 * S) / (64 * S)) * Math.PI) * 4);
+    img.rectPx(X, Y(4298) * S + sag, 3, 5, 0xf8e8c0);
+    img.px(X + 1, Y(4298) * S + sag + 2, 0xe83a2a);
+    glowPx(X + 1, Y(4298) * S + sag + 1, 0xffd090, 0.85);
+  }
   k.strollers(90, 4286, 30, 5, 5);
   // the long stairway in flights, landings between them, its balustrade, the hill banked up either side
   img.fine(SX0 - 3, Y(4548), SX1 - SX0 + 6, 246, (X, Yy, x, y) => {
     const u = 7168 - y;
     const flight = (u - 4302) % 62;
-    const landing = flight > 54;
+    const landing = flight > 47;
     const e = Math.min(X - (SX0 - 3) * S, (SX1 + 3) * S - 1 - X);
     if (e < 9) return e < 2 ? C.granite[1] : e > 6 ? C.granite[0] : (Yy % 18 < 2 ? C.granite[4] : C.granite[3]);
     if (landing) return k.flagPx(X, Yy, x, y, C.plaza, 1627, 15);
@@ -448,6 +492,60 @@ export function paintSuwa(k) {
     return hashPx(X, Yy, 1628) < 0.08 ? scaleColor(c, 0.9) : c;
   });
   k.reserve(SX0 - 4, Y(4548), SX1 - SX0 + 8, 248);
+  // the banks: stone-faced terraces with clipped azalea on them, stepping up beside each flight
+  for (let u = 4304; u < 4540; u += 62) {
+    for (const [a, b] of [[SX0 - 13, SX0 - 4], [SX1 + 4, SX1 + 13]]) {
+      k.hedge(a, b, u + 3, u + 44, u + a, 0xe86a9a, 0.62);
+      k.stoneFace(a, b, Y(u + 3), 2.4, u + a, C.granite);
+    }
+    // the landing's side: a little shrine on the left, a stone tablet and a pine on the right
+    const lu = u + 52;
+    if (lu < 4545) {
+      k.fill(SX0 - 16, Y(lu + 9), 12, 12, C.plaza, lu, 3);
+      k.fill(SX1 + 4, Y(lu + 9), 12, 12, C.plaza, lu + 1, 3);
+      k.reserve(SX0 - 16, Y(lu + 9), 12, 12);
+      k.reserve(SX1 + 4, Y(lu + 9), 12, 12);
+      k.house(SX0 - 15, Y(lu + 9), 9, 5, 4, 'jp', { ramp: C.copper, wall: 0x6a4a32, bay: 4, reserve: false });
+      objects.push({
+        y: Y(lu) + 1,
+        draw: () => {
+          const CX = (SX0 - 10) * S;
+          const Yb = (Y(lu) + 2) * S;
+          for (const s of [-8, 7]) for (let j = -14; j < 1; j++) for (let i = 0; i < 2; i++) img.px(CX + s + i, Yb + j, i ? C.vermilion[1] : C.vermilion[3]);
+          for (let i = -11; i <= 11; i++) {
+            img.px(CX + i, Yb - 16, 0x2a2026);
+            img.px(CX + i, Yb - 15, C.vermilion[2]);
+            if (Math.abs(i) < 8) img.px(CX + i, Yb - 10, C.vermilion[2]);
+          }
+        },
+      });
+      k.niwaki(SX1 + 11, lu + 2, 0.9, lu);
+      objects.push({
+        y: Y(lu - 2) + 1,
+        draw: () => {
+          const X = (SX1 + 6) * S;
+          const Yb = Y(lu - 2) * S;
+          for (let j = 0; j < 15; j++) for (let i = 0; i < 7; i++) img.px(X + i, Yb - j, j > 11 ? C.granite[3] : i < 1 ? C.granite[3] : i > 5 ? C.granite[0] : j % 3 === 0 && i > 1 && i < 5 ? C.granite[0] : C.granite[1]);
+        },
+      });
+    }
+  }
+  // the festival's banners up the stairs, white and red, on their bamboo poles
+  for (let u = 4306; u < 4540; u += 15) {
+    if ((u - 4302) % 62 > 44) continue;
+    for (const x of [SX0 - 2, SX1 + 1]) {
+      objects.push({
+        y: Y(u) + 1,
+        draw: () => {
+          const X = x * S + 1;
+          const Yb = Y(u) * S;
+          for (let j = 0; j < 30; j++) img.px(X, Yb - j, 0xc8b878);
+          const c = (u >> 1) % 2 ? 0xc8302a : 0xf0ece0;
+          for (let j = 2; j < 21; j++) for (let i = 1; i < 6; i++) img.px(X + i, Yb - 30 + j, j > 17 ? 0x2a4a8a : c);
+        },
+      });
+    }
+  }
   // three torii up the stairs (stone, bronze, stone), lanterns on the landings
   for (const [u, c] of [[4300, C.granite[3]], [4362, 0x6a5a3a], [4486, C.granite[3]]]) {
     const y = Y(u);
@@ -475,7 +573,7 @@ export function paintSuwa(k) {
       },
     });
   }
-  for (const u of [4360, 4422, 4484, 4546, 4310]) {
+  for (const u of [4356, 4418, 4480, 4542, 4310]) {
     k.stoneLantern(SX0 - 5, u);
     k.stoneLantern(SX1 + 4, u);
   }
@@ -551,11 +649,53 @@ export function paintSuwa(k) {
       },
     });
     k.way([[90, 4550], [90, 4560]], 4, { paint: (X, Yy, d, x, yy) => k.flagPx(X, Yy, x, yy, C.plaza, 1629, 15), kerb: C.granite[3] });
+    // the kagura hall for the sacred dances, on the west of the court, open on all sides
+    k.house(40, Y(4596), 11, 9, 4, 'jp', { ramp: C.copper, wall: 0x2a1e1a, bay: 3, reserve: true });
+    // the racks of ema, of omikuji tied in white, the shrine's office and its lit window; a bronze horse
+    objects.push({
+      y: Y(4556) + 1,
+      shadow: () => k.shadowRect(42, Y(4560), 12, 3, 0.7),
+      draw: () => {
+        const X0 = 40 * S;
+        const Yb = Y(4556) * S;
+        for (const i of [0, 33]) for (let j = -21; j < 1; j++) img.px(X0 + i, Yb + j, C.wood[1]);
+        for (let j = 0; j < 3; j++) {
+          for (let i = 0; i < 34; i++) img.px(X0 + i, Yb - 19 + j * 6, C.wood[0]);
+          for (let i = 2; i < 32; i += 3) img.rectPx(X0 + i, Yb - 18 + j * 6, 2, 3, hashPx(i, j, 1631) < 0.25 ? C.hinoki?.[2] ?? 0xba8c56 : 0xd4a86e);
+        }
+        for (let i = -2; i < 36; i++) {
+          img.px(X0 + i, Yb - 23, C.copper[3]);
+          img.px(X0 + i, Yb - 22, C.copper[1]);
+        }
+        const X1 = 54 * S;
+        for (const i of [0, 24]) for (let j = -15; j < 1; j++) img.px(X1 + i, Yb + j, C.wood[0]);
+        for (const j of [-14, -10, -6]) for (let i = 0; i < 25; i++) img.px(X1 + i, Yb + j, i % 2 ? 0xf8f6f0 : 0xdcd8cc);
+      },
+    });
+    k.reserve(40, Y(4562), 24, 7);
+    k.house(126, Y(4598), 13, 7, 5, 'jp', { ramp: C.copper, wall: 0xe0d8c8, bay: 4, reserve: true });
+    objects.push({
+      y: Y(4570) + 1,
+      shadow: () => k.shadowRect(132, Y(4574), 7, 3, 0.68),
+      draw: () => {
+        const X = 132 * S;
+        const Yb = Y(4570) * S;
+        for (let j = 0; j < 6; j++) for (let i = -2; i < 20; i++) img.px(X + i, Yb - j, j > 4 ? C.granite[4] : C.granite[2]);
+        for (let j = 0; j < 7; j++) for (let i = 2; i < 15; i++) img.px(X + i, Yb - 12 - j, j < 1 || i < 4 ? 0x5a8a7a : 0x3a6a5e);
+        for (const i of [3, 12]) for (let j = 0; j < 6; j++) img.rectPx(X + i, Yb - 12 + j, 2, 1, 0x2e5a4e);
+        for (let j = 0; j < 9; j++) for (let i = 14; i < 18; i++) img.px(X + i, Yb - 17 - j + 3, 0x4a7a6a);
+      },
+    });
+    k.reserve(131, Y(4574), 9, 5);
+    // the sacred camphor by the hall, its rope and white papers; a row of little sub-shrines along the back of the court
+    k.tree(46, Y(4612), 8, CAMPHOR, 1633);
+    for (let x = 58; x < 124; x += 11) k.house(x, Y(4634), 9, 5, 4, 'jp', { ramp: x % 2 ? C.copper : C.kawara, wall: 0x6a4a32, bay: 4, reserve: true });
+    for (let x = 56; x < 126; x += 8) k.stoneLantern(x, 4612, true);
     k.strollers(90, 4552, 16, 3, 4);
     k.crowd(84, Y(4556), 14, 6, 6);
   }
   // the sacred grove round it all; the lane round the back to the street at 4652
-  k.forest(0, 150, 4304, 4648, [CAMPHOR, CEDAR, CAMPHOR], 1629, 5, 8, (x, u) => !(x > SX0 - 8 && x < SX1 + 8 && u < 4548) && !(u > 4540 && x > 38 && x < 142));
+  k.forest(0, 150, 4304, 4648, [CAMPHOR, CEDAR, CAMPHOR], 1629, 5, 8, (x, u) => !(x > SX0 - 18 && x < SX1 + 18 && u < 4548) && !(u > 4540 && u < 4640 && x > 38 && x < 142));
   k.road([[140, 4600], [146, 4640], [146, 4652]], 1.5, { side: 0, surface: C.paving });
   // the Suwa-jinja tram stop, the verge
   tramStop(k, 4290, 4318);

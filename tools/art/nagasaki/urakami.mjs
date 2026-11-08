@@ -332,7 +332,7 @@ export function paintUrakami(k) {
     k.crowd(x0 + 2, Y(foot) + 2, w - 4, 6, 14);
   }
   // fishing boats moored along the south quay, their squid lamps lit in a row, their light on the water
-  const squid = (x, y, col) => {
+  const squid = (x, y, col, across = false) => {
     objects.push({
       y: y + 14,
       shadow: () => {
@@ -343,22 +343,25 @@ export function paintUrakami(k) {
         const Y0 = y * S;
         const WW = 21;
         const LL = 42;
+        // (lying across the harbour it is the same boat turned: i and j change places)
+        const put = (i, j, c) => (across ? img.px(X0 + j, Y0 + i, c) : img.px(X0 + i, Y0 + j, c));
+        const shine = (i, j, c, a) => (across ? glowPx(X0 + j, Y0 + i, c, a) : glowPx(X0 + i, Y0 + j, c, a));
         for (let j = 0; j < LL; j++) {
           const t = LL - 1 - j;
           const hw = Math.min(WW / 2, 1 + Math.pow(t, 0.6) * 2.6);
           for (let i = -hw; i <= hw; i++) {
             const e = hw - Math.abs(i);
-            img.px(X0 + 10 + i, Y0 + j, e < 1.2 ? (i > 0 ? scaleColor(col, 0.66) : scaleColor(col, 1.2)) : e < 2.4 ? col : j % 6 === 0 ? 0x9a9488 : 0xb8b2a4);
+            put(10 + Math.round(i), j, e < 1.2 ? (i > 0 ? scaleColor(col, 0.66) : scaleColor(col, 1.2)) : e < 2.4 ? col : j % 6 === 0 ? 0x9a9488 : 0xb8b2a4);
           }
         }
-        for (let j = 5; j < 15; j++) for (let i = 5; i < 16; i++) img.px(X0 + i, Y0 + j, j < 7 ? 0xffffff : j > 12 ? 0x9a9e9e : i > 13 ? 0x2a3a4a : 0xe8e8e0);
+        for (let j = 5; j < 15; j++) for (let i = 5; i < 16; i++) put(i, j, j < 7 ? 0xffffff : j > 12 ? 0x9a9e9e : i > 13 ? 0x2a3a4a : 0xe8e8e0);
         // the line of big lamps down the middle, each a white bulb on a cross wire
         for (let j = 17; j < 38; j += 4) {
-          for (let i = 3; i < 18; i++) img.px(X0 + i, Y0 + j, 0x4a4e54);
+          for (let i = 3; i < 18; i++) put(i, j, 0x4a4e54);
           for (const i of [5, 15]) {
-            glowPx(X0 + i, Y0 + j, 0xf8fff0);
-            glowPx(X0 + i + 1, Y0 + j, 0xe8fff0, 0.8);
-            glowPx(X0 + i, Y0 + j + 1, 0xe8fff0, 0.8);
+            shine(i, j, 0xf8fff0, 1);
+            shine(i + 1, j, 0xe8fff0, 0.8);
+            shine(i, j + 1, 0xe8fff0, 0.8);
           }
         }
         pool(x + 3.5, y + 11, 13, 0xc8ffd8, 0.1 + night(5200) * 0.26);
@@ -415,6 +418,163 @@ export function paintUrakami(k) {
       }
     }
   }
+  // squid boats anchored out in the harbour, each in its pool of green-white light on the black water
+  for (const [x, u, c] of [[26, 5262, 0xe8e8e0], [102, 5258, 0x3a6a9a], [138, 5276, 0xd8d0b8], [42, 5286, 0x8a3a2a], [156, 5392, 0xe8e8e0], [92, 5396, 0xd8d0b8], [120, 5408, 0x3a6a9a], [30, 5398, 0xe8e8e0]]) {
+    squid(x, Y(u), c, (x + u) % 3 !== 0);
+    for (let q = 0; q < 240; q++) {
+      const a = hashPx(q, x, 5305) * 6.283;
+      const r = hashPx(q, u, 5306) ** 0.6 * 36;
+      const X = (x + 3.5) * S + Math.cos(a) * r * 1.3;
+      const Yy = (Y(u) + 7) * S + Math.sin(a) * r * 0.7;
+      if (k.wetPx(Math.round(X), Math.round(Yy))) img.rectPx(X, Yy, 2 + (q % 4), 1, 0xc8ffe0, 0.3 * (1 - r / 36));
+    }
+  }
+  // the fishermen's marina off the west shore: a floating walkway, its finger piers, little boats in their berths, lamps
+  objects.push({
+    y: Y(5332) + 3,
+    shadow: () => k.shadowRect(7, Y(5346), 46, 15, 0.7),
+    draw: () => {
+      const X0 = 4 * S;
+      const Yy = Y(5336) * S;
+      const LL = 46 * S;
+      for (let i = 0; i < LL; i++) for (let j = 0; j < 9; j++) img.px(X0 + i, Yy + j, j < 1 ? C.wood[3] : j > 7 ? C.wood[0] : i % 6 < 1 ? C.wood[0] : C.wood[2]);
+      for (let f = 0; f < 6; f++) {
+        const FX = X0 + 6 + f * 24;
+        for (let j = 1; j < 30; j++) for (let i = 0; i < 4; i++) img.px(FX + i, Yy - j, j % 6 < 1 ? C.wood[0] : i < 1 ? C.wood[3] : C.wood[2]);
+        // a little boat in the berth, white, its awning
+        const BX = FX + 7;
+        const c = [0xe8e8e0, 0x3a6a9a, 0xd8d0b8, 0xc8602a, 0xe8e8e0, 0x2a7a5a][f];
+        for (let j = 0; j < 27; j++) {
+          const hw = Math.min(5, 1 + Math.pow(j, 0.7) * 0.9);
+          for (let i = -hw; i <= hw; i++) img.px(BX + 5 + i, Yy - 28 + j, hw - Math.abs(i) < 1.2 ? (i > 0 ? scaleColor(c, 0.66) : scaleColor(c, 1.2)) : j > 13 && j < 21 ? 0x3a3e46 : 0xc8c0b0);
+        }
+        glowPx(FX + 1, Yy - 30, 0xffe8b0, 0.95);
+        pool((FX + 1) / S, (Yy - 30) / S, 5, 0xffd8a0, 0.14);
+      }
+      for (let q = 0; q < 3; q++) glowPx(X0 + 30 + q * 48, Yy + 2, 0xffe8b0, 0.95);
+    },
+  });
+  k.reserve(4, Y(5346), 47, 13);
+  // the breakwater reaching in from the east, stone and tetrapods, its little red lighthouse at the end
+  {
+    const u = 5340;
+    img.fine(118, Y(u) - 2, W - 118, 6, (X, Yy) => {
+      const j = Yy - (Y(u) - 2) * S;
+      if (j < 1) return C.concrete[4];
+      if (j < 12) return X % 15 === 0 ? C.concrete[0] : k.settPx(X, Yy, 53, C.concrete);
+      return j < 14 ? C.concrete[0] : null;
+    });
+    const g = rng(5340);
+    for (let X = 118 * S; X < W * S; X += 4) {
+      const CX = X + g() * 2;
+      const CY = (Y(u) + 4) * S + g() * 6;
+      img.discPx(CX, CY, 2.6, C.concrete[1]);
+      img.discPx(CX - 0.6, CY - 0.6, 1.6, C.concrete[3]);
+      if (g() < 0.4) img.px(CX, CY + 4, 0xe0f0f0, 0.6);
+    }
+    k.reserve(118, Y(u) - 3, W - 118, 8);
+    objects.push({
+      y: Y(u) + 2,
+      shadow: () => k.shadowRect(122, Y(u) - 2, 4, 4, 0.6),
+      draw: () => {
+        const CX = 120 * S + 1;
+        const Yb = Y(u) * S;
+        for (let j = 0; j < 42; j++) {
+          const hw = 7 - j * 0.05;
+          for (let i = -hw; i <= hw; i++) {
+            const q = (i + hw) / (2 * hw);
+            let c = q < 0.25 ? 0xf06048 : q < 0.75 ? 0xd8382c : 0x8a2018;
+            if (j % 14 < 3) c = 0xf0e8e0;
+            img.px(CX + i, Yb - j, c);
+          }
+        }
+        for (let i = -9; i <= 9; i++) for (let j = 0; j < 3; j++) img.px(CX + i, Yb - 43 - j, j === 0 ? 0x5a5e66 : 0x2a2e36);
+        for (let j = 0; j < 6; j++) for (let i = -3; i <= 3; i++) glowPx(CX + i, Yb - 47 - j, 0xff8a70, 0.95);
+        pool(120, Y(u) - 14, 12, 0xff5040, 0.22);
+      },
+    });
+    for (const x of [136, 156, 172]) k.streetLamp(x, u + 1);
+  }
+  // the south quay's yard: stacks of fish boxes, ice trucks backed up, a small quay crane, a fuel tank, the ice plant
+  {
+    const boxes = (x, u, n, c) => {
+      const X = x * S;
+      const Yy = Y(u) * S;
+      for (let q = 0; q < n; q++) {
+        const i = (q % 5) * 6;
+        const j = Math.floor(q / 5) * 5 - (q % 2);
+        for (let a = 0; a < 5; a++) for (let b = 0; b < 4; b++) img.px(X + i + a, Yy + j + b, b < 1 ? scaleColor(c, 1.2) : a > 3 ? scaleColor(c, 0.7) : c);
+      }
+      for (let a = 0; a < 30; a++) for (let b = 0; b < 3; b++) img.tintPx(X + a + 1, Yy + 16 + b, 0.72);
+    };
+    boxes(6, 5140, 20, 0x3a8ac8);
+    boxes(18, 5132, 15, 0xe8e8e8);
+    boxes(40, 5138, 20, 0xc8a040);
+    boxes(92, 5138, 15, 0x3a8ac8);
+    boxes(112, 5130, 20, 0xe8e8e8);
+    const truck = (x, u, c) => {
+      const X = x * S;
+      const Yy = Y(u) * S;
+      for (let j = 0; j < 33; j++)
+        for (let i = 0; i < 15; i++) {
+          const e = Math.min(i, 14 - i);
+          let col = j < 21 ? (e < 1 ? 0x9aa0a8 : j % 9 === 0 ? 0xc8ccd0 : 0xe8ecf0) : j < 23 ? 0x2a2e34 : c;
+          if (j > 26 && j < 30 && e > 0) col = 0x2a3440;
+          img.px(X + i, Yy + j, col);
+        }
+      for (let j = 0; j < 33; j++) for (let i = 0; i < 3; i++) img.tintPx(X + 15 + i, Yy + j + 2, 0.7);
+    };
+    truck(28, 5146, 0x2a5a8a);
+    truck(35, 5142, 0xc83a2a);
+    truck(122, 5146, 0x2a7a5a);
+    // the ice plant's tower and pipes; a round fuel tank
+    k.slab(62 - 18, Y(5170), 14, 8, 10, { roofC: 0x7a7e84, wall: 0xb0b8bc, plainRoof: true, shop: false });
+    objects.push({
+      y: Y(5126),
+      shadow: () => k.shadowEllipse(151, Y(5132), 9, 7, 0.6),
+      draw: () => {
+        const CX = 148 * S;
+        const CY = Y(5136) * S;
+        for (let j = -18; j <= 18; j++)
+          for (let i = -24; i <= 24; i++) {
+            const d = (i / 24) ** 2 + (j / 18) ** 2;
+            if (d > 1) continue;
+            img.px(CX + i, CY + j, d > 0.88 ? (i + j < 0 ? 0xe8ecf0 : 0x6a7078) : (Math.floor(Math.hypot(i, j * 1.3) / 5) % 2 ? 0xc0c6cc : 0xb0b6bc));
+          }
+        for (let j = 0; j < 12; j++) for (let i = -24; i <= 24; i++) img.px(CX + i, CY + j + 12, j < 1 ? 0x2a2e34 : i > 16 ? 0x6a7078 : 0x98a0a8);
+        img.discPx(CX, CY, 3, 0x6a7078);
+      },
+    });
+    k.reserve(138, Y(5150), 22, 24);
+    // a quay crane on its rails, its jib swung out over the water, a red light on the jib
+    objects.push({
+      y: Y(5186),
+      shadow: () => k.shadowRect(112, Y(5186) - 2, 8, 4, 0.6),
+      draw: () => {
+        const X = 110 * S;
+        const Yb = Y(5186) * S;
+        for (const s of [-9, 9]) img.linePx(X + s, Yb, X + s * 0.3, Yb - 54, s < 0 ? 0x5a6a76 : 0x3a4650);
+        for (let j = 3; j < 54; j += 9) {
+          img.linePx(X - 9 + j * 0.12, Yb - j, X + 9 - j * 0.12, Yb - j - 9, 0x4a5660);
+          img.linePx(X - 9 + j * 0.12, Yb - j, X + 9 - j * 0.12, Yb - j, 0x4a5660);
+        }
+        img.linePx(X - 12, Yb - 54, X + 42, Yb - 90, 0xd8a020);
+        img.linePx(X - 12, Yb - 53, X + 42, Yb - 89, 0x8a6a18);
+        for (let j = 0; j < 27; j++) img.px(X + 42, Yb - 88 + j, 0x8a9096, 0.8);
+        img.rectPx(X - 6, Yb - 66, 12, 12, 0xd8a020);
+        img.rectPx(X - 3, Yb - 63, 6, 5, 0xffe8b0);
+        glowPx(X + 42, Yb - 91, 0xff4030);
+        glowPx(X + 43, Yb - 91, 0xff4030, 0.7);
+      },
+    });
+    for (const [x, u] of [[10, 5158], [40, 5158], [90, 5192], [130, 5170]]) k.streetLamp(x, u, 0xfff4e0);
+    k.crowd(6, Y(5152), 40, 10, 8, [0x3a5a8a, 0x2a3a5a, 0xe8e8e0]);
+    k.crowd(92, Y(5146), 34, 8, 8, [0x3a5a8a, 0x2a3a5a, 0xe8e8e0]);
+  }
+  // glints moving on the dark water
+  kit.spot([[0, 5420, 62, 200], [84, 5420, 96, 200]], [0, 1, 2].map((f) => k.sprite(3, 2, 5300, (r) => {
+    for (let i = 0; i < 2 + f * 3; i++) r.px(i, 2, 0xc8e0e8, 0.75 - f * 0.18);
+  }, false)), { rate: 2.4, fps: 6, a: 0.65 });
   // the harbour bridge: a frame of its own (boats go under), concrete piers in the water, its shadow on the water
   {
     const u0 = Math.floor(uraSouth(B_X)) - 4;
@@ -468,7 +628,28 @@ export function paintUrakami(k) {
     k.streetLamp(x + 9, u - 6);
     if (u + 12 < 5450) for (let q = 0; q < 3; q++) img.rectPx((x + q * 5) * S, Y(u - 2) * S, 12, 6, q % 2 ? 0x3a6aa8 : 0xd8d0b8);
   }
-  k.block(0, 180, 5466, 5584, () => (R() < 0.8 ? 'jp' : 'block'), { rowH: 22, w: [10, 16] });
+  // the north quay: a row of long sheds with their doors open and lit, finger piers out to moored boats
+  for (const [x, w] of [[4, 26], [34, 22], [84, 26], [114, 18]]) {
+    const foot = Math.round(Math.max(uraNorth(x), uraNorth(x + w))) + 7;
+    if (foot + 13 > 5450) continue;
+    if (k.anyRes(x, Y(foot + 13), w, 13)) continue;
+    k.slab(x, Y(foot + 13), w, 8, 5, { roofC: R.pick([0x5a6a74, 0x6a7680, 0x7a6a5a]), wall: 0xa8a49a, plainRoof: false, shop: false });
+  }
+  for (const [x, c] of [[20, 0xe8e8e0], [48, 0x2a5a8a], [94, 0xd8d0b8], [124, 0xe8e8e0], [150, 0x8a3a2a]]) {
+    const u = Math.round(uraNorth(x));
+    objects.push({
+      y: Y(u) + 12,
+      draw: () => {
+        const X = x * S;
+        const Yy = Y(u) * S;
+        for (let j = 0; j < 42; j++) for (let i = 0; i < 6; i++) img.px(X + i, Yy + j, j % 6 < 1 ? C.wood[0] : i < 1 ? C.wood[3] : C.wood[2]);
+        glowPx(X + 2, Yy + 40, 0xffe8b0, 0.95);
+        pool(x + 1, Y(u) + 13, 6, 0xffd8a0, 0.16);
+      },
+    });
+    squid(x + 3, Y(u - 2), c);
+  }
+  k.oldTown(0, 180, 5467, 5584, 5467, { temples: [[132, 5506, 30, 42], [12, 5500, 26, 40, C.copper]] });
   k.grove(0, 180, 5466, 5600, 34, [CAMPHOR, OAK], 5466, 3, 5);
   // Fuchi Shrine by the roundabout: torii, lanterns, the hall in its grove, a path to it
   {
@@ -1073,8 +1254,82 @@ export function paintInasa(k) {
   mast(160, 6712, 86);
   mast(146, 6640, 54);
   // the forest over everything else, up to the ridge: its crowns make the skyline the night view rises behind
-  const pals = [CEDAR, OAK, CAMPHOR, CEDAR, OAK, [0x24382a, 0x34503a, 0x48683e, 0x62804a]];
-  k.forest(0, W, 5600, RIDGE - 2, pals, 6100, 4.5, 8, (x, u) => !(u > 6600 && u < 6745 && x > 26 && x < 146));
+  // the stream down the ravine, over its rocks; it goes under the road in a culvert
+  const STREAM = [[150, 6570], [132, 6480], [112, 6400], [124, 6300], [108, 6220], [120, 6130], [100, 6060], [118, 5990], [136, 5880], [124, 5780], [142, 5690], [152, 5640]];
+  {
+    const seg = (x, u) => {
+      let best = 1e9;
+      for (let i = 0; i + 1 < STREAM.length; i++) {
+        const [ax, au] = STREAM[i];
+        const [bx, bu] = STREAM[i + 1];
+        const vx = bx - ax;
+        const vu = bu - au;
+        const t = Math.max(0, Math.min(1, ((x - ax) * vx + (u - au) * vu) / (vx * vx + vu * vu)));
+        best = Math.min(best, Math.hypot(x - ax - t * vx, u - au - t * vu));
+      }
+      return best;
+    };
+    img.fine(90, Y(6580), 72, 950, (X, Yy, x, y) => {
+      const u = 7168 - y;
+      const wob = Math.sin(u * 0.13) * 1.1 + Math.sin(u * 0.37 + x) * 0.5;
+      const d = seg(x + wob, u);
+      if (d > 4 || k.isRes(x, y)) return null;
+      if (d > 2.6) return rampColor(C.rock, 0.2 + hashPx(X >> 2, Yy >> 2, 6010) * 0.6, X, Yy);
+      const g = hashPx(X >> 1, Yy, 6011);
+      if (d > 2.2) return g < 0.4 ? 0xd8ecf0 : 0x4a7a8a;
+      return g > 0.86 ? 0xe0f0f4 : g > 0.5 ? 0x3a6a7a : 0x224a58;
+    });
+    for (let i = 0; i + 1 < STREAM.length; i++) {
+      const [ax, au] = STREAM[i];
+      const [bx, bu] = STREAM[i + 1];
+      const n = Math.ceil(Math.hypot(bx - ax, bu - au) / 3);
+      for (let q = 0; q <= n; q++) k.reserve(ax + ((bx - ax) * q) / n - 3, Y(au + ((bu - au) * q) / n) - 2, 6, 4);
+    }
+    // the stones in it and a few small falls with their mist
+    for (let i = 0; i + 1 < STREAM.length; i++) {
+      const [ax, au] = STREAM[i];
+      const [bx, bu] = STREAM[i + 1];
+      const CX = ((ax + bx) / 2) * S;
+      const CY = Y((au + bu) / 2) * S;
+      if (!k.isRes(CX / S + 8, CY / S)) k.rockPx(CX, CY, 6, C.rock, i);
+    }
+    kit.spot([[100, 6300, 40, 220], [104, 5980, 40, 200]], [0, 1].map((f) => k.sprite(2, 2, 6000, (r) => {
+      r.discPx(3, 3, 2 - f * 0.7, 0xeaff70, 0.95 - f * 0.3);
+      r.discPx(3, 3, 3, 0xc8ff50, 0.22);
+    }, false)), { rate: 3.2, fps: 3, a: 0.95 });
+  }
+  // glades in the woods: moss and boulders, a bench, a path from the road; wild boar root about in them at night
+  const boar = [0, 1].map((f) => k.sprite(7, 4, 6200, (r) => {
+    for (let i = 2; i < 16; i++) for (let j = 2; j < 9; j++) if (Math.abs(j - 5) + (i < 5 ? 5 - i : 0) * 0.5 < 4) r.px(i, j, j < 4 ? 0x5a4a3c : 0x3a2e24);
+    for (let i = 15; i < 20; i++) for (let j = 4; j < 8; j++) r.px(i, j, 0x4a3a2c);
+    r.px(20, 6, 0x2a1e16);
+    r.px(19, 4, 0x14100c);
+    for (const [i, st] of [[5, f], [8, 1 - f], [12, f], [14, 1 - f]]) for (let j = 8; j < 10 + st; j++) r.px(i, j, 0x2a1e16);
+    for (let i = 3; i < 18; i++) r.px(i, 11, 0x101018, 0.3);
+  }));
+  for (const [x, u, rx, ry, dk] of [[128, 6092, 16, 13, 12], [58, 6160, 15, 11, 12], [40, 6330, 14, 12, 16], [132, 6452, 15, 12, 20], [100, 5990, 12, 9, 9]]) {
+    img.fine(x - rx - 2, Y(u) - ry - 2, 2 * rx + 4, 2 * ry + 4, (X, Yy, xx, yy) => {
+      const d = Math.hypot((xx - x) / rx, (yy - Y(u)) / ry) + (fbm(xx, yy, { seed: 6020, scale: 4 }) - 0.5) * 0.5;
+      if (d > 1 || k.isRes(xx, yy)) return null;
+      return k.lawnPx(X, Yy, 0.35 + fbm(xx, yy, { seed: 6021, scale: 5 }) * 0.5, C.moss, true);
+    });
+    for (let yy = Y(u) - ry + 2; yy < Y(u) + ry - 2; yy += 2) for (let xx = x - rx + 2; xx < x + rx - 2; xx += 2) if (Math.hypot((xx - x) / rx, (yy - Y(u)) / ry) < 0.72) k.reserve(xx, yy, 2, 2);
+    k.boulder(x - rx * 0.4, u + ry * 0.3, 4, 3, x + u, 0.8);
+    k.boulder(x + rx * 0.45, u - ry * 0.3, 3, 2.4, x + u + 1, 0.8);
+    k.bench(x - 3, Y(u) + ry * 0.4, 5);
+    const d0 = DRIVE[dk];
+    const dx = x - d0[0];
+    const du = u - d0[1];
+    const nd = Math.hypot(dx, du) || 1;
+    const start = [d0[0] + (dx / nd) * 6, d0[1] + (du / nd) * 6];
+    if (nd < 70) k.way([start, [x, u]], 1.3, { paint: k.earthPx, kerb: null });
+    kit.wander(x, u, rx * 0.6, ry * 0.5, boar, { n: 1, sp: 3, turn: 'flip', fps: 3, idle: 0.6 });
+    k.strollers(x, u, rx * 0.4, ry * 0.3, 1, { sp: 2 });
+  }
+    const zone = (x, u) => fbm(x, u, { seed: 6200, scale: 42, octaves: 2 }) > 0.52;
+  const outside = (x, u) => !(u > 6600 && u < 6745 && x > 26 && x < 146);
+  k.forest(0, W, 5600, RIDGE - 2, [CEDAR, CEDAR, [0x0c1c18, 0x162a22, 0x20382c, 0x30483a]], 6100, 3.8, 6, (x, u) => outside(x, u) && zone(x, u));
+  k.forest(0, W, 5600, RIDGE - 2, [OAK, CAMPHOR, OAK, [0x24382a, 0x34503a, 0x48683e, 0x62804a], [0x3a3e22, 0x54542a, 0x70683a, 0x8a7e48]], 6101, 5, 9, (x, u) => outside(x, u) && !zone(x, u));
   // grey rock outcrops showing through the trees
   for (let i = 0; i < 26; i++) {
     const x = R.int(6, 174);
