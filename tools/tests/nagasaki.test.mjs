@@ -123,6 +123,7 @@ test('the map hangs together: roads, the river and the tramway lead somewhere', 
 const object = () => ({
   x: 0, y: 0, alpha: 1, visible: true,
   setOrigin() { return this; }, setDepth() { return this; }, setFrame() { return this; },
+  setScale() { return this; }, setBlendMode() { return this; }, setTint() { return this; },
   setVisible(v) { this.visible = v; return this; },
   setAlpha(a) { assert(a >= 0 && a <= 1, `alpha ${a}`); this.alpha = a; return this; },
   setPosition(x, y) { this.x = x; this.y = y; return this; },

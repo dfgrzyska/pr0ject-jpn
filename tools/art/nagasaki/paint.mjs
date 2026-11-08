@@ -35,7 +35,7 @@ export function masonry(r, x, y, w, h, base, seed = 2, size = 5) {
  * surface normals against a light from the upper left. prims: { cap: [ax, ay, bx, by], r, z } | { ell: [cx, cy],
  * rx, ry, z }, coordinates relative to (ox, oy). ramp: dark to light. Returns the covered pixels' mask (Set).
  */
-export function sculpt(r, ox, oy, prims, ramp, { outline = true, light = [-0.55, -0.62, 0.56] } = {}) {
+export function sculpt(r, ox, oy, prims, ramp, { outline = true, light = [-0.55, -0.62, 0.56], smooth = 0 } = {}) {
   const ln = Math.hypot(...light);
   const L = light.map((v) => v / ln);
   let x0 = Infinity;
@@ -97,6 +97,41 @@ export function sculpt(r, ox, oy, prims, ramp, { outline = true, light = [-0.55,
         shade[k] = (nx * L[0] + ny * L[1] + nz * L[2]) * 0.62 + 0.42 + (p.tone ?? 0);
       }
     }
+  // smooth: the forms melt into one another (muscle, not balloons): shade from the slope of the blurred depth
+  if (smooth > 0) {
+    let depthB = depth.slice();
+    for (let pass = 0; pass < 3; pass++) {
+      const next = depthB.slice();
+      for (let j = 0; j < h; j++)
+        for (let i = 0; i < w; i++) {
+          if (depth[j * w + i] === -Infinity) continue;
+          let sum = 0;
+          let n = 0;
+          for (let dj = -smooth; dj <= smooth; dj++)
+            for (let di = -smooth; di <= smooth; di++) {
+              const q = (j + dj) * w + i + di;
+              if (j + dj < 0 || j + dj >= h || i + di < 0 || i + di >= w || depthB[q] === -Infinity) continue;
+              sum += depthB[q];
+              n++;
+            }
+          next[j * w + i] = sum / n;
+        }
+      depthB = next;
+    }
+    const dz = (a, b) => (a === -Infinity || b === -Infinity ? 0 : a - b);
+    const gain = 0.62;
+    for (let j = 1; j < h - 1; j++)
+      for (let i = 1; i < w - 1; i++) {
+        const q = j * w + i;
+        if (depth[q] === -Infinity) continue;
+        const nx = -dz(depthB[q + 1], depthB[q - 1]) * gain;
+        const ny = -dz(depthB[q + w], depthB[q - w]) * gain;
+        const len = Math.hypot(nx, ny, 1);
+        // keep the tone (rock, cloth) the primitives gave, add the new light
+        const tone = shade[q] - Math.round(shade[q] * 4) / 4;
+        shade[q] = ((nx * L[0] + ny * L[1] + L[2]) / len) * 0.72 + 0.34 + tone * 0.2;
+      }
+  }
   const mask = new Set();
   for (let j = 0; j < h; j++)
     for (let i = 0; i < w; i++) {
@@ -106,7 +141,7 @@ export function sculpt(r, ox, oy, prims, ramp, { outline = true, light = [-0.55,
       const y = oy + by + j;
       const edge = outline && (i === 0 || j === 0 || i === w - 1 || j === h - 1 || depth[k - 1] === -Infinity || depth[k + 1] === -Infinity || depth[k - w] === -Infinity || depth[k + w] === -Infinity);
       // a crease where a nearer form overlaps a farther one
-      const crease = !edge && (depth[k] - depth[k - 1] > 2.2 || depth[k] - depth[k - w] > 2.2);
+      const crease = !edge && !smooth && (depth[k] - depth[k - 1] > 2.2 || depth[k] - depth[k - w] > 2.2);
       let v = shade[k];
       if (crease) v -= 0.12;
       const s = Math.max(0, Math.min(ramp.length - 1.001, v * (ramp.length - 1)));

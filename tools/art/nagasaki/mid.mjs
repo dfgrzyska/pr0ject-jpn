@@ -1,10 +1,10 @@
-// Middle layer (Nagasaki), seen from above in 3/4 pixel-art view, sailing in from Hashima through the harbour
-// mouth and north through the city to the night summit of Mount Inasa. The map (shores, river, roads) is in
-// geo.mjs; the districts are painted by the modules below, in order along the strip.
+// Middle layer (Nagasaki), seen from above in 3/4 pixel-art view at 3x the game's resolution, sailing in from Hashima
+// through the harbour mouth and north through the city to the night summit of Mount Inasa. The map (shores, river,
+// roads) is in geo.mjs; the districts are painted by the modules below, in order along the strip. The water is the far
+// layer showing through, with the sky's colour laid over it: gold, then sunset, then the blue hour, then night.
 import { readFileSync } from 'node:fs';
-import { Raster, fbm, mix, rng } from '../../lib/raster.mjs';
-import { rampColor } from '../nature.mjs';
-import { makeCanvas, C, scaleColor } from './canvas.mjs';
+import { fbm, hashPx, makeCanvas, C, S, scaleColor, rampColor, smooth, HiCanvas } from './canvas.mjs';
+import { rng } from '../../lib/raster.mjs';
 import { W, L, RIDGE, leftShore, rightShore, EMBANK, uraSouth, uraNorth } from './geo.mjs';
 import { paintHashima } from './hashima.mjs';
 import { paintHarbour } from './harbour.mjs';
@@ -15,6 +15,7 @@ import { paintTraffic } from './traffic.mjs';
 import { paintNetwork } from './network.mjs';
 
 export { W, L };
+export { buildFar } from './far.mjs';
 
 /** Where the stage's ground turrets stand: they spawn just above the screen and ride on the strip. */
 export function turretPads() {
@@ -23,21 +24,10 @@ export function turretPads() {
   return stage.waves.filter((w) => w.type === 'turret').map((w) => ({ x: w.x, u: Math.round(anchor + mid * w.t + 10) }));
 }
 
-export function buildFar() {
-  const r = new Raster(W, 384);
-  for (let y = 0; y < r.h; y++)
-    for (let x = 0; x < W; x++) {
-      const v = fbm(x * 0.6, y, { seed: 81, scale: 16, periodY: 384 });
-      r.set(x, y, mix(0x071c30, 0x275064, v));
-      if ((x * 17 + y * 31) % 167 === 0) r.rect(x, y, 3, 1, 0x78969f, 0.45);
-    }
-  return r;
-}
-
 /** The ground a district stands on before anything is built (land only). */
 function groundAt(x, u) {
+  if (u < 900) return C.concrete; // Hashima
   if (u < 1960) {
-    // the coasts: rocky shore, then wooded hillside (the shipyard and the terminal pave their own)
     const shore = x < 90 ? x - leftShore(u) : rightShore(u) - x;
     return shore > -7 ? C.rock : C.grass;
   }
@@ -49,96 +39,203 @@ function groundAt(x, u) {
   return C.forest;
 }
 
+/** The sky's colour on the water: [colour, alpha]. */
+function waterSky(u) {
+  const stops = [
+    [0, 0xe8a060, 0.1],
+    [900, 0xe88a50, 0.14],
+    [1500, 0xc85a48, 0.24],
+    [2200, 0x6a3a70, 0.34],
+    [3000, 0x2a2a60, 0.46],
+    [4000, 0x0e1838, 0.58],
+    [7168, 0x081028, 0.62],
+  ];
+  let i = 0;
+  while (i < stops.length - 2 && u >= stops[i + 1][0]) i++;
+  const t = smooth(stops[i][0], stops[i + 1][0], u);
+  const a = stops[i][2] + (stops[i + 1][2] - stops[i][2]) * t;
+  const c0 = stops[i][1];
+  const c1 = stops[i + 1][1];
+  const c = [16, 8, 0].reduce((acc, sh) => acc | (Math.round(((c0 >> sh) & 255) + (((c1 >> sh) & 255) - ((c0 >> sh) & 255)) * t) << sh), 0);
+  return [c, a];
+}
+
+/** What moves on the night panorama, at fine resolution: harbour ferries and their wakes, firework bursts, a shooting star. */
+function paintViewFrames(k) {
+  const { kit } = k;
+  for (let f = 0; f < 2; f++) {
+    const r = new HiCanvas(14, 7);
+    // a little ferry from the side: its hull, white decks and rows of lit windows, a funnel, its lights in the water
+    for (let X = 0; X < 42; X++) {
+      const taper = X > 34 ? (X - 34) * 0.6 : 0;
+      for (let j = 12 + Math.round(taper * 0.6); j < 18 - Math.round(taper * 0.3); j++) r.px(X, j, j < 14 ? 0xd6e2dd : 0x2a3a46);
+    }
+    for (let X = 4; X < 34; X++) for (let j = 6; j < 12; j++) r.px(X, j, j === 6 ? 0xf0f4f4 : (X % 4 < 2 && j > 7 && j < 11 ? (f && X % 8 < 2 ? 0xfff4c8 : 0xffe0a0) : 0xb8c8c8));
+    for (let X = 10; X < 26; X++) for (let j = 2; j < 6; j++) r.px(X, j, j === 2 ? 0xf0f4f4 : (X % 3 < 2 ? 0xffeab4 : 0x8aa0ac));
+    for (let j = 0; j < 5; j++) for (let X = 16; X < 20; X++) r.px(X, j, j < 2 ? 0x1a1a1e : 0xc83a30);
+    r.px(40, 12, f ? 0x92ffa1 : 0x578d79);
+    r.px(2, 11, 0xff6a50);
+    for (let q = 0; q < 12; q += 1) r.px(6 + q * 3 + (f ? 1 : 0), 18 + (q % 3), 0xffe0a0, 0.45 - (q % 3) * 0.1);
+    kit.frame(r, 'view_ferry_' + f);
+  }
+  const w = new HiCanvas(20, 7);
+  for (let q = 0; q < 54; q++) {
+    const al = (q / 54) * 0.38;
+    w.px(q, 3 + q / 7, 0xb8d8e4, al);
+    w.px(q, 17 - q / 7, 0xb8d8e4, al);
+    if (q % 3 === 0) w.px(q, 10, 0xd8ecf4, al * 0.7);
+  }
+  kit.frame(w, 'view_wake');
+  // the bursts are white: the game tints each one. Rings of falling sparks, growing, thinning.
+  const rng2 = rng(777);
+  const rays = Array.from({ length: 64 }, () => [rng2() * 6.283, 0.5 + rng2() * 0.5]);
+  for (let f = 0; f < 6; f++) {
+    const r = new HiCanvas(70, 70);
+    const CX = 105;
+    const CY = 105;
+    const grow = 1 - (1 - (f + 1) / 6) ** 2.4;
+    if (f < 2) {
+      r.discPx(CX, CY, 16 - f * 7, 0xffffff, 0.35);
+      r.discPx(CX, CY, 8 - f * 3, 0xffffff, 0.9);
+    }
+    for (const [ang, len] of rays) {
+      const R = 96 * len * grow;
+      const fall = f * f * 0.9;
+      const tail = 14 - f * 2;
+      for (let t = 0; t < tail; t++) {
+        const q = R - t * 3;
+        if (q < 0) continue;
+        const X = CX + Math.cos(ang) * q;
+        const Yy = CY + Math.sin(ang) * q + fall * (q / 96);
+        const al = (1 - t / tail) * (f > 3 ? 0.7 : 1);
+        r.px(X, Yy, 0xffffff, al);
+        r.px(X + 1, Yy, 0xffffff, al * 0.7);
+        r.px(X, Yy + 1, 0xffffff, al * 0.7);
+      }
+      r.discPx(CX + Math.cos(ang) * R, CY + Math.sin(ang) * R + fall * (R / 96), f > 3 ? 1.2 : 2, 0xffffff, f > 4 ? 0.7 : 1);
+    }
+    kit.frame(r, 'view_fw_' + f);
+  }
+  const st = new HiCanvas(26, 9);
+  for (let q = 0; q < 75; q++) {
+    const al = (q / 75) ** 2;
+    st.px(q, Math.round(q * 0.36), 0xffffff, al);
+    if (q > 50) st.px(q, Math.round(q * 0.36) + 1, 0xc8d8ff, al * 0.5);
+  }
+  kit.frame(st, 'view_star');
+}
+
 export function buildMid() {
   const k = makeCanvas(8088);
-  const { img, Y, U } = k;
+  const { img, Y, U, fineWater, shoreD, FW, FH } = k;
   const R = rng(8089);
 
-  // ------------------------------------------------------------ water and ground
-  for (let y = 0; y < L; y++) {
-    const u = U(y);
+  // ------------------------------------------------------------ water and ground, in fine pixels
+  const nRow = new Float32Array(W);
+  const relief = new Float32Array(W);
+  for (let Yy = 0; Yy < FH; Yy++) {
+    const y = (Yy + 0.5) / S;
+    const u = L - y;
     if (u >= RIDGE) continue; // above the summit ridge: left clear, the night view shows through
-    for (let x = 0; x < W; x++) {
-      if (k.wet(x, y)) {
-        const river = u > EMBANK;
-        const ramp = river ? C.river : C.sea;
-        const n = fbm(x, y, { seed: 71, scale: 22, octaves: 3 });
-        const ripple = fbm(x * 0.35, y * 2.2, { seed: 72, scale: 6, octaves: 2 });
-        let v = 0.18 + n * 0.45 + (ripple > 0.62 ? 0.18 : 0);
-        // shallows lighten towards the shore
-        let near = 9;
-        for (let d = 1; d < 9 && near === 9; d++) if (!k.wet(x - d, y) || !k.wet(x + d, y) || !k.wet(x, y - d) || !k.wet(x, y + d)) near = d;
-        if (!river && near < 9) v += (9 - near) * 0.03;
-        img.set(x, y, rampColor(ramp, Math.min(0.98, v), x, y));
-        continue;
+    if (Yy % S === 0)
+      for (let x = 0; x < W; x++) {
+        nRow[x] = 0.2 + fbm(x, Math.floor(y), { seed: 17, scale: 7, octaves: 2 }) * 0.65;
+        relief[x] = (fbm(x + 1.5, y + 1.5, { seed: 731, scale: 28, octaves: 2 }) - fbm(x - 1.5, y - 1.5, { seed: 731, scale: 28, octaves: 2 })) * 4;
       }
-      const ramp = groundAt(x, u);
-      const n = 0.2 + fbm(x, y, { seed: 17, scale: ramp === C.rock ? 3 : 7, octaves: 2 }) * 0.65;
-      img.set(x, y, rampColor(ramp, n, x, y));
-    }
-  }
-  // edges: stone quays and walls in the city, rocks and surf on the open coasts. In 3/4 view a wall's face shows
-  // under land that has water to its south; its top edge catches the light.
-  for (let y = 1; y < L - 3; y++) {
-    const u = U(y);
-    if (u >= RIDGE) continue;
-    const natural = u < 1540;
-    for (let x = 0; x < W; x++) {
-      if (!k.wet(x, y)) {
-        if (k.wet(x, y + 1) || k.wet(x, y - 1) || k.wet(x - 1, y) || k.wet(x + 1, y)) img.set(x, y, natural ? C.rock[3] : C.granite[3]);
-        continue;
-      }
-      if (!k.wet(x, y - 1)) {
-        // the face of the wall (or rock) below the land
-        for (let j = 0; j < 3; j++) {
-          if (!k.wet(x, y + j)) break;
-          const c = natural ? rampColor(C.rock, 0.5 - j * 0.15 + fbm(x, y + j, { seed: 77, scale: 2 }) * 0.3, x, y + j) : (x + j * 2) % 5 === 0 ? C.granite[0] : C.granite[2 - Math.min(1, j)];
-          img.set(x, y + j, c);
+    const [skyC, skyA] = Yy % S === 0 || !k.sky ? (k.sky = waterSky(u)) : k.sky;
+    const natural = u > 900 && u < 1540;
+    const river = u > EMBANK && u < 4400;
+    for (let X = 0; X < FW; X++) {
+      const i = Yy * FW + X;
+      const d = shoreD[i];
+      const x = (X + 0.5) / S;
+      const g = hashPx(X, Yy, 18);
+      if (fineWater[i]) {
+        // the water itself is the far layer seen through this one, with the sky's colour laid over it
+        let c = skyC;
+        let a = skyA;
+        if (river) {
+          // a river's green water, darker under its banks
+          c = 0x0e2428;
+          a = 0.42 + skyA * 0.5;
+          if (d < 12) a = Math.min(0.92, a + (12 - d) * 0.03);
+        } else if (d < 3) {
+          c = 0xe6f6f6;
+          a = (natural || u < 900 ? 0.85 : 0.5) - d * 0.14;
+        } else if (d < 9) {
+          c = natural ? 0x4ca8b4 : 0x0c2028;
+          a = natural ? 0.46 - d * 0.04 : 0.4 - d * 0.03;
+        } else if (natural && d < 20 && hashPx(X >> 1, Yy >> 2, 19) > 0.5 + d * 0.02) {
+          c = 0x4ca8b4;
+          a = 0.2;
         }
-        if (k.wet(x, y + 3)) img.set(x, y + 3, 0x081820, 0.45);
-        if (k.wet(x, y + 4)) img.set(x, y + 4, 0x081820, 0.25);
+        if (a > 0.003) img.px(X, Yy, c, a);
+        continue;
       }
-      if (natural) {
-        // surf against the rocks: broken white lines a pixel or two off the shore
-        let d = 9;
-        for (let q = 1; q < 6 && d === 9; q++) if (!k.wet(x - q, y) || !k.wet(x + q, y) || !k.wet(x, y + q)) d = q;
-        if (d <= 2 && fbm(x, y * 2, { seed: 79, scale: 3 }) > 0.45) img.set(x, y, 0xe6f2f0, d === 1 ? 0.75 : 0.4);
-        else if (d <= 4 && fbm(x, y, { seed: 80, scale: 2 }) > 0.72) img.set(x, y, 0xa8ccd0, 0.35);
+      const cell = Math.floor(x);
+      const ramp = groundAt(x, u);
+      const n = nRow[cell];
+      let c;
+      if (ramp === C.grass || ramp === C.moss || ramp === C.forest) {
+        c = k.lawnPx(X, Yy, n, ramp, true);
+        c = scaleColor(c, Math.max(0.74, Math.min(1.16, 0.95 + relief[cell])));
+      } else if (ramp === C.rock) {
+        c = rampColor(ramp, n, X, Yy);
+        if (g < 0.12) c = scaleColor(c, 0.84);
+        else if (g > 0.92) c = scaleColor(c, 1.1);
+      } else if (ramp === C.concrete) {
+        const t = hashPx(X >> 2, Yy >> 2, 21);
+        c = rampColor([0x6e6a5e, 0x7e7a6c, 0x8e8a7a, 0x9c9888], n * 0.8 + (t - 0.5) * 0.25, X, Yy);
+        if (g < 0.1) c = scaleColor(c, 0.86);
+        else if (g > 0.95) c = 0xb0ac9a;
+      } else {
+        c = k.pavePx(X, Yy, ramp);
       }
+      if (d <= 5) {
+        // the edge: rock and spray on the open coasts, a stone wall in the city; a face shows under land with water south
+        const south = fineWater[Math.min(FH - 1, Yy + 6) * FW + X];
+        if (natural) c = rampColor(C.rock, 0.3 + (5 - d) * 0.1 + (g - 0.5) * 0.4, X, Yy);
+        else if (south) {
+          const XX = X + ((Yy >> 2) % 2) * 5;
+          c = Yy % 4 === 0 || XX % 10 === 0 ? 0x4e4a44 : scaleColor(C.granite[Math.floor(hashPx(XX >> 3, Yy >> 2, 22) * 2) + 1], 0.92);
+        } else c = d < 2 ? C.granite[0] : X % 9 === 0 ? C.granite[1] : C.granite[3];
+      }
+      img.px(X, Yy, c);
     }
   }
   // boulders in the shallows off the rocky coasts
-  for (let i = 0; i < 70; i++) {
+  for (let i = 0; i < 90; i++) {
     const u = 980 + R() * 560;
     const side = R() < 0.5;
-    const x = side ? leftShore(u) + 2 + R() * 6 : rightShore(u) - 2 - R() * 6;
+    const x = side ? leftShore(u) + 2 + R() * 7 : rightShore(u) - 2 - R() * 7;
     const y = Y(u);
     if (!k.wet(Math.round(x), y)) continue;
-    const r = 1 + R() * 1.6;
-    img.disc(x, y, r, C.rock[2]);
-    img.set(Math.round(x - r * 0.4), Math.round(y - r * 0.4), C.rock[4]);
-    img.set(Math.round(x + r * 0.5), Math.round(y + r * 0.6), C.rock[0]);
-    img.set(Math.round(x), Math.round(y + r + 1), 0xd8eceb, 0.5);
+    const r = 2.5 + R() * 4;
+    k.rockPx(x * S, y * S, r, C.rock, i);
+    for (let a = 0; a < 6.3; a += 0.4) if (R() < 0.7) img.px(x * S + Math.cos(a) * (r + 2), y * S + Math.sin(a) * (r + 1) + 1, 0xe0f0f0, 0.5);
   }
 
   // ------------------------------------------------------------ districts, south to north
-  paintHashima(k);
-  paintNetwork(k);
-  // the harbour winch turrets' pads: kept clear of buildings, a concrete ring with hazard stripes, drawn last
+  // the turrets' pads: kept clear of buildings, a concrete ring with hazard stripes, drawn last
   for (const p of turretPads()) {
     const y = Y(p.u);
     k.reserve(p.x - 10, y - 10, 21, 21);
-    k.late.push(() => {
-      for (let yy = y - 10; yy <= y + 10; yy++)
-        for (let xx = p.x - 10; xx <= p.x + 10; xx++) {
-          const d = Math.hypot(xx + 0.5 - p.x, yy + 0.5 - y);
-          if (d > 10.2) continue;
-          const stripe = (Math.floor(Math.atan2(yy - y, xx - p.x) * 4) & 1) ? 0x2a2a2e : 0xe8c040;
-          img.set(xx, yy, d > 9 ? C.concrete[1] : d > 7.6 ? stripe : (xx + yy) % 4 === 0 ? C.concrete[2] : C.concrete[3]);
-        }
-      img.set(p.x + 3, y + 10, 0x101418, 0.4);
-    });
+    k.late.push(() =>
+      img.fine(p.x - 11, y - 11, 22, 22, (X, Yy, xx, yy) => {
+        const dx = xx - p.x;
+        const dy = yy - y;
+        const d = Math.hypot(dx, dy);
+        if (d > 10.2) return null;
+        if (d > 9.5) return C.concrete[0];
+        if (d > 9) return dx + dy < 0 ? C.concrete[4] : C.concrete[1];
+        if (d > 7.6) return Math.floor(Math.atan2(dy, dx) * 5) & 1 ? 0x2a2a2e : 0xe8c040;
+        if (d > 7.2) return 0x3a3a3e;
+        return rampColor(C.concrete, 0.4 + hashPx(X >> 2, Yy >> 2, 2) * 0.35 - (dx + dy) * 0.02, X, Yy);
+      }),
+    );
   }
+  paintHashima(k);
+  paintNetwork(k);
   paintHarbour(k);
   paintOura(k);
   paintDejima(k);
@@ -148,9 +245,10 @@ export function buildMid() {
   paintUrakami(k);
   paintInasa(k);
   paintTraffic(k);
+  paintViewFrames(k);
 
   const { strip, props, tint } = k.finish();
-  return { strip, props, meta: { width: W, chunkHeight: 512, chunks: 14, length: L, tint } };
+  return { strip, props, meta: { width: W, artScale: S, chunkHeight: 896, chunks: 8, length: L, sway: true, tint } };
 }
 
 export { scaleColor };

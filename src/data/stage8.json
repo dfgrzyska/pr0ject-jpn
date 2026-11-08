@@ -37,10 +37,11 @@
     "ease": 7000
   },
   "boss": true,
+  "shadows": true,
   "end": 260,
   "panorama": {
     "ridge": 6748,
-    "hold": 7
+    "hold": 10.5
   },
   "interlude": {
     "from": 149,

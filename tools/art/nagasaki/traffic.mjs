@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Raster } from '../../lib/raster.mjs';
+import { HiCanvas } from '../hires.mjs';
 import { planTraffic } from '../props.mjs';
 import { CARS, scaleColor } from './canvas.mjs';
 import { W, R1, TRAM_U0, STREETS, MEGAMI_U, B_X, FUCHI, DRIVE, PARK, offset } from './geo.mjs';
@@ -21,51 +21,73 @@ export function paintTraffic(k) {
     return [Math.max(0, tMid - 16), tMid + 6];
   };
   const frame = (r, u) => kit.frame(tod.frame(r, u));
-  // cars face right (the props turn them to their heading); headlights and tail lights for the dusk
+  // cars face right (the props turn them to their heading); the headlights and tail lights stay bright
   const carF = (col, u) => {
-    const r = new Raster(7, 4);
-    r.rect(0, 0, 7, 4, col);
-    r.rect(2, 0, 3, 4, scaleColor(col, 1.15));
-    r.rect(1, 0, 1, 4, 0x283440);
-    r.rect(5, 0, 1, 4, 0x283440);
-    const f = frame(r, u);
-    // the lights stay bright: put them on after the grade
-    const fr = k.kit.frames.get(f);
-    fr.set(6, 0, 0xfff4c8);
-    fr.set(6, 3, 0xfff4c8);
-    fr.set(0, 0, 0xff4030);
-    fr.set(0, 3, 0xff4030);
-    return f;
+    const r = new HiCanvas(7, 4);
+    const FL = 21;
+    const FHh = 12;
+    for (let j = 0; j < FHh; j++)
+      for (let i = 0; i < FL; i++) {
+        if ((i === 0 || i === FL - 1) && (j === 0 || j === FHh - 1)) continue;
+        let c = j === 0 ? scaleColor(col, 1.2) : j === FHh - 1 ? scaleColor(col, 0.7) : col;
+        const q = FL - 1 - i;
+        const inner = j > 0 && j < FHh - 1;
+        if (q >= 4 && q < 7) c = inner ? 0x283440 : scaleColor(col, 0.6);
+        else if (q >= 7 && q < 15 && inner) c = scaleColor(col, 1.14);
+        else if (q >= 15 && q < 17) c = inner ? 0x34404c : scaleColor(col, 0.6);
+        r.px(i, j, c);
+      }
+    tod.frame(r, u);
+    for (const j of [1, FHh - 2]) {
+      r.px(FL - 1, j, 0xfff4c8);
+      r.px(FL - 2, j, 0xfff4c8);
+      r.px(0, j, 0xff4030);
+    }
+    return kit.frame(r);
   };
   const busF = (body, band, u) => {
-    const r = new Raster(12, 5);
-    r.rect(0, 0, 12, 5, body);
-    r.rect(0, 0, 12, 1, band);
-    r.rect(0, 4, 12, 1, band);
-    r.rect(3, 2, 6, 1, 0xb8bcc0);
-    const f = frame(r, u);
-    const fr = k.kit.frames.get(f);
-    fr.set(11, 1, 0xfff4c8);
-    fr.set(11, 3, 0xfff4c8);
-    return f;
+    const r = new HiCanvas(12, 5);
+    const FL = 36;
+    const FHh = 15;
+    for (let j = 0; j < FHh; j++)
+      for (let i = 0; i < FL; i++) {
+        if ((i === 0 || i === FL - 1) && (j === 0 || j === FHh - 1)) continue;
+        const e = Math.min(j, FHh - 1 - j);
+        let c = e < 1 ? scaleColor(band, j === 0 ? 1.15 : 0.7) : e < 3 ? band : body;
+        if (i > FL - 5 && e >= 1) c = 0x2a3440;
+        if (i >= 6 && i < FL - 8 && j >= 5 && j < 10) c = (i - 6) % 9 < 6 ? (j === 5 ? 0xe0e4e8 : (i + j) % 2 ? 0x8a8e94 : 0xb8bcc0) : body;
+        r.px(i, j, c);
+      }
+    tod.frame(r, u);
+    for (const j of [2, FHh - 3]) r.px(FL - 1, j, 0xfff4c8);
+    return kit.frame(r);
   };
-  // Nagasaki trams: short single cars, green and cream, or in advertising colours
+  // Nagasaki trams: short single cars, green and cream, or in advertising colours, lit windows along the sides
   const tramF = (body, band, roof, u) => {
-    const r = new Raster(16, 5);
-    r.rect(0, 0, 16, 5, body);
-    r.rect(0, 0, 16, 1, band);
-    r.rect(0, 4, 16, 1, band);
-    r.rect(2, 1, 12, 3, roof);
-    r.rect(7, 1, 2, 3, 0x5a5e66);
-    const f = frame(r, u);
-    const fr = k.kit.frames.get(f);
-    for (let x = 1; x < 15; x += 2) {
-      fr.set(x, 0, 0xffe0a0);
-      fr.set(x, 4, 0xffe0a0);
+    const r = new HiCanvas(16, 5);
+    const FL = 48;
+    const FHh = 15;
+    for (let j = 0; j < FHh; j++)
+      for (let i = 0; i < FL; i++) {
+        if ((i < 2 || i >= FL - 2) && (j < 2 || j >= FHh - 2)) continue;
+        const e = Math.min(j, FHh - 1 - j);
+        let c = e < 1 ? scaleColor(band, j === 0 ? 1.15 : 0.7) : e < 3 ? band : j < 7 ? scaleColor(roof, 1.08) : roof;
+        if (i > FL - 6 && e >= 2) c = 0x2a3440;
+        if (i < 4 && e >= 2) c = 0x2a3440;
+        r.px(i, j, c);
+      }
+    for (let i = 9; i < FL - 12; i += 12) for (let j = 5; j < 10; j++) for (let q = 0; q < 9; q++) r.px(i + q, j, j === 5 ? 0xc8ccd0 : q % 3 === 0 ? 0x6a6e74 : 0x9aa2aa);
+    r.linePx(18, 7, 30, 7, 0x2a2a30);
+    r.linePx(24, 3, 24, 11, 0x2a2a30);
+    tod.frame(r, u);
+    for (let i = 4; i < FL - 6; i += 5) {
+      r.px(i, 1, 0xffe0a0);
+      r.px(i + 1, 1, 0xffe0a0);
+      r.px(i, FHh - 2, 0xffe0a0);
+      r.px(i + 1, FHh - 2, 0xffe0a0);
     }
-    fr.set(15, 1, 0xfff4c8);
-    fr.set(15, 3, 0xfff4c8);
-    return f;
+    for (const j of [3, FHh - 4]) r.px(FL - 1, j, 0xfff4c8);
+    return kit.frame(r);
   };
   const cars = (u) => CARS.map((c) => carF(c, u));
   const day = cars(1300);
@@ -117,56 +139,28 @@ export function paintTraffic(k) {
   const s0s = process.env.NOPLAN ? routes.map((r, i) => r.s0 ?? (i * 0.37) % 1) : planTraffic(routes, visible, { seed: 8121 });
   routes.forEach((r, i) => kit.path(r.pts, r.frames, { sp: r.sp, n: r.n, gap: r.gap, s0: s0s[i], turn: 'rot', cars: r.cars, d: 0.45 }));
 
-  // ---- boats (with their wakes drawn into the frame; they face down the screen, turn: 'none')
-  // a boat heading up the screen, its wake trailing below; down = the same turned round
-  const flipV = (name) => {
-    const src = k.kit.frames.get(name);
-    const r = new Raster(src.w, src.h);
-    for (let y = 0; y < src.h; y++) r.data.set(src.data.subarray((src.h - 1 - y) * src.w * 4, (src.h - y) * src.w * 4), y * src.w * 4);
-    return kit.frame(r);
-  };
-  const boat = (w, h, hull, deck, u, cabin = 0xe8e8e0) => {
-    const r = new Raster(w + 4, h + 8);
-    const cx = (w + 4) / 2;
-    for (let j = 0; j < 7; j++) {
-      r.set(Math.round(cx - 1 - j * 0.6), h + j, 0xd8ecea, 0.5 - j * 0.06);
-      r.set(Math.round(cx + j * 0.6), h + j, 0xd8ecea, 0.5 - j * 0.06);
-    }
-    r.ellipse(cx - 0.5, h / 2, w / 2, h / 2, 0x101418);
-    r.ellipse(cx - 0.5, h / 2, w / 2 - 0.6, h / 2 - 0.6, hull);
-    r.rect(cx - w / 2 + 1.5, 2, w - 3, h - 5, deck);
-    r.rect(cx - w / 2 + 2, h / 2 - 2, w - 4, 4, cabin);
-    return frame(r, u);
-  };
-  const tourUp = (() => {
-    const r = new Raster(11, 26);
-    r.ellipse(5, 13, 3.5, 9, 0x101418);
-    r.ellipse(5, 13, 3, 8.5, 0x2a5a8a);
-    r.rect(3, 7, 5, 11, 0xe8e8e0);
-    r.rect(3, 10, 5, 3, 0x3a6a8a);
-    for (let j = 0; j < 6; j++) {
-      r.set(4 - Math.round(j * 0.6), 22 + j * 0.6, 0xd8ecea, 0.45);
-      r.set(6 + Math.round(j * 0.6), 22 + j * 0.6, 0xd8ecea, 0.45);
-    }
-    return frame(r, 1000);
-  })();
-  const both = (up) => ({ fu: [up], fd: [flipV(up)] });
-  kit.path([[160, 516], [152, 900], [110, 1180], [92, 1390], [91, 1590], [91, 1780], [112, 1862]], [tourUp], { sp: 11, mode: 'pp', hold: 8, turn: 'none', fps: 1, d: 0.02, ...both(tourUp) });
-  const tug = boat(6, 11, 0xc8302a, 0x2a2a30, 1200, 0xe8e8e0);
-  kit.path([[96, 1020], [84, 1180], [100, 1300]], [tug], { sp: 7, mode: 'pp', hold: 5, turn: 'none', d: 0.02, ...both(tug) });
-  const sight = boat(6, 14, 0xe8e8e0, 0xc8c8c0, 2700, 0x3a7a5a);
-  kit.path([[12, 2650], [12, 2780], [60, 2770], [120, 2740]], [sight], { sp: 8, mode: 'pp', hold: 6, turn: 'none', d: 0.02, ...both(sight) });
+  // ---- boats: hulls from above with the bow to the right, turned by the props along their routes, wakes behind them
+  const wake = (u) => ({ f: k.wakeF(u), every: 5, life: 1.6 });
+  const tour = k.hull(26, 9, 1000, 0x2a5a8a, 0xe8e8e0, (r, FL, FHh) => {
+    for (let j = 6; j < FHh - 6; j++) for (let i = 12; i < 54; i++) r.px(i, j, j === 6 ? 0xffffff : j === FHh - 7 ? 0x8a8e94 : (i - 12) % 7 === 0 ? 0x4a5a6a : i > 48 ? 0x3a5a7a : 0xdcdcd4);
+    for (let i = 14; i < 50; i += 7) for (let j = 9; j < FHh - 9; j++) r.px(i + 2, j, 0x3a6a8a);
+  });
+  kit.path([[160, 516], [152, 900], [110, 1180], [92, 1390], [91, 1590], [91, 1780], [112, 1862]], [tour], { sp: 11, mode: 'pp', hold: 8, turn: 'rot', d: 0.02, wake: wake(1200) });
+  const tug = k.hull(13, 6, 1200, 0xc8302a, 0x2a2a30, (r, FL, FHh) => {
+    for (let j = 4; j < FHh - 4; j++) for (let i = 10; i < 26; i++) r.px(i, j, j === 4 ? 0xffffff : i > 22 ? 0x2a3a4a : 0xe8e8e0);
+    r.rectPx(4, 7, 4, 4, 0xe8a030);
+  });
+  kit.path([[96, 1020], [84, 1180], [100, 1300]], [tug], { sp: 7, mode: 'pp', hold: 5, turn: 'rot', d: 0.02, wake: wake(1200) });
+  const sight = k.hull(16, 6, 2700, 0xe8e8e0, 0xc8c8c0, (r, FL, FHh) => {
+    for (let j = 4; j < FHh - 4; j++) for (let i = 8; i < 34; i++) r.px(i, j, j === 4 ? 0xf8f8f4 : (i - 8) % 5 === 0 ? 0x4a5a5a : 0x3a7a5a);
+    for (let i = 10; i < 32; i += 5) r.px(i, 2, 0xffd890);
+  });
+  kit.path([[12, 2650], [12, 2780], [60, 2770], [120, 2740]], [sight], { sp: 8, mode: 'pp', hold: 6, turn: 'rot', d: 0.02, wake: wake(2700) });
   // fishing boats on the Urakami harbour, in under the bridge from the west and out to the east
-  const side = (col, u) => {
-    const r = new Raster(16, 7);
-    r.ellipse(8, 3, 6, 2.5, 0x101418);
-    r.ellipse(8, 3, 5.5, 2, col);
-    r.rect(5, 2, 4, 2, 0xe8e8e0);
-    for (let x = 0; x < 3; x++) r.set(x, 3 + (x % 2 ? 1 : -1), 0xd8ecea, 0.5);
-    const f = frame(r, u);
-    k.kit.frames.get(f).set(6, 2, 0xffd890);
-    return f;
-  };
-  kit.path([[-20, 5300], [W + 20, 5320]], [side(0xe8e8e0, 5300), side(0x3a6a9a, 5300)], { sp: 9, n: 2, gap: 120, turn: 'flip', cars: 1, d: 0.02 });
-  kit.path([[W + 20, 5372], [-20, 5360]], [side(0xd8c8a0, 5300)], { sp: 7, n: 1, turn: 'flip', d: 0.02 });
+  const fisher = (col, u) => k.hull(14, 6, u, col, 0xc8c0b0, (r, FL, FHh) => {
+    for (let j = 4; j < FHh - 4; j++) for (let i = 8; i < 18; i++) r.px(i, j, j === 4 ? 0xffffff : i > 15 ? 0x2a3a4a : 0xe8e8e0);
+    r.px(12, 3, 0xffd890);
+  });
+  kit.path([[-20, 5300], [W + 20, 5320]], [fisher(0xe8e8e0, 5300), fisher(0x3a6a9a, 5300)], { sp: 9, n: 2, gap: 120, turn: 'rot', cars: 1, d: 0.02, wake: wake(5300) });
+  kit.path([[W + 20, 5372], [-20, 5360]], [fisher(0xd8c8a0, 5300)], { sp: 7, n: 1, turn: 'rot', d: 0.02, wake: wake(5300) });
 }

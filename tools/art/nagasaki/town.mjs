@@ -1,109 +1,192 @@
-// Oura and Glover Garden, Dejima, Shinchi Chinatown.
-//   Oura: the Ishibashi tram terminus and Oura Tenshudō stop on the seawall road, Glover-dori climbing to
-//   Oura Cathedral (white Gothic front, octagonal spire, the white Virgin before the door), then Glover Garden on
-//   its terraces: the Alt and Ringer houses, Glover House (tiled clover-plan bungalow, veranda, conservatory)
-//   with its pond and the Miura Tamaki statue, the Mitsubishi No. 2 Dock House and Walker House, the covered
-//   moving walkway, the upper gate to Oranda-zaka's cobbles.
-//   Dejima: the Wharf boardwalk, the fan island in its stone walls with the tile-capped perimeter wall, the
-//   Chief Factor's residence with its outside stair, the namako-walled warehouses, the Protestant seminary and
-//   the club house, the Dutch flag, the 1:15 model of Dejima, the water gate, the Omotemon gate and bridge.
+// Oura and Glover Garden, Dejima, Shinchi Chinatown, in fine pixels.
+//   Oura: the Ishibashi tram terminus and Oura Tenshudō stop on the seawall road, Glover-dori's castella and souvenir
+//   shops climbing to Oura Cathedral (white Gothic front, octagonal spire, the white Virgin before the door), then
+//   Glover Garden on its terraces: the Alt and Ringer houses, Glover House (tiled clover-plan bungalow, veranda,
+//   conservatory) with its pond and the Miura Tamaki statue, the No. 2 Dock House and Walker House, the moving
+//   walkway, the upper gate to Oranda-zaka's cobbles.
+//   Dejima: the Wharf boardwalk, the fan island in its stone walls with the tile-capped wall, rows of restored houses
+//   along their lanes: namako-walled warehouses, the Chief Factor's residence with its outside stair, the Protestant
+//   seminary and club house, the Dutch flag, the 1:15 model, the water gate, the Omotemon gate and bridge.
 //   Shinchi: four gates on a cross of streets, lanterns overhead, red and green shops, steamers of kakuni-manju.
 import { rng, fbm } from '../../lib/raster.mjs';
-import { rampColor } from '../nature.mjs';
-import { C, night, scaleColor, mix } from './canvas.mjs';
-import { W, rightShore, r1X, R1_HW, TRAM_U0, DEJIMA, dejimaSouth, dejimaNorth, EMBANK, CHINA_X, STREETS } from './geo.mjs';
-import { masonry } from './paint.mjs';
+import { C, S, night, scaleColor, rampColor, hashPx } from './canvas.mjs';
+import { rightShore, r1X, R1_HW, TRAM_U0, DEJIMA, dejimaSouth, dejimaNorth, EMBANK, CHINA_X, STREETS } from './geo.mjs';
 
 const CAMPHOR = [0x1a3422, 0x284a2c, 0x3a6236, 0x527c44];
-const SAKURA = Object.assign([0x5a3a46, 0x7e4e5e, 0xa66a7c, 0xc88a9a], { kind: 'broadleaf' });
+const SAKURA = Object.assign([0x7a4a5e, 0xa66a7c, 0xc88a9a, 0xe8b4c0], { kind: 'broadleaf' });
 const CAMELLIA = [0x16301e, 0x22462a, 0x305c34, 0x44743e];
 const PINE = Object.assign([0x16301f, 0x234629, 0x34603a, 0x4c7a48], { kind: 'pine' });
 const HYDRANGEA = [0x5a6ad0, 0x7a8ae8, 0x9a7ad8, 0xb48ae0, 0xd890c8, 0xe8e0f0];
+const AZALEA = [0xe86a9a, 0xf4a0c0, 0xffffff, 0xd84a7a, 0xf8e070];
 
-/** A stone retaining wall along a terrace edge: its face shows below the top line. */
+/** A tram stop on R1: a platform either side of the tracks, a shelter with its glass roof, people waiting. */
+export function tramStop(k, u0, u1, cx = 162) {
+  const { img, Y } = k;
+  for (const [x0, x1] of [[cx - 8, cx - 5.5], [cx + 5.5, cx + 8]]) {
+    img.fine(x0, Y(u1), x1 - x0, u1 - u0, (X, Yy) => {
+      const e = Math.min(X - Math.round(x0 * S), Math.round(x1 * S) - 1 - X);
+      if (e < 1) return C.concrete[4];
+      return Yy % 9 === 0 ? C.concrete[1] : e < 2 ? 0xe8c838 : C.concrete[3];
+    });
+    const SX = Math.round(x0 * S);
+    const SW = Math.round((x1 - x0) * S);
+    const YS = Y(u1 - 3) * S;
+    k.objects.push({
+      y: Y(u0 + 8),
+      draw: () => {
+        const LL = (u1 - u0 - 12) * S;
+        for (let j = 0; j < LL; j++) for (let i = 0; i < SW; i++) img.px(SX + i, YS + j, i < 1 || i >= SW - 1 ? 0x4a5a64 : j % 12 < 2 ? 0x6a8a9a : 0xa8d0dc, 0.92);
+        k.glowPx(SX + (SW >> 1), YS + (LL >> 1), 0xe8f4ff, 0.6 + night(u0) * 0.35);
+        k.glowPx(SX + (SW >> 1), YS + (LL >> 1) + 12, 0xe8f4ff, 0.6 + night(u0) * 0.35);
+      },
+    });
+    k.crowd(x0 + 0.5, Y(u1 - 5), 1, u1 - u0 - 10, 4);
+  }
+}
+
+/** A stone retaining wall along a terrace edge: its face shows below a wavering top line. */
 function terrace(k, x0, x1, u, amp = 3, ph = 0, h = 4) {
   const { img, Y } = k;
-  for (let x = x0; x < x1; x++) {
-    const uu = Math.round(u + Math.sin(x * 0.07 + ph) * amp);
-    const y = Y(uu);
-    img.set(x, y - 1, C.granite[4]);
-    for (let j = 0; j < h; j++) {
-      const row = Math.floor(j / 2);
-      const joint = (x + row * 3) % 6 === 0 || j % 2 === 1;
-      img.set(x, y + j, joint ? C.granite[0] : rampColor(C.granite, 0.7 - j * 0.12 + fbm(x, y + j, { seed: 9, scale: 2 }) * 0.2, x, y + j));
+  for (let X = x0 * S; X < x1 * S; X++) {
+    const x = X / S;
+    const top = (7168 - (u + Math.sin(x * 0.07 + ph) * amp)) * S;
+    for (let j = -1; j < h * S; j++) {
+      const row = Math.floor((j + 0.5) / 6);
+      const XX = X + row * 7;
+      let c;
+      if (j < 1) c = C.granite[4];
+      else if (j % 6 === 5 || XX % 14 === 0) c = scaleColor(C.granite[0], 0.8);
+      else c = scaleColor(C.granite[1 + Math.floor(hashPx(Math.floor(XX / 14), row, 201) * 3)], 1.05 - (j / (h * S)) * 0.28);
+      if ((j % 6 === 5 || XX % 14 === 0) && hashPx(X, j, 202) < 0.1) c = 0x4a6a3a;
+      img.px(X, Math.round(top + j), c);
     }
-    img.set(x, y + h, 0x101818, 0.35);
+    for (let j = 0; j < 4; j++) img.tintPx(X, Math.round(top + h * S + j), 0.62 + j * 0.09);
   }
   k.reserve(x0, Y(u + amp + 1), x1 - x0, h + amp * 2 + 2);
 }
 
-/** A garden path or lane: a narrow paved line along a polyline. */
+/** A garden path or lane. */
 const path = (k, pts, hw = 1.5, surface = C.paving) => k.road(pts, hw, { side: 0, surface, kerb: scaleColor(surface[1], 0.8) });
 
-/** Flower beds: dabs of colour over a dark leafy ground. */
+/** Flower beds: drifts of bushes, each drift its own colour, in banks across the lawn rather than scattered singly. */
 function flowers(k, x0, y0, w, h, cols, n, seed) {
   const R = rng(seed);
+  const { img } = k;
+  const drifts = [];
+  for (let d = 0; d < Math.max(3, Math.round(n / 14)); d++) drifts.push([x0 + R() * w, y0 + R() * h, 5 + R() * 12, 2 + R() * 4, R() * 3.14]);
   for (let i = 0; i < n; i++) {
-    const x = Math.round(x0 + R() * w);
-    const y = Math.round(y0 + R() * h);
-    if (k.isRes(x, y) || k.wet(x, y)) continue;
-    k.img.set(x + 1, y + 1, 0x1a2e1e, 0.5);
-    k.img.set(x, y, R() < 0.35 ? 0x2e5032 : R.pick(cols));
+    const [dx, dy, drx, dry, rot] = drifts[i % drifts.length];
+    const a = R() * 6.283;
+    const q0 = Math.sqrt(R());
+    const ax = Math.cos(a) * drx * q0;
+    const ay = Math.sin(a) * dry * q0;
+    const x = dx + ax * Math.cos(rot) - ay * Math.sin(rot);
+    const y = dy + ax * Math.sin(rot) + ay * Math.cos(rot);
+    if (x < x0 || x > x0 + w || y < y0 || y > y0 + h || k.isRes(x, y) || k.wet(x, y)) continue;
+    const c = cols[(drifts.indexOf(drifts[i % drifts.length]) * 3 + (R() < 0.2 ? 1 : 0)) % cols.length];
+    const CX = Math.round(x * S);
+    const CY = Math.round(y * S);
+    const r = 2.5 + R() * 2;
+    for (let j = -r; j <= r + 1; j++)
+      for (let q = -r; q <= r; q++) {
+        if (q * q + j * j > r * r) continue;
+        img.tintPx(CX + q + 1, CY + j + 2, 0.76);
+      }
+    for (let j = -r; j <= r; j++)
+      for (let q = -r; q <= r; q++) {
+        if (q * q + j * j > r * r) continue;
+        const g = hashPx(CX + q, CY + j, seed);
+        img.px(CX + q, CY + j, g < 0.28 ? 0x2e5032 : g < 0.4 ? 0x3e6a3e : q + j < 0 ? scaleColor(c, 1.12) : g < 0.75 ? c : scaleColor(c, 0.82));
+      }
   }
 }
 
-/** A Western house of the foreign settlement: hipped roof, white or stone walls, a veranda of posts. */
+/** A Western house of the foreign settlement: hipped roof, white or stone walls, shuttered sashes, a veranda of posts. */
 function westernHouse(k, x, footU, w, rh, fh, opt = {}) {
   const { img, Y } = k;
   const y = Y(footU) - rh - fh;
   const u = footU;
   const wall = opt.wall ?? C.cream[3];
   const ramp = opt.ramp ?? C.kawara;
+  const bits = rng(x * 37 + footU);
+  const lit = Array.from({ length: 32 }, () => bits() < 0.15 + night(u) * 0.7);
   k.objects.push({
     y: Y(footU),
     shadow: () => k.shadowRect(x + 3, y + 3, w, rh + fh, 0.5),
     draw: () => {
-      // the walls (stone coursing for the stone houses)
-      for (let yy = y + rh; yy < y + rh + fh; yy++)
-        for (let xx = x; xx < x + w; xx++) {
+      const X0 = x * S;
+      const WW = w * S;
+      const Y0 = (y + rh) * S;
+      const HH = fh * S;
+      const bay = (opt.bay ?? 7) * S;
+      const midF = opt.floors === 2 ? HH >> 1 : -1;
+      for (let j = 0; j < HH; j++)
+        for (let i = 0; i < WW; i++) {
           let c = wall;
-          if (opt.stone) c = (yy + (Math.floor((xx + (yy % 4 < 2 ? 0 : 3)) / 6) % 2)) % 2 ? scaleColor(wall, 0.92) : wall;
-          if (xx === x + w - 1) c = scaleColor(c, 0.78);
-          img.set(xx, yy, c);
+          if (opt.stone) {
+            const row = j >> 2;
+            const XX = i + row * 5;
+            c = j % 4 === 3 || XX % 10 === 0 ? scaleColor(wall, 0.76) : scaleColor(wall, 0.92 + hashPx(XX >> 3, row, 203) * 0.16);
+          } else if (j % 3 === 0) c = scaleColor(wall, 0.93); // clapboard
+          if (j < 3) c = scaleColor(c, 0.55); // the eave's shade
+          // tall sash windows with green shutters
+          const q = i % bay;
+          const b = Math.floor(i / bay);
+          const fl = midF > 0 && j > midF ? 1 : 0;
+          const wy = fl ? j - midF : j;
+          const wh = midF > 0 ? midF : HH;
+          if (q >= 6 && q < 15 && wy >= 5 && wy < wh - 6) {
+            const sq = q - 6;
+            if (sq < 2 || sq > 6) c = (wy >> 1) % 2 ? opt.shutter ?? 0x3a6a5a : scaleColor(opt.shutter ?? 0x3a6a5a, 0.78);
+            else if (wy % 6 === 2 || sq === 4) c = 0xf0ece0;
+            else if (lit[(b * 3 + fl * 7) & 31]) {
+              k.glowPx(X0 + i, Y0 + j, C.warm, 0.55 + night(u) * 0.4);
+              continue;
+            } else c = 0x34404c;
+          }
+          if (i >= WW - 2) c = scaleColor(c, 0.74);
+          img.px(X0 + i, Y0 + j, c);
         }
-      // tall sash windows with shutters
-      for (let xx = x + 3; xx + 3 < x + w - 2; xx += opt.bay ?? 7) {
-        const on = night(u) > 0.15 && (xx * 7 + u) % 5 < 3;
-        img.rect(xx - 1, y + rh + 2, 1, fh - 4, opt.shutter ?? 0x3a6a5a);
-        img.rect(xx + 2, y + rh + 2, 1, fh - 4, opt.shutter ?? 0x3a6a5a);
-        img.rect(xx, y + rh + 2, 2, fh - 4, on ? C.warm : 0x34404c);
-        img.set(xx, y + rh + 1, scaleColor(wall, 1.1));
-        if (on) for (let j = 0; j < fh - 4; j++) k.glow(xx, y + rh + 2 + j, C.warm, 0.4 + night(u) * 0.4);
-      }
-      // a second floor
-      if (opt.floors === 2) img.rect(x, y + rh + Math.floor(fh / 2), w, 1, scaleColor(wall, 0.7));
-      // the veranda: white posts and a rail, a stone floor in front
+      if (midF > 0) for (let i = 0; i < WW; i++) for (let j = 0; j < 3; j++) img.px(X0 + i, Y0 + midF + j, j === 0 ? 0xffffff : scaleColor(wall, 0.72));
+      // the veranda: white posts and a rail in front, its stone floor, its shade on the wall
       if (opt.veranda !== false) {
-        for (let xx = x; xx < x + w; xx += opt.postGap ?? 4) img.rect(xx, y + rh, 1, fh, opt.post ?? 0xf8f4ea);
-        img.rect(x, y + rh + fh - 3, w, 1, opt.rail ?? 0xe8e2d0);
-        if (opt.floors === 2) img.rect(x, y + rh + Math.floor(fh / 2) - 2, w, 1, opt.rail ?? 0xe8e2d0);
-        img.rect(x - 1, y + rh + fh, w + 2, 2, C.granite[3]);
+        const gap = (opt.postGap ?? 4) * S;
+        const post = opt.post ?? 0xf8f4ea;
+        for (let i = 0; i < WW; i += gap) for (let j = 0; j < HH; j++) {
+          img.px(X0 + i, Y0 + j, post);
+          img.px(X0 + i + 1, Y0 + j, scaleColor(post, 0.72));
+        }
+        for (let i = 0; i < WW; i++) {
+          img.px(X0 + i, Y0 + HH - 8, opt.rail ?? 0xf0ead8);
+          img.px(X0 + i, Y0 + HH - 7, scaleColor(opt.rail ?? 0xf0ead8, 0.7));
+          if (i % 3 === 0) for (let j = -6; j < 0; j++) img.px(X0 + i, Y0 + HH + j, scaleColor(opt.rail ?? 0xf0ead8, 0.86));
+          if (midF > 0) {
+            img.px(X0 + i, Y0 + midF - 7, opt.rail ?? 0xf0ead8);
+            if (i % 3 === 0) for (let j = -6; j < 0; j++) img.px(X0 + i, Y0 + midF + j, scaleColor(opt.rail ?? 0xf0ead8, 0.86));
+          }
+        }
       }
+      for (let i = -3; i < WW + 3; i++) for (let j = 0; j < 6; j++) img.px(X0 + i, Y0 + HH + j, j === 0 ? C.granite[4] : j > 4 ? C.granite[0] : C.granite[2]);
       if (opt.portico) {
         // a stone portico of Tuscan columns in the middle of the front
-        const px = x + Math.floor(w / 2) - 8;
-        img.rect(px - 1, y + rh - 3, 18, 3, scaleColor(wall, 1.08));
+        const PX = X0 + (WW >> 1) - 24;
+        for (let i = -3; i < 51; i++) for (let j = -9; j < 0; j++) img.px(PX + i, Y0 + j, j === -9 ? 0xfff8e8 : j > -3 ? 0x9a9484 : scaleColor(wall, 1.1));
         for (let c2 = 0; c2 < 4; c2++) {
-          img.rect(px + c2 * 5, y + rh, 2, fh, 0xece6d4);
-          img.set(px + c2 * 5 + 1, y + rh, 0xc8c0a8);
-          img.rect(px + c2 * 5 - 1, y + rh, 4, 1, 0xf4eee0);
+          const CX = PX + c2 * 15;
+          for (let j = 0; j < HH; j++) for (let i = 0; i < 6; i++) img.px(CX + i, Y0 + j, i < 1 ? 0xfff8e8 : i < 4 ? 0xece6d4 : 0xb8b09e);
+          for (let i = -2; i < 8; i++) {
+            img.px(CX + i, Y0, 0xf4eee0);
+            img.px(CX + i, Y0 + HH - 1, 0xc8c0a8);
+          }
         }
       }
       k.roof(x - 2, y, w + 4, rh, ramp, { courses: !opt.slate });
       for (const cx of opt.chimneys ?? [x + 5, x + w - 7]) {
-        img.rect(cx, y + 1, 3, 5, opt.brick ?? 0x8a5a44);
-        img.rect(cx, y + 1, 3, 1, 0x4a3a34);
-        img.set(cx + 2, y + 2, scaleColor(opt.brick ?? 0x8a5a44, 0.7));
+        const CX = cx * S;
+        const brick = opt.brick ?? 0x8a5a44;
+        for (let j = 0; j < 15; j++) for (let i = 0; i < 9; i++) img.px(CX + i, (y + 1) * S + j, j < 3 ? 0x3a2a24 : j % 3 === 0 || (i + (j >> 1)) % 4 === 0 ? scaleColor(brick, 0.72) : i > 6 ? scaleColor(brick, 0.74) : brick);
+        for (let i = -1; i < 10; i++) img.px(CX + i, (y + 1) * S + 3, 0xc8b8a0);
+        for (let i = 0; i < 10; i++) for (let j = 0; j < 5; j++) img.tintPx(CX + i + 2, (y + 1) * S + 15 + j, 0.72);
       }
       opt.extra?.(y);
     },
@@ -114,57 +197,70 @@ function westernHouse(k, x, footU, w, rh, fh, opt = {}) {
 
 // ---------------------------------------------------------------------------------------------- Oura & Glover
 export function paintOura(k) {
-  const { img, Y, kit, objects, glow, pool } = k;
+  const { img, Y, kit, objects, glowPx, pool } = k;
   const R = rng(1863);
 
-  // the seawall promenade: rail, lamps, a moored pleasure boat or two
-  for (let u = 1990; u < 2560; u++) {
-    const x = Math.round(rightShore(u)) + 1;
-    if (u % 3 === 0) img.set(x, Y(u) - 1, 0xc8c4b8);
-    if (u % 36 === 0) k.streetLamp(x + 1, u, 0xfff0c8, 6);
+  // the seawall promenade: its rail, lamps, stone steps down to the water, a moored pleasure boat
+  for (let Yy = Y(2560) * S; Yy < Y(1990) * S; Yy++) {
+    const u = 7168 - Yy / S;
+    const X = Math.round((rightShore(u) + 1) * S);
+    img.px(X, Yy, Yy % 15 < 2 ? 0x5a5e66 : 0xd8d4c8);
+    img.px(X + 1, Yy, 0x6a6e72);
   }
-  // the harbour head between the terminal and Oura: a hotel and offices on the curving shore
+  for (let u = 1998; u < 2560; u += 36) k.streetLamp(rightShore(u) + 2, u);
+  // the harbour head between the terminal and Oura: a hotel and offices on the curving shore, a palm-lined drive
   k.slab(128, Y(1960), 30, 18, 12, { roofC: 0x7a7e84, wall: 0xd8d0c0 });
   k.slab(100, Y(1984), 24, 16, 10, { roofC: 0x6e7076, wall: 0xc8c0b0 });
   k.slab(160, Y(2010), 20, 22, 16, { roofC: 0x5e6670, wall: 0xb8b8c0 });
-  k.grove(70, 180, 1930, 2080, 18, [CAMPHOR, CAMELLIA], 1901, 3, 5);
+  for (const [x, u] of [[126, 1930], [156, 1930], [98, 1958], [158, 1984]]) k.palm(x, Y(u), 6, x + u);
+  k.way([[r1X(1940) - 11, 1950], [128, 1944]], 2.2, { seed: 21 });
+  k.grove(70, 180, 1930, 2080, 30, [CAMPHOR, CAMELLIA], 1901, 3, 5.5);
 
   // the Ishibashi terminus and the Oura Tenshudō stop: platforms and shelters beside the tracks
-  const stop = (u0, u1) => {
-    const cx = r1X((u0 + u1) / 2);
-    for (let u = u0; u < u1; u++) {
-      img.rect(Math.round(cx + 5.5), Y(u), 2, 1, u % 4 ? C.concrete[3] : C.concrete[2]);
-      img.rect(Math.round(cx - 7.5), Y(u), 2, 1, u % 4 ? C.concrete[3] : C.concrete[2]);
-    }
-    for (const sx of [Math.round(cx + 5.5), Math.round(cx - 7.5)]) {
-      img.rect(sx, Y(u1 - 4), 2, 8, 0x5a7a8a);
-      img.rect(sx, Y(u1 - 4), 2, 1, 0x8ab0c0);
-      glow(sx, Y(u1 - 6), 0xe8f4ff, 0.5 + night(u0) * 0.4);
-    }
-  };
-  stop(TRAM_U0 + 2, TRAM_U0 + 26);
-  stop(2140, 2164);
+  tramStop(k, TRAM_U0 + 2, TRAM_U0 + 26, r1X(TRAM_U0 + 14));
+  tramStop(k, 2140, 2164, r1X(2152));
 
   // Glover-dori: the stone-paved shopping slope from the tram road up to the cathedral steps
   const GD = [[r1X(2084) + R1_HW + 2, 2084], [100, 2090], [124, 2097], [140, 2103]];
   path(k, GD, 4, C.stoneSet);
-  const shop = (x, footU, w, noren) =>
-    k.house(x, Y(footU) - 18, w, 10, 8, 'jp', { noren, wall: R.pick([0xd8ccb0, 0xc8b898, 0xe0d4bc]), roof: { gable: R() < 0.4 ? 'tri' : null } });
-  // north side, facing the street; south side, their backs to it
+  const NOREN = [0x2a4a8a, 0xe8d8b0, 0x8a2a2a, 0xf0e8d0, 0x2a5a3a];
+  const shop = (x, footU, w, noren) => {
+    const fy = Y(footU);
+    const kind = R.int(0, 3);
+    k.house(x, fy - 18, w, 10, 8, 'jp', {
+      noren,
+      wall: R.pick([0xd8ccb0, 0xc8b898, 0xe0d4bc]),
+      roof: { gable: R() < 0.4 ? 'tri' : null, gw: 6 },
+      extra: () => {
+        // the shop's sign over the eave, its wares out on the street: castella in yellow boxes, souvenirs
+        const SX = (x + 1) * S;
+        const SW = (w - 2) * S;
+        for (let j = 0; j < 7; j++) for (let i = 0; i < SW; i++) img.px(SX + i, (fy - 8) * S + j, j === 0 || j === 6 ? 0x3a2a1c : 0xe8d8b0);
+        for (let i = 3; i < SW - 3; i += 4) img.rectPx(SX + i, (fy - 8) * S + 2, 2, 3, 0x2a1a14);
+        const WX = (x + 1) * S;
+        for (let i = 0; i < SW; i++)
+          for (let j = 0; j < 6; j++) {
+            const q = kind === 0 ? (j < 2 ? 0xe8c040 : (i >> 2) % 2 ? 0xf0d868 : 0x8a5a2a) : kind === 1 ? ((i + j) % 4 ? 0x3a6aa8 : 0xf0f0e8) : kind === 2 ? ((i >> 1) % 3 ? 0xd8483a : 0xf0e8d0) : ((i >> 2) % 2 ? 0x5a8a5a : 0xe8a050);
+            img.px(WX + i, fy * S + 1 + j, j === 5 ? 0x2a2018 : q);
+          }
+      },
+    });
+  };
   let sx = 66;
   for (const w of [12, 10, 14, 11]) {
-    shop(sx, 2108 - (sx - 66) * 0.12, w, R.pick([0x2a4a8a, 0xe8d8b0, 0x8a2a2a, 0xf0e8d0]));
+    shop(sx, 2108 - (sx - 66) * 0.12, w, R.pick(NOREN));
     sx += w + 1;
   }
   sx = 68;
   for (const w of [13, 12, 11, 14, 12]) {
     if (sx + w > 136) break;
-    shop(sx, 2066 + (sx - 68) * 0.1, w, R.pick([0x2a4a8a, 0xe8d8b0, 0x8a2a2a]));
+    shop(sx, 2066 + (sx - 68) * 0.1, w, R.pick(NOREN));
     sx += w + 1;
   }
-  k.walkers(GD.map(([x, u]) => [x, u + 1]), 4, 2090, { sp: 3 });
+  k.walkers(GD.map(([x, u]) => [x, u + 1]), 5, 2090, { sp: 3 });
+  k.crowd(70, Y(2096), 60, 6, 16);
 
-  // ---- Oura Cathedral
+  // ---- Oura Cathedral: Japan's oldest church (1864), a National Treasure
   {
     const x0 = 114;
     const x1 = 164;
@@ -172,107 +268,165 @@ export function paintOura(k) {
     const fy = Y(foot);
     const faceH = 18;
     const roofTop = Y(2196);
-    // the precinct wall and the steps up from the end of Glover-dori
     terrace(k, 100, 172, 2106, 0, 0, 3);
-    for (let u = 2102; u < foot; u += 2) for (let x = 130; x < 150; x++) img.set(x, Y(u), u % 4 ? C.granite[3] : C.granite[1]);
+    k.stairs(128, Y(2118), 24, 14);
     k.reserve(x0 - 2, roofTop - 30, x1 - x0 + 4, fy - roofTop + 34);
     objects.push({
       y: fy,
       shadow: () => k.shadowRect(x0 + 4, roofTop + 4, x1 - x0, fy - roofTop, 0.5),
       draw: () => {
-        // the long nave roof running north, grey slate, lit to the left of the ridge
-        for (let y = roofTop; y < fy - faceH; y++)
-          for (let x = x0 + 2; x < x1 - 2; x++) {
-            const t = (x - (x0 + 2)) / (x1 - x0 - 4);
-            let c = t < 0.5 ? rampColor(C.slate, 0.75 - t * 0.4, x, y) : rampColor(C.slate, 0.45 - (t - 0.5) * 0.6, x, y);
-            if ((y - roofTop) % 3 === 0) c = scaleColor(c, 0.88);
-            img.set(x, y, c);
+        const X0 = x0 * S;
+        const X1 = x1 * S;
+        const Yr = roofTop * S;
+        const Yf = (fy - faceH) * S;
+        const CX = Math.round((X0 + X1) / 2);
+        // the long nave roof running north in grey slate, lit to the left of the ridge, slates in courses
+        for (let Yy = Yr; Yy < Yf; Yy++)
+          for (let X = X0 + 6; X < X1 - 6; X++) {
+            const t = (X - (X0 + 6)) / (X1 - X0 - 12);
+            let c = t < 0.5 ? rampColor(C.slate, 0.75 - t * 0.4, X, Yy) : rampColor(C.slate, 0.45 - (t - 0.5) * 0.6, X, Yy);
+            if ((X + ((Yy >> 1) % 2) * 2) % 4 === 0) c = scaleColor(c, 0.86);
+            if (Yy % 3 === 0) c = scaleColor(c, 0.88);
+            if (Math.abs(X - CX) < 2) c = X < CX ? C.slate[4] : C.slate[0];
+            img.px(X, Yy, c);
           }
-        img.rect((x0 + x1) / 2, roofTop, 1, fy - faceH - roofTop, C.slate[4]);
-        // aisle roofs either side, lower
-        for (const [ax, aw] of [[x0, 6], [x1 - 6, 6]])
-          for (let y = roofTop + 8; y < fy - faceH; y++) for (let x = ax; x < ax + aw; x++) img.set(x, y, (y % 3 ? C.slate[1] : C.slate[0]));
-        // the white front: three bays, pointed windows, corner pinnacles
-        for (let y = fy - faceH; y < fy; y++)
-          for (let x = x0; x < x1; x++) img.set(x, y, x === x1 - 1 ? 0xb8b4a8 : x < x0 + 2 ? 0xfaf8f0 : 0xeeeae0);
-        // gable lines over the side bays
-        for (const [gx, gw] of [[x0 + 2, 14], [x1 - 16, 14]]) {
-          for (let j = 0; j < 5; j++) img.rect(gx + j, fy - faceH - j, gw - j * 2, 1, j === 4 ? 0xb8b4a8 : 0xf4f2e8);
-          for (const wx of [gx + 3, gx + gw - 6]) {
-            img.rect(wx, fy - faceH + 4, 3, 9, 0x3a4c6a);
-            img.set(wx + 1, fy - faceH + 3, 0x3a4c6a);
-            img.rect(wx, fy - faceH + 8, 3, 1, 0x8a7a5a);
-            if (night(foot) > 0.1) {
-              for (let j = 0; j < 8; j++) glow(wx + 1, fy - faceH + 4 + j, j % 3 ? 0xffd890 : 0xff9a7a, 0.35 + night(foot) * 0.35);
+        // aisle roofs either side, lower, a clerestory line between; buttresses
+        for (const [ax, aw, lit] of [[X0, 24, 1], [X1 - 24, 24, 0]])
+          for (let Yy = Yr + 24; Yy < Yf; Yy++)
+            for (let X = ax; X < ax + aw; X++) {
+              let c = lit ? C.slate[3] : C.slate[1];
+              if (Yy % 3 === 0) c = scaleColor(c, 0.84);
+              if ((Yy - Yr) % 36 < 4 && (X - ax) % 24 < 8) c = 0xe0dcd0;
+              img.px(X, Yy, c);
+            }
+        for (let Yy = Yr + 24; Yy < Yf; Yy++) {
+          for (const q of [X0 + 24, X1 - 25]) for (let i = 0; i < 2; i++) img.tintPx(q + i, Yy, 0.5);
+        }
+        // the white front: three bays, pointed windows of stained glass, corner pinnacles
+        const WH = faceH * S;
+        for (let j = 0; j < WH; j++)
+          for (let X = X0; X < X1; X++) {
+            const i = X - X0;
+            let c = i > X1 - X0 - 3 ? 0xb8b4a8 : i < 6 ? 0xfaf8f0 : 0xeeeae0;
+            if (j > 0 && (j % 9 === 0)) c = scaleColor(c, 0.94); // the stucco's false courses
+            if (j >= WH - 5) c = j === WH - 5 ? 0xf8f6ee : 0xc4c0b4;
+            img.px(X, Yf + j, c);
+          }
+        const lancet = (WX, WY, w, h) => {
+          for (let j = 0; j < h; j++) {
+            const hw = j < w ? Math.sqrt(Math.max(0, (w / 2) ** 2 - ((w - j) * 0.5) ** 2)) : w / 2;
+            for (let i = -hw; i <= hw; i++) {
+              const e = hw - Math.abs(i);
+              if (e < 1) img.px(WX + i, WY + j, 0xfdfbf2);
+              else {
+                const col = [0xffc070, 0xe8604a, 0x5a8ad8, 0xffe090, 0x8a5ac8][Math.floor(hashPx(Math.round(i / 2), j >> 2, WX) * 5)];
+                if ((Math.round(i) + j) % 5 === 0) img.px(WX + i, WY + j, 0x2a2a3a);
+                else if (night(foot) > 0.06) glowPx(WX + i, WY + j, col, 0.5 + night(foot) * 0.45);
+                else img.px(WX + i, WY + j, scaleColor(col, 0.55));
+              }
             }
           }
+        };
+        for (const [gx, gw] of [[x0 + 2, 14], [x1 - 16, 14]]) {
+          // the gable over each side bay
+          const GX = gx * S;
+          const GW = gw * S;
+          for (let j = 0; j < 15; j++) for (let i = j; i < GW - j; i++) img.px(GX + i, Yf - j, i - j < 2 ? 0xfffdf4 : GW - j - i < 3 ? 0xb8b4a8 : 0xf4f2e8);
+          lancet(GX + 12, Yf + 9, 9, 33);
+          lancet(GX + GW - 12, Yf + 9, 9, 33);
         }
+        // the corner pinnacles with their little crockets
         for (const px of [x0, x1 - 3, x0 + 16, x1 - 19]) {
-          img.rect(px, fy - faceH - 6, 3, faceH + 6, 0xf8f6ee);
-          img.rect(px + 2, fy - faceH - 6, 1, faceH + 6, 0xc0bcb0);
-          img.set(px + 1, fy - faceH - 8, 0xf8f6ee);
-          img.set(px + 1, fy - faceH - 7, 0xd8d4c8);
+          const PX = px * S;
+          for (let j = 0; j < (faceH + 6) * S; j++) for (let i = 0; i < 9; i++) img.px(PX + i, Yf - 18 + j, i < 2 ? 0xfffdf4 : i > 6 ? 0xc0bcb0 : j % 15 === 0 ? 0xc8c4b8 : 0xf8f6ee);
+          for (let j = 0; j < 9; j++) for (let i = j >> 1; i < 9 - (j >> 1); i++) img.px(PX + i, Yf - 18 - j, i < 4 ? 0xfffdf4 : 0xd8d4c8);
         }
-        // the tower: a white square body, the octagonal grey-green spire and its cross
-        const tx = (x0 + x1) / 2 - 6;
-        const tTop = fy - faceH - 20;
-        img.rect(tx, tTop, 12, fy - tTop, 0xf6f4ec);
-        img.rect(tx + 10, tTop, 2, fy - tTop, 0xc4c0b4);
-        img.rect(tx, tTop, 12, 1, 0xfffcf4);
-        // its doorway (lit), rose window and the louvred belfry
-        img.rect(tx + 3, fy - 9, 6, 9, 0x3a2a24);
-        img.rect(tx + 4, fy - 10, 4, 1, 0x3a2a24);
-        if (night(foot) > 0.05) for (let j = 0; j < 8; j++) glow(tx + 5, fy - 8 + j, C.warm, 0.55);
-        img.disc(tx + 6, fy - 14, 2.5, 0x4a5a7a);
-        img.set(tx + 6, fy - 14, 0xffd890);
-        img.rect(tx + 3, tTop + 5, 2, 6, 0x2a3240);
-        img.rect(tx + 7, tTop + 5, 2, 6, 0x2a3240);
-        for (let j = 0; j < 14; j++) {
-          const half = Math.max(0, 6 - Math.floor(j / 2.3));
-          img.rect(tx + 6 - half, tTop - j, half * 2, 1, j % 3 === 0 ? C.copper[1] : half > 3 ? C.copper[2] : C.copper[3]);
-          img.set(tx + 6 - half, tTop - j, C.copper[4]);
+        // the tower: a white square body, the octagonal grey-green spire and its gilded cross
+        const TW = 36;
+        const TX = CX - 18;
+        const TTop = Yf - 60;
+        for (let j = TTop; j < fy * S; j++)
+          for (let i = 0; i < TW; i++) img.px(TX + i, j, i < 2 ? 0xffffff : i > TW - 5 ? 0xc4c0b4 : (j - TTop) % 21 === 0 ? 0xd8d4c8 : 0xf6f4ec);
+        for (let i = -2; i < TW + 2; i++) for (let j = 0; j < 3; j++) img.px(TX + i, TTop + j, j === 0 ? 0xffffff : 0xd8d4c8);
+        // the door (lit), the rose window, the belfry's louvres
+        for (let j = 0; j < 30; j++) {
+          const hw = j < 9 ? Math.sqrt(Math.max(0, 81 - (9 - j) ** 2)) : 9;
+          for (let i = -hw; i <= hw; i++) img.px(CX + i, fy * S - 30 + j, Math.abs(i) > hw - 2 ? 0xc8c4b8 : night(foot) > 0.05 ? (i === 0 ? 0x5a3a24 : 0xffc880) : i === 0 ? 0x1e1410 : 0x3a2a24);
         }
-        img.rect(tx + 5, tTop - 19, 1, 6, 0xf0d890);
-        img.rect(tx + 3, tTop - 17, 5, 1, 0xf0d890);
-        glow(tx + 5, tTop - 18, 0xfff0c0, 0.7);
-        // the white Virgin on her pedestal at the top of the steps
-        img.rect(tx + 4, fy + 4, 4, 3, 0xb8b4a8);
-        img.rect(tx + 5, fy - 1, 2, 5, 0xffffff);
-        img.set(tx + 5, fy - 2, 0xf4f0e8);
-        img.set(tx + 4, fy + 1, 0xe8e4dc);
-        img.set(tx + 7, fy + 1, 0xd8d4cc);
-        pool(tx + 6, fy, 8, 0xfff4d8, 0.12 + night(foot) * 0.18);
+        const RY = fy * S - 42;
+        img.discPx(CX, RY, 8.5, 0xfdfbf2);
+        for (let a = 0; a < 16; a++) for (let q = 1; q < 7; q++) {
+          const X = CX + Math.cos((a / 16) * 6.283) * q;
+          const Yy = RY + Math.sin((a / 16) * 6.283) * q;
+          const col = a % 4 === 0 ? 0xffe090 : a % 2 ? 0xe8604a : 0x5a8ad8;
+          if (night(foot) > 0.05) glowPx(X, Yy, col, 0.85);
+          else img.px(X, Yy, scaleColor(col, 0.6));
+        }
+        img.px(CX, RY, 0xfff4c8);
+        for (const q of [-9, 3]) for (let j = 0; j < 18; j++) for (let i = 0; i < 6; i++) img.px(CX + q + i, TTop + 15 + j, j < 2 ? 0x1a1e28 : j % 3 === 0 ? 0xc8c4b8 : 0x2a3240);
+        // the spire in eight facets, lit to the left, banded
+        const SPH = 42;
+        for (let j = 0; j < SPH; j++) {
+          const hw = 18 * (1 - j / SPH);
+          for (let i = -hw; i <= hw; i++) {
+            const q = i / Math.max(1, hw);
+            let c = q < -0.55 ? C.copper[4] : q < -0.1 ? C.copper[3] : q < 0.5 ? C.copper[2] : C.copper[1];
+            if (j % 6 === 0) c = scaleColor(c, 0.84);
+            img.px(CX + i, TTop - 1 - j, c);
+          }
+        }
+        for (let j = 0; j < 17; j++) {
+          img.px(CX, TTop - 42 - j, 0xf0d890);
+          img.px(CX + 1, TTop - 42 - j, 0xc8a850);
+        }
+        for (let i = -5; i <= 6; i++) {
+          img.px(CX + i, TTop - 53, 0xf0d890);
+          img.px(CX + i, TTop - 52, 0xc8a850);
+        }
+        glowPx(CX, TTop - 54, 0xfff0c0, 0.75);
+        // the white Virgin on her pedestal at the top of the steps, floodlit, flowers at her feet
+        const VX = CX;
+        const VY = fy * S + 18;
+        for (let j = 0; j < 9; j++) for (let i = -6; i <= 6; i++) img.px(VX + i, VY + j, j < 1 ? 0xe8e4d8 : i > 4 ? 0x8a8678 : 0xb8b4a8);
+        for (let j = 0; j < 15; j++) {
+          const hw = 2.5 + j * 0.16;
+          for (let i = -hw; i <= hw; i++) img.px(VX + i, VY - 15 + j, i < -1 ? 0xffffff : i < hw - 1 ? 0xf0ecdf : 0xc8c4b8);
+        }
+        img.discPx(VX, VY - 18, 2.8, 0xf8f4ea);
+        for (let q = 0; q < 7; q++) img.px(VX - 9 + q * 3, VY + 9, q % 2 ? 0xf4f0e0 : 0xe86a9a);
+        pool(x0 + 25, fy + 4, 12, 0xfff4d8, 0.14 + night(foot) * 0.22);
       },
     });
     k.palm(x0 - 4, fy + 2, 7, 11);
     k.palm(x1 + 3, fy + 2, 7, 12);
+    k.crowd(128, fy + 4, 24, 3, 8);
     // the path past the cathedral's east side up to the garden's lower gate
     path(k, [[150, 2104], [168, 2118], [172, 2150], [172, 2200]], 1.5);
   }
 
   // ---- Glover Garden on its terraces (walls at 2200, 2290, 2400, 2480), the moving walkway on the east
+  img.fine(64, Y(2560), 102, 360, (X, Yy, x, y) => {
+    if (k.isRes(x, y)) return null;
+    const n = 0.3 + fbm(x, y, { seed: 2207, scale: 7, octaves: 3 }) * 0.55;
+    const c = k.lawnPx(X, Yy, n, [0x2e5a30, 0x3c6e38, 0x4e8444, 0x64984e]);
+    // mown stripes across the terraces
+    return (Yy >> 3) % 2 ? c : scaleColor(c, 0.96);
+  });
   for (const [u, amp, ph] of [[2200, 2, 0.3], [2290, 3, 1.2], [2400, 3, 2.1], [2480, 2, 0.6]]) terrace(k, 64, 166, u, amp, ph, 4);
-  for (let y = Y(2560); y < Y(2200); y++)
-    for (let x = 64; x < 166; x++) {
-      if (k.isRes(x, y)) continue;
-      const v = 0.45 + fbm(x, y, { seed: 2207, scale: 5 }) * 0.45;
-      img.set(x, y, rampColor([0x2e5a30, 0x3c6e38, 0x4e8444, 0x64984e], v, x, y));
-      if ((x + y * 3) % 11 === 0) img.set(x, y, 0x5a9050);
-    }
   {
     // the covered moving walkway: a glazed tube on posts, landings at every terrace
     const wx = 168;
-    for (let u = 2196; u < 2486; u++) {
-      const y = Y(u);
+    img.fine(wx, Y(2486), 10, 290, (X, Yy, x, y) => {
+      const u = 7168 - y;
+      const i = X - wx * S;
       const landing = [2200, 2290, 2400, 2480].some((t) => Math.abs(u - t) < 5);
-      for (let x = wx; x < wx + 10; x++) {
-        let c = x === wx || x === wx + 9 ? 0x8a9aa4 : x < wx + 3 ? 0xb8d0d8 : 0x9ab4c0;
-        if (landing) c = x === wx || x === wx + 9 ? C.granite[3] : C.granite[2];
-        else if (u % 6 === 0) c = 0x6a7a84;
-        img.set(x, y, c);
-      }
-      if (!landing && u % 6 === 3 && night(u) > 0.1) glow(wx + 5, y, 0xe8f4ff, 0.45);
-    }
+      if (landing) return i < 2 || i > 27 ? C.granite[3] : k.settPx(X, Yy, 22, C.granite);
+      if (i < 2 || i > 27) return i === 0 ? 0xe8f0f4 : 0x5a6a74;
+      if (Yy % 18 < 2) return 0x6a7a84;
+      const c = i < 9 ? 0xc8e0e8 : i < 21 ? 0x9ab4c0 : 0x7a98a6;
+      return (i + (Yy >> 1)) % 13 === 0 ? 0xe8f4f8 : c;
+    });
+    for (let u = 2204; u < 2480; u += 6) if (night(u) > 0.1) glowPx((wx + 5) * S, Y(u) * S, 0xe8f4ff, 0.5);
     k.reserve(wx, Y(2486), 10, 290);
   }
   // paths: along each terrace from the walkway landings, stairs through the walls at the west end
@@ -280,7 +434,7 @@ export function paintOura(k) {
   path(k, [[168, 2296], [76, 2296], [72, 2292], [72, 2208]], 1.5);
   path(k, [[168, 2406], [72, 2406], [68, 2400], [68, 2300]], 1.5);
   path(k, [[168, 2486], [128, 2486], [126, 2492], [126, 2540]], 1.5);
-  for (const [x, u0, u1] of [[71, 2196, 2210], [67, 2286, 2300], [67, 2396, 2410]]) for (let u = u0; u < u1; u += 2) img.rect(x, Y(u), 3, 1, C.granite[1]);
+  for (const [x, u0, u1] of [[70, 2196, 2210], [66, 2286, 2300], [66, 2396, 2410]]) k.stairs(x, Y(u1), 5, u1 - u0);
 
   // Former Alt House: stone, a portico of Tuscan columns
   westernHouse(k, 70, 2214, 40, 15, 10, { stone: true, wall: 0xb8b0a0, portico: true, ramp: C.kawara, chimneys: [76, 102] });
@@ -292,266 +446,385 @@ export function paintOura(k) {
     westernHouse(k, 94, foot + 6, 40, 18, 10, { ramp: C.kawara, postGap: 3, chimneys: [100, 126] });
     for (const [wx, ww] of [[78, 22], [128, 24]]) {
       const y = westernHouse(k, wx, foot, ww, 14, 9, { ramp: C.kawara, postGap: 3, chimneys: [wx + ww - 6], bay: 6 });
-      // the rounded bay of each wing
-      k.objects.push({
+      // the rounded bay of each wing: its veranda curves out on the lawn
+      objects.push({
         y: Y(foot) + 1,
         draw: () => {
-          for (let i = 0; i < ww - 2; i++) {
-            const dy = Math.round(Math.sin((i / (ww - 3)) * Math.PI) * 2);
-            img.set(wx + 1 + i, y + 23 + dy, C.granite[3]);
-            if (i % 3 === 0) img.rect(wx + 1 + i, y + 14 + dy, 1, 9, 0xf8f4ea);
+          for (let X = (wx + 1) * S; X < (wx + ww - 1) * S; X++) {
+            const dy = Math.round(Math.sin(((X - (wx + 1) * S) / ((ww - 2) * S)) * Math.PI) * 6);
+            for (let j = 0; j < 4; j++) img.px(X, (y + 23) * S + dy + j, j === 0 ? C.granite[4] : C.granite[2]);
+            if ((X - wx * S) % 9 === 0) for (let j = -24; j < 0; j++) img.px(X, (y + 23) * S + dy + j, 0xf8f4ea);
           }
         },
       });
     }
     // the conservatory at the west end: a glasshouse with plants inside
-    k.objects.push({
+    objects.push({
       y: Y(foot) + 1,
       shadow: () => k.shadowRect(68, Y(foot) - 14, 10, 14, 0.6),
       draw: () => {
-        const y = Y(foot) - 15;
-        for (let yy = y; yy < y + 15; yy++)
-          for (let x = 66; x < 78; x++) img.set(x, yy, (x - 66) % 3 === 0 || (yy - y) % 4 === 0 ? 0xd8e4e0 : yy < y + 6 ? 0x9ac4c8 : 0x4a7a5a);
-        for (let i = 0; i < 6; i++) img.set(67 + i * 2, y + 9 + (i % 2), 0xd87a9a);
-        if (night(foot) > 0.1) for (let i = 0; i < 4; i++) glow(68 + i * 3, y + 10, C.warm, 0.4);
+        const Y0 = (Y(foot) - 15) * S;
+        for (let j = 0; j < 45; j++)
+          for (let i = 0; i < 36; i++) {
+            let c;
+            if (i % 9 === 0 || j % 12 === 0) c = 0xe8f0ec;
+            else if (j < 18) c = (i + j) % 7 === 0 ? 0xd8f0f4 : 0x9ac4c8;
+            else {
+              const g = hashPx(i >> 1, j >> 1, 204);
+              c = g < 0.2 ? 0xd87a9a : g < 0.3 ? 0xf0e070 : g < 0.7 ? 0x4a7a5a : 0x3a6a4a;
+            }
+            img.px(66 * S + i, Y0 + j, c);
+          }
+        if (night(foot) > 0.1) for (let i = 4; i < 36; i += 9) glowPx(66 * S + i, Y0 + 30, C.warm, 0.5);
       },
     });
     k.reserve(65, Y(foot) - 16, 14, 17);
-    // the pond with its stone edge, carp and lilies, the little bridge, the Miura Tamaki statue
+    // the pond with its stone edge, lilies, the little bridge, the Miura Tamaki statue (Madame Butterfly) by it
     const py = Y(2310);
-    k.shadowEllipse(156, py, 15, 9, 1);
-    img.ellipse(156, py, 15, 9, C.granite[3]);
-    img.ellipse(156, py, 13, 7, 0x1e4a4e);
-    img.ellipse(154, py - 1, 9, 4, 0x2a5e5e);
-    for (const [cx, cy, c] of [[150, py + 1, 0xf08a3a], [158, py - 2, 0xf4f0e8], [161, py + 2, 0xe85a2a], [153, py - 3, 0x5a8a5a], [163, py - 1, 0x4a7a4a]]) {
-      img.set(cx, cy, c);
-      img.set(cx + 1, cy, scaleColor(c, 0.8));
+    img.fine(140, py - 10, 32, 20, (X, Yy, x, y) => {
+      const d = Math.hypot((x - 156) / 15, (y - py) / 9);
+      if (d >= 1) return null;
+      if (d > 0.87) return Math.floor(Math.atan2(y - py, x - 156) * 9) % 2 ? C.granite[3] : C.granite[2];
+      const c = rampColor([0x123a40, 0x1e4a4e, 0x2a5e5e, 0x3a7270], 0.2 + fbm(x, y, { seed: 2310, scale: 5 }) * 0.5 + (y - py) * 0.02, X, Yy);
+      return hashPx(X >> 1, Yy, 205) > 0.985 ? 0xc8e8e4 : c;
+    });
+    for (const [x, y] of [[151, py + 2], [162, py - 3], [147, py - 1], [159, py + 4], [165, py + 1]]) {
+      img.discPx(x * S, y * S, 3, 0x3a7a4a);
+      img.px(x * S - 1, y * S - 1, 0x6aaa6a);
+      if ((x + y) % 2) img.discPx(x * S + 1, y * S, 1, 0xf4b0c8);
     }
-    for (let i = 0; i < 6; i++) img.set(144 + i, py - Math.round(Math.sin((i / 5) * Math.PI) * 2), 0xb08a5a);
+    const koi = (col) => [0, 1].map((f) => k.sprite(4, 3, 2310, (r) => {
+      for (let i = 0; i < 9; i++) {
+        const hw = Math.sin((i / 8) * Math.PI) * 1.6;
+        const cy = 4 + (f ? 1 : -1) * Math.sin(i * 0.5) * 0.7;
+        for (let j = -hw; j <= hw; j += 0.5) r.px(i, cy + j, i > 2 && i < 6 ? 0xfff4e8 : col);
+      }
+    }, false));
+    kit.wander(156, 2310, 10, 5, koi(0xf08a3a), { n: 2, sp: 4, turn: 'rot', fps: 3 });
+    kit.wander(154, 2310, 9, 4, koi(0xe85a2a), { n: 1, sp: 3, turn: 'rot', fps: 3 });
+    for (let X = 143 * S; X < 150 * S; X++) {
+      const dy = Math.round(Math.sin(((X - 143 * S) / (7 * S)) * Math.PI) * 6);
+      for (let j = 0; j < 6; j++) img.px(X, py * S - dy + j, j < 1 || j > 4 ? 0x8a5a2a : X % 3 ? 0xb08a5a : 0x8a6a42);
+    }
     k.reserve(140, py - 10, 32, 20);
     objects.push({
       y: Y(2306),
+      shadow: () => k.shadowRect(135, Y(2306) - 2, 6, 3, 0.66),
       draw: () => {
-        const y = Y(2306);
-        img.rect(134, y - 2, 5, 3, C.granite[2]);
-        img.rect(135, y - 8, 3, 6, 0x6a8a7a);
-        img.set(136, y - 9, 0x4a5a52);
-        img.rect(134, y - 6, 1, 3, 0x6a8a7a);
-        img.set(138, y - 6, 0x8ab0a0);
+        const X = 136 * S;
+        const Yb = Y(2306) * S;
+        for (let j = 0; j < 9; j++) for (let i = -7; i <= 7; i++) img.px(X + i, Yb - j, j > 6 ? C.granite[4] : i > 5 ? C.granite[0] : C.granite[2]);
+        for (let j = 0; j < 15; j++) {
+          const hw = 2.4 + j * 0.2;
+          for (let i = -hw; i <= hw; i++) img.px(X + i, Yb - 24 + j, i < -1 ? 0x8ab0a0 : i < hw - 1 ? 0x6a8a7a : 0x4a6a5a);
+        }
+        img.discPx(X, Yb - 26, 2.4, 0x6a8a7a);
+        for (let q = 0; q < 8; q++) img.px(X + 3 + q, Yb - 18 - (q >> 1), 0x8ab0a0);
       },
     });
   }
   // Mitsubishi No. 2 Dock House: two storeys of verandas, and the small Walker House
-  westernHouse(k, 104, 2414, 52, 15, 16, { floors: 2, ramp: C.slate, slate: true, shutter: 0x4a7a6a, rail: 0x6a9a7a, postGap: 4, chimneys: [112, 146] });
+  westernHouse(k, 104, 2414, 52, 15, 16, { floors: 2, ramp: C.slate, slate: true, shutter: 0x4a7a6a, rail: 0x8aba9a, postGap: 4, chimneys: [112, 146] });
   westernHouse(k, 70, 2412, 28, 12, 9, { ramp: C.kawara, wall: 0xe8dcc4, chimneys: [76] });
-  // planting: palms, camellias, cherry, hydrangea and azalea beds, lamps along the walks
+  // planting: palms, camellias, cherry, hydrangea and azalea beds, lamps and benches along the walks
   for (const [x, u] of [[92, 2240], [150, 2250], [84, 2350], [116, 2360], [158, 2440], [96, 2452]]) k.palm(x, Y(u), 6, x + u);
-  k.grove(66, 166, 2210, 2560, 40, [CAMELLIA, CAMPHOR, SAKURA], 2211, 3, 5);
-  flowers(k, 66, Y(2290) + 2, 100, 80, HYDRANGEA, 260, 3);
-  flowers(k, 66, Y(2400) + 2, 100, 100, [0xe86a9a, 0xf4a0c0, 0xffffff, 0xd84a7a], 220, 4);
-  flowers(k, 66, Y(2480) + 2, 100, 70, HYDRANGEA, 180, 5);
-  flowers(k, 66, Y(2560) + 2, 100, 70, [0xe86a9a, 0xf4a0c0, 0xd84a7a, 0xf8e070], 160, 6);
-  for (const u of [2208, 2300, 2410, 2490]) for (let x = 80; x < 166; x += 22) k.streetLamp(x, u, 0xfff0c8, 5);
+  k.grove(66, 166, 2210, 2560, 44, [CAMELLIA, CAMPHOR, SAKURA, SAKURA], 2211, 3, 5);
+  flowers(k, 66, Y(2290) + 2, 100, 80, HYDRANGEA, 240, 3);
+  flowers(k, 66, Y(2400) + 2, 100, 100, AZALEA, 260, 4);
+  flowers(k, 66, Y(2480) + 2, 100, 70, HYDRANGEA, 200, 5);
+  flowers(k, 66, Y(2560) + 2, 100, 70, AZALEA, 180, 6);
+  // the empty corner below the cathedral: camellias, a little grove, a stone wall's end
+  k.grove(66, 114, 2108, 2196, 16, [CAMELLIA, CAMPHOR, SAKURA], 2109, 3, 5);
+  for (const u of [2208, 2300, 2410, 2490]) {
+    for (let x = 80; x < 166; x += 22) k.streetLamp(x, u);
+    for (let x = 90; x < 160; x += 44) k.bench(x, Y(u + 3), 5);
+  }
   k.strollers(116, 2300, 40, 6, 5);
   k.strollers(116, 2208, 40, 4, 3);
   k.strollers(116, 2410, 40, 4, 3);
+  k.strollers(146, 2490, 18, 3, 2);
+  // the upper gate of the garden
+  k.house(120, Y(2552), 12, 6, 5, 'jp', { wall: 0xc8b898, doorX: 5, bay: 4 });
 
   // ---- Oranda-zaka: the Dutch Slope's cobbles from the upper gate down to the coast road, wooden houses on it
   path(k, [[126, 2540], [128, 2570], [122, 2596], [r1X(2602) + R1_HW + 2, 2602]], 3, C.stoneSet);
-  for (let u = 2540; u < 2600; u += 3) img.set(126 + Math.round((u - 2540) * 0.05), Y(u), 0x5a5a56);
   westernHouse(k, 140, 2556, 30, 12, 9, { wall: 0xdcd4c0, ramp: C.slate, slate: true, shutter: 0x6a4a3a, chimneys: [146] });
   westernHouse(k, 136, 2610, 36, 12, 10, { wall: 0xe8e0cc, ramp: C.kawara, shutter: 0x3a6a5a, chimneys: [160] });
   westernHouse(k, 96, 2574, 22, 11, 8, { wall: 0xd8ccb4, ramp: C.kawara, chimneys: [100] });
-  k.grove(80, 180, 2540, 2660, 16, [CAMELLIA, CAMPHOR, SAKURA], 2541, 3, 5);
-  k.grove(170, 180, 2660, 2990, 6, [CAMPHOR], 2661, 2.5, 3.5);
+  k.walkers([[128, 2545], [128, 2570], [122, 2596], [70, 2600]], 3, 2570, { sp: 3 });
+  k.grove(80, 180, 2540, 2660, 24, [CAMELLIA, CAMPHOR, SAKURA], 2541, 3, 5);
+  k.grove(170, 180, 2660, 2990, 10, [CAMPHOR], 2661, 2.5, 3.5);
 }
 
 // ---------------------------------------------------------------------------------------------- Dejima
 export function paintDejima(k) {
-  const { img, Y, kit, objects, glow, pool } = k;
+  const { img, Y, kit, objects, glowPx, pool } = k;
   const R = rng(1636);
   const { x0, x1, gate } = DEJIMA;
-  const mid = (x) => (dejimaSouth(x) + dejimaNorth(x)) / 2;
 
   // the Wharf: a timber boardwalk on piles along the bay's east shore, restaurants with lamps and parasols
-  for (let u = 2662; u < 2792; u++) {
-    const y = Y(u);
-    for (let x = 128; x < 150; x++) img.set(x, y, (x + Math.floor(u / 2)) % 4 === 0 ? C.wood[1] : (u % 2 ? C.wood[2] : C.wood[3]));
-    img.set(127, y, C.wood[0]);
-    if (u % 8 === 0) img.set(127, y + 1, 0x101418, 0.5);
+  img.fine(128, Y(2792), 22, 130, (X, Yy) => {
+    const i = X - 128 * S;
+    const b = i >> 2;
+    if (i % 4 === 3) return C.wood[0];
+    const XX = Yy + b * 13;
+    if (XX % 40 === 0) return C.wood[0];
+    const c = rampColor(C.wood, 0.45 + hashPx(b, Math.floor(XX / 40), 206) * 0.5, X, Yy);
+    return hashPx(X, Yy, 207) < 0.06 ? scaleColor(c, 0.9) : c;
+  });
+  for (let Yy = Y(2792) * S; Yy < Y(2662) * S; Yy++) {
+    img.px(127 * S, Yy, C.wood[0]);
+    img.px(127 * S + 1, Yy, Yy % 12 < 2 ? 0x2a1c14 : C.wood[3]);
+    if (Yy % 24 === 0) for (let i = 0; i < 9; i++) img.px(127 * S - 1 - i, Yy, 0x061420, 0.4 - i * 0.04);
   }
   k.reserve(127, Y(2792), 24, 132);
   for (let u = 2670; u < 2790; u += 30) {
-    k.house(140, Y(u + 20), 10, 8, 10, 'jp', { wall: R.pick([0xc8a878, 0xb89868, 0xd8c098]), noren: R.pick([0x8a2a2a, 0x2a4a8a, 0xe8d8b0]) });
+    k.house(140, Y(u + 20), 10, 8, 10, 'jp', { wall: R.pick([0xc8a878, 0xb89868, 0xd8c098]), noren: R.pick([0x8a2a2a, 0x2a4a8a, 0xe8d8b0]), bay: 4 });
     for (const dy of [4, 14]) {
+      // a table under its parasol, chairs, a lamp under it
       const c = R.pick([0xe8e4d8, 0xd85a4a, 0x3a7a5a]);
-      img.disc(134, Y(u + dy), 3, c);
-      img.set(133, Y(u + dy) - 1, scaleColor(c, 1.15));
-      glow(134, Y(u + dy), 0xffd090, 0.3 + night(u) * 0.4);
+      const CX = 134 * S;
+      const CY = Y(u + dy) * S;
+      objects.push({
+        y: Y(u + dy) + 1,
+        draw: () => {
+          for (let j = -11; j <= 11; j++) for (let i = -11; i <= 11; i++) if (i * i + j * j <= 121) img.tintPx(CX + i + 3, CY + j + 4, 0.74);
+          for (let j = -10; j <= 10; j++)
+            for (let i = -10; i <= 10; i++) {
+              if (i * i + j * j > 100) continue;
+              const seg = Math.floor(((Math.atan2(j, i) + 3.15) / 6.3) * 8);
+              img.px(CX + i, CY + j, seg % 2 ? c : scaleColor(c, 0.78));
+            }
+          img.discPx(CX, CY, 1.4, 0xf8f0d8);
+          for (const [q, r] of [[-13, 0], [13, 0], [0, -13], [0, 13]]) img.rectPx(CX + q - 1, CY + r - 1, 3, 3, C.wood[3]);
+          pool(134, Y(u + dy), 5, 0xffd090, 0.1 + night(u) * 0.22);
+        },
+      });
     }
-    k.streetLamp(129, u + 22, 0xffe0a8, 5);
+    k.streetLamp(129, u + 22, 0xffe0a8);
   }
   k.strollers(136, 2730, 6, 50, 6);
 
-  // the island: earth and stone flags, its walls (faces drawn with the shores), the tile-capped perimeter wall
-  for (let u = 2795; u < 2950; u++)
-    for (let x = x0; x <= x1; x++) {
-      if (!k.wet(x, Y(u)) && u >= dejimaSouth(x) && u <= dejimaNorth(x)) img.set(x, Y(u), rampColor(C.sand, 0.3 + fbm(x, u, { seed: 1641, scale: 4 }) * 0.6, x, Y(u)));
+  // the island: earth and stone flags, the walls drawn with the shores, the lanes along the fan
+  const span = (x, t) => dejimaSouth(x) + (dejimaNorth(x) - dejimaSouth(x)) * t;
+  img.fine(x0, Y(2950), x1 - x0 + 1, 155, (X, Yy, x, y) => {
+    const u = 7168 - y;
+    if (k.fineWater[Yy * k.FW + X] || u < dejimaSouth(x) || u > dejimaNorth(x)) return null;
+    if (k.shoreD[Yy * k.FW + X] <= 5) return null;
+    const t = (u - dejimaSouth(x)) / (dejimaNorth(x) - dejimaSouth(x));
+    // the main street and two lanes in tamped earth edged in stone
+    for (const [lane, hw] of [[0.5, 0.032], [0.255, 0.018], [0.76, 0.018]]) {
+      const d = Math.abs(t - lane) / hw;
+      if (d < 1) return d > 0.82 ? C.granite[2] : k.settPx(X, Yy, 23, [0x8e8470, 0xa49a84, 0xb8ae96, 0xc8bea4]);
     }
-  for (let x = x0 + 1; x < x1; x++) {
-    for (const [uu, inward] of [[dejimaSouth(x) + 1, 1], [dejimaNorth(x) - 1, -1]]) {
-      const y = Y(Math.round(uu));
-      img.set(x, y, 0xe8e4d8);
-      img.set(x, y - inward, 0x3a3e46);
-      img.set(x, y - inward * 2, x % 2 ? 0x4a505a : 0x5a606a);
+    const c = rampColor(C.sand, 0.2 + fbm(x, y, { seed: 1641, scale: 5 }) * 0.6, X, Yy);
+    const g = hashPx(X, Yy, 208);
+    return g < 0.08 ? scaleColor(c, 0.88) : g > 0.96 ? scaleColor(c, 1.1) : c;
+  });
+  // the perimeter wall: a white wall capped with dark tiles, all round the fan (south and north arcs)
+  for (let X = (x0 + 1) * S; X < x1 * S; X++) {
+    const x = X / S;
+    if (Math.abs(x - gate) < 8) {
+      const YN = Math.round((7168 - dejimaNorth(x) + 1) * S);
+      for (let j = 0; j < 6; j++) img.px(X, YN + j, C.granite[3]);
+    }
+    for (const [uu, inward] of [[dejimaSouth(x) + 2, 1], [dejimaNorth(x) - 2, -1]]) {
+      if (inward < 0 && Math.abs(x - gate) < 7) continue;
+      const Yy = Math.round((7168 - uu) * S);
+      for (let j = -3; j <= 3; j++) img.px(X, Yy + j, j < -1 ? (X % 3 ? 0x4a505a : 0x5a606a) : j === -1 ? 0x2a2e36 : j < 2 ? 0xf0ece0 : j === 2 ? 0xc8c4b8 : 0x6a6a62);
     }
   }
-  // the island's lane, curving with the fan, and the buildings either side of it
-  for (let x = x0 + 4; x < x1 - 4; x++) for (let j = -2; j <= 2; j++) img.set(x, Y(Math.round(mid(x)) + j), j === 0 && x % 3 ? C.paving[3] : C.paving[2]);
-  for (let x = x0 + 4; x < x1 - 4; x++) k.reserve(x, Y(Math.round(mid(x)) + 3), 1, 6);
-  const at = (x, side) => Math.round(side > 0 ? dejimaNorth(x) - 6 : mid(x) - 4);
-  // namako-walled warehouses on the seaward side: dark tiles under a white diagonal grid
-  const kura = (x, w) => {
-    const foot = Math.round(dejimaSouth(x + w / 2) + 6);
-    const top = Math.round(mid(x + w / 2) - 4);
-    const y = Y(top);
-    const h = top - foot;
+  k.reserve(x0, Y(2950), x1 - x0 + 1, 155);
+
+  /** A house on the island. kind: 'kura' (namako-walled storehouse), 'home' (upper floor white, lower timber), 'hall'. */
+  const dejimaHouse = (x, w, t, kind, opt = {}) => {
+    const foot = Math.round(span(x + w / 2, t));
+    const rh = opt.rh ?? 10;
+    const fh = opt.fh ?? 8;
+    const y = Y(foot) - rh - fh;
+    const bits = rng(x * 17 + foot);
+    const lit = Array.from({ length: 16 }, () => bits() < 0.18 + night(2900) * 0.6);
     objects.push({
       y: Y(foot),
-      shadow: () => k.shadowRect(x + 2, y + 2, w, h, 0.55),
+      shadow: () => k.shadowRect(x + 2, y + 2, w, rh + fh, 0.55),
       draw: () => {
-        k.roof(x - 1, y, w + 2, Math.round(h * 0.55), C.kawara, { ridgeC: 0xe8e4d8 });
-        const fy = y + Math.round(h * 0.55);
-        for (let yy = fy; yy < y + h; yy++)
-          for (let xx = x; xx < x + w; xx++) {
-            const top2 = yy - fy < 3;
-            const grid = (xx + yy) % 4 === 0 || (xx - yy + 400) % 4 === 0;
-            img.set(xx, yy, top2 ? 0xf2eee4 : grid ? 0xe8e4d8 : 0x3e4450);
+        const X0 = x * S;
+        const WW = w * S;
+        const FY = (y + rh) * S;
+        const HH = fh * S;
+        for (let j = 0; j < HH; j++)
+          for (let i = 0; i < WW; i++) {
+            let c;
+            if (kind === 'kura') {
+              // namako: dark tiles under a white diagonal grid, plaster above
+              const high = j < HH * 0.34;
+              const grid = (i + j) % 9 < 1 || (i - j + 900) % 9 < 1;
+              c = high ? (i > WW - 3 ? 0xc8c4b8 : 0xf2eee4) : grid ? 0xf4f0e8 : 0x3e4450;
+              if (j >= 6 && j < 13 && Math.abs(i - (WW >> 1)) < 5) c = i % 3 === 0 ? 0x2a2e34 : 0x1a1a20;
+            } else if (kind === 'home') {
+              const mid = HH >> 1;
+              if (j < mid) {
+                c = 0xe6dcc4;
+                const q = i % 15;
+                if (j >= 3 && j < mid - 2 && q > 2 && q < 12) {
+                  const on = lit[Math.floor(i / 15) & 15];
+                  if (q % 3 === 0 || j % 3 === 0) c = C.oldWood[1];
+                  else if (on) {
+                    k.glowPx(X0 + i, FY + j, 0xffe4a8, 0.5 + night(2900) * 0.45);
+                    continue;
+                  } else c = 0xf0ead8;
+                }
+              } else if (j === mid || j === mid + 1) c = C.oldWood[j === mid ? 3 : 0];
+              else c = i % 3 === 0 ? C.oldWood[0] : (j >> 2) % 2 ? C.oldWood[3] : C.oldWood[2];
+              if (i % 24 < 2) c = C.oldWood[0];
+            } else {
+              // the seminary or club: white clapboard, sash windows
+              c = j % 3 === 0 ? scaleColor(opt.wall ?? 0xf4f0e8, 0.93) : opt.wall ?? 0xf4f0e8;
+              const q = i % 15;
+              if (q > 3 && q < 11 && j > 3 && j < HH - 4) {
+                if (j === (HH >> 1) || q === 7) c = 0xffffff;
+                else if (lit[Math.floor(i / 15) & 15]) {
+                  k.glowPx(X0 + i, FY + j, C.warm, 0.55 + night(2900) * 0.4);
+                  continue;
+                } else c = 0x3a4a5a;
+              }
+            }
+            if (j < 3) c = scaleColor(c, 0.6);
+            if (i >= WW - 2) c = scaleColor(c, 0.76);
+            img.px(X0 + i, FY + j, c);
           }
-        img.rect(x + Math.floor(w / 2) - 2, y + h - 5, 4, 5, 0x5a4232);
-        img.rect(x + Math.floor(w / 2) - 2, y + h - 5, 4, 1, 0x2a2a2a);
-      },
-    });
-    k.reserve(x, y, w, h);
-  };
-  kura(30, 18);
-  kura(50, 16);
-  kura(98, 16);
-  // the 1:15 model of Dejima in its courtyard: a tiny fan with tiny roofs in a blue moat
-  {
-    const cx = 79;
-    const cy = Y(Math.round(dejimaSouth(79) + 12));
-    k.objects.push({
-      y: cy + 4,
-      draw: () => {
-        img.ellipse(cx, cy, 11, 5, 0x3a7a9a);
-        for (let x = -8; x <= 8; x++) for (let j = 0; j < 4; j++) img.set(cx + x, cy - 2 + j + Math.round((x * x) / 30), 0xc8b890);
-        for (let x = -7; x <= 7; x += 2) img.set(cx + x, cy - 1 + Math.round((x * x) / 30), 0x4a4e58);
-        img.set(cx, cy - 4, 0xd83a2a);
-      },
-    });
-    k.reserve(cx - 12, cy - 6, 24, 11);
-  }
-  // the Protestant seminary (white, two storeys, 1878) and the club house at either end of the seaward row
-  westernHouse(k, 118, Math.round(dejimaSouth(128) + 6), 20, 10, 12, { floors: 2, wall: 0xf4f0e8, ramp: C.slate, slate: true, veranda: false, chimneys: [122], shutter: 0x5a6a7a });
-  westernHouse(k, 24, Math.round(dejimaNorth(30) - 34), 18, 10, 10, { wall: 0xb8c8c8, ramp: C.slate, slate: true, veranda: false, chimneys: [28], shutter: 0x4a5a6a });
-  // landward row: the Chief Factor's residence by the gate with its outside stair, other residences, the flag
-  const residence = (x, w, big = false) => {
-    const foot = Math.round(mid(x + w / 2) + 4);
-    const top = Math.round(dejimaNorth(x + w / 2) - 4);
-    const y = Y(top);
-    const h = top - foot;
-    objects.push({
-      y: Y(foot),
-      shadow: () => k.shadowRect(x + 2, y + 2, w, h, 0.55),
-      draw: () => {
-        const rh = Math.round(h * 0.5);
-        k.roof(x - 1, y, w + 2, rh, C.kawara, {});
-        for (let yy = y + rh; yy < y + h; yy++)
-          for (let xx = x; xx < x + w; xx++) img.set(xx, yy, (yy - y - rh) < (h - rh) / 2 ? 0xe6dcc4 : (xx % 4 === 0 ? C.oldWood[1] : C.oldWood[3]));
-        img.rect(x, y + rh + Math.floor((h - rh) / 2), w, 1, C.oldWood[0]);
-        k.panes(x + 1, y + rh + 1, w - 2, Math.floor((h - rh) / 2) - 1, 2900, { bay: 3, row: 3, pw: 2, ph: 1, sill: false });
-        if (big) {
-          // the outside stair under its own little roof, up to the first floor
-          const sx = x + w - 9;
-          for (let j = 0; j < 7; j++) img.rect(sx + j, y + h - 1 - j, 2, 1, C.oldWood[2]);
-          img.rect(sx, y + rh - 3, 10, 3, C.kawara[2]);
-          img.rect(sx, y + rh - 3, 10, 1, C.kawara[3]);
+        k.roof(x - 1, y, w + 2, rh, opt.ramp ?? C.kawara, { noshi: kind === 'kura', courses: kind !== 'west' });
+        if (opt.stair) {
+          // the Chief Factor's outside stair under its own little roof, up to the first floor
+          const SX = (x + w - 9) * S;
+          for (let j = 0; j < 18; j++) for (let i = 0; i < 9; i++) img.px(SX + j + i, FY + HH - 1 - j, i < 1 ? C.oldWood[3] : j % 2 ? C.oldWood[2] : C.oldWood[1]);
+          for (let j = 0; j < 9; j++) for (let i = 0; i < 30; i++) img.px(SX + i, FY - 3 + j, j < 1 ? C.kawara[4] : (i % 3 ? C.kawara[2] : C.kawara[3]));
         }
       },
     });
-    k.reserve(x, y, w, h);
+    k.reserve(x, y, w, rh + fh);
   };
-  residence(30, 20);
-  residence(54, 14);
-  residence(98, 24, true);
-  residence(124, 14);
-  // the Dutch tricolour on its tall pole in the Chief Factor's garden
+  // the four rows of the fan, near sea to near town; the flag's garden and the model's courtyard left open
+  const row = (t, items) => {
+    let x = x0 + 8;
+    for (const it of items) {
+      if (typeof it === 'number') x += it;
+      else {
+        if (x + it[0] > x1 - 6) break;
+        dejimaHouse(x, it[0], t, it[1], it[2]);
+        x += it[0] + 1;
+      }
+    }
+  };
+  const roofDark = { ramp: C.kawara };
+  const K = (w, o) => [w, 'kura', o ?? roofDark];
+  const H = (w, o) => [w, 'home', o ?? roofDark];
+  row(0.04, [K(12), K(11), H(13), 3, K(12), 32, K(12), H(12), [16, 'hall', { rh: 10, fh: 12, ramp: C.slate, wall: 0xf4f0e8 }]]);
+  row(0.28, [H(14), H(10), K(10), H(13), 6, H(12), K(10), H(14), K(9), H(10)]);
+  row(0.54, [[14, 'hall', { rh: 9, fh: 9, ramp: C.slate, wall: 0xb8c8c8 }], H(13), H(11), 2, H(16), 11, [24, 'home', { rh: 12, fh: 11, stair: true, ramp: C.kawara }], H(11), H(11)]);
+  row(0.78, [K(10), H(12), H(11), K(10), 22, K(10), H(12), H(11), K(10)]);
+  // the Dutch tricolour on its tall pole in the Chief Factor's garden, a pine and camphor by it, a little lawn
   {
-    const fx = 86;
-    const fu = Math.round(mid(86) + 6);
+    const fx = 90;
+    const fu = Math.round(span(fx, 0.58));
+    k.lawnFill(fx - 9, Y(fu) - 3, 20, 7, C.lawn, 2910);
     objects.push({
       y: Y(fu) + 1,
       shadow: () => k.shadowRect(fx + 1, Y(fu) - 1, 8, 2, 0.6),
       draw: () => {
-        img.rect(fx, Y(fu) - 34, 1, 34, 0xd8d4c8);
-        img.set(fx, Y(fu) - 35, C.gold);
+        for (let j = 0; j < 104; j++) {
+          img.px(fx * S, Y(fu) * S - j, 0xf0ece0);
+          img.px(fx * S + 1, Y(fu) * S - j, 0xa8a498);
+        }
+        img.discPx(fx * S, Y(fu) * S - 105, 1.6, C.gold);
       },
     });
-    const flag = [0, 1, 2].map((f) =>
-      k.sprite(12, 9, fu, (r) => {
-        for (let x = 0; x < 11; x++) {
-          const dy = Math.round(Math.sin(x * 0.6 + f * 2) * (x / 10));
-          r.set(x, 1 + dy, 0xc8302a);
-          r.set(x, 2 + dy, 0xc8302a);
-          r.set(x, 3 + dy, 0xf4f0e8);
-          r.set(x, 4 + dy, 0xf4f0e8);
-          r.set(x, 5 + dy, 0x2a4a9a);
-          r.set(x, 6 + dy, 0x2a4a9a);
-        }
-      }),
-    );
+    const flag = [0, 1, 2].map((f) => k.sprite(12, 9, fu, (r) => {
+      for (let X = 0; X < 33; X++) {
+        const dy = Math.round(Math.sin(X * 0.2 + f * 2) * (X / 12));
+        for (let j = 0; j < 18; j++) r.px(X, 4 + j + dy, j < 6 ? 0xc8302a : j < 12 ? 0xf4f0e8 : 0x2a4a9a);
+      }
+    }));
     kit.loop(fx + 1, fu + 34, flag, { fps: 3 });
-    k.tree(74, Y(fu) - 6, 4, PINE, 1636, 'pine');
-    k.tree(66, Y(fu) - 2, 3.5, CAMPHOR, 1637);
+    k.niwaki(fx - 6, fu + 1, 1, 1636);
+    k.tree(fx + 6, Y(fu + 2), 3.5, CAMPHOR, 1637);
   }
-  // the water gate on the seaward wall: steps down to the landing stage
-  for (let j = 0; j < 4; j++) img.rect(44, Y(Math.round(dejimaSouth(46))) + j, 6, 1, j % 2 ? C.granite[1] : C.granite[3]);
-  img.rect(42, Y(Math.round(dejimaSouth(46))) + 4, 10, 2, C.wood[2]);
+  // the 1:15 model of Dejima in its courtyard: a tiny fan with tiny roofs in a blue moat, visitors round it
+  {
+    const cx = 88;
+    const cy = Y(Math.round(dejimaSouth(88) + 15));
+    img.fine(cx - 13, cy - 7, 26, 14, (X, Yy, x, y) => {
+      const d = Math.hypot((x - cx) / 13, (y - cy) / 7);
+      if (d > 1) return null;
+      if (d > 0.92) return C.granite[3];
+      return (X + (Yy >> 1)) % 11 === 0 ? 0x8ac0d8 : 0x3a7a9a;
+    });
+    const CX = cx * S;
+    const CY = cy * S;
+    for (let X = -27; X <= 27; X++) {
+      const c0 = Math.round((X * X) / 90);
+      for (let j = -6; j <= 6; j++) img.px(CX + X, CY + j + c0 - 3, Math.abs(j) > 5 ? 0xf0ece0 : 0xc8b890);
+    }
+    for (let X = -24; X <= 24; X += 5) {
+      const c0 = Math.round((X * X) / 90);
+      for (const dy of [-7, 1]) {
+        img.rectPx(CX + X, CY + c0 + dy, 4, 2, 0x3a3e48);
+        img.rectPx(CX + X, CY + c0 + dy + 2, 4, 2, 0xe8e0d0);
+      }
+    }
+    img.px(CX, CY - 8, 0xd83a2a);
+    img.px(CX, CY - 7, 0xf4f0e8);
+    k.crowd(cx - 14, cy + 5, 28, 2, 7);
+    k.reserve(cx - 14, cy - 8, 28, 16);
+  }
+  k.niwaki(122, Math.round(span(122, 0.26)) + 1, 0.8, 2);
+  k.niwaki(50, Math.round(span(50, 0.5)) + 1, 0.8, 3);
+  for (const x of [40, 62, 82, 106, 126]) k.stoneLantern(x, Math.round(span(x, 0.5) - 3), true);
+  // the water gate on the seaward wall: steps down to the landing stage, a sampan tied up
+  {
+    const Yb = Y(Math.round(dejimaSouth(46))) * S;
+    for (let j = 0; j < 12; j++) for (let i = 0; i < 18; i++) img.px(44 * S + i, Yb + j, j % 3 === 0 ? C.granite[4] : j % 3 === 1 ? C.granite[2] : C.granite[0]);
+    for (let j = 0; j < 7; j++) for (let i = -6; i < 24; i++) img.px(44 * S + i, Yb + 12 + j, j < 1 ? C.wood[3] : i % 6 < 1 ? C.wood[0] : C.wood[2]);
+    for (let j = 0; j < 5; j++) for (let i = -9; i < 27; i++) img.tintPx(44 * S + i, Yb + 19 + j, 0.7);
+  }
   // the Omotemon gate and its bridge over the channel to the town
   {
     const gy = Y(Math.round(dejimaNorth(gate)));
     objects.push({
       y: gy + 3,
       draw: () => {
-        img.rect(gate - 6, gy - 7, 2, 8, C.oldWood[0]);
-        img.rect(gate + 5, gy - 7, 2, 8, C.oldWood[0]);
-        k.roof(gate - 8, gy - 12, 17, 5, C.kawara, {});
-        img.rect(gate - 4, gy - 5, 9, 6, 0x2a2622);
+        const GX = gate * S;
+        for (const q of [-18, 15]) for (let j = -21; j < 3; j++) for (let i = 0; i < 6; i++) img.px(GX + q + i, gy * S + j, i < 1 ? C.oldWood[3] : i > 4 ? 0x2a2018 : C.oldWood[0]);
+        for (let i = -15; i < 15; i++) for (let j = -18; j < 3; j++) img.px(GX + i, gy * S + j, j < -15 ? C.oldWood[1] : Math.abs(i) < 1 ? 0x1a1410 : (i >> 2) % 2 ? 0x3a2c22 : 0x2e2218);
+        k.roof(gate - 8, gy - 12, 17, 5, C.kawara, { noshi: true });
       },
     });
-    const by0 = Y(EMBANK + 8);
-    for (let y = by0; y <= gy; y++)
-      for (let x = gate - 5; x <= gate + 5; x++) {
-        const edge = Math.abs(x - gate) >= 4;
-        img.set(x, y, edge ? (y % 3 ? 0x8a6a4a : 0x5a4232) : (y % 2 ? C.wood[2] : C.wood[3]));
-      }
-    for (let x = gate - 5; x <= gate + 5; x++) img.set(x, gy + 1, 0x101418, 0.4);
-    k.reserve(gate - 6, by0, 13, gy - by0 + 1);
+    k.way([[gate, EMBANK + 8], [gate, Math.round(dejimaNorth(gate)) + 1]], 5, {
+      overWater: true,
+      kerb: 0x8a6a4a,
+      paint: (X, Yy) => {
+        if (Yy % 3 === 0) return C.wood[0];
+        const c = rampColor(C.wood, 0.45 + hashPx(X >> 2, Yy >> 1, 209) * 0.5, X, Yy);
+        return c;
+      },
+    });
+    for (let X = (gate - 5) * S; X < (gate + 5) * S; X++) for (let j = 0; j < 4; j++) img.tintPx(X, gy * S + 3 + j, 0.66);
     k.walkers([[gate, EMBANK + 10], [gate, Math.round(dejimaNorth(gate)) - 2]], 2, 2950, { sp: 3 });
   }
-  k.strollers(80, Math.round(mid(80)), 40, 2, 6);
-  // a few boats in the bay
-  for (const [x, u] of [[60, 2720], [16, 2860], [112, 2690]]) {
-    img.rect(x, Y(u), 4, 9, 0xe8e4d8);
-    img.rect(x + 1, Y(u) + 2, 2, 4, 0x3a6a8a);
-    img.set(x + 4, Y(u) + 8, 0x061420, 0.4);
+  // visitors in the street, a boat or two moored in the bay
+  k.walkers([[34, Math.round(span(34, 0.5)) + 1], [88, Math.round(span(88, 0.5)) + 1], [130, Math.round(span(130, 0.5)) + 1]], 5, 2870, { sp: 3, gap: 40 });
+  k.strollers(88, Math.round(span(88, 0.5)), 40, 1.5, 4);
+  for (const [x, u, col] of [[60, 2720, 0xe8e4d8], [16, 2860, 0x3a6a8a], [112, 2690, 0xe8e4d8]]) {
+    const f = k.hull(5, 13, u, col, 0xc8c0a8, (r, FL, FHh) => {
+      for (let j = 6; j < 24; j++) for (let i = 4; i < FL - 4; i++) r.px(i, j, 0xe8e4d8);
+    });
+    kit.loop(x, u + 13, [f], { d: 0.02 });
   }
 }
 
 // ---------------------------------------------------------------------------------------------- Shinchi
 export function paintShinchi(k) {
-  const { img, Y, kit, objects, glow, pool } = k;
+  const { img, Y, kit, objects, glowPx } = k;
   const R = rng(1698);
   const CROSS = STREETS.find((s) => s.u === 3330);
   const roofs = [C.chinaGreen, C.redTile, C.chinaGreen, C.kawara];
@@ -569,59 +842,87 @@ export function paintShinchi(k) {
           const tall = R() < 0.3;
           const style = tall ? 'block' : 'china';
           const rh = tall ? 9 : Math.round(h * 0.45);
+          const hx = x;
+          const hw = w;
+          const hu = u;
+          const signC = R.pick([0xe8b830, 0xc8302a, 0x2aa86a]);
+          const signSide = R() < 0.5;
           k.house(x, yTop, w - 1, rh, h - rh, style, {
             ramp: R.pick(roofs),
             wall: R.pick([0x8a3a32, 0xa8483a, 0x7a5a48, 0xd8c8a8, 0x6a7a6a, 0xc8a070]),
             roofC: R.pick([0x6a6e74, 0x5a6068, 0x7a7068]),
             noren: R.pick([0xc8302a, 0xe8b830, 0x2a6a4a]),
+            door: !tall,
             extra: (by) => {
-              // signboards and a pair of lanterns on the front
-              if (w > 10) {
-                const sx = x + 1;
-                img.rect(sx, by - 10, 2, 8, R.pick([0xe8b830, 0xc8302a, 0x2aa86a]));
-                img.set(sx, by - 11, 0x2a2026);
-                glow(sx, by - 8, 0xffd080, 0.35 + night(u) * 0.4);
+              // an upright signboard with its characters, a pair of paper lanterns on the front
+              if (hw > 10) {
+                const SX = (signSide ? hx + 1 : hx + hw - 4) * S;
+                const SY = (by - 11) * S;
+                for (let j = 0; j < 27; j++)
+                  for (let i = 0; i < 7; i++) {
+                    const e = Math.min(i, 6 - i, j, 26 - j);
+                    let c = e < 1 ? 0x2a2026 : signC;
+                    if (e > 1 && j % 7 > 1 && hashPx(i, j >> 1, hx) < 0.5) c = 0xfff8e0;
+                    if (night(hu) > 0.3 && e >= 1) glowPx(SX + i, SY + j, c, 0.85);
+                    else img.px(SX + i, SY + j, c);
+                  }
               }
-              for (const lx of [x + 2, x + w - 4]) {
-                img.set(lx, by - 4, 0xe83a2a);
-                img.set(lx, by - 5, 0xc8302a);
-                glow(lx, by - 4, 0xff6a3a, 0.5 + night(u) * 0.4);
+              for (const lx of [hx + 2, hx + hw - 3]) {
+                const LX = lx * S;
+                const LY = (by - 5) * S;
+                img.px(LX, LY - 2, 0x2a2026);
+                for (let j = 0; j < 7; j++) for (let i = -2; i <= 2; i++) if (Math.abs(i) < 3 - Math.abs(j - 3) * 0.3) img.px(LX + i, LY + j, j === 0 || j === 6 ? C.gold : i < 0 ? 0xff6a4a : 0xe83a2a);
+                glowPx(LX, LY + 3, 0xffa070, 0.7 + night(hu) * 0.3);
               }
-              pool(x + w / 2, by, 6, 0xff7040, 0.08 + night(u) * 0.14);
+              k.pool(hx + hw / 2, by, 7, 0xff7040, 0.08 + night(hu) * 0.16);
             },
           });
+          // a kitchen's vent steaming on the roof now and then
+          if (R() < 0.08) kit.emit(x + w / 2, u + h - 2, [[k.kit.frame(k.puff(5, u & 255, [0xb0b0b8, 0xd0d0d8, 0xebebf0, 0xffffff]))]], { rate: 0.8, life: [1.1, 1.8], vy: 5, sx: 1, wf: 0.6, a: 0.28 });
         }
         x += w + 1;
       }
     }
   }
-  // the main street: lanterns strung overhead, sways gently; steamers of kakuni-manju; people everywhere
+  // the main street: strings of lanterns overhead, swaying gently; red pillars; steamers of kakuni-manju; crowds
   const string = [0, 1, 2].map((f) =>
     k.sprite(15, 8, 3300, (r) => {
-      r.line(0, 1, 14, 1, 0x6a4a3a);
-      for (let x = 1; x < 15; x += 4) {
-        const dy = (x + f) % 2;
-        r.ellipse(x + 0.5, 4 + dy, 1.6, 2.2, 0xe83a2a);
-        r.set(x, 3 + dy, 0xff9a6a);
-        r.set(x, 6 + dy, 0xe8b830);
+      for (let X = 0; X < 45; X++) r.px(X, 3 + Math.round(Math.sin((X / 44) * Math.PI) * 3), 0x4a3a2a);
+      for (let X = 3; X < 45; X += 9) {
+        const dy = Math.round(Math.sin((X / 44) * Math.PI) * 3) + ((Math.floor(X / 9) + f) % 2);
+        for (let j = 0; j < 11; j++) {
+          const hw = 3.6 - Math.abs(j - 5) * 0.32;
+          for (let i = -hw; i <= hw; i++) r.px(X + i, 6 + dy + j, j === 0 || j === 10 ? 0xe8b830 : j % 3 === 2 ? 0xc8282a : i < -1 ? 0xff9a6a : 0xe83a2a);
+        }
+        r.px(X, 18 + dy, 0xe8b830);
+        r.px(X, 19 + dy, 0xe8b830);
       }
     }, false),
   );
   for (let u = 3020; u < 3640; u += 26) kit.loop(CHINA_X - 7, u, string, { fps: 1.2, d: 0.6 });
   for (let u = 3020; u < 3640; u += 26) for (let x = CHINA_X - 6; x < CHINA_X + 7; x += 4) k.pool(x, Y(u) + 5, 4, 0xff5a30, 0.12 + night(u) * 0.2);
-  for (let u = 3006; u < 3646; u += 38) k.crowd(CHINA_X - 6, Y(u + 30), 12, 30, 6);
+  // across the cross street too
+  for (const x of [46, 64, 112, 130]) kit.loop(x, CROSS.u + 6, string, { fps: 1.2, d: 0.6 });
+  for (let u = 3006; u < 3646; u += 38) k.crowd(CHINA_X - 6, Y(u + 30), 12, 30, 7);
+  k.crowd(40, Y(CROSS.u + 4), 40, 8, 14);
+  k.crowd(104, Y(CROSS.u + 4), 40, 8, 14);
   k.walkers([[CHINA_X - 3, 3006], [CHINA_X - 3, 3646]], 6, 3300, { sp: 3, gap: 90 });
   k.walkers([[CHINA_X + 3, 3646], [CHINA_X + 3, 3006]], 6, 3300, { sp: 3, gap: 100 });
   k.walkers([[34, CROSS.u + 2], [150, CROSS.u + 2]], 4, 3330, { sp: 3, gap: 30 });
-  const steam = Array.from({ length: 4 }, (_, f) =>
-    k.sprite(12, 19, 3300, (r) => {
-      for (let q = 0; q < 4; q++) r.ellipse(5 + Math.sin(q + f) * 2, 16 - q * 4 - f, 2 + q, 2, 0xe8e0d0, 0.2 - q * 0.04);
-    }, false),
-  );
-  for (const [x, u] of [[CHINA_X - 9, 3110], [CHINA_X + 8, 3240], [CHINA_X - 9, 3420], [CHINA_X + 8, 3560]]) {
-    img.rect(x - 1, Y(u), 4, 3, 0x9a8a6a);
-    img.rect(x - 1, Y(u), 4, 1, 0xd8c8a0);
-    kit.loop(x - 5, u + 18, steam, { fps: 3, fx: 1 });
+  const steam = [[0, 1].map((v) => k.kit.frame(k.puff(6, 71 + v, [0xb0b0b8, 0xd0d0d8, 0xebebf0, 0xffffff])))];
+  // the steamer carts: bamboo baskets stacked on a red cart, the steam off them
+  for (const [x, u] of [[CHINA_X - 9, 3110], [CHINA_X + 8, 3240], [CHINA_X - 9, 3420], [CHINA_X + 8, 3560], [CHINA_X - 9, 3200], [CHINA_X + 8, 3480]]) {
+    objects.push({
+      y: Y(u) + 3,
+      shadow: () => k.shadowRect(x, Y(u), 5, 3, 0.66),
+      draw: () => {
+        const X = x * S - 2;
+        const Yy = Y(u) * S;
+        for (let j = 0; j < 9; j++) for (let i = 0; i < 15; i++) img.px(X + i, Yy + j, j < 1 ? 0xe85a3e : i % 5 === 0 ? 0x7a1a14 : 0xa8261e);
+        for (const q of [0, 1, 2]) for (let j = 0; j < 4; j++) for (let i = 1; i < 14; i++) img.px(X + i, Yy - 3 - q * 3 + j, j === 0 ? 0xe8d8a0 : i % 2 ? 0xc8a868 : 0xa88848);
+      },
+    });
+    kit.emit(x + 2, u + 7, steam, { rate: 1.3, life: [1.1, 1.8], vy: 6, sx: 2, wf: 0.6, a: 0.4 });
   }
   // the four gates: south and north across the main street, west and east across the cross street
   const paifang = (cx, footU, half) => {
@@ -630,18 +931,26 @@ export function paintShinchi(k) {
       y: y + 1,
       shadow: () => k.shadowRect(cx - half + 3, y - 2, half * 2, 4, 0.55),
       draw: () => {
-        for (const px of [cx - half, cx - Math.round(half / 3), cx + Math.round(half / 3) - 1, cx + half - 2]) {
-          img.rect(px, y - 16, 2, 17, C.vermilion[2]);
-          img.set(px + 1, y - 16, C.vermilion[3]);
-          img.rect(px - 1, y, 4, 1, C.granite[2]);
+        const CX = cx * S;
+        const Yb = y * S;
+        const H3 = half * S;
+        // four red pillars on their carved stone bases, with gold bands
+        for (const px of [-H3, -Math.round(H3 / 3), Math.round(H3 / 3) - 6, H3 - 6]) {
+          for (let j = -48; j < 3; j++) for (let i = 0; i < 6; i++) img.px(CX + px + i, Yb + j, (j + 60) % 18 < 2 ? C.gold : i < 1 ? C.vermilion[3] : i > 4 ? C.vermilion[0] : C.vermilion[2]);
+          for (let j = 0; j < 6; j++) for (let i = -2; i < 8; i++) img.px(CX + px + i, Yb + j, j < 1 ? C.granite[4] : i > 6 ? C.granite[0] : C.granite[2]);
         }
-        img.rect(cx - half - 1, y - 14, half * 2 + 2, 2, C.vermilion[1]);
-        img.rect(cx - 5, y - 13, 10, 4, 0x1a3a5a);
-        img.rect(cx - 4, y - 12, 8, 2, C.gold);
+        // the beams, painted in bands, the tablet in dark blue with its gold characters
+        for (let j = 0; j < 9; j++) for (let i = -H3 - 3; i < H3 + 3; i++) img.px(CX + i, Yb - 42 + j, j < 1 ? C.vermilion[3] : j > 7 ? C.vermilion[0] : (i >> 3) % 2 ? C.vermilion[2] : 0x2a6a4a);
+        for (let j = 0; j < 12; j++) for (let i = -15; i < 15; i++) {
+          const e = Math.min(i + 15, 14 - i, j, 11 - j);
+          img.px(CX + i, Yb - 39 + j, e < 1 ? C.gold : e > 1 && hashPx(i >> 1, j >> 1, cx) < 0.45 ? C.goldHi : 0x1a3a5a);
+        }
         k.roof(cx - half - 4, y - 22, half * 2 + 8, 7, C.chinaGreen, { curl: true, ridgeC: C.vermilion[2] });
         k.roof(cx - Math.round(half / 2) - 2, y - 27, half + 4, 5, C.chinaGreen, { curl: true, ridgeC: C.gold });
-        glow(cx - half, y - 10, 0xff6a3a, 0.7);
-        glow(cx + half - 1, y - 10, 0xff6a3a, 0.7);
+        for (const s of [-H3, H3 - 1]) {
+          glowPx(CX + s, Yb - 30, 0xff6a3a, 0.9);
+          glowPx(CX + s, Yb - 29, 0xffa070, 0.9);
+        }
       },
     });
   };
@@ -653,29 +962,26 @@ export function paintShinchi(k) {
       y: y + CROSS.hw + 2,
       shadow: () => k.shadowRect(cx + 2, y - CROSS.hw, 4, CROSS.hw * 2 + 2, 0.55),
       draw: () => {
-        for (const py of [y - CROSS.hw - 1, y + CROSS.hw]) {
-          img.rect(cx, py - 12, 2, 13, C.vermilion[2]);
-          img.set(cx + 1, py - 12, C.vermilion[3]);
-        }
-        for (let yy = y - CROSS.hw - 16; yy < y + CROSS.hw - 9; yy++)
-          for (let x = cx - 3; x < cx + 6; x++) img.set(x, yy, (yy - y) % 2 ? C.chinaGreen[2] : C.chinaGreen[3]);
-        img.rect(cx - 4, y - CROSS.hw - 17, 11, 1, C.vermilion[2]);
-        img.rect(cx - 3, y + CROSS.hw - 9, 9, 1, C.chinaGreen[0]);
-        img.rect(cx, y - 6, 2, 4, C.gold);
+        const X = cx * S;
+        for (const py of [y - CROSS.hw - 1, y + CROSS.hw]) for (let j = -36; j < 3; j++) for (let i = 0; i < 6; i++) img.px(X + i, py * S + j, (j + 40) % 15 < 2 ? C.gold : i < 1 ? C.vermilion[3] : i > 4 ? C.vermilion[0] : C.vermilion[2]);
+        // its long roof seen end-on along the street, green tiles, the red ridge, the tablet on its beam
+        const Y0 = (y - CROSS.hw - 17) * S;
+        const Y1 = (y + CROSS.hw - 9) * S;
+        for (let Yy = Y0; Yy < Y1; Yy++)
+          for (let i = -6; i < 15; i++) {
+            const q = (i - 4) / 10;
+            let c = rampColor(C.chinaGreen, 0.8 - (q + 1) * 0.35, X + i, Yy);
+            if (Yy % 3 === 0) c = scaleColor(c, 0.84);
+            if (Math.abs(i - 4) < 2) c = C.vermilion[2];
+            img.px(X + i, Yy, c);
+          }
+        for (let j = 0; j < 12; j++) for (let i = 0; i < 6; i++) img.px(X + i, y * S - 18 + j, i === 0 || j === 0 || j === 11 ? C.gold : hashPx(i, j >> 1, cx) < 0.4 ? C.goldHi : 0x1a3a5a);
       },
     });
   };
   sideGate(36, CROSS.u);
   sideGate(148, CROSS.u);
-  // the Tsukimachi tram stop on R1
-  for (let u = 3090; u < 3118; u++) {
-    img.rect(162 + 6, Y(u), 2, 1, u % 4 ? C.concrete[3] : C.concrete[2]);
-    img.rect(162 - 7, Y(u), 2, 1, u % 4 ? C.concrete[3] : C.concrete[2]);
-  }
-  for (const sx of [168, 155]) {
-    img.rect(sx, Y(3114), 2, 8, 0x5a7a8a);
-    glow(sx, Y(3112), 0xe8f4ff, 0.7);
-  }
-  // R1's east verge: a row of narrow buildings at the very edge
-  for (let u = 2998; u < 3650; u += 20) if (!k.anyRes(174, Y(u + 18), 6, 18)) k.house(174, Y(u + 18), 6, 8, 9, 'block', { roofC: 0x5a6068 });
+  // the Tsukimachi tram stop on R1, and R1's east verge: a row of narrow buildings at the very edge
+  tramStop(k, 3090, 3118);
+  for (let u = 2998; u < 3650; u += 20) if (!k.anyRes(174, Y(u + 18), 6, 18)) k.house(174, Y(u + 18), 6, 8, 9, 'block', { roofC: 0x5a6068, plainRoof: true });
 }
