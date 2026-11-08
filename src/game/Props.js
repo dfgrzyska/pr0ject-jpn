@@ -11,6 +11,9 @@ import { pathAt } from './pathTime.js';
 //   wander koi, swans, crocodiles, skaters roaming inside an ellipse
 //   spot   one-shot animations at random places: splashes, bursting bubbles, a dolphin jumping
 //
+// A loop or a path may have a height z: it is then drawn away from the point under the camera (Parallax.camX,
+// camY) by z times its distance from it, so it runs faster than the strip and leans as it goes by. A negative z
+// is below the strip: seen through the water, it runs slower.
 // Bullets stay readable: everything sits under the enemies (and far under their bullets), moves slowly
 // or in place, and nothing small and bright flies about. When the screen fills with bullets (calm, set
 // by the stage) the effects fade back: steam, bubbles, glints, blinking neon (fx); solid things that
@@ -156,7 +159,9 @@ export class Props {
     const corner = p.k === 'loop' || p.k === 'wave';
     for (let i = 0; i < n; i++) {
       const f = p.f[p.k === 'wave' ? p.parts[i][0] : i % p.f.length];
-      p.objs.push(this.img(p, Array.isArray(f) ? f[0] : f, corner ? 0 : 0.5, corner ? 0 : 0.5));
+      const o = this.img(p, Array.isArray(f) ? f[0] : f, corner ? 0 : 0.5, corner ? 0 : 0.5);
+      if (p.sc) o.setScale(this.baseScale * p.sc);
+      p.objs.push(o);
     }
   }
 
@@ -178,7 +183,11 @@ export class Props {
     const i = p.seq ? p.seq[step % p.seq.length] : step % p.f.length;
     o.setVisible(i >= 0);
     if (i >= 0) this.setFrame(o, p.f[i]);
-    o.setPosition(p.x, this.px.screenY(p.u)).setAlpha(this.alphaOf(p));
+    if (p.z) {
+      const { camX, camY } = this.px;
+      const base = this.px.screenY(p.au ?? p.u);
+      o.setPosition(this.snap(p.x + ((p.ax ?? p.x) - camX) * p.z), this.snap(this.px.screenY(p.u) + (base - camY) * p.z)).setAlpha(this.alphaOf(p));
+    } else o.setPosition(p.x, this.px.screenY(p.u)).setAlpha(this.alphaOf(p));
   }
 
   /** Base alpha, faded back for the bullets if it is an effect. */
@@ -244,7 +253,11 @@ export class Props {
         const own = frames[i % frames.length];
         this.setFrame(o, Array.isArray(own) ? own[step % own.length] : own);
       } else this.setFrame(o, frames[step % frames.length]);
-      o.setPosition(this.snap(x), this.px.screenY(this.snap(u))).setAlpha(this.alphaOf(p));
+      if (p.z) {
+        const { camX, camY } = this.px;
+        const sy = this.px.screenY(u);
+        o.setPosition(this.snap(x + (x - camX) * p.z), this.snap(sy + (sy - camY) * p.z)).setAlpha(this.alphaOf(p));
+      } else o.setPosition(this.snap(x), this.px.screenY(this.snap(u))).setAlpha(this.alphaOf(p));
       if (p.wake && moving) {
         const tr = (p.trail[i] ??= { x, u });
         if (Math.hypot(x - tr.x, u - tr.u) >= p.wake.every) {

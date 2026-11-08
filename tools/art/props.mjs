@@ -247,10 +247,17 @@ export class PropKit {
     return [w, h];
   }
 
-  /** Frames cycling in place; frame top-left at (x, u). seq: frame indices per step (-1 = hidden). */
-  loop(x, u, f, { fps = 6, seq, ph = this.rand(), a, d, tint, fx } = {}) {
+  /**
+   * Frames cycling in place; frame top-left at (x, u). seq: frame indices per step (-1 = hidden).
+   * z: height above the strip, as a share of the distance from the camera: the part slides away from the point
+   * under the camera, by z times its distance from it (see Props). (ax, au): the point of the strip it is measured
+   * from, by default where it stands, so the levels of one building can share theirs and stay together.
+   * sc: shown this many times its size (a soft thing drawn at half the resolution, to save room).
+   */
+  loop(x, u, f, { fps = 6, seq, ph = this.rand(), a, d, tint, fx, z, ax, au, sc } = {}) {
     const [, h] = this.maxSize(f);
-    return this.add({ k: 'loop', x, u, f, fps, seq, ph, a, d, tint, fx }, [u - h, u]);
+    const m = z ? Math.ceil(Math.abs(z) * 520) : 0;
+    return this.add({ k: 'loop', x, u, f, fps, seq, ph, a, d, tint, fx, z, ax, au, sc }, [u - h * (sc ?? 1) - m, u + m]);
   }
 
   /**
@@ -275,11 +282,11 @@ export class PropKit {
    * cars: 1 = mover i always shows frame i (the coaches of a train) instead of cycling the frames; a
    * list in place of frame i is cycled for that mover alone (the dancers of a parade).
    */
-  path(pts, f, { sp = 10, n = 1, gap = 20, mode = 'wrap', hold = 0, turn = 'flip', fps = 4, fu, fd, wake, cars, s0 = this.rand(), a, d, tint, fx } = {}) {
+  path(pts, f, { sp = 10, n = 1, gap = 20, mode = 'wrap', hold = 0, turn = 'flip', fps = 4, fu, fd, wake, cars, s0 = this.rand(), a, d, tint, fx, z } = {}) {
     const [w, h] = this.maxSize([f, fu ?? [], fd ?? [], wake?.f ?? []]);
-    const m = Math.max(w, h) / 2 + 2;
+    const m = Math.max(w, h) / 2 + 2 + (z ? Math.ceil(Math.abs(z) * 520) : 0);
     const us = pts.map((p) => p[1]);
-    return this.add({ k: 'path', pts, f, sp, n, gap, mode, hold, turn, fps, fu, fd, wake, cars, s0, a, d, tint, fx }, [Math.min(...us) - m, Math.max(...us) + m]);
+    return this.add({ k: 'path', pts, f, sp, n, gap, mode, hold, turn, fps, fu, fd, wake, cars, s0, a, d, tint, fx, z }, [Math.min(...us) - m, Math.max(...us) + m]);
   }
 
   /** Gondolas round a wheel centred at (x, u). tc: colours the lit gondolas cycle through. */

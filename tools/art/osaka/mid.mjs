@@ -105,6 +105,44 @@ export function buildMid() {
       for (let x = Math.max(0, Math.floor(x0)); x < Math.min(W, x0 + w); x++) reserved[y * W + x] = 1;
   };
   const objects = [];
+  // the next object pushed is built up in levels instead of being painted on the strip (see liftedDraw)
+  let nextLift = null;
+  const liftNext = (o) => {
+    nextLift = o;
+  };
+  objects.push = (o) => {
+    if (nextLift) {
+      const opt = nextLift;
+      nextLift = null;
+      const draw0 = o.draw;
+      o.draw = () => liftedDraw(draw0, opt);
+    }
+    return Array.prototype.push.call(objects, o);
+  };
+  /** Where a building's levels sit among the moving parts: what stands further south is drawn over the rest. */
+  const liftOrder = (foot) => 0.18 + (0.28 * foot) / L;
+  /**
+   * Draw an object into its own frame, cut it across at the given rows and lay the bands one above the other as
+   * moving parts, each at a height z in proportion to how far up it is: from the camera's point of view the top
+   * of a tall thing leans away and its walls open up as it goes by. A band also carries a few rows from under its
+   * foot, so no gap opens between the levels. { x0, y0, w, h, z, n | cuts, foot }
+   */
+  const liftedDraw = (draw, { x0, y0, w, h, z, n = 5, cuts, foot = y0 + h }) => {
+    const out = capture(x0, y0, w, h, draw, { raw: true, pools: true, u: U(foot) });
+    const rows = cuts ?? Array.from({ length: n - 1 }, (_, i) => Math.round(y0 + ((i + 1) * h) / n));
+    const edges = [y0, ...rows.filter((r) => r > y0 && r < y0 + h).sort((a, b) => a - b), y0 + h];
+    const d = liftOrder(foot);
+    const au = U(foot);
+    const ax = x0 + w / 2;
+    for (let i = edges.length - 2; i >= 0; i--) {
+      const ya = edges[i];
+      const yb = i === edges.length - 2 ? edges[i + 1] : Math.min(y0 + h, edges[i + 1] + 4);
+      const band = out.crop(x0, ya, w, yb - ya);
+      if (!band.data.some((v, k) => k % 4 === 3 && v)) continue;
+      const lz = Math.max(0, (z * (foot - edges[i + 1])) / Math.max(1, foot - y0));
+      kit.loop(x0, U(ya), [kit.frame(band)], { fps: 1, z: lz || undefined, ax, au, d: d + (edges.length - i) * 1e-4 });
+    }
+  };
   const lights = [];
   const lightsFine = []; // single fine pixels lit after the grade: lamp panes, sparks, neon strokes
   const pools = [];
@@ -135,7 +173,7 @@ export function buildMid() {
     for (const pl of cast) applyPool(out, pl);
     for (const [x, y, c, a] of lit) out.light(x, y, c, a);
     for (const [X, Yy, c, a] of litFine) out.px(X, Yy, c, a);
-    return kit.frame(out);
+    return opt.raw ? out : kit.frame(out);
   };
   // neon that comes alive at night: tubes lighting letter by letter, billboards chasing (frames shared)
   const NEON_OFF = [0x2a2430, 0x201a26];
@@ -399,6 +437,9 @@ export function buildMid() {
     const nItems = Math.max(1, Math.floor((w * h) / 140));
     for (let i = 0; i < nItems; i++) items.push([rand.pick(opt.items ?? ['ac', 'ac', 'ac', 'tank', 'hut', 'solar']), x + 2 + Math.floor(rand() * Math.max(1, w - 9)), y + 2 + Math.floor(rand() * Math.max(1, h - 7))]);
     const tall = faceH >= 20;
+    const zTop = tall ? Math.min(0.075, 0.02 + faceH * 0.0014) : 0;
+    const liftD = tall ? liftOrder(y + h + faceH) + 0.001 : undefined;
+    const up = tall ? { ax: x + w / 2, au: U(y + h + faceH), d: liftD } : {};
     const heli = tall && w >= 22 && h >= 18 && rand() < 0.4;
     const mast = tall && !heli && rand() < 0.6;
     const lit_ = [];
@@ -415,11 +456,12 @@ export function buildMid() {
         if (kit.rand() > 0.5) continue;
         const f = tubeFrames(s.h);
         const seq = kit.rand() < 0.6 ? [...f.map((_, j) => j), -1, -1, -1, -1, 0, -1, 0, -1, -1, -1, -1, -1, -1, -1] : [...Array(26).fill(-1), 0, -1, 0, -1];
-        kit.loop(s.x, U(y + h + 1), f, { seq, fps: 6, fx: 1 });
+        kit.loop(s.x, U(y + h + 1), f, { seq, fps: 6, fx: 1, z: zTop * 0.85 || undefined, ...up });
       }
-      if (board && kit.rand() < 0.7) kit.loop(x + Math.floor((w - board.w) / 2), U(y + 2), boardFrames(board.w), { fps: 5, fx: 1 });
+      if (board && kit.rand() < 0.7) kit.loop(x + Math.floor((w - board.w) / 2), U(y + 2), boardFrames(board.w), { fps: 5, fx: 1, z: zTop || undefined, ...up });
     }
     const awn = rand.pick([0xc83a2a, 0x2a6a3a, 0x2a4a8a, 0xd8a020, 0x8a2a5a]);
+    if (tall) liftNext({ x0: x - 2, y0: y - 8, w: w + 4, h: h + faceH + 9, z: zTop, cuts: [...Array.from({ length: Math.max(2, Math.round(faceH / 9)) }, (_, i) => y + h + Math.round(((i + 1) * faceH) / (Math.max(2, Math.round(faceH / 9)) + 1))), y + h], foot: y + h + faceH });
     objects.push({
       y: y + h + faceH,
       shadow: () => shadowRect(x + off, y + off, w, h + faceH, 0.5),
@@ -1010,6 +1052,7 @@ export function buildMid() {
           y = y - wh - roofH[i] + 2;
         }
       }
+      liftNext({ x0: cx - 64, y0: Math.min(...tiers.map((t) => t.top)) - 12, w: 128, h: y0 + 20 - Math.min(...tiers.map((t) => t.top)) + 12, z: 0.08, cuts: [...tiers.map((t) => t.top + 2), y0 - 2], foot: y0 });
       objects.push({
         y: y0 + 20,
         shadow: () => {
@@ -1753,6 +1796,7 @@ export function buildMid() {
     {
       const x = 103;
       const y = Y(2570);
+      liftNext({ x0: x - 3, y0: y - 8, w: 56, h: 76, z: 0.085, n: 7, foot: y + 66 });
       objects.push({
         y: y + 66,
         shadow: () => shadowRect(x + 12, y + 10, 46, 66, 0.5),
@@ -1856,6 +1900,7 @@ export function buildMid() {
     {
       const cx = 62;
       const top = Y(3290);
+      liftNext({ x0: cx - 34, y0: top - 14, w: 68, h: 104, z: 0.09, n: 8, foot: top + 84 });
       objects.push({
         y: top + 84,
         shadow: () => {
@@ -2552,6 +2597,7 @@ export function buildMid() {
     /** A pagoda: square storeys under wide tiled roofs, vermilion walls, the bronze finial; floodlit at night. */
     const pagoda = (cx, uBase, tiers, w0, floorH = 8, roofH = 7) => {
       const y0 = Y(uBase);
+      liftNext({ x0: cx - w0, y0: y0 - tiers * (floorH + roofH) - 12, w: w0 * 2, h: tiers * (floorH + roofH) + 22, z: 0.07, cuts: Array.from({ length: tiers }, (_, i) => y0 - (i + 1) * (floorH + roofH - 2) + 3), foot: y0 + 4 });
       const parts = [];
       let y = y0;
       for (let i = 0; i < tiers; i++) {
@@ -3716,6 +3762,319 @@ export function buildMid() {
       dark.set(0, 0, 0x2a2c38);
       const f = kit.frame(tod.frame(dark, k * 256 + 128));
       kit.wave([f], wins.map(([x, u]) => [0, x, u, fr() * 20]), { w: 0.12, a0: 0, a1: 1, pw: 7, d: 0.05 });
+    }
+  }
+
+  // ------------------------------------------------------------ depth: what is above the city, what is under its water
+  {
+    const dr = rng(5601);
+    const SKY = 0.49; // (over the streets and rooftops, but under the turrets on the ground and all that flies: nothing here ever hides a target)
+    // --- reflections: the banks mirrored in the water, drawn under the strip (so only the water shows them) and at
+    // half the resolution, the rows nudged by the ripples; they run a little slower than the banks, as far below
+    {
+      const REACH = 26;
+      const dist = (x, y, dx, dy) => {
+        for (let k = 1; k <= REACH; k++) if (!W_(x + dx * k, y + dy * k) && x + dx * k >= 0 && x + dx * k < W) return k;
+        return 99;
+      };
+      const T = 40;
+      for (const [u0, u1] of [[0, 1296], [1296, 1362], [1362, 1914], [1914, 1972], [DOTONBORI[0], DOTONBORI[1]], [PORT[1], L]]) {
+        const au = (u0 + u1) / 2;
+        for (let ty = Y(u1); ty < Y(u0); ty += T)
+          for (let tx = 0; tx < W; tx += T) {
+            let any = 0;
+            const frames = [0, 1].map((f) => {
+              const out = new Raster(Math.ceil((T * S) / 2), Math.ceil((T * S) / 2));
+              for (let j = 0; j < out.h; j++)
+                for (let i = 0; i < out.w; i++) {
+                  const X = tx * S + i * 2;
+                  const Yy = ty * S + j * 2;
+                  const x = Math.floor(X / S);
+                  const y = Math.floor(Yy / S);
+                  if (!W_(x, y)) continue;
+                  const dN = dist(x, y, 0, -1);
+                  const dW = dist(x, y, -1, 0);
+                  const dE = dist(x, y, 1, 0);
+                  const d = Math.min(dN, dW, dE);
+                  if (d > REACH) continue;
+                  const rip = Math.round(Math.sin(Yy * 0.42 + f * 2.6 + X * 0.03) * 2);
+                  let SX = X + rip;
+                  let SY = Yy;
+                  if (d === dN) SY = 2 * (y - dN + 1) * S - Yy;
+                  else if (d === dW) SX = 2 * (x - dW + 1) * S - X + rip;
+                  else SX = 2 * (x + dE) * S - X + rip;
+                  const q = img.rgbaPx(SX, SY);
+                  if (!q || !q[3]) continue;
+                  const a = 0.85 * (1 - d / (REACH + 1)) ** 0.7;
+                  out.setRGBA(i, j, q[0] * 0.72, q[1] * 0.8, q[2] * 0.92, Math.round(255 * a));
+                  any++;
+                }
+              return out;
+            });
+            if (any < 80) continue;
+            kit.loop(tx, U(ty), frames.map((r) => kit.frame(r)), { fps: 2.5, d: -0.9, z: -0.06, ax: 90, au, sc: 2 });
+          }
+      }
+    }
+    // --- over the streets: the expressway on its piers, its traffic running above the avenues; its shadow on the road
+    {
+      const pierAt = (x, u) => {
+        const foot = Y(u) + 3;
+        liftedDraw(
+          () => {
+            for (let j = 0; j < 18 * S; j++)
+              for (let i = 0; i < 12; i++) img.px(x * S + i, (foot - 18) * S + j, i < 2 ? 0xb0b0b4 : i < 5 ? 0x9a9a9e : i < 9 ? 0x80808a : 0x62626c);
+            for (let i = -3; i < 15; i++) for (let j = 0; j < 4; j++) img.px(x * S + i, (foot - 18) * S + j, j === 0 ? 0xb8b8bc : 0x74747e);
+          },
+          { x0: x - 2, y0: foot - 18, w: 10, h: 18, z: 0.05, n: 4, foot },
+        );
+      };
+      for (const u of [2350, 3550]) {
+        for (let Yy = (Y(u) + 7) * S; Yy < (Y(u) + 13) * S; Yy++) for (let X = 0; X < W * S; X++) if (img.alphaPx(X, Yy)) img.tintPx(X, Yy, 0.68);
+        for (const x of [12, 58, 118, 164]) pierAt(x, u);
+        const deck = new HiCanvas(196, 16);
+        for (let j = 0; j < 16 * S; j++)
+          for (let i = 0; i < 196 * S; i++) {
+            let c;
+            if (j < 3) c = j === 0 ? 0xc8c8cc : 0xa8a8ae; // (the north parapet)
+            else if (j < 36) {
+              c = hashPx(i, j, 41) < 0.08 ? 0x4e4e58 : 0x44444e;
+              if (j === 19 || j === 20) c = i % 18 < 10 ? 0xd8d0a0 : c; // (the dashes down the middle)
+              if (j === 10 || j === 28) c = i % 12 < 6 ? 0x8a8a90 : c;
+            } else if (j < 39) c = j === 36 ? 0xc8c8cc : 0xa8a8ae; // (the south parapet)
+            else c = j < 42 ? 0x6a6a74 : (i % 18 < 2 ? 0x34343c : 0x54545e); // (the girder under it)
+            deck.px(i, j, c);
+          }
+        for (let i = 12; i < 196 * S; i += 60) {
+          for (let j = -6; j < 3; j++) deck.px(i, 3 + j, 0x8a8a92);
+          for (let k = 0; k < 6; k++) deck.px(i + k, -3 + 3, 0x8a8a92);
+          deck.px(i + 5, 0, u > 3000 ? 0xfff0c8 : 0xe0e0e0);
+        }
+        // the green sign gantry
+        for (let i = 280; i < 330; i++) for (let j = 0; j < 12; j++) deck.px(i, 8 + j, j === 0 || j === 11 || i === 280 || i === 329 ? 0xf0f0f0 : 0x1e6a4a);
+        for (let k = 0; k < 6; k++) for (let i = 0; i < 5; i++) for (let j = 0; j < 4; j++) if (hashPx(k, i * 3 + j, u) < 0.6) deck.px(285 + k * 7 + i, 12 + j, 0xf0f0f0);
+        tod.frame(deck, u);
+        kit.loop(-8, u + 8, [kit.frame(deck)], { fps: 1, z: 0.05, ax: 90, au: u, d: 0.475 });
+        const car = (c, dir) => {
+          const out = new HiCanvas(7, 4);
+          for (let j = 1; j < 10; j++) for (let i = 0; i < 18; i++) if (!((i === 0 || i === 17) && (j === 1 || j === 9))) out.px(i, j, (i > 4 && i < 8) || (i > 11 && i < 14) ? 0x26303a : j < 3 ? scaleColor(c, 1.2) : j > 7 ? scaleColor(c, 0.7) : c);
+          tod.frame(out, u);
+          if (u > 3000) for (const j of [2, 8]) {
+            out.px(dir > 0 ? 18 : -1, j, 0xfff4c8);
+            out.px(dir > 0 ? 0 : 17, j, 0xff3a2a);
+          }
+          return kit.frame(out);
+        };
+        const CARS = [0xc8c8cc, 0x3a4a6a, 0xa83a2a, 0x2a2a30, 0xe0e0e0];
+        for (const [lane, dir, sp] of [[3, 1, 38], [-3, -1, 32]])
+          for (let k = 0; k < 3; k++)
+            kit.path(dir > 0 ? [[-24, u + lane], [204, u + lane]] : [[204, u + lane], [-24, u + lane]], [car(dr.pick(CARS), dir)], { sp, turn: 'none', s0: (k + dr()) / 3, z: 0.05, d: 0.48 });
+      }
+    }
+    // --- strings of paper lanterns across the canal and of little flags across the avenues, hung above the traffic
+    {
+      const string = (w, u, lit, kind) => {
+        const out = new HiCanvas(w, 8);
+        const FW = w * S;
+        const sag = (i) => Math.round(((i / FW - 0.5) ** 2 - 0.25) * -28);
+        for (let i = 0; i < FW; i++) out.px(i, 3 + sag(i), 0x1a1418);
+        for (let i = 6; i < FW - 4; i += kind === 'lantern' ? 11 : 7) {
+          const y = 4 + sag(i);
+          if (kind === 'lantern') {
+            const c = (i >> 1) % 3 ? 0xe8452a : 0xf4e8c8;
+            for (let j = 0; j < 7; j++) for (let k = -2; k <= 2; k++) if (!((j === 0 || j === 6) && Math.abs(k) === 2)) out.px(i + k, y + j, j === 0 || j === 6 ? 0x1a1418 : j % 2 ? c : scaleColor(c, 0.85));
+          } else {
+            const c = dr.pick([0xd83a2a, 0xe8c040, 0x3a6ad0, 0xf0f0e8, 0x3a9a5a]);
+            for (let j = 0; j < 6; j++) for (let k = 0; k < 5 - j; k++) out.px(i + k, y + j, c);
+          }
+        }
+        tod.frame(out, u);
+        // (lit from within after dark: painted back over the grade)
+        if (lit && kind === 'lantern')
+          for (let i = 6; i < FW - 4; i += 11) {
+            const y = 4 + sag(i);
+            const c = (i >> 1) % 3 ? 0xff6a3a : 0xfff0c8;
+            for (let j = 1; j < 6; j++) for (let k = -1; k <= 1; k++) out.px(i + k, y + j, j === 3 ? 0xffe8a0 : c);
+          }
+        return kit.frame(out);
+      };
+      const lit = string(64, 4300, true, 'lantern');
+      for (let u = DOTONBORI[0] + 90; u < DOTONBORI[1] - 80; u += 54 + Math.floor(dr() * 24)) kit.loop(58, u, [lit], { fps: 1, z: 0.05, ax: 90, d: 0.47 });
+      const flags = [string(32, 3300, false, 'flag'), string(32, 3300, false, 'flag')];
+      for (let u = SHINSEKAI[0] + 40; u < SHINSEKAI[1] - 20; u += 46 + Math.floor(dr() * 20)) kit.loop(74, u, [flags[Math.floor(dr() * 2)]], { fps: 1, z: 0.05, ax: 90, d: 0.47 });
+    }
+    // --- at the edges of the screen, well above the rest and running much faster: the crowns of the tallest trees,
+    // the corners of near rooftops, then the harbour's cranes. Only down the edges, and under everything that flies
+    {
+      const canopy = (w, h, ramp, seed, side) => {
+        const r = rng(seed);
+        const out = new HiCanvas(w, h);
+        const lumps = Array.from({ length: 16 }, () => ({ x: (side < 0 ? r() * 0.7 : 0.3 + r() * 0.7) * w * S, y: (0.12 + r() * 0.76) * h * S, r: (5 + r() * 6) * S }));
+        for (let Yy = 0; Yy < h * S; Yy++)
+          for (let X = 0; X < w * S; X++) {
+            let best = null;
+            for (const l of lumps) {
+              const dx = X - l.x;
+              const dy = Yy - l.y;
+              const q = (dx * dx + dy * dy) / (l.r * l.r);
+              if (q <= 1 && (!best || Math.sqrt(1 - q) * l.r + l.y * 0.1 > best.h)) best = { h: Math.sqrt(1 - q) * l.r + l.y * 0.1, nx: dx / l.r, ny: dy / l.r, q };
+            }
+            if (!best) continue;
+            const v = 0.5 - best.nx * 0.32 - best.ny * 0.4 + (hashPx(X >> 1, Yy >> 1, seed) - 0.5) * 0.42;
+            out.px(X, Yy, rampColor(ramp, Math.max(0, Math.min(1, v)), X, Yy));
+          }
+        return out;
+      };
+      const roofCorner = (w, h, seed, side, neon) => {
+        const r = rng(seed);
+        const out = new HiCanvas(w, h);
+        const base = r.pick([0x6a6a74, 0x7a7468, 0x5a626e, 0x74685e]);
+        const X0 = side < 0 ? 0 : 5;
+        const X1 = side < 0 ? (w - 5) * S : w * S;
+        const FOOT = (h - 12) * S;
+        for (let Yy = 0; Yy < h * S; Yy++)
+          for (let X = X0; X < X1; X++) {
+            const e = Math.min(X - X0, X1 - 1 - X, Yy);
+            let c;
+            if (Yy >= FOOT) {
+              const fy = Yy - FOOT;
+              c = fy < 3 ? 0x24242c : fy % 9 < 4 && X % 8 < 5 ? (hashPx(X >> 3, fy >> 3, seed) < (neon ? 0.5 : 0.15) ? 0xffd890 : 0x34404c) : scaleColor(base, 0.62);
+            } else if (e < 3) c = e === 0 ? scaleColor(base, 1.3) : scaleColor(base, 1.1);
+            else c = hashPx(X >> 3, Yy >> 3, seed) < 0.1 ? scaleColor(base, 0.92) : base;
+            out.px(X, Yy, c);
+          }
+        // what stands on the roof: air conditioners, a water tank, an aerial
+        for (let k = 0; k < 4; k++) {
+          const AX = X0 + 6 + Math.floor(r() * Math.max(1, X1 - X0 - 30));
+          const AY = 8 + Math.floor(r() * Math.max(1, FOOT - 34));
+          for (let j = 0; j < 15; j++) for (let i = 0; i < 18; i++) out.px(AX + i, AY + j, j > 11 ? 0x4a4a54 : (i - 8) ** 2 + (j - 5) ** 2 < 18 ? 0x34343c : 0xa8a8b0);
+        }
+        const TX = X0 + (X1 - X0) / 2;
+        for (let j = 0; j < 30; j++) out.px(Math.round(TX), 12 + j, j % 6 ? 0x9a9ea4 : 0xd8dce0);
+        for (const j of [18, 26]) for (let i = -5; i <= 5; i++) out.px(Math.round(TX) + i, j, 0x8a8e94);
+        return out;
+      };
+      const crane = (w, h) => {
+        const out = new HiCanvas(w, h);
+        for (let X = 0; X < w * S; X++) {
+          const Yy = 16 + Math.round((X / (w * S)) * 6);
+          for (let j = 0; j < 14; j++) out.px(X, Yy + j, j < 2 || j > 11 ? 0xc8592a : (X + j) % 12 < 2 ? 0xa84a24 : (X - j + 200) % 12 < 2 ? 0xa84a24 : 0x000000, j < 2 || j > 11 || (X + j) % 12 < 2 || (X - j + 200) % 12 < 2 ? 1 : 0);
+        }
+        return out;
+      };
+      const SAK = [0xd88aa8, 0xe8a4bc, 0xf2bcd0, 0xfad4e0, 0xffe8f0];
+      const GRN = [0x1f4a28, 0x2a5e30, 0x3a7a3a, 0x549448, 0x72ac58];
+      const makers = (u, side, seed) => {
+        if (u < 1970) return (dr() < 0.5 ? canopy(34, 40, SAK, seed, side) : canopy(34, 42, GRN, seed, side));
+        return roofCorner(32, 40 + Math.floor(dr() * 14), seed, side, u > 3500);
+      };
+      let flip = 0;
+      for (let u = 80; u < PORT[1] - 230; u += 70 + Math.floor(dr() * 110)) {
+        const side = flip++ % 2 ? 1 : -1;
+        const out = makers(u, side, 5700 + flip);
+        const grade = u > 3500 ? Math.min(u, 5000) : u;
+        tod.frame(out, grade);
+        if (u > 3500) {
+          // (the red light on its aerial, burning after the grade)
+          const lx = (out.w * S) / 2;
+          for (const [i, j] of [[0, 0], [1, 0], [0, 1], [1, 1]]) out.px(Math.round(lx) + i, 10 + j, 0xff3a2a);
+        }
+        const w = out.w;
+        kit.loop(side < 0 ? 24 - w : 156, u + out.h, [kit.frame(out)], { fps: 1, z: 0.45 + dr() * 0.25, ax: 90, d: SKY - 0.005 });
+      }
+      for (let u = PORT[1] + 100; u < L - 40; u += 170 + Math.floor(dr() * 120)) {
+        const side = flip++ % 2 ? 1 : -1;
+        const out = crane(44, 16);
+        tod.frame(out, u);
+        kit.loop(side < 0 ? -20 : 156, u, [kit.frame(out)], { fps: 1, z: 0.5, ax: 90, d: SKY - 0.005 });
+      }
+    }
+    // --- in the air over the city: helicopters (with a searchlight by night) and their shadows on the streets, the
+    // advertising airship, crows and pigeons by day, thin moonlit cloud by night
+    {
+      const heli = (spin, beam) => {
+        const out = new HiCanvas(36, 36);
+        const CX = 54;
+        const CY = 18;
+        if (beam)
+          for (let j = 0; j < 80; j++)
+            for (let i = -12 - j * 0.3; i <= 12 + j * 0.3; i++) {
+              const a = 0.34 * (1 - j / 80) * (1 - Math.abs(i) / (13 + j * 0.3));
+              if (a > 0.01) out.px(Math.round(CX + i), CY + 10 + j, 0xfff4d0, a);
+            }
+        for (let j = -4; j <= 4; j++) for (let i = -8; i <= 8; i++) if ((i / 8) ** 2 + (j / 4.2) ** 2 <= 1) out.px(CX + i, CY + j, j < -2 ? 0x5a6a88 : i < -3 && j < 2 ? 0x9ac8e0 : 0x2a3448);
+        for (let i = 8; i < 24; i++) for (let j = -1; j <= 1; j++) out.px(CX + i, CY + j, j === -1 ? 0x4a5468 : 0x2a3448);
+        for (let j = -4; j <= 4; j++) out.px(CX + 24, CY + j, 0x2a3448);
+        for (let k = -18; k <= 18; k++) {
+          const dx = spin ? k : Math.round(k * 0.3);
+          const dy = spin ? Math.round(k * 0.18) : k;
+          out.px(CX + dx, CY + dy - 1, 0xc8d0d8, 0.8);
+        }
+        if (beam) out.px(CX, CY + 5, 0xff3a2a);
+        return out;
+      };
+      const flyer = (u, sp, night, s0) => {
+        const fs = [heli(0, night), heli(1, night)].map((r) => {
+          if (!night) tod.frame(r, u);
+          return kit.frame(r);
+        });
+        const pts = [[-40, u], [220, u - 60]];
+        kit.path(pts, fs, { sp, turn: 'flip', fps: 12, s0, z: 0.3, d: SKY });
+        const sh = new HiCanvas(14, 6);
+        for (let j = 0; j < 18; j++) for (let i = 0; i < 42; i++) if (((i - 21) / 21) ** 2 + ((j - 9) / 9) ** 2 <= 1) sh.px(i, j, 0x000000, 0.28);
+        kit.path(pts.map(([x, uu]) => [x + 16, uu - 24]), [kit.frame(sh)], { sp, turn: 'none', fps: 1, s0, d: 0.44 });
+      };
+      for (const [u, s0] of [[2180, 0.2], [2840, 0.7]]) flyer(u, 26, false, s0);
+      for (const [u, s0] of [[4050, 0.1], [4800, 0.55], [5500, 0.3], [6200, 0.8]]) flyer(u, 24, true, s0);
+      const airship = (u, s0, night) => {
+        const out = new HiCanvas(52, 20);
+        const CX = 72;
+        const CY = 28;
+        for (let j = -24; j <= 24; j++)
+          for (let i = -66; i <= 66; i++) {
+            const q = (i / 66) ** 2 + (j / 24) ** 2;
+            if (q > 1) continue;
+            let c = j < -10 ? 0xe8e8ec : j < 4 ? 0xc8c8d0 : 0x8a8a98;
+            if (Math.abs(j) < 6 && Math.abs(i) < 40) c = (Math.floor((i + 40) / 3) + Math.floor((j + 6) / 3)) % 3 ? 0x141420 : night ? 0xff5ac8 : 0xe8452a; // (its lit ribbon of adverts)
+            if (i % 22 === 0 && Math.abs(j) >= 6) c = scaleColor(c, 0.9);
+            out.px(CX + i, CY + j, c);
+          }
+        for (const s of [-1, 1]) for (let k = 0; k < 16; k++) for (let i = 0; i < 16 - k; i++) out.px(CX + 60 + i, CY + s * (16 + k), 0x7a7a88);
+        for (let i = -12; i <= 12; i++) for (let j = 25; j < 31; j++) out.px(CX + i, CY + j, j === 25 ? 0x4a4a58 : 0x2a2a38);
+        tod.frame(out, u);
+        if (night) for (let i = -38; i <= 38; i += 3) for (let j = -5; j <= 5; j += 3) if ((i + j + 400) % 9 === 0) out.px(CX + i, CY + j, 0xff8ae0);
+        const fr = kit.frame(out);
+        const pts = [[-70, u], [250, u + 30]];
+        kit.path(pts, [fr], { sp: 6, turn: 'none', fps: 1, s0, z: 0.42, d: SKY });
+        const sh = new HiCanvas(52, 18);
+        for (let j = 0; j < 54; j++) for (let i = 0; i < 156; i++) if (((i - 78) / 76) ** 2 + ((j - 27) / 26) ** 2 <= 1) sh.px(i, j, 0x000000, 0.24);
+        kit.path(pts.map(([x, uu]) => [x + 26, uu - 34]), [kit.frame(sh)], { sp: 6, turn: 'none', fps: 1, s0, d: 0.43 });
+      };
+      airship(2500, 0.35, false);
+      airship(4400, 0.5, true);
+      airship(5900, 0.15, true);
+      const bird = (f) => {
+        const out = new HiCanvas(4, 3);
+        const w = f ? 1 : -1;
+        for (const [i, j] of [[5, 3], [6, 3], [5, 4], [6, 4], [4, 3 + w], [7, 3 + w], [3, 3 + 2 * w], [8, 3 + 2 * w], [2, 3 + 2 * w], [9, 3 + 2 * w]]) out.px(i, j, 0x1a1a22);
+        return kit.frame(tod.frame(out, 800));
+      };
+      const birds = [bird(0), bird(1)];
+      for (const [u, s0] of [[260, 0.1], [820, 0.6], [1500, 0.3], [2050, 0.8], [3000, 0.45]])
+        kit.path([[-20, u], [200, u + 40]], birds, { sp: 17, n: 6, gap: 8, turn: 'flip', fps: 5, s0, z: 0.38, d: SKY });
+      const cloudF = [0, 1, 2].map((k) => {
+        const w = 70 + k * 16;
+        const h = 34 + k * 8;
+        const out = new HiCanvas(w, h);
+        for (let Yy = 0; Yy < h * S; Yy += 1)
+          for (let X = 0; X < w * S; X += 1) {
+            const e = Math.max(0, 1 - Math.hypot((X / (w * S) - 0.5) * 2, (Yy / (h * S) - 0.5) * 2));
+            const v = fbm(X / S, Yy / S, { seed: 5801 + k, scale: 12, octaves: 3 }) * e * 2.2 - 0.34;
+            if (v > 0) out.px(X, Yy, 0xa8b4d8, Math.min(0.42, v * 0.75));
+          }
+        return kit.frame(out);
+      });
+      for (let u = SHINSEKAI[1] - 60; u < L - 60; u += 110 + Math.floor(dr() * 110)) kit.loop(-30 + Math.floor(dr() * 140), u + 40, [cloudF[Math.floor(dr() * 3)]], { fps: 1, z: 0.55, ax: 90, d: SKY + 0.005, fx: 1 });
     }
   }
 

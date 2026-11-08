@@ -10,6 +10,9 @@ import { Props } from './Props.js';
 //          volcanic ash, embers rising near the volcano, an ash storm with lightning (Kagoshima),
 //          wisps of hot-spring steam (Beppu)
 // On top of the mid layer, the parts of the strip that move (steam, wheels, boats...): see Props.js.
+const CAMERA_ROW = 0.72; // how far down the screen the camera looks straight down (the strip's art looks north)
+const CAMERA_FOLLOW = 0.5; // how much of the ship's move from the middle the camera takes
+
 export class Parallax {
   constructor(scene, stage, meta) {
     this.scene = scene;
@@ -70,6 +73,10 @@ export class Parallax {
         .setFlipX(Math.random() < 0.5),
     );
     this.lastTop = null;
+    // the point of the strip right under the camera: ahead of the ship, drifting after it from side to side (what
+    // has a height slides against the ground when the ship moves, see Props)
+    this.camX = VIEW.width / 2;
+    this.camY = VIEW.maxHeight * CAMERA_ROW;
     this.props = new Props(scene, stage.id, meta, this);
     if (this.nearKind === 'ash')
       this.stormRect = scene.add.rectangle(0, 0, VIEW.width, VIEW.maxHeight, 0x14141e, 1).setOrigin(0, 0).setDepth(DEPTH.near - 0.05).setAlpha(0);
@@ -118,6 +125,10 @@ export class Parallax {
     }
     this.far.tilePositionY = -(Math.round(this.farTime * this.speed.far * this.artScale) % this.farH);
 
+    const ship = this.scene.player;
+    const follow = ship?.alive ? VIEW.width / 2 + (ship.x - VIEW.width / 2) * CAMERA_FOLLOW : VIEW.width / 2;
+    this.camX += (follow - this.camX) * Math.min(1, dt * 3);
+    this.camY = H * CAMERA_ROW;
     this.props.update(dt, H);
     this.updateNear(dt, scrolling, H);
     this.updateClouds(dt, H);

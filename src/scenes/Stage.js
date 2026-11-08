@@ -13,6 +13,7 @@ import { Debug } from '../game/Debug.js';
 import { Interlude } from '../game/Interlude.js';
 import { Ending } from '../game/Ending.js';
 import { PauseMenu } from '../game/PauseMenu.js';
+import { Shadows } from '../game/Shadows.js';
 import { Parallax } from '../game/Parallax.js';
 import { Player } from '../game/Player.js';
 import { Pool } from '../game/Pool.js';
@@ -123,6 +124,7 @@ export class Stage extends Phaser.Scene {
     this.enemies = new Enemies(this, this.stage.skin);
     this.pickups = new Pool(this, DEPTH.pickup);
     this.player = new Player(this);
+    this.shadows = this.stage.shadows ? new Shadows(this) : null;
     // N comes from stage 1 (x10 by the end of stage 1 without dying); the multiplier carries over
     const step =
       SCORE.multiplierStep === 'auto'
@@ -729,6 +731,7 @@ export class Stage extends Phaser.Scene {
     if (playing && this.stage.near === 'steam') this.player.heatUpdate(dt, this.player.alive && this.enemies.steamAt(this.player.x, this.player.y));
     this.player.update(dt, playing ? this.keys : null, playing && !this.ceasefire);
     this.enemies.update(dt);
+    this.shadows?.update(this.H);
     this.bullets.update(dt, this.H);
     this.updatePickups(dt);
     this.foodTrail.update(dt);

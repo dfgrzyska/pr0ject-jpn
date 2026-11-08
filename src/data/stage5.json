@@ -5,6 +5,7 @@
   "map": [135.5, 34.69, 6, 10],
   "skin": "osaka",
   "near": "osaka",
+  "shadows": true,
   "dark": [[0, 0.05], [1900, 0.15], [2950, 0.55], [3750, 1]],
   "scroll": { "far": 12, "mid": 30, "near": 64, "anchor": 420 },
   "boss": true,
