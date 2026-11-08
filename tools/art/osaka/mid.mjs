@@ -2788,18 +2788,148 @@ export function buildMid() {
       crowd(tx + 2, Y(tu + 40), 30, 34, 24, true);
     }
 
+    // ---- the people and the night life of the last districts, on their own random numbers (the rest of the strip
+    // keeps its place). Everything bright is painted after the night's grade, so it burns against the dusk; the
+    // turret pads stay clear
+    const fr = rng(6101);
+    const COATS = [0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0xff7ab0, 0x6aaa5a, 0x3a3a4a, 0x3a3a4a, 0x4a4038, 0x2a3040, 0xe07a30];
+    const padFree = (x, y, r = 15) => !pads.some((p) => Math.hypot(p.x - x, Y(p.u) - y) < r);
+    const near = () => (fr() + fr() + fr() - 1.5) / 1.5;
+    /** One person, sorted with the buildings. { coat, hat, extra(X, Yy) }. */
+    const folk = (x, y, o = {}) => {
+      if (!padFree(x, y)) return;
+      const X = Math.round(x * S);
+      const Yy = Math.round(y * S);
+      const coat = o.coat ?? fr.pick(COATS);
+      const hat = o.hat ?? fr() < 0.15;
+      objects.push({
+        y: y + 1.7,
+        draw: () => {
+          personPx(X, Yy, rng(X * 977 + Yy * 13), { coat, hat });
+          o.extra?.(X, Yy);
+        },
+      });
+    };
+    const knot = (cx, y, rx, ry, n, o = {}) => {
+      for (let k = 0; k < n; k++) folk(cx + near() * rx, y + near() * ry, o);
+    };
+    const warm = (x, y, r, k = 0.35, c = 0xffb868) => pool(x, y, r, c, k);
+    /** Somebody walking, in two steps, for the routes people take. */
+    const stepper = (c, step, u) => {
+      const out = new HiCanvas(2, 4);
+      for (let i = 1; i < 3; i++) out.px(i, 0, 0x2a2024);
+      out.px(1, 1, 0x2a2024);
+      out.px(2, 1, 0xe8c0a0);
+      for (let j = 2; j < 6; j++) for (let i = 0; i < 4; i++) if (!(j > 4 && (i === 0 || i === 3))) out.px(i, j, i === 0 || i === 3 ? scaleColor(c, 0.75) : c);
+      out.px(step ? 1 : 2, 6, 0x2a2a34);
+      out.px(step ? 2 : 1, 7, 0x2a2a34);
+      out.px(step ? 1 : 2, 8, 0x1a1a20);
+      for (let i = 2; i < 6; i++) out.px(i, 10, 0x101418, 0.4);
+      return kit.frame(tod.frame(out, u));
+    };
+    const walkers = (u) => [0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0xff7ab0, 0x6aaa5a, 0x5a5a62].map((c) => [stepper(c, 0, u), stepper(c, 1, u)]);
+    /** A stone torii in fine pixels: grey pillars on their footings, the curved kasagi, the nuki, a floodlight. */
+    const stoneTorii = (cx, foot, span, h) => {
+      const CX = cx * S + 1;
+      const FOOT = foot * S;
+      const H = h * S;
+      const TOP = FOOT - H;
+      const HS = Math.round((span * S) / 2);
+      const PW = Math.max(4, Math.round(span * S * 0.13));
+      const KL = HS + PW + Math.round(span * S * 0.14);
+      objects.push({
+        y: foot,
+        shadow: () => {
+          for (const sx of [-1, 1]) shadowRect(cx + sx * Math.round(span / 2) + 3, foot - 2, 5, 3, 0.6);
+          shadowRect(cx - Math.round(span / 2) + 3, foot + 1, span + 6, 2, 0.75);
+        },
+        draw: () => {
+          const NY = TOP + Math.round(H * 0.28);
+          for (let X = -HS - PW / 2 - 4; X <= HS + PW / 2 + 4; X++) for (let j = 0; j < 4; j++) img.px(CX + Math.round(X), NY + j, j === 0 ? STONE[3] : j === 3 ? STONE[0] : STONE[2]);
+          for (const sd of [-1, 1])
+            for (let Yy = TOP + 4; Yy < FOOT; Yy++) {
+              const P = CX + sd * HS - (PW >> 1);
+              for (let i = 0; i < PW; i++) {
+                const t = i / (PW - 1);
+                let c = t < 0.2 ? STONE[2] : t < 0.45 ? STONE[3] : t < 0.75 ? STONE[2] : STONE[0];
+                if (hashPx(P + i, Yy, 61) < 0.08) c = scaleColor(c, 0.88);
+                img.px(P + i, Yy, c);
+              }
+              if (FOOT - Yy < 4) for (let i = -2; i < PW + 2; i++) img.px(P + i, Yy, FOOT - Yy === 3 ? STONE[3] : STONE[1]);
+            }
+          for (let X = -KL; X <= KL; X++) {
+            const l = Math.round(4 * (Math.abs(X) / KL) ** 2.6);
+            for (let j = 0; j < 7; j++) img.px(CX + X, TOP + j - l, j === 0 ? 0xc8c8cc : j < 3 ? STONE[3] : j < 6 ? STONE[2] : STONE[0]);
+          }
+          for (let j = 7; j < NY - TOP; j++) for (let X = -3; X <= 3; X++) img.px(CX + X, TOP + j, X === -3 ? STONE[3] : X === 3 ? STONE[0] : STONE[2]);
+        },
+      });
+      warm(cx, foot - 1, span * 0.9, 0.3);
+    };
+    /** A festival stall (yatai): striped awning, what it sells burning bright on the counter, lanterns, the seller. */
+    const YATAI = { takoyaki: [0xd83a2a, 0xf4e8d0], yakitori: [0x2a2a30, 0xe8c040], kingyo: [0x2a6ad0, 0xf4f0e6], ringo: [0xe84a6a, 0xf8d8e0], men: [0x7a4ab8, 0xf0e0f8], kakigori: [0x3aa0c8, 0xf4f0e6] };
+    const yatai = (x, y, kind) => {
+      const [A, B] = YATAI[kind];
+      const X = x * S;
+      const Yy = y * S;
+      const lit = (i, j, c) => glowPx(X + i, Yy + j, c, 0.96);
+      objects.push({
+        y: y + 12,
+        shadow: () => shadowRect(x + 2, y + 3, 18, 11, 0.6),
+        draw: () => {
+          // the back and the seller in his headband
+          for (let j = 10; j < 22; j++) for (let i = 3; i < 51; i++) img.px(X + i, Yy + j, 0x2a1e18);
+          for (let k = 0; k < 3; k++) {
+            lit(26 + k, 11, 0x2a2024);
+            lit(26 + k, 12, k === 1 ? 0xf0d0b0 : 0xf4f0e6);
+            lit(26 + k, 13, 0xf0d0b0);
+            for (let j = 14; j < 18; j++) lit(26 + k, j, A === 0x2a2a30 ? 0xe8c040 : A);
+          }
+          // the counter and its goods
+          for (let j = 18; j < 34; j++) for (let i = 1; i < 53; i++) img.px(X + i, Yy + j, j < 20 ? 0xb89060 : j > 31 ? 0x3a2a1c : (i % 13 === 0 ? 0x3a2a1c : j % 4 === 0 ? 0x5e4229 : 0x7a5835));
+          for (let i = 3; i < 51; i++) {
+            const k = i - 3;
+            for (let j = 0; j < 8; j++) {
+              let c = null;
+              if (kind === 'takoyaki') c = j > 5 ? 0x1a1414 : (k % 7 < 5 && (j + 7) % 7 < 5) ? (hashPx(k >> 2, j >> 2, 5) < 0.5 ? 0xd88a3a : 0xc0702a) : 0x241c1a;
+              else if (kind === 'yakitori') c = j > 5 ? 0x3a2a20 : k % 5 === 0 ? 0xd8b070 : j % 2 ? 0xa85a28 : (hashPx(k, j, 6) < 0.35 ? 0xff7a20 : 0xd07a34);
+              else if (kind === 'kingyo') c = hashPx(k >> 1, j >> 1, 7) < 0.14 ? 0xff7a2a : j === 0 || j === 7 || k === 0 || k === 47 ? 0xd8e8f0 : (k + j) % 5 === 0 ? 0x6ab4e0 : 0x3a8ad0;
+              else if (kind === 'ringo') c = (k % 7 < 5 && j > 1) ? (j < 4 && k % 7 === 1 ? 0xffb0b8 : 0xe0202a) : j < 2 && k % 7 === 2 ? 0xd8c090 : 0xf0e8d8;
+              else if (kind === 'men') c = k % 8 < 6 ? ((k % 8 === 1 || k % 8 === 4) && j === 2 ? 0x1a1a22 : j === 5 && k % 8 > 1 && k % 8 < 4 ? 0xe84a4a : hashPx(k >> 3, 3, 8) < 0.33 ? 0xf8e0c0 : hashPx(k >> 3, 3, 8) < 0.66 ? 0xf4f4f0 : 0xe8c040) : 0x2a1e18;
+              else c = j > 5 ? 0x7ac0e0 : k % 8 < 5 ? (j < 3 ? 0xf8f8fc : hashPx(k >> 3, 4, 9) < 0.5 ? 0xff6a8a : 0x6ad0f0) : 0xe0e8f0;
+              if (c !== null) lit(i, 12 + j, c);
+            }
+          }
+          // the awning, its stripes and scalloped edge; the name on its noren
+          for (let j = 0; j < 12; j++)
+            for (let i = 0; i < 54; i++) {
+              if (j === 11 && i % 6 > 3) continue;
+              const c = Math.floor(i / 6) % 2 ? A : B;
+              lit(i, j, j === 0 ? scaleColor(c, 1.12) : j > 8 ? scaleColor(c, 0.82) : c);
+            }
+          const gr = rng(x * 31 + y);
+          for (let k = 0; k + 4 < 18; k += 6) glyph(X + 4 + k, Yy + 3, 4, 0x1a1414, gr, (gx, gy, gc) => glowPx(gx, gy, gc, 0.9));
+          for (const LX of [X - 1, X + 51]) {
+            for (let j = 0; j < 7; j++) for (let k = 0; k < 4; k++) if (!((j === 0 || j === 6) && (k === 0 || k === 3))) glowPx(LX + k, Yy + 11 + j, j === 0 || j === 6 ? 0x1a1414 : j % 2 ? 0xff6a3a : 0xffb060, 0.98);
+          }
+        },
+      });
+      warm(x + 9, y + 12, 15, 0.5);
+      if (kind === 'yakitori' || kind === 'takoyaki') kit.emit(x + 9, U(y + 4), stallSteam, { rate: 1.3, life: [1.2, 2], vy: 6, sx: 1.2, wf: 0.6, a: 0.42, tint: 1 });
+    };
+
     // ---- 2. Namba Yasaka: the shrine whose hall is a giant lion's head with a stage in its mouth
     {
       const [y0u, y1u] = YASAKA;
       gravelGround(0, W, y0u, y1u, 64);
+      // the worn stone approach, straight up to the lion's stage, and raked gravel either side of it
+      ishidatami(80, 100, y0u + 4, 5244);
+      for (let FYr = Y(5246) * S; FYr < Y(y0u + 2) * S; FYr += 4) for (let X = 30 * S; X < 150 * S; X++) if (X < 79 * S || X > 101 * S) img.tintPx(X, FYr, 0.86);
       // the stone torii at the entrance, lanterns along the approach
       {
         const cx = 90;
         const y = Y(5186);
-        for (const px of [cx - 14, cx + 14]) img.rect(px - 1, y + 3, 3, 10, STONE[2]);
-        img.rect(cx - 19, y, 38, 2, STONE[1]);
-        img.rect(cx - 19, y, 38, 1, STONE[3]);
-        img.rect(cx - 16, y + 5, 32, 2, STONE[1]);
+        stoneTorii(cx, y + 13, 26, 24);
         reserveRect(cx - 20, y - 1, 40, 14);
       }
       for (let u = 5192; u < 5240; u += 10) {
@@ -2855,6 +2985,147 @@ export function buildMid() {
         const u = 5250 + rand() * 110;
         if (!anyRes(x - 4, Y(u) - 4, 8, 8)) tree(rand() < 0.5 ? 'broadleaf' : 'pine', x, Y(u), 4 + rand() * 2);
       }
+      // --- the festival: the great tug of war (tsunahiki) on the approach, the portable shrine going round, stalls all
+      // down both flanks, a drum tower, walls of named lanterns either side of the lion's steps
+      const u0 = 5208; // the rope's row
+      const rope = [0, 3, -3].map((shift) =>
+        capture(60, Y(u0) - 9, 60, 18, () => {
+          const CY = (9 + Y(u0) - 9) * S;
+          const CX = 90 * S + shift;
+          for (let i = -78; i <= 78; i++) {
+            const sag = Math.round(Math.sin(i * 0.09) * 1.2);
+            for (let j = 0; j < 7; j++) glowPx(CX + i, CY + sag + j, (i + j * 2 + 400) % 5 < 2 ? 0x9a8448 : j < 2 ? 0xf0dfa8 : j > 4 ? 0xa8945a : 0xd8c484, 0.98);
+          }
+          // the knot at the middle, its red and white flag, the referee with his fan beside it
+          for (let j = -8; j < 8; j++) for (let i = 0; i < 4; i++) glowPx(CX + i, CY + j, j < -3 ? (i % 2 ? 0xffffff : 0xe83a2a) : 0x8a6a3a, 0.98);
+          const pr = rng(7);
+          personPx(90 * S + 4, CY - 22, pr, { coat: 0xf4f0e6 });
+          // the two teams hauling, blue happi on one side and red on the other, leaning back
+          for (const sd of [-1, 1])
+            for (let k = 0; k < 10; k++) {
+              const PX = CX + sd * (12 + k * 7) - (sd < 0 ? 3 : 0) + sd * 2;
+              personPx(PX, CY - 7 + (k % 2) * 13, rng(k * 13 + sd + 20), { coat: sd < 0 ? 0x2a4ab0 : 0xc8302a, hat: k % 3 === 0 });
+            }
+        }, { u: u0 }),
+      );
+      kit.loop(60, U(Y(u0) - 9), rope, { seq: [0, 1, 1, 0, 2, 2], fps: 2.2, d: 0.14 });
+      warm(90, Y(u0) + 2, 34, 0.42);
+      // the crowd cheering them on, round three sides of the ring
+      for (const sd of [-1, 1]) knot(90 + sd * 40, Y(u0) + 3, 5, 9, 12);
+      knot(76, Y(u0) + 13, 10, 3, 14, { hat: false });
+      knot(104, Y(u0) + 13, 10, 3, 14, { hat: false });
+      knot(76, Y(u0) - 13, 10, 3, 10);
+      knot(104, Y(u0) - 13, 10, 3, 10);
+      // stalls down both flanks of the lion, faces to the walkway
+      const kinds = ['takoyaki', 'kingyo', 'ringo', 'yakitori', 'men', 'kakigori'];
+      let ki = 0;
+      for (let u = 5344; u > 5256; u -= 17)
+        for (const x of [31, 131]) {
+          const y = Y(u);
+          yatai(x, y, kinds[ki++ % kinds.length]);
+          knot(x + 9, y + 15, 9, 2, 6);
+        }
+      // the mikoshi itself, gold roof and phoenix on the shoulders of its bearers in white, chanting up and down
+      {
+        const frames = [0, 1].map((bob) =>
+          capture(0, 0, 26, 26, () => {
+            const CX = 39;
+            const pr = rng(31);
+            for (let k = 0; k < 12; k++) personPx(CX - 30 + (k % 6) * 12, 42 + (k > 5 ? 22 : 0) + (k % 2 ? bob : 1 - bob), pr, { coat: 0xf4f0e6 });
+            const Yb = 30 - bob;
+            for (let i = -34; i <= 34; i++) for (const r of [Yb + 22, Yb + 30]) for (let j = 0; j < 2; j++) img.px(CX + i, r + j, j ? 0x3a2a14 : 0xb08a3a);
+            for (let j = 0; j < 20; j++) for (let i = -12; i <= 12; i++) glowPx(CX + i, Yb + 8 + j, Math.abs(i) > 10 ? 0xd8a020 : i % 5 === 0 ? 0xf4d060 : j % 6 === 0 ? 0xf4d060 : 0x7a1a1a, 0.96);
+            for (let j = 0; j < 12; j++) {
+              const hw = 20 - j * 1.4;
+              for (let i = -hw; i <= hw; i++) glowPx(CX + Math.round(i), Yb + 8 - j, j === 0 ? 0xfff0a0 : Math.round(i) % 4 === 0 ? 0xf4d060 : 0xd8a020, 0.98);
+            }
+            for (const [i, j] of [[0, 0], [-1, 1], [1, 1], [0, 2], [-2, -1], [2, -1], [0, -2]]) glowPx(CX + i, Yb - 7 + j, 0xfff8c8, 0.98);
+          }, { u: 5174 }),
+        );
+        kit.path([[38, 5172], [142, 5172]], frames, { sp: 3.2, mode: 'pp', hold: 3, turn: 'none', fps: 2.5, s0: 0.2, d: 0.2 });
+        knot(50, Y(5166), 12, 3, 8);
+        knot(130, Y(5166), 12, 3, 8);
+      }
+      // the drum tower: a scaffold in red and white bunting, two drummers (live) on top, lanterns on every side
+      {
+        const x = 36;
+        const y = Y(5244);
+        objects.push({
+          y: y + 18,
+          shadow: () => shadowRect(x + 3, y + 3, 22, 18, 0.55),
+          draw: () => {
+            const X = x * S;
+            const Yy = y * S;
+            for (let j = 0; j < 30; j++) for (let i = 0; i < 60; i++) img.px(X + i, Yy + 24 + j, Math.floor(i / 6) % 2 ? 0xe83a2a : 0xf4f0e6);
+            for (const PX of [X, X + 28, X + 56]) for (let j = 0; j < 54; j++) for (let i = 0; i < 4; i++) img.px(PX + i, Yy + j, i < 2 ? 0x7a5835 : 0x46301f);
+            for (let j = 0; j < 24; j++) for (let i = 0; i < 60; i++) img.px(X + i, Yy + j, j < 2 ? 0x8a6a48 : (i + j) % 6 === 0 ? 0x46301f : 0x5e4229);
+            for (let i = 2; i < 58; i += 8) for (let j = 0; j < 7; j++) for (let k = 0; k < 4; k++) glowPx(X + i + k, Yy + 15 + j, j === 0 || j === 6 ? 0x1a1414 : j % 2 ? 0xff6a3a : 0xffd080, 0.98);
+          },
+        });
+        warm(x + 10, y + 12, 18, 0.5);
+        const drum = [0, 1].map((beat) =>
+          capture(x + 4, y - 6, 14, 12, () => {
+            const CX = (x + 11) * S;
+            const CY = (y + 1) * S;
+            for (let j = -9; j <= 9; j++) for (let i = -9; i <= 9; i++) if (i * i + j * j < 90) img.px(CX + i, CY + j, i * i + j * j > 60 ? 0x5a2a14 : 0xe8d8b8);
+            for (const sd of [-1, 1]) {
+              personPx(CX + sd * 16 - 1, CY - 2, rng(sd + 3), { coat: 0xf4f0e6 });
+              const up = (beat ? sd > 0 : sd < 0) ? -5 : 0;
+              for (let k = 0; k < 7; k++) img.px(CX + sd * (14 - k), CY - 3 + up + (up ? k : 0), 0xd8b070);
+            }
+          }, { u: U(y) }),
+        );
+        kit.loop(x + 4, U(y - 6), drum, { fps: 4, d: 0.12 });
+        knot(x + 12, y + 22, 13, 3, 10);
+      }
+      // walls of named paper lanterns either side of the lion's steps, the way a shrine thanks its donors
+      for (const x0 of [53, 109]) {
+        const y = Y(5240);
+        objects.push({
+          y: y + 14,
+          shadow: () => shadowRect(x0 + 2, y + 2, 18, 14, 0.55),
+          draw: () => {
+            const X = x0 * S;
+            const Yy = y * S;
+            const gr = rng(x0);
+            for (let i = 0; i < 54; i++) for (const r of [0, 14, 28]) for (let j = 0; j < 2; j++) img.px(X + i, Yy + r + j, j ? 0x2a1e18 : 0x7a5835);
+            for (const PX of [X, X + 52]) for (let j = 0; j < 42; j++) for (let i = 0; i < 2; i++) img.px(PX + i, Yy + j, 0x46301f);
+            for (const r of [0, 14, 28])
+              for (let k = 0; k < 8; k++) {
+                const LX = X + 3 + k * 6;
+                for (let j = 0; j < 10; j++) for (let i = 0; i < 5; i++) if (!((j === 0 || j === 9) && (i === 0 || i === 4))) glowPx(LX + i, Yy + r + 2 + j, j === 0 || j === 9 ? 0x1a1414 : j % 2 ? 0xfff4d8 : 0xffe4a8, 0.98);
+                for (let j = 3; j < 8; j += 2) glowPx(LX + 2, Yy + r + 2 + j, gr() < 0.5 ? 0x1a1414 : 0xc83a2a, 0.9);
+              }
+          },
+        });
+        warm(x0 + 9, y + 14, 16, 0.45, 0xffe0a8);
+      }
+      // fire baskets at the foot of the steps (live), people on the steps and thronging the approach
+      {
+        const flames = [0, 1, 2, 3].map((k) => {
+          const out = new HiCanvas(5, 7);
+          const r = rng(k * 7 + 3);
+          for (let t = 0; t < 4; t++) {
+            const bx = 6 + t * 1.5 + (r() - 0.5) * 2;
+            const h = 9 + r() * 8;
+            for (let j = 0; j < h; j++) {
+              const w = 2.6 * (1 - j / h);
+              for (let i = -w; i <= w; i++) out.px(Math.round(bx + i + Math.sin(j * 0.5 + k) * (j / h) * 2), 20 - j, j / h < 0.3 ? 0xfff0a0 : j / h < 0.6 ? 0xffa030 : 0xe8501a);
+            }
+          }
+          return kit.frame(out);
+        });
+        for (const x of [74, 101]) {
+          kit.loop(x, 5256 - 12, flames, { fps: 9, fx: 1, d: 0.16 });
+          warm(x + 3, Y(5240), 13, 0.6, 0xff9a40);
+        }
+      }
+      for (let k = 0; k < 90; k++) folk(82 + fr() * 16, Y(5176 + fr() * 64));
+      knot(90, Y(5238), 18, 4, 30);
+      for (const x of [62, 118]) knot(x, Y(5254), 11, 3, 8);
+      const ws = walkers(5230);
+      for (const [x, u0w, u1w] of [[84, 5180, 5196], [96, 5180, 5196], [85, 5222, 5240], [95, 5222, 5240], [50, 5252, 5340], [130, 5252, 5340]])
+        kit.path([[x, u0w], [x, u1w]], fr.pick(ws), { sp: 3 + fr() * 1.4, n: u1w - u0w > 40 ? 3 : 1, gap: 26, mode: 'pp', hold: 2, turn: 'none', fps: 3, s0: fr() });
     }
 
     // ---- 3. Kuromon Ichiba: the covered market, "Osaka's kitchen"
@@ -2864,64 +3135,241 @@ export function buildMid() {
       const ax0 = 64;
       const ax1 = 116;
       const m1 = 5560;
+      // the arcade's floor, warm terrazzo in big squares, worn pale down the middle, a drain along each side
+      for (let Yr = Y(m1) * S; Yr < Y(k0) * S; Yr++)
+        for (let X = ax0 * S; X < ax1 * S; X++) {
+          const tile = (Math.floor(X / 18) + Math.floor(Yr / 18)) % 2;
+          const joint = X % 18 === 0 || Yr % 18 === 0;
+          let c = joint ? 0x6a5a48 : tile ? 0xb8a488 : 0xa89478;
+          if (Math.abs(X - 90 * S) < 42 && !joint) c = scaleColor(c, 1.12);
+          if (hashPx(X, Yr, 71) < 0.1) c = scaleColor(c, 0.92);
+          img.px(X, Yr, c);
+        }
+      /** A market stall, its awning and hanging sign, what it sells piled up on crushed ice or trays, the fishmonger. */
+      const SHOP = { fish: [0x2a5ab0, 0xf4f4f8], crab: [0xc8302a, 0xf4f0e6], tuna: [0x1a1a22, 0xe8e8ec], uni: [0xd88a20, 0xf8f0d8], fruit: [0x3a9a4a, 0xf8f8e8], grill: [0x2a2a30, 0xe07a30], veg: [0x5aa03a, 0xf0f0d8] };
+      const stallAt = (x0, y, kind, face) => {
+        const [A, B] = SHOP[kind];
+        const X = x0 * S;
+        const Yy = y * S;
+        const FW = 42;
+        const lit = (i, j, c) => glowPx(X + i, Yy + j, c, 0.97);
+        const sr = rng(x0 * 37 + y);
+        objects.push({
+          y: y + 10,
+          draw: () => {
+            // the seller behind the goods
+            for (let j = 6; j < 10; j++) for (let i = 0; i < FW; i++) lit(i, j, 0x2a1e18);
+            const VX = face < 0 ? 28 : 10;
+            for (let k = 0; k < 3; k++) {
+              lit(VX + k, 6, 0x2a2024);
+              lit(VX + k, 7, k === 1 ? 0xf0d0b0 : 0xf4f4f0);
+              lit(VX + k, 8, 0xf0d0b0);
+              lit(VX + k, 9, 0xf4f4f0);
+            }
+            // the goods, rows 10..24
+            for (let j = 10; j < 25; j++)
+              for (let i = 1; i < FW - 1; i++) {
+                const n = hashPx(i, j, x0 + y);
+                let c;
+                if (kind === 'fish') {
+                  c = n < 0.5 ? 0xe8f2f8 : n < 0.8 ? 0xcfe2ec : 0xf8fcff; // (crushed ice)
+                  const row = (j - 11) % 5;
+                  const sh = (i + ((j - 11) >> 2) * 4) % 13;
+                  if (row < 3 && sh < 10) {
+                    c = sh === 0 ? 0x1a1a22 : row === 0 ? 0x5a7a9a : row === 1 ? (sh > 7 ? 0x3a5a7a : 0xb8c8d4) : 0x8aa0b4;
+                    if (sh === 1 && row === 1) c = 0x101010;
+                    if (((i + j) >> 3) % 3 === 1) c = sh === 0 ? 0x8a1a1a : row === 0 ? 0xe05a4a : row === 1 ? 0xf08a7a : 0xc84a3a; // (red sea bream)
+                  }
+                } else if (kind === 'crab') {
+                  c = (i + j) % 5 === 0 ? 0x1a4a7a : 0x2a5a8a; // (the blue tray)
+                  const cx = ((i >> 0) % 13) - 6;
+                  const cy = ((j - 10) % 8) - 3;
+                  const q = cx * cx + cy * cy * 2;
+                  if (q < 13) c = q < 4 ? 0xff8a6a : 0xe83a2a;
+                  else if (q < 36 && (cx + cy * 2 + 40) % 3 === 0) c = 0xc83020; // (its legs)
+                } else if (kind === 'tuna') {
+                  c = j % 5 === 0 ? 0xf0e8e4 : 0xf8f4f0;
+                  const k = i % 11;
+                  if (k < 8 && (j - 10) % 5 < 4) c = (j + k) % 4 === 0 ? 0xf08a8a : (i >> 3) % 2 ? 0xc01a2a : 0xe0404a;
+                } else if (kind === 'uni') {
+                  c = i % 10 === 0 || (j - 10) % 7 === 0 ? 0x8a6a40 : (i + j) % 2 ? 0xf0a030 : 0xf8b840;
+                } else if (kind === 'fruit') {
+                  const b = Math.floor(i / 10) % 4;
+                  const on = (i % 5 < 4 && (j - 10) % 5 < 4);
+                  c = i % 10 === 0 ? 0xc8a878 : !on ? 0x5a4428 : b === 0 ? ((i + j) % 2 ? 0xd8e8a0 : 0xb8d078) : b === 1 ? 0xe82a3a : b === 2 ? 0xf0901a : 0x8a3ab0;
+                  if (on && b !== 0 && i % 5 === 1 && (j - 10) % 5 === 1) c = 0xffffff;
+                } else if (kind === 'veg') {
+                  const b = Math.floor(i / 8) % 3;
+                  c = b === 0 ? ((j + i) % 3 ? 0x4a9a3a : 0x6ab84a) : b === 1 ? (i % 3 ? 0xf4f0e8 : 0xd8d4c8) : (j % 3 ? 0xe8701a : 0x4a8a2a);
+                } else {
+                  // the grill: scallops in their shells over the coals, skewers, the fire showing through
+                  c = n < 0.3 ? 0xff7a20 : n < 0.5 ? 0xd8401a : 0x241c1a;
+                  const sx = i % 9;
+                  const sy = (j - 10) % 7;
+                  if ((sx - 4) ** 2 + (sy - 3) ** 2 < 11) c = (sx - 4) ** 2 + (sy - 3) ** 2 < 4 ? 0xf8e0b8 : 0xc8b090;
+                }
+                lit(i, j, c);
+              }
+            // the counter's front with its price cards
+            for (let j = 25; j < 30; j++) for (let i = 0; i < FW; i++) lit(i, j, j === 25 ? 0xc8a878 : j === 29 ? 0x3a2a1c : i % 14 < 2 ? 0x5e4229 : 0x7a5835);
+            for (let i = 4; i < FW - 6; i += 8) {
+              for (let j = 26; j < 29; j++) for (let k = 0; k < 5; k++) lit(i + k, j, k === 2 && j === 27 ? 0xd8302a : 0xf8f4e0);
+            }
+            // the awning and the sign hanging from it
+            for (let j = 0; j < 6; j++) for (let i = 0; i < FW; i++) lit(i, j, j === 0 ? scaleColor(A, 1.2) : j === 5 && i % 6 > 3 ? 0x2a1e18 : Math.floor(i / 6) % 2 ? A : B);
+            for (let j = 0; j < 5; j++) for (let i = 13; i < 29; i++) lit(i, j, j === 0 || j === 4 ? 0x3a2a1c : 0xfff8e0);
+            for (let k = 0; k < 3; k++) glyph(X + 15 + k * 4, Yy + 1, 3, 0x1a1414, sr, (gx, gy, gc) => glowPx(gx, gy, gc, 0.98));
+            // two bare bulbs over the goods
+            for (const BX of [8, 34]) {
+              glowPx(X + BX, Yy + 6, 0xfff8d8, 1);
+              glowPx(X + BX + 1, Yy + 6, 0xfff8d8, 1);
+            }
+          },
+        });
+        if (kind === 'grill') {
+          kit.emit(x0 + 7, U(y + 3), stallSteam, { rate: 1.6, life: [1.2, 2], vy: 6, sx: 1.6, wf: 0.6, a: 0.42, tint: 1 });
+        }
+      };
       // the stalls on both sides of the walk under the arcade
       for (let u = k0 + 6; u < m1; u += 12)
         for (const [sx0, sx1] of [[ax0 + 1, ax0 + 15], [ax1 - 15, ax1 - 1]]) {
           const kind = rand.pick(['fish', 'crab', 'tuna', 'uni', 'fruit', 'grill', 'fish', 'veg']);
           const y = Y(u + 10);
-          img.rect(sx0, y, sx1 - sx0, 10, 0x6a4a30);
-          img.rect(sx0, y, sx1 - sx0, 1, 0x8a6a48);
-          for (let yy = y + 1; yy < y + 9; yy++)
-            for (let xx = sx0 + 1; xx < sx1 - 1; xx++) {
-              let c;
-              if (kind === 'fish') c = (xx + yy) % 3 === 0 ? 0xc8d8e0 : (xx + yy * 2) % 5 === 0 ? 0x5a7a9a : 0xe8f0f4; // fish on ice
-              else if (kind === 'crab') c = (xx + yy) % 4 < 2 ? 0xd83a2a : 0xf06a4a;
-              else if (kind === 'tuna') c = (yy - y) % 3 === 0 ? 0xf0e0d8 : 0xb82a3a;
-              else if (kind === 'uni') c = (xx - sx0) % 4 === 0 ? 0x8a6a40 : 0xf0a030;
-              else if (kind === 'fruit') c = rand.pick([0xe83a3a, 0x6aaa3a, 0xf0b030, 0xf0e070, 0xd85a8a]);
-              else if (kind === 'veg') c = rand.pick([0x4a8a3a, 0x6aaa4a, 0xe8e0c8, 0xd86a2a]);
-              else c = (xx + yy) % 2 ? 0x2a2420 : 0x3a302a; // the grill
-              img.set(xx, yy, c);
-            }
-          if (kind === 'grill') {
-            for (let xx = sx0 + 2; xx < sx1 - 2; xx += 2) glow(xx, y + 5, 0xff7a20, 0.8);
-            for (let j = 0; j < 6; j++) img.set(sx0 + 4 + (j % 3), y - j, 0x9a9aa8, 0.3);
-          }
-          glow(Math.round((sx0 + sx1) / 2), y + 1, 0xfff4d8, 0.8);
-          pool((sx0 + sx1) / 2, y + 5, 8, 0xfff0d0, 0.25);
+          // (the draws the old drawing made, so what follows keeps its place)
+          if (kind === 'fruit' || kind === 'veg') for (let k = 0; k < 96; k++) rand.pick([0]);
+          stallAt(sx0, y, kind, sx0 < 90 ? 1 : -1);
+          // customers at the counter, in the aisle in front of it, a shopping bag or two
+          if (fr() < 0.8) knot(sx0 < 90 ? sx1 + 1.5 : sx0 - 2.5, y + 6, 1.2, 3, 2 + Math.floor(fr() * 3));
           reserveRect(sx0, y, sx1 - sx0, 10);
         }
       crowd(ax0 + 16, Y(m1), ax1 - ax0 - 32, m1 - k0, 140, true);
+      for (let k = 0; k < 150; k++) folk(82 + fr() * 16, Y(k0 + 4 + fr() * (m1 - k0 - 8)));
+      for (let u = k0 + 12; u < m1; u += 12) warm(90, Y(u), 22, 0.32, 0xfff0d0);
       // the arcade roof: a frame of arches and glass, the market's name in lights at the gate
       objects.push({
         y: Y(k0),
         draw: () => {
-          for (let u = k0; u < m1; u++)
-            for (let x = ax0; x < ax1; x++) {
-              const rib = (u - k0) % 10 === 0;
-              const edge = x === ax0 || x === ax1 - 1;
-              const spine = x === Math.floor((ax0 + ax1) / 2);
-              if (edge || rib || spine) img.set(x, Y(u), edge ? 0x8a8e96 : 0xb8c0c8, edge ? 1 : 0.7);
-              else img.set(x, Y(u), 0xd8e4ee, 0.12);
+          // the arcade's frame: arched ribs, a spine down the middle hung with lamps, the outer rails
+          for (let u = k0; u < m1; u++) {
+            const y = Y(u);
+            const rib = (u - k0) % 12 === 0;
+            for (let X = ax0 * S; X < ax1 * S; X++) {
+              const lx = X - ax0 * S;
+              const edge = lx < 3 || lx >= (ax1 - ax0) * S - 3;
+              if (edge) for (let j = 0; j < S; j++) img.px(X, y * S + j, lx === 0 || lx === (ax1 - ax0) * S - 1 ? 0x4a4e56 : 0x8a8e96);
+              else if (rib) img.px(X, y * S, 0xb8c0c8, 0.55);
             }
-          for (let x = ax0 + 2; x < ax1 - 2; x++) glow(x, Y(k0 + 2), (x >> 2) % 2 ? 0xff5a30 : 0xffe060, 0.9);
-          for (let x = ax0 + 2; x < ax1 - 2; x++) glow(x, Y(m1 - 2), (x >> 2) % 2 ? 0xff5a30 : 0xffe060, 0.9);
+            for (let j = 0; j < S; j++) {
+              img.px(90 * S, y * S + j, 0x8a8e96, 0.7);
+              img.px(90 * S + 1, y * S + j, 0x4a4e56, 0.7);
+            }
+            // paper lanterns and strip lights hung from the spine, banners of the market's season at every fourth rib
+            if ((u - k0) % 12 === 6) for (let k = -1; k <= 2; k++) for (let j = 0; j < 3; j++) glowPx(90 * S + k, y * S + j, 0xfff8e0, 1);
+            if ((u - k0) % 48 === 12)
+              for (const sd of [-1, 1]) {
+                const BX = 90 * S + sd * 30;
+                for (let j = 0; j < 15; j++) for (let i = 0; i < 12; i++) glowPx(BX + i - 6, y * S + j, j === 0 || (j === 14 && i % 3 === 1) ? 0x1a1414 : i < 3 || i > 8 ? 0xc8302a : 0xf4f0e6, 0.97);
+              }
+          }
         },
       });
+      // the gates at each end: the market's great lit sign on its arch, bulbs chasing round it
+      for (const [u, name] of [[m1 + 2, 1], [k0 + 7, 2]]) {
+        const y = Y(u);
+        const r = rng(name * 17);
+        const glyphs = Array.from({ length: 4 }, () => Math.floor(r() * 1e6));
+        const frames = [0, 1, 2].map((p) =>
+          capture(ax0 - 2, y - 3, ax1 - ax0 + 4, 12, () => {
+            const X0 = (ax0 - 2) * S;
+            const X1 = (ax1 + 2) * S;
+            const Y0 = (y - 3) * S;
+            for (let Yy = Y0; Yy < Y0 + 36; Yy++)
+              for (let X = X0; X < X1; X++) {
+                const e = Math.min(X - X0, X1 - 1 - X, Yy - Y0, Y0 + 35 - Yy);
+                glowPx(X, Yy, e === 0 ? 0x1a1414 : e < 4 ? (e === 2 && (X + Yy + p * 2) % 6 < 2 ? 0xfff8c0 : 0x7a1a14) : 0xc8202a, 0.99);
+              }
+            glyphs.forEach((g, k) => glyph(X0 + 42 + k * 24, Y0 + 9, 18, 0xfff4c8, rng(g), (gx, gy, gc) => {
+              for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) glowPx(gx + a, gy + b, gc, 0.99);
+            }));
+          }, { u }),
+        );
+        kit.loop(ax0 - 2, U(y - 3), frames, { fps: 4, d: 0.22 });
+        warm(90, y + 7, 34, 0.55, 0xffa070);
+      }
+      // (live) shoppers up and down the aisle, a porter with his stack of polystyrene fish boxes, steam, a stray cat
+      {
+        const ws = walkers(5470);
+        for (const x of [83, 86, 89, 92, 95, 97])
+          kit.path([[x, k0 + 12], [x, m1 - 12]], fr.pick(ws), { sp: 2.6 + fr() * 1.6, n: 3, gap: 56, mode: 'pp', hold: 1.5, turn: 'none', fps: 3, s0: fr(), d: 0.03 });
+        const cart = [0, 1].map((st) =>
+          capture(0, 0, 6, 10, () => {
+            for (let j = 0; j < 14; j++) for (let i = 0; i < 16; i++) glowPx(1 + i, 1 + j, j % 5 === 0 ? 0xc8d0d8 : i % 8 === 0 ? 0xd8e0e8 : 0xf4f4f8, 0.98);
+            for (const i of [2, 14]) for (let j = 14; j < 17; j++) img.px(i, j, 0x1a1a20);
+            personPx(7, 20 + st, rng(3), { coat: 0x2a3a5a, hat: true });
+          }, { u: 5470 }),
+        );
+        kit.path([[85, k0 + 16], [85, m1 - 16]], cart, { sp: 5, mode: 'pp', hold: 4, turn: 'none', fps: 3, s0: 0.3, d: 0.05 });
+      }
       reserveRect(ax0, Y(m1), ax1 - ax0, m1 - k0);
       // side streets: small shops and eateries with neon
       district(0, ax0 - 2, k0 + 4, m1, 'shop');
       district(ax1 + 2, W, k0 + 4, m1, 'shop');
       // the plaza at the north end: benches, a food truck, people eating
-      for (const [bx, bu] of [[20, 5580], [146, 5598], [84, 5600]]) {
-        img.rect(bx, Y(bu), 10, 2, WOOD[2]);
-        img.rect(bx, Y(bu) + 2, 10, 1, WOOD[0]);
+      // the food court: long tables under strings of bulbs, a yatai row along the back, a kitchen van, everybody eating
+      for (const [x, u, kind] of [[8, 5606, 'takoyaki'], [28, 5606, 'yakitori'], [134, 5606, 'kakigori'], [154, 5606, 'ringo']]) {
+        yatai(x, Y(u), kind);
+        knot(x + 9, Y(u) + 15, 9, 2, 7);
       }
-      img.rect(80, Y(5576), 20, 9, 0xe8e0d0);
-      img.rect(80, Y(5576), 20, 2, 0xd83a2a);
-      img.rect(84, Y(5576) + 4, 8, 3, 0x3a5a7a);
-      glow(83, Y(5576) + 5, 0xfff0c0);
-      glow(96, Y(5576) + 5, 0xfff0c0);
+      {
+        const X = 76 * S;
+        const Yy = Y(5580) * S;
+        objects.push({
+          y: Y(5580) + 11,
+          shadow: () => shadowRect(79, Y(5580) + 4, 28, 9, 0.55),
+          draw: () => {
+            for (let j = 0; j < 33; j++)
+              for (let i = 0; i < 84; i++) {
+                let c = j < 6 ? (j === 0 ? 0xffffff : 0xf0ece4) : j < 10 ? 0xd83a2a : 0xe8e0d0;
+                if (j > 12 && j < 26 && i > 12 && i < 58) c = i % 11 === 0 || j === 13 ? 0xd8d0c0 : 0xfff0c0;
+                if (j > 28) c = i % 20 < 8 && (i < 16 || i > 64) ? 0x1a1a20 : 0xa8a094;
+                glowPx(X + i, Yy + j, c, 0.96);
+              }
+            for (let i = 16; i < 54; i += 12) personPx(X + i, Yy + 15, rng(i), { coat: 0xf4f4f0, hat: true });
+            for (let j = 12; j < 16; j++) for (let i = 62; i < 80; i++) glowPx(X + i, Yy + j, (i + j) % 3 ? 0xffe060 : 0xff6a3a, 0.97);
+          },
+        });
+        warm(90, Y(5580) + 10, 26, 0.5, 0xfff0c0);
+        kit.emit(84, 5578, stallSteam, { rate: 1.5, life: [1.2, 2], vy: 6, sx: 2, wf: 0.6, a: 0.42, tint: 1 });
+        knot(90, Y(5580) + 16, 16, 3, 18);
+      }
+      for (const [bx, bu] of [[20, 5580], [146, 5598], [84, 5600], [36, 5572], [130, 5572], [40, 5598]]) {
+        if (!padFree(bx + 6, Y(bu), 13)) continue;
+        const y = Y(bu);
+        objects.push({
+          y: y + 5,
+          shadow: () => shadowRect(bx + 2, y + 2, 14, 4, 0.6),
+          draw: () => {
+            for (let j = 0; j < 9; j++) for (let i = 0; i < 42; i++) glowPx(bx * S + i, y * S + j, j === 0 ? 0xc8a878 : j > 7 ? 0x3a2a1c : j % 3 ? 0x8a6a48 : 0x7a5835, 0.95);
+            for (let k = 0; k < 5; k++) for (let j = 2; j < 5; j++) for (let i = 0; i < 4; i++) glowPx(bx * S + 3 + k * 8 + i, y * S + j, k % 2 ? 0xf4f0e6 : 0xd8703a, 0.97);
+            for (let k = 0; k < 6; k++) {
+              personPx(bx * S + 2 + k * 7, y * S - 7, rng(k + bx), {});
+              personPx(bx * S + 2 + k * 7, y * S + 8, rng(k + bx + 50), {});
+            }
+          },
+        });
+        warm(bx + 7, y + 3, 12, 0.35);
+      }
+      for (const [x0, u, x1] of [[6, 5600, 174], [6, 5578, 174]]) {
+        const y = Y(u);
+        const strand = new HiCanvas(x1 - x0, 6);
+        for (let i = 0; i < (x1 - x0) * S; i++) {
+          const j = 9 + Math.round(Math.sin((i / ((x1 - x0) * S)) * Math.PI * 7) * 5);
+          strand.px(i, j, 0x1a1418);
+          if (i % 12 === 0) for (const [a, b] of [[0, 1], [1, 1], [0, 2], [1, 2]]) strand.px(i + a, j + b, 0xfff0b0);
+        }
+        kit.loop(x0, u + 3, [kit.frame(strand)], { fps: 1, d: 0.1 });
+      }
+      for (let k = 0; k < 70; k++) folk(6 + fr() * 168, Y(5562 + fr() * 42));
       crowd(4, Y(k1 - 2), 172, 44, 50, false);
       for (const x of [10, 40, 140, 170]) chochin(x, Y(5606), 0xff5a30);
     }
@@ -2934,10 +3382,7 @@ export function buildMid() {
       {
         const cx = 90;
         const y = Y(5622);
-        for (const px of [cx - 16, cx + 16]) img.rect(px - 1, y + 3, 3, 9, STONE[2]);
-        img.rect(cx - 21, y, 42, 2, STONE[1]);
-        img.rect(cx - 21, y, 42, 1, STONE[3]);
-        img.rect(cx - 17, y + 5, 34, 2, STONE[1]);
+        stoneTorii(cx, y + 12, 30, 25);
         reserveRect(cx - 22, y - 1, 44, 13);
       }
       templeHall(64, Y(5650), 52, 14, 8, { gate: true });
@@ -2955,7 +3400,23 @@ export function buildMid() {
           const northSide = cu1 - 1 - u < 7;
           if (southSide && d < 7 && u - cu0 >= 4) c = (x - cx0) % 4 === 0 ? VERM[0] : (x - cx0) % 4 === 1 ? VERM[1] : 0x1a1210; // the corridor's posts seen from the front
           else if (northSide && cu1 - 1 - u < 4 && x - cx0 >= 7 && cx1 - 1 - x >= 7) c = (x - cx0) % 4 === 0 ? VERM[0] : (x - cx0) % 4 === 1 ? VERM[1] : 0x2a1a14; // and along the north side, facing the courtyard
-          else c = d < 1 || d === 6 ? TILE[0] : (x + u) % 2 ? TILE[1] : TILE[2];
+          else {
+            // the corridor's tiled roof in fine pixels: rows of round tiles running down from the ridge to the eave
+            const along = u - cu0 >= 7 && cu1 - 1 - u >= 7; // (the east and west arms run north and south)
+            for (let j = 0; j < S; j++)
+              for (let i = 0; i < S; i++) {
+                const FX = x * S + i;
+                const FY = Y(u) * S + j;
+                const k = along ? FY % 3 : FX % 3;
+                let t = k === 0 ? TILE[3] : k === 1 ? TILE[2] : TILE[1];
+                if ((along ? FX : FY) % 5 === 0) t = scaleColor(t, 0.82);
+                if (d === 3) t = i === 1 || j === 1 ? 0x8a94a8 : TILE[3]; // (the ridge)
+                if (d === 0 || d === 6) t = (along ? FY : FX) % 3 === 0 ? 0xc8ccd4 : TILE[0]; // (the eaves, their tile ends)
+                if (hashPx(FX, FY, 77) < 0.03) t = 0x4a5a44; // (moss)
+                img.px(FX, FY, t);
+              }
+            continue;
+          }
           img.set(x, Y(u), c);
         }
       for (let x = cx0; x < cx1; x += 4) glow(x, Y(cu0 + 5), 0xffb070, 0.5);
@@ -2965,7 +3426,16 @@ export function buildMid() {
       reserveRect(cx1 - 7, Y(cu1), 7, cu1 - cu0);
       gravelGround(cx0 + 7, cx1 - 7, cu0 + 7, cu1 - 7, 67);
       // raked lines in the gravel, a stone path from gate to gate
-      for (let u = cu0 + 8; u < cu1 - 8; u += 3) for (let x = cx0 + 8; x < cx1 - 8; x++) if (Math.abs(x - 90) > 7 && !isRes(x, Y(u))) img.tint(x, Y(u), 0.88);
+      // (fine grooves combed along the court, swinging round in rings about the great incense burner)
+      for (let Yr = Y(cu1 - 8) * S; Yr < Y(cu0 + 8) * S; Yr++)
+        for (let X = (cx0 + 8) * S; X < (cx1 - 8) * S; X++) {
+          const x = X / S;
+          if (Math.abs(x - 90) < 8 || isRes(Math.floor(x), Math.floor(Yr / S))) continue;
+          const dr = Math.hypot(x - 90, Yr / S - Y(5722));
+          const groove = dr < 22 ? Math.floor(dr * S) % 5 === 0 : Yr % 5 === 0;
+          if (groove) img.tintPx(X, Yr, 0.78);
+          else if ((dr < 22 ? Math.floor(dr * S) % 5 === 2 : Yr % 5 === 2)) img.tintPx(X, Yr, 1.12);
+        }
       ishidatami(84, 97, cu0 + 7, cu1 - 7);
       for (let x = cx0 + 7; x < cx1 - 7; x += 4) glow(x, Y(cu1 - 10), 0xffb070, 0.5);
       incense(86, Y(5800));
@@ -2979,6 +3449,193 @@ export function buildMid() {
         stoneLantern(104, Y(u));
       }
       crowd(cx0 + 10, Y(5760), cx1 - cx0 - 20, 70, 50, false);
+      // --- the night of ten thousand lanterns (Mantō): racks of paper lanterns burning in rows down the court, the
+      // great bronze incense burner smoking at the crossing, the bell and drum towers, monks walking their round
+      const lr = rng(6131);
+      const rack = (x0, x1, u) => {
+        const y = Y(u);
+        const n = Math.floor(((x1 - x0) * S - 4) / 6);
+        objects.push({
+          y: y + 6,
+          shadow: () => shadowRect(x0 + 1, y + 2, x1 - x0, 5, 0.65),
+          draw: () => {
+            const X = x0 * S;
+            const Yy = y * S;
+            const gr = rng(x0 * 7 + u);
+            for (let i = 0; i < (x1 - x0) * S; i++) for (const r of [0, 9]) img.px(X + i, Yy + r, 0x2a1e18);
+            for (const PX of [X, X + (x1 - x0) * S - 2]) for (let j = 0; j < 17; j++) for (let i = 0; i < 2; i++) img.px(PX + i, Yy + j, 0x2a1e18);
+            for (const r of [1, 10])
+              for (let k = 0; k < n; k++) {
+                const LX = X + 3 + k * 6;
+                const c = gr() < 0.16 ? [0xffa060, 0xff7a40] : [0xfff4d0, 0xffe4a8];
+                for (let j = 0; j < 7; j++) for (let i = 0; i < 5; i++) if (!((j === 0 || j === 6) && (i === 0 || i === 4))) glowPx(LX + i, Yy + r + j, j === 0 ? 0x1a1414 : j % 2 ? c[0] : c[1], 0.98);
+                if (gr() < 0.7) for (let j = 2; j < 5; j++) glowPx(LX + 2, Yy + r + j, 0x4a2a1a, 0.9);
+              }
+          },
+        });
+        warm((x0 + x1) / 2, y + 5, (x1 - x0) * 0.62, 0.3, 0xffd890);
+      };
+      const courtRacks = [];
+      for (let u = cu0 + 26; u < 5736; u += 12)
+        for (const [a, b] of [[31, 70], [110, 149]]) courtRacks.push([a, b, u]);
+      for (let u = 5752; u < 5782; u += 13)
+        for (const [a, b] of [[31, 54], [126, 149]]) courtRacks.push([a, b, u]);
+      for (const [a, b, u] of courtRacks) rack(a, b, u);
+      // (live) here and there a lantern guttering
+      {
+        const dot = new HiCanvas(1, 1);
+        dot.set(0, 0, 0x2a1a14);
+        const f = kit.frame(dot);
+        const parts = [];
+        for (const [a, b, u] of courtRacks) for (let k = 0; k < 4; k++) parts.push([0, a + 1 + Math.floor(lr() * (b - a - 3)), u - 1 - (k % 2) * 3, lr() * 20]);
+        for (let i = 0; i < parts.length; i += 40) kit.wave([f], parts.slice(i, i + 40), { w: 1.4, a0: 0, a1: 0.8, pw: 8, d: 0.05 });
+      }
+      // the great bronze incense burner (jōkoro) at the crossing of the walks, smoke rising, people wafting it over themselves
+      {
+        const X = 90 * S + 1;
+        const Yy = Y(5722) * S;
+        objects.push({
+          y: Y(5722) + 3,
+          shadow: () => shadowRect(90, Y(5722), 16, 5, 0.55),
+          draw: () => {
+            for (let j = 4; j < 10; j++) for (let i = -10; i <= 10; i++) img.px(X + i, Yy + j, STONE[j < 6 ? 3 : j < 8 ? 2 : 1]);
+            for (let j = -16; j < 5; j++) {
+              const hw = 7 + Math.sin(((j + 16) / 21) * Math.PI) * 5;
+              for (let i = -hw; i <= hw; i++) {
+                const t = (i + hw) / (2 * hw);
+                img.px(X + Math.round(i), Yy + j, t < 0.2 ? 0x5a4a2a : t < 0.4 ? 0x9a8a4a : t < 0.75 ? 0x5a4a2a : 0x2a2418);
+              }
+            }
+            for (let j = 0; j < 8; j++) {
+              const hw = 12 - j * 1.4;
+              for (let i = -hw; i <= hw; i++) img.px(X + Math.round(i), Yy - 18 - j, j === 0 ? 0x9a8a4a : i < 0 ? 0x6a5a30 : 0x3a3020);
+            }
+            for (const k of [-5, -2, 2, 5]) for (let j = -2; j < 2; j++) glowPx(X + k, Yy - 15 + j, 0xff9a40, 0.95);
+            for (let j = 0; j < 3; j++) glowPx(X, Yy - 27 - j, 0xc8a030, 0.9);
+          },
+        });
+        warm(90, Y(5722) - 2, 22, 0.55, 0xff9a50);
+        kit.emit(90, 5730, stallSteam, { rate: 2.2, life: [2.2, 3.4], vy: 7, sx: 2, wf: 0.9, a: 0.45, tint: 1 });
+        knot(90, Y(5722) + 6, 13, 4, 20);
+        knot(76, Y(5722) - 1, 4, 5, 5);
+        knot(104, Y(5722) - 1, 4, 5, 5);
+      }
+      // the bell tower and the drum tower, under their hip roofs at the north corners of the court
+      for (const [x, drum] of [[34, false], [130, true]]) {
+        const y = Y(5812);
+        objects.push({
+          y: y + 26,
+          shadow: () => shadowRect(x + 3, y + 5, 17, 23, 0.55),
+          draw: () => {
+            const X = x * S;
+            for (let Yy = (y + 10) * S; Yy < (y + 26) * S; Yy++)
+              for (let i = 2; i < 46; i++) {
+                const open = Yy < (y + 18) * S;
+                let c = i < 7 || i > 40 ? (i === 2 || i === 41 ? VERM[0] : i < 7 ? VERM[1] : VERM[2]) : open ? 0x1a1210 : (i + Yy) % 6 === 0 ? 0x5a5a62 : 0xe9e2d0;
+                if (Yy > (y + 22) * S) c = STONE[1 + (Yy % 3 === 0 ? 1 : 0)];
+                img.px(X + i, Yy, c);
+              }
+            if (drum) {
+              for (let j = -11; j <= 11; j++) for (let i = -11; i <= 11; i++) if (i * i + j * j < 124) img.px(X + 24 + i, (y + 13) * S + j, i * i + j * j > 90 ? 0x7a1a14 : i * i + j * j > 72 ? C.gold : 0xd8c8a8);
+            } else {
+              for (let j = 0; j < 20; j++) {
+                const hw = 6 + j * 0.3;
+                for (let i = -hw; i <= hw; i++) img.px(X + 24 + Math.round(i), (y + 8) * S + j, j % 6 === 0 ? 0x8a9a6a : i < -2 ? 0x6a7a4a : i > 2 ? 0x2a3a2a : 0x4a5a3a);
+              }
+            }
+            hipRoofPx(x, y, 16, 11, y + 3, 4, TILE);
+          },
+        });
+        warm(x + 8, y + 20, 15, 0.5, 0xffc080);
+        knot(x + 8, y + 29, 9, 2, 7);
+      }
+      // the monks' round, in saffron and purple with their paper lanterns, slowly round the pagoda (live)
+      {
+        const monk = (c, st) =>
+          capture(0, 0, 4, 5, () => {
+            for (let i = 3; i < 6; i++) img.px(i, 1, 0xd8b090);
+            for (let i = 3; i < 6; i++) img.px(i, 2, 0xe8c0a0);
+            for (let j = 3; j < 10; j++) for (let i = 2; i < 7; i++) if (!(j > 7 && (i === 2 || i === 6))) img.px(i, j, i === 2 ? scaleColor(c, 1.15) : i === 6 ? scaleColor(c, 0.75) : j === 5 && i < 5 ? 0xf0e0c0 : c);
+            img.px(st ? 3 : 5, 10, 0x1a1a20);
+            for (let j = 2; j < 5; j++) for (let i = 7; i < 10; i++) glowPx(i, j + st, j === 2 ? 0x1a1414 : 0xfff0c8, 0.99);
+          }, { u: 5760 });
+        const route = [[56, 5812], [56, 5736], [124, 5736], [124, 5812]];
+        for (const [c, s0, n] of [[0xd8802a, 0.1, 6], [0x7a3a9a, 0.34, 2], [0xd8802a, 0.5, 5]]) kit.path(route, [monk(c, 0), monk(c, 1)], { sp: 2.2, n, gap: 7, mode: 'pp', hold: 4, turn: 'none', fps: 2, s0, d: 0.04 });
+      }
+      // worshippers at the golden hall, round the pagoda's foot and in the court; visitors coming up the walk
+      knot(90, Y(5816), 34, 3, 44);
+      knot(90, Y(5738), 26, 3, 18);
+      for (let k = 0; k < 90; k++) folk(84 + fr() * 12, Y(cu0 + 18 + fr() * 50));
+      for (const [a, b, u] of courtRacks) if (fr() < 0.7) knot((a + b) / 2, Y(u) + 8, (b - a) / 3, 1.5, 4);
+      const wsS = walkers(5700);
+      for (const x of [86, 94]) kit.path([[x, cu0 + 26], [x, 5714]], fr.pick(wsS), { sp: 3, n: 2, gap: 20, mode: 'pp', hold: 2.5, turn: 'none', fps: 3, s0: fr() });
+      // --- outside the cloisters: the flea market that fills the temple's grounds, blue sheets and tent stalls
+      {
+        const flea = (x, y) => {
+          const c = fr.pick([0x2a5ab0, 0x2a7a9a, 0xb86a2a, 0x8a3a3a]);
+          const kind = fr();
+          objects.push({
+            y: y + 8,
+            shadow: () => shadowRect(x + 2, y + 2, 14, 7, 0.65),
+            draw: () => {
+              const X = x * S;
+              const Yy = y * S;
+              const gr = rng(x * 53 + y);
+              // the sheet laid out on the ground, its old pots and books and kimono in rows
+              for (let j = 8; j < 24; j++) for (let i = 0; i < 42; i++) glowPx(X + i, Yy + j, (i + j) % 9 === 0 ? scaleColor(c, 0.8) : c, 0.9);
+              for (let j = 10; j < 22; j += 5)
+                for (let i = 2; i < 38; i += 5) {
+                  const g = gr();
+                  const col = g < 0.3 ? 0xd8c8a8 : g < 0.5 ? 0x8a5a2a : g < 0.7 ? 0xe8e4d8 : g < 0.85 ? 0xc83a3a : 0x3a5a8a;
+                  for (let a = 0; a < 4; a++) for (let b = 0; b < 3; b++) glowPx(X + i + a, Yy + j + b, a === 0 && b === 0 ? scaleColor(col, 1.3) : col, 0.95);
+                }
+              // a tent over the seller on the bigger pitches
+              if (kind < 0.55) {
+                for (let j = 0; j < 8; j++) for (let i = 0; i < 42; i++) glowPx(X + i, Yy + j, j === 0 ? 0xffffff : Math.floor(i / 7) % 2 ? 0xf0ece4 : 0xd8d4cc, 0.95);
+                for (const PX of [X, X + 40]) for (let j = 8; j < 24; j++) for (let a = 0; a < 2; a++) img.px(PX + a, Yy + j, 0x8a8a92);
+                glowPx(X + 20, Yy + 9, 0xfff4c8, 1);
+                glowPx(X + 21, Yy + 9, 0xfff4c8, 1);
+              }
+              personPx(X + 34, Yy + 12, gr, { hat: true });
+            },
+          });
+          warm(x + 7, y + 6, 10, 0.34, 0xffd8a0);
+          knot(x + 7, y + 10, 7, 1.5, 3);
+        };
+        for (const [x0, x1] of [[4, 60], [120, 176]])
+          for (let u = s0 + 40; u > s0 + 2; u -= 12)
+            for (let x = x0; x + 14 <= x1; x += 16) flea(x, Y(u));
+        // the stone walk through them to the south gate, and people coming and going
+        for (let k = 0; k < 60; k++) folk(4 + fr() * 172, Y(s0 + 2 + fr() * 48));
+        knot(90, Y(5628), 18, 4, 22);
+        knot(90, Y(5612), 24, 4, 16);
+        const ws = walkers(5630);
+        for (const [a, b] of [[[6, 5624], [60, 5624]], [[120, 5642], [174, 5642]], [[6, 5648], [60, 5648]], [[120, 5616], [174, 5616]], [[84, 5612], [84, 5636]], [[96, 5612], [96, 5636]]])
+          kit.path([a, b], fr.pick(ws), { sp: 3, n: 2, gap: 24, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0: fr() });
+      }
+      // stone lanterns lit along the west and east walks, and the arched red bridges over the turtle ponds
+      for (const px of [11, 169]) {
+        const y = Y(5742);
+        objects.push({
+          y: y + 6,
+          draw: () => {
+            const X = px * S;
+            for (let i = -18; i <= 18; i++) {
+              const a = Math.round(((i / 18) ** 2 - 1) * 5);
+              for (let j = 0; j < 5; j++) img.px(X + i, y * S + a + j, j === 0 ? 0xf06a40 : j < 3 ? VERM[0] : VERM[2]);
+              if (i % 6 === 0) for (let j = -5; j < 0; j++) img.px(X + i, y * S + a + j, VERM[1]);
+              for (const r of [-5]) img.px(X + i, y * S + a + r, VERM[0]);
+            }
+          },
+        });
+        warm(px, y + 3, 10, 0.4);
+        knot(px, y + 1, 4, 1, 2);
+        const tur = capture(0, 0, 2, 2, () => {
+          for (let j = 0; j < 4; j++) for (let i = 0; i < 5; i++) if (!((j === 0 || j === 3) && (i === 0 || i === 4))) img.px(i, 1 + j, (i + j) % 2 ? 0x5a6a3a : 0x3a4a2a);
+          img.px(5, 2, 0x7a8a5a);
+        }, { u: 5760 });
+        kit.wander(px, 5764, 4, 22, [tur], { n: 3, sp: 1.2, idle: 0.5, turn: 'flip' });
+      }
       // outside the cloisters: the turtle pond, trees, lanterns
       pondAtNight(11, 5760, 8, 36);
       pondAtNight(169, 5760, 8, 36);
