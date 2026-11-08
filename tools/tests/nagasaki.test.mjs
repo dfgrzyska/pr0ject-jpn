@@ -183,7 +183,7 @@ test('the Inasa view rises from behind the ridge, dims for the dragon, flares wh
   globalThis.location.search = '?noprops';
   const still = new NagasakiView(s);
   still.update(0.1);
-  assert.equal(still.traffic.visible, false);
+  assert(still.points.every((p) => !p.visible), 'nothing moves with ?noprops');
 });
 
 /** A fake enemies context for the float: records shots, telegraphs and lobs. */

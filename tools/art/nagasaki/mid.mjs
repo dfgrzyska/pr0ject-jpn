@@ -64,28 +64,38 @@ function waterSky(u) {
 function paintViewFrames(k) {
   const { kit } = k;
   for (let f = 0; f < 2; f++) {
-    const r = new HiCanvas(14, 7);
-    // a little ferry from the side: its hull, white decks and rows of lit windows, a funnel, its lights in the water
-    for (let X = 0; X < 42; X++) {
-      const taper = X > 34 ? (X - 34) * 0.6 : 0;
-      for (let j = 12 + Math.round(taper * 0.6); j < 18 - Math.round(taper * 0.3); j++) r.px(X, j, j < 14 ? 0xd6e2dd : 0x2a3a46);
+    const r = new HiCanvas(9, 5);
+    // a little ferry far below: a dark hull, a white deckhouse, rows of lit windows, her lights trailing in the water
+    for (let X = 0; X < 27; X++) {
+      const taper = X > 21 ? (X - 21) * 0.6 : 0;
+      for (let j = 8 + Math.round(taper * 0.5); j < 11; j++) r.px(X, j, j === 8 ? 0x9aa8b0 : 0x101a24);
     }
-    for (let X = 4; X < 34; X++) for (let j = 6; j < 12; j++) r.px(X, j, j === 6 ? 0xf0f4f4 : (X % 4 < 2 && j > 7 && j < 11 ? (f && X % 8 < 2 ? 0xfff4c8 : 0xffe0a0) : 0xb8c8c8));
-    for (let X = 10; X < 26; X++) for (let j = 2; j < 6; j++) r.px(X, j, j === 2 ? 0xf0f4f4 : (X % 3 < 2 ? 0xffeab4 : 0x8aa0ac));
-    for (let j = 0; j < 5; j++) for (let X = 16; X < 20; X++) r.px(X, j, j < 2 ? 0x1a1a1e : 0xc83a30);
-    r.px(40, 12, f ? 0x92ffa1 : 0x578d79);
-    r.px(2, 11, 0xff6a50);
-    for (let q = 0; q < 12; q += 1) r.px(6 + q * 3 + (f ? 1 : 0), 18 + (q % 3), 0xffe0a0, 0.45 - (q % 3) * 0.1);
+    for (let X = 3; X < 21; X++) for (let j = 4; j < 8; j++) r.px(X, j, j === 4 ? 0xc8d4d8 : X % 3 < 2 ? (f && X % 6 < 2 ? 0xfff4c8 : 0xffd898) : 0x4a5864);
+    for (let X = 8; X < 16; X++) for (let j = 2; j < 4; j++) r.px(X, j, j === 2 ? 0xc8d4d8 : X % 2 ? 0xffe4b0 : 0x4a5864);
+    r.px(12, 0, 0xffffff);
+    r.px(12, 1, 0x8a98a0);
+    r.px(26, 8, f ? 0x92ffa1 : 0x60c080);
+    r.px(0, 7, 0xff6a50);
+    for (let q = 0; q < 9; q++) r.px(3 + q * 2 + (f ? 1 : 0), 11 + (q % 3), 0xffd898, 0.4 - (q % 3) * 0.1);
     kit.frame(r, 'view_ferry_' + f);
   }
-  const w = new HiCanvas(20, 7);
-  for (let q = 0; q < 54; q++) {
-    const al = (q / 54) * 0.38;
-    w.px(q, 3 + q / 7, 0xb8d8e4, al);
-    w.px(q, 17 - q / 7, 0xb8d8e4, al);
-    if (q % 3 === 0) w.px(q, 10, 0xd8ecf4, al * 0.7);
+  const w = new HiCanvas(14, 4);
+  for (let q = 0; q < 39; q++) {
+    const al = (q / 39) * 0.34;
+    w.px(q, 2 + q / 12, 0xa8c8d8, al);
+    w.px(q, 10 - q / 12, 0xa8c8d8, al);
   }
   kit.frame(w, 'view_wake');
+  // headlights and tail lights moving on the roads, single fine pixels and their halo
+  for (const [name, c] of [['view_car_0', 0xfff4d8], ['view_car_1', 0xff3a28]]) {
+    const r = new HiCanvas(1, 1);
+    r.px(1, 1, c);
+    r.px(0, 1, c, 0.35);
+    r.px(2, 1, c, 0.35);
+    r.px(1, 0, c, 0.35);
+    r.px(1, 2, c, 0.35);
+    kit.frame(r, name);
+  }
   // the bursts are white: the game tints each one. Rings of falling sparks, growing, thinning.
   const rng2 = rng(777);
   const rays = Array.from({ length: 64 }, () => [rng2() * 6.283, 0.5 + rng2() * 0.5]);

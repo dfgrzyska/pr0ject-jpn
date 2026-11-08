@@ -23,8 +23,7 @@ export class NagasakiView {
     const d = DEPTH.mid - 0.5;
     // (the layers are painted at 3x the game's resolution)
     this.layers = names.map((n, i) => scene.add.image(0, 0, `view_stage8_${n}`).setOrigin(0).setScale(1 / 3).setDepth(d + i * 0.01).setVisible(false));
-    this.traffic = scene.add.blitter(0, 0, 'sprites').setDepth(d + 0.055).setVisible(false);
-    this.points = Array.from({ length: 24 }, () => this.traffic.create(0, 0, 'n_traffic'));
+    this.points = Array.from({ length: 36 }, (_, i) => scene.add.image(0, 0, 'props_stage8', `view_car_${i % 2}`).setScale(1 / 3).setDepth(d + 0.055).setVisible(false));
     this.ferries = Array.from({ length: 3 }, () => ({
       boat: scene.add.image(0, 0, 'props_stage8', 'view_ferry_0').setScale(1 / 3).setDepth(d + 0.054).setVisible(false),
       wake: scene.add.image(0, 0, 'props_stage8', 'view_wake').setScale(1 / 3).setDepth(d + 0.053).setVisible(false),
@@ -56,12 +55,12 @@ export class NagasakiView {
     const on = s.parallax.uTop > cfg.ridge;
     for (const l of this.layers) l.setVisible(on);
     this.shade.setVisible(on);
-    this.traffic.setVisible(on && this.animate);
     if (!on) {
       for (const f of this.ferries) {
         f.boat.setVisible(false);
         f.wake.setVisible(false);
       }
+      for (const p of this.points) p.setVisible(false);
       for (const b of this.bursts) b.im.setVisible(false);
       this.star.setVisible(false);
       return;
@@ -90,19 +89,21 @@ export class NagasakiView {
     }
     const cx = Math.round((-18 - this.px * SWAY[1]) * 3) / 3;
     const cy = Math.round((baseY + (1 - e) * SHIFT[1]) * 3) / 3;
-    this.traffic.setPosition(cx, cy);
+    // headlights one way, tail lights the other, along the waterfront and Inasa's hill road
     for (let i = 0; i < this.points.length; i++) {
-      const x = (i * 9 + t * (i % 2 ? 1.2 : -0.8) + 216) % 216;
-      const shore = i % 4 === 0 ? hillRoad(x) : i % 3 ? farShore(x) : nearShore(x) + 14;
-      this.points[i].setPosition(x, shore).setAlpha(0.4 + 0.2 * Math.sin(t + i));
+      const dir = i % 2 ? 1 : -1;
+      const x = (((i * 29) % 216) + (t * dir * (i % 3 === 0 ? 1.6 : 2.4)) + 432) % 216;
+      const hill = i % 3 === 0;
+      const y = hill ? hillRoad(x) + dir * 0.4 : farShore(x) - 2 + dir * 0.4;
+      this.points[i].setVisible(this.animate).setPosition(cx + x, cy + y).setAlpha(0.9);
     }
     for (let i = 0; i < this.ferries.length; i++) {
-      const x = 22 + ((i * 57 + t * (0.65 + i * 0.15)) % 164);
+      const x = 22 + ((i * 57 + t * (0.65 + i * 0.15)) % 108);
       const fy = farShore(x) + (nearShore(x) - farShore(x)) * (0.32 + i * 0.19);
       const { boat, wake } = this.ferries[i];
-      boat.setVisible(true).setPosition(cx + x, cy + fy).setAlpha(0.9);
+      boat.setVisible(true).setPosition(cx + x, cy + fy).setAlpha(1);
       boat.setFrame(`view_ferry_${Math.floor(t * 0.8 + i) % 2}`);
-      wake.setVisible(this.animate).setPosition(cx + x - 11, cy + fy + 3).setAlpha(0.55 + Math.sin(t * 2 + i) * 0.15);
+      wake.setVisible(this.animate).setPosition(cx + x - 8, cy + fy + 1.5).setAlpha(0.55 + Math.sin(t * 2 + i) * 0.15);
     }
     // a shooting star across the upper sky every so often
     if (this.animate) {
