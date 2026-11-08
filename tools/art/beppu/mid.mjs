@@ -22,7 +22,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Raster, fbm, rng, scaleColor, rgb } from '../../lib/raster.mjs';
+import { Raster, fbm, rng, scaleColor, rgb, mix } from '../../lib/raster.mjs';
 import { crownPixels, palmPixels, rampColor } from '../nature.mjs';
 import { HiCanvas, hashPx } from '../hires.mjs';
 import { PropKit, puff, todGrade, tintTable } from '../props.mjs';
@@ -4207,56 +4207,264 @@ export function buildMid() {
 
   // ------------------------------------------------------------ E. Oniyama: the crocodile pens, the hippos' pool, the red oni statue
   {
-    /** A crocodile from above, its snout at the -len/2 end along angle a, scutes down its back. */
-    const croc = (cx, cy, a, len, tone = 0) => {
-      const ca = Math.cos(a);
-      const sa = Math.sin(a);
-      const N = len * S;
-      const CX = cx * S;
-      const CY = cy * S;
-      const base = tone ? [0x6a7a48, 0x34402a, 0x4e5e3a, 0x3e4e30] : [0x5a6a3a, 0x2e3a22, 0x445432, 0x3a4a2a];
-      const sc = Math.min(1, len / 18);
-      const drawn = new Set();
-      const put = (X, Yy, c, a2 = 1) => {
-        const rx = Math.round(X);
-        const ry = Math.round(Yy);
-        if (a2 >= 1) drawn.add(rx * 100000 + ry);
-        img.px(rx, ry, c, a2);
+    /**
+     * A crocodile from above, its snout at the -len/2 end along angle a: the long narrow snout with its nostril bump
+     * and teeth along the jaw, the broad head with raised eyes, the neck scutes, a wide armoured back in rows, four
+     * splayed legs with toes and claws, the long tail curving away, its two crests joining into one saw-toothed ridge,
+     * dark bands across it. opt: swim (legs folded, low in the water), gape (jaws open as they do to cool off), bend.
+     */
+    const croc = (cx, cy, a, len, tone = 0, opt = {}) => {
+      const big = len >= 12;
+      const N = Math.round((opt.exact ? len : big ? len * 1.3 : len * 1.15) * S);
+      const sc = N / 62;
+      const seed = Math.floor(cx * 13 + cy * 7) & 1023;
+      const bend = opt.bend ?? (hashPx(seed, 3, 701) - 0.5) * 1.6;
+      const gape = opt.gape ?? (big && !opt.swim && hashPx(seed, 5, 702) < 0.36);
+      const PAL = [
+        [0x8a9a58, 0x6a7a44, 0x505e34, 0x3a4628, 0x262e1c],
+        [0x9a9e60, 0x7a8048, 0x5e6438, 0x46492a, 0x2e301e],
+        [0x6e7a4c, 0x525e3a, 0x3e482c, 0x2c3420, 0x1c2216],
+      ][tone % 3];
+      const BELLY = 0xc4bc84;
+      const lerpTab = (T, t) => {
+        for (let k = 0; k + 1 < T.length; k++) if (t <= T[k + 1][0]) return T[k][1] + (T[k + 1][1] - T[k][1]) * ((t - T[k][0]) / (T[k + 1][0] - T[k][0]));
+        return T[T.length - 1][1];
       };
-      // first the legs, under the body
-      for (const [t0, spread] of [[0.27, 7], [0.55, 8]])
-        for (const s of [-1, 1])
-          for (let k = 0; k < spread; k++) {
-            const j = t0 * N + (k * 0.5 - 1);
-            const off = s * (6 + k * 0.7) * sc;
-            for (const w of [0, 0.7]) put(CX + ca * (j - N / 2) - sa * off + w, CY + sa * (j - N / 2) + ca * off + w, k > spread - 3 ? base[3] : base[0]);
-          }
-      for (let j = 0; j < N; j += 0.5) {
-        const t = j / N;
-        const hw = (t < 0.18 ? 0.6 + t * 8 : t < 0.6 ? 2.2 : Math.max(0.4, 2.2 - (t - 0.6) * 5)) * S * 0.95 * sc;
-        const px0 = CX + ca * (j - N / 2);
-        const py0 = CY + sa * (j - N / 2);
-        for (let k = -hw; k <= hw; k += 0.5) {
-          const dark0 = k / hw;
-          let c = dark0 < -0.35 ? base[0] : dark0 > 0.45 ? base[1] : base[2];
-          // the armoured back: rows of square scutes, two ridges along it
-          if (t > 0.2) {
-            const row = Math.floor(j / 3.2);
-            if (Math.abs(k) < hw * 0.75 && (j % 3.2 < 0.8 || Math.floor((k + hw) / 2.6) % 2 === row % 2)) c = scaleColor(c, 0.8);
-            if (Math.abs(Math.abs(k) - hw * 0.45) < 0.5) c = scaleColor(c, 1.22);
-          } else if (t < 0.16 && hashPx(Math.round(j), Math.round(k), 7) < 0.14) c = scaleColor(c, 0.84);
-          put(px0 - sa * k, py0 + ca * k, c);
+      const HW = [[0, 1.5], [0.012, 2.3], [0.03, 1.7], [0.07, 1.9], [0.13, 3], [0.19, 4.9], [0.215, 4.7], [0.245, 3.7], [0.3, 4.7], [0.38, 6.5], [0.48, 6.3], [0.56, 4.9], [0.7, 3.2], [0.85, 1.7], [1, 0.4]];
+      const widthAt = (t) => Math.max(0.6, lerpTab(HW, t) * sc);
+      // the spine, snout first, the tail swinging away, the head turned a little the other way
+      const P = [];
+      {
+        let x = 0;
+        let y = 0;
+        for (let i = 0; i <= N; i++) {
+          const t = i / N;
+          const phi = a + (t > 0.5 ? bend * Math.sin(((t - 0.5) / 0.5) * Math.PI * 1.25) : 0) - bend * 0.3 * Math.max(0, (0.3 - t) / 0.3);
+          P.push([x, y, phi]);
+          x += Math.cos(phi);
+          y += Math.sin(phi);
         }
-        // the eyes
-        if (t > 0.13 && t < 0.15)
-          for (const s of [-1, 1]) {
-            put(px0 - sa * s * 3 * sc, py0 + ca * s * 3 * sc, 0xd8c040);
-            put(px0 - sa * s * 3 * sc + 1, py0 + ca * s * 3 * sc, 0x1a1a10);
-          }
+        const m = P[N >> 1];
+        const ox = cx * S - m[0];
+        const oy = cy * S - m[1];
+        for (const p of P) {
+          p[0] += ox;
+          p[1] += oy;
+        }
       }
+      const wet = (c) => (opt.swim ? mix(c, 0x2e5a50, 0.34) : c);
+      const shadeOf = (v) => PAL[Math.max(0, Math.min(4, Math.round((1 - v) * 4)))];
+      const paint = (put) => {
+        // a limb: two segments, thick at the shoulder, then the foot and its toes with their dark claws
+        const seg = (x0, y0, x1, y1, w0, w1, c, cd) => {
+          const n = Math.max(2, Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 2));
+          for (let k = 0; k <= n; k++) {
+            const q = k / n;
+            const w = w0 + (w1 - w0) * q;
+            const X = x0 + (x1 - x0) * q;
+            const Yy = y0 + (y1 - y0) * q;
+            for (let j = -w; j <= w; j += 0.5)
+              for (let i = -w; i <= w; i += 0.5) {
+                if (i * i + j * j > w * w) continue;
+                put(X + i, Yy + j, i + j > w * 0.2 ? cd : c);
+              }
+          }
+        };
+        const limb = (ti, side, fore) => {
+          const [bx, by, phi] = P[Math.floor(ti * N)];
+          const dx = Math.cos(phi);
+          const dy = Math.sin(phi);
+          const nx = -dy * side;
+          const ny = dx * side;
+          const hw = widthAt(ti) * 0.75;
+          const sx = bx + nx * hw;
+          const sy = by + ny * hw;
+          let ex;
+          let ey;
+          let fx;
+          let fy;
+          if (opt.swim) {
+            // folded along the flank, as they swim
+            ex = sx + nx * 2 * sc + dx * 3.5 * sc;
+            ey = sy + ny * 2 * sc + dy * 3.5 * sc;
+            fx = ex + dx * 3 * sc;
+            fy = ey + dy * 3 * sc;
+          } else if (fore) {
+            ex = sx + nx * 3.4 * sc + dx * 1.6 * sc;
+            ey = sy + ny * 3.4 * sc + dy * 1.6 * sc;
+            fx = ex + nx * 1.4 * sc - dx * 3.2 * sc;
+            fy = ey + ny * 1.4 * sc - dy * 3.2 * sc;
+          } else {
+            ex = sx + nx * 3.8 * sc - dx * 2.2 * sc;
+            ey = sy + ny * 3.8 * sc - dy * 2.2 * sc;
+            fx = ex + nx * 1.8 * sc + dx * 3.6 * sc;
+            fy = ey + ny * 1.8 * sc + dy * 3.6 * sc;
+          }
+          const c = wet(PAL[2]);
+          const cd = wet(PAL[3]);
+          seg(sx, sy, ex, ey, Math.max(0.7, 2.3 * sc), Math.max(0.6, 1.8 * sc), c, cd);
+          seg(ex, ey, fx, fy, Math.max(0.6, 1.8 * sc), Math.max(0.5, 1.3 * sc), wet(PAL[1]), c);
+          if (opt.swim || sc < 0.45) return;
+          // the toes spread on the ground, claws at their tips
+          const dirX = fx - ex;
+          const dirY = fy - ey;
+          const base = Math.atan2(dirY, dirX);
+          for (const o of [-0.85, -0.3, 0.3, 0.85]) {
+            const L = (fore ? 2.5 : 3) * sc;
+            for (let k = 0; k <= L * 2; k++) {
+              const q = k / (L * 2);
+              put(fx + Math.cos(base + o) * L * q, fy + Math.sin(base + o) * L * q, q > 0.78 ? 0x1a1a10 : PAL[2]);
+            }
+          }
+        };
+        for (const side of [-1, 1]) {
+          limb(0.545, side, false);
+          limb(0.285, side, true);
+        }
+        // the open mouth, under the head: pink inside, darkening to the throat
+        const jawEnd = Math.floor(0.19 * N);
+        const hingeP = P[jawEnd];
+        const heading = hingeP[2] + Math.PI;
+        const theta = 0.3;
+        if (gape) {
+          for (let j = 0; j <= jawEnd * 0.92; j += 0.5) {
+            const q = j / jawEnd;
+            const span = Math.tan(theta) * j;
+            for (let k = -span; k <= span; k += 0.5) {
+              const X = hingeP[0] + Math.cos(heading) * j - Math.sin(heading) * k;
+              const Yy = hingeP[1] + Math.sin(heading) * j + Math.cos(heading) * k;
+              const g = hashPx(Math.round(X), Math.round(Yy), 703);
+              put(X, Yy, q < 0.28 ? 0x5a1c1c : q < 0.5 ? 0xa84a44 : g < 0.2 ? 0xc87a70 : 0xe8a498);
+            }
+          }
+        }
+        // the body, nape to tail, then the head and jaws
+        const start = gape ? jawEnd : 0;
+        for (let i = start; i < N; i++) {
+          const t = i / N;
+          const [px, py, phi] = P[i];
+          const nx = -Math.sin(phi);
+          const ny = Math.cos(phi);
+          const hw = widthAt(t);
+          for (let k = -hw; k <= hw; k += 0.4) {
+            const q = k / hw;
+            const dot = -(nx + ny) * 0.7 * q;
+            let c = shadeOf(0.5 + dot * 0.42 - Math.abs(q) * Math.abs(q) * 0.12);
+            const g = hashPx(Math.round(px * 2), Math.round(k * 2), 704);
+            if (big) {
+              if (t < 0.235) {
+                // the head and snout: rough plates, a low ridge down the middle
+                if (g < 0.22) c = scaleColor(c, 0.84);
+                else if (g > 0.86) c = scaleColor(c, 1.14);
+                if (t > 0.04 && t < 0.15 && Math.abs(q) < 0.12) c = PAL[1];
+              } else if (t < 0.27) {
+                // the four big scutes at the back of the neck
+                const cell = Math.floor((q + 1) * 2);
+                const inCell = ((q + 1) * 2) % 1;
+                c = inCell > 0.15 && inCell < 0.85 && Math.abs(q) < 0.8 ? PAL[cell === 1 || cell === 2 ? 0 : 1] : PAL[4];
+              } else if (t < 0.57 && Math.abs(q) < 0.8) {
+                // the armoured back: rows of square scutes, keeled, the grooves dark between them
+                const rowLen = Math.max(2.4, 3.4 * sc);
+                const colW = Math.max(1.8, 2.5 * sc);
+                const u0 = i % rowLen;
+                const v0 = (k + hw) % colW;
+                if (u0 < 0.9 || v0 < 0.7) c = scaleColor(c, 0.62);
+                else if (u0 < 1.8 && v0 > colW * 0.35 && v0 < colW * 0.7) c = scaleColor(c, 1.32);
+              } else if (t >= 0.57) {
+                // the tail: rings of scales, dark bands across it
+                if (Math.floor(t * 30) % 3 === 0) c = scaleColor(c, 0.66);
+                if (i % Math.max(2, Math.round(3 * sc)) === 0) c = scaleColor(c, 0.82);
+              }
+              // the pale hide of the flanks showing at the edge
+              if (Math.abs(q) > 0.86 && t > 0.27 && t < 0.72 && !opt.swim) c = mix(c, BELLY, 0.65);
+              // the two crests on the tail, joining into one saw-toothed ridge
+              if (t > 0.57 && t < 0.76 && Math.abs(Math.abs(q) - 0.5) < 0.16 && (i >> 1) % 3 !== 2) c = q < 0 ? PAL[0] : PAL[1];
+              if (t >= 0.76 && Math.abs(k) < Math.max(0.6, ((i >> 1) % 3) * 0.6 * sc)) c = (i >> 1) % 3 === 2 ? PAL[0] : PAL[1];
+            } else if (Math.floor(t * 18) % 2 === 0 && t > 0.2) {
+              // hatchlings are boldly banded
+              c = scaleColor(c, 0.62);
+            }
+            put(px + nx * k, py + ny * k, wet(c));
+          }
+        }
+        const eyes = (i0) => {
+          const [ex, ey, phi] = P[i0];
+          const nx = -Math.sin(phi);
+          const ny = Math.cos(phi);
+          const off = widthAt(i0 / N) * 0.6;
+          const r = Math.max(0.8, 1.7 * sc);
+          for (const sd of [-1, 1]) {
+            const X = ex + nx * sd * off;
+            const Yy = ey + ny * sd * off;
+            for (let j = -r; j <= r; j += 0.5) for (let i = -r; i <= r; i += 0.5) if (i * i + j * j <= r * r) put(X + i, Yy + j, i + j < 0 ? PAL[0] : PAL[3]);
+            put(X, Yy, 0xe8c838);
+            if (sc > 0.7) {
+              put(X + 1, Yy, 0xe8c838);
+              put(X, Yy + 1, 0x14140c);
+            }
+          }
+        };
+        if (gape) {
+          // two long jaws opening from the hinge, the teeth along their inner edges
+          for (const sd of [-1, 1]) {
+            const dir = heading + sd * theta;
+            const cd = Math.cos(dir);
+            const sdir = Math.sin(dir);
+            const nx = -sdir;
+            const ny = cd;
+            const L = jawEnd * 1.04;
+            for (let j = 0; j <= L; j += 0.5) {
+              const t = 0.19 * (1 - j / L);
+              const hw = Math.max(0.7, widthAt(t) * 0.58);
+              const X0 = hingeP[0] + cd * j;
+              const Y0 = hingeP[1] + sdir * j;
+              for (let k = -hw; k <= hw; k += 0.4) {
+                const q = k / hw;
+                const dot = -(nx + ny) * 0.7 * q;
+                let c = shadeOf(0.55 + dot * 0.42);
+                if (hashPx(Math.round(j * 2), Math.round(k * 2), 705) < 0.2) c = scaleColor(c, 0.84);
+                put(X0 + nx * k, Y0 + ny * k, c);
+              }
+              // teeth along the inner edge of each jaw
+              if (Math.round(j * 2) % 5 === 0 && j > L * 0.15) put(X0 + nx * -sd * (hw + 0.9), Y0 + ny * -sd * (hw + 0.9), 0xf8f4e0);
+              if (j > L * 0.96) put(X0, Y0, PAL[3]);
+            }
+          }
+          eyes(Math.floor(0.205 * N));
+        } else {
+          eyes(Math.floor(0.165 * N));
+          if (big) {
+            // the nostrils on their bump, teeth showing all along the closed jaw
+            const [nxp, nyp, phi] = P[Math.max(1, Math.floor(0.014 * N))];
+            const nx = -Math.sin(phi);
+            const ny = Math.cos(phi);
+            for (const sd of [-1, 1]) put(nxp + nx * sd * 0.9 * sc, nyp + ny * sd * 0.9 * sc, 0x14140c);
+            if (!opt.swim)
+              for (let i = Math.floor(0.025 * N); i < 0.17 * N; i += Math.max(2, Math.round(3 * sc))) {
+                const [tx, ty, ph2] = P[i];
+                const mx = -Math.sin(ph2);
+                const my = Math.cos(ph2);
+                const hw = widthAt(i / N) + 0.6;
+                for (const sd of [-1, 1]) put(tx + mx * sd * hw, ty + my * sd * hw, 0xf8f4e0);
+              }
+          }
+        }
+      };
+      // its shadow first, one shape; then the animal
+      const sil = new Set();
+      paint((X, Yy) => sil.add(Math.round(X) * 100000 + Math.round(Yy)));
+      const SX = opt.swim ? 2 : 3;
+      const SY = opt.swim ? 2 : 4;
+      for (const v of sil) {
+        const X = Math.floor(v / 100000);
+        const Yy = v - X * 100000;
+        if (opt.swim) img.px(X + SX, Yy + SY, 0x0a2018, 0.4);
+        else img.tintPx(X + SX, Yy + SY, 0.62);
+      }
+      paint((X, Yy, c) => img.px(Math.round(X), Math.round(Yy), c));
     };
-    // a crocodile swimming, snout to the right (the game turns it as it goes), only its back above water
-    const swimmer = capture(0, Y(ONIYAMA[0] + 300) - 5, 22, 11, () => croc(11, Y(ONIYAMA[0] + 300) + 0.5, Math.PI, 18));
+    // a crocodile swimming, snout to the right (the game turns it as it goes), low in the water, legs folded
+    const swimmer = capture(0, Y(ONIYAMA[0] + 300) - 7, 30, 15, () => croc(15, Y(ONIYAMA[0] + 300) + 0.5, Math.PI, 24, 0, { swim: true, exact: true, bend: 0.5 }));
     // the red oni statue on his rock by the entrance, club raised (the boss, before he wakes)
     {
       const x = 152;
@@ -4515,17 +4723,21 @@ export function buildMid() {
         } else {
           if (nursery) {
             // the nursery: hatchlings by the dozen sunning all round a little pool
-            for (let k = 0; k < 26; k++) {
+            const placed = [];
+            for (let k = 0; k < 40; k++) {
               const hx = x0 + 7 + pr() * 46;
-              const hy = y + 14 + pr() * 34;
-              if (shape(hx, hy) < 1.3) continue;
-              croc(hx, hy, pr() * Math.PI * 2, 7 + pr() * 4, k % 2);
+              const hy = y + 15 + pr() * 28;
+              const ha = pr() * Math.PI * 2;
+              const hl = 7 + pr() * 4;
+              if (shape(hx, hy) < 1.3 || placed.some(([ox, oy]) => Math.hypot(ox - hx, oy - hy) < 10)) continue;
+              placed.push([hx, hy]);
+              croc(hx, hy, ha, hl, k % 2);
             }
           }
-          for (let k = 0; k < 2; k++) croc(x0 + 14 + k * 26 + rand() * 6, y + 6 + rand() * 2, (rand() - 0.5) * 0.3 + (k ? Math.PI : 0), 18, k);
+          for (let k = 0; k < 2; k++) croc(x0 + 14 + k * 26 + rand() * 6, y + 7 + rand() * 2, (rand() - 0.5) * 0.3 + (k ? Math.PI : 0), 18, k);
           // more of them, along the south ledge and one or two half in the water, snouts on the kerb
-          if (pen % 2) croc(x0 + 18 + pr() * 22, y + 53, Math.PI + (pr() - 0.5) * 0.3, 20, 0);
-          if (pen % 3 === 0) croc(x0 + 40 - pr() * 8, y + 52, (pr() - 0.5) * 0.3, 16, 1);
+          if (pen % 2) croc(x0 + 18 + pr() * 22, y + 51, Math.PI + (pr() - 0.5) * 0.3, 20, 0);
+          if (pen % 3 === 0 && pen % 2 === 0) croc(x0 + 40 - pr() * 8, y + 51, (pr() - 0.5) * 0.3, 16, 1);
           if (pen % 4 === 1) croc(x0 + 12 + pr() * 6, y + 26 + pr() * 10, Math.PI / 2 + (pr() - 0.5) * 0.5, 15, 1);
           if (pen % 4 === 3) croc(x0 + 50 - pr() * 6, y + 26 + pr() * 10, -Math.PI / 2 + (pr() - 0.5) * 0.5, 15, 0);
           if (pen % 7 === 5) {
