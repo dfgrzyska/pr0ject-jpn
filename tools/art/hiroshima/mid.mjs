@@ -772,6 +772,23 @@ export function buildMid() {
     for (let k = 0; k < 400; k++) lit.push(rand() < litP);
     const awn = rand.pick([0xc83a2a, 0x2a6a3a, 0x2a4a8a, 0xd8a020, 0x8a2a5a]);
     const off = 3 + Math.round(faceH * 0.3);
+    // (its own generator: what each roof carries doesn't change the rest of the city)
+    const br = rng(x * 131 + y * 17 + 5);
+    let rk = 'std';
+    if (opt.noItems !== true && !opt.top && !opt.front) {
+      const t = br();
+      if (t < 0.17 && w >= 12 && h >= 12) rk = 'garden';
+      else if (t < 0.3 && w >= 15 && h >= 14) rk = 'setback';
+      else if (t < 0.41 && w >= 13) rk = 'sign';
+      else if (t < 0.45 && w >= 16 && h >= 18) rk = 'heli';
+      else if (t < 0.6) rk = 'gravel';
+      else if (t < 0.68 && w >= 12 && h >= 12) rk = 'terrace';
+    }
+    const fv = style === 'glass' ? 0 : Math.floor(br() * 3);
+    const rail = br() < 0.35;
+    const adC = [0xd83a2a, 0x2a6ad0, 0xe8c040, 0x2a9a6a, 0xe86aa0, 0xf0f0e8][Math.floor(br() * 6)];
+    const adSeed = Math.floor(br() * 999);
+    const skY = Math.floor(br() * 2);
     objects.push({
       y: y + h + faceH,
       shadow: () => shadowRect(x + off, y + off, w, h + faceH, 0.5),
@@ -795,10 +812,135 @@ export function buildMid() {
               const g = hashPx(X, Yy, 8);
               if (g < 0.06) c = scaleColor(c, 0.9);
               else if (g > 0.96) c = scaleColor(c, 1.08);
+              if (rk === 'gravel') {
+                const t = hashPx(X >> 1, Yy >> 1, 9);
+                c = scaleColor(mix(roofC, C.granite[1], 0.6), 0.93 + t * 0.12);
+                if ((X - X0) % 45 < 2 || (Yy - Y0) % 45 < 2) c = scaleColor(roofC, 0.9);
+              }
             }
             img.px(X, Yy, c);
           }
-        if (opt.noItems !== true)
+        if (rail) {
+          for (let X = X0 + 4; X < X1 - 4; X++) {
+            img.px(X, Y0 + 4, 0xd8dcde);
+            if ((X - X0) % 6 === 0) img.px(X, Y0 + 5, 0x7a7e84);
+          }
+          for (let Yy = Y0 + 4; Yy < Y1 - 4; Yy++) {
+            img.px(X0 + 4, Yy, 0xd8dcde);
+            img.px(X1 - 5, Yy, 0x9a9ea2);
+          }
+        }
+        if (rk === 'garden') {
+          // a roof garden: lawn and clipped shrubs in their beds, a deck walk across it, a little hut
+          const GX0 = X0 + 7;
+          const GX1 = X1 - 7;
+          const GY0 = Y0 + 7;
+          const GY1 = Y1 - 7;
+          const midY = Math.round((GY0 + GY1) / 2);
+          for (let Yy = GY0; Yy < GY1; Yy++)
+            for (let X = GX0; X < GX1; X++) {
+              const e = Math.min(X - GX0, GX1 - 1 - X, Yy - GY0, GY1 - 1 - Yy);
+              let c;
+              if (e < 2) c = e === 0 ? 0x8a8478 : 0xb0a896;
+              else if (Math.abs(Yy - midY) < 4) c = (X >> 1) % 3 === 0 ? C.wood[1] : C.wood[2];
+              else {
+                c = lawnPx(X, Yy, 0.3 + hashPx(X >> 3, Yy >> 3, 10) * 0.5, C.lawn);
+                if (hashPx(X, Yy, 11) > 0.985) c = [0xf4d040, 0xe85a70, 0xf4f0e0][X % 3];
+              }
+              img.px(X, Yy, c);
+            }
+          const nS = Math.max(2, Math.floor((GX1 - GX0) / 20));
+          for (let k = 0; k < nS; k++) {
+            const SX = GX0 + 8 + ((GX1 - GX0 - 16) * k) / Math.max(1, nS - 1);
+            for (const SY of [GY0 + 8, GY1 - 8]) {
+              for (let j = -4; j <= 4; j++) for (let i = -4; i <= 4; i++) if (i * i + j * j <= 16) img.tintPx(SX + i + 2, SY + j + 3, 0.72);
+              img.discPx(SX, SY, 4.2, C.camphor[1]);
+              img.discPx(SX - 0.8, SY - 0.8, 3, C.camphor[2]);
+              img.px(SX - 1, SY - 2, C.camphor[3]);
+            }
+          }
+        } else if (rk === 'terrace') {
+          // a roof terrace: a timber deck, tables under umbrellas
+          const GX0 = X0 + 8;
+          const GX1 = X1 - 8;
+          const GY0 = Y0 + 8;
+          const GY1 = Y1 - 8;
+          for (let Yy = GY0; Yy < GY1; Yy++) for (let X = GX0; X < GX1; X++) img.px(X, Yy, X === GX0 || X === GX1 - 1 || Yy === GY0 || Yy === GY1 - 1 ? C.wood[0] : (Yy >> 1) % 3 === 0 ? C.hinoki[0] : (X + (Yy >> 3) * 7) % 21 === 0 ? C.hinoki[0] : C.hinoki[1]);
+          let k = 0;
+          for (let Yy = GY0 + 9; Yy < GY1 - 6; Yy += 20)
+            for (let X = GX0 + 9; X < GX1 - 6; X += 20) {
+              for (let j = -5; j <= 5; j++) for (let i = -5; i <= 5; i++) if (i * i + j * j <= 25) img.tintPx(X + i + 2, Yy + j + 3, 0.76);
+              const c = [0xd83a2a, 0xf0ece0, 0x2a6ad0, 0xe8c040][(k + adSeed) % 4];
+              for (let j = -5; j <= 5; j++) for (let i = -5; i <= 5; i++) if (i * i + j * j <= 25) img.px(X + i, Yy + j, i === 0 || j === 0 ? scaleColor(c, 0.78) : i + j < -2 ? scaleColor(c, 1.1) : c);
+              img.px(X, Yy, 0x2a2026);
+              k++;
+            }
+        } else if (rk === 'heli') {
+          // an emergency landing square, as the tall blocks have: a dark deck, yellow edge, the circle and its H
+          const CX = Math.round((X0 + X1) / 2);
+          const CY = Math.round((Y0 + Y1) / 2);
+          const R = Math.floor(Math.min(X1 - X0, Y1 - Y0) / 2) - 8;
+          for (let j = -R; j <= R; j++)
+            for (let i = -R; i <= R; i++) {
+              const d = Math.hypot(i, j);
+              const edge = Math.max(Math.abs(i), Math.abs(j)) > R - 2;
+              let c = edge ? ((i + j) % 8 < 4 ? 0xe8c838 : 0x2a2a30) : 0x4e5056;
+              if (d < R - 4 && d > R - 7) c = 0xe8e8e0;
+              const hh = R * 0.5;
+              if ((Math.abs(i) > hh * 0.45 && Math.abs(i) < hh * 0.72 && Math.abs(j) < hh) || (Math.abs(i) <= hh * 0.5 && Math.abs(j) < hh * 0.14)) c = 0xe8e8e0;
+              img.px(CX + i, CY + j, c);
+            }
+        } else if (rk === 'setback') {
+          // the top storeys stepped back: a block of its own standing on the roof, its shade across it
+          const bw = Math.round((w * 0.55) * S);
+          const bh = Math.round((h * 0.45) * S);
+          const bf = 12;
+          const BX = skY ? X0 + 9 : X1 - 9 - bw;
+          const BY = Y0 + 7;
+          for (let j = 2; j < bh + bf + 6; j++) for (let i = 2; i < bw + 7; i++) img.tintPx(BX + i, BY + j, i > bw || j > bh + bf ? 0.72 : 1);
+          for (let j = 0; j < bh; j++)
+            for (let i = 0; i < bw; i++) {
+              const e = Math.min(i, j);
+              const e2 = Math.min(bw - 1 - i, bh - 1 - j);
+              let c = e < 2 ? scaleColor(roofC, 1.28) : e2 < 2 ? scaleColor(roofC, 0.72) : scaleColor(roofC, 1.05);
+              if (e >= 2 && e2 >= 2 && hashPx((BX + i) >> 2, (BY + j) >> 2, 12) > 0.9) c = scaleColor(c, 0.94);
+              img.px(BX + i, BY + j, c);
+            }
+          for (let j = 0; j < bf; j++)
+            for (let i = 0; i < bw; i++) {
+              const r2 = j % 6;
+              const c = j < 2 ? scaleColor(wall, 0.55) : r2 >= 2 && r2 <= 4 && i % 6 < 4 && i > 1 && i < bw - 2 ? 0x2e3846 : i > bw - 3 ? scaleColor(wall, 0.8) : wall;
+              img.px(BX + i, BY + bh + j, c);
+            }
+          // a mast and a pair of fans on top
+          for (let k = 0; k < 2; k++) for (let j = 0; j < 7; j++) for (let i = 0; i < 7; i++) img.px(BX + 5 + k * 9 + i, BY + 5 + j, i === 0 || j === 0 ? 0xdadee2 : i === 6 || j === 6 ? 0x7a7e84 : j % 2 ? 0x8a8e94 : 0xb8bcc0);
+          for (let j = 0; j < 12; j++) img.px(BX + bw - 6, BY + 2 + j - 6, 0x8a8e94);
+        }
+        if (rk === 'sign') {
+          // a big sign on steel legs along the back of the roof, facing the street
+          const SX = X0 + 6;
+          const SW = X1 - X0 - 12;
+          const SY = Y0 + 4;
+          const SH = 18;
+          for (let i = 0; i < SW; i++) for (let j = 0; j < 6; j++) img.tintPx(SX + i + 3, SY + SH + 5 + j, 0.76);
+          for (let i = 6; i < SW; i += 18) for (let j = 0; j < 7; j++) img.px(SX + i, SY + SH + j, 0x4a4e54);
+          for (let i = 0; i < SW; i++) for (let j = 2; j < 5; j++) if ((i + j) % 9 === 0) img.px(SX + i, SY + SH + j, 0x4a4e54);
+          for (let j = 0; j < SH; j++)
+            for (let i = 0; i < SW; i++) {
+              const e = Math.min(i, j, SW - 1 - i, SH - 1 - j);
+              let c = e === 0 ? 0x24242a : e === 1 ? 0xf0ece0 : adC;
+              // its lettering, in big blocks, and a stripe
+              if (e > 1 && j >= 4 && j < 13 && (i - 4) % 10 < 7) {
+                const cell = hashPx(Math.floor((i - 4) / 10), adSeed, 13);
+                const bit = hashPx((i - 4) % 10 >> 1, (j - 4) >> 1, Math.floor(cell * 99));
+                if (bit < 0.6) c = adC === 0xf0f0e8 || adC === 0xe8c040 ? 0x2a2026 : 0xffffff;
+              }
+              if (e > 1 && j >= SH - 5 && j < SH - 3) c = scaleColor(adC, 0.74);
+              img.px(SX + i, SY + j, c);
+            }
+          for (let i = 4; i < SW - 4; i += 6) glowPx(SX + i, SY + SH - 1, 0xfff4c8, 0.4 + dusk(u) * 0.5);
+        }
+        if (opt.noItems !== true && rk !== 'garden' && rk !== 'terrace' && rk !== 'heli')
           for (const [kind, ix, iy] of items) {
             const IX = ix * S;
             const IY = iy * S;
@@ -859,14 +1001,18 @@ export function buildMid() {
               else if (cx >= 2 && cx < X1 - X0 - 2) {
                 const bay2 = (cx - 2) % 9;
                 const bi = Math.floor((cx - 2) / 9);
-                if (row >= 2 && row <= 6 && bay2 >= 1 && bay2 <= 7) {
+                if (fv === 2 && row === 0 && bay2 !== 0) c = wall;
+                if (fv === 2 && bay2 === 0) c = scaleColor(wall, 0.7);
+                const inWin = fv === 1 ? row >= 3 && row <= 6 : fv === 2 ? row >= 1 && bay2 >= 3 && bay2 <= 5 : row >= 2 && row <= 6 && bay2 >= 1 && bay2 <= 7;
+                if (fv === 1 && !inWin && row !== 0) c = scaleColor(wall, row < 3 ? 1.04 : 0.94);
+                if (inWin) {
                   if (lit[(fl * 11 + bi) % 400]) {
-                    if (bay2 !== 4) {
+                    if (fv === 1 ? bay2 !== 0 : bay2 !== 4) {
                       glowPx(X, FY0 + j, bi & 1 ? C.warm : C.cool, 0.92);
                       continue;
                     }
                     c = 0x6a6e74;
-                  } else c = bay2 === 4 ? 0x6a6e74 : hashPx(bi, fl, x) < 0.2 && row < 4 ? 0xc8c4b8 : row === 2 && bay2 < 4 ? 0x6a7c8c : style === 'shop' ? 0x3a3038 : 0x2e3846;
+                  } else c = (fv === 1 ? bay2 === 0 : bay2 === 4) ? 0x6a6e74 : hashPx(bi, fl, x) < 0.2 && row < 4 ? 0xc8c4b8 : row === 2 && bay2 < 4 ? 0x6a7c8c : style === 'shop' ? 0x3a3038 : 0x2e3846;
                 }
               }
             }
@@ -1170,6 +1316,220 @@ export function buildMid() {
       img.px(X, Yy, c);
     }
   }
+
+  // ------------------------------------------------------------ helpers of the island (sections 8 and 9)
+  /** Setts laid in courses: long stones, staggered, each its own tone. */
+  const settPx = (X, Yy, seed = 0, ramp = C.paving) => {
+    const r = Math.floor(Yy / 5);
+    const XX = X + r * 4;
+    if (Yy % 5 === 0 || XX % 9 === 0) return scaleColor(ramp[0], 0.82);
+    let c = rampColor(ramp, 0.15 + hashPx(Math.floor(XX / 9), r, seed + 81) * 0.75, X, Yy);
+    const g = hashPx(X, Yy, seed + 82);
+    if (g < 0.06) c = scaleColor(c, 0.91);
+    else if (g > 0.97) c = scaleColor(c, 1.07);
+    return c;
+  };
+  /** A beaten earth trail with roots, pebbles and fallen leaves. */
+  const earthPx = (X, Yy, seed = 0) => {
+    let c = rampColor(C.dirt, 0.2 + hashPx(X >> 2, Yy >> 1, seed + 83) * 0.55, X, Yy);
+    const g = hashPx(X, Yy, seed + 84);
+    if (g > 0.985) c = 0xd65a28;
+    else if (g > 0.97) c = 0xe0a030;
+    else if (g < 0.05) c = 0x6e6a60;
+    else if (g < 0.12) c = scaleColor(c, 0.88);
+    return c;
+  };
+  /**
+   * A way through the island: everything within hw of the polyline pts [x, u], with round corners and a kerb, so
+   * branches join their road cleanly. paint(X, Yy, d, x, y) gives the surface (default setts); kerb: its colour.
+   */
+  const way = (pts, hw, opt = {}) => {
+    const P = pts.map(([x, u]) => [x, L - u]);
+    const x0 = Math.floor(Math.min(...P.map((p) => p[0])) - hw - 1);
+    const x1 = Math.ceil(Math.max(...P.map((p) => p[0])) + hw + 1);
+    const y0 = Math.floor(Math.min(...P.map((p) => p[1])) - hw - 1);
+    const y1 = Math.ceil(Math.max(...P.map((p) => p[1])) + hw + 1);
+    const kerb = opt.kerb === undefined ? C.stone[1] : opt.kerb;
+    const paint = opt.paint ?? ((X, Yy) => settPx(X, Yy, opt.seed ?? 0));
+    img.fine(Math.max(0, x0), y0, Math.min(W, x1) - Math.max(0, x0), y1 - y0, (X, Yy, x, y) => {
+      if (fineWater[Yy * FW + X] && !opt.overWater) return null;
+      let d = 1e9;
+      for (let k = 0; k + 1 < P.length; k++) {
+        const [ax, ay] = P[k];
+        const [bx, by] = P[k + 1];
+        const vx = bx - ax;
+        const vy = by - ay;
+        const t = Math.max(0, Math.min(1, ((x - ax) * vx + (y - ay) * vy) / (vx * vx + vy * vy || 1)));
+        d = Math.min(d, Math.hypot(x - ax - t * vx, y - ay - t * vy));
+      }
+      if (d > hw) return null;
+      if (kerb !== null && d > hw - 0.55) return hashPx(X >> 1, Yy >> 1, 85) < 0.5 ? kerb : scaleColor(kerb, 1.14);
+      return paint(X, Yy, d, x, y);
+    });
+    for (let k = 0; k + 1 < P.length; k++) {
+      const n = Math.ceil(Math.hypot(P[k + 1][0] - P[k][0], P[k + 1][1] - P[k][1]) / 2);
+      for (let i = 0; i <= n; i++) {
+        const cx = P[k][0] + ((P[k + 1][0] - P[k][0]) * i) / Math.max(1, n);
+        const cy = P[k][1] + ((P[k + 1][1] - P[k][1]) * i) / Math.max(1, n);
+        reserveRect(cx - hw, cy - hw, hw * 2, hw * 2);
+      }
+    }
+  };
+  /** Woods: n trees in a rectangle, skipping reserved ground, water and whatever skip(x, y) refuses. */
+  const woods = (x0, x1, u0, u1, n, pals, seed, rMin, rMax, skip) => {
+    const g = rng(seed);
+    for (let k = 0; k < n; k++) {
+      const x = x0 + g() * (x1 - x0);
+      const u = u0 + g() * (u1 - u0);
+      const r = rMin + g() * (rMax - rMin);
+      const pal = pals[Math.floor(g() * pals.length)];
+      const y = Y(u);
+      if (anyRes(x - r * 0.7, y - r * 0.5, r * 1.4, r * 1.2) || W_(Math.round(x), y) || wet[y * W + Math.round(x)] || skip?.(x, y)) continue;
+      tree(x, y, r, pal, seed * 7 + k * 131, pal === C.pine ? 'pine' : 'broadleaf');
+    }
+  };
+  /** People standing on something drawn as an object (a deck, a terrace), so they stay on top of it. */
+  const standing = (x0, y0, w, h, n, seed, cols = COATS) => {
+    const g = rng(seed);
+    for (let i = 0; i < n; i++) {
+      const x = x0 + g() * w;
+      const y = y0 + g() * h;
+      const coat = g() < 0.65 ? cols[Math.floor(g() * cols.length)] : 0x3a3a4a;
+      const X = Math.round(x * S);
+      const Yy = Math.round(y * S);
+      objects.push({ y: y + 1.7, draw: () => personPx(X, Yy, rng(X * 977 + Yy * 13), { coat }) });
+    }
+  };
+  /** A granite boulder: lumpy outline, facets catching the low sun, cracks, lichen and moss on its top. */
+  const boulderPx = (bx, bu, rx, ry, seed, moss = 0.5) => {
+    const by = Y(bu);
+    const sc = Math.max(2.4, rx * 0.3);
+    objects.push({
+      y: by + ry,
+      shadow: () => shadowEllipse(bx + 3, by + 3, rx, ry * 0.8, 0.6),
+      draw: () =>
+        img.fine(bx - rx - 2, by - ry - 2, 2 * rx + 4, 2 * ry + 4, (X, Yy, x, y) => {
+          const dx = x - bx;
+          const dy = y - by;
+          const d = (dx / rx) ** 2 + (dy / ry) ** 2 + (fbm(x, y, { seed: seed + 800, scale: rx * 0.7, octaves: 2 }) - 0.5) * 0.7;
+          if (d > 0.84) return null;
+          const h = fbm(x, y, { seed: seed + 801, scale: sc, octaves: 3 });
+          const h2 = fbm(x + 0.8, y + 0.8, { seed: seed + 801, scale: sc, octaves: 3 });
+          const sh = 0.5 - (dx / rx) * 0.3 - (dy / ry) * 0.42 + (h - h2) * 6;
+          let c = rampColor(C.granite, Math.max(0.02, Math.min(0.98, sh)), X, Yy);
+          if (Math.abs(fbm(x, y, { seed: seed + 802, scale: sc * 1.4 }) - 0.5) < 0.012) c = scaleColor(c, 0.62);
+          if (dy < 0 && fbm(x, y, { seed: seed + 803, scale: 2.4, octaves: 2 }) > 1.02 - moss * (0.6 - dy / ry * 0.5)) c = rampColor(C.moss, 0.3 + hashPx(X >> 1, Yy >> 1, 86) * 0.6, X, Yy);
+          if (d > 0.72 && dx + dy > 0) c = scaleColor(c, 0.78);
+          const g = hashPx(X, Yy, seed & 255);
+          return g < 0.07 ? scaleColor(c, 0.9) : g > 0.96 ? scaleColor(c, 1.08) : c;
+        }),
+    });
+    reserveRect(bx - rx * 0.9, by - ry * 0.9, rx * 1.8, ry * 1.8);
+  };
+  /** A boat from above, its bow to the right: a pointed hull, its deck, and whatever paint() puts on it. */
+  const hullIsle = (w, h, u, hullC, deck, paint) =>
+    sprite(w, h, u, (r) => {
+      const FL = w * S;
+      const FHh = h * S;
+      const mid = (FHh - 1) / 2;
+      for (let X = 0; X < FL; X++) {
+        const t = FL - 1 - X;
+        const hw = Math.min(FHh / 2 - 0.5, 1 + Math.pow(t, 0.72) * (FHh / 2 / Math.pow(FL * 0.3, 0.72)));
+        for (let Yy = 0; Yy < FHh; Yy++) {
+          const a = Math.abs(Yy - mid);
+          if (a > hw) continue;
+          const e = hw - a;
+          let c = e < 1.2 ? (Yy > mid ? scaleColor(hullC, 0.66) : scaleColor(hullC, 1.2)) : e < 2.4 ? hullC : deck;
+          if (X < 2) c = scaleColor(hullC, 0.66);
+          r.px(X, Yy, c);
+        }
+      }
+      paint(r, FL, FHh);
+    });
+
+  /** A trained pine: a twisted trunk and its needles in flat pads like clouds, on a little mound of moss. */
+  const niwaki = (x, u, sz = 1, seed = 1) => {
+    const y = Y(u);
+    const CX = x * S + 1;
+    const CY = y * S;
+    const g = rng(seed * 77 + x * 13 + u);
+    const n = 4 + Math.floor(g() * 2);
+    const pads = [[CX, CY - 16 * sz, 8 * sz]];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * 6.283 + g();
+      const R = (7 + g() * 4) * sz;
+      pads.push([CX + Math.cos(a) * R, CY - 9 * sz + Math.sin(a) * R * 0.5, (5 + g() * 3) * sz]);
+    }
+    pads.sort((p, q) => q[1] - p[1]);
+    objects.push({
+      y: y + 1,
+      shadow: () => {
+        for (const [px, py, r] of pads)
+          for (let j = -r; j <= r; j++) for (let i = -r; i <= r; i++) if ((i / r) ** 2 + (j / (r * 0.62)) ** 2 <= 1) img.tintPx(Math.round(px + i + 8 * sz), Math.round(py + j + 13 * sz), 0.8);
+      },
+      draw: () => {
+        // the mound, the trunk, the branches out to each pad
+        for (let j = -4; j <= 4; j++)
+          for (let i = -9; i <= 9; i++) {
+            if ((i / 9) ** 2 + (j / 4) ** 2 > 1) continue;
+            img.px(CX + i, CY + j, rampColor(C.moss, 0.65 - (i + j) * 0.035 + (hashPx(i, j, seed) - 0.5) * 0.3, CX + i, CY + j));
+          }
+        for (let j = 0; j < 14 * sz; j++) {
+          const ox = Math.round(Math.sin(j * 0.45) * 1.6);
+          img.px(CX + ox - 1, CY - j, 0x6a4a34);
+          img.px(CX + ox, CY - j, 0x4a3224);
+          img.px(CX + ox + 1, CY - j, 0x2e2018);
+        }
+        for (const [px, py] of pads) img.linePx(CX, CY - 8 * sz, Math.round(px), Math.round(py), 0x3a2a1e);
+        for (const [px, py, r] of pads)
+          for (let j = -r; j <= r; j++)
+            for (let i = -r; i <= r; i++) {
+              const qx = i / r;
+              const qy = j / (r * 0.62);
+              if (qx * qx + qy * qy > 1) continue;
+              const XX = Math.round(px + i);
+              const YY = Math.round(py + j);
+              const t = 0.62 - qx * 0.32 - qy * 0.42 + (hashPx(XX >> 1, YY, 149) - 0.5) * 0.35;
+              img.px(XX, YY, rampColor(C.pine, Math.max(0.02, Math.min(0.98, t)), XX, YY));
+            }
+      },
+    });
+    if (x >= 0 && x < W) reserveRect(x - 2, y - 2, 4, 4);
+  };
+  /** A wooden notice board on its two posts, under a little roof. */
+  const noticeBoard = (x, u) => {
+    const X = x * S;
+    const Yb = Y(u) * S;
+    objects.push({
+      y: Y(u) + 1,
+      shadow: () => {
+        for (let i = 0; i < 18; i++) img.tintPx(X + i + 2, Yb + 1, 0.72);
+      },
+      draw: () => {
+        for (const i of [1, 15]) for (let j = -15; j < 0; j++) img.px(X + i, Yb + j, C.wood[1]);
+        for (let j = -14; j < -5; j++) for (let i = 0; i < 17; i++) img.px(X + i, Yb + j, j === -14 || j === -6 || i === 0 || i === 16 ? C.wood[0] : j % 2 === 0 && i > 2 && i < 14 && hashPx(i, j, x) < 0.7 ? 0x4a4a4a : 0xf0e8d4);
+        for (let i = -2; i < 19; i++) {
+          img.px(X + i, Yb - 16, C.kawara[3]);
+          img.px(X + i, Yb - 15, C.kawara[1]);
+        }
+      },
+    });
+  };
+  /** A clipped hedge of azaleas between two u's: lit along its upper edge, a shade at its foot, a late flower here and there. */
+  const hedge = (x0, x1, u0, u1, seed = 1) => {
+    img.fine(x0, Y(u1), x1 - x0, u1 - u0, (X, Yy, x, y) => {
+      const t = (y - Y(u1)) / Math.max(1, u1 - u0);
+      const g = hashPx(X >> 1, Yy >> 1, seed);
+      const c = rampColor(C.camphor, Math.max(0.05, Math.min(0.98, 0.92 - t * 0.75 + (g - 0.5) * 0.35)), X, Yy);
+      return hashPx(X, Yy, seed + 1) > 0.988 ? 0xe85a70 : c;
+    });
+    for (let X = x0 * S; X < x1 * S; X++) for (let j = 0; j < 4; j++) img.tintPx(X, Y(u0) * S + j, 0.66 + j * 0.07);
+    reserveRect(x0, Y(u1), x1 - x0, u1 - u0);
+  };
+  const gravelWay = (X, Yy) => {
+    const g = hashPx(X, Yy, 141);
+    return g < 0.1 ? scaleColor(C.gravel[0], 0.84) : g > 0.92 ? scaleColor(C.gravel[3], 1.06) : rampColor(C.gravel, hashPx(X >> 1, Yy >> 1, 142), X, Yy);
+  };
 
   // ------------------------------------------------------------ 2. roads, tramways & bridges (traffic keeps left)
   // West boulevard (cx = 34, hw = 10): car lanes and the double Hiroden track, u = 714..2705
@@ -1499,6 +1859,7 @@ export function buildMid() {
     lawnFill(HON.x0 + 1, Y(HON.back), HON.x1 - HON.x0 - 2, HON.back - JODAN.top, C.lawn, 153);
     stoneFace(HON.x0 + 1, HON.x1 - 1, Y(JODAN.top), JODAN.top - JODAN.face, 154);
     stairs(104, Y(JODAN.top) - 1, 9, JODAN.top - JODAN.face + 2);
+    gravelPath(104, 121, JODAN.face - 7, JODAN.face);
 
     // the Omote-gomon bridge: a wooden bridge on posts across the moat to the main gate
     {
@@ -1605,7 +1966,114 @@ export function buildMid() {
       return j === 0 ? C.kawara[4] : j < 3 ? (X % 3 === 0 ? C.kawara[3] : C.kawara[2]) : j === 3 ? C.kawara[0] : X % 15 === 0 ? C.plaster[0] : C.plaster[1];
     });
 
-    // ---- the Honmaru (lower): the Gokoku Shrine on the approach from the Chūgomon
+    // ---- the Honmaru (lower): the Gokoku Shrine on the approach from the Chūgomon, in its gravel precinct behind a
+    // vermilion fence; the walks out to the hibaku trees and the Headquarters ruins
+    {
+      const px0 = 62;
+      const px1 = 122;
+      const pu0 = 344;
+      const pu1 = 426;
+      img.fine(px0, Y(pu1), px1 - px0, pu1 - pu0, (X, Yy) => {
+        const c = gravelWay(X, Yy);
+        return Yy % 7 === 0 ? scaleColor(c, 0.95) : c;
+      });
+      // the fence: vermilion posts and rails, open where the approach comes in
+      objects.push({
+        y: Y(pu0) + 1,
+        draw: () => {
+          const X0 = px0 * S;
+          const X1 = px1 * S;
+          const Yb = Y(pu0) * S;
+          const Yt = Y(pu1) * S;
+          for (let X = X0; X < X1; X++) {
+            if (Math.abs(X - 92 * S) < 21) continue;
+            img.px(X, Yb - 6, C.vermilion[3]);
+            img.px(X, Yb - 5, C.vermilion[1]);
+            img.px(X, Yb - 2, C.vermilion[1]);
+            if ((X - X0) % 12 < 2) for (let j = -7; j < 1; j++) img.px(X, Yb + j, (X - X0) % 12 === 0 ? C.vermilion[3] : C.vermilion[1]);
+            img.tintPx(X, Yb + 1, 0.72);
+          }
+          for (let X = X0; X < X1; X++) {
+            if (Math.abs(X - 116 * S) < 14) continue;
+            img.px(X, Yt, C.vermilion[2]);
+            img.px(X, Yt + 1, C.vermilion[0]);
+          }
+          for (let Yy = Yt; Yy < Yb; Yy++) {
+            img.rectPx(X0, Yy, 2, 1, Yy % 12 < 2 ? C.vermilion[3] : C.vermilion[2]);
+            img.rectPx(X1 - 2, Yy, 2, 1, Yy % 12 < 2 ? C.vermilion[1] : C.vermilion[0]);
+          }
+        },
+      });
+      reserveRect(px0, Y(pu1), px1 - px0, pu1 - pu0);
+      // the guardian dogs on their plinths at the entrance
+      for (const x of [79, 106]) {
+        objects.push({
+          y: Y(348) + 1,
+          shadow: () => shadowRect(x + 1, Y(350), 5, 3, 0.72),
+          draw: () => {
+            const X = x * S;
+            const Yb = Y(348) * S;
+            for (let j = -5; j < 0; j++) for (let i = -1; i < 12; i++) img.px(X + i, Yb + j, j === -5 ? C.granite[4] : i > 9 ? C.granite[0] : C.granite[2]);
+            for (let j = -14; j < -5; j++) for (let i = 2; i < 9; i++) img.px(X + i, Yb + j, i < 4 ? C.granite[4] : i > 7 ? C.granite[1] : C.granite[3]);
+            for (let i = 2; i < 9; i++) for (const j of [-17, -16, -15]) img.px(X + i, Yb + j, i === 2 || j === -17 ? C.granite[4] : C.granite[3]);
+            img.px(X + 4, Yb - 15, C.granite[0]);
+            img.px(X + 7, Yb - 15, C.granite[0]);
+          },
+        });
+      }
+      // a rack of omikuji, paper fortunes knotted along its wires; a great sacred camphor with its rope
+      objects.push({
+        y: Y(360) + 1,
+        shadow: () => shadowRect(65, Y(362), 8, 2, 0.74),
+        draw: () => {
+          const X = 63 * S;
+          const Yb = Y(360) * S;
+          for (const i of [0, 26]) for (let j = -14; j < 0; j++) img.px(X + i, Yb + j, C.wood[0]);
+          for (const j of [-13, -9, -5]) for (let i = 0; i < 27; i++) img.px(X + i, Yb + j, i % 2 ? 0xf8f6f0 : 0xdcd8cc);
+        },
+      });
+      tree(70, Y(398), 7.5, C.camphor, 1603);
+      objects.push({
+        y: Y(398) + 6,
+        draw: () => {
+          for (let i = -12; i <= 12; i++) {
+            const sag = Math.round(Math.abs(i) * -0.12 + 2);
+            img.px(70 * S + i, Y(398) * S + sag + 6, (i + 12) % 4 < 2 ? 0xe8dcb0 : 0xa89468);
+            if (i % 6 === 0) for (let j = 0; j < 5; j++) img.px(70 * S + i, Y(398) * S + sag + 7 + j, 0xf8f4ec);
+          }
+        },
+      });
+      for (const [x, u] of [[67, 352], [108, 348], [67, 420], [106, 422]]) niwaki(x, u, 0.9, x + u);
+      standing(66, Y(392), 8, 18, 3, 1604);
+      standing(113, Y(392), 5, 18, 3, 1605);
+      // the walks: the approach to the path on up to the terrace; out to the two old trees that survived the bomb; to
+      // the Headquarters ruins
+      way([[92, 344], [92, 354], [116, 362], [116, 428]], 2.8, { kerb: null, paint: (X, Yy) => settPx(X, Yy, 25, C.granite) });
+      way([[92, 304], [132, 304], [146, 290]], 2.6, { paint: gravelWay });
+      way([[92, 304], [40, 304], [30, 288]], 2.6, { paint: gravelWay });
+      way([[62, 340], [46, 366], [46, 408]], 2.6, { paint: gravelWay });
+      way([[62, 340], [86, 334]], 2.6, { paint: gravelWay });
+      noticeBoard(136, 300);
+      noticeBoard(38, 300);
+      noticeBoard(38, 404);
+      // low iron fences round the survivors
+      for (const [cx, cu, r] of [[146, 300, 11], [28, 296, 9]])
+        for (let a = 0; a < 6.283; a += 0.04) {
+          const X = Math.round((cx + Math.cos(a) * r) * S);
+          const Yy = Math.round(Y(cu) * S + Math.sin(a) * r * 0.8 * S);
+          img.px(X, Yy, 0x3a3a40);
+          if (Math.round(a * 25) % 8 === 0) img.px(X, Yy - 1, 0x3a3a40);
+        }
+      for (const [x, u] of [[120, 310], [64, 310], [130, 326], [52, 326], [146, 360], [34, 360], [146, 430], [132, 468], [150, 500], [30, 500], [124, 500]]) niwaki(x, u, 1, x * 3 + u);
+      for (const u of [316, 336]) for (const x of [80, 104]) bench(x + (x < 92 ? -6 : 3), Y(u), 4);
+      hedge(18, 84, 278, 283, 1606);
+      hedge(100, 162, 278, 283, 1607);
+      standing(92, Y(322), 4, 10, 3, 1608);
+      standing(132, Y(302), 8, 3, 4, 1609);
+      standing(36, Y(308), 8, 3, 3, 1611);
+      strollers(92, 300, 40, 4, 3, { sp: 3 });
+      strollers(46, 380, 2, 24, 2, { sp: 3 });
+    }
     gravelPath(86, 97, HON.top, 352);
     for (const [lx, lu] of [[83, 300], [100, 300], [83, 324], [100, 324]]) stoneLantern(lx, lu, false);
     // the great torii (bronze-dark) over the approach
@@ -1669,11 +2137,15 @@ export function buildMid() {
     // the A-bombed eucalyptus and willow by the moat (they still grow there), and the castle woods
     tree(146, Y(300), 7, [0x3a5a4a, 0x4e7260, 0x6a8c78, 0x8eaa96], 1601);
     tree(28, Y(296), 6, C.willow, 1602);
-    gravelPath(104, 113, 352, JODAN.face);
-    gravelPath(40, 104, 474, 481);
-    grove(HON.x0 + 4, HON.x1 - 4, HON.top + 6, JODAN.face - 6, 70, [C.camphor, C.camphor, C.pine, C.ginkgo, C.momijiR, C.sakuraAut], 1610, 4, 7);
-    strollers(92, 450, 40, 30, 6);
-    strollers(56, 360, 20, 30, 3);
+    gravelPath(112, 121, 426, JODAN.face);
+    gravelPath(40, 113, 474, 481);
+    way([[46, 466], [46, 476]], 2.6, { paint: gravelWay });
+    noticeBoard(52, 470);
+    for (let x = 24; x < 100; x += 13) tree(x + ((x * 7) % 5), Y(508 - ((x * 3) % 6)), 4.6, x % 3 ? C.sakuraAut : C.momijiO, x + 1630);
+    for (const x of [34, 60, 86]) bench(x, Y(490), 5);
+    grove(HON.x0 + 4, HON.x1 - 4, HON.top + 6, JODAN.face - 6, 130, [C.camphor, C.camphor, C.pine, C.ginkgo, C.momijiR, C.sakuraAut], 1610, 4, 7);
+    strollers(70, 477, 28, 2, 3, { sp: 3 });
+    strollers(116, 470, 2, 40, 3, { sp: 3 });
 
     // ---- the keep: five storeys on the tenshudai at the north-west of the upper Honmaru
     const castleKeep = (cx, uBase) => {
@@ -1846,19 +2318,69 @@ export function buildMid() {
       reserveRect(cx - baseW / 2 - 2, y0 - 120, baseW + 4, 124);
     };
     castleKeep(58, 560);
-    // the upper Honmaru: the palace's foundation stones in the lawn, pines and a great camphor behind the keep
-    for (let u = 572; u < 640; u += 9)
-      for (let x = 112; x < 150; x += 8) {
-        if ((x * 3 + u) % 5 === 0) continue;
-        rockPx(x * S, Y(u) * S, 2.6, C.granite, x + u);
+    // the upper Honmaru: paths right round the keep, the palace's foundation stones laid out in their bed of gravel, a
+    // hedge along the terrace's edge, trained pines, a kiosk and notice boards, visitors; a lookout over the moat at the back
+    {
+      // the bed of the palace, a low kerb round it, moss creeping over the gravel
+      img.fine(109, Y(646), 44, 78, (X, Yy, x, y) => {
+        const e = Math.min(x - 109, 153 - x, y - Y(646), Y(568) - y);
+        if (e < 0.5) return hashPx(X >> 2, Yy >> 2, 151) < 0.5 ? C.granite[3] : C.granite[1];
+        const m = fbm(x, y, { seed: 152, scale: 3, octaves: 2 });
+        if (m > 0.68 || (e < 2.5 && hashPx(X >> 1, Yy >> 1, 153) < 0.5)) return lawnPx(X, Yy, m, C.moss);
+        return gravelWay(X, Yy);
+      });
+      reserveRect(109, Y(646), 44, 78);
+      for (let u = 572; u < 640; u += 9)
+        for (let x = 112; x < 150; x += 8) {
+          if ((x * 3 + u) % 5 === 0) continue;
+          rockPx(x * S, Y(u) * S, 3.2, C.granite, x + u);
+        }
+      way([[108, JODAN.top], [108, 562]], 4.5, { paint: gravelWay });
+      way([[116, 518], [108, 526]], 4, { kerb: null, paint: gravelWay });
+      way([[108, 556], [24, 556], [24, 662], [64, 668], [100, 650]], 2.8, { paint: gravelWay });
+      way([[108, 560], [105, 600], [100, 650], [96, 672]], 3, { paint: gravelWay });
+      way([[108, 562], [156, 562], [156, 650], [103, 650]], 2.8, { paint: gravelWay });
+      // the lookout: flags, benches, a rail over the moat
+      flagFill(82, Y(687), 30, 12, C.plaza, 155, 12);
+      reserveRect(82, Y(687), 30, 12);
+      for (let X = 82 * S; X < 112 * S; X++) {
+        img.px(X, Y(687) * S, 0x4a4a50);
+        if (X % 12 < 2) for (let j = 0; j < 5; j++) img.px(X, Y(687) * S + j, 0x3a3a40);
       }
-    gravelPath(104, 113, JODAN.top, 560);
-    gravelPath(80, 113, 553, 560);
-    grove(HON.x0 + 3, HON.x1 - 3, JODAN.top + 6, HON.back - 2, 44, [C.pine, C.pine, C.camphor, C.momijiO, C.ginkgo], 1620, 4, 6.5);
-    grove(92, HON.x1 - 3, JODAN.top + 4, HON.back - 2, 30, [C.camphor, C.pine, C.momijiR, C.sakuraAut, C.ginkgo], 1621, 4, 6);
-    grove(HON.x0 + 3, 40, JODAN.top + 4, HON.back - 2, 14, [C.pine, C.camphor, C.momijiO], 1622, 4, 6);
-    strollers(128, 600, 22, 30, 4);
-    schoolGroup([[108, 536], [108, 552], [86, 556]], 8, 550, 0.3);
+      for (const x of [85, 101]) bench(x, Y(680), 6);
+      standing(86, Y(686), 22, 2, 6, 1623);
+      // the hedge along the terrace's edge, broken for the stair
+      hedge(18, 102, JODAN.top + 1, JODAN.top + 5, 1624);
+      hedge(115, 162, JODAN.top + 1, JODAN.top + 5, 1625);
+      // a kiosk by the keep's steps, with benches; notice boards at the turnings
+      flagFill(116, Y(552), 26, 16, C.plaza, 156, 12);
+      reserveRect(116, Y(552), 26, 16);
+      hall(118, Y(551), 16, 7, 4, C.kawara, 'shop', { noren: 0x2a3a6a, wall: C.oldWood[1] });
+      bench(119, Y(539), 5);
+      bench(128, Y(539), 5);
+      standing(118, Y(540), 12, 2, 4, 1626);
+      noticeBoard(84, 552);
+      noticeBoard(158, 566);
+      noticeBoard(26, 620);
+      noticeBoard(103, 608);
+      for (const [x, u] of [[100, 542], [118, 556], [40, 545], [60, 545], [80, 543], [16, 600], [18, 640], [34, 650], [160, 580], [160, 620], [160, 640], [116, 656], [136, 656], [150, 540], [92, 572]]) niwaki(x, u, 1.05, x * 5 + u);
+      // visitors: a group having its picture taken before the keep, others going round
+      standing(50, Y(552), 26, 5, 14, 1627);
+      standing(60, Y(547), 5, 2, 2, 1628);
+      for (const [pts, s0, k] of [
+        [[[108, 562], [156, 562], [156, 650], [103, 650], [105, 600], [108, 562]], 0.1, 1],
+        [[[108, 562], [156, 562], [156, 650], [103, 650], [105, 600], [108, 562]], 0.55, 2],
+        [[[108, 556], [24, 556], [24, 662], [64, 668], [100, 650], [105, 600], [108, 556]], 0.3, 5],
+        [[[108, 556], [24, 556], [24, 662], [64, 668], [100, 650], [105, 600], [108, 556]], 0.8, 3],
+      ]) {
+        const c = COATS[k];
+        kit.path(pts, [walker(c, 0, 600), walker(c, 1, 600)], { sp: 3.5, turn: 'flip', fps: 3, s0 });
+      }
+      grove(HON.x0 + 3, HON.x1 - 3, JODAN.top + 6, HON.back - 2, 90, [C.pine, C.pine, C.camphor, C.momijiO, C.ginkgo], 1620, 4, 6.5);
+      grove(92, HON.x1 - 3, JODAN.top + 4, HON.back - 2, 50, [C.camphor, C.pine, C.momijiR, C.sakuraAut, C.ginkgo], 1621, 4, 6);
+      grove(HON.x0 + 3, 40, JODAN.top + 4, HON.back - 2, 24, [C.pine, C.camphor, C.momijiO], 1622, 4, 6);
+      schoolGroup([[108, 536], [108, 552], [86, 556]], 8, 550, 0.3);
+    }
 
     // ---- life on the moat: koi in the clear water, ducks paddling, a grey heron fishing by the bridge,
     // glints, visitors crossing to the gate
@@ -3864,136 +4386,6 @@ export function buildMid() {
       kit.spot([[8, 3300, 150, 260], [8, 3900, 150, 300], [8, 4400, 150, 260]], cp, { rate: 0.5, fps: 3, a: 0.55 });
     }
   }
-
-  // ------------------------------------------------------------ helpers of the island (sections 8 and 9)
-  /** Setts laid in courses: long stones, staggered, each its own tone. */
-  const settPx = (X, Yy, seed = 0, ramp = C.paving) => {
-    const r = Math.floor(Yy / 5);
-    const XX = X + r * 4;
-    if (Yy % 5 === 0 || XX % 9 === 0) return scaleColor(ramp[0], 0.82);
-    let c = rampColor(ramp, 0.15 + hashPx(Math.floor(XX / 9), r, seed + 81) * 0.75, X, Yy);
-    const g = hashPx(X, Yy, seed + 82);
-    if (g < 0.06) c = scaleColor(c, 0.91);
-    else if (g > 0.97) c = scaleColor(c, 1.07);
-    return c;
-  };
-  /** A beaten earth trail with roots, pebbles and fallen leaves. */
-  const earthPx = (X, Yy, seed = 0) => {
-    let c = rampColor(C.dirt, 0.2 + hashPx(X >> 2, Yy >> 1, seed + 83) * 0.55, X, Yy);
-    const g = hashPx(X, Yy, seed + 84);
-    if (g > 0.985) c = 0xd65a28;
-    else if (g > 0.97) c = 0xe0a030;
-    else if (g < 0.05) c = 0x6e6a60;
-    else if (g < 0.12) c = scaleColor(c, 0.88);
-    return c;
-  };
-  /**
-   * A way through the island: everything within hw of the polyline pts [x, u], with round corners and a kerb, so
-   * branches join their road cleanly. paint(X, Yy, d, x, y) gives the surface (default setts); kerb: its colour.
-   */
-  const way = (pts, hw, opt = {}) => {
-    const P = pts.map(([x, u]) => [x, L - u]);
-    const x0 = Math.floor(Math.min(...P.map((p) => p[0])) - hw - 1);
-    const x1 = Math.ceil(Math.max(...P.map((p) => p[0])) + hw + 1);
-    const y0 = Math.floor(Math.min(...P.map((p) => p[1])) - hw - 1);
-    const y1 = Math.ceil(Math.max(...P.map((p) => p[1])) + hw + 1);
-    const kerb = opt.kerb === undefined ? C.stone[1] : opt.kerb;
-    const paint = opt.paint ?? ((X, Yy) => settPx(X, Yy, opt.seed ?? 0));
-    img.fine(Math.max(0, x0), y0, Math.min(W, x1) - Math.max(0, x0), y1 - y0, (X, Yy, x, y) => {
-      if (fineWater[Yy * FW + X] && !opt.overWater) return null;
-      let d = 1e9;
-      for (let k = 0; k + 1 < P.length; k++) {
-        const [ax, ay] = P[k];
-        const [bx, by] = P[k + 1];
-        const vx = bx - ax;
-        const vy = by - ay;
-        const t = Math.max(0, Math.min(1, ((x - ax) * vx + (y - ay) * vy) / (vx * vx + vy * vy || 1)));
-        d = Math.min(d, Math.hypot(x - ax - t * vx, y - ay - t * vy));
-      }
-      if (d > hw) return null;
-      if (kerb !== null && d > hw - 0.55) return hashPx(X >> 1, Yy >> 1, 85) < 0.5 ? kerb : scaleColor(kerb, 1.14);
-      return paint(X, Yy, d, x, y);
-    });
-    for (let k = 0; k + 1 < P.length; k++) {
-      const n = Math.ceil(Math.hypot(P[k + 1][0] - P[k][0], P[k + 1][1] - P[k][1]) / 2);
-      for (let i = 0; i <= n; i++) {
-        const cx = P[k][0] + ((P[k + 1][0] - P[k][0]) * i) / Math.max(1, n);
-        const cy = P[k][1] + ((P[k + 1][1] - P[k][1]) * i) / Math.max(1, n);
-        reserveRect(cx - hw, cy - hw, hw * 2, hw * 2);
-      }
-    }
-  };
-  /** Woods: n trees in a rectangle, skipping reserved ground, water and whatever skip(x, y) refuses. */
-  const woods = (x0, x1, u0, u1, n, pals, seed, rMin, rMax, skip) => {
-    const g = rng(seed);
-    for (let k = 0; k < n; k++) {
-      const x = x0 + g() * (x1 - x0);
-      const u = u0 + g() * (u1 - u0);
-      const r = rMin + g() * (rMax - rMin);
-      const pal = pals[Math.floor(g() * pals.length)];
-      const y = Y(u);
-      if (anyRes(x - r * 0.7, y - r * 0.5, r * 1.4, r * 1.2) || W_(Math.round(x), y) || wet[y * W + Math.round(x)] || skip?.(x, y)) continue;
-      tree(x, y, r, pal, seed * 7 + k * 131, pal === C.pine ? 'pine' : 'broadleaf');
-    }
-  };
-  /** People standing on something drawn as an object (a deck, a terrace), so they stay on top of it. */
-  const standing = (x0, y0, w, h, n, seed, cols = COATS) => {
-    const g = rng(seed);
-    for (let i = 0; i < n; i++) {
-      const x = x0 + g() * w;
-      const y = y0 + g() * h;
-      const coat = g() < 0.65 ? cols[Math.floor(g() * cols.length)] : 0x3a3a4a;
-      const X = Math.round(x * S);
-      const Yy = Math.round(y * S);
-      objects.push({ y: y + 1.7, draw: () => personPx(X, Yy, rng(X * 977 + Yy * 13), { coat }) });
-    }
-  };
-  /** A granite boulder: lumpy outline, facets catching the low sun, cracks, lichen and moss on its top. */
-  const boulderPx = (bx, bu, rx, ry, seed, moss = 0.5) => {
-    const by = Y(bu);
-    const sc = Math.max(2.4, rx * 0.3);
-    objects.push({
-      y: by + ry,
-      shadow: () => shadowEllipse(bx + 3, by + 3, rx, ry * 0.8, 0.6),
-      draw: () =>
-        img.fine(bx - rx - 2, by - ry - 2, 2 * rx + 4, 2 * ry + 4, (X, Yy, x, y) => {
-          const dx = x - bx;
-          const dy = y - by;
-          const d = (dx / rx) ** 2 + (dy / ry) ** 2 + (fbm(x, y, { seed: seed + 800, scale: rx * 0.7, octaves: 2 }) - 0.5) * 0.7;
-          if (d > 0.84) return null;
-          const h = fbm(x, y, { seed: seed + 801, scale: sc, octaves: 3 });
-          const h2 = fbm(x + 0.8, y + 0.8, { seed: seed + 801, scale: sc, octaves: 3 });
-          const sh = 0.5 - (dx / rx) * 0.3 - (dy / ry) * 0.42 + (h - h2) * 6;
-          let c = rampColor(C.granite, Math.max(0.02, Math.min(0.98, sh)), X, Yy);
-          if (Math.abs(fbm(x, y, { seed: seed + 802, scale: sc * 1.4 }) - 0.5) < 0.012) c = scaleColor(c, 0.62);
-          if (dy < 0 && fbm(x, y, { seed: seed + 803, scale: 2.4, octaves: 2 }) > 1.02 - moss * (0.6 - dy / ry * 0.5)) c = rampColor(C.moss, 0.3 + hashPx(X >> 1, Yy >> 1, 86) * 0.6, X, Yy);
-          if (d > 0.72 && dx + dy > 0) c = scaleColor(c, 0.78);
-          const g = hashPx(X, Yy, seed & 255);
-          return g < 0.07 ? scaleColor(c, 0.9) : g > 0.96 ? scaleColor(c, 1.08) : c;
-        }),
-    });
-    reserveRect(bx - rx * 0.9, by - ry * 0.9, rx * 1.8, ry * 1.8);
-  };
-  /** A boat from above, its bow to the right: a pointed hull, its deck, and whatever paint() puts on it. */
-  const hullIsle = (w, h, u, hullC, deck, paint) =>
-    sprite(w, h, u, (r) => {
-      const FL = w * S;
-      const FHh = h * S;
-      const mid = (FHh - 1) / 2;
-      for (let X = 0; X < FL; X++) {
-        const t = FL - 1 - X;
-        const hw = Math.min(FHh / 2 - 0.5, 1 + Math.pow(t, 0.72) * (FHh / 2 / Math.pow(FL * 0.3, 0.72)));
-        for (let Yy = 0; Yy < FHh; Yy++) {
-          const a = Math.abs(Yy - mid);
-          if (a > hw) continue;
-          const e = hw - a;
-          let c = e < 1.2 ? (Yy > mid ? scaleColor(hullC, 0.66) : scaleColor(hullC, 1.2)) : e < 2.4 ? hullC : deck;
-          if (X < 2) c = scaleColor(hullC, 0.66);
-          r.px(X, Yy, c);
-        }
-      }
-      paint(r, FL, FHh);
-    });
 
   // the island's woods stand on a floor of moss and leaf litter, its slopes catching the low sun
   {
