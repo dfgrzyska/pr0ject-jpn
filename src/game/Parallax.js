@@ -11,7 +11,7 @@ import { Props } from './Props.js';
 //          wisps of hot-spring steam (Beppu)
 // On top of the mid layer, the parts of the strip that move (steam, wheels, boats...): see Props.js.
 const CAMERA_ROW = 0.72; // how far down the screen the camera looks straight down (the strip's art looks north)
-const CAMERA_FOLLOW = 0.5; // how much of the ship's move from the middle the camera takes
+const CAMERA_FOLLOW = 0.3; // how much of the ship's move from the middle the camera takes
 
 export class Parallax {
   constructor(scene, stage, meta) {
