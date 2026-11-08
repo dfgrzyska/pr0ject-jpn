@@ -1716,7 +1716,7 @@ export function buildMid() {
             let m = 0;
             for (let k = -4; k <= 4; k++) m += rowMax.get(y + k) ?? rowMax.get(y);
             const end = (m / 9) * S;
-            for (let Yy = y * S; Yy < (y + 1) * S; Yy++) for (let X = x0 * S; X < end; X++) img.tintPx(X, Yy, end - X < 2 ? 0.8 : 0.6);
+            for (let Yy = y * S; Yy < (y + 1) * S; Yy++) for (let X = x0 * S; X < end; X++) img.tintPx(X, Yy, end - X < 2 ? 0.86 : 0.72);
           }
         },
         draw: () => {
@@ -2037,11 +2037,65 @@ export function buildMid() {
     img.fine(gx0, Y(g1 - 1), gx1 - gx0, 2, (X, Yy) => (Yy - Y(g1 - 1) * S < 3 ? (X % 3 === 0 ? C.kawara[3] : C.kawara[2]) : C.plaster[1]));
     hall(84, Y(g0 + 10), 17, 6, 4, C.kawara, 'temple', { open: true, gable: 'tri', gw: 7, crest: false });
     gravelPath(88, 97, g0 + 4, g0 + 62);
-    img.fine(56, Y(g0 + 52), 74, 46, (X, Yy) => {
-      const g = hashPx(X, Yy, 211);
-      return g < 0.1 ? C.gravel[0] : g > 0.92 ? C.gravel[3] : rampColor(C.gravel, 0.3 + hashPx(X >> 1, Yy >> 1, 212) * 0.5, X, Yy);
-    });
-    hall(122, Y(g0 + 30), 10, 5, 4, C.kawara, 'shop', { noren: 0x2a3a6a }); // the ticket office
+    {
+      const fx0 = 56;
+      const fx1 = 130;
+      const fu0 = g0 + 6;
+      const fu1 = g0 + 52;
+      // the raked gravel, its lines swinging round the two great rock groups
+      const RG = [[76, 776, 7], [106, 748, 6], [72, 744, 4], [112, 778, 4]];
+      img.fine(fx0, Y(fu1), fx1 - fx0, fu1 - fu0, (X, Yy, x, y) => {
+        const u = L - y;
+        let d = 1e9;
+        for (const [rx, ru, rr] of RG) d = Math.min(d, Math.hypot(x - rx, (u - ru) * 1.1) - rr);
+        let ln;
+        if (d < 8) ln = Math.floor((d * S) / 1.5) % 4 === 0;
+        else ln = Math.floor(Yy + Math.sin(x * 0.2) * 2.4) % 5 === 0;
+        const g = hashPx(X, Yy, 211);
+        const c = rampColor(C.gravel, 0.45 + hashPx(X >> 1, Yy >> 1, 212) * 0.45, X, Yy);
+        if (ln) return scaleColor(c, 0.84);
+        return g < 0.05 ? C.gravel[0] : g > 0.95 ? scaleColor(C.gravel[3], 1.05) : c;
+      });
+      // the stone kerb and the moss round the gravel
+      img.fine(fx0 - 1, Y(fu1) - 1, fx1 - fx0 + 2, fu1 - fu0 + 2, (X, Yy, x, y) => {
+        const e = Math.min(x - fx0, fx1 - x, y - Y(fu1), Y(fu0) - y);
+        if (e >= 0.2) return null;
+        return hashPx(X >> 2, Yy >> 2, 213) < 0.5 ? C.stone[2] : C.stone[3];
+      });
+      // the walk: granite flags, moss in their joints, up from the gate to the pond path
+      img.fine(88, Y(g0 + 62), 9, 58, (X, Yy) => {
+        const fl = 15;
+        const XX = X + (Math.floor(Yy / fl) % 2) * 7;
+        if (X - 88 * S < 2 || 97 * S - X <= 2) return hashPx(X, Yy, 214) < 0.5 ? C.moss[1] : C.moss[2];
+        if (XX % fl === 0 || Yy % fl === 0) return hashPx(X >> 1, Yy >> 1, 215) < 0.4 ? C.moss[1] : C.granite[0];
+        return rampColor(C.granite, 0.35 + hashPx(Math.floor(XX / fl), Math.floor(Yy / fl), 216) * 0.45, X, Yy);
+      });
+      // the rock groups, standing in the gravel, each with its low mound of moss
+      for (const [rx, ru, rr] of RG) {
+        img.fine(rx - rr - 1, Y(ru) - rr, 2 * rr + 3, 2 * rr, (X, Yy, x, y) => {
+          const d = Math.hypot(x - rx, (L - y - ru) * 1.1) / rr;
+          if (d > 1) return null;
+          return lawnPx(X, Yy, 0.2 + (1 - d) * 0.5, C.moss);
+        });
+        const K = [[0, 0, 1], [-0.55, 0.15, 0.62], [0.5, -0.2, 0.55]];
+        for (const [ax, ay, ar] of K) rockPx((rx + ax * rr) * S, (Y(ru) + ay * rr) * S, ar * rr * 1.25, C.granite, rx + ru + Math.round(ax * 7));
+      }
+      // clipped azalea hedges along the sides, a dwarf pine and lantern at the corners
+      for (const [x0, x1] of [[fx0 - 7, fx0 - 1], [fx1 + 1, fx1 + 7]]) {
+        img.fine(x0, Y(fu1), x1 - x0, fu1 - fu0, (X, Yy, x) => {
+          const g = hashPx(X >> 1, Yy >> 1, 217);
+          const shade = (x - x0) / (x1 - x0);
+          const c = rampColor(C.camphor, Math.max(0.05, 0.85 - shade * 0.7 + (g - 0.5) * 0.4), X, Yy);
+          if (hashPx(X, Yy, 218) > 0.985) return 0xe85a70;
+          return Yy % 18 === 0 ? scaleColor(c, 0.76) : c;
+        });
+        for (let X = x0 * S; X < x1 * S; X++) for (let j = 0; j < 4; j++) img.tintPx(X, Y(fu0) * S + j, 0.68 + j * 0.06);
+      }
+      reserveRect(fx0 - 7, Y(fu1), fx1 - fx0 + 14, fu1 - fu0);
+      for (const [lx, lu] of [[86, 744], [99, 744], [86, 766], [99, 766]]) stoneLantern(lx, lu, true);
+      for (const [tx, tu] of [[60, 742], [126, 742], [60, 780], [90 - 28, 790], [124, 792]]) tree(tx, Y(tu), 3, C.pine, tx * 7 + tu, 'pine');
+    }
+    hall(120, Y(g0 + 50), 11, 5, 4, C.kawara, 'shop', { noren: 0x2a3a6a }); // the ticket office
     // Seifūkan: the thatched main tea house looking over the pond from the south-west
     hall(54, Y(856), 26, 12, 5, C.thatch, 'temple', { hip: true, ridge: true, wall: 0xe8e0c8, bay: 4 });
     img.fine(55, Y(831), 24, 2, (X, Yy) => (X % 6 === 0 ? C.hinoki[0] : Yy % 3 === 0 ? C.hinoki[3] : C.hinoki[2])); // the veranda over the water
@@ -2981,7 +3035,7 @@ export function buildMid() {
     // ---- Heiwa Ōdōri: tree belts on both sides of the hundred-metre road
     for (let x = 4; x < W; x += 12) {
       if (Math.abs(x - WEST_CX) < 13 || Math.abs(x - EAST_CX) < 9) continue;
-      tree(x, Y(HEIWA - 14), 4.5, x % 24 ? C.camphor : C.ginkgo, 1900 + x);
+      if (Math.abs(x - AXIS) >= 8) tree(x, Y(HEIWA - 14), 4.5, x % 24 ? C.camphor : C.ginkgo, 1900 + x);
       tree(x + 6, Y(HEIWA + 15), 4.5, x % 24 ? C.ginkgo : C.camphor, 1950 + x);
     }
   }
@@ -3049,53 +3103,116 @@ export function buildMid() {
       },
     });
     building(px0 + 46, Y(2130), 46, 26, 20, { style: 'glass', wall: 0x6a7a8a });
-    // the Hondōri arcade: a long glass barrel vault over the shopping street, people walking under it (live)
+    // the Hondōri arcade: the shops on both sides of its street, the glass barrel vault over the street between them,
+    // its portals at the avenues, people walking under it (live)
     {
       const a0 = 2140;
       const a1 = 2186;
+      const st0 = 2152;
+      const st1 = 2170;
+      const SEGS = [[0, 22], [46, 140], [156, W]];
+      const NOR = [0xc83a2a, 0x2a5aa8, 0xe8c040, 0x2a7a5a, 0xe86aa0, 0x4a4048, 0xf0f0e8, 0xe87a30];
+      for (const [x0, x1] of SEGS) {
+        // the street: patterned paving, a dark strip of shade under each row
+        img.fine(x0, Y(st1), x1 - x0, st1 - st0, (X, Yy) => {
+          const k = (X + Yy) % 36 < 18 ? 0 : 1;
+          const j = Yy - Y(st1) * S;
+          const c = (X >> 2) % 6 === 0 || (Yy >> 2) % 6 === 0 ? 0x8a8478 : k ? 0xc8c0b0 : 0xb4ac9c;
+          return j < 8 ? scaleColor(c, 0.72) : c;
+        });
+        crowd(x0, Y(st1) + 1, x1 - x0 - 2, st1 - st0 - 3, Math.round((x1 - x0) * 0.42), true);
+        // the row facing us, each shop with its own roof, sign and open front
+        let x = x0;
+        let k = x0;
+        while (x < x1 - 4) {
+          const w = Math.min(x1 - x, 9 + ((k * 7) % 4) * 3);
+          const hx = x;
+          const nc = NOR[k % NOR.length];
+          building(hx, Y(a1), w - 1, 9, 9, {
+            style: 'shop',
+            front: (fy) => {
+              // the lit sign along the storey above, the shop open at street level, its wares, a banner
+              const X0 = hx * S;
+              const WW = (w - 1) * S;
+              const Yf = fy * S;
+              for (let i = 0; i < WW; i++) {
+                for (let j = 0; j < 8; j++) img.px(X0 + i, Yf + j, j === 0 || j === 7 ? 0x24242a : nc);
+                for (let j = 8; j < 27; j++) img.px(X0 + i, Yf + j, j < 12 ? 0x3a3438 : (i + (j >> 1)) % 7 === 0 ? 0xfff0c0 : j > 21 ? 0x6a5a48 : 0xe8d8a8);
+              }
+              for (let i = 3; i < WW - 3; i += 4) img.rectPx(X0 + i, Yf + 3, 2, 2, nc === 0xf0f0e8 ? 0x2a2026 : 0xffffff);
+              for (let i = 2; i < WW - 2; i += 6) for (let j = 21; j < 26; j++) img.px(X0 + i, Yf + j, NOR[(i + k) % NOR.length]);
+              for (let i = 0; i < WW; i += 9) glowPx(X0 + i + 4, Yf + 14, 0xffe0a0, 0.7);
+            },
+          });
+          x += w;
+          k += 3;
+        }
+        // the low row on the near side, its back and roof towards us
+        x = x0;
+        k = x0 + 2;
+        while (x < x1 - 4) {
+          const w = Math.min(x1 - x, 10 + ((k * 5) % 4) * 3);
+          building(x, Y(st0), w - 1, 9, 3, { style: 'shop' });
+          x += w;
+          k += 3;
+        }
+      }
+      reserveRect(0, Y(a1) - 1, W, a1 - a0 + 2);
       objects.push({
-        y: Y(a0) + 2,
-        shadow: () => shadowRect(2, Y(a1) + 4, W, a1 - a0, 0.55),
+        y: Y(st0) + 5,
+        shadow: () => {
+          for (const [x0, x1] of SEGS) shadowRect(x0 + 2, Y(st1) + 8, x1 - x0, st1 - st0 - 6, 0.82);
+        },
         draw: () => {
-          const YT = (Y(a1) - 6) * S;
-          const YB = (Y(a0) - 6) * S;
-          const skip = (X) => Math.abs((X + 0.5) / S - WEST_CX) <= WEST_HW + 1 || Math.abs((X + 0.5) / S - EAST_CX) <= EAST_HW + 1;
-          for (let Yy = YT; Yy < YB; Yy++) {
-            const t = Math.sin(((Yy - YT) / (YB - YT)) * Math.PI);
-            for (let X = 0; X < FW; X++) {
-              if (skip(X)) continue;
-              const k = X % 24;
-              // the barrel vault: steel ribs, purlins, panes of glass taking the sky, the shoppers dim below
-              if (k < 2) img.px(X, Yy, k === 0 ? 0xe8eef2 : 0x8a949c);
-              else if ((Yy - YT) % 36 < 2) img.px(X, Yy, (Yy - YT) % 36 === 0 ? 0xd0d8de : 0x8a949c);
-              else {
-                let c = t > 0.8 ? 0xc8e4f0 : t > 0.45 ? 0x9cc8dc : 0x6e9ab0;
-                if (Math.abs(((X + (Yy - YT) * 0.6) % 96) - 30) < 7) c = scaleColor(c, 1.14);
-                img.px(X, Yy, c, 0.82);
+          // the vault, standing a little above the street: panes in a steel frame, its ridge lantern catching the sky,
+          // the street and its crowd seen through the glass
+          const YT = (Y(st1) - 3) * S;
+          const YB = (Y(st0) - 5) * S;
+          for (const [x0, x1] of SEGS)
+            for (let Yy = YT; Yy < YB; Yy++) {
+              const q = (Yy - YT) / (YB - YT);
+              const t = Math.sin(q * Math.PI);
+              for (let X = x0 * S; X < x1 * S; X++) {
+                const i = X - x0 * S;
+                const e = Math.min(i, x1 * S - 1 - X);
+                if (Math.abs(q - 0.42) < 0.05) {
+                  img.px(X, Yy, i % 12 < 2 ? 0x8a949c : q < 0.42 ? 0xf0f6f8 : 0xc0d4dc);
+                  continue;
+                }
+                if (Yy - YT < 2 || YB - Yy <= 2) {
+                  img.px(X, Yy, Yy - YT < 1 ? 0xe8eef2 : 0x7a8088);
+                  continue;
+                }
+                if (e < 6) {
+                  // the portal at each end, with its coloured band
+                  img.px(X, Yy, e < 2 ? 0xe8eef2 : Yy % 12 < 6 ? 0xc83a2a : 0xf0ece0);
+                  continue;
+                }
+                const k = i % 36;
+                if (k < 2) img.px(X, Yy, k === 0 ? 0xe8eef2 : 0x8a949c);
+                else if (i % 12 === 0) img.px(X, Yy, 0xb0bcc4, 0.85);
+                else if ((Yy - YT) % 12 === 0) img.px(X, Yy, 0xb0bcc4, 0.7);
+                else {
+                  let c = t > 0.8 ? 0xc8e4f0 : t > 0.45 ? 0x9cc8dc : 0x6e9ab0;
+                  if (Math.abs(((X + (Yy - YT) * 0.6) % 96) - 30) < 7) c = scaleColor(c, 1.14);
+                  img.px(X, Yy, c, 0.42);
+                }
               }
             }
-          }
-          // the front: the lit shop signs along its foot
-          for (let X = 0; X < FW; X++) {
-            if (skip(X)) continue;
-            for (let j = 0; j < 18; j++) {
-              const Yr = YB + j;
-              if (j < 5) img.px(X, Yr, j === 0 ? 0xc0c8d0 : 0x6a7078);
-              else {
-                const b = Math.floor(X / 21);
-                const col = [0xffe0a0, 0xe84a3a, 0x4a4048, 0xf0f0e8, 0x3a8ac8, 0xffe0a0][b % 6];
-                img.px(X, Yr, X % 21 < 2 ? 0x24242a : j < 12 ? (j === 5 ? 0x24242a : col) : hashPx(X >> 2, b, 303) < 0.5 ? 0x4a4048 : 0x3a3438);
-              }
+          // banners and the arcade's name hung under the vault, read through the glass
+          for (const [x0, x1] of SEGS)
+            for (let X = x0 * S + 18; X < x1 * S - 18; X += 54) {
+              const c = NOR[(X >> 3) % NOR.length];
+              img.rectPx(X, YB - 12, 9, 7, c);
+              img.rectPx(X, YB - 13, 9, 1, 0x4a5058);
             }
-          }
         },
       });
-      reserveRect(0, Y(a1) - 7, W, a1 - a0 + 8);
       for (let k = 0; k < 10; k++) {
         const c = COATS[k % COATS.length];
-        const lane = a0 + 10 + ((k * 7) % 28);
+        const lane = st0 + 3 + ((k * 7) % 12);
         const pts = k % 2 ? [[px0 + 2, lane], [px1 - 2, lane]] : [[px1 - 2, lane], [px0 + 2, lane]];
-        kit.path(pts, [walker(c, 0, lane), walker(c, 1, lane)], { sp: 4 + (k % 3), mode: 'pp', hold: 1, turn: 'flip', fps: 3, s0: (k * 0.37) % 1, a: 0.75 });
+        kit.path(pts, [walker(c, 0, lane), walker(c, 1, lane)], { sp: 4 + (k % 3), mode: 'pp', hold: 1, turn: 'flip', fps: 3, s0: (k * 0.37) % 1, a: 0.8 });
       }
     }
     // the Honkawa: gangi on both banks, a rowing boat, a cruise boat, glints
@@ -3895,6 +4012,66 @@ export function buildMid() {
       const c = lawnPx(X, Yy, n, C.moss, true);
       return scaleColor(c, Math.max(0.68, Math.min(1.14, 0.86 + rel)));
     });
+  }
+
+  // ---- street trees down the two avenues: camphors along the boulevard, ginkgos turning yellow along the east avenue
+  {
+    const clear = (u) =>
+      CROSS_STREETS.every(([uc, hw]) => Math.abs(u - uc) > hw + 7) &&
+      !(u > MOTOYASU[0] - 12 && u < MOTOYASU[1] + 12) &&
+      !(u > HONKAWA[0] - 12 && u < HONKAWA[1] + 12) &&
+      !(u > 2132 && u < 2194);
+    for (let u = 736; u < 2692; u += 22) {
+      if (!clear(u)) continue;
+      const k = Math.floor(u / 22);
+      tree(22.6, Y(u), 3.3, k % 5 === 0 ? C.ginkgo : C.camphor, u + 11, 'broadleaf');
+      tree(45.6, Y(u + 11), 3.3, k % 5 === 2 ? C.ginkgo : C.camphor, u + 12, 'broadleaf');
+      tree(140.6, Y(u), 3.1, C.ginkgo, u + 13, 'broadleaf');
+      tree(155.6, Y(u + 11), 3.1, C.ginkgo, u + 14, 'broadleaf');
+    }
+  }
+  // ---- two pocket parks in the blocks to the coast: lawn, a gravel walk, big trees, benches, swings and a sandpit, a
+  // small shrine in the corner
+  {
+    const gravelW = (X, Yy) => {
+      const g = hashPx(X, Yy, 271);
+      return g < 0.1 ? scaleColor(C.gravel[0], 0.84) : g > 0.92 ? scaleColor(C.gravel[3], 1.06) : rampColor(C.gravel, hashPx(X >> 1, Yy >> 1, 272), X, Yy);
+    };
+    for (const [u0, u1, sd] of [[2468, 2514, 273], [2548, 2692, 274]]) {
+      lawnFill(47, Y(u1), 21, u1 - u0, C.lawn, sd);
+      for (const x of [47, 67]) img.fine(x, Y(u1), 1, u1 - u0, (X, Yy) => (hashPx(X >> 1, Yy >> 1, 275) < 0.5 ? C.camphor[1] : C.camphor[2]));
+      const pts = [];
+      for (let u = u0; u <= u1; u += 10) pts.push([56 + Math.sin((u - u0) / 22 + sd) * 4, u]);
+      way(pts, 1.8, { kerb: C.stone[2], paint: gravelW });
+      for (let u = u0 + 12; u < u1 - 6; u += 34) bench(49, Y(u), 4);
+      woods(47, 68, u0 + 2, u1 - 2, Math.round((u1 - u0) / 4), [C.camphor, C.ginkgo, C.sakuraAut, C.camphor], sd + 5, 3.5, 5.5);
+      strollers(56, (u0 + u1) / 2, 3, (u1 - u0) / 2 - 6, 2, { sp: 3 });
+    }
+    reserveRect(47, Y(2692), 21, 224);
+    // the swings and the sandpit
+    const Yb = Y(2600) * S;
+    const Xb = 60 * S;
+    objects.push({
+      y: Y(2598),
+      shadow: () => shadowRect(61, Y(2604), 7, 2, 0.74),
+      draw: () => {
+        img.fine(61, Y(2622), 6, 12, (X, Yy) => (hashPx(X, Yy, 276) < 0.1 ? 0xb0a080 : 0xd8c8a0));
+        for (const i of [0, 18]) for (let j = -12; j < 0; j++) img.px(Xb + i, Yb + j, 0xd83a2a);
+        for (let i = 0; i < 19; i++) img.px(Xb + i, Yb - 12, 0xe8c040);
+        for (const i of [5, 13]) {
+          for (let j = -11; j < -3; j++) img.px(Xb + i, Yb + j, 0x4a5058);
+          img.rectPx(Xb + i - 1, Yb - 3, 3, 1, C.wood[2]);
+        }
+      },
+    });
+  }
+  // ---- the park's edges: old camphors, ginkgos and cherries on the lawns beside the avenues and on the lawn before the
+  // Museum, a straight walk to it along the axis, its line kept open
+  {
+    way([[AXIS, 1890], [AXIS, 1965]], 3.4, { kerb: C.stone[2], paint: (X, Yy) => settPx(X, Yy, 24, C.plaza) });
+    for (const [x0, x1, u0, u1, n, sd] of [[0, 21, 1530, 1968, 34, 281], [157, W, 1530, 1968, 34, 282], [47, AXIS - 13, 1892, 1964, 16, 283], [AXIS + 13, 139, 1892, 1964, 16, 284]])
+      woods(x0, x1, u0, u1, n, [C.camphor, C.camphor, C.ginkgo, C.sakuraAut], sd, 3.5, 6);
+    for (const [x, u] of [[AXIS - 7, 1912], [AXIS + 5, 1912], [AXIS - 7, 1944], [AXIS + 5, 1944]]) bench(x, Y(u), 3);
   }
 
   // ---- Miyajimaguchi's forecourt (drawn here for the helpers above): the bus and taxi loop round its garden, the
