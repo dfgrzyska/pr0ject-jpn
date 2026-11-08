@@ -105,44 +105,6 @@ export function buildMid() {
       for (let x = Math.max(0, Math.floor(x0)); x < Math.min(W, x0 + w); x++) reserved[y * W + x] = 1;
   };
   const objects = [];
-  // the next object pushed is built up in levels instead of being painted on the strip (see liftedDraw)
-  let nextLift = null;
-  const liftNext = (o) => {
-    nextLift = o;
-  };
-  objects.push = (o) => {
-    if (nextLift) {
-      const opt = nextLift;
-      nextLift = null;
-      const draw0 = o.draw;
-      o.draw = () => liftedDraw(draw0, opt);
-    }
-    return Array.prototype.push.call(objects, o);
-  };
-  /** Where a building's levels sit among the moving parts: what stands further south is drawn over the rest. */
-  const liftOrder = (foot) => 0.18 + (0.28 * foot) / L;
-  /**
-   * Draw an object into its own frame, cut it across at the given rows and lay the bands one above the other as
-   * moving parts, each at a height z in proportion to how far up it is: from the camera's point of view the top
-   * of a tall thing leans away and its walls open up as it goes by. A band also carries a few rows from under its
-   * foot, so no gap opens between the levels. { x0, y0, w, h, z, n | cuts, foot }
-   */
-  const liftedDraw = (draw, { x0, y0, w, h, z, n = 5, cuts, foot = y0 + h }) => {
-    const out = capture(x0, y0, w, h, draw, { raw: true, pools: true, u: U(foot) });
-    const rows = cuts ?? Array.from({ length: n - 1 }, (_, i) => Math.round(y0 + ((i + 1) * h) / n));
-    const edges = [y0, ...rows.filter((r) => r > y0 && r < y0 + h).sort((a, b) => a - b), y0 + h];
-    const d = liftOrder(foot);
-    const au = U(foot);
-    const ax = x0 + w / 2;
-    for (let i = edges.length - 2; i >= 0; i--) {
-      const ya = edges[i];
-      const yb = i === edges.length - 2 ? edges[i + 1] : Math.min(y0 + h, edges[i + 1] + 4);
-      const band = out.crop(x0, ya, w, yb - ya);
-      if (!band.data.some((v, k) => k % 4 === 3 && v)) continue;
-      const lz = Math.max(0, (z * (foot - edges[i + 1])) / Math.max(1, foot - y0));
-      kit.loop(x0, U(ya), [kit.frame(band)], { fps: 1, z: lz || undefined, ax, au, d: d + (edges.length - i) * 1e-4 });
-    }
-  };
   const lights = [];
   const lightsFine = []; // single fine pixels lit after the grade: lamp panes, sparks, neon strokes
   const pools = [];
@@ -173,7 +135,7 @@ export function buildMid() {
     for (const pl of cast) applyPool(out, pl);
     for (const [x, y, c, a] of lit) out.light(x, y, c, a);
     for (const [X, Yy, c, a] of litFine) out.px(X, Yy, c, a);
-    return opt.raw ? out : kit.frame(out);
+    return kit.frame(out);
   };
   // neon that comes alive at night: tubes lighting letter by letter, billboards chasing (frames shared)
   const NEON_OFF = [0x2a2430, 0x201a26];
@@ -437,9 +399,6 @@ export function buildMid() {
     const nItems = Math.max(1, Math.floor((w * h) / 140));
     for (let i = 0; i < nItems; i++) items.push([rand.pick(opt.items ?? ['ac', 'ac', 'ac', 'tank', 'hut', 'solar']), x + 2 + Math.floor(rand() * Math.max(1, w - 9)), y + 2 + Math.floor(rand() * Math.max(1, h - 7))]);
     const tall = faceH >= 20;
-    const zTop = tall ? Math.min(0.03, 0.01 + faceH * 0.0006) : 0;
-    const liftD = tall ? liftOrder(y + h + faceH) + 0.001 : undefined;
-    const up = tall ? { ax: x + w / 2, au: U(y + h + faceH), d: liftD } : {};
     const heli = tall && w >= 22 && h >= 18 && rand() < 0.4;
     const mast = tall && !heli && rand() < 0.6;
     const lit_ = [];
@@ -456,12 +415,11 @@ export function buildMid() {
         if (kit.rand() > 0.5) continue;
         const f = tubeFrames(s.h);
         const seq = kit.rand() < 0.6 ? [...f.map((_, j) => j), -1, -1, -1, -1, 0, -1, 0, -1, -1, -1, -1, -1, -1, -1] : [...Array(26).fill(-1), 0, -1, 0, -1];
-        kit.loop(s.x, U(y + h + 1), f, { seq, fps: 6, fx: 1, z: zTop * 0.85 || undefined, ...up });
+        kit.loop(s.x, U(y + h + 1), f, { seq, fps: 6, fx: 1 });
       }
-      if (board && kit.rand() < 0.7) kit.loop(x + Math.floor((w - board.w) / 2), U(y + 2), boardFrames(board.w), { fps: 5, fx: 1, z: zTop || undefined, ...up });
+      if (board && kit.rand() < 0.7) kit.loop(x + Math.floor((w - board.w) / 2), U(y + 2), boardFrames(board.w), { fps: 5, fx: 1 });
     }
     const awn = rand.pick([0xc83a2a, 0x2a6a3a, 0x2a4a8a, 0xd8a020, 0x8a2a5a]);
-    if (tall) liftNext({ x0: x - 2, y0: y - 8, w: w + 4, h: h + faceH + 9, z: zTop, cuts: [...Array.from({ length: Math.max(2, Math.round(faceH / 9)) }, (_, i) => y + h + Math.round(((i + 1) * faceH) / (Math.max(2, Math.round(faceH / 9)) + 1))), y + h], foot: y + h + faceH });
     objects.push({
       y: y + h + faceH,
       shadow: () => shadowRect(x + off, y + off, w, h + faceH, 0.5),
@@ -1052,7 +1010,6 @@ export function buildMid() {
           y = y - wh - roofH[i] + 2;
         }
       }
-      liftNext({ x0: cx - 64, y0: Math.min(...tiers.map((t) => t.top)) - 12, w: 128, h: y0 + 20 - Math.min(...tiers.map((t) => t.top)) + 12, z: 0.035, cuts: [...tiers.map((t) => t.top + 2), y0 - 2], foot: y0 });
       objects.push({
         y: y0 + 20,
         shadow: () => {
@@ -1796,7 +1753,6 @@ export function buildMid() {
     {
       const x = 103;
       const y = Y(2570);
-      liftNext({ x0: x - 3, y0: y - 8, w: 56, h: 76, z: 0.04, n: 7, foot: y + 66 });
       objects.push({
         y: y + 66,
         shadow: () => shadowRect(x + 12, y + 10, 46, 66, 0.5),
@@ -1900,7 +1856,6 @@ export function buildMid() {
     {
       const cx = 62;
       const top = Y(3290);
-      liftNext({ x0: cx - 34, y0: top - 14, w: 68, h: 104, z: 0.04, n: 8, foot: top + 84 });
       objects.push({
         y: top + 84,
         shadow: () => {
@@ -2597,7 +2552,6 @@ export function buildMid() {
     /** A pagoda: square storeys under wide tiled roofs, vermilion walls, the bronze finial; floodlit at night. */
     const pagoda = (cx, uBase, tiers, w0, floorH = 8, roofH = 7) => {
       const y0 = Y(uBase);
-      liftNext({ x0: cx - w0, y0: y0 - tiers * (floorH + roofH) - 12, w: w0 * 2, h: tiers * (floorH + roofH) + 22, z: 0.03, cuts: Array.from({ length: tiers }, (_, i) => y0 - (i + 1) * (floorH + roofH - 2) + 3), foot: y0 + 4 });
       const parts = [];
       let y = y0;
       for (let i = 0; i < tiers; i++) {
@@ -3770,7 +3724,7 @@ export function buildMid() {
     const dr = rng(5601);
     const SKY = 0.49; // (over the streets and rooftops, but under the turrets on the ground and all that flies: nothing here ever hides a target)
     // --- reflections: the banks mirrored in the water, drawn under the strip (so only the water shows them) and at
-    // half the resolution, the rows nudged by the ripples; they run a little slower than the banks, as far below
+    // half the resolution, the rows nudged by the ripples
     {
       const REACH = 26;
       const dist = (x, y, dx, dy) => {
@@ -3779,7 +3733,6 @@ export function buildMid() {
       };
       const T = 40;
       for (const [u0, u1] of [[0, 1296], [1296, 1362], [1362, 1914], [1914, 1972], [DOTONBORI[0], DOTONBORI[1]], [PORT[1], L]]) {
-        const au = (u0 + u1) / 2;
         for (let ty = Y(u1); ty < Y(u0); ty += T)
           for (let tx = 0; tx < W; tx += T) {
             let any = 0;
@@ -3812,7 +3765,7 @@ export function buildMid() {
               return out;
             });
             if (any < 80) continue;
-            kit.loop(tx, U(ty), frames.map((r) => kit.frame(r)), { fps: 2.5, d: -0.9, z: -0.06, ax: 90, au, sc: 2 });
+            kit.loop(tx, U(ty), frames.map((r) => kit.frame(r)), { fps: 2.5, d: -0.9, sc: 2 });
           }
       }
     }
@@ -3820,14 +3773,12 @@ export function buildMid() {
     {
       const pierAt = (x, u) => {
         const foot = Y(u) + 3;
-        liftedDraw(
-          () => {
-            for (let j = 0; j < 18 * S; j++)
-              for (let i = 0; i < 12; i++) img.px(x * S + i, (foot - 18) * S + j, i < 2 ? 0xb0b0b4 : i < 5 ? 0x9a9a9e : i < 9 ? 0x80808a : 0x62626c);
-            for (let i = -3; i < 15; i++) for (let j = 0; j < 4; j++) img.px(x * S + i, (foot - 18) * S + j, j === 0 ? 0xb8b8bc : 0x74747e);
-          },
-          { x0: x - 2, y0: foot - 18, w: 10, h: 18, z: 0.025, n: 4, foot },
-        );
+        const pier = capture(x - 2, foot - 18, 10, 18, () => {
+          for (let j = 0; j < 18 * S; j++)
+            for (let i = 0; i < 12; i++) img.px(x * S + i, (foot - 18) * S + j, i < 2 ? 0xb0b0b4 : i < 5 ? 0x9a9a9e : i < 9 ? 0x80808a : 0x62626c);
+          for (let i = -3; i < 15; i++) for (let j = 0; j < 4; j++) img.px(x * S + i, (foot - 18) * S + j, j === 0 ? 0xb8b8bc : 0x74747e);
+        });
+        kit.loop(x - 2, U(foot - 18), [pier], { fps: 1, d: 0.46 });
       };
       for (const u of [2350, 3550]) {
         for (let Yy = (Y(u) + 7) * S; Yy < (Y(u) + 13) * S; Yy++) for (let X = 0; X < W * S; X++) if (img.alphaPx(X, Yy)) img.tintPx(X, Yy, 0.68);
@@ -3854,7 +3805,7 @@ export function buildMid() {
         for (let i = 280; i < 330; i++) for (let j = 0; j < 12; j++) deck.px(i, 8 + j, j === 0 || j === 11 || i === 280 || i === 329 ? 0xf0f0f0 : 0x1e6a4a);
         for (let k = 0; k < 6; k++) for (let i = 0; i < 5; i++) for (let j = 0; j < 4; j++) if (hashPx(k, i * 3 + j, u) < 0.6) deck.px(285 + k * 7 + i, 12 + j, 0xf0f0f0);
         tod.frame(deck, u);
-        kit.loop(-8, u + 8, [kit.frame(deck)], { fps: 1, z: 0.025, ax: 90, au: u, d: 0.475 });
+        kit.loop(-8, u + 8, [kit.frame(deck)], { fps: 1, d: 0.475 });
         const car = (c, dir) => {
           const out = new HiCanvas(7, 4);
           for (let j = 1; j < 10; j++) for (let i = 0; i < 18; i++) if (!((i === 0 || i === 17) && (j === 1 || j === 9))) out.px(i, j, (i > 4 && i < 8) || (i > 11 && i < 14) ? 0x26303a : j < 3 ? scaleColor(c, 1.2) : j > 7 ? scaleColor(c, 0.7) : c);
@@ -3868,7 +3819,7 @@ export function buildMid() {
         const CARS = [0xc8c8cc, 0x3a4a6a, 0xa83a2a, 0x2a2a30, 0xe0e0e0];
         for (const [lane, dir, sp] of [[3, 1, 38], [-3, -1, 32]])
           for (let k = 0; k < 3; k++)
-            kit.path(dir > 0 ? [[-24, u + lane], [204, u + lane]] : [[204, u + lane], [-24, u + lane]], [car(dr.pick(CARS), dir)], { sp, turn: 'none', s0: (k + dr()) / 3, z: 0.025, d: 0.48 });
+            kit.path(dir > 0 ? [[-24, u + lane], [204, u + lane]] : [[204, u + lane], [-24, u + lane]], [car(dr.pick(CARS), dir)], { sp, turn: 'none', s0: (k + dr()) / 3, d: 0.48 });
       }
     }
     // --- strings of paper lanterns across the canal and of little flags across the avenues, hung above the traffic
@@ -3899,9 +3850,9 @@ export function buildMid() {
         return kit.frame(out);
       };
       const lit = string(64, 4300, true, 'lantern');
-      for (let u = DOTONBORI[0] + 90; u < DOTONBORI[1] - 80; u += 54 + Math.floor(dr() * 24)) kit.loop(58, u, [lit], { fps: 1, z: 0.025, ax: 90, d: 0.47 });
+      for (let u = DOTONBORI[0] + 90; u < DOTONBORI[1] - 80; u += 54 + Math.floor(dr() * 24)) kit.loop(58, u, [lit], { fps: 1, d: 0.47 });
       const flags = [string(32, 3300, false, 'flag'), string(32, 3300, false, 'flag')];
-      for (let u = SHINSEKAI[0] + 40; u < SHINSEKAI[1] - 20; u += 46 + Math.floor(dr() * 20)) kit.loop(74, u, [flags[Math.floor(dr() * 2)]], { fps: 1, z: 0.025, ax: 90, d: 0.47 });
+      for (let u = SHINSEKAI[0] + 40; u < SHINSEKAI[1] - 20; u += 46 + Math.floor(dr() * 20)) kit.loop(74, u, [flags[Math.floor(dr() * 2)]], { fps: 1, d: 0.47 });
     }
     // --- in the air over the city: helicopters (with a searchlight by night) and their shadows on the streets, the
     // advertising airship, crows and pigeons by day, thin moonlit cloud by night
@@ -3916,9 +3867,9 @@ export function buildMid() {
               const a = 0.34 * (1 - j / 80) * (1 - Math.abs(i) / (13 + j * 0.3));
               if (a > 0.01) out.px(Math.round(CX + i), CY + 10 + j, 0xfff4d0, a);
             }
-        for (let j = -4; j <= 4; j++) for (let i = -8; i <= 8; i++) if ((i / 8) ** 2 + (j / 4.2) ** 2 <= 1) out.px(CX + i, CY + j, j < -2 ? 0x5a6a88 : i < -3 && j < 2 ? 0x9ac8e0 : 0x2a3448);
-        for (let i = 8; i < 24; i++) for (let j = -1; j <= 1; j++) out.px(CX + i, CY + j, j === -1 ? 0x4a5468 : 0x2a3448);
-        for (let j = -4; j <= 4; j++) out.px(CX + 24, CY + j, 0x2a3448);
+        for (let j = -4; j <= 4; j++) for (let i = -8; i <= 8; i++) if ((i / 8) ** 2 + (j / 4.2) ** 2 <= 1) out.px(CX + i, CY + j, j < -2 ? 0x5a6a88 : i > 3 && j < 2 ? 0x9ac8e0 : 0x2a3448); // (the cockpit's glass at the front)
+        for (let i = 8; i < 24; i++) for (let j = -1; j <= 1; j++) out.px(CX - i, CY + j, j === -1 ? 0x4a5468 : 0x2a3448);
+        for (let j = -4; j <= 4; j++) out.px(CX - 24, CY + j, 0x2a3448);
         for (let k = -18; k <= 18; k++) {
           const dx = spin ? k : Math.round(k * 0.3);
           const dy = spin ? Math.round(k * 0.18) : k;
@@ -3953,7 +3904,7 @@ export function buildMid() {
             if (i % 22 === 0 && Math.abs(j) >= 6) c = scaleColor(c, 0.9);
             out.px(CX + i, CY + j, c);
           }
-        for (const s of [-1, 1]) for (let k = 0; k < 16; k++) for (let i = 0; i < 16 - k; i++) out.px(CX + 60 + i, CY + s * (16 + k), 0x7a7a88);
+        for (const s of [-1, 1]) for (let k = 0; k < 16; k++) for (let i = 0; i < 16 - k; i++) out.px(CX - 60 - i, CY + s * (16 + k), 0x7a7a88);
         for (let i = -12; i <= 12; i++) for (let j = 25; j < 31; j++) out.px(CX + i, CY + j, j === 25 ? 0x4a4a58 : 0x2a2a38);
         tod.frame(out, u);
         if (night) for (let i = -38; i <= 38; i += 3) for (let j = -5; j <= 5; j += 3) if ((i + j + 400) % 9 === 0) out.px(CX + i, CY + j, 0xff8ae0);
