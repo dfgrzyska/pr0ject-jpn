@@ -67,7 +67,7 @@ export const SKINS = {
     heavy: { frame: 'wani_0', kind: 'wani' },
     turret: { base: 'yuzutsu_base', head: 'nozzle_', wreck: 'yuzutsu_wreck', pattern: 'puff' },
     geyser: { frame: 'boil_0', anim: 'boil', mud: 'mudboil_0', mudAnim: 'mudboil' },
-    steam: { frame: 'steam_0' },
+    steam: { frame: 'steamf_0' },
   },
   // Hiroshima & Miyajima: paper crane flocks, armored Seto oysters with pearl crits, scooping shamoji paddles,
   // tidal stone lanterns, Heike-gani samurai crab, and Sankibō the Great Tengu of Mount Misen

@@ -35,10 +35,41 @@ function cloud(w, h, puffs, alpha, name, add) {
   add(name, r);
 }
 
+/** The same at 3x (shown at a third of the size, like the stage's art): soft-edged, billowing, lit from the top left. */
+function fineCloud(w, h, puffs, alpha, name, add) {
+  const S = 3;
+  const r = new Raster(w * S, h * S);
+  for (let Y = 0; Y < h * S; Y++)
+    for (let X = 0; X < w * S; X++) {
+      const x = (X + 0.5) / S;
+      const y = (Y + 0.5) / S;
+      let best = Infinity;
+      let nx = 0;
+      let ny = 0;
+      const wob = (fbm(x, y, { seed: w + h, scale: 5, octaves: 3 }) - 0.5) * 5;
+      for (const [cx, cy, pr] of puffs) {
+        const d = Math.hypot(x - cx, y - cy) - pr + wob;
+        if (d < best) {
+          best = d;
+          nx = (x - cx) / pr;
+          ny = (y - cy) / pr;
+        }
+      }
+      if (best > 0) continue;
+      const edge = Math.min(1, -best / 3.2);
+      const light = 0.5 - (nx + ny) * 0.32 + (fbm(x, y, { seed: w + 7, scale: 3, octaves: 2 }) - 0.5) * 0.5;
+      const c = light > 0.72 ? 0xffffff : light > 0.48 ? 0xf4f2f6 : light > 0.26 ? 0xe4e2ea : 0xd2d2dc;
+      r.set(X, Y, c, alpha * edge * edge * (3 - 2 * edge));
+    }
+  add(name, r);
+}
+
 export function beppuSprites(add) {
   // ------------------------------------------------------------ steam: big clouds you fly through, small wisps
   cloud(44, 30, [[12, 17, 10], [24, 12, 11], [34, 17, 9], [22, 20, 10]], 0.7, 'steam_0', add);
   cloud(38, 28, [[11, 15, 9], [21, 11, 10], [29, 16, 8], [19, 19, 9]], 0.7, 'steam_1', add);
+  fineCloud(44, 30, [[12, 17, 10], [24, 12, 11], [34, 17, 9], [22, 20, 10]], 0.8, 'steamf_0', add);
+  fineCloud(38, 28, [[11, 15, 9], [21, 11, 10], [29, 16, 8], [19, 19, 9]], 0.8, 'steamf_1', add);
   cloud(18, 12, [[6, 7, 5], [11, 5, 5], [13, 8, 4]], 0.5, 'wisp_s_0', add);
   cloud(14, 12, [[5, 7, 4], [9, 5, 4.5]], 0.5, 'wisp_s_1', add);
   // the steam nozzles' scalding puffs: the cloud shape of the steam, but solid, with the enemy bullets' dark

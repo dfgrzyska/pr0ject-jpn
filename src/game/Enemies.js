@@ -180,7 +180,7 @@ export class Enemies {
       case 'steam':
         // a cloud of hot-spring steam drifting down the screen: hides what is under it, heats the guns
         e = this.pool.spawn(look.frame, w.x, -24, { ...base, ghost: true });
-        e.setScale(1.3).setAlpha(0.8); // tinted warm every frame: this steam is hot (the background plumes are white)
+        e.setScale(1.3 / 3).setAlpha(0.8); // (its frames are drawn at 3x) tinted warm every frame: this steam is hot (the background plumes are white)
         break;
       case 'boss':
         if (w.boss === 'jaodori') return this.spawnJaodori(w, base);
@@ -699,8 +699,8 @@ export class Enemies {
           }
           const stretch = Math.min(0.45, Math.abs(e.vx) / 110);
           const sc = 1.3 + Math.sin(e.age * 3) * 0.06;
-          e.setFrame(Math.floor(e.age * 1.2) % 2 ? 'steam_1' : 'steam_0');
-          e.setScale(sc + Math.max(sq, stretch), sc - Math.max(sq, stretch) * 0.55)
+          e.setFrame(Math.floor(e.age * 1.2) % 2 ? 'steamf_1' : 'steamf_0');
+          e.setScale((sc + Math.max(sq, stretch)) / 3, (sc - Math.max(sq, stretch) * 0.55) / 3)
             .setRotation((e.vx / 100) * 0.22)
             .setAlpha(0.8 - sq * 0.75)
             .setTint(0xffd2b8)

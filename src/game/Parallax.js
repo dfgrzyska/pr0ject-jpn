@@ -202,7 +202,8 @@ export class Parallax {
         }
         const stretch = Math.min(0.45, Math.abs(p.vx) / 130);
         const baseSc = p.big ? 1.6 : 1;
-        p.setScale(baseSc + stretch, baseSc - stretch * 0.5).setRotation((p.vx / 130) * 0.22);
+        const k3 = p.big ? 1 / 3 : 1; // (the big banks' frames are drawn at 3x)
+        p.setScale((baseSc + stretch) * k3, (baseSc - stretch * 0.5) * k3).setRotation((p.vx / 130) * 0.22);
       }
       if (this.drift(p, dt, H)) this.near.kill(p);
     }
@@ -321,9 +322,9 @@ export class Parallax {
     if (this.mistTimer > 0) return;
     this.mistTimer = 0.75 + Math.random() * 1.1;
     const big = Math.random() < 0.35;
-    const frame = big ? `steam_${Math.floor(Math.random() * 2)}` : `wisp_s_${Math.floor(Math.random() * 2)}`;
+    const frame = big ? `steamf_${Math.floor(Math.random() * 2)}` : `wisp_s_${Math.floor(Math.random() * 2)}`;
     const m = this.near.spawn(frame, Math.random() * 180, -24, { vy: fall * (big ? 1.05 : 0.9), vx: -4 + Math.random() * 8, sway: 2, age: 0, flipT: 0, big });
-    m.setAlpha(big ? 0.14 : 0.22).setScale(big ? 1.6 : 1);
+    m.setAlpha(big ? 0.14 : 0.22).setScale(big ? 1.6 / 3 : 1);
   }
 
   /** Okinawa: big soft clouds drifting past and the odd seagull. */
