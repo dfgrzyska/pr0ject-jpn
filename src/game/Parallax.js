@@ -1,6 +1,7 @@
 import { DEPTH, VIEW } from '../config.js';
 import { Pool } from './Pool.js';
 import { Props } from './Props.js';
+import { TreeSway } from './TreeSway.js';
 
 // Three layers seen from above:
 //   far  - the valley / open ocean far below (seamless loop, slowest; keeps moving during a boss)
@@ -37,8 +38,11 @@ export class Parallax {
       .setDepth(DEPTH.far);
     this.farH = scene.textures.get(farKey).getSourceImage().height;
     this.chunks = [];
-    for (let i = 0; i < meta.chunks; i++)
-    this.chunks.push(scene.add.image(0, 0, `mid_${stage.id}_${i}`).setOrigin(0, 0).setScale(invScale).setDepth(DEPTH.mid).setVisible(false));
+    this.sway = meta.sway ? new TreeSway(scene, stage.id, meta, DEPTH.mid, VIEW.width) : null;
+    if (this.sway) this.chunks = this.sway.chunks;
+    else
+      for (let i = 0; i < meta.chunks; i++)
+        this.chunks.push(scene.add.image(0, 0, `mid_${stage.id}_${i}`).setOrigin(0, 0).setScale(invScale).setDepth(DEPTH.mid).setVisible(false));
 
     // the small drifting bits (ash, embers, snowflakes, petals) are blitter bobs: hundreds at once in a blizzard
     // or an ash storm, each far lighter than a sprite and the same to look at; the big ones (clouds, mist, steam
@@ -124,6 +128,7 @@ export class Parallax {
       if (vis) img.y = y;
     }
     this.far.tilePositionY = -(Math.round(this.farTime * this.speed.far * this.artScale) % this.farH);
+    this.sway?.update(dt);
 
     const ship = this.scene.player;
     const follow = ship?.alive ? VIEW.width / 2 + (ship.x - VIEW.width / 2) * CAMERA_FOLLOW : VIEW.width / 2;

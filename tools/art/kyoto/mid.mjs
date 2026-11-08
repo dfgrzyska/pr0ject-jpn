@@ -134,6 +134,8 @@ export function buildMid() {
   // lanterns (they flicker), the townhouses' kitchens (they smoke)
   const sakuraCrowns = [];
   const bloom = new Uint8Array(W * S * L * S);
+  const crownMask = new Uint8Array(W * S * L * S); // (the crowns of the trees, each its own 1..15: the wind runs through them)
+  const crownHash = new Uint8Array(W * S * L * S); // (what each crown drew there, to know if something was drawn over it)
   const lamps = [];
   const kitchens = [];
   /** Draw with the stage's own helpers into a frame at (x0, y0), graded like its place on the strip, lights on top. */
@@ -4439,6 +4441,155 @@ export function buildMid() {
         const ws = strollers;
         for (const [a, b] of [[[6, u - 14], [70, u - 14]], [[174, u - 10], [110, u - 10]]]) kit.path([a, b], kr.pick(ws), { sp: 3, n: 2, gap: 24, mode: 'pp', hold: 2, turn: 'none', fps: 3, s0: kr() });
       }
+      // --- Hanamikōji: the white lanterns with Gion's red dumplings all down the eaves of both sides
+      const dango = (X, Yy) => {
+        for (let j = 0; j < 11; j++)
+          for (let i = 0; i < 7; i++) {
+            if ((j === 0 || j === 10) && (i === 0 || i === 6)) continue;
+            img.px(X + i, Yy + j, j === 0 || j === 10 ? 0x1a1414 : i === 0 ? 0xf8f4ea : i === 6 ? 0xc8c4b8 : (j + 2) % 3 === 0 ? 0xd8d4c8 : 0xf0ecdc);
+          }
+        for (const a of [1, 3, 5]) for (const b of [3, 5, 7]) if (a === 3 || b === 5) img.px(X + a, Yy + b, 0xc8201a);
+        img.px(X + 3, Yy - 1, 0x2a2024);
+      };
+      for (let u = 8; u < 490; u += 7) {
+        if (u > 165 && u < 192) continue;
+        for (const x of [76, 103]) {
+          const y = Y(u);
+          objects.push({ y: y + 3, draw: () => dango(x * S, y * S) });
+        }
+      }
+      // parasols among the crowd on the street, tourists stopping to photograph a maiko
+      const parasolFolk = (x, y, c) =>
+        objects.push({
+          y: y + 2,
+          draw: () => {
+            const X = Math.round(x * S);
+            const Yy = Math.round(y * S);
+            personPx(X, Yy, { maiko: true, kimono: kr.pick(KIMONO), orn: true, obi: 0xe8c040 });
+            for (let j = -4; j <= 3; j++) for (let i = -7; i <= 7; i++) if ((i / 7.2) ** 2 + (j / 4.2) ** 2 <= 1) img.px(X + 1 + i, Yy - 7 + j, i === 0 || (i + 14) % 4 === 0 ? scaleColor(c, 0.74) : i < -2 ? scaleColor(c, 1.18) : c);
+          },
+        });
+      for (const u of [70, 250, 420]) {
+        parasolFolk(88 + kr() * 6, Y(u), 0xc8302a);
+        knot(90, Y(u) + 5, 8, 2, 8);
+      }
+      // --- the Kamo: children hopping the turtle stones (live), herons in the shallows, lanterns along the terraces' rails
+      {
+        const kid = strollers[1];
+        kit.path([[32, 568], [32, 624]], kid, { sp: 2.4, n: 2, gap: 26, mode: 'pp', hold: 3, turn: 'none', fps: 4, s0: 0.2 });
+        for (const u of [580, 604]) kfolk(32, Y(u) - 1, { coat: 0xe07a30 });
+        const heron = (x, y) =>
+          objects.push({
+            y: y + 2,
+            draw: () => {
+              const X = x * S;
+              const Yy = y * S;
+              for (const [i, j, c] of [[0, 0, 0xe8e8ec], [1, 0, 0xffffff], [2, 0, 0xffffff], [3, 0, 0xd8d8e0], [4, 1, 0xa8a8b4], [0, -1, 0xffffff], [0, -2, 0xffffff], [0, -3, 0xffffff], [-1, -3, 0xe8c040], [-2, -3, 0xe8c040], [1, 1, 0x4a3a2a], [1, 2, 0x4a3a2a], [3, 1, 0x4a3a2a], [3, 2, 0x4a3a2a]]) img.px(X + i, Yy + j, c);
+            },
+          });
+        for (const [x, u] of [[10, 612], [56, 574], [122, 616], [168, 578], [146, 566]]) heron(x, Y(u));
+        for (const [x0, x1] of [[4, 72], [108, 176]])
+          for (let x = x0; x < x1; x += 6) {
+            const y = Y(561);
+            objects.push({
+              y: y + 3,
+              draw: () => {
+                for (let j = 0; j < 8; j++) for (let i = 0; i < 5; i++) if (!((j === 0 || j === 7) && (i === 0 || i === 4))) img.px(x * S + i, y * S + j, j === 0 || j === 7 ? 0x1a1414 : j % 2 ? 0xf8f0d8 : 0xe8d8b0);
+                img.px(x * S + 2, y * S + 3, 0xc8301e);
+              },
+            });
+          }
+      }
+      // --- the Katsura: the weir above the bridge with the water piled white on it, rental boats tied up along the bank,
+      // their mooring posts, the old fisherman with cormorants and his fire basket (live)
+      {
+        for (let X = 0; X < W * S; X++) {
+          const Yc = Math.round(Y(3398 + (X / S - 90) * 0.1) * S);
+          if (X > 80 * S && X < 100 * S) continue;
+          for (let j = -6; j < 16; j++) {
+            const n = hashPx(X >> 1, j, 8101);
+            if (j < 0 && n < 0.5 + j * 0.08) img.px(X, Yc + j, 0xd8ecf0, 0.5);
+            else if (j >= 0 && j < 4) img.px(X, Yc + j, n < 0.8 ? 0xf8fcff : 0xc8e0e8);
+            else if (j >= 4 && n < 0.5 - j * 0.03) img.px(X, Yc + j, n < 0.2 ? 0xf0f8fc : 0xa8d0d8, 0.8);
+          }
+        }
+        const rowboat = (x, y, c) =>
+          objects.push({
+            y: y + 8,
+            draw: () => {
+              const X = x * S;
+              const Yy = y * S;
+              for (let j = 0; j < 27; j++) {
+                const hw = j < 6 ? 1 + j * 0.9 : 6;
+                for (let i = -hw; i <= hw; i++) {
+                  const e = hw - Math.abs(i);
+                  img.px(X + Math.round(i), Yy + j, e < 1 ? scaleColor(c, 0.6) : e < 2 ? (i < 0 ? 0xf4f0e6 : 0xc8c4b8) : j % 7 < 2 ? 0x7a5835 : 0x9a7040);
+                }
+              }
+              for (let j = 27; j < 33; j++) img.px(X, Yy + j, 0xc8b888);
+            },
+          });
+        for (const [x0, x1] of [[6, 76], [104, 176]])
+          for (let x = x0; x < x1; x += 8) rowboat(x, Y(3350) + Math.floor(kr() * 3), kr.pick([0x2a5ab0, 0xc8302a, 0x2a8a6a, 0xe8c040]));
+        const ukai = [0, 1, 2].map((k) => {
+          const out = new HiCanvas(30, 12);
+          const OY = 18;
+          for (let i = 0; i < 90; i++) {
+            const hw = i < 18 ? 2 + i * 0.5 : i > 80 ? 5 : 11;
+            for (let j = -hw; j <= hw; j++) out.px(i, OY + Math.round(j), Math.abs(j) > hw - 1.5 ? 0x2a1e14 : (i >> 2) % 3 ? 0x5e4229 : 0x46301f);
+          }
+          // the fisherman in his straw skirt, a helper at the stern, the cormorants on their leashes in the water
+          for (const [i, j, c] of [[40, -1, 0x2a2024], [41, -1, 0x2a2024], [42, -1, 0x2a2024], [40, 0, 0xc8a868], [41, 0, 0xc8a868], [42, 0, 0xc8a868], [40, 1, 0xa88848], [42, 1, 0xa88848], [70, 0, 0x2a2a34], [71, 0, 0x2a2a34]]) out.px(i, OY + j, c);
+          for (let i = 12; i < 30; i++) out.px(i, OY - 15 + (k % 2), 0x8a8a90, 0.5);
+          for (const [bx, by] of [[10, -14], [24, -13 + k], [32, -16]]) {
+            for (const [a, b] of [[0, 0], [1, 0], [2, 0], [0, -1], [-1, -1]]) out.px(bx + a, OY + by + b, 0x101014);
+            out.px(bx + 3, OY + by, 0xd8ecf0, 0.7);
+          }
+          // the iron basket of fire hung over the bow, sparks, its light on the water
+          for (let j = -6; j <= 6; j++) for (let i = -6; i <= 6; i++) if (i * i + j * j < 38) out.px(10 + i, OY + j, i * i + j * j < 12 ? 0xfff0a0 : (i + j + k) % 3 ? 0xff8a2a : 0xd83a1a);
+          for (let q = 0; q < 4; q++) out.px(10 + ((q * 7 + k * 5) % 11) - 5, OY - 8 - ((q * 3 + k) % 6), 0xffc060);
+          return kit.frame(gradeAt(out, 3380));
+        });
+        kit.path([[30, 3366], [76, 3366]], ukai, { sp: 2, mode: 'pp', hold: 5, turn: 'flip', fps: 6, s0: 0.3 });
+        kit.path([[150, 3420], [104, 3420]], ukai, { sp: 2, mode: 'pp', hold: 6, turn: 'flip', fps: 6, s0: 0.7 });
+      }
+      // --- Ryōan-ji: the old clay wall's tile cap, a stone basin by the veranda, the wall stained by age
+      {
+        const wy = Y(4700) * S;
+        for (let X = 18 * S; X < 160 * S; X++)
+          for (let j = -5; j < 4; j++) img.px(X, wy + j, j === -5 ? 0x8a94a4 : j === 3 ? 0x1a181c : (X + (j > -1 ? 2 : 0)) % 5 < 2 ? 0x3c4452 : 0x515b6c);
+        for (let k = 0; k < 60; k++) {
+          const X = Math.floor((18 + kr() * 142) * S);
+          for (let j = 4; j < 12; j++) if (kr() < 0.7) img.tintPx(X, wy + j, 0.82);
+        }
+      }
+      // --- Kiyomizu: the queue for Otowa's three streams, parasols and cameras along the stage's rail, its visitors
+      for (let k = 0; k < 26; k++) kfolk(60 + k * 1.2, Y(5604 - k * 0.5));
+      for (let x = 30; x < 150; x += 11 + Math.floor(kr() * 9)) parasolFolk(x + kr() * 4, Y(5726), kr.pick([0xc8302a, 0xe0803a, 0xb83a6a, 0x3a5ab0]));
+      // --- Daimonji: lit lanterns all the way up the mountain path, pilgrims with hand lamps climbing it (live), the crowd
+      // gathering below the fires
+      for (let u = 6310; u < 6860; u += 18) {
+        const px = 90 + 10 * Math.sin((u - 6300) / 110);
+        for (const sd of [-1, 1]) {
+          const x = Math.round(px + sd * 8);
+          if (!isRes(x, Y(u)) && padClear(x, Y(u), 13)) lantern(x - 1, Y(u));
+        }
+      }
+      {
+        const walker = (st) => {
+          const out = new HiCanvas(3, 4);
+          for (let i = 1; i < 3; i++) out.px(i, 0, 0x2a2024);
+          for (let j = 1; j < 6; j++) for (let i = 0; i < 4; i++) out.px(i, j, 0x4a4a5a);
+          out.px(st ? 1 : 2, 6, 0x2a2a34);
+          out.px(st ? 2 : 1, 7, 0x2a2a34);
+          gradeAt(out, 6500);
+          for (let j = 2; j < 5; j++) for (let i = 5; i < 8; i++) out.px(i, j, 0xffd890);
+          return kit.frame(out);
+        };
+        const pts = [];
+        for (let u = 6310; u < 6870; u += 18) pts.push([90 + 10 * Math.sin((u - 6300) / 110) - 2, u]);
+        kit.path(pts, [walker(0), walker(1)], { sp: 2.6, n: 6, gap: 80, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0: 0.1 });
+      }
     }
   }
 
@@ -4533,6 +4684,7 @@ export function buildMid() {
         if (X < 0 || X >= W * S || Y < 0 || Y >= L * S || isRes(X / S, Y / S)) return;
         img.px(X, Y, c);
         if (leaf) markCanopy(X, Y);
+        else canopy[Y * W * S + X] = 0;
       };
       const shade = (X, Y, f) => {
         X = Math.round(X);
@@ -4638,10 +4790,18 @@ export function buildMid() {
         for (const p of list) {
           const rim = !inCrown.has(p.x * 65536 + p.y + 1) || !inCrown.has((p.x + 1) * 65536 + p.y);
           img.px(p.x, p.y, rim ? scaleColor(p.c, 0.78) : p.c);
-          if (p.x >= 0 && p.x < W * S && p.y >= 0 && p.y < L * S) bloom[p.y * W * S + p.x] = blossom;
+          if (p.x >= 0 && p.x < W * S && p.y >= 0 && p.y < L * S) {
+            bloom[p.y * W * S + p.x] = blossom;
+            crownMask[p.y * W * S + p.x] = 1 + (seed % 15);
+          }
         }
         if (kind === 'sakura')
           for (const p of list) if (((p.x * 7 + p.y * 13 + seed) & 31) === 0) img.px(p.x, p.y, (p.x + p.y) & 1 ? 0xffe8f0 : 0xfff6fa);
+        for (const p of list) {
+          if (p.x < 0 || p.x >= W * S || p.y < 0 || p.y >= L * S) continue;
+          const q = img.rgbaPx(p.x, p.y);
+          if (q) crownHash[p.y * W * S + p.x] = (q[0] ^ (q[1] << 1) ^ (q[2] << 2)) & 255;
+        }
       },
     };
   }
@@ -4674,7 +4834,19 @@ export function buildMid() {
   // ------------------------------------------------------------ compose
   for (const o of objects) o.shadow?.();
   objects.sort((a, b) => a.y - b.y);
-  for (const o of objects) o.draw();
+  for (const o of objects) {
+    o.draw();
+    o.afterDraw?.();
+  }
+  // a crown something else was drawn over no longer sways there
+  {
+    const D = img.hi.data;
+    for (let k = 0; k < crownMask.length; k++) {
+      if (!crownMask[k]) continue;
+      const i = k * 4;
+      if (((D[i] ^ (D[i + 1] << 1) ^ (D[i + 2] << 2)) & 255) !== crownHash[k] || !D[i + 3]) crownMask[k] = 0;
+    }
+  }
 
   // the bamboo grove: sprays leaning out over the fence and the path, so the walk runs under a green eave; then
   // the light on the leaves gathered into pools and the gloom between them, so the grove is not one even carpet
@@ -4740,6 +4912,91 @@ export function buildMid() {
   grade(img.hi, GRADE);
   for (const [x, y, c, a] of lights) img.light(x, y, c, a);
   for (const [X, Yy, c, a] of lightsFine) img.px(X, Yy, c, a);
+
+  // wind in the crowns (live): nothing here moves against the ground. A gust is a band of leaves turning their pale
+  // undersides, which runs across the woods in one direction; where it passes leaves and petals are torn loose
+  {
+    const wr = rng(8901);
+    const R = 27;
+    const speck = (lit, dark, seed, u) => {
+      const out = new HiCanvas(18, 18);
+      const r = rng(seed);
+      for (let n = 0; n < 150; n++) {
+        const a = r() * Math.PI * 2;
+        const d = Math.sqrt(r()) * R;
+        const CX = Math.round(27 + Math.cos(a) * d);
+        const CY = Math.round(27 + Math.sin(a) * d);
+        const fall = Math.min(1, ((R - d) / R) * 2.2);
+        const pale = r() < 0.72;
+        const size = 1 + Math.floor(r() * 2);
+        for (let j = -size; j <= size; j++)
+          for (let i = -size - 1; i <= size + 1; i++) {
+            if ((i / (size + 1.2)) ** 2 + (j / (size + 0.2)) ** 2 > 1) continue;
+            out.px(CX + i, CY + j, pale ? (j < 0 ? lit[1] : lit[0]) : dark, (pale ? 0.62 : 0.4) * fall);
+          }
+      }
+      return kit.frame(gradeAt(out, u));
+    };
+    const zones = [[4000, [0xb4d48c, 0xd4eca8], 0x1e4424, [0xffdce8, 0xfff0f6], 0xa86a84], [6400, [0x7e9a6a, 0x9ab484], 0x18241c, [0xc8a8b8, 0xe0c4d0], 0x4a3440]];
+    const frames = zones.map(([u, gl, gd, pl, pd], z) => ({
+      green: [0, 1, 2].map((k) => speck(gl, gd, 8910 + z * 10 + k, u)),
+      pink: [0, 1, 2].map((k) => speck(pl, pd, 8950 + z * 10 + k, u)),
+    }));
+    const STEP = 15;
+    for (let c0 = 0; c0 < L; c0 += 128) {
+      const parts = [[], []];
+      const sets = [[...frames[0].green, ...frames[0].pink], [...frames[1].green, ...frames[1].pink]];
+      for (let y0 = L - c0 - 128; y0 < L - c0; y0 += STEP)
+        for (let x0 = -6; x0 < W; x0 += STEP) {
+          const u = L - y0;
+          if (u < 16 || (u > 2700 && u < 3262)) continue;
+          let inCrown = 0;
+          let pink = 0;
+          let all = 0;
+          for (let j = -21; j <= 21; j += 7)
+            for (let i = -21; i <= 21; i += 7) {
+              if (i * i + j * j > 441) continue;
+              const X = (x0 + 9) * S + i;
+              const Yy = (y0 + 9) * S + j;
+              if (X < 0 || X >= W * S || Yy < 0 || Yy >= L * S) continue;
+              all++;
+              const k = Yy * W * S + X;
+              if (crownMask[k]) {
+                inCrown++;
+                if (bloom[k]) pink++;
+              }
+            }
+          if (!all || inCrown / all < 0.8) continue;
+          const z = u > 6000 ? 1 : 0;
+          const v = Math.floor(wr() * 3) + (pink / inCrown > 0.5 ? 3 : 0);
+          const ph = -(x0 * 0.05 + u * 0.02) + fbm(x0, u, { seed: 8990, scale: 50 }) * 2.4;
+          parts[z].push([v, x0, u, ph]);
+        }
+      for (const z of [0, 1]) if (parts[z].length) kit.wave(sets[z], parts[z], { w: 0.9, a0: 0, a1: z ? 0.42 : 0.62, pw: 3 });
+    }
+    // leaves and petals torn off in the gusts, carried away on the same wind
+    const flight = (cols, seed, u) =>
+      [0, 1, 2, 3, 4, 5, 6, 7].map((k) => {
+        const out = new HiCanvas(26, 12);
+        const r = rng(seed);
+        for (let n = 0; n < 4; n++) {
+          const x0 = r() * 14;
+          const y0 = 4 + r() * 16;
+          const c = cols[n % cols.length];
+          const ph = r() * 6;
+          const X = Math.round(x0 + k * 7.5);
+          const Yy = Math.round(y0 + k * 1.1 + Math.sin(k * 0.9 + ph) * 3);
+          const flat = (k + n) % 2;
+          for (const [i, j] of flat ? [[0, 0], [1, 0], [2, 0]] : [[0, 0], [1, 1], [0, 1]]) out.px(X + i, Yy + j, c, k > 5 ? 0.5 : 1);
+        }
+        return kit.frame(gradeAt(out, u));
+      });
+    const zonesF = [[3262, 3500, [0xf8c8d8, 0xfff0f4, 0xe8a0b8], 4000], [3500, 5000, [0xf8c8d8, 0x7aa84a, 0xfff0f4, 0x9ac05a], 4000], [5560, 6300, [0xf8c8d8, 0xfff0f4, 0xe8a0b8], 5000], [6300, 6880, [0xc8a8b8, 0x7e9a6a], 6400]];
+    zonesF.forEach(([u0, u1, cols, gu], z) => {
+      const fl = flight(cols, 8970 + z, gu);
+      for (let u = u0; u < u1; u += 240) kit.spot([[0, Math.min(u + 240, u1), 150, Math.min(240, u1 - u)]], fl, { rate: 0.7, fps: 8, a: 0.9 });
+    });
+  }
 
   // gusts of wind through the bamboo grove (live): the leaves turn their paler undersides, a patch at a
   // time, in waves running across the grove
@@ -5013,13 +5270,25 @@ export function buildMid() {
     kit.frame(out, `cshadow_${i}`);
   }
 
+  {
+    const D = img.hi.data;
+    for (let k = 0; k < crownMask.length; k++) {
+      let v = crownMask[k];
+      if (!v && canopy[k]) {
+        const X = k % (W * S);
+        const Yy = Math.floor(k / (W * S));
+        v = 1 + Math.floor(hashPx(X >> 5, Yy >> 5, 9001) * 15);
+      }
+      if (v && D[k * 4 + 3] === 255) D[k * 4 + 3] = 239 + v;
+    }
+  }
   const chunks = [];
   for (let i = 0; i < CHUNKS; i++) chunks.push(img.crop(0, i * CHUNK, W, CHUNK));
   return {
     strip: img.hi,
     chunks,
     props: kit.pack(),
-    meta: { width: W, artScale: S, chunkHeight: CHUNK, chunks: CHUNKS, length: L, tint: tintTable(L, (u) => [0, 1, 2].map((k) => Math.round(gradeAt(whitePx(), u).data[k]))) },
+    meta: { width: W, artScale: S, chunkHeight: CHUNK, chunks: CHUNKS, length: L, sway: true, tint: tintTable(L, (u) => [0, 1, 2].map((k) => Math.round(gradeAt(whitePx(), u).data[k]))) },
   };
 }
 
