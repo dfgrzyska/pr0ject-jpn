@@ -1625,7 +1625,41 @@ export function buildMid() {
         for (let x = x0; x < x0 + 21; x++) {
           if (isRes(x, Y(u))) continue;
           const path = (x - x0) % 8 < 2 || (u - u0) % 14 < 2;
-          img.set(x, Y(u), path ? rampColor(C.gravel, 0.6, x, Y(u)) : rand() < 0.5 ? rand.pick([0xe83a5a, 0xf08ab0, 0xf4e0a0, 0xd02a3a, 0xffffff, 0xff7a6a]) : 0x2e5a2a);
+          if (!path && rand() < 0.5) rand.pick([0]);
+          for (let j = 0; j < S; j++)
+            for (let i = 0; i < S; i++) {
+              const X = x * S + i;
+              const Yy = Y(u) * S + j;
+              if (path) {
+                img.px(X, Yy, rampColor(C.gravel, 0.5 + hashPx(X, Yy, 97) * 0.3, X, Yy));
+                continue;
+              }
+              // low box hedge round each bed, dark leaves in it, the roses in their colours as little round heads
+              const bx = (x - x0) % 8;
+              const by = (u - u0) % 14;
+              const edge = (bx === 2 && i === 0) || (bx === 7 && i === 2) || (by === 2 && j === 2) || (by === 13 && j === 0);
+              let c = edge ? 0x1e4a24 : hashPx(X, Yy, 98) < 0.4 ? 0x2a5a2a : 0x3a6e34;
+              const CX = Math.floor(X / 5);
+              const CY = Math.floor(Yy / 5);
+              const pick = hashPx(CX, CY, 99);
+              if (!edge && pick < 0.62) {
+                const dx = X % 5 - 2;
+                const dy = Yy % 5 - 2;
+                if (dx * dx + dy * dy < 4) {
+                  const base = [0xd82a4a, 0xf08ab0, 0xf4e0a0, 0xb81a2a, 0xfff4f0, 0xff7a6a][Math.floor(pick * 9.7) % 6];
+                  c = dx === 0 && dy === 0 ? scaleColor(base, 0.72) : dx + dy < 0 ? scaleColor(base, 1.15) : base;
+                }
+              }
+              img.px(X, Yy, c);
+            }
+        }
+      // white rose arches over the walks
+      for (let u = u0 + 7; u < u0 + 90; u += 14)
+        for (let X = (x0 + 2) * S; X < (x0 + 19) * S; X += 3) {
+          const t = (X - (x0 + 2) * S) / (17 * S);
+          const a = Math.round(Math.sin(t * Math.PI * 3) * 3);
+          img.px(X, Y(u) * S + a, 0xf0f0e8);
+          img.px(X + 1, Y(u) * S + a + 1, 0xf08ab0);
         }
       reserveRect(x0, Y(u0 + 90), 21, 90);
     }
@@ -1903,17 +1937,17 @@ export function buildMid() {
             const hw = (8 + (FYr / S - top - 24) * 0.2) * S;
             for (const sd of [-1, 1]) {
               const X = Math.round(CXf + sd * hw);
-              img.px(X, FYr, 0xb8b8c0);
-              img.px(X - sd, FYr, 0x9a9aa0);
-              img.px(X - 2 * sd, FYr, 0x6a6a72);
-              if (FYr % 24 === 0) glowPx(X, FYr, 0xfff0c0);
+              for (let i = -3; i <= 3; i++) glowPx(X + i, FYr, i === -3 ? 0xf0f0f4 : i < 0 ? 0xc8c8d0 : i < 3 ? 0x8a8a94 : 0x5a5a64, 0.96);
+              if (FYr % 12 === 0) for (const i of [-4, 4]) glowPx(X + i, FYr, 0xfff0c0, 1);
               const XI = Math.round(CXf + sd * hw * 0.45);
-              img.px(XI, FYr, 0x7a7a82);
+              for (let i = -1; i <= 1; i++) glowPx(XI + i, FYr, i < 0 ? 0xa8a8b0 : 0x6a6a72, 0.95);
             }
             const k = (FYr - (top + 24) * S) % 30;
-            img.px(Math.round(CXf - hw + (k / 30) * hw * 2), FYr, 0x6a6a72);
-            img.px(Math.round(CXf + hw - (k / 30) * hw * 2), FYr, 0x6a6a72);
-            if (k < 2) for (let X = Math.round(CXf - hw); X <= CXf + hw; X++) img.px(X, FYr, k ? 0x5a5a62 : 0x8a8a92);
+            for (const d of [0, 1]) {
+              glowPx(Math.round(CXf - hw + (k / 30) * hw * 2) + d, FYr, 0x8a8a94, 0.95);
+              glowPx(Math.round(CXf + hw - (k / 30) * hw * 2) + d, FYr, 0x7a7a84, 0.95);
+            }
+            if (k < 3) for (let X = Math.round(CXf - hw); X <= CXf + hw; X++) glowPx(X, FYr, k === 0 ? 0xd8d8e0 : k === 1 ? 0x8a8a94 : (X % 12 === 0 ? 0xfff0c0 : 0x5a5a62), 0.96);
           }
         },
       });
@@ -2778,14 +2812,17 @@ export function buildMid() {
         for (let k = 0; k < 6; k++) img.set(fx - 3 + k, fy + 9, 0x6ab0d0); // water splashed at its feet
         crowd(fx - 8, fy + 11, 16, 3, 6, true);
       }
-      for (let r = 0; r < 3; r++)
-        for (let k = 0; k < 12; k++) {
-          const lx = tx + 4 + k * 3;
-          const ly = Y(tu + 46) + r * 3;
-          const c = (k + r) % 3 ? 0xffd040 : 0xff5a30;
-          img.set(lx, ly, c);
-          glow(lx, ly, c, 0.9);
+      for (let r = 0; r < 3; r++) {
+        for (let X = (tx + 3) * S; X < (tx + 41) * S; X++) img.px(X, (Y(tu + 46) + r * 4) * S - 1, 0x2a1e18);
+        for (let k = 0; k < 18; k++) {
+          const LX = (tx + 3) * S + 1 + k * 6;
+          const LY = (Y(tu + 46) + r * 4) * S;
+          const c = (k + r) % 3 ? [0xffe080, 0xffc848] : [0xff7a4a, 0xff5a30];
+          for (let j = 0; j < 8; j++) for (let i = 0; i < 5; i++) if (!((j === 0 || j === 7) && (i === 0 || i === 4))) glowPx(LX + i, LY + j, j === 0 || j === 7 ? 0x1a1414 : j % 2 ? c[0] : c[1], 0.98);
+          glowPx(LX + 2, LY + 3, 0x4a2a1a, 0.9);
+          glowPx(LX + 2, LY + 5, 0x4a2a1a, 0.9);
         }
+      }
       pool(tx + 20, Y(tu + 44), 18, 0xffa040, 0.3);
       oldRows(0, 83, h0 + 4, 5062);
       oldRows(98, W, h0 + 4, tu - 4);
@@ -2937,6 +2974,247 @@ export function buildMid() {
       warm(x + 9, y + 12, 15, 0.5);
       if (kind === 'yakitori' || kind === 'takoyaki') kit.emit(x + 9, U(y + 4), stallSteam, { rate: 1.3, life: [1.2, 2], vy: 6, sx: 1.2, wf: 0.6, a: 0.42, tint: 1 });
     };
+
+    // ---- round the alleys of Hōzen-ji, and under Tsūtenkaku: cobbles, shop signs, stalls, statues, the people out
+    {
+      const [h0, h1] = HOZEN;
+      // small cobbles for the lanes between the houses (the alley and the temple keep their big stones)
+      for (let Yr = Y(h1) * S; Yr < Y(h0) * S; Yr++)
+        for (let X = 0; X < W * S; X++) {
+          if (isRes(Math.floor(X / S), Math.floor(Yr / S))) continue;
+          const row = Yr >> 2;
+          const XX = X + (row % 2) * 4;
+          const joint = Yr % 4 === 0 || XX % 8 === 0;
+          const tone = hashPx(XX >> 3, row, 101);
+          img.px(X, Yr, joint ? STONE[0] : tone < 0.4 ? 0x60606c : tone < 0.8 ? 0x6c6c78 : 0x7a7a84);
+        }
+      // tall lit shop signs along the alley, each with its name running down it
+      for (let u = h0 + 8; u < h1 - 4; u += 12)
+        for (const [x, sd] of [[81, 1], [98, -1]]) {
+          const y = Y(u);
+          const c = fr.pick([0xfff4d8, 0xffe0a0, 0xff9a70, 0xf8f0e8]);
+          const seed = Math.floor(fr() * 1e6);
+          objects.push({
+            y: y + 8,
+            draw: () => {
+              const X = x * S;
+              const Yy = y * S;
+              const gr = rng(seed);
+              for (let j = -2; j < 22; j++) for (let i = -1; i < 8; i++) glowPx(X + i, Yy + j, j === -2 || j === 21 || i === -1 || i === 7 ? 0x1a1414 : c, 0.98);
+              for (let k = 0; k + 5 < 20; k += 6) glyph(X + 1, Yy + k, 5, 0x1a1414, gr, (gx, gy, gc) => glowPx(gx, gy, gc, 0.99));
+            },
+          });
+          warm(x + sd * 3, y + 4, 8, 0.42);
+        }
+      // the people: thick down the alley, at the temple, couples under paper parasols
+      for (let k = 0; k < 130; k++) folk(85 + fr() * 11, Y(h0 + 2 + fr() * (h1 - h0 - 4)));
+      for (let k = 0; k < 14; k++) {
+        const c = fr.pick([0xc8302a, 0xe0803a, 0xb83a6a, 0x3a5ab0]);
+        folk(86 + fr() * 9, Y(h0 + 6 + fr() * (h1 - h0 - 12)), {
+          coat: fr.pick([0xe86a9a, 0x9a5ac8, 0x3a8ac8, 0xf0a040]),
+          extra: (X, Yy) => {
+            for (let j = -3; j <= 2; j++) for (let i = -6; i <= 6; i++) if ((i / 6.2) ** 2 + (j / 3.2) ** 2 <= 1) glowPx(X + 1 + i, Yy - 5 + j, i === 0 ? scaleColor(c, 0.75) : i < -1 ? scaleColor(c, 1.2) : c, 0.97);
+          },
+        });
+      }
+      // the cross alley: stalls down both arms, its lanterns lit
+      const kinds = ['takoyaki', 'kakigori', 'yakitori', 'ringo', 'men', 'kingyo'];
+      [8, 30, 52, 102, 124, 146].forEach((x, k) => {
+        const y = Y(5066) - 2;
+        yatai(x, y, kinds[k]);
+        knot(x + 9, y + 15, 9, 1.5, 6);
+      });
+      for (let k = 0; k < 60; k++) folk(2 + fr() * 176, Y(5053 + fr() * 2));
+      // Hōzen-ji's Fudō, furred with centuries of moss, water thrown over it by a line of people with ladles (live)
+      {
+        const tx = 104;
+        const tu = 5004;
+        const fx = tx + 16;
+        const fy = Y(tu + 20);
+        objects.push({
+          y: fy + 10,
+          draw: () => {
+            const CX = fx * S + 1;
+            const CY = fy * S;
+            for (let j = -27; j <= 21; j++)
+              for (let i = -18; i <= 18; i++) {
+                const head = (i / 7) ** 2 + ((j + 16) / 8) ** 2 < 1;
+                const body = (i / 13) ** 2 + ((j - 3) / 18) ** 2 < 1;
+                const halo = (i / 18) ** 2 + ((j + 7) / 21) ** 2 < 1 && j < 6;
+                if (!head && !body && !halo) continue;
+                const n = hashPx(i, j, 102);
+                const c = head || body ? (n < 0.3 ? 0x6aa84e : n < 0.7 ? 0x3e7e3a : 0x265a2e) : n < 0.5 ? 0x1e4e28 : 0x163e20;
+                glowPx(CX + i, CY + j, i < -4 && (head || body) ? scaleColor(c, 1.2) : c, 0.97);
+              }
+            for (let j = -12; j < 18; j++) for (let i = 0; i < 2; i++) glowPx(CX + 16 + i, CY + j, 0x5a9a5a, 0.97); // (his sword, under its moss)
+          },
+        });
+        warm(fx, fy + 6, 14, 0.36, 0xffd8a0);
+        const drip = [0, 1, 2].map((k) => {
+          const out = new HiCanvas(10, 10);
+          for (let d = 0; d < 6; d++) for (let j = 0; j < 8; j++) {
+            const X = 6 + d * 3 + ((d + j + k) % 2);
+            const Yy = 8 + ((j * 3 + k * 5 + d * 7) % 20);
+            out.px(X, Yy, 0xc8f0ff, 0.8);
+          }
+          return kit.frame(out);
+        });
+        kit.loop(fx - 5, U(fy - 5), drip, { fps: 7, fx: 1, d: 0.1 });
+        for (let k = 0; k < 16; k++) folk(fx - 15 + k * 1.2, fy + 13 + (k % 2) * 1.8, { hat: false });
+        knot(tx + 53, Y(tu + 28), 15, 4, 24);
+      }
+      const ws = walkers(5070);
+      for (const x of [86, 90, 94]) kit.path([[x, h0 + 6], [x, h1 - 6]], fr.pick(ws), { sp: 2.8, n: 3, gap: 58, mode: 'pp', hold: 2, turn: 'none', fps: 3, s0: fr() });
+      for (const [a, b] of [[[6, 5059], [80, 5059]], [[100, 5059], [174, 5059]]]) kit.path([a, b], fr.pick(ws), { sp: 3, n: 2, gap: 30, mode: 'pp', hold: 2, turn: 'none', fps: 3, s0: fr() });
+      const cat = capture(0, 500, 3, 2, () => {
+        for (let i = 0; i < 7; i++) for (let j = 1; j < 4; j++) img.px(i, 500 * S + j, 0x2a2a30);
+        img.px(7, 500 * S, 0x2a2a30);
+        img.px(0, 500 * S, 0x2a2a30);
+      }, { u: 5040 });
+      kit.wander(90, 5040, 5, 60, [cat], { n: 1, sp: 3, idle: 0.6, turn: 'flip' });
+    }
+    // the head of the Dōtonbori canal: a waterside square with its plane trees, stalls, a railing along the water,
+    // lamp standards, benches, and the crowd spilling off the bridges
+    {
+      const u0 = 4920; // (the water's edge)
+      const u1 = 4950;
+      for (let Yr = Y(u1) * S; Yr < Y(u0) * S; Yr++)
+        for (let X = 0; X < W * S; X++) {
+          if (!img.alphaPx(X, Yr)) continue;
+          const row = Yr >> 2;
+          const XX = X + (row % 2) * 4;
+          const joint = Yr % 4 === 0 || XX % 8 === 0;
+          const tone = hashPx(XX >> 3, row, 103);
+          img.px(X, Yr, joint ? 0x4e4e5a : tone < 0.4 ? 0x70707c : tone < 0.8 ? 0x7c7c88 : 0x8a8a94);
+        }
+      for (let X = 0; X < W * S; X++) {
+        const y0 = Y(u0) * S - 4;
+        img.px(X, y0, 0xc8ccd4);
+        img.px(X, y0 + 1, 0x7a7e88);
+        if (X % 15 < 2) for (let j = 2; j < 5; j++) img.px(X, y0 + j, 0x6a6e78);
+      }
+      for (const x of [14, 66, 114, 166]) {
+        const y = Y(4932);
+        tree('broadleaf', x, y, 4.5, fr);
+        warm(x, y + 3, 12, 0.3);
+      }
+      for (const [x, kind] of [[26, 'takoyaki'], [46, 'ringo'], [74, 'yakitori'], [124, 'kakigori'], [144, 'men']]) {
+        const y = Y(u1) + 1;
+        if (x > 70 && x < 100) continue;
+        yatai(x, y, kind);
+        knot(x + 9, y + 15, 8, 2, 7);
+      }
+      for (let x = 8; x < W; x += 28) {
+        chochin(x, Y(u0) - 10, 0xfff0d0);
+        warm(x, Y(u0) - 7, 10, 0.34);
+      }
+      for (let k = 0; k < 70; k++) folk(2 + fr() * 176, Y(u0 + 3 + fr() * 24));
+      const ws = walkers(4935);
+      for (const [a, b] of [[[4, 4926], [176, 4926]], [[176, 4932], [4, 4932]]]) kit.path([a, b], fr.pick(ws), { sp: 3.2, n: 4, gap: 44, mode: 'pp', hold: 2, turn: 'none', fps: 3, s0: fr() });
+    }
+    // under Tsūtenkaku: the square between its legs, the golden Billiken in his shrine, the angry chef of the
+    // kushikatsu shops with his forks, stalls, the crowd; the district's name on arches across the avenue
+    {
+      const cx = 62;
+      const top = Y(3290);
+      for (let Yr = (top + 26) * S; Yr < (top + 92) * S; Yr++)
+        for (let X = (cx - 26) * S; X < (cx + 26) * S; X++) {
+          const dx = Math.abs(X / S - cx);
+          const lim = 8 + (Yr / S - top - 24) * 0.25;
+          const ring = Math.abs(dx - lim) < 2 ? 1 : 0;
+          if (dx > lim + 8) continue;
+          img.px(X, Yr, ((X >> 3) + (Yr >> 3)) % 2 ? (ring ? 0xc8a860 : 0x9a8e7a) : ring ? 0xb89850 : 0x887c6c);
+        }
+      warm(cx, top + 62, 30, 0.42, 0xffc880);
+      const BY = top + 58;
+      objects.push({
+        y: BY + 10,
+        shadow: () => shadowRect(cx - 4, BY + 7, 12, 3, 0.6),
+        draw: () => {
+          const CX = cx * S + 1;
+          const Yy = BY * S;
+          // the little red-and-white shrine, the gold seated figure with his pointed head, smiling, his soles out
+          for (let j = -16; j < 24; j++) for (let i = -16; i <= 16; i++) if (Math.abs(i) > 13 || j < -13) glowPx(CX + i, Yy + j, j < -13 ? 0xe83a2a : i % 2 ? 0xf4f0e6 : 0xd83a2a, 0.97);
+          for (let j = 24; j < 30; j++) for (let i = -18; i <= 18; i++) glowPx(CX + i, Yy + j, j === 24 ? 0xe8e4dc : 0xa8a49c, 0.96);
+          for (let j = -12; j < 24; j++) {
+            const hw = j < -2 ? Math.max(0, (j + 12) * 0.9) : j < 10 ? 9 : 11;
+            for (let i = -hw; i <= hw; i++) {
+              const I = Math.round(i);
+              glowPx(CX + I, Yy + j, I < -3 ? 0xfff0a0 : I > 4 ? 0xb88a20 : 0xe8c040, 0.98);
+            }
+          }
+          for (const sd of [-1, 1]) {
+            glowPx(CX + sd * 3, Yy - 2, 0x2a1a0a, 0.98);
+            for (let i = -3; i <= 3; i++) glowPx(CX + i, Yy + 4 + Math.round(-(i * i) / 5 + 1), 0x8a5a14, 0.98);
+            for (let j = 16; j < 24; j++) for (let i = 2; i < 11; i++) glowPx(CX + sd * i, Yy + j, 0xf8d860, 0.98);
+          }
+        },
+      });
+      for (let k = 0; k < 12; k++) folk(cx - 10 + k * 1.6, BY + 13 + (k % 3));
+      // the chef, huge and furious, a skewer in each hand
+      {
+        const x = cx + 20;
+        const y = top + 76;
+        objects.push({
+          y: y + 10,
+          shadow: () => shadowRect(x - 3, y + 8, 10, 3, 0.6),
+          draw: () => {
+            const CX = x * S;
+            const Yy = y * S;
+            for (let j = -18; j < 27; j++)
+              for (let i = -12; i <= 12; i++) {
+                const head = (i / 10) ** 2 + ((j + 7) / 11) ** 2 < 1;
+                const body = j >= 2 && Math.abs(i) < 12;
+                if (!head && !body) continue;
+                let c = head ? (j < -11 ? 0x1a1a22 : i < -4 ? 0xf0d0a8 : 0xd8a878) : (j % 4 === 0 ? 0xc8d0e8 : 0xf4f4f8);
+                if (head && Math.abs(i) > 2 && Math.abs(i) < 8 && j > -10 && j < -7) c = 0x1a1a22;
+                if (head && j > -2 && j < 2 && Math.abs(i) < 6) c = 0x7a1a14;
+                if (body && j > 14) c = 0x1e3a6a;
+                glowPx(CX + i, Yy + j, c, 0.98);
+              }
+            for (const sd of [-1, 1]) for (let k = 0; k < 20; k++) glowPx(CX + sd * (13 + Math.round(k * 0.3)), Yy + 6 - k, k > 10 ? 0xc8884a : 0xc8c8d0, 0.98);
+          },
+        });
+        warm(x, y + 8, 14, 0.5);
+        knot(x, y + 13, 8, 2, 7);
+      }
+      // (between the legs, on the square: the avenue to the west and the cross street to the south stay clear)
+      for (const [y, kind] of [[top + 50, 'yakitori'], [top + 67, 'takoyaki']]) {
+        yatai(37, y, kind);
+        knot(46, y + 15, 7, 1.5, 6);
+      }
+      knot(cx, top + 84, 30, 5, 46);
+      for (let u = SHINSEKAI[0] + 4; u < SHINSEKAI[1]; u += 26) for (const x of [75, 105]) if (padFree(x, Y(u), 14)) knot(x, Y(u), 3, 7, 5);
+      // the arches across Midōsuji with the district's name, bulbs chasing round them
+      for (const u of [SHINSEKAI[0] + 70, SHINSEKAI[1] - 120]) {
+        const y = Y(u);
+        const frames = [0, 1, 2].map((p) =>
+          capture(70, y - 4, 40, 12, () => {
+            const X0 = 70 * S;
+            const X1 = 110 * S;
+            const Y0 = (y - 4) * S;
+            const r = rng(u);
+            const g0 = [0, 1, 2, 3, 4].map(() => Math.floor(r() * 1e6));
+            for (let Yy = Y0; Yy < Y0 + 30; Yy++)
+              for (let X = X0; X < X1; X++) {
+                const e = Math.min(X - X0, X1 - 1 - X, Yy - Y0, Y0 + 29 - Yy);
+                glowPx(X, Yy, e === 0 ? 0x1a1414 : e < 4 ? (e === 2 && (X + Yy + p * 2) % 6 < 2 ? 0xfff8c0 : 0x1e4a8a) : 0x0e2a6a, 0.99);
+              }
+            g0.forEach((g, k) => glyph(X0 + 12 + k * 20, Y0 + 7, 15, 0xfff4c8, rng(g), (gx, gy, gc) => {
+              for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) glowPx(gx + a, gy + b, gc, 0.99);
+            }));
+            for (const PX of [X0, X1 - 6]) for (let j = 30; j < 60; j++) for (let i = 0; i < 6; i++) glowPx(PX + i, Y0 + j, i < 2 ? 0xc8ccd8 : 0x6a7080, 0.97);
+          }, { u }),
+        );
+        kit.loop(70, U(y - 4), frames, { fps: 4, d: 0.22 });
+        warm(90, y + 6, 26, 0.45, 0xa8c8ff);
+      }
+      // the rose garden's visitors, by day
+      for (let k = 0; k < 34; k++) {
+        const col = Math.floor(fr() * 3);
+        folk(1 + col * 8 + fr() * 1.6, Y(1410 + fr() * 86), { hat: fr() < 0.3 });
+      }
+    }
 
     // ---- 2. Namba Yasaka: the shrine whose hall is a giant lion's head with a stage in its mouth
     {
