@@ -167,6 +167,19 @@ export function buildMid() {
     return 90 + s * (20 * Math.sin(k / 230) + 9 * Math.sin(k / 83 + 1.1));
   };
   const widen = () => 0;
+  /** The path through the bamboo grove (from where the ridge path comes in). */
+  const groveX = (u) => 90 + 10 * Math.sin((u - ARASHI[0]) / 80) - (90 - pathX(ARASHI[0])) * (1 - smooth(ARASHI[0], ARASHI[0] + 80, u));
+  // glades in the grove, where a culm has fallen and let the light in: [centre x, half width, u of the far edge,
+  // u of the near edge]. A culm is far taller than a glade is deep, so to see the ground the culms standing in
+  // front of it have to go as well
+  const GLADES = [[36, 14, 2860, 2790], [58, 11, 3010, 2950], [24, 13, 3110, 3050], [140, 14, 2820, 2760], [156, 13, 3100, 3040], [124, 11, 3220, 3165]];
+  /** No culm grows here: in a glade, or where the grove thins (it stands in clumps, dark lanes between them). */
+  const groveOpen = (x, y) => {
+    const u = L - y;
+    const n = (fbm(x, u, { seed: 1231, scale: 9, octaves: 2 }) - 0.5) * 8;
+    for (const [gx, rx, u1, u0] of GLADES) if (Math.abs(x - gx) < rx + n && u < u1 + n && u > u0 + n) return true;
+    return fbm(x, u, { seed: 1233, scale: 7, octaves: 2 }) < 0.4;
+  };
   const ridgeEdges = (u) => {
     const s = ridgeAmt(u);
     const rc = pathX(u) * 0.55 + 90 * 0.45;
@@ -323,95 +336,251 @@ export function buildMid() {
     const t = w <= 1 ? 0.5 : i / (w - 1);
     return t < 0.18 ? mid : t < 0.42 ? lit : t < 0.75 ? mid : dark;
   };
-  // torii seen from above in 3/4: the kasagi (black lacquer top, curving up at the ends, vermilion face under
-  // it), round pillars with black feet and the odd inscription, the nuki through them, dark tunnel between.
-  const toriiPx = (cx, y, hw, o = {}) => {
-    const { pw = 1, top = 1, bot = 6, nukiRow = 3, nukiExt = 1, kExt = 2, kRows = 2, tone = 1, black = false, inside = true, plaque = false, put = (X, Yy, c) => img.px(X, Yy, c) } = o;
+  /** The rows of a torii's parts, shared by the gate and the beams drawn over the pilgrims (fine pixels). */
+  const toriiDims = (span, h, plaque = false, black = false) => {
+    const H = Math.round(h * S);
+    const SP = Math.round(span * S);
+    const KB = Math.max(2, Math.round(H * 0.055));
+    const KF = Math.max(2, Math.round(H * 0.07));
+    const ST = black ? 0 : Math.max(2, Math.round(H * 0.06));
+    const GAP = plaque ? Math.round(H * 0.17) : Math.max(2, Math.round(H * 0.085));
+    const NT = Math.max(2, Math.round(H * 0.06));
+    return { H, SP, KB, KF, ST, GAP, NT, BEAM: KB + KF + ST, PW: Math.max(3, Math.round(SP * 0.16)), LEAN: Math.round(H * 0.035), OVER: Math.round(SP * (black ? 0.1 : 0.18)) };
+  };
+  /**
+   * A torii standing on row `foot` (logical), `span` between its pillars and `h` high, seen a little from above:
+   * round pillars leaning in towards the top on their black nemaki (and a stone kamebara on the big ones), the
+   * nuki running through them with its wedges, the gakuzuka strut (or a tablet) up to the shimagi, and on top the
+   * kasagi: its black upper face, its vermilion front, its ends sweeping up. `black` is a shrine's gate of
+   * unbarked logs, all straight; `inside` fills the opening with a torii tunnel's gloom.
+   */
+  const toriiPx = (cx, foot, span, h, o = {}) => {
+    const { tone = 1, black = false, inside = false, plaque = false, rope = false, beamsOnly = false, seed = 1, put = (X, Yy, c) => img.px(X, Yy, c) } = o;
     const R1 = black ? 0x5a4a3e : scaleColor(C.R1, tone);
     const R2 = black ? 0x3a2e28 : scaleColor(C.R2, tone);
     const R3 = black ? 0x221a16 : scaleColor(C.R3, tone);
     const HI = black ? 0x7a6a5a : scaleColor(0xf27a4a, tone);
-    const Y0 = y * S;
-    const PW = pw * S;
-    const pillars = [Math.round((cx - hw) * S + S / 2 - PW / 2), Math.round((cx + hw) * S + S / 2 - PW / 2)];
-    if (inside)
-      for (let Yy = Y0 + (top + 1) * S; Yy < Y0 + bot * S; Yy++)
-        for (let X = pillars[0] + PW; X < pillars[1]; X++) put(X, Yy, Yy < Y0 + (top + 2) * S ? 0x150c08 : C.IN);
-    for (const P of pillars) {
-      for (let Yy = Y0 + top * S; Yy < Y0 + (bot + 1) * S; Yy++)
-        for (let i = 0; i < PW; i++) {
-          const foot = Yy >= Y0 + bot * S;
-          let c = foot ? (i === 0 ? 0x3a3034 : C.K) : roundShade(HI, R1, R3, i, PW);
-          if (!foot && PW >= 3 && i === Math.floor(PW / 2) && !black && (Yy - Y0) % 7 < 2 && P === pillars[0] && hashPx(P, Yy, 3) < 0.6) c = 0x2a1a14; // (the donor's name)
-          put(P + i, Yy, c);
+    const { H, SP, KB, KF, ST, GAP, NT, BEAM, PW, LEAN, OVER } = toriiDims(span, h, plaque, black);
+    const CX = Math.round(cx * S) + 1;
+    const FOOT = Math.round(foot * S);
+    const TOP = FOOT - H;
+    const NY = TOP + BEAM + GAP;
+    const big = H >= 45;
+    const KL = Math.round(SP / 2 + PW / 2 + OVER);
+    const CURV = black ? 0 : Math.max(2, Math.round(H * 0.06));
+    const lift = (dx) => Math.round(CURV * (Math.abs(dx) / KL) ** 2.6);
+    const half = (Yy) => Math.round(SP / 2 - LEAN * (1 - (Yy - TOP) / H)); // (from the axis to a pillar's centre)
+    const hs = (a, b) => hashPx(a + 512, b + 512, seed + 40);
+    // the tunnel beyond the opening: gloom, the next gates fading into it, the floor catching what light there is
+    if (inside) {
+      const R0 = BEAM + GAP + NT + 6;
+      for (let Yy = TOP + BEAM; Yy < FOOT; Yy++) {
+        const a = half(Yy);
+        const row = Yy - TOP;
+        const t = (row - R0) / Math.max(1, H - R0);
+        for (let X = -a; X <= a; X++) {
+          let c = row < BEAM + 3 ? 0x150c08 : C.IN;
+          if (t >= 0) {
+            const inner = a * (0.72 - t * 0.12);
+            const lane = a * (0.2 + t * 0.62);
+            if (Math.abs(X) <= lane && t > 0.35) c = (Yy % 4 === 0 ? 0x4e3626 : 0x3c2a1e); // (the path, stripes of light from between the gates)
+            else if (Math.abs(Math.abs(X) - inner) < 1) c = scaleColor(R3, 0.72);
+            else if (t < 0.14 && Math.abs(X) < inner) c = scaleColor(R3, 0.55);
+          }
+          put(CX + X, Yy, c);
+        }
+      }
+    }
+    // the nuki, tied through the pillars, its ends standing proud of them
+    {
+      const NL = Math.round(half(NY) + PW / 2 + OVER * 0.55);
+      for (let X = -NL; X <= NL; X++)
+        for (let j = 0; j < NT; j++) {
+          let c = j === 0 ? (black ? R1 : HI) : j < NT - 1 ? R1 : R2;
+          if (Math.abs(X) === NL) c = R3;
+          put(CX + X, NY + j, c);
         }
     }
-    // the nuki through the pillars
-    const NY = Y0 + nukiRow * S;
-    for (let X = pillars[0] - nukiExt * S; X < pillars[1] + PW + nukiExt * S; X++) {
-      put(X, NY, R1);
-      put(X, NY + 1, R2);
-      if (pw > 1) put(X, NY + 2, R3);
+    // the pillars
+    if (!beamsOnly) {
+      const NEM = Math.max(2, Math.round(H * 0.09));
+      for (const side of [-1, 1])
+        for (let Yy = TOP + KB; Yy < FOOT; Yy++) {
+          const P0 = CX + side * half(Yy) - Math.floor(PW / 2);
+          const up = FOOT - 1 - Yy;
+          for (let i = 0; i < PW; i++) {
+            let c;
+            if (up < NEM) c = up === NEM - 1 ? (big ? C.gold : 0x4a4048) : i === 0 ? 0x3a3034 : C.K;
+            else {
+              c = roundShade(HI, R1, R3, i, PW);
+              if (black && hs(i * 3, Yy >> 1) < 0.34) c = 0x221a16; // (the bark's furrows)
+              else if (hs(i * 5 + side, Yy >> 2) < 0.1) c = scaleColor(c, 0.9); // (the grain)
+              if (Yy < TOP + BEAM + 2) c = scaleColor(c, 0.72); // (in the beams' shade)
+              if (up < NEM + H * 0.12 && hs(i, Yy) < 0.22) c = scaleColor(c, 0.8); // (weathered near the ground)
+              if (!black && PW >= 4 && !big && side < 0 && i === PW >> 1 && Yy > NY + NT + 2 && (Yy - TOP) % 5 < 3 && hs(1, (Yy - TOP) >> 2) < 0.75) c = 0x2a1a14; // (the donor's name)
+            }
+            put(P0 + i, Yy, c);
+          }
+          if (big && up < 4) for (let i = -3 + up; i < PW + 3 - up; i++) put(P0 + i, Yy, i < 0 ? C.stone[3] : i >= PW ? C.stone[0] : up === 0 ? C.stone[1] : C.stone[2]); // (the kamebara)
+        }
+      // the wedges where the nuki leaves each pillar
+      if (PW >= 5) {
+        const a = half(NY) + Math.ceil(PW / 2);
+        for (const side of [-1, 1]) for (let i = 0; i < 2; i++) for (let j = 0; j < NT; j++) put(CX + side * (a + i), NY + j, j === 0 ? 0x4a3a3e : C.K);
+      }
     }
-    // the kasagi: black on top, the vermilion face, its ends curving up
-    const KX0 = pillars[0] - kExt * S;
-    const KX1 = pillars[1] + PW + kExt * S;
-    const span = KX1 - KX0;
-    const kb = Math.max(2, Math.round(kRows * S * 0.45));
-    const kf = Math.max(2, kRows * S - kb);
-    for (let X = KX0; X < KX1; X++) {
-      const e = Math.min(X - KX0, KX1 - 1 - X) / span;
-      const lift = e < 0.08 ? Math.round((0.08 - e) * 30 * (pw > 1 ? 1.4 : 0.9)) : 0;
-      for (let j = 0; j < kb; j++) put(X, Y0 - lift + j, hashPx(X, Y0 + j, 99) < (tone < 0.92 ? 0.16 : 0.05) ? (j === 0 ? 0x5a6a3a : 0x3a4a2a) : j === 0 ? 0x4a3a3e : C.K); // (moss on the older ones)
-      for (let j = 0; j < kf; j++) put(X, Y0 - lift + kb + j, j === 0 ? HI : j < kf - 1 ? R1 : R2);
+    // the sacred rope: twisted straw sagging under the nuki, its zigzags of white paper
+    if (rope) {
+      const a = half(NY) - Math.ceil(PW / 2);
+      const ry = NY + NT + 1;
+      const sag = Math.max(2, Math.round(H * 0.05));
+      const thick = Math.max(2, Math.round(H * 0.035));
+      for (let X = -a; X <= a; X++) {
+        const d = Math.round((1 - (X / a) ** 2) * sag);
+        for (let j = 0; j < thick; j++) put(CX + X, ry + d + j, (X + j) % 3 === 0 ? 0x9a8a5a : j === 0 ? 0xe8dcb0 : 0xc8b888);
+      }
+      for (const t of [-0.6, -0.2, 0.2, 0.6]) {
+        const X = Math.round(t * a);
+        const y0 = ry + Math.round((1 - t * t) * sag) + thick;
+        for (let j = 0; j < 6; j++) for (let i = 0; i < 2; i++) put(CX + X + i + ((j >> 1) % 2), y0 + j, i ? 0xc8c8c0 : 0xf4f4ec);
+      }
     }
-    if (plaque) {
-      // the gakuzuka: a black tablet with gold characters between the kasagi and the nuki
-      const PX = Math.round(cx * S + S / 2) - 9;
-      for (let Yy = Y0 + kRows * S; Yy < NY; Yy++)
-        for (let i = 0; i < 19; i++) put(PX + i, Yy, i < 2 || i > 16 || Yy === Y0 + kRows * S ? (i === 0 ? 0x3a2e30 : C.K) : C.K);
-      for (let Yy = Y0 + kRows * S + 2; Yy < NY - 1; Yy++) for (const i of [6, 9, 12]) if ((Yy + i) % 4 !== 0) put(PX + i, Yy, i === 9 ? C.goldHi : C.gold);
+    // the gakuzuka, or the tablet with the shrine's name in gold
+    if (!black) {
+      const SB = TOP + BEAM;
+      if (plaque) {
+        const W = Math.round(SP * 0.11);
+        const y1 = NY + NT + Math.round(H * 0.05);
+        for (let Yy = SB - 1; Yy < y1; Yy++)
+          for (let X = -W; X <= W; X++) {
+            const e = Math.min(W - Math.abs(X), Yy - SB + 1, y1 - 1 - Yy);
+            let c = e === 0 ? 0x3a2e30 : e === 1 ? C.gold : C.K;
+            if (e >= 3) {
+              // two gold characters, one above the other, built of strokes rather than specks
+              const CH = Math.floor((y1 - SB - 7) / 2);
+              const cy = Yy - SB - 3;
+              const k = Math.floor(cy / (CH + 1));
+              const ly = cy - k * (CH + 1);
+              if (k < 2 && ly < CH) {
+                const v = (i) => Math.abs(X - Math.round(((i - 1) * (W - 3)) / 1.5)) < 1;
+                const hz = (t) => ly === Math.round(t * (CH - 1));
+                const top = k === 0;
+                if (top ? hz(0) || hz(0.45) || hz(1) || (v(1) && ly > CH * 0.1) : hz(0.2) || hz(0.75) || (v(0) && ly > CH * 0.2) || (v(2) && ly > CH * 0.2)) c = X < 0 ? C.goldHi : C.gold;
+              }
+            }
+            put(CX + X, Yy, c);
+          }
+      } else {
+        const W = Math.max(1, Math.round(PW * 0.35));
+        for (let Yy = SB; Yy < NY; Yy++) for (let X = -W; X <= W; X++) put(CX + X, Yy, Yy < SB + 1 ? R3 : X === -W ? R1 : X === W ? R3 : R2);
+      }
+      // the shimagi under the kasagi
+      const SL = KL - Math.round(OVER * 0.3);
+      for (let X = -SL; X <= SL; X++)
+        for (let j = 0; j < ST; j++) put(CX + X, TOP + KB + KF + j - lift(X), j === 0 ? R3 : j < ST - 1 ? R1 : R2);
+    }
+    // the kasagi
+    for (let X = -KL; X <= KL; X++) {
+      const l = lift(X);
+      const end = Math.abs(X) >= KL - (big ? 2 : 0);
+      for (let j = 0; j < KB; j++) {
+        let c = j === 0 ? 0x4a3a3e : C.K;
+        if (black) c = hs(X >> 1, j) < 0.3 ? 0x221a16 : j === 0 ? 0x7a6a5a : R2;
+        else if (hs(X, j * 3) < (tone < 0.92 ? 0.18 : 0.05)) c = j === 0 ? 0x5a6a3a : 0x3a4a2a; // (moss on the older ones)
+        else if (big && j === 1 && X % 9 === 0) c = 0x3a2e30; // (the joints of its sheathing)
+        put(CX + X, TOP + j - l, c);
+      }
+      for (let j = 0; j < KF; j++) {
+        let c = j === 0 ? HI : j < KF - 1 ? R1 : R2;
+        if (end) c = big ? C.gold : C.K;
+        put(CX + X, TOP + KB + j - l, c);
+      }
     }
   };
-  const gate = (cx, y, hw, tone = 1, black = false) => toriiPx(cx, y, hw, { tone, black });
-  const gateShadow = (cx, y, hw) => {
-    for (let J = S; J <= 7 * S; J++) {
-      img.tintPx((cx + hw + 3) * S, y * S + J, 0.55);
-      img.tintPx((cx + hw + 3) * S + 1, y * S + J, 0.6);
-      img.tintPx((cx + hw + 3) * S + 2, y * S + J, 0.68);
-      for (let k = 3; k < 6; k++) img.tintPx((cx + hw + 3) * S + k, y * S + J, 0.78);
-    }
+  /** Its shadow on the ground: the gate thrown down and to the right by the sun, every pixel shaded once. */
+  const toriiShadow = (cx, foot, span, h, o = {}, seen = new Set()) => {
+    const FOOT = Math.round(foot * S);
+    toriiPx(cx, foot, span, h, {
+      ...o,
+      inside: false,
+      put: (X, Yy) => {
+        const z = FOOT - Yy;
+        const SX = Math.round(X + z * 0.5);
+        const SY = Math.round(FOOT + z * 0.22);
+        const key = SY * 4096 + SX;
+        if (seen.has(key)) return;
+        seen.add(key);
+        img.tintPx(SX, SY, 0.6);
+      },
+    });
   };
-  const tunnel = (u0, u1, cxf, hw, seed = 1) => {
+  // the ground the old tunnels kept clear (the same random numbers, so the trees keep their places)
+  const tunnelGround = (u0, u1, cxf, hw, seed = 1) => {
     const tr = rng(seed);
     for (let u = u1; u >= u0; ) {
-      const cx = Math.round(cxf(u));
-      const y = Y(u);
-      const tone = 0.82 + tr() * 0.26;
-      objects.push({ y: y + 6, draw: () => gate(cx, y, hw, tone), shadow: () => gateShadow(cx, y, hw) });
-      reserveRect(cx - hw - 4, y - 1, hw * 2 + 9, 8);
+      reserveRect(Math.round(cxf(u)) - hw - 4, Y(u) - 1, hw * 2 + 9, 8);
+      tr();
       u -= tr.chance(0.04) ? 9 + tr.int(0, 8) : tr.chance(0.3) ? 5 : 4;
     }
   };
-  const gateSmall = (cx, y, hw, black = false) => {
-    objects.push({ y: y + 6, draw: () => gate(cx, y, hw, 1.05, black), shadow: () => gateShadow(cx, y, hw) });
+  // what crosses the middle of a gate is cut out again and laid over the pilgrims, so they walk under the beams
+  const beamFrames = new Map();
+  const beamFrame = (span, h, k, tone) => {
+    const key = span + '_' + k;
+    if (beamFrames.has(key)) return beamFrames.get(key);
+    const { SP, BEAM, GAP, NT, PW, LEAN } = toriiDims(span, h);
+    const ce = Math.ceil(span / 2);
+    const rows = Math.ceil((BEAM + GAP + NT) / S) + 1;
+    const out = new HiCanvas(ce * 2 + 1, rows);
+    const inner = Math.round(SP / 2 - LEAN - PW / 2) - 1;
+    const CXo = ce * S + 1;
+    toriiPx(ce, h + 1, span, h, {
+      tone,
+      seed: k,
+      beamsOnly: true,
+      put: (X, Yy, c) => {
+        if (Math.abs(X - CXo) <= inner && Yy >= 0 && Yy < rows * S) out.px(X, Yy, c);
+      },
+    });
+    const fr = [kit.frame(gradeAt(out, 2260))];
+    beamFrames.set(key, fr);
+    return fr;
+  };
+  /** A tunnel of gates, close enough that each hides the feet of the one behind it, with the odd sunlit gap. */
+  const tunnel = (u0, u1, cxf, span, seed = 1) => {
+    const tr = rng(seed * 31 + 7);
+    const h = span + 2;
+    const seen = new Set();
+    for (let u = u1; u >= u0; ) {
+      const cx = Math.round(cxf(u));
+      const foot = Y(u) + 7;
+      const k = Math.floor(tr() * 8);
+      const tone = 0.82 + (k / 7) * 0.26;
+      objects.push({ y: foot, draw: () => toriiPx(cx, foot, span, h, { tone, seed: k, inside: true }), shadow: () => toriiShadow(cx, foot, span, h, { tone, seed: k }, seen) });
+      kit.loop(cx - Math.ceil(span / 2), U(foot - h - 1), beamFrame(span, h, k, tone), { fps: 1, d: 0.2 });
+      u -= tr.chance(0.05) ? 10 + tr.int(0, 8) : tr.chance(0.35) ? 6 : 5;
+    }
+  };
+  /** A gate standing alone across a path; it keeps the ground the old, wider one kept. */
+  const gateSmall = (cx, y, hw, black = false, o = {}) => {
+    const { span = hw * 2, h = Math.round(hw * 2.2), rope = black } = o;
+    const foot = y + 7;
+    const opt = { tone: 1.05, black, rope, seed: cx + 3 };
+    objects.push({ y: foot, draw: () => toriiPx(cx, foot, span, h, opt), shadow: () => toriiShadow(cx, foot, span, h, opt) });
     reserveRect(cx - hw - 4, y - 2, hw * 2 + 9, 10);
   };
   const miniGate = (cx, y, hw) => {
-    objects.push({
-      y: y + 4,
-      shadow: () => shadowPx((cx - hw + 1) * S, (y + 2) * S, (hw * 2 + 3) * S, 3 * S, 0.65),
-      draw: () => toriiPx(cx, y, hw, { top: 1, bot: 3, nukiRow: 2, nukiExt: 0, kExt: 1, kRows: 2, inside: false }),
-    });
+    const foot = y + 4;
+    const span = hw * 2;
+    const h = span + 2;
+    const opt = { tone: 0.95, seed: cx };
+    objects.push({ y: foot, shadow: () => toriiShadow(cx, foot, span, h, opt), draw: () => toriiPx(cx, foot, span, h, opt) });
   };
-  const greatTorii = (cx, y, hw) => {
-    const o = { pw: 5, top: 4, bot: 12, nukiRow: 8, nukiExt: 2, kExt: 5, kRows: 4, plaque: true };
-    objects.push({
-      y: y + 13,
-      shadow: () => toriiPx(cx, y, hw, { ...o, inside: false, put: (X, Yy) => img.tintPx(X + 5 * S, Yy + 6 * S, 0.5) }),
-      draw: () => toriiPx(cx, y, hw, { ...o, inside: false }),
-    });
-    reserveRect(cx - hw - 10, y - 3, hw * 2 + 21, 18);
+  /** The great gate over the approach: as high as it is wide, its pillars at the edges of the paving. */
+  const greatTorii = (cx, foot, span, h) => {
+    const opt = { plaque: true, seed: 5 };
+    objects.push({ y: foot, shadow: () => toriiShadow(cx, foot, span, h, opt), draw: () => toriiPx(cx, foot, span, h, opt) });
+    reserveRect(56, foot - 16, 69, 18); // (the ground the old, wider gate kept, so the trees and shops keep their places)
   };
   /** A stone lantern (tōrō): base, post, the fire box with its window lit, a curled roof, the jewel on top. */
   const lantern = (x, y, lit = true) => {
@@ -1738,7 +1907,7 @@ export function buildMid() {
       lantern(62, Y(u));
       lantern(115, Y(u));
     }
-    greatTorii(90, Y(1010), 24);
+    greatTorii(90, Y(1010) + 13, 36, 38);
     gateSmall(90, Y(720), 12);
     // souvenir shops and food stalls (fox masks, inari-zushi) along the approach
     machiyaRows(22, 58, 664, 1112, [10, 12]);
@@ -1996,8 +2165,8 @@ export function buildMid() {
     hall(124, Y(1740), 34, 20, 6, 'shrine');
     fox(76, Y(1716), false);
     fox(100, Y(1716), true);
-    gateSmall(90, Y(1770), 9);
-    gateSmall(90, Y(1806), 9);
+    gateSmall(90, Y(1770), 9, false, { rope: true });
+    gateSmall(90, Y(1806), 9, false, { rope: true });
     for (let k = 0; k < 260; k++) {
       // visitors all over the courtyard, kept off the turret pads
       const x = 16 + rand() * 148;
@@ -2024,13 +2193,22 @@ export function buildMid() {
   {
     const split = (u) => 11 * smooth(2140, 2220, u) * (1 - smooth(2500, 2580, u));
     path(TORII[0], TORII[1], pathX, 6);
-    tunnel(1840, 2140, pathX, 6, 11);
+    tunnelGround(1840, 2140, pathX, 6, 11);
     path(2140, 2580, (u) => pathX(u) - split(u), 5);
     path(2140, 2580, (u) => pathX(u) + split(u), 5);
-    tunnel(2144, 2576, (u) => pathX(u) - split(u), 5, 12);
-    tunnel(2144, 2576, (u) => pathX(u) + split(u), 5, 13);
+    tunnelGround(2144, 2576, (u) => pathX(u) - split(u), 5, 12);
+    tunnelGround(2144, 2576, (u) => pathX(u) + split(u), 5, 13);
     for (let u = 2230; u < 2490; u++) reserveRect(pathX(u) - 4, Y(u), 9, 1);
-    tunnel(2580, 2690, pathX, 6, 14);
+    tunnelGround(2580, 2690, pathX, 6, 14);
+    // one tunnel until there is room for two side by side, then two until they close up again
+    let fork0 = 2140;
+    while (split(fork0) < 6.5) fork0++;
+    let fork1 = 2580;
+    while (split(fork1) < 6.5) fork1--;
+    tunnel(1840, fork0, pathX, 9, 11);
+    tunnel(fork0 + 6, fork1 - 6, (u) => pathX(u) - split(u), 8, 12);
+    tunnel(fork0 + 6, fork1 - 6, (u) => pathX(u) + split(u), 8, 13);
+    tunnel(fork1, 2690, pathX, 9, 14);
     // at each mouth of the tunnels: a pair of stone lanterns and a pair of foxes keeping watch
     for (const [u, fx] of [[1832, pathX], [2588, pathX], [2696, pathX], [2136, (uu) => pathX(uu) - split(uu)], [2136, (uu) => pathX(uu) + split(uu)]]) {
       const cx = Math.round(fx(u));
@@ -2059,12 +2237,12 @@ export function buildMid() {
         const k = vr();
         if (k < 0.35) {
           // a miniature torii, a hand high
-          for (let j = 0; j < 4; j++) {
+          for (let j = -2; j < 4; j++) {
             img.px(X, Yy + j, C.R1);
             img.px(X + 4, Yy + j, C.R2);
           }
-          for (let i = -1; i < 6; i++) img.px(X + i, Yy, C.K);
-          for (let i = 0; i < 5; i++) img.px(X + i, Yy + 1, C.R1);
+          for (let i = -1; i < 6; i++) img.px(X + i, Yy - 3, C.K);
+          for (let i = 0; i < 5; i++) img.px(X + i, Yy - 1, C.R1);
         } else if (k < 0.5) {
           for (const [i, j] of [[0, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]]) img.px(X + i, Yy + j, 0xd8d2c6);
           img.px(X + 1, Yy + 2, C.R1);
@@ -2094,7 +2272,7 @@ export function buildMid() {
         for (let u = u0; u <= u1; u += 16) pts.push([Math.round(fx(u)), u]);
         return pts;
       };
-      const routes = [along(1846, 2134, pathX), along(2150, 2570, (u) => pathX(u) - split(u)), along(2150, 2570, (u) => pathX(u) + split(u)), along(2586, 2684, pathX)];
+      const routes = [along(1846, fork0 - 2, pathX), along(fork0 + 10, fork1 - 10, (u) => pathX(u) - split(u)), along(fork0 + 10, fork1 - 10, (u) => pathX(u) + split(u)), along(fork1 + 4, 2684, pathX)];
       for (const [i, pts] of routes.entries())
         for (const c of [0xe8e8f0, 0x3a3a4a, 0xd04040].slice(0, i === 3 ? 1 : 2)) kit.path(pts, [pilgrim(c)], { sp: 3, mode: 'pp', hold: 4, turn: 'none', s0: er() });
       // the fox: russet back, pale throat and belly, black-tipped ears and legs, the white tip of its brush
@@ -2137,7 +2315,7 @@ export function buildMid() {
     fillGround(0, Y(3260), W, 3260 - a0, C.bambooFloor, 31, 5);
     // the path through the bamboo grove, low brushwood fences (shiba-gaki) on both sides: bundles of twigs
     // bound to rails, a post every so often
-    const bx = (u) => 90 + 10 * Math.sin((u - a0) / 80) - (90 - pathX(a0)) * (1 - smooth(a0, a0 + 80, u)); // (from where the ridge path comes in)
+    const bx = groveX;
     path(a0, 3262, bx, 6);
     for (let FYr = Y(3262) * S; FYr < (Y(a0) + 1) * S; FYr++) {
       const u = L - FYr / S;
@@ -2222,11 +2400,24 @@ export function buildMid() {
       const parts = [];
       for (let u = a0 + 40; u < 3150; u += 38) parts.push([parts.length % 2, Math.floor(wr() * 140), u, wr() * 6]);
       kit.wave(beams, parts, { w: 0.3, a0: 0, a1: 0.28, pw: 2, d: 0.6 });
+      // the odd dry leaf spiralling down through the grove
+      const turning = [0, 1, 2, 3].map((k) => {
+        const out = new HiCanvas(3, 3);
+        const c = k < 2 ? 0xd4bc60 : 0xb09a48;
+        const [dx, dy] = [[1, 0], [1, 1], [0, 1], [-1, 1]][k];
+        for (let i = -2; i <= 2; i++) out.px(4 + dx * i, 4 + dy * i, Math.abs(i) === 2 ? scaleColor(c, 0.8) : c);
+        return kit.frame(gradeAt(out, 2990));
+      });
+      const dry = [[...turning, ...turning, ...turning]]; // (an emitter takes variants, each a list of frames over its life)
+      for (let u = 2730; u < 3240; u += 34) {
+        const side = wr() < 0.5 ? -1 : 1;
+        kit.emit(Math.round(bx(u) + side * (6 + wr() * 34)), u + 18, dry, { rate: 0.14, life: [3.5, 5], vy: -5, sx: 7, wf: 1.4, a: 0.9, rise: 0, tint: 1 });
+      }
     }
     // Nonomiya shrine: the black torii of unbarked wood, a little hall, a moss garden
     fillGround(126, Y(2990), 50, 70, C.moss, 32, 4);
     reserveRect(124, Y(2992), 54, 74);
-    gateSmall(150, Y(2934), 9, true);
+    gateSmall(150, Y(2934), 9, true, { span: 11, h: 14 });
     hall(132, Y(2984), 34, 16, 5, 'hondo');
     walk(bx(2916) + 5, 154, 2913, 2918); // its approach, through a gap in the fence and the torii to the hall
     path(2913, 2964, () => 150, 3);
@@ -3363,14 +3554,17 @@ export function buildMid() {
           for (let j = 14; j < 26; j++) for (let i = 2; i < 28; i++) img.px(X + i, Yy + j, (i - 2) % 9 < 2 ? C.R1 : j < 19 ? C.white : C.R2);
           img.rectPx(X + 12, Yy + 17, 6, 9, 0x140c0a);
           // its torii, and the foxes either side of it
-          for (let j = 0; j < 9; j++) {
-            img.px(X + 8, Yy + 32 + j, C.R1);
-            img.px(X + 22, Yy + 32 + j, C.R2);
+          for (let j = 0; j < 14; j++) {
+            for (let i = 0; i < 2; i++) {
+              img.px(X + 10 + i, Yy + 27 + j, i ? C.R2 : C.R1);
+              img.px(X + 19 + i, Yy + 27 + j, i ? C.R3 : C.R2);
+            }
           }
-          for (let i = 5; i < 26; i++) {
-            img.px(X + i, Yy + 31, C.K);
-            img.px(X + i, Yy + 32, C.R1);
-            if (i > 6 && i < 24) img.px(X + i, Yy + 35, C.R2);
+          for (let i = 6; i < 25; i++) {
+            const up = i < 8 || i > 22 ? 1 : 0;
+            img.px(X + i, Yy + 26 - up, C.K);
+            img.px(X + i, Yy + 27 - up, C.R1);
+            if (i > 7 && i < 23) img.px(X + i, Yy + 31, i % 2 ? C.R1 : C.R2);
           }
           for (const FX of [X + 2, X + 26])
             for (const [i, j] of [[0, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]]) img.px(FX + i, Yy + 36 + j, j === 2 && i === 1 ? C.R1 : 0xd8d2c6);
@@ -3507,8 +3701,149 @@ export function buildMid() {
         const y = Y(u + er() * 2);
         if (er() < 0.8) continue;
         if (occAny(x - 1, y - 1, 3, 3) || !img.alpha(x, y)) continue;
-        objects.push(treeObj('bamboo', x, y, 0, Math.floor(er() * 1e9)));
+        const culmSeed = Math.floor(er() * 1e9);
+        if (groveOpen(x, y)) continue;
+        objects.push(treeObj('bamboo', x, y, 0, culmSeed));
       }
+    // the floor of the grove: a litter of narrow fallen leaves, straw and rust and a few still green, moss
+    // creeping over the shady parts, the thin culms' roots breaking the surface
+    {
+      const lr = rng(1241);
+      const free = (X, Yy) => X >= 0 && X < W * S && !isRes(X / S, Yy / S) && img.alpha(X / S, Yy / S);
+      for (let n = 0; n < 26000; n++) {
+        const X = Math.floor(lr() * W * S);
+        const Yy = Math.floor((Y(3262) + lr() * (3262 - 2704)) * S);
+        if (!free(X, Yy)) continue;
+        const moss = fbm(X * 0.05, Yy * 0.05, { seed: 1243, scale: 3, octaves: 2 }) > 0.62;
+        if (moss) {
+          for (let j = 0; j < 3; j++) for (let i = 0; i < 4; i++) if (free(X + i, Yy + j) && lr() < 0.7) img.px(X + i, Yy + j, rampColor(C.moss, 0.3 + lr() * 0.6, X + i, Yy + j));
+          continue;
+        }
+        const k = lr();
+        const c = k < 0.4 ? 0xa89658 : k < 0.7 ? 0x8a6e3e : k < 0.88 ? 0xc4b070 : 0x6a7a3c;
+        const dx = lr() < 0.5 ? 1 : -1;
+        const dy = lr() < 0.5 ? 0 : 0.5;
+        const len = 3 + Math.floor(lr() * 4);
+        for (let i = 0; i < len; i++) {
+          const LX = X + dx * i;
+          const LY = Math.round(Yy + dy * i);
+          if (free(LX, LY)) img.px(LX, LY, i === 0 ? scaleColor(c, 0.8) : c);
+        }
+      }
+      for (const [gx, rx, u1] of GLADES)
+        for (let n = 0; n < 320; n++) {
+          const X = Math.round((gx + (lr() - 0.5) * 2 * rx) * S);
+          const Yy = Math.round(Y(u1 - lr() * 46) * S);
+          const c = lr() < 0.5 ? 0xa8945a : lr() < 0.6 ? 0x8a7040 : 0xbca868;
+          const dx = lr() < 0.5 ? 1 : -1;
+          const len = 3 + Math.floor(lr() * 4);
+          for (let i = 0; i < len; i++) if (free(X + dx * i, Yy + (i >> 1))) img.px(X + dx * i, Yy + (i >> 1), c);
+        }
+      // a bamboo shoot (takenoko): a spear of overlapping brown sheaths, hairy and dark-flecked, green at the tip
+      const shoot = (X, Yy, n) => {
+        objects.push({
+          y: Yy / S,
+          shadow: () => shadowPx(X - 2, Yy - 2, 12, 4, 0.6),
+          draw: () => {
+            for (let j = 0; j < n; j++) {
+              const t = j / n;
+              const w = Math.max(1, Math.round((n * 0.2 + 1) * (1 - t) ** 0.8));
+              for (let i = -w; i <= w; i++) {
+                const band = (j + (i > 0 ? 2 : 0)) % 4;
+                let c = t > 0.8 ? 0x7a9a44 : band === 0 ? 0x3a2a1a : i < -w * 0.3 ? 0xb88a50 : i > w * 0.5 ? 0x5a3e24 : 0x8a6236;
+                if (t <= 0.8 && hashPx(i, j, X) < 0.16) c = 0x2a1e14;
+                img.px(X + i, Yy - j, c);
+              }
+            }
+          },
+        });
+      };
+      // a cut stump: a short length of culm, its top a pale ring round the hollow
+      const stump = (X, Yy, w, tall) => {
+        objects.push({
+          y: Yy / S,
+          shadow: () => shadowPx(X, Yy - 1, w + 5, 3, 0.6),
+          draw: () => {
+            for (let j = 0; j < tall; j++) for (let i = 0; i < w; i++) img.px(X + i, Yy - j, i < 1 ? 0x7a8a48 : i < w / 2 ? 0x8a9450 : i < w - 1 ? 0x5a6a38 : 0x3a4a28);
+            for (let i = 0; i < w; i++) img.px(X + i, Yy - (tall >> 1), 0xc2c088);
+            for (let i = -1; i <= w; i++) for (const j of [0, 1, 2]) {
+              const e = Math.abs(i - (w - 1) / 2) / (w / 2 + 1);
+              if (e > 1 - (j === 1 ? 0 : 0.35)) continue;
+              img.px(X + i, Yy - tall - j, j === 1 && e < 0.5 ? 0x2a2014 : 0xe0d4a0);
+            }
+          },
+        });
+      };
+      // a fallen culm lying across the leaves, its nodes still showing, gone the colour of straw
+      const fallen = (X0, Y0, X1, Y1) => {
+        const len = Math.hypot(X1 - X0, Y1 - Y0);
+        const old = lr() < 0.5;
+        const R = old ? [0x6a5834, 0xac9860, 0xd8c488, 0xf4e4ac] : [0x3e5a30, 0x7a9c54, 0xa0bc6c, 0xd0e094];
+        const nodeAt = 15 + Math.floor(lr() * 8);
+        objects.push({
+          y: Math.max(Y0, Y1) / S,
+          shadow: () => {
+            for (let i = 0; i < len; i++) {
+              const t = i / len;
+              for (let j = 2; j < 7; j++) img.tintPx(Math.round(X0 + (X1 - X0) * t + 2), Math.round(Y0 + (Y1 - Y0) * t) + j, 0.7);
+            }
+          },
+          draw: () => {
+            for (let i = 0; i < len; i++) {
+              const t = i / len;
+              const X = Math.round(X0 + (X1 - X0) * t);
+              const Yy = Math.round(Y0 + (Y1 - Y0) * t);
+              const ring = i % nodeAt < 2;
+              for (let j = 0; j < 5; j++) img.px(X, Yy + j, ring ? (j < 3 ? R[3] : R[1]) : j === 0 ? R[1] : j === 1 ? R[3] : j < 3 ? R[2] : j === 3 ? R[1] : R[0]);
+              if (i % nodeAt === 2) for (let j = 0; j < 5; j++) img.px(X, Yy + j, R[0]);
+            }
+            // its dead twigs still sticking out
+            for (let b = nodeAt; b < len - 4; b += nodeAt * 2) {
+              const t = b / len;
+              const X = X0 + (X1 - X0) * t;
+              const Yy = Y0 + (Y1 - Y0) * t;
+              for (let i = 0; i < 8; i++) img.px(Math.round(X + i * 0.5), Math.round(Yy - i * 0.8), R[1]);
+            }
+          },
+        });
+      };
+      // culms the grove-keepers have cut, stacked on two sleepers for the fence-makers
+      const stack = (X, Yy, len) => {
+        objects.push({
+          y: Yy / S,
+          shadow: () => shadowPx(X + 3, Yy - 1, len + 6, 5, 0.72),
+          draw: () => {
+            for (const sx of [X + 8, X + len - 12]) for (let j = 0; j < 4; j++) for (let i = 0; i < 5; i++) img.px(sx + i, Yy - j, j === 3 ? 0x7a6a48 : 0x4a3c28);
+            const rows = [[0, 5], [1, 4], [2, 3], [3, 2]];
+            for (const [row, n] of rows)
+              for (let k = 0; k < n; k++) {
+                const y0 = Yy - 3 - (row + 1) * 5;
+                const x0 = X + row * 3 + (k % 2);
+                const tint = 0.9 + hashPx(k, row, X) * 0.22;
+                for (let i = 0; i < len - row * 6; i++) {
+                  const dy = k * 0;
+                  for (let j = 0; j < 5; j++) {
+                    const node = (i + k * 7) % 22 < 2;
+                    const c = node ? 0xf0e8b0 : j === 0 ? 0x8a9a54 : j === 1 ? 0xe4e4a0 : j < 4 ? 0xc0c878 : 0x6e7e48;
+                    if (j >= k * 0) img.px(x0 + i, y0 + j + dy, scaleColor(c, tint));
+                  }
+                }
+              }
+          },
+        });
+      };
+      const gr = rng(1247);
+      GLADES.forEach(([gx, rx, u1], g) => {
+        const near = (d) => Y(u1 - d) * S; // (a row of the glade, d back from its far edge)
+        const across = () => Math.round((gx - rx * 0.8 + gr() * rx * 1.6) * S);
+        for (let k = 0; k < 7; k++) shoot(across(), near(8 + gr() * 34), 7 + Math.floor(gr() * 8));
+        for (let k = 0; k < 5; k++) stump(across(), near(6 + gr() * 34), 5 + Math.floor(gr() * 4), 3 + Math.floor(gr() * 5));
+        const fx = across();
+        fallen(fx - 36, near(14 + gr() * 8), fx + 30, near(10 + gr() * 22));
+        if (g % 2) fallen(fx - 18, near(26), fx + 34, near(32 + gr() * 6));
+        if (g % 3 === 0) stack(Math.round((gx - 9) * S), near(30), 54);
+      });
+    }
   }
 
   // ------------------------------------------------------------ trees
@@ -3524,19 +3859,78 @@ export function buildMid() {
     return [['cedar', 0.5], ['broadleaf', 0.85], ['sakura', 1]];
   }
   const RADIUS = { sakura: [6, 9.5], broadleaf: [6, 9], cedar: [4.5, 7], bamboo: [3.5, 5.5], pine: [5, 8] };
+  /**
+   * A bamboo branch: a thin twig rising from the node and bending under its own weight, with fans of narrow
+   * spindle-shaped leaves all along it, hanging. Each leaf drops a little shade on what lies under it, lit along
+   * its upper edge, its tip paler, and here and there a yellow one about to fall.
+   */
+  function groveSpray(put, shade, X0, Y0, side, len, LEAF, r) {
+    const tone = r();
+    const at = (t) => [X0 + side * len * t, Y0 - len * 0.62 * t + len * 0.5 * t * t];
+    for (let i = 0; i <= len; i++) {
+      const [X, Y] = at(i / len);
+      put(X, Y, i < len * 0.5 ? LEAF[0] : LEAF[1]);
+    }
+    for (let d = 4 + r() * 3; d <= len; d += 4 + r() * 4) {
+      const [X, Y] = at(d / len);
+      const fan = 3 + Math.floor(r() * 3);
+      for (let k = 0; k < fan; k++) {
+        const ang = -0.75 + (k / (fan - 1)) * 2 + (r() - 0.5) * 0.35; // (a fan: from up and out, through out along the twig, to hanging)
+        const dx = side * Math.cos(ang);
+        const dy = Math.sin(ang);
+        const n = 8 + Math.floor(r() * 6);
+        const base = Math.min(4, Math.floor(1 + tone * 3 + r() * 1.5 - (ang > 1 ? 1 : 0)));
+        const yellow = r() < 0.025;
+        for (let i = 0; i < n; i++) {
+          const t = i / n;
+          const LX = X + dx * i;
+          const LY = Y + dy * i + t * t * 3; // (every leaf tip sags a little)
+          shade(LX + 2, LY + 3, 0.8);
+          const wide = t > 0.14 && t < 0.72;
+          let c = yellow ? (t > 0.6 ? 0xe0c860 : 0xc8b04c) : LEAF[Math.max(1, base - (t < 0.12 ? 1 : 0))];
+          if (!yellow && t > 0.85) c = LEAF[Math.min(4, base + 1)];
+          put(LX, LY, c, true);
+          if (wide) put(LX - dy * side, LY + 1, yellow ? 0xa8903c : LEAF[Math.max(0, base - 2)], true);
+        }
+      }
+    }
+  }
   function treeObj(kind, x, y, r, seed = Math.floor(rand() * 1e9)) {
     const cx = Math.round(x);
     const cy = Math.round(y);
     if (kind === 'bamboo') {
-      // a culm of fine pixels: a shaded edge, the green body, a lit edge, pale nodes with a dark ring under
-      // them, a powdery band below each node; sprays of narrow leaves fanning out of the top, some drooping
+      // a culm in fine pixels, of its own age and girth: bright and powdery when young, deep green in its prime,
+      // yellowing and blotched with lichen when old, straw-coloured and bare when dead. It tapers and bows as
+      // it rises, its internodes short at the foot and long in the middle, each node a swollen ring with the
+      // groove under it and the white bloom below; roots at its foot, the sheaths it has shed round them
       const h = 45 + seed % 19;
-      const lean = seed % 5 - 2;
       const br = rng(seed);
       const CX = cx * S + 1;
       const CY = cy * S + 2;
       const H = h * S;
-      const stalk = (Y) => CX + (lean * S * (CY - Y)) / H;
+      const age = br();
+      const AGE = age < 0.2 ? 0 : age < 0.72 ? 1 : age < 0.95 ? 2 : 3;
+      const RAMP = [
+        [0x2e5a34, 0x6ea85a, 0x9ccc78, 0xd4eeb0],
+        [0x20402c, 0x4e8048, 0x6f9c58, 0xa4c47c],
+        [0x3a4624, 0x74843f, 0x949f50, 0xc4c478],
+        [0x54442a, 0xa08c56, 0xc0a96c, 0xe2d094],
+      ][AGE];
+      const LEAF = [
+        [0x34662f, 0x5c9a42, 0x7ab84e, 0xa2d060, 0xc4e27c],
+        [0x28522c, 0x467a38, 0x5e8f42, 0x7aa64c, 0x9cbb62],
+        [0x34522a, 0x567636, 0x74903e, 0x96a84a, 0xbcbc5c],
+        [0x5a4c28, 0x806c34, 0xa08a44, 0xbca458, 0xd4bc70],
+      ][AGE];
+      const girth = br();
+      const W0 = girth < 0.14 ? 9 : girth < 0.45 ? 7 : girth < 0.85 ? 6 : 4;
+      const lean = (seed % 5) - 2 + (br() - 0.5);
+      const bow = (br() - 0.5) * 3;
+      const stalk = (Y) => {
+        const t = (CY - Y) / H;
+        return CX + S * (lean * t + bow * t * t);
+      };
+      const widthAt = (Y) => Math.max(2, Math.round(W0 * (1 - 0.6 * ((CY - Y) / H) ** 1.6)));
       const put = (X, Y, c, leaf = false) => {
         X = Math.round(X);
         Y = Math.round(Y);
@@ -3544,57 +3938,81 @@ export function buildMid() {
         img.px(X, Y, c);
         if (leaf) markCanopy(X, Y);
       };
-      const node = 20 + (seed % 7);
-      const leaves = [];
-      for (let k = 0; k < 48; k++) {
-        const Y0 = CY - H + Math.floor(br() * 30);
-        const side = br() < 0.5 ? -1 : 1;
-        const len = 8 + Math.floor(br() * 12);
-        const droop = 0.2 + br() * 0.9;
-        const ang = -0.5 + br() * 0.9;
-        leaves.push([Y0, side, len, droop, ang, br.pick([0x5e8a42, 0x71944c, 0x86a855, 0x9cbb62, 0x4a7438])]);
+      const shade = (X, Y, f) => {
+        X = Math.round(X);
+        Y = Math.round(Y);
+        if (X >= 0 && X < W * S && Y >= 0 && Y < L * S && !isRes(X / S, Y / S)) img.tintPx(X, Y, f);
+      };
+      // the nodes, counted up from the ground (row -> rows past the node)
+      const nodes = [];
+      for (let Y = CY - 3, step = 7 + br() * 3; Y > CY - H; Y -= Math.round(step)) {
+        nodes.push(Y);
+        const t = (CY - Y) / H;
+        step = (t < 0.5 ? 9 + t * 34 : 26 - (t - 0.5) * 22) * (0.92 + br() * 0.16);
       }
+      const crownFrom = CY - H * 0.36;
+      const sprays = [];
+      if (AGE < 3 || br() < 0.3)
+        nodes.forEach((Y, i) => {
+          if (Y > crownFrom) return;
+          const side = i % 2 ? 1 : -1;
+          const t = (crownFrom - Y) / (crownFrom - (CY - H));
+          sprays.push([Y, side, Math.round((20 - t * 8) * (0.8 + br() * 0.4)), Math.floor(br() * 1e9)]);
+        });
+      // and the tuft at the very top
+      for (const side of [-1, 1]) sprays.push([CY - H, side, 10 + Math.floor(br() * 5), Math.floor(br() * 1e9)]);
       return {
         y: cy,
         shadow: () => {
-          for (let J = 0; J < H; J++)
-            for (const dx of [7, 8, 9]) {
-              const X = Math.round(stalk(CY - J)) + dx;
-              if (!isRes(X / S, (CY - J) / S)) img.tintPx(X, CY - J, dx === 8 ? 0.62 : 0.78);
-            }
+          // thrown down and to the right along the ground, as far as the gloom lets it show
+          for (let z = 0; z < 66; z++) {
+            const X = CX + z * 0.5;
+            const Y = CY + z * 0.22;
+            const f = 0.78 + (z / 66) * 0.16;
+            for (let i = 0; i < Math.ceil(W0 / 2); i++) shade(X + i, Y, f);
+          }
+          for (let i = -6; i <= 6; i++) for (let j = -2; j <= 2; j++) if ((i / 6) ** 2 + (j / 2) ** 2 < 1) shade(CX + i, CY + j, 0.74);
         },
         draw: () => {
-          // (six fine pixels across: shade, body, body, light, highlight, the far edge)
-          const CULM = [0x203c28, 0x4e7a42, 0x6e9550, 0x88aa5e, 0xb4c886, 0x3e6034];
-          for (let Y = CY - H; Y <= CY; Y++) {
+          // the shed sheaths and the roots round its foot
+          const lr = rng(seed + 3);
+          for (let k = 0; k < 5; k++) {
+            const X = CX + (lr() - 0.5) * 18;
+            const Y = CY + (lr() - 0.3) * 5;
+            const c = lr() < 0.5 ? 0xb49a62 : 0x8a7044;
+            for (let i = 0; i < 3 + lr() * 3; i++) put(X + i, Y + (i >> 1), c);
+          }
+          for (const side of [-1, 1])
+            for (let i = 0; i < 4 + W0 / 3; i++) put(CX + side * (W0 / 2 + i), CY - 1 + (i >> 1), i < 2 ? RAMP[0] : 0x2a2418);
+          for (let Y = CY; Y >= CY - H; Y--) {
             const X = stalk(Y);
-            const k = (CY - Y + seed) % node;
-            const pale = k === 0 || k === 1;
-            for (let i = 0; i < 6; i++) {
-              let c = CULM[i];
-              if (pale) c = i === 0 ? 0x6a7a48 : i === 5 ? 0x7a8a50 : k === 0 ? 0xd2d49a : 0xc2c58a;
-              else if (k === 2) c = scaleColor(CULM[i], 0.6);
-              else if (k < 7) c = scaleColor(CULM[i], 1.12); // (the powdery band under the node)
-              put(X - 3 + i, Y, c);
+            let w = widthAt(Y);
+            let k = 99;
+            for (const n of nodes)
+              if (n <= Y) {
+                k = Math.min(k, Y - n);
+              }
+            const flare = CY - Y < 5 ? Math.round((5 - (CY - Y)) / 2) : 0;
+            const ring = k === 0 || k === 1;
+            if (ring) w += 1;
+            w += flare;
+            const X0 = Math.round(X - w / 2);
+            for (let i = 0; i < w; i++) {
+              const t = w <= 1 ? 0.5 : i / (w - 1);
+              let c = t < 0.12 ? RAMP[1] : t < 0.3 ? RAMP[2] : t < 0.42 ? RAMP[3] : t < 0.72 ? RAMP[1] : RAMP[0];
+              const hs = hashPx(i * 3 + seed % 97, Y >> 2, 88);
+              if (ring) c = k === 0 ? (t > 0.72 ? RAMP[1] : scaleColor(RAMP[3], 1.06)) : t > 0.72 ? RAMP[0] : RAMP[2];
+              else if (k === 2) c = scaleColor(c, 0.55); // (the groove under the node)
+              else if (k < 8 && AGE < 2 && t < 0.72) c = mix(c, 0xd8e4cc, ((8 - k) / 6) * (AGE ? 0.22 : 0.42)); // (the white bloom)
+              else if (hs < 0.08) c = scaleColor(c, 0.88); // (the grain)
+              if (AGE === 2 && hashPx(X0 + i, Y, seed & 255) < 0.05) c = 0x4a4630; // (dark flecks of age)
+              if (AGE === 2 && hashPx(0, Y >> 4, seed & 255) < 0.3 && hashPx(X0 + i, Y >> 1, 93) < 0.3) c = mix(c, 0xc8ccae, 0.6); // (lichen)
+              if (CY - Y < 12 && t > 0.1 && hashPx(i, Y, 91) < 0.25) c = scaleColor(c, 0.82); // (soil splashed at its foot)
+              put(X0 + i, Y, c);
             }
-            if (pale) put(X + 3, Y, 0x5a6a40);
+            if (ring && w >= 5) put(X0 + w, Y, 0x24301c);
           }
-          // a side branch or two, thin, off the upper nodes
-          for (let b = 0; b < 2; b++) {
-            const Y0 = CY - H + node * (1 + b);
-            const side = b ? 1 : -1;
-            for (let i = 1; i < 9; i++) put(stalk(Y0) + side * (i + 1), Y0 - i * 0.6, 0x5a7a40);
-          }
-          for (const [Y0, side, len, droop, ang, c] of leaves) {
-            const X0 = stalk(Y0) + side;
-            for (let i = 0; i < len; i++) {
-              const t = i / len;
-              const X = X0 + side * i * Math.cos(ang);
-              const Y = Y0 - i * Math.sin(ang) + droop * i * t * 1.4;
-              put(X, Y, i === 0 ? 0x3a6039 : t > 0.75 ? scaleColor(c, 0.85) : c, true);
-              if (t > 0.2 && t < 0.7) put(X, Y + 1, scaleColor(c, 0.7), true);
-            }
-          }
+          for (const [Y0, side, len, sd] of sprays) groveSpray(put, shade, stalk(Y0), Y0, side, len, LEAF, rng(sd));
         },
       };
     }
@@ -3652,6 +4070,8 @@ export function buildMid() {
       if (u >= 5000 && u < 5560) continue;
       if (rand() < (kind === 'bamboo' ? 0.02 : 0.12)) continue; // occasional gap in the canopy
       if (kind === 'bamboo' && gy % 36 !== 0) { rand(); continue; } // preserve the seed stream outside the grove
+      if (kind === 'bamboo' && groveOpen(x, y)) { rand(); continue; }
+      if (kind === 'cedar' && L - y > ARASHI[0] + 20 && L - y < 3260) { rand(); continue; }
       objects.push(treeObj(kind, x, y, r));
     }
 
@@ -3659,6 +4079,58 @@ export function buildMid() {
   for (const o of objects) o.shadow?.();
   objects.sort((a, b) => a.y - b.y);
   for (const o of objects) o.draw();
+
+  // the bamboo grove: sprays leaning out over the fence and the path, so the walk runs under a green eave; then
+  // the light on the leaves gathered into pools and the gloom between them, so the grove is not one even carpet
+  {
+    const fr = rng(1251);
+    const LEAF = [0x28522c, 0x467a38, 0x5e8f42, 0x7aa64c, 0x9cbb62];
+    const put = (X, Yy, c, leaf = false) => {
+      X = Math.round(X);
+      Yy = Math.round(Yy);
+      if (X < 0 || X >= W * S || Yy < 0 || Yy >= L * S) return;
+      img.px(X, Yy, c);
+      if (leaf) markCanopy(X, Yy);
+    };
+    const shade = (X, Yy, f) => {
+      X = Math.round(X);
+      Yy = Math.round(Yy);
+      if (X >= 0 && X < W * S && Yy >= 0 && Yy < L * S) img.tintPx(X, Yy, f);
+    };
+    for (let u = 2720; u < 3250; u += 3 + fr() * 4)
+      for (const side of [-1, 1]) {
+        if (fr() < 0.3) continue;
+        // (only where the fence backs onto the grove, not by the gardens)
+        if (side < 0 && u > 3160) continue;
+        if (side > 0 && u > 2905 && u < 2925) continue;
+        const X = (groveX(u) + side * (10 + fr() * 2)) * S;
+        groveSpray(put, shade, X, Y(u) * S, -side, 12 + Math.floor(fr() * 16), LEAF, rng(Math.floor(fr() * 1e9)));
+      }
+    const D = img.hi.data;
+    const row = W * S * 4;
+    for (let Yy = Y(3262) * S; Yy < Y(2704) * S; Yy++)
+      for (let X = 0; X < W * S; X++) {
+        const leaf = canopyAt(X, Yy);
+        if (!leaf && isRes(X / S, Yy / S)) continue;
+        const i = Yy * row + X * 4;
+        if (!D[i + 3]) continue;
+        const v = fbm((X >> 2) / S, (Yy >> 2) / S, { seed: 1253, scale: 26, octaves: 3 });
+        const gust = hashPx(X >> 1, Yy >> 1, 1255) * 0.08;
+        let f = 0.62 + Math.max(0, Math.min(1, (v - 0.32) / 0.36)) * 0.62 + gust;
+        if (!leaf) {
+          // (the sun reaches the floor of the glades)
+          const u = L - Yy / S;
+          for (const [gx, rx, u1] of GLADES) {
+            const e = ((X / S - gx) / (rx + 3)) ** 2 + ((u - (u1 - 22)) / 28) ** 2;
+            if (e < 1) f = Math.max(f, 0.78 + (1 - e) * 0.42);
+          }
+        }
+        const warm = v > 0.6 ? (v - 0.6) * 30 : 0;
+        D[i] = Math.min(255, D[i] * f + warm);
+        D[i + 1] = Math.min(255, D[i + 1] * f + warm * 0.7);
+        D[i + 2] = Math.min(255, D[i + 2] * (f - (v < 0.42 ? -0.06 : 0)));
+      }
+  }
 
   {
     const D = img.hi.data;
@@ -3683,14 +4155,18 @@ export function buildMid() {
         for (let X = x0 * S; X < Math.min(W, x0 + 16) * S; X++) {
           const q = img.rgbaPx(X, Y);
           if (!canopyAt(X, Y) || !q || !q[3]) continue;
-          const e = Math.min(X - x0 * S, (x0 + 16) * S - 1 - X, Y - y0 * S, (y0 + 16) * S - 1 - Y);
-          tile.setRGBAPx(X, Y, Math.min(255, q[0] * 1.25 + 16), Math.min(255, q[1] * 1.3 + 20), Math.min(255, q[2] * 1.05 + 6), Math.round(255 * Math.min(1, (e + 1) / 12)));
+          // (not every leaf turns; the patch fades out from its middle, so no square shows)
+          if (hashPx(X >> 2, Y >> 1, 1261) < 0.35) continue;
+          const r = Math.hypot(X - (x0 + 8) * S, Y - (y0 + 8) * S) / (8 * S);
+          const e = Math.max(0, Math.min(1, (1.08 - r) * 1.8));
+          if (e <= 0) continue;
+          tile.setRGBAPx(X, Y, Math.min(255, q[0] * 1.14), Math.min(255, q[1] * 1.24), Math.min(255, q[2] * 0.98), Math.round(255 * e));
           n++;
         }
       if (n < 12 * S * S) continue;
       const u = U(y0);
       const ph = -(x0 * 0.05 + u * 0.012) + fbm(x0, u, { seed: 77, scale: 40 }) * 2.5;
-      kit.wave([kit.frame(tile)], [[0, x0, u, ph]], { w: 1.1, a0: 0, a1: 0.6, pw: 4 });
+      kit.wave([kit.frame(tile)], [[0, x0, u, ph]], { w: 1.1, a0: 0, a1: 0.3, pw: 3 });
     }
   // the Golden Pavilion's reflection ripples: rows of the pond nudged sideways, three ways in turn (live)
   if (ripple) {
