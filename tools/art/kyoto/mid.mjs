@@ -3332,11 +3332,7 @@ export function buildMid() {
       return p;
     };
     // at Fushimi Inari: charms by the Rōmon, food stalls (grilled skewers, inari foxes) in the courtyard
-    placeStall(16, 78, 1222, 1300, 'omamori');
-    placeStall(102, 164, 1222, 1300, 'yakitori');
-    placeStall(16, 78, 1440, 1560, 'kitsune');
-    placeStall(102, 164, 1440, 1560, 'dango');
-    placeStall(102, 164, 1620, 1720, 'omamori');
+    const inariStalls = [placeStall(16, 78, 1222, 1300, 'omamori'), placeStall(102, 164, 1222, 1300, 'yakitori'), placeStall(16, 78, 1440, 1560, 'kitsune'), placeStall(102, 164, 1440, 1560, 'dango'), placeStall(102, 164, 1620, 1720, 'omamori')];
     // in Kiyomizu's gate courtyard, and at Arashiyama's river bank, and at the foot of the 大 for the crowd
     placeStall(4, 76, 5440, 5560, 'omamori');
     placeStall(104, 176, 5430, 5480, 'taiyaki');
@@ -3649,6 +3645,253 @@ export function buildMid() {
     {
       const p = findSpot(16, 164, 1240, 1480, 16, 10);
       if (p) school(p[0], p[1]);
+    }
+    // ---- Fushimi Inari is never empty: the approach and the courtyard full of people, thick where people really
+    // gather (at the offering box and its bell ropes, the stalls, the water basin, the dance stage, the plaques,
+    // the foxes, under the gates for a photograph) and in twos and threes everywhere else. Every one is an object
+    // sorted with the buildings, so they stand in front of and behind things properly. All of it on its own
+    // random numbers, so the rest of the map keeps its place; the turret pads stay clear.
+    {
+      const fr = rng(1301);
+      const QUIET = [0x3a3a4a, 0x4a4038, 0x2a3040, 0x5a5a62, 0x6a6258, 0x34404c];
+      const BRIGHT = [0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0x6aaa5a, 0xe07a30, 0x8a5ab0];
+      const onWalk = (x, u) => (u > 660 && u < 1130 && x >= 70 && x < 110) || (u >= 1130 && u < 1830 && x >= 78 && x < 102);
+      const taken = new Set();
+      const open = (x, y) => {
+        const ix = Math.round(x);
+        const iy = Math.round(y);
+        if (ix < 15 || ix > 164 || iy < 0 || iy >= L || !img.alpha(ix, iy)) return false;
+        if (pads.some((p) => Math.hypot(p.x - x, Y(p.u) - y) < 15)) return false;
+        return onWalk(x, L - y) || !occ[iy * W + ix];
+      };
+      /** One person, dressed at random: a rented kimono (some under a paper parasol), a sun hat, a rucksack. */
+      const visitor = (x, y, o = {}) => {
+        const cell = Math.round(x / 1.4) * 8192 + Math.round(y / 1.6);
+        if (taken.has(cell) || !open(x, y)) return false;
+        taken.add(cell);
+        const X = Math.round(x * S);
+        const Yy = Math.round(y * S);
+        const kind = o.kimono ?? fr() < 0.14;
+        const look = kind
+          ? { maiko: true, kimono: fr.pick(KIMONO), orn: fr() < 0.5, obi: fr.pick([0xe8c040, 0x2a2a6a, 0xf4f0e6, 0xc83a3a, 0x3a8a6a]) }
+          : { coat: o.coat ?? (fr() < 0.42 ? fr.pick(BRIGHT) : fr.pick(QUIET)), hair: o.hair ?? fr.pick([0x2a2024, 0x1a1418, 0x3a2a20, 0x6a5a48, 0xc8c8c8]), face: o.face ?? fr() < 0.5, legs: o.legs ?? fr.pick([0x2a2a34, 0x3a4a6a, 0x1a1a20, 0x5a5048]) };
+        const extra = fr();
+        const parasol = kind && extra < 0.35 ? fr.pick([0xc8302a, 0xe0803a, 0xb83a6a, 0x3a5ab0]) : 0;
+        const hat = !kind && !o.coat && extra < 0.13 ? fr.pick([0xe8e0c8, 0xc8a868, 0xf4f4f0]) : 0;
+        const pack = !kind && !o.coat && extra > 0.78 ? fr.pick([0x2a3a5a, 0x5a3a2a, 0x3a5a3a, 0x8a2a2a]) : 0;
+        const cap = o.cap ?? 0;
+        const phone = !kind && extra > 0.68 && extra <= 0.78;
+        objects.push({
+          y: (Yy + 5) / S,
+          draw: () => {
+            if (pack) for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) img.px(X + i, Yy + j, i === 2 ? scaleColor(pack, 0.75) : pack);
+            personPx(X, Yy, look);
+            if (pack) for (let j = 0; j < 3; j++) img.px(X + 1, Yy + j, pack);
+            if (hat) {
+              for (let i = -1; i < 4; i++) img.px(X + i, Yy - 2, hat);
+              img.px(X + 1, Yy - 3, hat);
+            }
+            if (cap) {
+              for (let i = 0; i < 3; i++) img.px(X + i, Yy - 2, cap);
+              img.px(X + 1, Yy - 3, cap);
+            }
+            if (phone) {
+              img.px(X + 3, Yy, 0xe8c0a0);
+              img.px(X + 4, Yy - 1, 0x141418);
+              img.px(X + 4, Yy - 2, 0xa8c8e0);
+            }
+            if (parasol)
+              for (let j = -3; j <= 2; j++)
+                for (let i = -6; i <= 6; i++) {
+                  if ((i / 6.2) ** 2 + (j / 3.2) ** 2 > 1) continue;
+                  img.px(X + 1 + i, Yy - 6 + j, i === 0 || (i + 12) % 4 === 0 ? scaleColor(parasol, 0.78) : i < -1 ? scaleColor(parasol, 1.15) : parasol);
+                }
+          },
+        });
+        return true;
+      };
+      const normal = () => (fr() + fr() + fr() - 1.5) / 1.5; // (roughly -1..1, thickest in the middle)
+      /** A knot of n people round (cx, u). */
+      const gather = (cx, u, rx, ry, n, o = {}) => {
+        for (let k = 0; k < n * 2 && n > 0; k++) if (visitor(cx + normal() * rx, Y(u) + normal() * ry, o)) n--;
+      };
+      /** People waiting one behind another, from the head of the line back along (dx, du). */
+      const queue = (x, u, dx, du, n, o = {}) => {
+        for (let k = 0; k < n; k++) visitor(x + dx * k + (fr() - 0.5) * 0.8, Y(u + du * k), { face: false, ...o });
+      };
+      /** A tour party: all in the company's caps, close together behind a guide with a flag on a pole. */
+      const tour = (x, u, n, cap, flag) => {
+        gather(x, u, 7, 3.5, n, { cap, kimono: false });
+        const X = Math.round((x + 9) * S);
+        const Yy = Y(u) * S;
+        if (!open(x + 9, Y(u))) return;
+        objects.push({
+          y: (Yy + 5) / S,
+          draw: () => {
+            personPx(X, Yy, { coat: flag, hair: 0x2a2024, face: true, legs: 0x2a2a34 });
+            for (let j = -14; j < 2; j++) img.px(X + 4, Yy + j, 0x8a8a90);
+            for (let j = 0; j < 5; j++) for (let i = 0; i < 8 - j; i++) img.px(X + 5 + i, Yy - 14 + j, j === 0 ? scaleColor(flag, 1.2) : flag);
+          },
+        });
+      };
+
+      // --- the approach: a river of people up the paving, thickening towards the shops
+      for (let k = 0; k < 520; k++) visitor(71 + fr() * 38, Y(664 + fr() * 466));
+      for (const side of [-1, 1]) for (let k = 0; k < 90; k++) visitor(90 + side * (24 + fr() * 6), Y(664 + fr() * 466));
+      gather(90, 724, 16, 6, 26); // (under the small gate)
+      gather(90, 1006, 19, 8, 44); // (under the great gate, for its photograph)
+      tour(78, 860, 12, 0xe8c040, 0xe8c040);
+      tour(100, 1070, 11, 0xd04040, 0xd04040);
+
+      // --- the walk through the courtyard, two ways at once, the throng growing towards the shrine
+      for (let k = 0; k < 330; k++) {
+        const t = fr() ** 0.7;
+        visitor(90 + normal() * 8, Y(1220 + t * 262));
+      }
+      // the throng before the offering box, everyone with their back to us, three lines at the bell ropes
+      gather(90, 1474, 30, 12, 130, { face: false });
+      gather(90, 1484, 14, 3, 30, { face: false });
+      for (const x of [85, 90, 95]) queue(x, 1484, 0, -2.2, 14);
+      // on past the hall, up the steps and under the two gates
+      for (let k = 0; k < 150; k++) visitor(90 + normal() * 7, Y(1600 + fr() * 100));
+      for (let k = 0; k < 100; k++) visitor(90 + normal() * 8, Y(1700 + fr() * 128));
+      for (const u of [1754, 1790]) {
+        gather(90, u, 12, 4, 22); // (posing under the gate)
+        queue(90, u - 12, 0, 0, 1, { face: true, coat: 0x3a3a4a });
+      }
+      // along both flanks of the hall, the way round to the back
+      for (const x of [24, 156]) for (let k = 0; k < 46; k++) visitor(x + (fr() - 0.5) * 18, Y(1500 + fr() * 100));
+      // and either side of the great gate, and at its foxes, where everyone stops on the way in
+      for (let k = 0; k < 110; k++) visitor(16 + fr() * 148, Y(1132 + fr() * 88));
+      gather(68, 1134, 12, 3, 12);
+      gather(115, 1134, 12, 3, 12);
+      gather(90, 1136, 16, 4, 30);
+
+      // --- more stalls down both sides, with people round every one
+      const more = [[16, 78, 1222, 1300, 'taiyaki'], [102, 164, 1222, 1300, 'ramune'], [16, 78, 1370, 1420, 'dango'], [102, 164, 1300, 1360, 'kitsune'], [16, 78, 1440, 1500, 'yakitori'], [102, 164, 1440, 1490, 'taiyaki'], [16, 78, 1700, 1820, 'ramune'], [102, 164, 1745, 1825, 'yakitori']];
+      const spot = (x0, x1, u0, u1, w, h) => {
+        for (let k = 0; k < 200; k++) {
+          const x = Math.round(x0 + fr() * Math.max(0, x1 - x0 - w));
+          const y = Math.round(Y(u1) + fr() * Math.max(0, u1 - u0 - h));
+          if (free(x, y, w, h)) return [x, y];
+        }
+        return null;
+      };
+      const all = [...inariStalls];
+      for (const [x0, x1, u0, u1, kind] of more) {
+        const p = spot(x0, x1, u0, u1, 18, 12);
+        if (p) stall(p[0], p[1], kind);
+        all.push(p);
+      }
+      for (const p of all) {
+        if (!p) continue;
+        const u = U(p[1] + 15);
+        gather(p[0] + 9, u, 11, 2.5, 13, { face: false });
+        queue(p[0] + 5, u - 3, (fr() < 0.5 ? -1 : 1) * 0.6, -2.2, 6);
+      }
+
+      // --- where people stop: the water basin, the dance stage, the plaques, the sake, the foxes, the side halls
+      gather(121, 1279, 11, 2.5, 16, { face: false });
+      queue(112, 1279, -1.6, 1, 7);
+      gather(141, 1359, 17, 4, 40, { face: false }); // (the audience at the kagura stage)
+      for (const [x0, u] of [[28, 1420], [130, 1500], [26, 1610]]) gather(x0 + 13, u - 8, 14, 2.5, 13, { face: false });
+      for (const [x0, u0] of [[16, 1290], [128, 1600]]) gather(x0 + 17, u0 - 13, 16, 3, 10);
+      for (const [x, u] of [[30, 1250], [146, 1250], [30, 1500], [146, 1520], [76, 1716], [100, 1716]]) gather(x + 5, u - 9, 7, 3, 6);
+      for (const [x, u, w] of [[42, 1314, 17], [138, 1394, 17], [41, 1659, 15], [141, 1709, 15]]) gather(x, u, w, 3, 16, { face: false });
+      for (const [x, u] of [[48, 1300], [140, 1660]]) gather(x, u - 8, 10, 3, 9);
+
+      // --- parties being shown round
+      tour(50, 1340, 14, 0xe8e8f0, 0x3a6ad0);
+      tour(128, 1262, 12, 0xe8c040, 0xe07a30);
+      tour(52, 1470, 13, 0x3a8a5a, 0x3a8a5a);
+      tour(130, 1660, 12, 0xd04040, 0xd04040);
+      tour(52, 1740, 11, 0x3a6ad0, 0x3a6ad0);
+
+      // --- red-felt benches under big paper parasols, where people rest with their tea and dango
+      const teaBench = (x, y) => {
+        const X = x * S;
+        const Yy = y * S;
+        const br = rng(x * 41 + y);
+        objects.push({
+          y: y + 5,
+          shadow: () => shadowPx(X + 4, Yy + 7, 36, 8, 0.55),
+          draw: () => {
+            for (const LX of [X + 3, X + 30]) for (let j = 6; j < 12; j++) img.px(LX, Yy + j, C.wood[0]);
+            for (let j = 0; j < 7; j++) for (let i = 0; i < 34; i++) img.px(X + i, Yy + j, j === 0 ? 0xf05a48 : j === 6 ? 0x8a1a14 : j < 3 ? 0xd83a2a : 0xc02a20);
+            for (let k = 0; k < 4; k++) {
+              if (br() < 0.25) continue;
+              personPx(X + 3 + k * 8, Yy - 5, { coat: br.pick([...BRIGHT, ...QUIET]), hair: br.pick([0x2a2024, 0x1a1418, 0x6a5a48]), face: br() < 0.7, legs: 0x2a2a34 });
+            }
+            // the parasol: a great red circle of paper on bamboo ribs, its pole down behind the bench
+            const CX = X + 17;
+            const CY = Yy - 15;
+            for (let j = -6; j < 13; j++) {
+              img.px(CX, Yy + j, 0x8a6a3a);
+              img.px(CX + 1, Yy + j, 0x5a4428);
+            }
+            for (let j = -10; j <= 10; j++)
+              for (let i = -20; i <= 20; i++) {
+                const e = (i / 20) ** 2 + (j / 10) ** 2;
+                if (e > 1) continue;
+                const a = Math.atan2(j * 2, i);
+                const rib = Math.abs(((a + Math.PI) * 4) % (Math.PI / 2) - Math.PI / 4) < 0.05;
+                img.px(CX + i, CY + j, e < 0.03 ? 0x2a2024 : e > 0.84 ? 0x8a1a14 : rib ? 0xa82a20 : i + j < -8 ? 0xf05a48 : 0xd83a2a);
+              }
+          },
+        });
+        take(x, y - 7, 12, 11);
+      };
+      for (const [x0, x1, u0, u1] of [[16, 76, 1220, 1320], [104, 164, 1300, 1356], [16, 76, 1440, 1500], [104, 164, 1650, 1700], [16, 76, 1760, 1825]]) {
+        const p = spot(x0, x1, u0, u1, 12, 10);
+        if (p) teaBench(p[0], p[1] + 7);
+      }
+
+      // --- and everybody else, in ones, twos and threes, more in some parts of the gravel than in others
+      for (let k = 0, placed = 0; k < 4000 && placed < 480; k++) {
+        const x = 16 + fr() * 148;
+        const u = 1218 + fr() * 610;
+        if (fbm(x, u, { seed: 1307, scale: 26, octaves: 2 }) < 0.46) continue;
+        const n = 1 + Math.floor(fr() ** 1.6 * 4);
+        for (let i = 0; i < n; i++) if (visitor(x + (fr() - 0.5) * 7, Y(u + (fr() - 0.5) * 5))) placed++;
+      }
+
+      // --- (live) people walking: both ways along the paving, the worn tracks out to the side halls, and strolling
+      // about the gravel. The gates' beams would be walked over, so every line stops short of them
+      const walker = (c, step) => {
+        const out = new HiCanvas(2, 4);
+        for (let i = 1; i < 3; i++) out.px(i, 0, 0x2a2024);
+        out.px(1, 1, 0x2a2024);
+        out.px(2, 1, 0xe8c0a0);
+        for (let j = 2; j < 6; j++) for (let i = 0; i < 4; i++) if (!(j > 4 && (i === 0 || i === 3))) out.px(i, j, i === 0 || i === 3 ? scaleColor(c, 0.75) : c);
+        out.px(step ? 1 : 2, 6, 0x2a2a34);
+        out.px(step ? 2 : 1, 7, 0x2a2a34);
+        out.px(step ? 1 : 2, 8, 0x1a1a20);
+        for (let i = 2; i < 6; i++) out.px(i, 10, 0x101418, 0.4);
+        return kit.frame(gradeAt(out, 1300));
+      };
+      const walkers = [...BRIGHT, ...QUIET, ...KIMONO.slice(0, 3)].map((c) => [walker(c, 0), walker(c, 1)]);
+      const lane = (pts, n = 1, gap = 60) => kit.path(pts, fr.pick(walkers), { sp: 2.6 + fr() * 1.8, n, gap, mode: 'pp', hold: 1.5 + fr() * 2, turn: 'none', fps: 3, s0: fr() });
+      for (const [u0, u1, xs] of [[672, 725, [76, 84, 92, 100]], [745, 1015, [72, 76, 80, 84, 88, 92, 96, 100, 104]], [1040, 1124, [78, 86, 94, 102]], [1222, 1484, [83, 85, 87, 89, 91, 93, 95, 97]], [1600, 1755, [84, 88, 92, 96]], [1786, 1808, [86, 94]]])
+        for (const x of xs) lane([[x, u0], [x, u1]], u1 - u0 > 200 ? 2 : 1, 110);
+      // a whole party on the move, close together in the same yellow caps
+      const caps = [0, 1].map((step) => {
+        const out = new HiCanvas(2, 4);
+        for (let i = 1; i < 3; i++) out.px(i, 0, 0xe8c040);
+        out.px(1, 1, 0x2a2024);
+        out.px(2, 1, 0xe8c0a0);
+        for (let j = 2; j < 6; j++) for (let i = 0; i < 4; i++) if (!(j > 4 && (i === 0 || i === 3))) out.px(i, j, i === 0 || i === 3 ? 0x2a3040 : 0x3a4a60);
+        out.px(step ? 1 : 2, 6, 0x2a2a34);
+        out.px(step ? 2 : 1, 7, 0x2a2a34);
+        for (let i = 2; i < 6; i++) out.px(i, 10, 0x101418, 0.4);
+        return kit.frame(gradeAt(out, 1300));
+      });
+      kit.path([[86, 1222], [86, 1484]], caps, { sp: 2.8, n: 9, gap: 4, mode: 'pp', hold: 5, turn: 'none', fps: 3, s0: 0.3 });
+      kit.path([[94, 760], [94, 1015]], caps, { sp: 2.8, n: 8, gap: 4, mode: 'pp', hold: 5, turn: 'none', fps: 3, s0: 0.65 });
+      for (const pts of [[[98, 1290], [112, 1284]], [[102, 1366], [126, 1362]], [[80, 1418], [58, 1414]], [[110, 1490], [128, 1490]], [[102, 1650], [148, 1642]], [[78, 1650], [32, 1640]], [[102, 1340], [150, 1338]], [[78, 1262], [30, 1262]]]) lane(pts, 2, 18);
+      for (let k = 0; k < 9; k++) {
+        const p = spot(16, 164, 1220, 1825, 22, 14);
+        if (p) kit.wander(p[0] + 11, U(p[1] + 7), 11, 7, fr.pick(walkers), { n: 2, sp: 3, idle: 0.5, turn: 'none', fps: 3 });
+      }
     }
     // Kiyomizu's gate courtyard and the walks behind the main hall
     dress(4, 176, 5428, 5560, [
