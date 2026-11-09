@@ -20,19 +20,41 @@ export function paintHashima(k) {
     const u = 7168 - y;
     if (!inPoly(HASHIMA, x, u)) return null;
     const n = fbm(x, y, { seed: 801, scale: 9, octaves: 3 });
-    let c = rampColor(CONC, 0.15 + n * 0.6, X, Yy);
+    // what was built here lies in slabs and foundations, each slab its own weathering, soil and rubble between
+    const cx = Math.floor((x + (Math.floor(y / 12) % 2) * 7) / 14);
+    const cy = Math.floor(y / 12);
+    const fx = (x + (Math.floor(y / 12) % 2) * 7) % 14;
+    const fy = y % 12;
+    const kind = hashPx(cx, cy, 830);
+    let c;
+    if (kind < 0.42) {
+      // a slab, its edge broken, its tone its own
+      c = rampColor([0x5a5a56, 0x6e6e68, 0x82827a, 0x94948a], 0.15 + hashPx(cx, cy, 831) * 0.4 + n * 0.4, X, Yy);
+      if (fx < 0.5 || fy < 0.5) c = 0x34342e;
+    } else if (kind < 0.68) {
+      // rubble: lumps of concrete with their shadows
+      const lump = hashPx(X >> 1, Yy >> 1, 832);
+      const big = fbm(x, y, { seed: 833, scale: 2.4, octaves: 2 });
+      c = lump < 0.16 ? 0x3e3e38 : rampColor([0x54524a, 0x62605a, 0x72706a], big * 0.7 + lump * 0.3, X, Yy);
+    } else c = rampColor([0x4a4438, 0x5a5444, 0x6a6250, 0x7a7260], 0.15 + n * 0.7, X, Yy); // soil
     const g = hashPx(X, Yy, 802);
     if (g < 0.1) c = scaleColor(c, 0.82);
     else if (g > 0.96) c = 0xbcb8a4;
-    if (Math.abs(fbm(x, y, { seed: 803, scale: 6 }) - 0.5) < 0.008) c = 0x38382e;
-    if (fbm(x, y, { seed: 804, scale: 3, octaves: 3 }) > 0.72) c = rampColor(WEED, hashPx(X >> 1, Yy >> 1, 805), X, Yy);
+    if (Math.abs(fbm(x, y, { seed: 803, scale: 6 }) - 0.5) < 0.008) c = 0x2a2a24;
+    if (fbm(x, y, { seed: 804, scale: 4, octaves: 3 }) > 0.64) c = rampColor(WEED, hashPx(X >> 1, Yy >> 1, 805), X, Yy);
     return c;
   });
 
   /** A gutted concrete apartment block: the roof fallen in, floors of empty window holes, rust and salt down its face. */
-  const block = (x, footU, w, rh, floors, opt = {}) => {
+  const fits = (x, u0, w, h) => [[x - 4, u0 - 3], [x + w + 4, u0 - 3], [x - 4, u0 + h + 3], [x + w + 4, u0 + h + 3]].every(([a, b]) => inPoly(HASHIMA, a, b));
+  const block = (x0, footU, w, rh, floors, opt = {}) => {
     const FLOOR = opt.floorH ?? 3;
     const fh = floors * FLOOR;
+    // inside the seawall, moved along if it has to be; if it can't fit, it isn't built
+    const toMiddle = x0 < 90 ? 2 : -2;
+    let x = x0;
+    for (let q = 0; q < 12 && !fits(x, footU, w, rh + fh); q++) x += toMiddle;
+    if (!fits(x, footU, w, rh + fh)) return;
     const y = Y(footU) - rh - fh;
     if (k.anyRes(x, y, w, rh + fh)) return;
     k.reserve(x - 1, y - 1, w + 2, rh + fh + 2);
@@ -81,6 +103,9 @@ export function paintHashima(k) {
             }
             if (X >= X1 - 3) c = scaleColor(c, 0.7);
             if (j >= YB - YF - 3 && hashPx(i, 3, sd) < 0.5) c = rampColor(WEED, 0.5, X, Yy);
+            // creeper hanging from the parapet, thick in places, ending raggedly
+            const vine = hashPx(i >> 3, 11, sd);
+            if (vine < 0.24 && j < (0.2 + vine * 3) * (YB - YF) * (0.7 + hashPx(i, 12, sd) * 0.3) && hashPx(i >> 1, j >> 1, sd + 8) < 0.72) c = rampColor(WEED, hashPx(i, j, sd + 9), X, Yy);
             img.px(X, Yy, c);
           }
         }
@@ -113,6 +138,19 @@ export function paintHashima(k) {
               img.px(HX + i, HY + j, c);
             }
         }
+        // bushes and small trees rooted on the roof
+        for (let q = 0; q < 2 + w / 9; q++) {
+          if (hashPx(q, 21, sd) < 0.3) continue;
+          const BX = X0 + 6 + hashPx(q, 22, sd) * (X1 - X0 - 12);
+          const BY = YR + 5 + hashPx(q, 23, sd) * (YF - YR - 8);
+          const r = 3 + hashPx(q, 24, sd) * 5;
+          for (let j = -r; j <= r; j++)
+            for (let i = -r; i <= r; i++) {
+              const q2 = i * i + j * j + (hashPx(i + q, j, sd) - 0.5) * r * r * 0.5;
+              if (q2 > r * r) continue;
+              img.px(BX + i, BY + j, rampColor([0x24381f, 0x34502a, 0x4c6c38, 0x648644], 0.5 - j / (r * 2.2) - i / (r * 6), BX + i, BY + j));
+            }
+        }
         if (opt.tank) {
           const TX = (x + 3) * S;
           const TY = (y + 2) * S;
@@ -134,14 +172,19 @@ export function paintHashima(k) {
   const rows = [];
   for (let u = 366; u < 760; u += 38) rows.push(u);
   rows.forEach((u, i) => {
-    block(29 + (i % 2), u, 21 + (i % 3), 11 + (i % 3), 5 + (i % 3), { tank: i % 3 === 0 });
-    block(54 + (i % 2), u + 4, 12 + (i % 3), 10 + (i % 3), 5 + (i % 2), { tank: i % 4 === 1 });
-    block(69 + (i % 2), u + 2, 12 + (i % 2), 11 + (i % 2), 6 + (i % 2));
+    const f = (q) => Math.floor(hashPx(i, q, 840) * 3);
+    if (i % 4 === 2) block(30, u, 51, 13, 6 + (f(4) ? 1 : 0), { bay: 9, tank: true });
+    else {
+      block(29 + (i % 2), u, 21 + f(1), 11 + (i % 3), 4 + f(2), { tank: i % 3 === 0 });
+      block(54 + (i % 2), u + 4, 12 + (i % 3), 10 + (i % 3), 4 + f(3), { tank: i % 4 === 1 });
+      block(69 + (i % 2), u + 2, 12 + (i % 2), 11 + (i % 2), 5 + f(5));
+    }
     k.reserve(26, Y(u + 3), 60, 2);
   });
   // the narrow north-south alleys and their stairs
   for (const ax of [52, 81]) {
-    img.fine(ax, Y(830), 3, 462, (X, Yy) => {
+    img.fine(ax, Y(830), 3, 462, (X, Yy, x, y) => {
+      if (!inPoly(HASHIMA, x, 7168 - y) || k.shoreD[Yy * k.FW + X] <= 5) return null;
       const q = Yy % 6;
       return q < 2 ? 0xa09c88 : q < 3 ? 0x2a2a24 : hashPx(X, Yy, 809) < 0.3 ? 0x5a5a4a : 0x4a4a3e;
     });
@@ -150,8 +193,17 @@ export function paintHashima(k) {
   block(62, 352, 30, 14, 9, { wall: 0x8a8270, roof: 0x6e6a5a, bay: 12 });
   // the school in the north, seven storeys, its corridors along the front, the schoolyard before it
   block(112, 740, 30, 13, 7, { wall: 0xa8a48e, roof: 0x7e7c6a, bay: 8, tank: true });
-  k.fill(114, Y(800), 18, 24, [0x6e6a58, 0x7e7a66, 0x8e8a74], 810, 5);
-  for (let x = 116; x < 132; x += 5) k.tree(x, Y(802), 2.6, [0x2a4228, 0x3a5a30, 0x4c6e38, 0x628044], x + 811);
+  img.fine(112, Y(800), 22, 24, (X, Yy, x, y) => {
+    if (!inPoly(HASHIMA, x, 7168 - y) || k.shoreD[Yy * k.FW + X] <= 6) return null;
+    const dx = x - 123;
+    const dy = y - (Y(800) + 12);
+    const n = fbm(x, y, { seed: 810, scale: 4, octaves: 3 });
+    if (n > 0.6) return rampColor(WEED, hashPx(X >> 1, Yy >> 1, 811), X, Yy);
+    const line = Math.abs(Math.abs(dx) - 9) < 0.34 || Math.abs(Math.abs(dy) - 10) < 0.34 || Math.abs(dy) < 0.3 || Math.abs(Math.hypot(dx, dy) - 3.6) < 0.3;
+    if (line && hashPx(X >> 2, Yy >> 2, 812) < 0.62) return 0xb8b4a0;
+    return rampColor([0x5e5a4c, 0x6e6a58, 0x7e7a66], 0.2 + n * 0.8, X, Yy);
+  });
+  for (const gx of [114, 132]) k.tree(gx, Y(802), 2.6, [0x2a4228, 0x3a5a30, 0x4c6e38, 0x628044], gx + 811);
   // the gymnasium and the cinema's shell
   block(114, 708, 26, 10, 3, { wall: 0x8a8e80, bay: 14 });
 
@@ -281,6 +333,78 @@ export function paintHashima(k) {
     if (i % 4 === 0) img.rectPx(x * S, y * S - 4, 16, 2, 0x7a4a2a);
   }
 
+  // the foundations of everything that has gone: broken low walls round a floor of rubble, a stair going nowhere
+  const footprint = (x, u, w, h, seed2) => {
+    const y = Y(u + h);
+    if (!fits(x, u, w, h) || k.anyRes(x - 1, y - 1, w + 2, h + 2)) return;
+    k.reserve(x - 1, y - 1, w + 2, h + 2);
+    img.fine(x, y, w, h, (X, Yy, xx, yy) => {
+      const dx = Math.min(xx - x, x + w - xx);
+      const dy = Math.min(yy - y, y + h - yy);
+      const e = Math.min(dx, dy);
+      const broken = hashPx(Math.floor(xx / 4), Math.floor(yy / 4), seed2) < 0.3;
+      if (e < 1.3 && !broken) {
+        // the wall's broken top, its shaded inner side
+        return e < 0.7 ? 0xa4a08c : 0x3a3a32;
+      }
+      // the divisions of the rooms
+      if ((Math.abs(((xx - x) % 9) - 4.5) < 0.4 || Math.abs(((yy - y) % 8) - 4) < 0.4) && hashPx(Math.floor(xx / 3), Math.floor(yy / 3), seed2 + 1) < 0.6) return 0x7e7a68;
+      const lump = hashPx(X >> 1, Yy >> 1, seed2 + 2);
+      if (fbm(xx, yy, { seed: seed2, scale: 4, octaves: 2 }) > 0.6) return rampColor(WEED, lump, X, Yy);
+      return lump < 0.16 ? 0x34342c : rampColor([0x4a4a42, 0x5c5c52, 0x6e6e62], lump, X, Yy);
+    });
+  };
+  for (let u = 370; u < 790; u += 22)
+    for (let x = 112; x < 148; x += 14) footprint(x + (hashPx(x, u, 841) * 3 | 0), u + (hashPx(x, u, 842) * 5 | 0), 11 + (hashPx(x, u, 843) * 3 | 0), 13 + (hashPx(x, u, 844) * 4 | 0), x + u);
+  for (let u = 340; u < 440; u += 20) for (let x = 36; x < 112; x += 15) footprint(x, u + (hashPx(x, u, 845) * 4 | 0), 12 + (hashPx(x, u, 846) * 3 | 0), 12 + (hashPx(x, u, 847) * 5 | 0), x * 3 + u);
+  for (let u = 800; u < 852; u += 20) for (let x = 50; x < 130; x += 16) footprint(x, u, 13, 12, x + u * 2);
+  // the coal tubs' narrow-gauge line along the east yard, rusted through, one tub still on it
+  {
+    const TX = 110;
+    img.fine(TX - 2, Y(780), 6, 400, (X, Yy, x, y) => {
+      const u = 7168 - y;
+      if (k.isRes(Math.floor(x), Math.floor(y)) || !inPoly(HASHIMA, x, u)) return null;
+      const i = X - (TX - 2) * S;
+      if (Yy % 9 < 2) return i > 1 && i < 16 ? [0x4a3a2c, 0.9] : null;
+      if (i === 4 || i === 13) return hashPx(X, Yy >> 2, 848) < 0.2 ? null : 0x7a4a2a;
+      return null;
+    });
+    objects.push({
+      y: Y(600),
+      shadow: () => k.shadowRect(TX, Y(600) - 2, 7, 3, 0.5),
+      draw: () => {
+        const X = (TX - 1) * S;
+        const Yb = Y(600) * S;
+        for (let j = 0; j < 10; j++) for (let i = 0; i < 14; i++) img.px(X + i, Yb - j, j < 2 ? 0x14120e : hashPx(i, j, 849) < 0.3 ? 0x8a5a34 : i > 11 ? 0x3a2418 : 0x6a4228);
+        for (const i of [2, 11]) img.rectPx(X + i, Yb, 2, 2, 0x1a1410);
+      },
+    });
+  }
+  // rusted pipes along the yard walls, the footings' water tank on its legs
+  for (const [x, u, n] of [[112, 742, 26], [114, 472, 22], [126, 660, 16]]) {
+    if (k.anyRes(x, Y(u) - 1, n, 2)) continue;
+    objects.push({
+      y: Y(u) + 1,
+      draw: () => {
+        const X = x * S;
+        const Yb = Y(u) * S;
+        for (let i = 0; i < n * S; i++) {
+          if (hashPx(i >> 3, 1, 850) < 0.14) continue;
+          for (let j = 0; j < 4; j++) img.px(X + i, Yb - j, j === 0 ? 0x4a2e1c : j === 3 ? 0xa8704a : 0x7a4a2e);
+          if (i % 18 < 3) for (let j = 0; j < 6; j++) img.px(X + i, Yb + j, 0x3a2a1e);
+        }
+      },
+    });
+  }
+  // rubble spilling from the foot of the blocks
+  for (let i = 0; i < 90; i++) {
+    const x = R.int(28, 84);
+    const u = R.int(340, 780);
+    const y = Y(u);
+    if (k.isRes(x, y) || !inPoly(HASHIMA, x, u) || k.wet(x, y)) continue;
+    const n = 2 + R.int(0, 3);
+    for (let q = 0; q < n; q++) k.rockPx(x * S + R.int(-6, 6), y * S + R.int(-3, 3), 1.4 + R() * 1.8, [0x4a4a42, 0x62625a, 0x7c7c72, 0x96968a], i * 3 + q);
+  }
   // ---- the seawall: tall black-stained concrete with salt tide-lines all the way round
   for (let Yy = Y(862) * S; Yy < Y(325) * S; Yy++)
     for (let X = 16 * S; X < 158 * S; X++) {
@@ -299,6 +423,26 @@ export function paintHashima(k) {
       } else img.px(X, Yy, d < 2 ? 0x4a4a40 : d < 4 ? 0xb8b4a0 : 0x8e8a78);
     }
   k.reserve(18, Y(862), 140, 540);
+  // where the typhoons have breached the wall: a bite out of it, its slabs lying in the shallows with the sea breaking over them
+  for (const [bx, bu, seed2] of [[24, 640, 851], [22, 500, 852], [152, 610, 853], [152, 470, 854], [44, 832, 855]]) {
+    const BX = bx * S;
+    const BY = Y(bu) * S;
+    const out = bx < 80 ? -1 : 1;
+    img.fine(bx - 5, Y(bu) - 9, 10, 18, (X, Yy) => {
+      const d = Math.hypot((X - BX) / 10, (Yy - BY) / 24);
+      if (d > 1 + (hashPx(X >> 2, Yy >> 2, seed2) - 0.5) * 0.5) return null;
+      const g2 = fbm(X / 3, Yy / 3, { seed: seed2, scale: 2.2, octaves: 2 });
+      return rampColor([0x4a4a42, 0x5a5a50, 0x6c6c60, 0x7e7e70], g2, X, Yy);
+    });
+    const g = rng(seed2);
+    for (let q = 0; q < 11; q++) {
+      const ax = BX + out * (4 + g() * 18);
+      const ay = BY - 24 + g() * 48;
+      const r = 2.2 + g() * 3.4;
+      for (let a = 0; a < 6.3; a += 0.5) if (g() < 0.7) img.px(ax + Math.cos(a) * (r + 2), ay + Math.sin(a) * (r + 1) + 1, 0xe0f0f0, 0.55);
+      k.rockPx(ax, ay, r, [0x3e3e36, 0x5a5a50, 0x76766a, 0x92927e], q + seed2);
+    }
+  }
 
   // the Dolphin Pier on the east side, the only way ashore: a concrete arm on piles, its covered gangway, the tour boat
   objects.push({
@@ -318,18 +462,36 @@ export function paintHashima(k) {
       for (let j = 0; j < 24; j++) for (let i = 0; i < 18; i++) img.px(168 * S + i, Y(514) * S - 6 + j, i < 2 || i > 15 ? 0x3a3e46 : j % 6 < 2 ? 0xe8e4d4 : 0xb8b4a4);
     },
   });
-  // waves lapping the seawall: broken white lines at its foot, moving a little
-  const surf = [0, 1, 2].map((f) => k.sprite(140, 8, 400, (r) => {
-    for (let X = 0; X < 420; X += 5) for (let i = 0; i < 4; i++) r.px(X + i, 12 + Math.round(Math.sin((X + f * 20) * 0.04) * 6), 0xdcf0f4, 0.6);
-    for (let X = 2; X < 420; X += 9) r.px(X, 16 + Math.round(Math.sin((X + f * 34) * 0.03) * 6), 0xdcf0f4, 0.35);
-  }));
-  kit.loop(20, 334, surf, { fps: 2, fx: 1 });
-  for (const [x, u, h] of [[12, 760, 330], [153, 720, 280]]) {
-    const side = [0, 1, 2].map((f) => k.sprite(10, h, u, (r) => {
-      for (let Yy = 0; Yy < h * S; Yy += 6) for (let j = 0; j < 4; j++) r.px(12 + Math.round(Math.sin((Yy + f * 24) * 0.05) * 7), Yy + j, 0xdcf0f4, 0.5);
+  // waves lapping the seawall: short broken white lines right at its foot, following each side of the island
+  HASHIMA.forEach(([ax, au], i) => {
+    const [bx, bu] = HASHIMA[(i + 1) % HASHIMA.length];
+    const len = Math.hypot(bx - ax, bu - au);
+    const dx = (bx - ax) / len;
+    const dy = -(bu - au) / len; // on screen, y runs down
+    // which way is out
+    let nx = -dy;
+    let ny = dx;
+    if (inPoly(HASHIMA, (ax + bx) / 2 + nx * 3, (au + bu) / 2 - ny * 3)) {
+      nx = -nx;
+      ny = -ny;
+    }
+    const frames = [0, 1, 2].map((f) => k.sprite(14, 14, 500, (r) => {
+      const CX = 21;
+      const CY = 21;
+      for (let t = -18; t <= 18; t++) {
+        if (((t + f * 5 + 40) % 9) > 5) continue;
+        const o = Math.sin(t * 0.35 + f * 2) * 2;
+        r.px(CX + dx * t + nx * o, CY + dy * t + ny * o, 0xdcf0f4, 0.62);
+        const o2 = 5 + Math.sin(t * 0.28 + f * 2.6) * 2;
+        if (t % 3 === 0) r.px(CX + dx * t + nx * o2, CY + dy * t + ny * o2, 0xdcf0f4, 0.32);
+      }
     }));
-    kit.loop(x, u, side, { fps: 2, fx: 1 });
-  }
+    for (let q = 6; q < len - 4; q += 13) {
+      const x = ax + (bx - ax) * (q / len) + nx * 4;
+      const u = au + (bu - au) * (q / len) - ny * 4;
+      kit.loop(x - 7, u + 7, frames, { fps: 2, fx: 1 });
+    }
+  });
   // kites wheeling over the ruin
   const kite = [0, 1].map((f) => k.sprite(11, 5, 600, (r) => {
     const CXk = 16;

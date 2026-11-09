@@ -76,6 +76,12 @@ export function paintHarbour(k) {
   terraced(0, 30, 1340, 1540, 1304);
   k.road([[8, 1080], [11, 1270], [12, 1274]], 1.5, { side: 0, surface: C.stoneSet });
   k.road([[12, 1340], [10, 1540]], 1.5, { side: 0, surface: C.stoneSet });
+  // the shore path, from the cove along the foot of the terraces in both directions
+  for (const [a, b] of [[1084, 1286], [1322, 1536]]) {
+    const pts = [];
+    for (let u = a; u <= b; u += 8) pts.push([leftShore(u) - 3.4, u]);
+    k.road(pts, 1.1, { side: 0, surface: C.stoneSet });
+  }
   k.forest(0, 60, 990, 1560, [PINE, OAK, CAMPHOR], 101, 4, 7, (x, u) => x < leftShore(u) - 6);
   k.forest(120, W, 1100, 1560, [PINE, OAK], 102, 4, 6, (x, u) => x > rightShore(u) + 4 && (x < 150 || x > 178));
 

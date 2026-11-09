@@ -48,7 +48,7 @@ export function rightShore(u) {
   if (u < 2660) return lerp(oura(u), 150, smooth(2540, 2660, u));
   return 150;
 }
-const oura = (u) => 38 + 3 * Math.sin(u * 0.012);
+const oura = () => 38;
 export const EMBANK = 2975; // the town's stone embankment north of Dejima's channel
 
 /** Dejima: the fan, its curved seaward side to the south. */

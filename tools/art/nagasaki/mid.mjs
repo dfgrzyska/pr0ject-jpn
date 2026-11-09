@@ -12,6 +12,7 @@ import { paintOura, paintDejima, paintShinchi } from './town.mjs';
 import { paintNakashima, paintSuwa } from './river.mjs';
 import { paintUrakami, paintInasa } from './urakami.mjs';
 import { paintTraffic } from './traffic.mjs';
+import { paintWaters } from './waters.mjs';
 import { paintNetwork } from './network.mjs';
 
 export { W, L };
@@ -125,6 +126,18 @@ function paintViewFrames(k) {
       r.discPx(CX + Math.cos(ang) * R, CY + Math.sin(ang) * R + fall * (R / 96), f > 3 ? 1.2 : 2, 0xffffff, f > 4 ? 0.7 : 1);
     }
     kit.frame(r, 'view_fw_' + f);
+    // the same burst on the water: squashed, turned over, broken up by the ripples
+    const m = new HiCanvas(70, 26);
+    for (let Yy = 0; Yy < 210; Yy++) {
+      const row = Math.floor(((209 - Yy) * 78) / 210);
+      if (hashPx(row, f >> 1, 92) < 0.32) continue;
+      const shift = Math.round((hashPx(row, 2, 93) - 0.5) * 8);
+      for (let X = 0; X < 210; X++) {
+        const q = r.rgbaPx(X, Yy);
+        if (q && q[3] > 0) m.px(X + shift, row, 0xffffff, (q[3] / 255) * 0.62);
+      }
+    }
+    kit.frame(m, 'view_fwr_' + f);
   }
   const st = new HiCanvas(26, 9);
   for (let q = 0; q < 75; q++) {
@@ -133,6 +146,28 @@ function paintViewFrames(k) {
     if (q > 50) st.px(q, Math.round(q * 0.36) + 1, 0xc8d8ff, al * 0.5);
   }
   kit.frame(st, 'view_star');
+  // a ropeway gondola with its hanger, seen a little from above: a pale car, lit windows all round, the people in them
+  const gd = new HiCanvas(12, 11);
+  const GW = 36;
+  for (let j = 0; j < 9; j++) gd.px(GW / 2, j, j < 2 ? 0x6a7a8a : 0x3a4654);
+  for (let i = -4; i <= 4; i++) gd.px(GW / 2 + i, 1, 0x7a8a9a);
+  for (let j = 9; j < 31; j++) {
+    const t = (j - 9) / 22;
+    const hw = 15 + Math.min(1, t * 4) * 2 - Math.max(0, t - 0.85) * 18;
+    for (let i = -hw; i <= hw; i++) {
+      const x = GW / 2 + i;
+      let c = j < 11 ? 0xe8ecf0 : j < 14 ? 0xb8282a : j > 27 ? 0x8a2024 : 0xd8dce0;
+      if (j >= 14 && j <= 26) {
+        const pane = Math.abs(i) < hw - 2 && Math.round(i + 100) % 7 !== 0;
+        c = pane ? (j < 16 ? 0xfff0c8 : 0xffd898) : 0xc8ccd0;
+        // the figures against the glass
+        if (pane && j > 19 && hashPx(Math.floor((i + 40) / 5), 1, 94) < 0.5) c = 0x4a3a30;
+      }
+      if (Math.abs(Math.abs(i) - hw) < 0.8) c = i > 0 ? 0x4a5058 : 0xe8ecf0;
+      gd.px(x, j, c);
+    }
+  }
+  kit.frame(gd, 'view_gondola');
 }
 
 export function buildMid() {
@@ -254,6 +289,7 @@ export function buildMid() {
   paintSuwa(k);
   paintUrakami(k);
   paintInasa(k);
+  paintWaters(k);
   paintTraffic(k);
   paintViewFrames(k);
 

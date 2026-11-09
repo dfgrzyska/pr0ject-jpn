@@ -46,7 +46,7 @@ export function paintNetwork(k) {
   for (let i = 0; i < R1.length - 1; i += 12) {
     const piece = R1.slice(i, i + 14);
     const tram = piece[0][1] >= TRAM_U0;
-    k.road(piece, R1_HW, { side: 2, tram, lanes: !tram });
+    k.road(piece, R1_HW, { side: 2, tram, lanes: !tram, piece: true });
   }
   // the streets run on through R1's pavements at the junctions
   for (const st of STREETS) {

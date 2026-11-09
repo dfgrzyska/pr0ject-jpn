@@ -20,6 +20,57 @@ const HYDRANGEA = [0x5a6ad0, 0x7a8ae8, 0x9a7ad8, 0xb48ae0, 0xd890c8, 0xe8e0f0];
 const AZALEA = [0xe86a9a, 0xf4a0c0, 0xffffff, 0xd84a7a, 0xf8e070];
 
 /** A tram stop on R1: a platform either side of the tracks, a shelter with its glass roof, people waiting. */
+/**
+ * The houses along the far side of R1, cut by the screen's edge: never a row of the same thing. Different widths and
+ * heights, one or two side streets with a lamp at the corner, a tree or a parked van in the odd gap.
+ */
+export function eastEdge(k, u0, u1, seed, style = 'jp') {
+  const R = rng(seed);
+  const { img, Y } = k;
+  const roofs = [C.kawara, C.kawara, C.redTile, C.slate, [0x4a5a58, 0x5a6c68, 0x6a7e78, 0x7e928a, 0x96a89e]];
+  const walls = [0xd8ccb4, 0xc8bca4, 0xb8ac94, 0xe4dccc, 0x8a7a68, 0xa89a88];
+  for (let u = u0; u < u1 - 8; ) {
+    const r = R();
+    if (r < 0.15) {
+      // a side street running off beyond the edge, its corner lamp, its pavement crossing
+      const w = R.int(6, 9);
+      if (!k.anyRes(174, Y(u + w), 6, w)) {
+        img.fine(174, Y(u + w), 6, w, (X, Yy) => k.asphaltPx(X, Yy));
+        for (let i = 0; i < 3; i++) img.rectPx(172 * S, Y(u + 1 + i * 2) * S, 6, 2, 0xd8d4c6);
+        k.streetLamp(175, u + w + 1, 0xffe0a8);
+        k.reserve(174, Y(u + w), 6, w);
+      }
+      u += w + 1;
+      continue;
+    }
+    if (r < 0.28) {
+      // a tree in somebody's plot, a wall along it
+      const h = R.int(8, 13);
+      if (!k.anyRes(174, Y(u + h), 6, h)) {
+        k.fill(174, Y(u + h), 6, h, [0x4a4438, 0x56503e, 0x625c48], u, 4);
+        for (let X = 174 * S; X < 180 * S; X++) for (let j = 0; j < 3; j++) img.px(X, (Y(u) - 1) * S + j, j === 0 ? C.granite[3] : C.granite[1]);
+        k.tree(178, Y(u + 3), 3.6, [0x1e3a2a, 0x2a4e34, 0x3a6240, 0x4a7a4c], u + 7);
+      }
+      u += h + 1;
+      continue;
+    }
+    const h = r < 0.5 ? R.int(10, 14) : r < 0.82 ? R.int(14, 20) : R.int(20, 30);
+    const w = R.int(7, 14);
+    const y = Y(u + h);
+    if (!k.anyRes(174, y, 6, h)) {
+      if (h > 19) {
+        k.house(174, y, w, 6, h - 6, 'block', { roofC: R.pick([0x5a6068, 0x6a6e74, 0x4e5660]), plainRoof: R() < 0.5 });
+      } else if (style === 'china' && R() < 0.6) {
+        k.house(174, y, w, Math.round(h * 0.46), h - Math.round(h * 0.46), 'china', { ramp: R.pick(roofs), wall: R.pick([0x8a3a32, 0xa8483a, 0xd8c8a8, 0x7a5a48]), noren: R.pick([0xc8302a, 0xe8b830]) });
+      } else {
+        const rh = Math.round(h * 0.52);
+        k.house(174, y, w, rh, h - rh, 'jp', { ramp: R.pick(roofs), wall: R.pick(walls), noren: R() < 0.3 ? R.pick([0x2a4a8a, 0x8a2a2a, 0xe8d8b0]) : undefined, door: R() < 0.7, bay: R.int(3, 5) });
+      }
+    }
+    u += h + R.int(0, 2);
+  }
+}
+
 export function tramStop(k, u0, u1, cx = 162) {
   const { img, Y } = k;
   for (const [x0, x1] of [[cx - 8, cx - 5.5], [cx + 5.5, cx + 8]]) {
@@ -616,10 +667,21 @@ export function paintDejima(k) {
     for (const [lane, hw] of [[0.5, 0.032], [0.255, 0.018], [0.76, 0.018]]) {
       const d = Math.abs(t - lane) / hw;
       if (d < 1) return d > 0.82 ? C.granite[2] : k.settPx(X, Yy, 23, [0x8e8470, 0xa49a84, 0xb8ae96, 0xc8bea4]);
+      // the gutter that runs beside each street
+      if (d < 1.34) return d < 1.12 ? 0x4a463c : C.granite[1];
     }
-    const c = rampColor(C.sand, 0.2 + fbm(x, y, { seed: 1641, scale: 5 }) * 0.6, X, Yy);
+    // the cross lanes between the streets, each plot's side alley
+    for (const lx of [50, 74, 110, 128]) {
+      const d = Math.abs(x - lx);
+      if (d < 1.4 && t > 0.05 && t < 0.95) return d > 1.1 ? C.granite[1] : k.settPx(X, Yy, 29, [0x7e7462, 0x8e8472, 0xa09684, 0xb0a694]);
+    }
+    // plots of beaten earth, each its own shade, swept in lines
+    const plot = hashPx(Math.floor(x / 13), Math.floor(t * 9), 1642);
+    const n0 = fbm(x, y, { seed: 1641, scale: 5 });
+    const c = rampColor([0x5e5648, 0x6e6454, 0x7c7260, 0x8a806c], 0.12 + plot * 0.32 + n0 * 0.42, X, Yy);
     const g = hashPx(X, Yy, 208);
-    return g < 0.08 ? scaleColor(c, 0.88) : g > 0.96 ? scaleColor(c, 1.1) : c;
+    if (hashPx(X >> 2, Yy, 1643) < 0.05) return scaleColor(c, 0.92);
+    return g < 0.08 ? scaleColor(c, 0.88) : g > 0.96 ? scaleColor(c, 1.08) : c;
   });
   // the perimeter wall: a white wall capped with dark tiles, all round the fan (south and north arcs)
   for (let X = (x0 + 1) * S; X < x1 * S; X++) {
@@ -707,6 +769,7 @@ export function paintDejima(k) {
   // the four rows of the fan, near sea to near town; the flag's garden and the model's courtyard left open
   const row = (t, items) => {
     let x = x0 + 8;
+    let n = 0;
     for (const it of items) {
       if (typeof it === 'number') x += it;
       else {
@@ -715,14 +778,20 @@ export function paintDejima(k) {
         x += it[0] + 1;
       }
     }
+    // whatever room is left to the far wall takes one more storehouse or home
+    while (x + 8 <= x1 - 6) {
+      const w = Math.min(x1 - 6 - x, 9 + ((x + n * 5) % 5));
+      dejimaHouse(x, w, t, n++ % 2 ? 'kura' : 'home', { ramp: C.kawara });
+      x += w + 1;
+    }
   };
   const roofDark = { ramp: C.kawara };
   const K = (w, o) => [w, 'kura', o ?? roofDark];
   const H = (w, o) => [w, 'home', o ?? roofDark];
-  row(0.04, [K(12), K(11), H(13), 3, K(12), 32, K(12), H(12), [16, 'hall', { rh: 10, fh: 12, ramp: C.slate, wall: 0xf4f0e8 }]]);
-  row(0.28, [H(14), H(10), K(10), H(13), 6, H(12), K(10), H(14), K(9), H(10)]);
-  row(0.54, [[14, 'hall', { rh: 9, fh: 9, ramp: C.slate, wall: 0xb8c8c8 }], H(13), H(11), 2, H(16), 11, [24, 'home', { rh: 12, fh: 11, stair: true, ramp: C.kawara }], H(11), H(11)]);
-  row(0.78, [K(10), H(12), H(11), K(10), 22, K(10), H(12), H(11), K(10)]);
+  row(0.04, [K(12), K(11), H(13), K(12), 30, K(12), H(12), [16, 'hall', { rh: 10, fh: 12, ramp: C.slate, wall: 0xf4f0e8 }]]);
+  row(0.28, [H(14), H(10), K(10), H(13), K(7), H(12), K(10), H(14), K(9), H(10)]);
+  row(0.54, [[14, 'hall', { rh: 9, fh: 9, ramp: C.slate, wall: 0xb8c8c8 }], H(13), H(11), K(8), H(14), 9, [24, 'home', { rh: 12, fh: 11, stair: true, ramp: C.kawara }], H(11), H(11)]);
+  row(0.78, [K(10), H(12), H(11), K(10), 24, K(10), H(12), H(11), K(10)]);
   // the Dutch tricolour on its tall pole in the Chief Factor's garden, a pine and camphor by it, a little lawn
   {
     const fx = 90;
@@ -811,6 +880,116 @@ export function paintDejima(k) {
     for (let X = (gate - 5) * S; X < (gate + 5) * S; X++) for (let j = 0; j < 4; j++) img.tintPx(X, gy * S + 3 + j, 0.66);
     k.walkers([[gate, EMBANK + 10], [gate, Math.round(dejimaNorth(gate)) - 2]], 2, 2950, { sp: 3 });
   }
+  // the Dutch garden behind the north row: gravel walks, box-edged beds of flowers the Company brought, a sundial, two pines
+  {
+    const gx0 = 77;
+    const gu0 = 2902;
+    img.fine(gx0, Y(gu0 + 22), 21, 22, (X, Yy, x, y) => {
+      const u = 7168 - y;
+      const dx = x - gx0;
+      const dy = u - gu0;
+      const walk = Math.abs(dx - 10.5) < 1.2 || Math.abs(dy - 11) < 1.2;
+      if (dx < 0.7 || dx > 20.3 || dy < 0.7 || dy > 21.3) return C.granite[2];
+      if (Math.hypot(dx - 10.5, dy - 11) < 2.6) return 0xb8ac94;
+      if (walk) return rampColor([0x9a9080, 0xaea494, 0xc0b6a4], hashPx(X, Yy, 1644), X, Yy);
+      const bx = dx < 10.5 ? dx - 1.5 : dx - 12;
+      const by = dy < 11 ? dy - 1.5 : dy - 12.5;
+      if (bx < 0.7 || bx > 7.3 || by < 0.7 || by > 7.6) return (X + Yy) % 3 ? 0x2a4a2c : 0x3a5a36;
+      const b = hashPx(X >> 1, Yy >> 1, 1645);
+      const hue = [0xe85a70, 0xf0d060, 0xf0ece0, 0xb070d0][Math.floor((dx + dy * 3) / 11) & 3];
+      return b < 0.34 ? hue : b < 0.42 ? 0xffffff : rampColor(C.lawn, 0.2 + b * 0.6, X, Yy);
+    });
+    objects.push({
+      y: Y(gu0 + 11),
+      draw: () => {
+        const CX = Math.round((gx0 + 10.5) * S);
+        const CY = Y(gu0 + 11) * S;
+        img.rectPx(CX - 2, CY - 9, 5, 9, C.granite[3]);
+        img.rectPx(CX - 4, CY - 11, 9, 2, C.granite[4]);
+        for (let i = 0; i < 5; i++) img.px(CX + i, CY - 11 - i, 0x8a7030);
+      },
+    });
+    k.niwaki(gx0 + 3, gu0 + 19, 0.7, 1646);
+    k.niwaki(gx0 + 18, gu0 + 19, 0.7, 1647);
+    k.strollers(gx0 + 10, gu0 + 6, 7, 1.5, 2);
+  }
+  /** What the Company shipped: casks, bales of sugar, crates, stacked against the walls and in the yards. */
+  const cargo = (x, u, seed2) => {
+    objects.push({
+      y: Y(u),
+      shadow: () => k.shadowRect(x + 1, Y(u) - 3, 7, 4, 0.5),
+      draw: () => {
+        const X = x * S;
+        const Yb = Y(u) * S;
+        const g = rng(seed2);
+        for (let q = 0; q < 5; q++) {
+          const a = X + Math.floor(g() * 15);
+          const b = Yb - Math.floor(g() * 7);
+          const kind = g();
+          if (kind < 0.42) {
+            // a cask, its hoops
+            for (let j = 0; j < 8; j++) for (let i = -3; i <= 3; i++) img.px(a + i, b - j, j === 1 || j === 6 ? 0x3a3028 : i > 1 ? C.wood[0] : i < -1 ? C.wood[3] : C.wood[2]);
+            for (let i = -2; i <= 2; i++) img.px(a + i, b - 8, C.wood[3]);
+          } else if (kind < 0.74) {
+            // a bale, corded
+            for (let j = 0; j < 6; j++) for (let i = -5; i <= 5; i++) img.px(a + i, b - j, i === 0 || j === 3 ? 0x6a5a40 : j < 2 ? 0xd8ccb0 : i > 3 ? 0x98886c : 0xbcae90);
+          } else {
+            // a crate, its slats
+            for (let j = 0; j < 7; j++) for (let i = -4; i <= 4; i++) img.px(a + i, b - j, j < 2 ? C.wood[3] : (i + 8) % 3 === 0 ? C.wood[0] : C.wood[2]);
+          }
+        }
+      },
+    });
+  };
+  for (const [t, xs] of [[0.17, [24, 135]], [0.4, [24, 135]], [0.62, [135]], [0.72, [24]], [0.9, [28, 133]]]) for (const x of xs) cargo(x, Math.round(span(x, t)), x * 13 + Math.round(t * 100));
+  // the well in the street's bend, its cover and bucket; a hand cart left by a door
+  {
+    const wx = 62;
+    const wu = Math.round(span(wx, 0.455));
+    objects.push({
+      y: Y(wu),
+      shadow: () => k.shadowEllipse(wx + 2, Y(wu), 4, 2, 0.5),
+      draw: () => {
+        const X = wx * S;
+        const Yb = Y(wu) * S;
+        for (let j = 0; j < 7; j++) for (let i = -6; i <= 6; i++) img.px(X + i, Yb - j, i > 4 ? C.granite[0] : i < -4 ? C.granite[3] : j % 3 === 0 ? C.granite[1] : C.granite[2]);
+        for (let j = -3; j <= 3; j++) for (let i = -6; i <= 6; i++) if ((i / 6.4) ** 2 + (j / 3.4) ** 2 < 1) img.px(X + i, Yb - 8 + j, i % 3 === 0 ? C.wood[0] : C.wood[3]);
+      },
+    });
+  }
+  // along the main street: banners on their poles outside the shops, paper lanterns over the door
+  for (const [x, c] of [[36, 0x2a3a7a], [46, 0x8a2a2a], [58, 0x2a3a7a], [70, 0xe8d8b0], [86, 0x8a2a2a], [100, 0x2a3a7a], [116, 0xe8d8b0], [132, 0x8a2a2a]]) {
+    const u = Math.round(span(x, 0.53));
+    objects.push({
+      y: Y(u),
+      draw: () => {
+        const X = x * S;
+        const Yb = Y(u) * S;
+        for (let j = 0; j < 27; j++) img.px(X, Yb - j, C.wood[1]);
+        for (let j = 3; j < 21; j++) for (let i = 1; i < 7; i++) img.px(X + i, Yb - 27 + j, (i === 3 || i === 4) && j % 4 < 2 ? scaleColor(c, 1.8) : i > 5 ? scaleColor(c, 0.74) : c);
+      },
+    });
+  }
+  for (const x of [41, 54, 66, 80, 96, 106, 122, 134]) {
+    const u = Math.round(span(x, 0.47));
+    const cc = x % 3 ? 0xffc070 : 0xff9a58;
+    objects.push({
+      y: Y(u),
+      draw: () => {
+        const X = x * S;
+        const Yb = Y(u) * S;
+        for (let j = 0; j < 15; j++) img.px(X, Yb - j, 0x3a2a20);
+        for (let j = -3; j <= 3; j++) for (let i = -2; i <= 2; i++) if (i * i + j * j < 10) glowPx(X + i, Yb - 18 + j, cc, 0.95);
+        pool(x, Y(u) - 3, 6, 0xffc888, 0.12 + night(2880) * 0.2);
+      },
+    });
+  }
+  // the visitors: strolling the back lanes too, a guide with a little group, someone looking in at a storehouse
+  k.walkers([[34, Math.round(span(34, 0.255)) + 1], [76, Math.round(span(76, 0.255)) + 1], [132, Math.round(span(132, 0.255)) + 1]], 3, 2826, { sp: 2.6, gap: 50 });
+  k.walkers([[132, Math.round(span(132, 0.76)) + 1], [84, Math.round(span(84, 0.76)) + 1], [34, Math.round(span(34, 0.76)) + 1]], 3, 2900, { sp: 2.8, gap: 44 });
+  for (const lx of [50, 110]) k.walkers([[lx, Math.round(span(lx, 0.26))], [lx, Math.round(span(lx, 0.5))], [lx, Math.round(span(lx, 0.76))]], 1, 2850 + lx, { sp: 2.2, gap: 60 });
+  k.crowd(52, Y(Math.round(span(52, 0.505))) - 1, 16, 2, 5);
+  k.crowd(104, Y(Math.round(span(104, 0.5))) - 1, 14, 2, 4);
   // visitors in the street, a boat or two moored in the bay
   k.walkers([[34, Math.round(span(34, 0.5)) + 1], [88, Math.round(span(88, 0.5)) + 1], [130, Math.round(span(130, 0.5)) + 1]], 5, 2870, { sp: 3, gap: 40 });
   k.strollers(88, Math.round(span(88, 0.5)), 40, 1.5, 4);
@@ -1102,5 +1281,5 @@ export function paintShinchi(k) {
   sideGate(148, CROSS.u);
   // the Tsukimachi tram stop on R1, and R1's east verge: a row of narrow buildings at the very edge
   tramStop(k, 3090, 3118);
-  for (let u = 2998; u < 3650; u += 20) if (!k.anyRes(174, Y(u + 18), 6, 18)) k.house(174, Y(u + 18), 6, 8, 9, 'block', { roofC: 0x5a6068, plainRoof: true });
+  eastEdge(k, 2998, 3650, 2998, 'china');
 }

@@ -1,12 +1,12 @@
 import { DEPTH, VIEW } from '../config.js';
-import { farShore, nearShore, hillRoad } from '../data/nagasakiView.js';
+import { farShore, nearShore, hillRoad, ropeway } from '../data/nagasakiView.js';
 
 // The night view from Mount Inasa, behind the mid strip: the strip is clear above the summit ridge, so as the climb
 // crests the view rises from behind the trees, its layers sliding into place at their own speeds (the sky still,
 // the far hills and the city across the harbour slower than the near wooded slope), and shifting a little with
 // the ship from side to side. The dragon is fought over it, dimmed; when it falls the city's lights flare up.
-// Seven pre-rendered layers (including four light masks), 24 light points, three ferries with wakes and one
-// dimming sheet: nothing is made per window or per frame.
+// Seven pre-rendered layers (including four light masks), a sheet of cloud drifting past the moon, 36 light points,
+// three ferries with wakes, two gondolas on the ropeway and one dimming sheet: nothing is made per window or per frame.
 const SHIFT = [0, 150, 150, 150, 150, 150, 330]; // px each layer starts below its place, sky to near slope
 const SWAY = [0.03, 0.09, 0.09, 0.09, 0.09, 0.09, 0.17]; // how far each layer follows the ship sideways
 
@@ -29,8 +29,11 @@ export class NagasakiView {
       wake: scene.add.image(0, 0, 'props_stage8', 'view_wake').setScale(1 / 3).setDepth(d + 0.053).setVisible(false),
     }));
     // when the dragon falls: fireworks over the harbour; before that, now and then, a shooting star
+    this.clouds = [0, 1].map(() => scene.add.image(0, 0, 'view_stage8_clouds').setOrigin(0).setScale(1 / 3).setDepth(d + 0.004).setVisible(false));
+    this.gondolas = [0, 1].map(() => scene.add.image(0, 0, 'props_stage8', 'view_gondola').setOrigin(0.5, 0).setDepth(d + 0.055).setVisible(false));
     this.bursts = Array.from({ length: 6 }, (_, i) => ({
       im: scene.add.image(0, 0, 'props_stage8', 'view_fw_0').setScale(1 / 3).setDepth(d + 0.056).setVisible(false).setBlendMode('ADD'),
+      mirror: scene.add.image(0, 0, 'props_stage8', 'view_fwr_0').setScale(1 / 3).setDepth(d + 0.0525).setVisible(false).setBlendMode('ADD'),
       t: -0.7 - i * 0.95,
       x: 0,
       y: 0,
@@ -61,7 +64,12 @@ export class NagasakiView {
         f.wake.setVisible(false);
       }
       for (const p of this.points) p.setVisible(false);
-      for (const b of this.bursts) b.im.setVisible(false);
+      for (const b of this.bursts) {
+        b.im.setVisible(false);
+        b.mirror.setVisible(false);
+      }
+      for (const c of this.clouds) c.setVisible(false);
+      for (const g2 of this.gondolas) g2.setVisible(false);
       this.star.setVisible(false);
       return;
     }
@@ -83,7 +91,8 @@ export class NagasakiView {
     for (let i = 0; i < this.layers.length; i++) {
       const isLight = i >= 2 && i <= 5;
       const x = Math.round((-18 - this.px * SWAY[i]) * 3) / 3;
-      const y = i === 0 ? Math.min(0, baseY) : Math.round((baseY + (1 - e) * SHIFT[i]) * 3) / 3;
+      const base = i === this.layers.length - 1 ? Math.min(baseY, s.H - 420) : baseY;
+      const y = i === 0 ? Math.min(0, baseY) : Math.round((base + (1 - e) * SHIFT[i]) * 3) / 3;
       const glow = isLight ? Math.min(1, 0.55 + 0.18 * Math.sin(t * (0.45 + i * 0.09) + i * 2) + 0.1 * Math.sin(t * 1.7 + i) + this.flare * 0.5) : 1;
       this.layers[i].setPosition(x, y).setAlpha(glow);
     }
@@ -105,6 +114,22 @@ export class NagasakiView {
       boat.setFrame(`view_ferry_${Math.floor(t * 0.8 + i) % 2}`);
       wake.setVisible(this.animate).setPosition(cx + x - 8, cy + fy + 1.5).setAlpha(0.55 + Math.sin(t * 2 + i) * 0.15);
     }
+    // the clouds drift past the moon, wrapping round, over the sky alone
+    const skyX = Math.round((-18 - this.px * SWAY[0]) * 3) / 3;
+    const skyY = Math.min(0, baseY);
+    const drift = (t * 1.1) % 216;
+    this.clouds.forEach((c, i) => c.setVisible(true).setPosition(Math.round((skyX - drift + i * 216) * 3) / 3, skyY));
+    // the ropeway's two cars on their cables, one going down as the other comes up, slowing into each station;
+    // nearer means bigger, and the summit's trees take them at the top
+    this.gondolas.forEach((g2, i) => {
+      const cycle = (t / 34 + i * 0.5) % 1;
+      const leg = cycle < 0.5 ? cycle * 2 : 2 - cycle * 2;
+      const k = leg * leg * (3 - 2 * leg);
+      const size = (0.42 + k * 1.05) / 3;
+      const lx = ropeway.x0 + (ropeway.x1 - ropeway.x0) * k + (i ? ropeway.gap : -ropeway.gap);
+      const ly = ropeway.y0 + (ropeway.y1 - ropeway.y0) * k - 8 / 3;
+      g2.setVisible(true).setScale(size).setPosition(cx + lx, cy + ly);
+    });
     // a shooting star across the upper sky every so often
     if (this.animate) {
       this.starT -= dt;
@@ -137,10 +162,16 @@ export class NagasakiView {
         if (b.t > life) {
           b.t = this.t > 8.4 ? -999 : -0.5 - (i % 3) * 0.5;
           b.im.setVisible(false);
+          b.mirror.setVisible(false);
           continue;
         }
         const fr = Math.min(5, Math.floor((b.t / life) * 6));
         b.im.setVisible(true).setFrame(`view_fw_${fr}`).setPosition(b.x, Math.round(cy) + b.y).setAlpha(b.t > life * 0.6 ? 1 - (b.t - life * 0.6) / (life * 0.4) : 1);
+        // its reflection, squashed and broken up, out on the harbour under it
+        const near = nearShore(b.x);
+        const far = farShore(b.x);
+        const wob = Math.sin(this.t * 7 + i) * 0.7;
+        b.mirror.setVisible(true).setFrame(`view_fwr_${fr}`).setTint(b.im.tintTopLeft ?? 0xffffff).setPosition(b.x + wob, Math.round(cy) + far + (near - far) * 0.42).setAlpha((b.t > life * 0.6 ? 1 - (b.t - life * 0.6) / (life * 0.4) : 1) * 0.8);
         if (fr === 0) this.flare = Math.max(this.flare, 0.55);
       }
     }

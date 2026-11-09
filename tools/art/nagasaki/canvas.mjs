@@ -1359,14 +1359,16 @@ export function makeCanvas(seed = 8080) {
       for (let X = XA; X <= XB; X++) {
         const px = (X + 0.5) / S;
         let best = null;
-        for (const s of segs) {
-          const t = Math.max(0, Math.min(s.len, (px - s.x0) * s.dx + (pu - s.u0) * s.du));
+        for (let n = 0; n < segs.length; n++) {
+          const s = segs[n];
+          const t0 = (px - s.x0) * s.dx + (pu - s.u0) * s.du;
+          const t = Math.max(0, Math.min(s.len, t0));
           const qx = s.x0 + s.dx * t;
           const qu = s.u0 + s.du * t;
           const d = Math.hypot(px - qx, pu - qu);
-          if (!best || d < best.d) best = { d, along: s.s0 + t, across: (px - s.x0) * -s.du + (pu - s.u0) * s.dx };
+          if (!best || d < best.d) best = { d, along: s.s0 + t, across: (px - s.x0) * -s.du + (pu - s.u0) * s.dx, past: (n === 0 && t0 < 0) || (n === segs.length - 1 && t0 > s.len) };
         }
-        if (!best || best.d > reach) continue;
+        if (!best || best.d > reach || (opt.piece && best.past)) continue;
         if (fineWater[Yy * FW + X] && !opt.over) continue;
         const a = Math.abs(best.across);
         let c;

@@ -11,7 +11,7 @@
 import { rng, fbm } from '../../lib/raster.mjs';
 import { C, S, night, scaleColor, rampColor, hashPx } from './canvas.mjs';
 import { W, riverX, riverHW, channelHW, RIVER, EMBANK, STREETS } from './geo.mjs';
-import { tramStop } from './town.mjs';
+import { tramStop, eastEdge } from './town.mjs';
 
 const WILLOW = [0x2a4a2a, 0x3a623a, 0x507a48, 0x6a9258];
 const CAMPHOR = [0x1a3422, 0x284a2c, 0x3a6236, 0x527c44];
@@ -392,7 +392,7 @@ export function paintNakashima(k) {
   k.grove(0, 150, 3667, 4261, 30, [CAMPHOR, WILLOW, CAMPHOR], 3667, 3, 4.5);
   // the Meganebashi tram stop, the east verge
   tramStop(k, 3940, 3966);
-  for (let u = 3670; u < 4260; u += 20) if (!k.anyRes(174, Y(u + 18), 6, 18)) k.house(174, Y(u + 18), 6, 8, 9, 'block', { roofC: 0x5a6068, plainRoof: true });
+  eastEdge(k, 3670, 4260, 3670);
 }
 
 export function paintSuwa(k) {

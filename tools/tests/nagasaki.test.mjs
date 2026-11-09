@@ -43,7 +43,7 @@ test('Nagasaki assets, music, landmarks and the quiet memorial interval', () => 
   assert(!stage.waves.some((w) => w.t >= from && w.t < to));
   const uFrom = stage.scroll.anchor + from * stage.scroll.mid;
   assert(uFrom > 4800 && uFrom < 4950, `the quiet begins over the park (${uFrom})`);
-  assert.equal(meta.panorama.length, 7);
+  assert.equal(meta.panorama.length, 8);
   for (const n of meta.panorama) assert(statSync(new URL(`../../public/assets/bg/stage8/view_${n}.png`, import.meta.url)).size > 0);
   // landmarks cover the strip in order without gaps
   const lm = LANDMARKS.stage8;
