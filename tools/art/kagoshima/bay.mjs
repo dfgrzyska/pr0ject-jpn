@@ -300,6 +300,50 @@ export function paintBay(k) {
     r.linePx(8, 0, 13, 5, 0xc8c8c0);
   });
   kit.path([[60, 3760], [90, 3800], [108, 3850], [80, 3900], [52, 3840], [60, 3760]], [kayak], { sp: 3, n: 4, gap: 11, mode: 'wrap', turn: 'rot', d: 0.02, s0: 0.3 });
+  // the ferries' lane is buoyed down the middle of the bay, a green on one hand, a red on the other, blinking
+  for (const [x, u, red] of [[62, 3060, false], [94, 3060, true], [62, 3300, false], [94, 3300, true], [62, 3540, false], [94, 3540, true], [94, 3780, true], [62, 4000, false], [94, 4000, true], [62, 4170, false], [94, 4170, true]]) {
+    const CX = x * S + 1;
+    const CY = Y(u) * S;
+    const col = red ? [0x8a1c18, 0xc8302a, 0xf06a5a] : [0x1a5a30, 0x2a8a4a, 0x5ac87a];
+    for (let a = 0; a < 6.3; a += 0.3) img.px(CX + Math.cos(a) * 8, CY + 2 + Math.sin(a) * 4, 0xe8f6f6, 0.5);
+    img.discPx(CX + 1, CY + 2, 6.5, 0x061420, 0.5);
+    img.discPx(CX, CY, 6, col[0]);
+    img.discPx(CX - 0.6, CY - 0.6, 4.8, col[1]);
+    img.discPx(CX - 2, CY - 2, 1.6, col[2]);
+    for (let j = 0; j < 13; j++) {
+      img.px(CX, CY - 2 - j, j % 4 === 0 ? 0xe8e8e0 : col[1]);
+      img.px(CX + 1, CY - 2 - j, col[0]);
+    }
+    const f = [k.sprite(5, 5, u, (r) => {
+      r.discPx(7, 7, 7, red ? 0xff5a40 : 0x5aff90, 0.26);
+      r.discPx(7, 7, 2.2, 0xffffff);
+    }, false)];
+    kit.loop(x - 2, u + 7, f, { fps: 1.2, seq: [0, -1, -1, -1], fx: 1 });
+  }
+  // a few more out working in the empty stretches, some lying still over their lines; a yacht heeling along; shoals under the surface
+  kit.path([[-24, 3990], [70, 4020], [W + 24, 4000]], [fisher(4000, 0xe8e4dc)], { sp: 5, turn: 'rot', d: 0.02, wake: wake(4000) });
+  kit.path([[W + 24, 4150], [100, 4120], [-24, 4150]], [fisher(4130, 0x8a3a2a)], { sp: 4.5, turn: 'rot', d: 0.02, wake: wake(4130) });
+  for (const [x, u, c] of [[30, 3440, 0x2a5a8a], [150, 3510, 0xe8e4dc], [24, 4190, 0x3a7a5a], [146, 4170, 0xe8e4dc], [46, 3930, 0x3a5a8a]]) kit.loop(x, u, [fisher(u, c)], { d: 0.02 });
+  const yacht = k.hull(15, 5, 3600, 0xe8e4d8, 0xc8bca4, (r, FL, FHh) => {
+    for (let j = 4; j < FHh - 4; j++) for (let i = 10; i < 22; i++) r.px(i, j, j === 4 ? 0xffffff : 0xd8d8d0);
+    for (let i = 3; i < 38; i++) r.px(i, FHh >> 1, 0x8a8e94, 0.8);
+    // the sail, seen from above, a pale curve leaning out
+    for (let i = 8; i < 38; i++) for (let j = 0; j < 4; j++) r.px(i, (FHh >> 1) - 1 - Math.round(Math.sin(((i - 8) / 30) * Math.PI) * 4) - j, 0xf8f8f4, 0.9 - j * 0.2);
+  });
+  kit.path([[-24, 3400], [40, 3470], [W + 24, 3440]], [yacht], { sp: 6, turn: 'rot', d: 0.02, wake: wake(3440), s0: 0.6 });
+  kit.path([[W + 24, 4060], [110, 4080], [-24, 4040]], [yacht], { sp: 5, turn: 'rot', d: 0.02, wake: wake(4060), s0: 0.2 });
+  const shoal = [0, 1].map((f) => k.sprite(20, 12, 3600, (r) => {
+    const g = rng(99);
+    for (let q = 0; q < 30; q++) {
+      const X = 6 + g() * 48;
+      const Yy = 4 + g() * 28;
+      const c = g() < 0.14 && (q + f) % 2 ? 0xa8c8d0 : 0x0a2028;
+      r.px(X + (f ? 1 : 0), Yy, c);
+      r.px(X + 1 + (f ? 1 : 0), Yy, c);
+      r.px(X + 2 + (f ? 1 : 0), Yy, c, 0.6);
+    }
+  }, false));
+  for (const [x, u, rr] of [[120, 3380, 16], [34, 3610, 12], [116, 3960, 14], [150, 4110, 12]]) kit.orbit(x, u, rr, shoal, { ry: rr * 0.6, w: 0.14, n: 1, a: 0.5, d: 0.02 });
   // the shadow of a plume of ash blown out over the bay, drifting across the water
   const plume = k.sprite(100, 60, 3300, (r) => {
     for (let j = 0; j < 180; j += 1)

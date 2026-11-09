@@ -152,7 +152,7 @@ export function buildMid() {
           return k.settPx(X, Yy, 24, C.granite);
         }
         const ramp = p.u > ISLAND[0] ? [0x34302c, 0x443e38, 0x544e46] : [0x4a3a2a, 0x5a4834, 0x6a5840];
-        if (dd > 8.4) return Math.floor(Math.atan2(yy - y, x - p.x) * 9) % 2 ? 0x7a766e : 0x4e4a44;
+        if (dd > 8.5) return hashPx(X >> 2, Yy >> 2, 22) < 0.56 ? (hashPx(X >> 1, Yy >> 1, 26) < 0.5 ? 0x7a766e : 0x5e5a54) : scaleColor(ramp[0], 0.8);
         return rampColor(ramp, 0.2 + fbm(x, yy, { seed: 2, scale: 3 }) * 0.5 + (hashPx(X, Yy, 25) - 0.5) * 0.2, X, Yy);
       });
     }

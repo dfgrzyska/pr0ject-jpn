@@ -191,6 +191,184 @@ export function paintLava(k) {
     k.reserve(4, Y(ru + 56), 50, 54);
     k.walkers(BW.filter((_, i) => i % 4 === 0), 5, ru + 20, { sp: 2.2, gap: 26 });
   }
+  // ---- past the observatory people stop: a fence and its signs across the slope, a gate on the service track up to the volcanologists'
+  // station, its mast and dome and solar panels; an old bomb shelter half way
+  {
+    const TRK = [[50, 6122], [72, 6160], [100, 6196], [122, 6240], [140, 6290], [146, 6318]];
+    const trk = [];
+    for (let i = 0; i + 1 < TRK.length; i++) {
+      const p0 = TRK[Math.max(0, i - 1)];
+      const p1 = TRK[i];
+      const p2 = TRK[i + 1];
+      const p3 = TRK[Math.min(TRK.length - 1, i + 2)];
+      for (let q = 0; q < 6; q++) {
+        const t = q / 6;
+        const at = (a, b, c, d) => 0.5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t);
+        trk.push([at(p0[0], p1[0], p2[0], p3[0]), at(p0[1], p1[1], p2[1], p3[1])]);
+      }
+    }
+    trk.push(TRK[TRK.length - 1]);
+    k.road(trk, 1.6, { side: 0, kerb: ROCK[1], piece: true, paint: (X, Yy, across) => (Math.abs(Math.abs(across) - 0.8) < 0.3 ? rampColor(ROCK, 0.2, X, Yy) : rampColor(ASH, 0.3 + hashPx(X >> 2, Yy, 5412) * 0.5, X, Yy)) });
+    const fenceU = (x) => 6196 + Math.sin(x * 0.05) * 5;
+    objects.push({
+      y: Y(6190),
+      draw: () => {
+        let last = null;
+        for (let x = 2; x < W; x += 5) {
+          const X = x * S;
+          const Yb = Math.round((7168 - fenceU(x)) * S);
+          const open = Math.abs(x - 100) < 6;
+          if (!open) for (let j = 0; j < 10; j++) img.px(X, Yb - j, 0x7a7670);
+          if (last && !open) for (const h of [4, 9]) img.linePx(last[0], last[1] - h, X, Yb - h, 0xc8c4bc, 0.7);
+          last = open ? null : [X, Yb];
+        }
+        // the signs, in yellow, hazard red and black
+        for (const x of [14, 42, 70, 128, 158]) {
+          const X = x * S;
+          const Yb = Math.round((7168 - fenceU(x)) * S);
+          for (let j = 0; j < 12; j++) for (let i = 0; i < 18; i++) img.px(X + i - 9, Yb - 16 + j, j < 3 ? 0xc8301a : j > 10 ? 0x2a2a2e : hashPx(i >> 1, j >> 1, 5413) < 0.34 ? 0x1a1a1e : 0xe8c030);
+        }
+        // the gate's boom, lowered, red and white
+        const GX = 94 * S;
+        const Gy = Math.round((7168 - fenceU(94)) * S);
+        for (let i = 0; i < 36; i++) for (let j = 0; j < 2; j++) img.px(GX + i, Gy - 8 + j, (i >> 2) % 2 ? 0xd83a2a : 0xf0ece0);
+        for (let j = 0; j < 10; j++) img.px(GX, Gy - j, 0x3a3a3e);
+      },
+    });
+    // the old shelter by the track
+    objects.push({
+      y: Y(6256),
+      shadow: () => k.shadowEllipse(112, Y(6256), 8, 3, 0.5),
+      draw: () => {
+        const X = 110 * S;
+        const Yb = Y(6256) * S;
+        for (let j = 0; j < 21; j++) {
+          const hw = Math.sqrt(Math.max(0, 1 - (j / 21) ** 2)) * 24;
+          for (let i = -hw; i <= hw; i++) img.px(X + i, Yb - j, hashPx(i >> 1, j >> 1, 5414) < 0.14 ? 0x5a5650 : i < -hw * 0.4 ? 0xa8a49c : i < hw * 0.5 ? 0x8a867e : 0x5e5a54);
+        }
+        for (let j = 0; j < 10; j++) {
+          const hw = Math.sqrt(Math.max(0, 1 - (j / 10) ** 2)) * 8;
+          for (let i = -hw; i <= hw; i++) img.px(X + i, Yb - j, 0x0e0e12);
+        }
+      },
+    });
+    k.reserve(100, Y(6264), 24, 12);
+    // the station: a gravel square inside its own fence, the hut, the mast with its guy wires, a dome, solar panels
+    const sx = 134;
+    const su = 6318;
+    img.fine(sx, Y(su + 36), 30, 36, (X, Yy, x, y) => {
+      const e = Math.min(x - sx, sx + 30 - x, y - Y(su + 36), Y(su) - y);
+      if (e < 0.7) return (X + Yy) % 6 < 3 ? 0x9a968e : 0x4a4640;
+      return rampColor(ASH, 0.3 + hashPx(X >> 1, Yy >> 1, 5415) * 0.5, X, Yy);
+    });
+    k.reserve(sx, Y(su + 36), 30, 36);
+    k.house(sx + 3, Y(su + 32), 14, 8, 6, 'block', { roofC: 0x6a6e74, wall: 0xc8c4bc, plainRoof: false, shop: false, reserve: false });
+    objects.push({
+      y: Y(su + 10),
+      shadow: () => k.shadowRect(sx + 18, Y(su + 12), 10, 3, 0.5),
+      draw: () => {
+        // the mast and its guys
+        const X = (sx + 24) * S;
+        const Yb = Y(su + 14) * S;
+        for (let j = 0; j < 72; j++) {
+          img.px(X - 1, Yb - j, 0xc8ccd0);
+          img.px(X + 1, Yb - j, 0x6a6e74);
+          if (j % 6 === 0) img.linePx(X - 1, Yb - j, X + 1, Yb - j - 6, 0x8a8e94);
+        }
+        for (const s of [-1, 1]) img.linePx(X, Yb - 60, X + s * 24, Yb + 6, 0x8a8e94, 0.55);
+        for (let i = -6; i <= 6; i++) img.px(X + i, Yb - 66, 0xc8ccd0);
+        // the white dome of the GPS, on a post
+        const DX = (sx + 8) * S;
+        const DY = Y(su + 8) * S;
+        for (let j = 0; j < 6; j++) img.px(DX, DY - j, 0x6a6e74);
+        for (let j = -7; j <= 0; j++) for (let i = -7; i <= 7; i++) if (i * i + j * j < 50) img.px(DX + i, DY - 6 + j, i + j < -5 ? 0xffffff : i > 3 ? 0xb8bcc0 : 0xe8ecec);
+        // the panels
+        const PX = (sx + 14) * S;
+        const PY = Y(su + 7) * S;
+        for (let q = 0; q < 2; q++) for (let j = 0; j < 12; j++) for (let i = 0; i < 18; i++) img.px(PX + q * 21 + i, PY + j - (i >> 3), j % 4 === 0 || i % 6 === 0 ? 0x5a6a7a : 0x1e3a5a);
+      },
+    });
+    const beacon = [k.sprite(5, 5, su, (r) => {
+      r.discPx(7, 7, 7, 0xff5040, 0.28);
+      r.discPx(7, 7, 2.2, 0xffd0c0);
+    }, false)];
+    kit.loop(sx + 22, su + 40, beacon, { fps: 1, seq: [0, -1, -1, -1], fx: 1 });
+    k.standing(sx + 6, Y(su + 14), 8, 4, 2, 5416, [0xe8e8e0, 0xf0a020]);
+  }
+  // burnt snags: what's left of the forests the ash has killed, bare and silver-black, in stands
+  for (let q = 0; q < 16; q++) {
+    const cx = R() * W;
+    const cu = 6130 + R() * 460;
+    const n = 3 + R.int(0, 6);
+    for (let i = 0; i < n; i++) {
+      const x = cx + (R() - 0.5) * 26;
+      const u = cu + (R() - 0.5) * 20;
+      if (k.isRes(x, Y(u))) continue;
+      const h = 15 + R() * 21;
+      const lean = (R() - 0.5) * 0.3;
+      const seed2 = q * 31 + i;
+      objects.push({
+        y: Y(u),
+        shadow: () => {
+          for (let j = 0; j < 15; j++) img.tintPx(x * S + j, Y(u) * S + 1 + (j >> 1), 0.68);
+        },
+        draw: () => {
+          const X = x * S;
+          const Yb = Y(u) * S;
+          for (let j = 0; j < h; j++) {
+            const w0 = j < h * 0.3 ? 1 : 0;
+            for (let s = -w0; s <= w0 + 1; s++) img.px(X + lean * j + s, Yb - j, s < 0 || (w0 === 0 && s === 0) ? 0x6e6660 : 0x1e1a1a);
+          }
+          for (let b = 0; b < 4; b++) {
+            const j0 = h * (0.45 + b * 0.13);
+            const dir = b % 2 ? 1 : -1;
+            const len = 4 + hashPx(b, seed2, 5417) * 7;
+            img.linePx(Math.round(X + lean * j0), Math.round(Yb - j0), Math.round(X + lean * j0 + dir * len), Math.round(Yb - j0 - len * 0.7), 0x2e2826);
+          }
+        },
+      });
+    }
+  }
+  // bomb craters: blown out of the ash with a pale rim of what they threw up, the rock lying cracked in the middle
+  for (let q = 0; q < 54; q++) {
+    const x = R() * W;
+    const u = 6280 + R() * 720;
+    if (k.isRes(x, Y(u))) continue;
+    const r = 2.6 + R() * R() * 6;
+    const cy = Y(u);
+    const seed2 = 5420 + q;
+    img.fine(x - r * 1.9, cy - r * 1.5, r * 3.8, r * 3, (X, Yy, xx, yy) => {
+      const d = Math.hypot(xx - x, (yy - cy) * 1.25);
+      const ang = Math.atan2(yy - cy, xx - x);
+      if (d < r * 0.72) {
+        // the pit: its far (upper) wall lit, its near wall in shadow
+        return rampColor(ROCK, 0.08 + ((cy - yy) / r) * -0.2 + 0.1 + hashPx(X >> 1, Yy >> 1, seed2) * 0.14, X, Yy);
+      }
+      if (d < r * (0.86 + fbm(xx, yy, { seed: seed2, scale: 3, octaves: 2 }) * 0.4)) return hashPx(X >> 2, Yy >> 2, seed2 + 2) < 0.2 ? null : rampColor(ASH, 0.22 + Math.sin(ang) * 0.24 + hashPx(X >> 1, Yy >> 1, seed2) * 0.2, X, Yy);
+      const ray = Math.abs(Math.sin(ang * 5 + q));
+      if (d < r * 1.8 && hashPx(X >> 1, Yy >> 1, seed2 + 1) < (1 - (d - r) / (r * 0.8)) * 0.6 * ray) return rampColor(ASH, 0.15 + hashPx(X, Yy, seed2) * 0.3, X, Yy);
+      return null;
+    });
+    if (q % 5 === 0) k.rockPx((x + 1) * S, cy * S + 2, r * 0.7 + 0.6, ROCK, q);
+  }
+  // fumaroles: crusts of sulphur, dull yellow, round a vent breathing steam
+  for (let q = 0; q < 13; q++) {
+    const x = 8 + R() * (W - 16);
+    const u = 6260 + R() * 640;
+    if (k.isRes(x, Y(u))) continue;
+    const seed2 = 5500 + q;
+    const rx = 5 + R() * 7;
+    const ry = 3.4 + R() * 4;
+    const cy = Y(u);
+    img.fine(x - rx, cy - ry, rx * 2, ry * 2, (X, Yy, xx, yy) => {
+      const e = ((xx - x) / rx) ** 2 + ((yy - cy) / ry) ** 2 + (fbm(xx, yy, { seed: seed2, scale: 3, octaves: 2 }) - 0.5) * 0.9;
+      if (e > 1) return null;
+      if (e < 0.05) return 0x2a2422;
+      if (hashPx(X, Yy, seed2) > 1.2 - e) return null;
+      return e < 0.4 ? (hashPx(X >> 1, Yy >> 1, seed2 + 1) < 0.5 ? 0xc8ba6e : 0xa89c58) : hashPx(X >> 1, Yy >> 1, seed2 + 1) < 0.5 ? 0x8a8250 : 0x6e6a48;
+    });
+    kit.emit(Math.round(x), u + 1, vapour, { rate: 0.8, life: [2.2, 3.2], vy: 6, sx: 1, wf: 1, a: 0.34, tint: 1 });
+  }
   // black pines, in clumps, the first trees back on the lava, thinning out up the slope; boulders; silver grass; knotweed
   for (let q = 0; q < 24; q++) {
     const cx = R() * W;
