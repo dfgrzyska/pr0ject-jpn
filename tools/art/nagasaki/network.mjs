@@ -15,8 +15,23 @@ export function paintNetwork(k) {
   }
   // Shinchi's main street, stone setts from the Omotemon bridge's landing to the street north of the north gate
   k.road([[CHINA_X, EMBANK + 18], [CHINA_X, 3654]], 7, { surface: C.stoneSet, side: 0 });
-  // B: from the 5112 street north over the harbour bridge (deck drawn in urakami.mjs) to the Fuchi roundabout
-  k.road([[B_X, 5112], [B_X, FUCHI.u - FUCHI.r + 2]], 5, { side: 2, over: false });
+  // B: from the 5112 street north over the harbour bridge (deck drawn in urakami.mjs) to the Fuchi roundabout. It meets each
+  // street at the carriageway's edge: a T at the 5112, a crossroads at the 5458, the streets running on unbroken through them.
+  const BU = [5112, 5458].map((u) => STREETS.find((st) => st.u === u));
+  k.road([[B_X, BU[0].u + BU[0].hw], [B_X, BU[1].u - BU[1].hw]], 5, { side: 2, over: false, piece: true });
+  k.road([[B_X, BU[1].u + BU[1].hw], [B_X, FUCHI.u - FUCHI.r + 2]], 5, { side: 2, over: false, piece: true });
+  const mouth = (u0, u1) => img.fine(B_X - 5, Y(u1), 10, u1 - u0, (X, Yy) => k.asphaltPx(X, Yy));
+  mouth(BU[0].u + BU[0].hw - 2, BU[0].u + BU[0].hw + 1);
+  mouth(BU[1].u + BU[1].hw - 2, BU[1].u + BU[1].hw + 1);
+  mouth(BU[1].u - BU[1].hw - 1, BU[1].u - BU[1].hw + 2);
+  // the crossings: over B beside each junction, over the street either side of it
+  k.zebraH(B_X - 4, B_X + 4, BU[0].u + BU[0].hw + 3);
+  k.zebraH(B_X - 4, B_X + 4, BU[1].u - BU[1].hw - 6);
+  k.zebraH(B_X - 4, B_X + 4, BU[1].u + BU[1].hw + 3);
+  for (const st of BU) {
+    k.zebraV(B_X - 10, st.u - st.hw + 1, st.u + st.hw - 1);
+    k.zebraV(B_X + 7, st.u - st.hw + 1, st.u + st.hw - 1);
+  }
   // the driveway with its verge and white edge lines, the summit car park with its bays, lamps and parked cars
   k.road(DRIVE, DRIVE_HW, { side: 1, pave: C.granite, lanes: true });
   img.fine(PARK.x0, Y(PARK.u1), PARK.x1 - PARK.x0, PARK.u1 - PARK.u0, (X, Yy, x, y) => {
