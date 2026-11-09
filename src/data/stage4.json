@@ -5,6 +5,7 @@
   "map": [130.55, 31.6, 26, 6],
   "skin": "kagoshima",
   "near": "ash",
+  "shadows": true,
   "dark": [[0, 0.2], [2400, 0.3], [4250, 0.4], [5400, 0.6], [7168, 0.8]],
   "scroll": { "far": 12, "mid": 30, "near": 64, "anchor": 420 },
   "boss": true,

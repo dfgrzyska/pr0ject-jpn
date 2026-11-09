@@ -69,10 +69,16 @@ export const TOD = [
   [5000, [0.54, 0.58, 0.76], 0x24345e, 0.16],
   [L, [0.46, 0.52, 0.72], 0x18264a, 0.18],
 ];
+const nagasakiNight = (u) => smooth(1500, 4200, u);
+let nightNow = nagasakiNight;
 /** How much of the night has fallen at u (lamps and windows come on). */
-export const night = (u) => smooth(1500, 4200, u);
+export const night = (u) => nightNow(u);
 
-export function makeCanvas(seed = 8080) {
+export function makeCanvas(seed = 8080, stage = {}) {
+  const isWaterAt = stage.isWater ?? isWater;
+  const TODS = stage.tod ?? TOD;
+  const ridge = stage.ridge ?? RIDGE;
+  nightNow = stage.night ?? nagasakiNight;
   const FW = W * S;
   const FH = L * S;
   const st = { img: new HiCanvas(W, L, S) };
@@ -114,7 +120,7 @@ export function makeCanvas(seed = 8080) {
   const kit = new PropKit(seed + 1, { artScale: S });
   const frame0 = kit.frame.bind(kit);
   kit.frame = (r, name) => frame0(r.hi ?? r, name); // (frames are drawn on HiCanvases)
-  const tod = todGrade(TOD, smooth);
+  const tod = todGrade(TODS, smooth);
   const objects = [];
   const lights = [];
   const lightsFine = [];
@@ -146,7 +152,7 @@ export function makeCanvas(seed = 8080) {
   // ------------------------------------------------------------ the water, cell by cell, and fine along the shores
   for (let y = 0; y < L; y++) {
     const u = U(y);
-    for (let x = 0; x < W; x++) if (isWater(x + 0.5, u - 0.5)) water[y * W + x] = 1;
+    for (let x = 0; x < W; x++) if (isWaterAt(x + 0.5, u - 0.5)) water[y * W + x] = 1;
   }
   const fineWater = new Uint8Array(FW * FH);
   for (let y = 0; y < L; y++)
@@ -158,7 +164,7 @@ export function makeCanvas(seed = 8080) {
         for (let i = 0; i < S; i++) {
           const X = x * S + i;
           const Yy = y * S + j;
-          fineWater[Yy * FW + X] = same ? v : isWater((X + 0.5) / S, L - (Yy + 0.5) / S) ? 1 : 0;
+          fineWater[Yy * FW + X] = same ? v : isWaterAt((X + 0.5) / S, L - (Yy + 0.5) / S) ? 1 : 0;
         }
     }
   const shoreD = new Uint8Array(FW * FH).fill(255);
@@ -180,6 +186,7 @@ export function makeCanvas(seed = 8080) {
         }
       }
   }
+  k.crownMask = crownMask;
   k.fineWater = fineWater;
   k.shoreD = shoreD;
   k.wetPx = (X, Yy) => X >= 0 && X < FW && Yy >= 0 && Yy < FH && fineWater[Yy * FW + X] === 1;
@@ -1352,7 +1359,7 @@ export function makeCanvas(seed = 8080) {
     const us = pts.map((p) => p[1]);
     const XA = Math.max(0, Math.floor((Math.min(...xs) - reach) * S));
     const XB = Math.min(FW - 1, Math.ceil((Math.max(...xs) + reach) * S));
-    const YA = Math.max(0, Math.floor((L - Math.min(RIDGE, Math.max(...us) + reach)) * S));
+    const YA = Math.max(0, Math.floor((L - Math.min(ridge, Math.max(...us) + reach)) * S));
     const YB = Math.min(FH - 1, Math.ceil((L - Math.max(0, Math.min(...us) - reach)) * S));
     for (let Yy = YA; Yy <= YB; Yy++) {
       const pu = L - (Yy + 0.5) / S;
@@ -1492,15 +1499,15 @@ export function makeCanvas(seed = 8080) {
       const i = q * 4;
       if (((d[i] ^ (d[i + 1] << 1) ^ (d[i + 2] << 2)) & 255) !== crownHash[q] || !d[i + 3]) crownMask[q] = 0;
     }
-    const tint = TOD.map(([, , t]) => rgb(t));
+    const tint = TODS.map(([, , t]) => rgb(t));
     for (let Yy = 0; Yy < FH; Yy++) {
       const u = L - (Yy + 0.5) / S;
       let i = 0;
-      while (i < TOD.length - 2 && u >= TOD[i + 1][0]) i++;
-      const t = smooth(TOD[i][0], TOD[i + 1][0], u);
-      const mul = TOD[i][1].map((m, q) => m + (TOD[i + 1][1][q] - m) * t);
+      while (i < TODS.length - 2 && u >= TODS[i + 1][0]) i++;
+      const t = smooth(TODS[i][0], TODS[i + 1][0], u);
+      const mul = TODS[i][1].map((m, q) => m + (TODS[i + 1][1][q] - m) * t);
       const tc = tint[i].map((c, q) => c + (tint[i + 1][q] - c) * t);
-      const amt = TOD[i][3] + (TOD[i + 1][3] - TOD[i][3]) * t;
+      const amt = TODS[i][3] + (TODS[i + 1][3] - TODS[i][3]) * t;
       for (let X = 0; X < FW; X++) {
         const p = (Yy * FW + X) * 4;
         if (!d[p + 3]) continue;

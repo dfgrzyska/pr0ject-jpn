@@ -1,1248 +1,171 @@
-// Middle layer (Kagoshima): the city under a haze of volcanic ash (Chūō station with its rooftop Ferris
-// wheel, trams on lawn-covered tracks to their depot by the river, palm avenues, the Tenmonkan arcade, yellow ash bags), the
-// Kōtsuki river with stone arch bridges, Sengan-en garden by the sea, hot sand baths on a black beach,
-// fields of black-vinegar jars on the coast, Kinkō Bay (a cruise ship at its pier, ferries, a fish farm and
-// more pens, dolphins), Sakurajima (port, ash-covered village,
-// eruption shelters, giant daikon and komikan, the buried torii of Kurokami), the 1914 lava fields and
-// the summit crater. Graded from hazy day to the red glow of the crater; lava and lamps are painted
-// after the grade. Open water stays transparent (the far layer is the bay).
-//
-// Live (see ../props.mjs): the Ferris wheel turns, trams shuttle along the lawn tracks, the Sakurajima
-// ferries cross the bay with their wakes, the feeding boat circles the fish farm, the shadow of an ash plume
-// drifts over the water, steam seeps from the sand baths and the port's foot bath, ash sweepers trundle up the
-// lava road in their dust, volcanic bombs thud down under the crater, dolphins leap, ash billows out of the crater and steam off the
-// vents and cracks, and the lava breathes, flaring up and dying down.
-//
-// Coordinates: u = distance from the bottom of the strip (stage start), strip y = L - u.
+// Middle layer (Kagoshima), at 3x the game's resolution: the city under a haze of volcanic ash (city.mjs), Sengan-en, the
+// sand baths and the black-vinegar jars along the coast (coast.mjs), Kinkō Bay (bay.mjs), Sakurajima's port, village and
+// fields (island.mjs), the 1914 lava and the summit crater (lava.mjs). Graded from hazy day to the red glow of the crater;
+// lava and lamps are painted after the grade. Open water stays transparent: the far layer is the bay.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Raster, fbm, rng, bayer, scaleColor, rgb } from '../../lib/raster.mjs';
-import { crownPixels, palmPixels, rampColor } from '../nature.mjs';
-import { PropKit, Window, puff, todGrade, tintTable } from '../props.mjs';
+import { makeCanvas, C, S, hashPx, scaleColor, rampColor, fbm, HiCanvas } from '../nagasaki/canvas.mjs';
+import { W, L, isWater, smooth, RIVER, SENGAN, COAST, BAY, ISLAND, LAVA, CITY } from './geo.mjs';
+import { paintCity } from './city.mjs';
+import { paintSengan, paintCoast } from './coast.mjs';
+import { paintBay } from './bay.mjs';
+import { paintIsland } from './island.mjs';
+import { paintLava, paintCrater, lavaPx } from './lava.mjs';
+import { paintTraffic } from './traffic.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
-export const W = 180;
-export const CHUNK = 512;
-export const CHUNKS = 14;
-export const L = CHUNK * CHUNKS;
-
-const CITY = [0, 1300];
-const RIVER = [1300, 1345];
-const SENGAN = [1345, 2200];
-const COAST = [2200, 2850];
-const BAY = [2850, 4250];
-const ISLAND = [4250, 5400];
-const LAVA = [5400, 6560];
-
-const C = {
-  grass: [0x45563a, 0x56683f, 0x6a7a4a, 0x7e8c58],
-  ash: [0x625e5a, 0x76726c, 0x8c8882, 0xa29e96],
-  asphalt: [0x3c3c40, 0x48484c, 0x545458],
-  walk: [0x908c84, 0xa09c94, 0xb0aca4],
-  soil: [0x332a24, 0x43382f, 0x544639],
-  rock: [0x2a2422, 0x3a3230, 0x4e4442, 0x645856],
-  sand: [0x403c3a, 0x504c48, 0x625e5a],
-  shallow: [0x24505a, 0x30626a, 0x447676, 0x5c8a86],
-  roofs: [0x8a8e94, 0xb0aca4, 0x6a4a3a, 0x3a5a7a, 0x9a3a2a, 0x5a6a5a, 0xc8c0b0],
-  tile: [0x34363e, 0x44464f, 0x565862],
-  stone: [0x6a665e, 0x84807a, 0x9e9a90],
-  lawn: [0x3e7a32, 0x4e8c3a],
-  rail: 0x8a8a90,
-  foam: 0xd8dcd8,
-  lava: [0xff4a10, 0xff8a20, 0xffd060],
-};
+export { W, L };
+export { buildFar } from './far.mjs';
 
 // time of day / atmosphere along the strip: [u, multiply rgb, tint, tint amount]
 const TOD = [
-  [0, [0.97, 0.95, 0.9], 0x8a7a68, 0.1],
-  [2400, [0.92, 0.92, 0.92], 0x6e6e72, 0.14],
-  [4250, [0.86, 0.8, 0.76], 0x6a4a3a, 0.14],
-  [5400, [0.72, 0.6, 0.56], 0x4a2018, 0.18],
-  [L, [0.6, 0.46, 0.42], 0x3a1410, 0.22],
+  [0, [0.97, 0.95, 0.9], 0x8a7a68, 0.08],
+  [2400, [0.93, 0.92, 0.9], 0x6e6e72, 0.12],
+  [4250, [0.9, 0.87, 0.84], 0x5a4a44, 0.1],
+  [5400, [0.8, 0.74, 0.72], 0x3a2a2c, 0.12],
+  [L, [0.66, 0.56, 0.54], 0x2a1414, 0.16],
 ];
+const night = (u) => smooth(4800, 6600, u);
 
-const smooth = (a, b, x) => {
-  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
+const ASH = [0x5c5a56, 0x706e6a, 0x868480, 0x9c9a94];
 
 export function buildMid() {
   const stage = JSON.parse(readFileSync(join(root, 'src', 'data', 'stage4.json'), 'utf8'));
   const { mid: V, anchor } = stage.scroll;
-  // the boss wave holds where the crater and its side vents are (the game places the boss there)
-  const bw = stage.waves.find((w) => w.type === 'boss');
-  const CRATER = { x: bw.crater[0], u: bw.crater[1], rx: 66, ry: 46 };
-  const VENTS = bw.vents;
-  const img = new Raster(W, L);
-  const rand = rng(4404);
-  const Y = (u) => Math.round(L - u);
-  const U = (y) => L - y;
-  const reserved = new Uint8Array(W * L);
-  const isRes = (x, y) => x >= 0 && x < W && y >= 0 && y < L && reserved[Math.floor(y) * W + Math.floor(x)];
-  const anyRes = (x0, y0, w, h) => {
-    for (let y = Math.floor(y0); y < y0 + h; y++) for (let x = Math.floor(x0); x < x0 + w; x++) if (isRes(x, y)) return true;
-    return false;
+  const k = makeCanvas(4404, { isWater, tod: TOD, night, ridge: L });
+  const { img, Y, U, kit, FW, FH, fineWater, shoreD } = k;
+  // what glows in the lava's cracks is painted after the grade; some of it flares up and dies down, patch by patch
+  const LIT = [];
+  k.lavaGlow = (X, Yy, c) => {
+    k.glowPx(X, Yy, c, 0.96);
+    LIT.push([X, Yy]);
   };
-  const reserveRect = (x0, y0, w, h) => {
-    for (let y = Math.max(0, Math.floor(y0)); y < Math.min(L, y0 + h); y++)
-      for (let x = Math.max(0, Math.floor(x0)); x < Math.min(W, x0 + w); x++) reserved[y * W + x] = 1;
+  let breaths = 0;
+  k.breathe = (pxs, ph) => {
+    if (!pxs.length || breaths >= 26) return;
+    breaths++;
+    const xs = pxs.map((p) => p[0]);
+    const ys = pxs.map((p) => p[1]);
+    const x0 = Math.floor(Math.min(...xs) / S) - 1;
+    const y0 = Math.floor(Math.min(...ys) / S) - 1;
+    const w = Math.ceil(Math.max(...xs) / S) - x0 + 2;
+    const h = Math.ceil(Math.max(...ys) / S) - y0 + 2;
+    const out = new HiCanvas(w, h, S, x0, y0);
+    for (const [X, Yy] of pxs) {
+      out.px(X, Yy, 0xffb060);
+      out.px(X, Yy - 1, 0xc84a18, 0.4);
+    }
+    kit.wave([kit.frame(out)], [[0, x0, U(y0), ph]], { w: 1.3, a0: 0, a1: 0.55, pw: 2 });
   };
-  const objects = [];
-  const lights = [];
-  const pools = [];
-  const glow = (x, y, c, a = 1) => lights.push([Math.round(x), Math.round(y), c, a]);
-  const pool = (x, y, r, c, k = 0.5) => pools.push({ x, y, r, c, k });
-  const kit = new PropKit(4414); // the moving parts
-  const tod = todGrade(TOD, smooth);
-  /** A frame graded for strip position u; `lit` are [x, y, colour, alpha] pixels painted on afterwards. */
-  const frameAt = (r, u, lit = []) => {
-    tod.frame(r, u);
-    for (const [x, y, c, a] of lit) r.set(x, y, c, a);
-    return kit.frame(r);
-  };
-  const lavaPx = []; // glowing cracks and the crater's lava (they pulse, live)
-  const vapour = [2, 3, 4, 5].map((r) => [0, 1].map((v) => kit.frame(puff(r, r * 19 + v, [0x9a9696, 0xbcb8b6, 0xdcd8d4, 0xf4f0ec]))));
-  /**
-   * Where a mover should start so it passes its painted spot (sAt px along the route) as the screen goes
-   * by there, and never reaches the ends of its route while on screen.
-   */
-  const passing = (u, sp, sAt, total) => {
-    const t = (u - 235) / V;
-    return ((((sAt - sp * t) % total) + total) % total) / total;
-  };
-  const shadowRect = (x, y, w, h, f = 0.6) => {
-    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) img.tint(x + i, y + j, f);
-  };
-  const ashOn = (c, x, y, amt = 0.3) => (fbm(x, y, { seed: 7, scale: 3 }) < amt ? scaleColor(C.ash[3], 0.95) : c); // grey ash dusting
 
-  const pads = stage.waves.filter((w) => w.type === 'turret').map((w) => ({ x: w.x, u: anchor + V * w.t + 10 }));
-  // Sakurajima's road: up from the port through the village (x 150), then bending away over the 1914 lava and
-  // winding up towards the summit (one road, so it never starts or stops in the middle of the lava)
-  const LAVA_ROAD = [5440, 5600]; // where it leaves the village road's line and where it takes up the winding one
-  const lavaRoadX = (u) => {
-    const wind = 70 + 40 * Math.sin((u - LAVA[0]) / 170);
-    return u < LAVA_ROAD[1] ? 150 + (wind - 150) * smooth(LAVA_ROAD[0], LAVA_ROAD[1], u) : wind;
-  };
-  for (const p of pads) reserveRect(p.x - 12, Y(p.u) - 12, 24, 24);
+  // the turrets' pads: kept clear of everything, bare earth where a living jar stands
+  const pads = stage.waves.filter((w) => w.type === 'turret').map((w) => ({ x: w.x, u: Math.round(anchor + V * w.t + 10) }));
+  for (const p of pads) k.reserve(p.x - 10, Y(p.u) - 10, 21, 21);
+  k.pads = pads;
 
-  // ------------------------------------------------------------ 1. land and sea
-  const seaX = (u) => {
-    if (u < SENGAN[0]) return 999;
-    const n = (fbm(u, 5, { seed: 91, scale: 30, octaves: 2 }) - 0.5) * 10;
-    if (u < BAY[0]) return 172 - smooth(SENGAN[0], BAY[0], u) * 60 + n;
-    return 112 - smooth(BAY[0], BAY[0] + 110, u) * 140 + n;
-  };
-  const shoreU = (x) => ISLAND[0] + 18 + 22 * Math.sin(x / 26 + 1) + (fbm(x, 3, { seed: 92, scale: 12 }) - 0.5) * 16;
-  // the black beach of the sand baths pushes out into the sea past the coast road
-  const sandBeach = (u) => 26 * smooth(2230, 2270, u) * (1 - smooth(2386, 2426, u));
-  const landD = (x, u) => {
-    let d = seaX(u) + sandBeach(u) - x;
-    if (u > BAY[0] + 900) d = Math.max(d, u - shoreU(x));
-    return d;
-  };
-  const land = new Int16Array(W * L);
-  for (let y = 0; y < L; y++) {
-    const u = U(y);
-    for (let x = 0; x < W; x++) {
-      const d = landD(x, u);
-      land[y * W + x] = Math.max(-999, Math.min(999, Math.round(d)));
-      if (d > 0) {
-        const island = u > ISLAND[0];
-        if (d < 5) img.set(x, y, island ? rampColor(C.sand, 0.3 + fbm(x, y, { seed: 12, scale: 3 }) * 0.6, x, y) : d < 2 ? 0x7a7a76 : 0x9a968e); // black sand / sea wall
-        else if (u > LAVA[0] + (fbm(x, 7, { seed: 19, scale: 20 }) - 0.5) * 140) {
-          // 1914 lava: ropy flow bands running downhill, blocky crust, drifts of ash in the hollows
-          const n = fbm(x, y, { seed: 13, scale: 6, octaves: 3 });
-          const rope = Math.sin(y * 0.55 + fbm(x, y, { seed: 17, scale: 14 }) * 9);
-          const drift = fbm(x, y, { seed: 18, scale: 26, octaves: 2 });
-          let c = rampColor(C.rock, 0.25 + n * 0.5 + rope * 0.12, x, y);
-          if (drift > 0.6) c = rampColor(C.ash, (drift - 0.6) * 2 + n * 0.3, x, y);
-          img.set(x, y, c);
+  // ------------------------------------------------------------ land and water, in fine pixels
+  const nRow = new Float32Array(W);
+  for (let Yy = 0; Yy < FH; Yy++) {
+    const y = (Yy + 0.5) / S;
+    const u = L - y;
+    if (Yy % S === 0) for (let x = 0; x < W; x++) nRow[x] = 0.2 + fbm(x, Math.floor(y), { seed: 17, scale: 7, octaves: 2 }) * 0.65;
+    const river = u > RIVER[0] && u < RIVER[1];
+    for (let X = 0; X < FW; X++) {
+      const i = Yy * FW + X;
+      const d = shoreD[i];
+      if (fineWater[i]) {
+        if (river) continue; // (painted with the river)
+        // shallows over the black sand near the shore, foam on it, thinning out into the bay
+        if (d < 3) img.px(X, Yy, 0xdce4e0, 0.8 - d * 0.2);
+        else if (d < 22) {
+          const c = rampColor([0x1e4a54, 0x2a5e66, 0x3a7076], 1 - d / 22, X, Yy);
+          if (hashPx(X, Yy, 18) < 1 - d / 26) img.px(X, Yy, c, 0.55);
         }
-        else if (island) img.set(x, y, rampColor(C.ash, 0.25 + fbm(x, y, { seed: 14, scale: 9, octaves: 3 }) * 0.6, x, y));
-        else img.set(x, y, ashOn(rampColor(C.grass, 0.3 + fbm(x, y, { seed: 15, scale: 8, octaves: 3 }) * 0.6, x, y), x, y, 0.22));
         continue;
       }
-      // shallow water near the shore, dithering out into the transparent bay
-      const s = 1 + d / 22;
-      if (s <= 0 || (s < 0.4 && s < bayer(x, y) * 0.4)) continue;
-      let c = rampColor(C.shallow, Math.min(1, s * 0.9 + (fbm(x * 1.2, y, { seed: 16, scale: 6 }) - 0.5) * 0.2), x, y);
-      if (d > -1.5) c = C.foam;
-      img.set(x, y, c);
-    }
-  }
-  const D = (x, y) => (x < 0 || x >= W || y < 0 || y >= L ? -999 : land[y * W + x]);
-
-  // ------------------------------------------------------------ helpers
-  const roadPx = (x, y, across, hw) => {
-    const a = Math.abs(across);
-    if (a > hw) {
-      img.set(x, y, rampColor(C.walk, fbm(x, y, { seed: 33, scale: 3 }), x, y));
-      return;
-    }
-    let c = rampColor(C.asphalt, fbm(x, y, { seed: 31, scale: 4, octaves: 2 }), x, y);
-    if (Math.abs(a - hw / 2) < 0.5 && (x + y) % 6 < 3 && hw > 4) c = 0xb8b4a8; // lane marks
-    img.set(x, y, ashOn(c, x, y, 0.12));
-  };
-  const vRoad = (cx, hw, u0, u1) => {
-    for (let u = u0; u < u1; u++) for (let x = Math.floor(cx - hw - 2); x <= cx + hw + 1; x++) if (D(x, Y(u)) > 0) roadPx(x, Y(u), x + 0.5 - cx, hw);
-    reserveRect(cx - hw - 3, Y(u1), hw * 2 + 6, u1 - u0);
-  };
-  const hRoad = (uc, hw, x0 = 0, x1 = W) => {
-    for (let u = Math.floor(uc - hw - 2); u <= uc + hw + 1; u++) for (let x = x0; x < x1; x++) if (D(x, Y(u)) > 0) roadPx(x, Y(u), u + 0.5 - uc, hw);
-    reserveRect(x0, Y(uc + hw + 3), x1 - x0, hw * 2 + 6);
-  };
-  /** Building with a flat or tiled roof dusted with ash and a sunlit front face with windows. */
-  const building = (x, y, w, h, faceH, opt = {}) => {
-    const roof = opt.roof ?? rand.pick(C.roofs);
-    const wall = opt.wall ?? rand.pick([0xd8d0c0, 0xc4c2bc, 0xb8a890, 0xe0dcd2]);
-    const units = [];
-    for (let i = 0; i < Math.floor((w * h) / 300); i++) units.push([x + 3 + Math.floor(rand() * (w - 9)), y + 3 + Math.floor(rand() * (h - 8))]);
-    objects.push({
-      y: y + h + faceH,
-      shadow: () => shadowRect(x + 3, y + 4, w, h + faceH, 0.55),
-      draw: () => {
-        for (let yy = y; yy < y + h; yy++)
-          for (let xx = x; xx < x + w; xx++) {
-            let c = xx === x || yy === y ? scaleColor(roof, 1.15) : xx === x + w - 1 ? scaleColor(roof, 0.8) : roof;
-            if (opt.tiles && (yy - y) % 2 === 0) c = scaleColor(c, 0.88);
-            img.set(xx, yy, ashOn(c, xx, yy, 0.18));
-          }
-        for (const [ux, uy] of units) {
-          img.rect(ux + 1, uy + 1, 4, 3, scaleColor(roof, 0.6));
-          img.rect(ux, uy, 4, 3, 0x8a8c90);
-        }
-        for (let yy = y + h; yy < y + h + faceH; yy++) for (let xx = x; xx < x + w; xx++) img.set(xx, yy, yy === y + h ? scaleColor(wall, 0.6) : wall);
-        for (let r = y + h + 2; r < y + h + faceH - 1; r += 2) for (let xx = x + 2; xx < x + w - 2; xx += 3) img.set(xx, r, 0x4a5a6a);
-      },
-    });
-    reserveRect(x - 1, y - 1, w + 2, h + faceH + 2);
-  };
-  /** Pile of the city's yellow ash-collection bags at a kerb. */
-  const ashBags = (x, y) => {
-    for (const [dx, dy] of [[0, 0], [2, 0], [1, 1], [3, 1]]) {
-      img.tint(x + dx + 1, y + dy + 1, 0.6);
-      img.set(x + dx, y + dy, (dx + dy) % 2 ? 0xe8c020 : 0xf4d840);
-    }
-  };
-  const tree = (kind, x, y, r) => {
-    const seed = Math.floor(rand() * 1e9);
-    const cx = Math.round(x);
-    const cy = Math.round(y);
-    const crown = kind === 'komikan' ? 'fukugi' : kind; // mandarin trees: dense dark crowns, fruit added below
-    const px = () => (kind === 'palm' ? palmPixels(cx, cy, r, rng(seed)) : crownPixels(crown, cx, cy, r, rng(seed), seed & 1023));
-    const off = Math.round(2 + r * 0.3);
-    objects.push({
-      y: cy + r * 0.6,
-      shadow: () => {
-        for (const p of px()) img.tint(p.x + off, p.y + off + 1, 0.55);
-      },
-      draw: () => {
-        for (const p of px()) img.set(p.x, p.y, ashOn(p.c, p.x, p.y, kind === 'palm' ? 0.08 : 0.16));
-        if (kind === 'komikan') {
-          const fr = rng(seed + 1);
-          for (let i = 0; i < r * 2.5; i++) {
-            const a = fr() * Math.PI * 2;
-            const dd = fr() * r * 0.85;
-            img.set(Math.round(cx + Math.cos(a) * dd), Math.round(cy + Math.sin(a) * dd), fr() < 0.8 ? 0xf08a20 : 0xffc040);
-          }
-        }
-      },
-    });
-  };
-
-  // ------------------------------------------------------------ A. the city
-  {
-    const streets = [120, 250, 450, 600, 850, 1100, 1166];
-    const DEPOT = { x0: 56, x1: 141, u0: 1174, u1: RIVER[0] - 3 }; // the tram depot by the river, where the avenue ends
-    const VIADUCT = [425, 437]; // the railway into Kagoshima-Chūō station, on its viaduct (below)
-    for (const x of [30, 150]) vRoad(x, 5, 0, RIVER[0]);
-    vRoad(90, 10, 0, DEPOT.u0);
-    for (const u of streets) hRoad(u, 5);
-    // the tram line down the middle of the avenue: lawn-covered tracks, a tram here and there
-    for (let u = 0; u < DEPOT.u0; u++) {
-      const y = Y(u);
-      if (streets.some((s) => Math.abs(u - s) < 7)) continue;
-      for (let x = 85; x <= 95; x++) img.set(x, y, rampColor(C.lawn, fbm(x, y, { seed: 35, scale: 2 }), x, y));
-      for (const x of [86, 88, 92, 94]) img.set(x, y, C.rail);
-    }
-    // live: trams shuttling along both tracks between the terminus and the river, shadows on the lawn
-    for (const [x, color, s0] of [[87, 0xd84a2a, 0.1], [93, 0x2a8a5a, 0.45], [87, 0xe8e0d0, 0.65], [93, 0xe8a030, 0.9]]) {
-      const tram = (up) => {
-        const r = new Raster(8, 26);
-        r.rect(0, 0, 6, 24, color);
-        r.rect(0, 0, 6, 1, 0xf0ece0);
-        for (let k = 2; k < 22; k += 4) r.rect(1, k, 4, 2, 0x8aa8c0);
-        r.rect(1, up ? 0 : 22, 4, 2, 0x5a7a9a); // the driver's window at the front
-        for (let j = 2; j < 26; j++) r.set(j > 24 ? 6 : 7, j, 0x101418, 0.35);
-        return frameAt(r, 600);
-      };
-      const fu = tram(true);
-      const fd = tram(false);
-      kit.path([[x + 2, 10], [x + 2, DEPOT.u0 + 16]], [fu], { sp: 9, mode: 'pp', hold: 4, turn: 'none', fu: [fu], fd: [fd], s0 });
-    }
-    // the tram depot: through its gate the two tracks fan out over the yard to four, trams parked on them under
-    // the overhead wires, into the long shed with a door for each track; the workshop beside it
-    {
-      const { x0, x1, u0, u1 } = DEPOT;
-      for (let u = u0 + 2; u < u1; u++)
-        for (let x = x0; x < x1; x++) {
-          const y = Y(u);
-          if (isRes(x, y)) continue; // (a turret stand)
-          img.set(x, y, x === x0 || x === x1 - 1 ? 0x5a5a5e : rampColor(C.walk, 0.25 + fbm(x, y, { seed: 461, scale: 4 }) * 0.35, x, y));
-        }
-      for (let x = x0; x < x1; x++) if (x < 82 || x > 98) img.set(x, Y(u0 + 2), 0x5a5a5e); // the fence, the gate open in the middle
-      const TRACKS = [78, 88, 98, 108];
-      const fan = (i, u) => {
-        const from = i < 2 ? 87 : 93;
-        const t = Math.max(0, Math.min(1, (u - u0 - 4) / 30));
-        return from + (TRACKS[i] - from) * t * t * (3 - 2 * t);
-      };
-      for (let u = u0 + 2; u < u1 - 2; u++)
-        for (let i = 0; i < 4; i++) {
-          const cx = Math.round(fan(i, u));
-          const y = Y(u);
-          for (let x = cx - 3; x <= cx + 3; x++) img.set(x, y, rampColor(C.stone, 0.15 + fbm(x, y, { seed: 462, scale: 2 }) * 0.3, x, y)); // ballast
-          if (u % 3 === 0) img.rect(cx - 3, y, 7, 1, 0x5a4a3a); // sleepers
-          img.set(cx - 2, y, C.rail);
-          img.set(cx + 2, y, C.rail);
-          if (u % 18 === 0 && u > u0 + 40) img.set(cx + 5, y, 0x2a2a2e); // the overhead wire poles
-        }
-      // the shed over the tracks' far end: a corrugated roof in four bays with skylights, the doors facing the yard
-      const sy = Y(u1 - 4);
-      const sh = 54;
-      objects.push({
-        y: sy + sh + 4,
-        shadow: () => shadowRect(70, sy + 4, 46, sh, 0.5),
-        draw: () => {
-          for (let y = sy; y < sy + sh; y++)
-            for (let x = 70; x < 116; x++) {
-              const bay = (x - 70) % 11;
-              let c = bay === 0 ? 0x6a6e76 : bay < 5 ? 0xb4b8be : 0x9aa0a8; // each bay's roof, lit on one side
-              if (bay === 5 && (y - sy) % 6 < 3) c = 0x8ab0c8; // skylights along its ridge
-              img.set(x, y, c);
-            }
-          for (let y = sy + sh; y < sy + sh + 4; y++) for (let x = 70; x < 116; x++) img.set(x, y, y === sy + sh ? 0x4a4a52 : 0xc8c4bc);
-          for (const cx of TRACKS) img.rect(cx - 3, sy + sh + 1, 7, 3, 0x1a1a1e); // the doors
-        },
-      });
-      // the workshop and its yard crane
-      building(118, Y(u1 - 6), 20, 26, 5, { roof: 0x6a4a3a, tiles: true });
-      // trams parked in the yard, waiting for the morning
-      for (const [i, u, color] of [[0, u0 + 54, 0xe8e0d0], [1, u0 + 46, 0xd84a2a], [3, u0 + 58, 0x2a8a5a]]) {
-        const cx = Math.round(fan(i, u));
-        const y = Y(u + 24);
-        objects.push({
-          y: y + 24,
-          shadow: () => shadowRect(cx - 2, y + 2, 6, 24, 0.55),
-          draw: () => {
-            img.rect(cx - 3, y, 6, 24, color);
-            img.rect(cx - 3, y, 6, 1, 0xf0ece0);
-            for (let k = 2; k < 22; k += 4) img.rect(cx - 2, y + k, 4, 2, 0x8aa8c0);
-            img.rect(cx - 2, y, 4, 2, 0x5a7a9a);
-          },
-        });
+      const x = (X + 0.5) / S;
+      const cell = Math.floor(x);
+      const n = nRow[cell];
+      const g = hashPx(X, Yy, 19);
+      let c;
+      if (u < CITY[1] + 50) {
+        c = k.pavePx(X, Yy, [0x7e7a72, 0x8c8880, 0x9a968c]);
+      } else if (u < COAST[1]) {
+        c = k.lawnPx(X, Yy, n, [0x3e5a34, 0x4c6c3c, 0x5e7e48, 0x74905a], true);
+      } else if (u < ISLAND[0]) {
+        c = k.lawnPx(X, Yy, n, [0x4a5a3a, 0x5a6a44, 0x6c7c50], true);
+      } else if (u > LAVA[0] + (fbm(x, 7, { seed: 19, scale: 20 }) - 0.5) * 140) {
+        c = lavaPx(k, X, Yy, x, y, u);
+      } else {
+        // Sakurajima's ash soil, raked by the wind
+        c = rampColor(ASH, n * 0.8 + (hashPx(X >> 3, Yy >> 1, 20) - 0.5) * 0.26, X, Yy);
+        if (g < 0.08) c = scaleColor(c, 0.88);
       }
-      reserveRect(x0 - 1, Y(u1 + 1), x1 - x0 + 2, u1 - u0 + 2);
-    }
-    // palms along the avenue
-    for (let u = 20; u < DEPOT.u0 - 8; u += 26) {
-      if (streets.some((s) => Math.abs(u - s) < 12) || (u > VIADUCT[0] - 12 && u < VIADUCT[1] + 10)) continue;
-      for (const x of [76, 104]) tree('palm', x, Y(u), 5 + rand());
-    }
-    // Kagoshima-Chūō station with the Ferris wheel on its roof
-    {
-      const x = 102;
-      const y = Y(420);
-      objects.push({
-        y: y + 50,
-        shadow: () => shadowRect(x + 5, y + 6, 38, 50, 0.5),
-        draw: () => {
-          img.rect(x, y, 38, 40, 0xa8a4a0);
-          img.rect(x, y, 38, 1, 0xc8c4c0);
-          img.rect(x + 2, y + 2, 34, 36, 0x9a9690);
-          for (let yy = y + 40; yy < y + 50; yy++) for (let xx = x; xx < x + 38; xx++) img.set(xx, yy, yy === y + 40 ? 0x5a5a5e : (xx - x) % 3 === 1 ? 0x5a7a9a : 0xd0ccc4);
-          img.rect(x + 15, y + 33, 9, 3, 0x7a7a80); // the wheel's stand (the wheel is live)
-        },
-      });
-      reserveRect(x - 2, y - 2, 42, 56);
-      // the wheel turning: spokes and ring in three steps per spoke, the coloured gondolas going round
-      const cx = x + 19;
-      const cy = y + 18;
-      const wheel = [0, 1, 2].map((s) => {
-        const r = new Window(cx - 16, cy - 16, 33, 33);
-        for (let a = 0; a < Math.PI * 2; a += 0.02) r.set(Math.round(cx + Math.cos(a) * 15), Math.round(cy + Math.sin(a) * 15), 0xd8302a);
-        for (let k = 0; k < 12; k++) {
-          const a = (k / 12) * Math.PI * 2 + (s / 3) * ((Math.PI * 2) / 12);
-          r.line(cx, cy, Math.round(cx + Math.cos(a) * 14), Math.round(cy + Math.sin(a) * 14), 0xc8c4bc);
-        }
-        r.rect(cx - 1, cy - 1, 3, 3, 0xe8e4dc);
-        return frameAt(r, 410);
-      });
-      kit.loop(cx - 16, U(cy - 16), wheel, { fps: 1.5, ph: 0 });
-      const gondolas = [0xf0c030, 0x40a0e0, 0xe85a8a, 0x5ac05a].map((c) => {
-        const r = new Raster(3, 2);
-        r.rect(0, 0, 3, 2, c);
-        r.set(2, 1, scaleColor(c, 0.75));
-        return frameAt(r, 410);
-      });
-      kit.orbit(cx, U(cy) - 1, 15, gondolas, { n: 12, w: ((Math.PI * 2) / 12 / 3) * 1.5, d: 0.02 });
-    }
-    // the railway into Kagoshima-Chūō: two tracks on a concrete viaduct along the station's north side, over
-    // the avenues, the platform between them under its canopy beside the station; trains crossing (live)
-    {
-      const [v0, v1] = VIADUCT;
-      for (let u = v0 - 5; u < v0; u++) for (let x = 3; x < W; x++) img.tint(x, Y(u), 0.6); // its shadow on the street below
-      for (let u = v0; u <= v1; u++)
-        for (let x = 0; x < W; x++) {
-          const y = Y(u);
-          let c = u === v0 || u === v1 ? 0xb4b0a8 : rampColor(C.stone, 0.2 + fbm(x, y, { seed: 471, scale: 2 }) * 0.25, x, y);
-          if (u === v0 + 2 || u === v0 + 4 || u === v1 - 4 || u === v1 - 2) c = C.rail;
-          else if ((u === v0 + 3 || u === v1 - 3) && x % 3 === 0) c = 0x5a4a3a; // sleepers
-          img.set(x, y, c);
-        }
-      for (let x = 104; x < 140; x++) for (let u = v0 + 5; u <= v1 - 5; u++) img.set(x, Y(u), (x - 104) % 4 === 0 ? 0x8a8e96 : 0xc8ccd4); // the platform canopy
-      for (let x = 4; x < W; x += 30) img.rect(x, Y(v0 - 1), 3, 1, 0x3a3a3e); // the piers' feet
-      reserveRect(0, Y(v1 + 1), W, v1 - v0 + 7);
-      const train = (up) => {
-        const r = new Raster(60, 4);
-        r.rect(0, 0, 60, 4, 0xf0f0ec);
-        r.rect(0, 2, 60, 1, 0x2a5aa8); // the stripe
-        for (let x = 3; x < 57; x += 3) if (x % 20 > 1) r.set(x, 1, 0x3a4a5a); // windows, the gaps between the cars
-        r.set(up ? 59 : 0, 1, 0x2a3a4a);
-        return frameAt(r, 430);
-      };
-      kit.path([[-260, v0 + 3], [440, v0 + 3]], [train(true)], { sp: 30, turn: 'flip', s0: 0.2 });
-      kit.path([[440, v1 - 3], [-260, v1 - 3]], [train(false)], { sp: 26, turn: 'flip', s0: 0.65 });
-    }
-    // Tenmonkan: a covered shopping arcade cutting through the blocks
-    for (let u = 610; u < 1090; u++) {
-      if (streets.some((s) => Math.abs(u - s) < 8)) continue;
-      const y = Y(u);
-      for (let x = 54; x < 66; x++) img.set(x, y, x === 54 || x === 65 ? 0x7a7c84 : (u % 8 === 0 ? 0x9aa4ae : x % 3 === 0 ? 0xc8d0d8 : 0xb8c2cc));
-    }
-    reserveRect(52, Y(1090), 16, 480);
-    // blocks with buildings
-    const blocks = [[0, 22], [41, 51], [69, 77], [104, 142], [159, W]];
-    const all = [0, ...streets, RIVER[0] - 6];
-    for (let i = 0; i < all.length - 1; i++) {
-      const u0 = all[i] + 9;
-      const u1 = all[i + 1] - 9;
-      for (const [x0, x1] of blocks) {
-        let x = x0 + 1;
-        while (x < x1 - 7) {
-          const w = Math.min(x1 - x, 14 + Math.floor(rand() * 18));
-          let u = u0;
-          while (u < u1 - 18) {
-            const h = Math.min(u1 - u, 22 + Math.floor(rand() * 24));
-            const face = 4 + Math.floor(rand() * 6);
-            const top = Y(u + h);
-            if ((x + w > DEPOT.x0 && x < DEPOT.x1 && u + h > DEPOT.u0) || (u < VIADUCT[1] + 3 && u + h > VIADUCT[0] - 6)) {
-              u += h + 2; // (the depot's yard, the railway viaduct)
-              continue;
-            }
-            if (!anyRes(x, top, w - 1, h)) building(x, top, w - 1, h - face - 1, face);
-            else if (u < u1 - 10 && rand() < 0.6) tree('broadleaf', x + w / 2, Y(u + h / 2), 5);
-            u += h + 2;
-          }
-          x += w;
-        }
+      if (d <= 6) {
+        // the edge: a sea wall on the mainland, black sand on the island
+        if (u > ISLAND[0]) c = rampColor([0x2a2624, 0x3a3432, 0x4c4644], 0.2 + hashPx(X >> 1, Yy >> 1, 21) * 0.6, X, Yy);
+        else if (u > SENGAN[0]) c = d < 2 ? 0x6a6a66 : X % 12 === 0 ? 0x7a7a76 : Yy % 9 === 0 ? 0x7a7a76 : 0x9a968e;
       }
-    }
-    // ash bags at the corners, Shiroyama's camphor forest on the hill
-    for (const u of streets) for (const x of [22, 40, 79, 102, 140, 160]) ashBags(x, Y(u + 8));
-    for (let k = 0; k < 40; k++) {
-      const x = rand() * 46;
-      const u = 1110 + rand() * 180;
-      if (!isRes(x, Y(u))) tree('broadleaf', x, Y(u), 5 + rand() * 3);
+      img.px(X, Yy, c);
     }
   }
 
-  // ------------------------------------------------------------ Kōtsuki river with stone arch bridges
-  {
-    const [r0, r1] = RIVER;
-    for (let u = r0; u < r1; u++)
-      for (let x = 0; x < W; x++) {
-        const y = Y(u);
-        const bank = Math.min(u - r0, r1 - u);
-        img.set(x, y, bank < 3 ? C.stone[1] : rampColor(C.shallow, 0.3 + fbm(x, y, { seed: 37, scale: 5 }) * 0.5, x, y));
-      }
-    reserveRect(0, Y(r1), W, r1 - r0);
-    for (const bx of [30, 150])
-      objects.push({
-        y: Y(r0),
-        shadow: () => shadowRect(bx + 7, Y(r1 + 2), 3, r1 - r0 + 4, 0.55),
-        draw: () => {
-          for (let u = r0 - 2; u < r1 + 2; u++) {
-            const y = Y(u);
-            for (let x = bx - 6; x <= bx + 6; x++) img.set(x, y, Math.abs(x - bx) === 6 ? C.stone[0] : (u + (x >> 1)) % 4 === 0 ? C.stone[0] : C.stone[2]);
-          }
-          // the arches show as darker crescents on the sides
-          for (const s of [-1, 1]) for (let k = -4; k <= 4; k++) img.set(bx + s * 7, Y((r0 + r1) / 2 + k), 0x2a3a40);
-        },
-      });
+  paintCity(k);
+  paintSengan(k);
+  paintCoast(k);
+  paintBay(k);
+  paintIsland(k);
+  paintLava(k);
+  paintCrater(k);
+  // a few patches of the glowing cracks breathe on their own
+  for (let i = 0; i < 12; i++) {
+    const uc = 6000 + i * 80;
+    const xc = 20 + ((i * 67) % 140);
+    const yc = Y(uc) * S;
+    const patch = LIT.filter(([X, Yy]) => Math.abs(X - xc * S) < 72 && Math.abs(Yy - yc) < 72);
+    k.breathe(patch, i * 1.7);
   }
+  paintTraffic(k);
 
-  // ------------------------------------------------------------ B. Sengan-en, the Shimadzu garden by the sea
-  {
-    // the coast road, and the Nippō railway inland of it, keep to the shore: where the land turns west round the
-    // head of the bay they bend with it and run off the screen along the bay (they don't stop at the corner).
-    // It starts off the right-hand bridge over the Kōtsuki, square with the city street it carries on.
-    const roadX = (u) => {
-      const coast = seaX(u) - 14;
-      return u < 1400 ? 150 + (coast - 150) * smooth(SENGAN[0], 1400, u) : coast;
-    };
-    // Sengan-en's entrance across the left-hand bridge: the roofed gate in the white garden wall along the river,
-    // the garden path setting off from it
-    {
-      const wy = Y(SENGAN[0] + 4);
-      for (let x = 0; x < 72; x++) {
-        if (Math.abs(x - 30) < 8) continue;
-        img.set(x, wy, C.tile[2]); // the tiled cap on the wall
-        img.set(x, wy + 1, 0xe8e2d4);
-        img.set(x, wy + 2, 0xd0c8b8);
-        img.tint(x + 1, wy + 3, 0.6);
-      }
-      reserveRect(0, wy - 1, 72, 5);
-      objects.push({
-        y: wy + 4,
-        shadow: () => shadowRect(24, wy, 15, 5, 0.55),
-        draw: () => {
-          for (let j = 0; j < 5; j++) img.rect(22 + Math.max(0, 1 - j), wy - 2 + j, 17 - 2 * Math.max(0, 1 - j), 1, j < 2 ? C.tile[2] : C.tile[1]);
-          img.rect(23, wy + 3, 2, 2, 0x5a3a24); // the posts
-          img.rect(36, wy + 3, 2, 2, 0x5a3a24);
-          img.rect(25, wy - 2, 11, 1, C.tile[0]);
-        },
-      });
-      reserveRect(20, wy - 4, 21, 10);
-    }
-    const rails = [[], []];
-    const TUNNEL = 1392; // the railway comes out of its tunnel under the hill here (it runs under Shiroyama)
-    for (let u = SENGAN[0]; u < BAY[0] + 160; u++) {
-      const cx = roadX(u);
-      if (cx < -24) break;
-      const slope = (roadX(u + 1) - roadX(u - 1)) / 2; // px across per px up the strip
-      const k = Math.sqrt(1 + slope * slope); // on the bend a row cuts the road at a slant
-      const y = Y(u);
-      // as wide as the city street off the bridge at first (as vRoad draws it), narrowing to the coast road
-      const hw = 3 + 2 * (1 - smooth(SENGAN[0] + 20, 1440, u));
-      for (let x = Math.floor(cx - (hw + 2) * k); x <= cx + (hw + 1) * k; x++) if (D(x, y) > 0) roadPx(x, y, (x + 0.5 - cx) / k, hw);
-      reserveRect(cx - (hw + 3) * k, y, (hw * 2 + 6) * k, 1);
-      // the tracks lie 8 and 10 px inland of the coast road, square to it
-      if (u >= TUNNEL) for (const [i, off] of [[0, 8], [1, 10]]) rails[i].push([cx - off / k, u + (off * slope) / k]);
-      if (u % 30 === 0 && Math.abs(slope) < 0.4 && u > TUNNEL) tree('palm', cx + 7, y, 4.5);
-    }
-    {
-      // the tunnel mouth: a grassy hump over the line, a concrete portal with its dark arch facing up the coast
-      const tx = Math.round(roadX(TUNNEL) - 9);
-      const ty = Y(TUNNEL);
-      for (let y = ty; y < ty + 22; y++)
-        for (let x = tx - 14; x <= tx + 10; x++) {
-          const e = ((x + 0.5 - tx + 2) / 13) ** 2 + ((y - ty - 9) / 12) ** 2;
-          if (e < 1 && !isRes(x, y)) img.set(x, y, e > 0.8 ? rampColor(C.grass, 0.05, x, y) : rampColor(C.grass, 0.75 - e * 0.5 - (y - ty) * 0.012 + fbm(x, y, { seed: 451, scale: 3 }) * 0.2, x, y)); // lit on top, shaded round its foot
+  // the jars' pads, the very last thing on the ground
+  k.late.push(() => {
+    for (const p of pads) {
+      const y = Y(p.u);
+      img.fine(p.x - 10, y - 10, 21, 21, (X, Yy, x, yy) => {
+        const dd = Math.hypot(x - p.x, yy - y);
+        if (dd > 9.6) return null;
+        if (p.u < RIVER[0]) {
+          // in the city: a stone-paved circle round a little planting
+          if (dd > 8.8) return C.granite[1];
+          return k.settPx(X, Yy, 24, C.granite);
         }
-      for (let k = 0; k < 4; k++) {
-        img.set(tx - 6 - k, ty + 1 + k, 0x9a968e); // the wing walls
-        img.set(tx + 5 + k, ty + 1 + k, 0x9a968e);
-      }
-      img.rect(tx - 5, ty, 10, 4, 0xb4b0a8); // the portal
-      img.rect(tx - 5, ty, 10, 1, 0xd4d0c8);
-      img.rect(tx - 2, ty + 1, 4, 3, 0x0c0c0e); // its dark arch
-      img.set(tx - 2, ty + 1, 0x3a3a3e);
-      img.set(tx + 1, ty + 1, 0x3a3a3e);
-      reserveRect(tx - 15, ty - 1, 26, 24);
-    }
-    for (const line of rails)
-      for (let i = 1; i < line.length; i++) {
-        const [ax, au] = line[i - 1];
-        const [bx, bu] = line[i];
-        const n = Math.max(1, Math.ceil(Math.max(Math.abs(bx - ax), Math.abs(bu - au))));
-        for (let j = 0; j <= n; j++) {
-          const x = Math.round(ax + ((bx - ax) * j) / n);
-          const u = au + ((bu - au) * j) / n;
-          const yy = Y(u);
-          if (D(x, yy) <= 0) continue;
-          img.set(x, yy, Math.round(u) % 3 ? C.rail : 0x5a4a3a);
-          reserveRect(x - 1, yy, 3, 1);
-        }
-      }
-    // pond with an island
-    for (let u = 1430; u < 1500; u++)
-      for (let x = 60; x < 124; x++) {
-        const e = ((x + 0.5 - 92) / 30) ** 2 + ((u - 1465) / 32) ** 2 + (fbm(x, u, { seed: 38, scale: 10 }) - 0.5) * 0.3;
-        if (e < 1) {
-          img.set(x, Y(u), e > 0.85 ? C.stone[0] : rampColor(C.shallow, 0.4 + fbm(x, u, { seed: 39, scale: 4 }) * 0.4, x, Y(u)));
-          reserved[Y(u) * W + x] = 1;
-        }
-      }
-    // the residence: linked halls with dark tile roofs
-    for (const [x, u, w, h] of [[24, 1700, 40, 16], [60, 1680, 30, 14], [40, 1640, 26, 12]]) building(x, Y(u), w, h, 5, { roof: C.tile[1], wall: 0xe8e0cc, tiles: true });
-    // Shūseikan, the stone factory hall of 1865
-    building(14, Y(1935), 60, 18, 7, { roof: 0x4a4c54, wall: 0x9a968a, tiles: true });
-    // replica of the Satsuma cannon aimed at the bay
-    objects.push({
-      y: Y(1850) + 4,
-      shadow: () => shadowRect(104, Y(1850) + 3, 18, 3, 0.55),
-      draw: () => {
-        img.rect(100, Y(1850) - 1, 8, 5, 0x6a4a2a);
-        img.rect(104, Y(1850), 16, 3, 0x1e1e22);
-        img.set(120, Y(1850) + 1, 0x0a0a0c);
-        img.rect(105, Y(1850), 14, 1, 0x4a4a52);
-      },
-    });
-    reserveRect(98, Y(1850) - 3, 26, 10);
-    // stone lanterns and garden paths
-    for (const [x, u] of [[50, 1560], [100, 1600], [70, 1780], [30, 1820], [110, 1760]]) {
-      img.rect(x + 1, Y(u) + 1, 3, 3, 0x2a2a28);
-      img.rect(x, Y(u), 3, 3, C.stone[2]);
-    }
-    for (let u = SENGAN[0] + 8; u < 1908; u++) {
-      // (up to the door of the Shūseikan)
-      // (from the gate by the left-hand bridge it winds off through the garden)
-      const wind = 40 + 22 * Math.sin(u / 60);
-      const x = Math.round(u < 1430 ? 30 + (40 + 22 * Math.sin(1430 / 60) - 30) * smooth(SENGAN[0] + 8, 1430, u) : wind);
-      for (let k = -1; k <= 1; k++) if (!isRes(x + k, Y(u))) img.set(x + k, Y(u), rampColor(C.walk, 0.6, x + k, Y(u)));
-    }
-  }
-
-  // ------------------------------------------------------------ C0. hot sand baths on the black beach
-  // As at Ibusuki: bathers in yukata lie in rows buried to the neck in black volcanic sand heated by the hot
-  // springs underneath, towels round their heads, some under reed shades; attendants shovel sand over them,
-  // steam seeps out of the beach; the bathhouse stands behind.
-  {
-    const sr = rng(4421);
-    const S0 = 2236;
-    const S1 = 2420;
-    const shoreX = (u) => {
-      let x = W - 1;
-      while (x > 0 && D(x, Y(u)) <= 0) x--;
-      return x;
-    };
-    for (let u = S0 - 10; u < S1 + 10; u++) {
-      const y = Y(u);
-      for (let x = Math.ceil(seaX(u) - 14 + 6); x < W; x++) {
-        const d = D(x, y);
-        if (d <= 0) continue;
-        img.set(x, y, d < 3 ? 0x2a2624 : rampColor(C.sand, 0.12 + fbm(x, y, { seed: 81, scale: 3 }) * 0.35 - (u % 4 === 0 ? 0.08 : 0), x, y));
-        reserved[y * W + x] = 1;
-      }
-    }
-    // two rows of bathers lying across the beach, heads towards the land
-    const shades = [[2300, 2324], [2356, 2380]];
-    for (const dd of [6, 16])
-      for (let u = S0 + 14; u < S1 - 10; u += 5) {
-        if (sr() < 0.18) continue;
-        const sx = shoreX(u);
-        const x1 = sx - dd;
-        const x0 = x1 - 7;
-        const y = Y(u);
-        if (seaX(u) + sandBeach(u) - x1 < 4 || x0 - 2 < seaX(u) - 8) continue;
-        for (let x = x0; x <= x1; x++) {
-          img.set(x, y - 1, 0x8a8680); // the mound of sand over the body, its top catching the light
-          img.set(x, y, 0x6a6662);
-          img.set(x, y + 1, 0x1a1816);
-        }
-        img.set(x0, y, [0x3a5a9a, 0xe8e8f0, 0x9a3a4a][Math.floor(sr() * 3)]); // the yukata at the neck
-        img.rect(x0 - 2, y - 1, 2, 2, 0xf4f0e6); // the towel round the head
-        img.set(x0 - 1, y, 0xd8a888); // the face
-      }
-    // reed shades on poles over part of the rows
-    for (const [a, b] of shades) {
-      const x0 = Math.round(seaX((a + b) / 2) - 2);
-      objects.push({
-        y: Y(a),
-        shadow: () => shadowRect(x0 + 3, Y(b) + 4, 14, b - a, 0.6),
-        draw: () => {
-          for (let y = Y(b); y < Y(a); y++)
-            for (let x = x0; x < x0 + 14; x++) img.set(x, y, (y - Y(b)) % 3 === 0 ? 0x8a6e44 : (x + y) % 5 === 0 ? 0xa88a58 : 0xc0a470);
-          img.rect(x0, Y(b), 14, 1, 0x6a5232);
-        },
+        const ramp = p.u > ISLAND[0] ? [0x34302c, 0x443e38, 0x544e46] : [0x4a3a2a, 0x5a4834, 0x6a5840];
+        if (dd > 8.6) return hashPx(X >> 1, Yy >> 1, 22) < 0.5 ? scaleColor(ramp[0], 0.8) : scaleColor(ramp[1], 0.9);
+        return rampColor(ramp, 0.2 + fbm(x, yy, { seed: 2, scale: 3 }) * 0.5 + (hashPx(X, Yy, 25) - 0.5) * 0.2, X, Yy);
       });
     }
-    // the bathhouse behind the beach, a path down to the sand
-    building(60, Y(2272), 28, 13, 4, { roof: 0x5a4a3e, tiles: true });
-    for (let x = 74; x < seaX(2253) - 18; x++)
-      for (const u of [2252, 2253]) {
-        if (isRes(x, Y(u))) continue; // (the rails: a level crossing)
-        img.set(x, Y(u), rampColor(C.walk, u === 2252 ? 0.35 : 0.6, x, Y(u)));
-        reserved[Y(u) * W + x] = 1;
-      }
-    // steam seeping out of the sand (live) and the attendants with their shovels
-    for (let k = 0; k < 7; k++) {
-      const u = S0 + 20 + Math.floor(sr() * (S1 - S0 - 40));
-      kit.emit(Math.round(seaX(u) + 2 + sr() * 16), u, vapour.slice(0, 2), { rate: 0.5, life: [1.4, 2.2], vy: 5, sx: 3, wf: 1, a: 0.3, tint: 1 });
-    }
-    const attendant = (f) => {
-      const r = new Raster(4, 5);
-      r.set(1, 0, 0x2a2026);
-      r.set(1, 1, 0x2a3a6a);
-      r.set(1, 2, 0x2a3a6a);
-      r.set(f ? 0 : 2, 1, 0x2a3a6a);
-      r.set(3, f ? 1 : 2, 0x8a6a44); // the shovel
-      r.set(3, f ? 2 : 3, 0x9a9aa0);
-      r.set(2, 4, 0x0a0a0c, 0.4);
-      return frameAt(r, 2330);
-    };
-    kit.wander(seaX(2330) + 10, 2330, 5, 70, [attendant(0), attendant(1)], { n: 2, sp: 4, idle: 0.7, turn: 'flip', fps: 2 });
-  }
-
-  // ------------------------------------------------------------ C. black-vinegar jar fields on the coast
-  {
-    for (let u = COAST[0] + 10; u < BAY[0] + 20; u += 64) {
-      const fh = 52;
-      for (let x0 = 4; x0 < 130; x0 += 46) {
-        for (let jy = 0; jy < fh; jy += 7)
-          for (let jx = 0; jx < 40; jx += 7) {
-            const x = x0 + jx + 3;
-            const y = Y(u + fh - jy);
-            if (D(x + 3, y) < 18 || anyRes(x - 1, y - 1, 6, 6)) continue;
-            img.rect(x + 1, y + 2, 4, 3, 0x000000, 0.35);
-            img.disc(x + 2, y + 2, 2.4, 0x221c1a);
-            img.set(x + 1, y + 1, 0x5a5250);
-            img.set(x + 2, y + 2, 0x3a3230);
-          }
-        // farm path between the fields
-        for (let k = 0; k < fh; k++) if (D(x0 + 43, Y(u + k)) > 18) img.set(x0 + 43, Y(u + k), rampColor(C.walk, 0.4, x0 + 43, Y(u + k)));
-      }
-      if (u < BAY[0] - 60) building(8, Y(u + fh + 11), 22, 8, 3, { roof: 0x6a6e78 });
-    }
-  }
-
-  // ------------------------------------------------------------ D. Kinkō Bay
-  {
-    // the Sakurajima ferries crossing the bay, wakes spreading behind (live)
-    const wake = [0, 1, 2, 3].map((k) => {
-      const s = 6 + k * 2;
-      const r = new Raster(1, s * 2 + 1);
-      r.set(0, 0, 0xeaf0f0);
-      r.set(0, s * 2, 0xeaf0f0);
-      if (k < 2) {
-        r.set(0, 1, 0xc8d4d8);
-        r.set(0, s * 2 - 1, 0xc8d4d8);
-      }
-      return frameAt(r, 3500);
-    });
-    const ferry = (x, u, up) => {
-      const r = new Raster(14, 37);
-      for (let j = 0; j < 34; j++) {
-        const w = up ? (j < 5 ? 3 + j * 2 : 11) : j > 28 ? 3 + (33 - j) * 2 : 11;
-        const ox = Math.floor((11 - w) / 2);
-        for (let i = 0; i < w; i++) r.set(ox + i, j, i === 0 || i === w - 1 ? 0xe0a020 : 0xf2f0ea);
-      }
-      r.rect(2, 11, 7, 12, 0xd8dce0);
-      r.rect(3, 13, 5, 2, 0x3a5a8a);
-      r.rect(2, 23, 7, 1, 0xe0a020);
-      r.rect(4, 25, 3, 3, 0x5a5e66);
-      for (let j = 4; j < 37; j++) for (let i = 11; i < 14; i++) if (i - 11 < Math.min(3, j - 3) && j < 34 + (i - 11)) r.set(i, j, 0x0a1418, 0.25);
-      const [a, b] = up ? [2962, 4206] : [4206, 2962]; // from the berth beside the city's pier to the Sakurajima pier
-      const sp = 10;
-      kit.path([[x + 7, a], [x + 7, b]], [frameAt(r, u)], { sp, turn: 'none', wake: { f: wake, every: 3, life: 2.6 }, s0: passing(u, sp, Math.abs(u - a), 1244) });
-    };
-    ferry(70, 3300, true);
-    ferry(70, 3880, false);
-    building(64, Y(2884), 20, 10, 4, { roof: 0x8a8e96 }); // the ferry terminal at the root of the pier
-    // a cruise ship moored at a pier at the head of the bay, bow out towards Sakurajima: balconies down both
-    // sides, lifeboats slung along them, pools and loungers, a water slide, a sports court on the bow, the
-    // funnel aft; its shadow on the water
-    {
-      const qx = 84;
-      const [q0, q1] = [2872, 3006];
-      for (let u = q0; u <= q1; u++) {
-        const y = Y(u);
-        if (D(qx + 3, y) <= 0) for (let x = qx + 7; x < qx + 10; x++) img.set(x, y + 2, 0x0a1418, 0.25);
-        for (let x = qx; x < qx + 7; x++) img.set(x, y, x === qx || x === qx + 6 ? 0x7a7670 : rampColor(C.walk, 0.5 + fbm(x, y, { seed: 82, scale: 3 }) * 0.3, x, y));
-        if (u % 14 === 0) img.set(qx + 6, y, 0x2a2a2e); // bollards
-      }
-      reserveRect(qx - 1, Y(q1), 9, q1 - q0);
-      const sx = 92;
-      const [s0, s1] = [2896, 2994];
-      const len = s1 - s0;
-      const yTop = Y(s1);
-      const half = (j) => (j < 20 ? 1.5 + (j / 20) ** 0.6 * 7 : j > len - 4 ? 8.5 - (j - (len - 4)) * 0.4 : 8.5); // bow to stern
-      for (let j = 0; j <= len; j++)
-        for (let i = -9; i <= 9; i++) {
-          const h = half(j);
-          if (Math.abs(i + 0.5) > h + 4) continue;
-          img.set(sx + 9 + i + 4, yTop + j + 5, 0x0a1418, Math.abs(i + 0.5) <= h ? 0.3 : 0); // the shadow
-        }
-      for (let j = 0; j <= len; j++)
-        for (let i = -9; i <= 9; i++) {
-          const h = half(j);
-          const a = Math.abs(i + 0.5);
-          if (a > h) continue;
-          const x = sx + 9 + i;
-          const y = yTop + j;
-          let c = 0xf2f2ee;
-          if (a > h - 1) c = 0x22304a; // the dark hull showing at the waterline
-          else if (a > h - 2 && j > 22 && j < len - 6) c = j % 2 ? 0x6a8aa8 : 0xd8dce0; // balconies
-          img.set(x, y, c);
-        }
-      const cx = sx + 9;
-      // the bridge across the bow, with its windows; the sports court in front of it
-      img.rect(cx - 7, yTop + 22, 15, 3, 0xd8dce0);
-      img.rect(cx - 6, yTop + 22, 13, 1, 0x2a3a5a);
-      img.rect(cx - 3, yTop + 10, 7, 9, 0x3a7a4a);
-      img.rect(cx - 2, yTop + 11, 5, 7, 0x4a8a5a);
-      img.rect(cx - 3, yTop + 14, 7, 1, 0xf0f0f0);
-      // pools, loungers, the slide
-      for (const [py, pw, ph] of [[34, 8, 6], [52, 6, 5]]) {
-        img.rect(cx - Math.floor(pw / 2) - 1, yTop + py - 1, pw + 2, ph + 2, 0xc8c0a8);
-        img.rect(cx - Math.floor(pw / 2), yTop + py, pw, ph, 0x3ab0d8);
-        img.rect(cx - Math.floor(pw / 2), yTop + py, pw, 1, 0x8ad8f0);
-      }
-      for (let j = 30; j < 62; j += 2)
-        for (const dx of [-6, 6]) if (j < 33 || j > 41) img.set(cx + dx, yTop + j, j % 4 ? 0xf0e8d8 : 0x3a6ac8);
-      for (let k = 0; k < 10; k++) img.set(cx + 3 + Math.round(Math.sin(k * 0.7) * 2), yTop + 44 + k, k % 2 ? 0xf0c020 : 0xe0402a);
-      // the funnel aft, lifeboats along both sides
-      img.ellipse(cx + 0.5, yTop + 76.5, 3.5, 5, 0x1a1a1e);
-      img.ellipse(cx + 0.5, yTop + 77, 3, 4.2, 0xe8a020);
-      img.ellipse(cx + 0.5, yTop + 74.5, 2.4, 1.6, 0x1a1a1e);
-      for (let j = 28; j < 70; j += 7)
-        for (const side of [-1, 1]) {
-          img.rect(side < 0 ? cx - 10 : cx + 9, yTop + j, 2, 4, 0xf07a20);
-          img.set(side < 0 ? cx - 10 : cx + 10, yTop + j, 0xf8a050);
-        }
-      img.rect(cx - 5, yTop + 84, 11, 6, 0xd8dce0); // the aft deck
-      img.rect(cx - 4, yTop + 85, 9, 1, 0x9aa0a8);
-      // mooring lines to the pier
-      for (const j of [8, 30, 70, 92]) img.line(qx + 6, yTop + j + (j < 50 ? 3 : -3), sx + 1, yTop + j, 0x3a3a3e);
-      reserveRect(sx - 2, yTop - 2, 24, len + 10);
-    }
-    // a fish farm out in the bay: eight pens of floats round dark nets, linked by walkways, a shed on its raft;
-    // the feeding boat goes round it (live)
-    {
-      const pens = [];
-      for (let r = 0; r < 4; r++) for (let c = 0; c < 2; c++) pens.push([20 + c * 22, 3286 + r * 22]);
-      for (const [x, u] of pens) {
-        img.line(x + 9, Y(u), x + 13, Y(u), 0xb8b4a8);
-        img.line(x, Y(u) - 9, x, Y(u) - 13, 0xb8b4a8);
-      }
-      for (const [x, u] of pens)
-        for (let a = 0; a < Math.PI * 2; a += 0.04) {
-          const px = Math.round(x + Math.cos(a) * 9);
-          const py = Math.round(Y(u) + Math.sin(a) * 9);
-          img.set(px, py, Math.floor(a * 6) % 2 ? 0xe8e4d8 : 0xd84a2a);
-          for (let k = 1; k < 9; k++) if ((k + Math.round(a * 20)) % 3 === 0) img.set(Math.round(x + Math.cos(a) * k), Math.round(Y(u) + Math.sin(a) * k), 0x14262e, 0.5);
-        }
-      img.rect(10, Y(3374), 12, 7, 0x8a7a64); // the raft
-      img.rect(12, Y(3373), 8, 5, 0x5a6a7a); // the shed
-      img.rect(12, Y(3373), 8, 1, 0x7a8a9a);
-      const fb = (up) => {
-        const r = new Raster(5, 10);
-        for (let j = 0; j < 9; j++) {
-          const w = (up ? j < 2 : j > 6) ? 1 : 3;
-          for (let i = 0; i < w; i++) r.set(1 + i + (3 - w > 0 ? 1 : 0), j, j % 3 === 0 ? 0xd8d4c8 : 0xf0ece0);
-        }
-        r.rect(1, up ? 5 : 2, 3, 2, 0x3a5a8a);
-        for (let j = 1; j < 10; j++) r.set(4, j, 0x0a1418, 0.25);
-        return frameAt(r, 3320);
-      };
-      kit.path([[54, 3270], [54, 3380], [6, 3384], [6, 3274], [54, 3270]], [fb(true)], { sp: 4, mode: 'wrap', turn: 'none', fu: [fb(true)], fd: [fb(false)], s0: 0.3 });
-    }
-    // the shadow of a plume of ash blown out over the bay, drifting across the water (live)
-    {
-      const r = new Raster(120, 74);
-      for (let y = 0; y < r.h; y++)
-        for (let x = 0; x < r.w; x++) {
-          const d = ((x - 60) / 58) ** 2 + ((y - 37) / 35) ** 2 + (fbm(x, y, { seed: 83, scale: 14, octaves: 2 }) - 0.5) * 0.9;
-          if (d >= 1) continue;
-          if (d > 0.7 && (d - 0.7) / 0.3 > bayer(x, y)) continue;
-          r.set(x, y, 0x1e1812);
-        }
-      kit.path([[-80, 2980], [260, 3420]], [frameAt(r, 3200)], { sp: 4, turn: 'none', a: 0.22, d: 0.3, fx: 1, s0: 0.45 });
-      kit.path([[260, 3700], [-80, 4100]], [frameAt(r, 3900)], { sp: 3, turn: 'none', a: 0.18, d: 0.3, fx: 1, s0: 0.2 });
-    }
-    // fish-farm pens: rings of floats around dark nets
-    for (const [x, u, r] of [[146, 3020, 10], [128, 3070, 8], [30, 3520, 11], [150, 3620, 9], [58, 4060, 10], [36, 4120, 8]])
-      for (let a = 0; a < Math.PI * 2; a += 0.04) {
-        const px = Math.round(x + Math.cos(a) * r);
-        const py = Math.round(Y(u) + Math.sin(a) * r);
-        img.set(px, py, Math.floor(a * 6) % 2 ? 0xe8e4d8 : 0xd84a2a);
-        for (let k = 1; k < r; k++) if ((k + Math.round(a * 20)) % 3 === 0) img.set(Math.round(x + Math.cos(a) * k), Math.round(Y(u) + Math.sin(a) * k), 0x14262e, 0.5);
-      }
-    // fishing boats and a pod of dolphins
-    for (const [x, u] of [[100, 3150], [20, 3720], [160, 3420]]) {
-      img.rect(x, Y(u), 3, 8, 0xe8e4dc);
-      img.rect(x + 1, Y(u) + 2, 1, 3, 0x3a5a8a);
-      for (let k = 0; k < 14; k++) img.set(x + 1, Y(u) + 8 + k, 0xeaf0f0, 0.6 * (1 - k / 14));
-    }
-    for (const [x, u] of [[126, 3560], [134, 3572], [120, 3584], [138, 3590]]) {
-      img.rect(x, Y(u), 5, 2, 0x6a7a86);
-      img.set(x + 2, Y(u) - 1, 0x4a5a66);
-      img.set(x + 5, Y(u) + 1, 0xeaf0f0, 0.7);
-    }
-    // ...and every few seconds one of them leaps: a fin breaks the water, the arc of its back, the splash (live)
-    {
-      const leap = [0, 1, 2, 3, 4, 5].map((f) => {
-        const r = new Raster(11, 7);
-        if (f === 0) r.set(5, 3, 0xd8e4e8);
-        if (f === 1) {
-          r.rect(4, 3, 3, 1, 0x4a5a66);
-          r.set(5, 2, 0x3a4a56);
-          r.set(3, 4, 0xeaf0f0, 0.8);
-        }
-        if (f === 2 || f === 3) {
-          const o = f === 2 ? 0 : 1;
-          r.rect(2 + o, 2, 7, 2, 0x6a7a86);
-          r.rect(2 + o, 2, 7, 1, 0x8a9aa6);
-          r.set(5 + o, 1, 0x4a5a66);
-          r.set(9 + o, 3, 0x4a5a66);
-          r.set(1 + o, 4, 0xeaf0f0, 0.8);
-        }
-        if (f >= 4) for (let a = 0; a < Math.PI * 2; a += 0.6) r.set(Math.round(5 + Math.cos(a) * (f - 1)), Math.round(3 + Math.sin(a) * (f - 2.5)), 0xeaf0f0, f === 4 ? 0.9 : 0.5);
-        return frameAt(r, 3570);
-      });
-      kit.spot([[100, 3640, 70, 120]], leap, { rate: 0.45, fps: 6 });
-    }
-  }
-
-  // ------------------------------------------------------------ E. Sakurajima: port, village, fields, shelters, buried torii
-  {
-    const [i0, i1] = ISLAND;
-    // ferry terminal and pier
-    building(70, Y(i0 + 90), 40, 16, 6, { roof: 0x8a8e96 });
-    for (let u = i0 - 30; u < i0 + 40; u++) for (let x = 84; x < 96; x++) if (D(x, Y(u)) <= 2) img.set(x, Y(u), u % 4 ? 0x8a8a84 : 0x6a6a64);
-    // the long hot-spring foot bath along the sea wall by the port: a wooden trough of milky water, people
-    // sitting along both sides with their feet in it, steam rising off it (live)
-    {
-      const fu = i0 + 54;
-      const fy = Y(fu);
-      const fr = rng(4431);
-      objects.push({
-        y: fy + 6,
-        shadow: () => shadowRect(8, fy + 2, 58, 6, 0.55),
-        draw: () => {
-          img.rect(6, fy, 58, 6, 0x8a6a44);
-          img.rect(6, fy, 58, 1, 0xa8885c);
-          img.rect(7, fy + 1, 56, 4, 0xa8c8b8);
-          for (let x = 9; x < 62; x += 7) img.set(x, fy + 2, 0xd8ece4); // ripples where the feet are
-          for (let x = 8; x < 63; x += 3) {
-            for (const [dy, hy] of [[-1, -2], [6, 7]]) {
-              if (fr() < 0.3) continue;
-              img.set(x, fy + dy, fr.pick([0xd04040, 0x3a6ad0, 0xe8c040, 0xe8e8f0, 0x6aaa5a, 0x3a3a4a]));
-              img.set(x, fy + hy, 0x2a2024);
-            }
-          }
-        },
-      });
-      reserveRect(4, fy - 4, 62, 14);
-      for (const x of [16, 34, 52]) kit.emit(x, fu - 2, vapour.slice(0, 2), { rate: 0.7, life: [1.4, 2.2], vy: 5, sx: 3, wf: 1, a: 0.3, tint: 1 });
-    }
-    hRoad(i0 + 110, 4);
-    vRoad(150, 4, i0 + 110, LAVA_ROAD[0]);
-    // village with ash on the roofs
-    // lanes of packed ash between the rows of houses, off the main road
-    for (let u = i0 + 151; u < i0 + 380; u += 30) // (in the free band between two rows of houses)
-      for (let uu = u - 2; uu <= u + 2; uu++)
-        for (let x = 0; x < 146; x++) {
-          const y = Y(uu);
-          img.set(x, y, Math.abs(uu - u) > 1 ? rampColor(C.walk, 0.25, x, y) : rampColor(C.walk, 0.5 + fbm(x, y, { seed: 481, scale: 3 }) * 0.3, x, y));
-          reserved[y * W + x] = 1;
-        }
-    for (let u = i0 + 130; u < i0 + 380; u += 30)
-      for (let x = 6; x < 140; x += 24 + Math.floor(rand() * 6)) {
-        const w = 14 + Math.floor(rand() * 6);
-        if (!anyRes(x - 2, Y(u + 16) - 2, w + 4, 24)) building(x, Y(u + 16), w, 11, 4, { roof: rand.pick([0x6a4a3a, 0x3a5a7a, 0x9a3a2a, 0x5a6a5a]), tiles: true });
-      }
-    // eruption shelters along the road: concrete half-pipes with a dark opening
-    for (let u = i0 + 150; u < i1; u += 120)
-      objects.push({
-        y: Y(u) + 6,
-        shadow: () => shadowRect(136, Y(u) + 2, 10, 6, 0.55),
-        draw: () => {
-          img.rect(132, Y(u), 10, 6, 0xb4b0a8);
-          img.rect(132, Y(u), 10, 1, 0xd0ccc4);
-          img.rect(132, Y(u) + 5, 10, 1, 0x7a7670);
-          img.rect(133, Y(u) + 2, 2, 3, 0x1a1a1c);
-        },
-      });
-    // giant Sakurajima daikon: rows of white roots under green leaf rosettes
-    for (let u = i0 + 420; u < i0 + 680; u += 9)
-      for (let x = 8; x < 136; x += 9) {
-        const y = Y(u);
-        if (anyRes(x - 3, y - 3, 7, 7)) continue;
-        img.set(x, y, 0x3a2e26);
-        img.disc(x + 0.5, y + 0.5, 2.4, 0xece8dc);
-        img.set(x - 1, y - 1, 0xffffff);
-        for (const [dx, dy] of [[-3, 0], [3, 0], [0, -3], [-2, -2], [2, -2]]) img.set(x + dx, y + dy, (dx + dy) % 2 ? 0x4a8a32 : 0x5a9a3a);
-      }
-    // komikan orchard
-    for (let u = i0 + 720; u < i0 + 960; u += 14) for (let x = 10; x < 136; x += 15) if (!anyRes(x - 6, Y(u) - 6, 12, 12)) tree('komikan', x + rand() * 3, Y(u), 5);
-    // the buried torii of Kurokami: only the top beam and pillar stubs rise from the ash
-    {
-      const x = 62;
-      const y = Y(i1 - 100);
-      for (let yy = y - 10; yy < y + 12; yy++) for (let xx = x - 18; xx < x + 18; xx++) if (((xx - x) / 18) ** 2 + ((yy - y) / 11) ** 2 < 1) img.set(xx, yy, rampColor(C.ash, 0.7, xx, yy));
-      objects.push({
-        y: y + 4,
-        shadow: () => shadowRect(x - 8, y + 2, 22, 3, 0.5),
-        draw: () => {
-          img.rect(x - 11, y - 3, 22, 2, 0x8a867e);
-          img.rect(x - 12, y - 4, 24, 1, 0xa29e94);
-          img.rect(x - 8, y, 16, 1, 0x7a766e);
-          for (const px of [x - 7, x + 6]) img.rect(px, y - 1, 2, 4, 0x8a867e);
-        },
-      });
-      reserveRect(x - 20, y - 12, 40, 26);
-    }
-  }
-
-  // ------------------------------------------------------------ F. lava fields and the climb
-  {
-    for (let u = LAVA_ROAD[0] - 2; u < 6104; u++) {
-      // (as far as the Yunohira observatory: no road goes on to the crater)
-      const cx = lavaRoadX(u);
-      const slope = (lavaRoadX(u + 1) - lavaRoadX(u - 1)) / 2;
-      const k = Math.sqrt(1 + slope * slope); // as wide as the village road, also where it runs at a slant
-      for (let x = Math.floor(cx - 6 * k); x <= cx + 5 * k; x++) roadPx(x, Y(u), (x + 0.5 - cx) / k, 4);
-      reserveRect(cx - 7 * k, Y(u), 14 * k, 1);
-    }
-    // the Yunohira observatory with its car park
-    for (let u = 6100; u < 6122; u++) for (let x = 10; x < 56; x++) roadPx(x, Y(u), 99, 4); // the car park's paving
-    reserveRect(8, Y(6124), 50, 26);
-    for (let k = 0; k < 6; k++) img.rect(14 + k * 6, Y(6118), 1, 6, 0xe8e4dc); // its bays
-    building(14, Y(6150), 34, 14, 6, { roof: 0x9a968e });
-    // jagged lava: dark ridges, pioneer pines, steaming cracks that glow more towards the summit
-    for (let k = 0; k < 260; k++) {
-      const x = rand() * W;
-      const u = LAVA[0] + rand() * (CRATER.u - LAVA[0] - 40);
-      const y = Y(u);
-      if (isRes(x, y)) continue;
-      const len = 4 + rand() * 10;
-      const a = rand() * Math.PI;
-      const hot = smooth(5900, 6900, u);
-      for (let j = 0; j < len; j++) {
-        const px = Math.round(x + Math.cos(a) * j);
-        const py = Math.round(y + Math.sin(a) * j);
-        if (isRes(px, py)) continue;
-        img.set(px, py, C.rock[0]);
-        img.set(px + 1, py, C.rock[3]);
-        if (rand() < hot * 0.5) {
-          glow(px, py, rand() < 0.6 ? C.lava[0] : C.lava[1]);
-          lavaPx.push([px, py]);
+    // ash on everything: a fine grey dust over land, roofs and streets, thicker towards the volcano
+    const d = img.hi.data;
+    const crowns = k.crownMask;
+    for (let Yy = 0; Yy < FH; Yy++) {
+      const u = L - Yy / S;
+      const amt = 0.012 + smooth(0, 5400, u) * 0.03;
+      for (let X = 0; X < FW; X++) {
+        if (fineWater[Yy * FW + X] || crowns[Yy * FW + X]) continue;
+        const q = (Yy * FW + X) * 4;
+        if (d[q + 3] !== 255) continue;
+        const g = hashPx(X, Yy, 23);
+        if (g < amt + 0.06 && g < amt + Math.max(0, fbm(X >> 3, Yy >> 3, { seed: 7, scale: 6 }) - 0.5) * 0.24) {
+          for (let j = 0; j < 3; j++) d[q + j] += (0x86 - d[q + j]) * 0.34;
         }
       }
-      if (rand() < hot * 0.4) pool(x, y, 8, 0xff5a20, 0.3);
     }
-    for (let k = 0; k < 160; k++) {
-      const x = rand() * W;
-      const u = LAVA[0] + rand() * 600;
-      if (!isRes(x, Y(u))) tree('pine', x, Y(u), 2.5 + rand() * 2);
-    }
-    // boulders and tufts of silver grass (susuki), the first plants on the lava
-    for (let k = 0; k < 220; k++) {
-      const x = Math.round(rand() * W);
-      const y = Y(LAVA[0] + rand() * (CRATER.u - LAVA[0] - 60));
-      if (isRes(x, y)) continue;
-      if (rand() < 0.55) {
-        const r = 1.5 + rand() * 2.5;
-        img.disc(x + 1.5, y + 2, r, 0x000000, 0.35);
-        img.disc(x + 0.5, y + 0.5, r, C.rock[2]);
-        img.disc(x, y, r * 0.5, C.rock[3]);
-      } else if (U(y) < 6300)
-        for (let j = 0; j < 5; j++) img.set(x + Math.round((j - 2) * 0.8), y - (j % 2), j % 2 ? 0xc8b88a : 0xa89a70);
-    }
-    for (let k = 0; k < 30; k++) {
-      const x = rand() * W;
-      const y = Y(LAVA[0] + 300 + rand() * 1200);
-      for (let j = 0; j < 7; j++) img.set(x + Math.round(Math.sin(j) * 1.5), y - j, 0xffffff, 0.3 - j * 0.035);
-      kit.emit(Math.round(x), U(y) + 1, vapour, { rate: 0.8, life: [2.4, 3.4], vy: 6, sx: 1, wf: 1, a: 0.4, tint: 1 }); // steam off the crack (live)
-    }
-  }
+  });
 
-  // the lava road's ash sweepers trundling up and down with a cloud of grey dust behind them; patches of
-  // knotweed, the brightest green on the lava; volcanic bombs thudding down on the slopes under the crater,
-  // glowing and smoking (live)
-  {
-    const lr = rng(4441);
-    const roadX = lavaRoadX;
-    const sweeper = (up) => {
-      const r = new Raster(5, 9);
-      r.rect(0, 0, 5, 9, 0x101010, 0.25);
-      r.rect(0, 0, 4, 8, 0xe8e4dc);
-      r.rect(0, up ? 0 : 6, 4, 2, 0x3a5a8a); // the cab
-      r.rect(0, up ? 7 : 0, 4, 1, 0x2a2a2e); // the brushes
-      r.set(1, 4, 0xf0a020); // the beacon
-      return frameAt(r, 5800);
-    };
-    const dust = [3, 4, 5, 5].map((rad, k) => {
-      const r = new Raster(rad * 2 + 1, rad * 2 + 1);
-      for (let y = 0; y < r.h; y++) for (let x = 0; x < r.w; x++) if (Math.hypot(x - rad, y - rad) < rad && bayer(x, y) < 0.7 - k * 0.15) r.set(x, y, 0x9a948c, 0.7);
-      return frameAt(r, 5800);
-    });
-    for (const s0 of [0.2, 0.7]) {
-      const pts = [];
-      for (let u = LAVA_ROAD[0] - 300; u < 6100; u += 16) pts.push([Math.round(roadX(u)) + (s0 < 0.5 ? -2 : 2), u]); // (from down in the village)
-      kit.path(pts, [sweeper(true)], { sp: 6, mode: 'pp', hold: 4, turn: 'none', fu: [sweeper(true)], fd: [sweeper(false)], wake: { f: dust, every: 4, life: 2.4 }, s0 });
-    }
-    for (let k = 0; k < 26; k++) {
-      const x = Math.round(lr() * W);
-      const y = Y(LAVA[0] + 40 + lr() * 1100);
-      if (anyRes(x - 4, y - 3, 9, 7)) continue;
-      for (let j = 0; j < 14; j++) {
-        const px = x + Math.round((lr() - 0.5) * 8);
-        const py = y + Math.round((lr() - 0.5) * 5);
-        img.set(px, py, lr() < 0.2 ? 0x8a3a3a : lr() < 0.5 ? 0x5a8a3a : 0x7aa84a); // knotweed leaves, a red stem here and there
-      }
-    }
-    const bomb = [0, 1, 2, 3, 4, 5, 6].map((k) => {
-      const r = new Raster(13, 13);
-      const c = 6;
-      if (k === 0) r.set(c, c, 0x1a1414, 0.5); // its shadow, coming down
-      if (k === 1) r.disc(c + 0.5, c + 0.5, 1.5, 0x1a1414, 0.6);
-      if (k === 2) {
-        r.disc(c + 0.5, c + 0.5, 2.5, 0xff8a20);
-        r.disc(c + 0.5, c + 0.5, 1.2, 0xfff0a0);
-      }
-      if (k >= 3) {
-        const rr = k - 1;
-        for (let a = 0; a < Math.PI * 2; a += 0.5) r.set(Math.round(c + Math.cos(a) * rr), Math.round(c + Math.sin(a) * rr * 0.8), 0x7a7470, 0.8 - (k - 3) * 0.15); // the ash it throws up
-        r.disc(c + 0.5, c + 0.5, 1.4, k < 5 ? 0xff6a10 : 0xa83a10); // the rock still glowing
-      }
-      return kit.frame(r);
-    });
-    kit.spot([[8, 6980, 164, 300]], bomb, { rate: 0.5, fps: 7 });
-  }
-
-  // ------------------------------------------------------------ G. the summit crater and two side vents
-  {
-    const { x: cx, u: cu, rx, ry } = CRATER;
-    const cy = Y(cu);
-    for (let y = cy - ry - 30; y < Math.min(L, cy + ry + 60); y++)
-      for (let x = 0; x < W; x++) {
-        if (y < 0) continue;
-        const e = Math.hypot((x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry) + (fbm(x, y, { seed: 41, scale: 10 }) - 0.5) * 0.12;
-        if (e > 1.6) continue;
-        let c;
-        if (e > 1.08) {
-          // outer slope with radial gullies
-          const ang = Math.atan2(y - cy, x - cx);
-          c = rampColor(C.rock, 0.35 + (Math.sin(ang * 22) * 0.5 + 0.5) * 0.3 + (1.6 - e) * 0.4, x, y);
-        } else if (e > 0.94) c = C.rock[3]; // rim
-        else {
-          c = rampColor(C.rock, 0.1 + e * 0.3 + fbm(x, y, { seed: 42, scale: 5 }) * 0.2, x, y);
-          if (e < 0.75 && fbm(x, y, { seed: 43, scale: 6 }) > 0.62) {
-            glow(x, y, e < 0.4 ? C.lava[2] : C.lava[0], 0.9);
-            lavaPx.push([x, y]);
-          }
-        }
-        img.set(x, y, c);
-        reserved[y * W + x] = 1;
-      }
-    pool(cx, cy, rx * 0.9, 0xff4a10, 0.55);
-    // the eruption column (live): ash billowing up out of the crater, leaning with the wind; steam off the vents
-    const ash = [5, 7, 9, 11, 13, 15].map((r) => [0, 1, 2].map((v) => kit.frame(puff(r, r * 7 + v * 3, [0x4a4246, 0x625a5c, 0x7e7676, 0x9e9692]))));
-    for (const [dx, du] of [[0, 4], [-14, 0], [12, -2]]) kit.emit(cx + dx, cu + du, ash, { rate: 1.3, life: [4.5, 6], vy: 11, sx: 5, wf: 1.2, a: 0.62, burst: 0.06, d: 1.1, tint: 1 });
-    for (const [vx, vu] of VENTS) {
-      const vy = Y(vu);
-      for (let y = vy - 9; y <= vy + 9; y++) for (let x = vx - 9; x <= vx + 9; x++) if (Math.hypot(x + 0.5 - vx, y + 0.5 - vy) < 9) img.set(x, y, Math.hypot(x + 0.5 - vx, y + 0.5 - vy) > 7 ? C.rock[3] : C.rock[0]);
-      pool(vx, vy, 14, 0xff6020, 0.45);
-      kit.emit(vx, vu, ash.slice(0, 3), { rate: 1.2, life: [2.5, 3.5], vy: 8, sx: 2, wf: 1, a: 0.45, d: 1.1, tint: 1 });
-    }
-    // steam drifting off the rim
-    for (let k = 0; k < 40; k++) {
-      const a = rand() * Math.PI * 2;
-      const x = cx + Math.cos(a) * rx * 1.05;
-      const y = cy + Math.sin(a) * ry * 1.05;
-      for (let j = 0; j < 6; j++) img.set(Math.round(x + j * 0.5), Math.round(y - j), 0xffffff, 0.25 - j * 0.035);
-    }
-  }
-
-  // ------------------------------------------------------------ vegetation on the remaining land
-  const kindsAt = (u) => {
-    if (u < CITY[1]) return { p: 0.06, k: [['broadleaf', 0.7], ['palm', 1]] };
-    if (u < SENGAN[1]) return { p: 0.45, k: [['pine', 0.45], ['broadleaf', 0.85], ['bamboo', 1]] };
-    if (u < COAST[1]) return { p: 0.1, k: [['broadleaf', 0.6], ['palm', 1]] };
-    if (u < ISLAND[1]) return { p: 0.12, k: [['broadleaf', 0.6], ['pine', 1]] };
-    return { p: 0, k: [] };
-  };
-  const RADIUS = { broadleaf: [4, 6.5], palm: [4.5, 6], pine: [3.5, 5], bamboo: [3, 4.5] };
-  for (let gy = 0; gy < L; gy += 7)
-    for (let gx = -2; gx < W + 2; gx += 7) {
-      const x = gx + rand() * 7;
-      const y = gy + rand() * 7;
-      const ix = Math.round(x);
-      const iy = Math.round(y);
-      if (ix < 0 || ix >= W || iy < 0 || iy >= L || D(ix, iy) < 8) continue;
-      const { p, k } = kindsAt(U(iy));
-      if (rand() > p) continue;
-      const roll = rand();
-      const kind = k.find(([, q]) => roll < q)[0];
-      const [r0, r1] = RADIUS[kind];
-      const r = r0 + rand() * (r1 - r0);
-      const s = r * 0.7;
-      if (isRes(ix, iy) || isRes(ix - s, iy) || isRes(ix + s, iy) || isRes(ix, iy - s) || isRes(ix, iy + s)) continue;
-      tree(kind, x, y, r);
-    }
-
-  // ------------------------------------------------------------ compose
-  for (const o of objects) o.shadow?.();
-  objects.sort((a, b) => a.y - b.y);
-  for (const o of objects) o.draw();
-
-  // turret pads: bare earth where a living jar stands among the others
-  for (const p of pads) {
-    const y = Y(p.u);
-    for (let yy = y - 9; yy <= y + 9; yy++)
-      for (let xx = p.x - 9; xx <= p.x + 9; xx++) {
-        const d = Math.hypot(xx + 0.5 - p.x, yy + 0.5 - y);
-        if (d > 9) continue;
-        img.set(xx, yy, d > 7.6 ? C.soil[0] : rampColor(C.soil, 0.4 + fbm(xx, yy, { seed: 2, scale: 3 }) * 0.5, xx, yy));
-      }
-  }
-
-  // ------------------------------------------------------------ atmosphere grade, then lava light
-  const tint = TOD.map(([, , t]) => rgb(t));
-  for (let y = 0; y < L; y++) {
-    const u = U(y);
-    let i = 0;
-    while (i < TOD.length - 2 && u >= TOD[i + 1][0]) i++;
-    const t = smooth(TOD[i][0], TOD[i + 1][0], u);
-    const mul = TOD[i][1].map((m, k) => m + (TOD[i + 1][1][k] - m) * t);
-    const tc = tint[i].map((c, k) => c + (tint[i + 1][k] - c) * t);
-    const amt = TOD[i][3] + (TOD[i + 1][3] - TOD[i][3]) * t;
-    for (let x = 0; x < W; x++) {
-      const p = (y * W + x) * 4;
-      const d = img.data;
-      if (!d[p + 3]) continue;
-      for (let k = 0; k < 3; k++) {
-        const v = d[p + k] * mul[k];
-        d[p + k] = v + (tc[k] - v) * amt;
-      }
-    }
-  }
-  for (const { x, y, r, c, k } of pools) {
-    const [cr, cg, cb] = rgb(c);
-    for (let yy = Math.floor(y - r); yy <= y + r; yy++)
-      for (let xx = Math.floor(x - r); xx <= x + r; xx++) {
-        const i = img.idx(xx, yy);
-        if (i < 0 || !img.data[i + 3]) continue;
-        const dd = Math.hypot(xx + 0.5 - x, yy + 0.5 - y) / r;
-        if (dd >= 1) continue;
-        const f = (1 - dd) ** 1.6 * k;
-        img.data[i] += cr * f;
-        img.data[i + 1] += cg * f;
-        img.data[i + 2] += cb * f;
-      }
-  }
-  for (const [x, y, c, a] of lights) img.set(x, y, c, a);
-
-  // the lava breathes (live): every glowing crack and the crater's lava flares up and dies down, stretch by
-  // stretch of the slope, out of step with each other
-  for (let y0 = 0; y0 < L; y0 += 48) {
-    const here = lavaPx.filter(([, y]) => y >= y0 && y < y0 + 48);
-    if (!here.length) continue;
-    const xs = here.map(([x]) => x);
-    const out = new Window(Math.min(...xs) - 1, y0 - 1, Math.max(...xs) - Math.min(...xs) + 3, 50);
-    for (const [x, y] of here) {
-      out.set(x, y, 0xffe8a0);
-      out.set(x, y - 1, 0xff9a30, 0.5);
-    }
-    kit.wave([kit.frame(out)], [[0, out.x0, U(out.y0), y0 * 0.11]], { w: 1.3, a0: 0, a1: 0.75, pw: 2 });
-  }
-
-  const chunks = [];
-  for (let i = 0; i < CHUNKS; i++) chunks.push(img.crop(0, i * CHUNK, W, CHUNK));
-  return { strip: img, chunks, props: kit.pack(), meta: { width: W, chunkHeight: CHUNK, chunks: CHUNKS, length: L, tint: tintTable(L, tod.white) } };
+  const { strip, canvas, props, tint } = k.finish();
+  void canvas;
+  return { strip, props, meta: { width: W, artScale: S, chunkHeight: 896, chunks: 8, length: L, sway: true, tint } };
 }
+void BAY;
