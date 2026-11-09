@@ -6,6 +6,41 @@
 import { C, S, night, hashPx, scaleColor, rampColor, fbm, rng, mix } from '../nagasaki/canvas.mjs';
 import { puff } from '../props.mjs';
 import { W, SENGAN, COAST, BAY, TUNNEL, coastX, railX, seaX, sandBeach, landD } from './geo.mjs';
+
+/** A short fishing jetty off the sea wall, tetrapods along it, a boat tied up, somebody with a rod on the end. */
+export function jetty(k, u, col, seed2) {
+  const { img, Y, objects, kit } = k;
+  const x0 = Math.floor(seaX(u)) - 1;
+  const y = Y(u);
+  const len = 18;
+  img.fine(x0, y - 1, len, 3, (X, Yy) => {
+    const j = Yy - (y - 1) * S;
+    if (j < 1) return C.concrete[4];
+    if (j > 7) return C.concrete[0];
+    return X % 15 === 0 ? C.concrete[1] : hashPx(X >> 1, Yy >> 1, seed2) < 0.2 ? C.concrete[2] : C.concrete[3];
+  });
+  const g = rng(seed2);
+  for (let X = x0 * S; X < (x0 + len) * S; X += 4) {
+    const CX = X + g() * 2;
+    const CY = (y + 3) * S + g() * 4;
+    img.discPx(CX, CY, 2.6, C.concrete[1]);
+    img.discPx(CX - 0.6, CY - 0.6, 1.6, C.concrete[3]);
+    if (g() < 0.5) img.px(CX, CY + 4, 0xe8f4f4, 0.7);
+  }
+  kit.loop(x0 + 5, u + 9, [k.hull(14, 5, u, col, 0xc8c0b0, (r, FL, FHh) => {
+    for (let j = 4; j < FHh - 4; j++) for (let i = 6; i < 16; i++) r.px(i, j, j === 4 ? 0xffffff : i > 13 ? 0x2a3a4a : 0xe8e8e0);
+  })], { d: 0.02 });
+  objects.push({
+    y: y + 2,
+    draw: () => {
+      const X = (x0 + len - 2) * S;
+      k.personPx(X, y * S - 9, g);
+      img.linePx(X + 3, y * S - 8, X + 21, y * S - 18, 0x2a2a30);
+      img.linePx(X + 21, y * S - 18, X + 24, y * S + 6, 0xc8d4d4, 0.4);
+    },
+  });
+  k.reserve(x0, y - 2, len, 8);
+}
 import { LEAF } from './city.mjs';
 
 const GRAVEL = [0x9a9280, 0xaea694, 0xc0b8a6, 0xd0c8b6];
@@ -391,7 +426,81 @@ export function paintSengan(k) {
   k.grove(128, 150, 1460, 1880, 22, [LEAF.pine, LEAF.camellia, LEAF.camphor], 1367, 3.6, 6);
   k.grove(76, 130, 1732, 1846, 14, [LEAF.pine, LEAF.camphor, PLUM], 1368, 3.6, 6);
   for (const [x, u, s] of [[62, 1400, 1.1], [38, 1486, 1], [128, 1400, 1], [74, 1542, 1], [44, 1610, 0.9], [122, 1730, 1], [96, 1872, 1.1]]) if (!k.anyRes(x - 1, Y(u) - 1, 2, 2)) k.niwaki(x, u, s, x + u);
-  k.forest(0, 170, 1958, 2196, [LEAF.pine, LEAF.camphor, LEAF.camellia], 1369, 4.2, 7.5, (x, u) => landD(x, u) > 22 && Math.abs(x - railX(u)) > 8);
+  // Iso's hill behind the garden: a path of stone steps climbing from the glassworks, a stream coming down to the sea under the
+  // railway, a clearing with a little shrine, another with a tea house and a bench looking at the volcano; a forest of many greens
+  const HILL = curved([[72, 1948], [62, 1984], [78, 2022], [58, 2058], [72, 2100], [42, 2136], [60, 2192]]);
+  for (let i = 0; i < HILL.length - 1; i += 12) k.road(HILL.slice(i, i + 14), 1.2, { side: 0, surface: C.stoneSet, kerb: 0x4a4638, piece: true });
+  const BROOK = curved([[4, 2118], [26, 2108], [46, 2094], [68, 2092], [90, 2082], [108, 2086], [railX(2078) - 4, 2078]]);
+  for (let q = 0; q < BROOK.length - 1; q++) {
+    const [a, b] = BROOK[q];
+    const [c, d] = BROOK[q + 1];
+    const n = Math.ceil(Math.hypot(c - a, d - b) * S);
+    for (let t = 0; t <= n; t++) {
+      const X = (a + ((c - a) * t) / n) * S;
+      const Yy = Math.round((7168 - (b + ((d - b) * t) / n)) * S);
+      for (let i = -9; i <= 9; i++) {
+        const v = Math.abs(i);
+        img.px(X + (q % 2 ? i * 0.2 : 0), Yy + i, v > 6 ? (hashPx(X >> 2, (Yy + i) >> 2, 1380) < 0.5 ? C.granite[2] : C.granite[0]) : hashPx(X >> 1, Yy + i, 1381) < 0.16 ? 0xd0e8e8 : 0x2a5a60);
+      }
+    }
+  }
+  k.rockPx(18 * S, Y(2112) * S, 6, C.rock, 1);
+  k.rockPx(42 * S, Y(2102) * S, 5, C.rock, 2);
+  k.rockPx(76 * S, Y(2096) * S, 4, C.rock, 3);
+  // where the steps cross it, a stone slab
+  {
+    const X = 60 * S;
+    const Yy = Y(2093) * S;
+    for (let j = -12; j <= 12; j++) for (let i = -6; i <= 6; i++) img.px(X + i, Yy + j, j % 8 === 0 ? C.granite[0] : C.granite[3]);
+  }
+  const near = (pts, x, u, d) => pts.some(([a, b]) => Math.abs(a - x) < d && Math.abs(b - u) < d);
+  const CLEAR = [[92, 2050, 13], [30, 2158, 12]];
+  const free = (x, u) => landD(x, u) > 22 && Math.abs(x - railX(u)) > 8 && !near(HILL, x, u, 4.5) && !near(BROOK, x, u, 5) && !CLEAR.some(([a, b, r]) => Math.hypot(x - a, u - b) < r);
+  const zone = (x, u) => fbm(x, u, { seed: 1382, scale: 26, octaves: 2 });
+  k.forest(0, 170, 1958, 2196, [LEAF.camphor, LEAF.camellia, LEAF.pine], 1369, 4.2, 7.5, (x, u) => free(x, u) && zone(x, u) < 0.5);
+  k.forest(0, 170, 1958, 2196, [BAMBOO, [0x2a5228, 0x386a30, 0x4a823c, 0x60984a]], 1383, 3, 4.4, (x, u) => free(x, u) && zone(x, u) >= 0.5 && zone(x, u) < 0.6);
+  k.forest(0, 170, 1958, 2196, [LEAF.pine, [0x6a3a2a, 0x8a4e32, 0xa8683e, 0xc08648], [0x8a7a3a, 0xa8983e, 0xc0b048, 0xd8c860], LEAF.camphor], 1384, 4, 7, (x, u) => free(x, u) && zone(x, u) >= 0.6);
+  // the shrine in its clearing, its vermilion torii on the path up
+  {
+    const [cx, cu, r] = CLEAR[0];
+    img.fine(cx - r, Y(cu + r), r * 2, r * 2, (X, Yy, x, y) => (Math.hypot(x - cx, y - Y(cu)) < r - 1 ? k.gravelPx(X, Yy) : null));
+    k.house(cx - 8, Y(cu + 10), 16, 10, 5, 'jp', { ramp: C.copper, wall: 0xf0ece0, door: true, reserve: true, roof: { gable: 'tri', gw: 4 } });
+    k.road([[72, 2052], [cx - 8, 2046]], 1.2, { side: 0, surface: C.stoneSet, kerb: 0x4a4638, piece: true });
+    objects.push({
+      y: Y(2042),
+      draw: () => {
+        const X = (cx - 8) * S;
+        const Yb = Y(2042) * S;
+        for (const s of [-1, 1]) for (let j = 0; j < 21; j++) for (let i = 0; i < 2; i++) img.px(X + s * 8 + i, Yb - j, C.vermilion[2]);
+        for (let i = -13; i <= 13; i++) for (let j = 0; j < 3; j++) img.px(X + i, Yb - 23 + j, j ? C.vermilion[2] : 0x2a2a2e);
+      },
+    });
+    k.stoneLantern(cx - 6, cu - 8, false);
+    k.stoneLantern(cx + 6, cu - 8, false);
+    k.strollers(cx, cu - 6, 6, 3, 2);
+  }
+  // the tea house with its bench and red parasol
+  {
+    const [cx, cu, r] = CLEAR[1];
+    img.fine(cx - r, Y(cu + r), r * 2, r * 2, (X, Yy, x, y) => (Math.hypot(x - cx, y - Y(cu)) < r - 1 ? k.lawnPx(X, Yy, 0.4 + hashPx(X >> 2, Yy >> 2, 1385) * 0.3, MOSSY) : null));
+    k.house(cx - 7, Y(cu + 8), 13, 8, 5, 'jp', { ramp: [0x5a4a30, 0x6e5c3c, 0x84704a, 0x9a8458, 0xb09a68], wall: 0xd8ccb0, noren: 0x8a2a2a, door: true });
+    k.road([[42, 2136], [cx + 2, cu - 6]], 1.2, { side: 0, surface: C.stoneSet, kerb: 0x4a4638, piece: true });
+    objects.push({
+      y: Y(cu - 8),
+      draw: () => {
+        const X = (cx + 6) * S;
+        const Yb = Y(cu - 8) * S;
+        for (let j = -9; j <= 9; j++) for (let i = -9; i <= 9; i++) if (i * i + j * j < 80) img.tintPx(X + i + 3, Yb + j + 3, 0.7);
+        for (let j = 0; j < 12; j++) img.px(X, Yb - j, 0x3a2a1e);
+        for (let j = -9; j <= 9; j++) for (let i = -9; i <= 9; i++) if (i * i + j * j < 80) img.px(X + i, Yb - 12 + j, Math.floor(((Math.atan2(j, i) + 3.15) / 6.3) * 10) % 2 ? 0xd83a2a : 0xb82a20);
+      },
+    });
+    k.bench(cx - 8, Y(cu - 8), 5);
+    k.strollers(cx, cu - 6, 6, 3, 2);
+  }
+  k.walkers(HILL.filter((_, i) => i % 6 === 0), 3, 2050, { sp: 2.2, gap: 70 });
+  // fishing jetties off the sea wall
+  for (const [u, col, s2] of [[1560, 0x2a5a8a, 1], [1810, 0xe8e4dc, 2], [2110, 0x3a7a5a, 3]]) jetty(k, u, col, 1390 + s2);
   // a pine-backed strip of lawn with paths behind the sea wall, people looking out at the volcano
   for (let u = 1500; u < 2190; u += 34) {
     const x = coastX(u) + 8;
@@ -496,6 +605,9 @@ export function paintCoast(k) {
   k.tree(50, Y(2260), 5, LEAF.camphor, 2204);
   k.tree(56, Y(2300), 4, LEAF.camellia, 2205);
 
+  // the jars' stretch of the coast has its jetties too, and anglers along the wall
+  for (const [u, col, s2] of [[2500, 0xe8e4dc, 1], [2640, 0x2a5a8a, 2], [2780, 0x8a3a2a, 3]]) jetty(k, u, col, 2220 + s2);
+  for (let u = 2450; u < 2840; u += 42) k.strollers(coastX(u) + 8, u, 2, 16, 1);
   // ------------------------------------------------------------ the black-vinegar jars of Fukuyama
   /** One big black jar, glazed, its conical sedge lid tied on. */
   const jar = (x, u, seed2) => {
@@ -519,36 +631,89 @@ export function paintCoast(k) {
       img.px(X - 1, Yy - 3, 0xa86a3a);
     }
   };
+  let fieldNo = 0;
   for (let u = COAST[0] + 10; u < BAY[0] + 20; u += 64) {
     const fh = 52;
     for (let x0 = 4; x0 < 130; x0 += 46) {
       const u1 = u + fh;
-      // only where there's room inland of the railway
       const ok = (x) => x < railX(u1) - 6 && x < railX(u) - 6;
       if (!ok(x0 + 10)) continue;
       const xr = Math.min(x0 + 42, railX(u1) - 6, railX(u) - 6);
-      // the field: pale gravel, a low fence, an earth path round it
+      const kind = [0, 1, 0, 3, 1, 0, 2, 1, 0, 3, 0, 2, 1][fieldNo++ % 13];
+      if (kind === 3 && !k.anyRes(x0, Y(u1), xr - x0, fh)) {
+        // a brewery's tasting house: the great tiled barn, its terrace of parasols, people at the tables, a few jars on show
+        img.fine(x0, Y(u1), xr - x0, fh, (X, Yy) => k.settPx(X, Yy, 2210, C.stoneSet));
+        k.reserve(x0, Y(u1), xr - x0, fh);
+        k.house(x0 + 2, Y(u1 - 1), xr - x0 - 4, 16, 8, 'jp', { ramp: C.kawara, wall: 0xd8ccb0, noren: 0x1a1a1a, door: true, reserve: false, bay: 6, roof: { gable: 'tri', gw: 6 } });
+        for (let q = 0; q < 9; q++) {
+          const CX = (x0 + 7 + (q % 3) * 12) * S;
+          const CY = Y(u + 8 + (q >> 2) * 9) * S;
+          const c = [0xe8e4d8, 0x3a3a3e, 0x8a2a2a][q % 3];
+          objects.push({
+            y: CY / S + 2,
+            draw: () => {
+              for (let j = -9; j <= 9; j++) for (let i = -9; i <= 9; i++) if (i * i + j * j < 78) img.tintPx(CX + i + 3, CY + j + 4, 0.74);
+              for (let j = -9; j <= 9; j++) for (let i = -9; i <= 9; i++) if (i * i + j * j < 76) img.px(CX + i, CY + j, Math.floor(((Math.atan2(j, i) + 3.15) / 6.3) * 8) % 2 ? c : scaleColor(c, 0.8));
+            },
+          });
+        }
+        k.crowd(x0 + 3, Y(u + 30), xr - x0 - 6, 24, 14);
+        for (const x of [x0 + 3, x0 + 8, xr - 8, xr - 3]) jar(x, u + 3, x + u);
+        continue;
+      }
+      if (kind === 2) {
+        // a plot given over to persimmons between the jars: bare trunks, bright fruit, the earth swept
+        img.fine(x0, Y(u1), xr - x0, fh, (X, Yy, x, y) => k.lawnPx(X, Yy, 0.2 + fbm(x, y, { seed: 2211, scale: 6 }) * 0.5, [0x4a5a3a, 0x5a6a44, 0x6a7c50]));
+        k.reserve(x0, Y(u1), xr - x0, fh);
+        for (let uu = u + 6; uu < u1; uu += 12)
+          for (let x = x0 + 5; x < xr - 3; x += 11) {
+            if (k.anyRes(x, Y(uu), 1, 1) && false) continue;
+            k.tree(x + ((uu >> 2) % 2) * 3, Y(uu), 4, [0x2e4a26, 0x40602e, 0x56783a, 0x6e9048], Math.round(x + uu));
+            const fx = x + ((uu >> 2) % 2) * 3;
+            const fu = Y(uu);
+            objects.push({
+              y: fu + 3,
+              draw: () => {
+                for (let q = 0; q < 12; q++) {
+                  const ang = hashPx(q, uu + x, 2213) * 6.283;
+                  const dd = hashPx(q, uu + x, 2214) * 3.4;
+                  img.rectPx((fx + Math.cos(ang) * dd) * S, (fu + Math.sin(ang) * dd * 0.84) * S, 2, 2, q % 3 ? 0xf08a20 : 0xffa838);
+                }
+              },
+            });
+          }
+        continue;
+      }
+      // the field: pale gravel, a low fence, the jars in their rows (the living jars' pads among them, later)
       img.fine(x0, Y(u1), xr - x0, fh, (X, Yy, x, y) => {
-        if (k.isRes(x, y)) return null;
         const e = Math.min(x - x0, xr - x, y - Y(u1), Y(u) - y);
         if (e < 0.6) return (X + Yy) % 9 < 3 ? C.wood[0] : 0x5a5040;
         return k.gravelPx(X, Yy);
       });
-      for (let jy = 0; jy < fh; jy += 7)
-        for (let jx = 0; jx < xr - x0 - 3; jx += 7) {
+      for (let jy = 0, row = 0; jy < fh - 7; jy += kind === 1 ? 6 : 7, row++)
+        for (let jx = kind === 1 && row % 2 ? 3.5 : 0; jx < xr - x0 - 5; jx += 7) {
           const x = x0 + jx + 3.5;
           const uu = u1 - jy - 3.5;
           if (k.anyRes(x - 3, Y(uu) - 3, 6, 6)) continue;
+          if (hashPx(Math.round(x), Math.round(uu), 2212) < 0.04) continue; // a gap where one was lifted
           jar(x, uu, Math.round(x * 13 + uu));
         }
       k.reserve(x0, Y(u1), xr - x0, fh);
-      // the farmers going round with their ladles and sedge hats
       if ((x0 + u) % 3 < 2) k.strollers((x0 + xr) / 2, u + 26, (xr - x0) / 2 - 3, 20, 2, { hat: 0xd8c898, sp: 2.4, cols: [0x2a3a5a, 0x4a4a3a] });
     }
-    // the path between the rows of fields, a farmhouse at the end, its sign
+    // the path between the rows of fields, the farm at its end: never quite the same farm
     if (u < BAY[0] - 60) {
-      k.house(8, Y(u + fh + 11), 24, 7, 4, 'jp', { ramp: C.kawara, wall: 0xd8ccb0, noren: 0x1a1a1a, door: true, bay: 5 });
-      k.tree(38, Y(u + fh + 8), 3.2, LEAF.camellia, u + 2207);
+      const n = Math.floor((u - COAST[0]) / 64);
+      const w = 18 + (n * 7) % 12;
+      const ramp = [C.kawara, C.redTile, [0x4a342a, 0x5e4436, 0x725444, 0x886854, 0x9e7c64], C.slate][n % 4];
+      k.house(6 + (n * 5) % 8, Y(u + fh + 11), w, 7, 4, 'jp', { ramp, wall: [0xd8ccb0, 0xc8b898, 0xe0d4bc][n % 3], noren: n % 2 ? 0x1a1a1a : 0x2a3a6a, door: true, bay: 5 });
+      // the stacks of lids and a hand cart by the door, a persimmon or camellia in the yard
+      const X = (8 + w + (n * 5) % 8) * S;
+      const Yy = Y(u + fh + 4) * S;
+      for (let q = 0; q < 4; q++) img.discPx(X + q * 6, Yy, 3, 0xc0a878);
+      for (let q = 0; q < 3; q++) img.discPx(X + q * 6 + 3, Yy - 3, 3, 0xd0b888);
+      k.tree(40 + (n * 11) % 30, Y(u + fh + 8), 3.2, n % 2 ? LEAF.camellia : LEAF.camphor, u + 2207);
+      k.strollers(44 + (n * 13) % 50, u + fh + 5, 14, 2, 1);
     }
   }
   void glowPx;

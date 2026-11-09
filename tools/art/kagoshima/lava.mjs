@@ -115,6 +115,82 @@ export function paintLava(k) {
     k.streetLamp(52, 6126);
     k.strollers(30, 6112, 16, 6, 3);
   }
+  // the Arimura lookout on the 1914 flow: a spur off the road, a little car park, a domed shelter against bombs, a boardwalk winding
+  // over the blocks with people on it
+  {
+    const ru = 5786;
+    const rx = lavaRoadX(ru);
+    k.road([[rx, ru], [68, ru - 6]], 2.6, { side: 0, lanes: false, piece: true });
+    img.fine(50, Y(ru + 8), 22, 18, (X, Yy, x, y) => {
+      const inRow = (y - Y(ru + 8)) % 9;
+      return inRow < 1 && X % 15 < 2 ? 0xe4e4dc : k.asphaltPx(X, Yy);
+    });
+    k.reserve(50, Y(ru + 8), 22, 18);
+    for (let q = 0; q < 5; q++) {
+      const X = (52 + q * 4) * S;
+      const Yy = Y(ru + 6) * S;
+      const c = [0xe8e8ec, 0xc43a30, 0x3a609c, 0x2c3038, 0xe8d69c][q];
+      for (let j = 0; j < 15; j++) for (let i = 0; i < 9; i++) img.px(X + i, Yy + j, (j === 4 || j === 10) && i > 0 && i < 8 ? 0x2a3440 : c);
+    }
+    // the shelter: a half-buried concrete dome, its dark mouth
+    objects.push({
+      y: Y(ru + 10),
+      shadow: () => k.shadowEllipse(40, Y(ru + 10), 9, 3, 0.5),
+      draw: () => {
+        const X = 38 * S;
+        const Yb = Y(ru + 10) * S;
+        for (let j = 0; j < 24; j++) {
+          const hw = Math.sqrt(Math.max(0, 1 - (j / 24) ** 2)) * 27;
+          for (let i = -hw; i <= hw; i++) img.px(X + i, Yb - j, i < -hw * 0.4 ? 0xd8d4cc : i < hw * 0.5 ? 0xb8b4ac : 0x8a867e);
+        }
+        for (let j = 0; j < 12; j++) {
+          const hw = Math.sqrt(Math.max(0, 1 - (j / 12) ** 2)) * 9;
+          for (let i = -hw; i <= hw; i++) img.px(X + i, Yb - j, 0x121216);
+        }
+      },
+    });
+    const BW0 = [[50, ru - 1], [34, ru - 5], [18, ru + 6], [12, ru + 26], [24, ru + 46], [42, ru + 42], [46, ru + 22], [50, ru + 6]];
+    const BW = [];
+    for (let i = 0; i + 1 < BW0.length; i++) {
+      const p0 = BW0[Math.max(0, i - 1)];
+      const p1 = BW0[i];
+      const p2 = BW0[i + 1];
+      const p3 = BW0[Math.min(BW0.length - 1, i + 2)];
+      for (let q = 0; q < 8; q++) {
+        const t = q / 8;
+        const at = (a, b, c, d) => 0.5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t);
+        BW.push([at(p0[0], p1[0], p2[0], p3[0]), at(p0[1], p1[1], p2[1], p3[1])]);
+      }
+    }
+    BW.push(BW0[BW0.length - 1]);
+    k.road(BW, 1.5, {
+      side: 0,
+      kerb: 0x3a2c1e,
+      piece: true,
+      paint: (X, Yy, across, along) => {
+        const a = Math.abs(across);
+        if (a > 1) return 0x5a4630;
+        if (Math.floor(along * 2.2) % 2 === 0) return 0x7a6246;
+        return hashPx(Math.floor(along * 2.2), 1, 5410) < 0.4 ? 0x9a8058 : 0x8a7050;
+      },
+    });
+    for (let i = 0; i < BW.length; i += 3) {
+      const [x, u] = BW[i];
+      const X = x * S;
+      const Yy = Y(u) * S;
+      for (let j = 0; j < 6; j++) img.px(X + 6, Yy - j, 0x3a2c1e);
+    }
+    // a signboard at its start, a lookout platform at its far bend
+    k.noticeBoard?.(42, ru + 3);
+    {
+      const X = 11 * S;
+      const Yy = Y(ru + 30) * S;
+      for (let j = -12; j <= 12; j++) for (let i = -12; i <= 12; i++) if (Math.abs(i) + Math.abs(j) < 18) img.px(X + i, Yy + j, (j + 40) % 6 < 2 ? 0x7a6246 : 0x9a8058);
+      k.standing(9, Y(ru + 30) - 1, 4, 3, 3, 5411, undefined);
+    }
+    k.reserve(4, Y(ru + 56), 50, 54);
+    k.walkers(BW.filter((_, i) => i % 4 === 0), 5, ru + 20, { sp: 2.2, gap: 26 });
+  }
   // black pines, in clumps, the first trees back on the lava, thinning out up the slope; boulders; silver grass; knotweed
   for (let q = 0; q < 24; q++) {
     const cx = R() * W;
@@ -145,11 +221,11 @@ export function paintLava(k) {
       // susuki: a fountain of thin pale blades, plumes on their tips, its shadow on the rock
       for (let i = 0; i < 12; i++) img.tintPx(X + i - 3, Yy + 1, 0.7);
       for (let b = 0; b < 15; b++) {
-        const lean = (b - 7) * 0.13 + 0.3;
-        const h = 9 + hashPx(b, q, 5407) * 8;
+        const lean = (b - 7) * 0.09 + 0.14;
+        const h = 13 + hashPx(b, q, 5407) * 9;
         for (let j = 0; j < h; j++) {
           const t = j / h;
-          img.px(X + lean * j * (0.5 + t * 1.1), Yy - j * (1 - t * 0.16), t > 0.76 ? 0xf0e4bc : t > 0.4 ? 0xb8a87a : 0x7a7a50);
+          img.px(X + (b - 7) * 0.5 + lean * j * (0.4 + t * 0.9), Yy - j * (1 - t * 0.1), t > 0.74 ? 0xf0e4bc : t > 0.4 ? 0xb8a87a : 0x7a7a50);
         }
       }
     } else if (u < 6100) {

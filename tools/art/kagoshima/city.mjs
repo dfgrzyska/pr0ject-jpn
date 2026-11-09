@@ -145,7 +145,7 @@ export function paintCity(k) {
     k.house(x, Y(u + h), w, rh, fh, 'block', {
       roofC: opt.roofC ?? R.pick(ROOFS),
       wall: opt.wall ?? R.pick(WALLS),
-      plainRoof: !!sign,
+      plainRoof: opt.plain ?? !!sign,
       extra: (by) => {
         if (sign) fancyRoof(x, Y(u + h), w, rh);
         if (vert && fh > 8) verticalSign(x + w - 3, by, Math.min(fh - 1, 14));
@@ -202,9 +202,9 @@ export function paintCity(k) {
         let h = Math.min(u1 - u, R.int(17, 34));
         if (u1 - u - h < 12) h = u1 - u;
         const r = R();
-        if (r < 0.1) carPark(x, u, w - 1, Math.min(h, 24));
-        else if (r < 0.16 && h > 14) pocket(x, u, w - 1, Math.min(h, 22));
-        else if (r < 0.34 && h < 28) lowHouse(x, u, w - 1, h - 1, R() < 0.5 ? R.pick([0x2a4a8a, 0x8a2a2a, 0xe8d8b0]) : undefined);
+        if (r < 0.05) carPark(x, u, w - 1, Math.min(h, 24));
+        else if (r < 0.1 && h > 14) pocket(x, u, w - 1, Math.min(h, 22));
+        else if (r < 0.36 && h < 30) lowHouse(x, u, w - 1, h - 1, R() < 0.5 ? R.pick([0x2a4a8a, 0x8a2a2a, 0xe8d8b0]) : undefined);
         else office(x, u, w - 1, h - 1);
         u += h + 1;
       }
@@ -474,10 +474,16 @@ export function paintCity(k) {
           img.fine(x0, Y(b), x1 - x0, b - a, (X, Yy, x) => {
             const q = (x - x0) / (x1 - x0);
             if (q < 0.03 || q > 0.97) return q < 0.03 ? 0xd8d8d8 : 0x6a6e76;
+            // every so often a tall vent across the roof, its louvres
+            if (Yy % 150 < 15) return Yy % 150 < 2 ? 0xe8ecf0 : Yy % 3 === 0 ? 0x5a626a : 0xa8b0b8;
             if (Yy % 18 < 2) return 0x8a929a;
             if (Math.abs(q - 0.5) < 0.04) return 0xe8ecf0;
             const lit = q < 0.5 ? 0xcfe0e8 : 0xa4b8c4;
-            return (X + (Yy >> 1)) % 21 === 0 ? 0xf0f6fa : hashPx(X >> 2, Yy >> 2, 488) < 0.06 ? 0xffe4b0 : lit;
+            // the shoppers below, dim shapes through the frosted glass; the shops' lights along its edges
+            const h2 = hashPx(X >> 1, Yy >> 1, 489);
+            if (h2 < 0.05) return mix(lit, 0x2a3440, 0.55);
+            if ((q < 0.14 || q > 0.86) && h2 > 0.88) return 0xffe4b0;
+            return (X + (Yy >> 1)) % 21 === 0 ? 0xf0f6fa : lit;
           }),
       });
       // its gate on the street: a steel frame, the name in lights
@@ -519,7 +525,30 @@ export function paintCity(k) {
     });
   }
   // Yamakataya, the department store: a great pale block, its name across the top, awnings along the street
-  office(103, 858, 40, 60, { fh: 24, roofC: 0xa8a49c, wall: 0xe8e0d0, sign: true, vert: false, extra: (by) => {
+  office(103, 858, 40, 60, { fh: 24, roofC: 0xa8a49c, wall: 0xe8e0d0, sign: false, plain: true, vert: false, extra: (by) => {
+    {
+      const rx = 104;
+      const ry = by - 60 + 2;
+      img.fine(rx, ry, 38, 32, (X2, Yy2, x, y) => {
+        const e = Math.min(x - rx, rx + 38 - x, y - ry, ry + 32 - y);
+        if (e < 1.4) return k.lawnPx(X2, Yy2, 0.3 + hashPx(X2 >> 1, Yy2 >> 1, 505) * 0.6, C.lawn);
+        return (X2 >> 3) % 2 === (Yy2 >> 3) % 2 ? 0xb4a688 : 0xa89a7c;
+      });
+      for (let q = 0; q < 12; q++) {
+        const CX = (rx + 6 + (q % 4) * 9) * S;
+        const CY = (ry + 7 + (q >> 2) * 9) * S;
+        const c = [0xd83a2a, 0xf0ece0, 0x2a6ab8][q % 3];
+        for (let j = -8; j <= 8; j++) for (let i = -8; i <= 8; i++) if (i * i + j * j < 60) img.tintPx(CX + i + 3, CY + j + 4, 0.72);
+        for (let j = -8; j <= 8; j++)
+          for (let i = -8; i <= 8; i++) {
+            if (i * i + j * j >= 58) continue;
+            const seg = Math.floor(((Math.atan2(j, i) + 3.15) / 6.3) * 8);
+            img.px(CX + i, CY + j, seg % 2 ? c : scaleColor(c, 0.78));
+          }
+      }
+      // the wooden letters of its name over the street
+      for (let i = 0; i < 38 * S; i++) for (let j = 0; j < 12; j++) img.px(rx * S + i, (ry + 33) * S + j, j < 2 || j > 9 ? 0x8a2a2a : (i >> 3) % 2 && j > 3 && j < 8 ? 0xf0ece0 : 0xa83a32);
+    }
     const X = 103 * S;
     const Yt = (by - 24) * S;
     for (let i = 0; i < 40 * S; i++) for (let j = 0; j < 7; j++) img.px(X + i, Yt + j + 2, j < 1 || j > 5 ? 0x8a2a2a : (i >> 2) % 3 ? 0xe8e0d0 : 0x8a2a2a);
@@ -679,6 +708,133 @@ export function paintCity(k) {
             return j % 3 === 0 ? scaleColor(body, 0.92) : body;
           }),
       });
+    }
+  }
+
+  // ------------------------------------------------------------ places in the blocks
+  // the Xavier Memorial Church: Francis Xavier landed here in 1549. A white hall, a slender tower and cross; its lawn, his bust
+  {
+    k.lawnFill(104, Y(590), 38, 124, C.lawn, 506);
+    k.reserve(104, Y(590), 38, 124);
+    k.flagFill(112, Y(528), 22, 50, C.plaza, 507, 12);
+    k.house(110, Y(558), 26, 18, 12, 'west', { ramp: [0x6a7078, 0x7e848c, 0x92989e, 0xa8aeb4, 0xc0c4c8], wall: 0xf4f2ea, door: true, doorX: 11, reserve: false, bias: 2 });
+    objects.push({
+      y: Y(528) + 4,
+      draw: () => {
+        const X = 123 * S;
+        const Yb = Y(528) * S;
+        for (let j = 0; j < 78; j++) for (let i = -6; i <= 6; i++) img.px(X + i, Yb - j, i < -4 ? 0xffffff : i > 4 ? 0xb8b4a8 : j % 15 === 0 ? 0xd8d4c8 : 0xf0ece0);
+        // the arched door, a slit window, the belfry's louvres
+        for (let j = 0; j < 15; j++) for (let i = -3; i <= 3; i++) img.px(X + i, Yb - j, j > 12 && Math.abs(i) > 1 ? 0xf0ece0 : 0x4a3a2a);
+        for (let j = 30; j < 42; j++) for (let i = -1; i <= 1; i++) img.px(X + i, Yb - j, 0x5a8ac8);
+        for (let j = 60; j < 72; j++) for (let i = -3; i <= 3; i++) img.px(X + i, Yb - j, j % 3 === 0 ? 0xd8d4c8 : 0x2a3240);
+        for (let j = 0; j < 15; j++) img.px(X, Yb - 78 - j, 0xc8a850);
+        for (let i = -5; i <= 5; i++) img.px(X + i, Yb - 88, 0xc8a850);
+      },
+    });
+    objects.push({
+      y: Y(494) + 1,
+      shadow: () => k.shadowRect(122, Y(494) - 2, 5, 3, 0.5),
+      draw: () => {
+        const X = 122 * S;
+        const Yb = Y(494) * S;
+        for (let j = 0; j < 12; j++) for (let i = -5; i <= 5; i++) img.px(X + i, Yb - j, i > 3 ? C.granite[0] : C.granite[3]);
+        for (let j = 12; j < 22; j++) for (let i = -2; i <= 2; i++) img.px(X + i, Yb - j, i < 0 ? 0x5a7464 : 0x2e4238);
+        img.discPx(X, Yb - 24, 3, 0x38504a);
+      },
+    });
+    for (const [x, u, r] of [[108, 584, 5], [134, 576, 4.5], [108, 500, 5], [138, 480, 5], [108, 474, 4]]) k.tree(x, Y(u), r, LEAF.camphor, x + u);
+    for (const [x, u] of [[112, 478], [128, 478]]) k.bench(x, Y(u), 4);
+    k.strollers(122, 505, 10, 18, 5);
+  }
+  // a school: its long block, the gym, the dust playground with a running track, the children in their yellow ash helmets
+  {
+    const x0 = 38;
+    const x1 = 77;
+    k.house(x0 + 1, Y(592), 38, 12, 14, 'block', { roofC: 0x7a7e84, wall: 0xe8e4da, plainRoof: false, shop: false });
+    img.fine(x0, Y(564), x1 - x0, 102, (X, Yy, x, y) => {
+      const dx = (x - 57) / 15;
+      const dy = (y - Y(513)) / 40;
+      const q = Math.hypot(Math.max(0, Math.abs(dx) - 0) , Math.max(0, Math.abs(dy) - 0.45) * 1.8);
+      const c = rampColor([0x8a7a64, 0x9a8a72, 0xaa9a80], 0.2 + hashPx(X >> 2, Yy >> 2, 508) * 0.6, X, Yy);
+      if (Math.abs(q - 0.9) < 0.03 || Math.abs(q - 0.7) < 0.03) return (Yy >> 2) % 2 ? 0xe8e4d8 : c;
+      if (Math.min(x - x0, x1 - x, y - Y(564), Y(462) - y) < 0.8) return (X + Yy) % 6 < 3 ? 0x5a5e66 : 0x3a3e46;
+      return c;
+    });
+    k.reserve(x0, Y(564), x1 - x0, 102);
+    k.standing(46, Y(540), 22, 50, 14, 509, [0xf0d030, 0xf0d030, 0xe8e8ec]);
+    k.strollers(57, 513, 12, 24, 8, { hat: 0xf0d030, cols: [0xf0f0f0, 0x2a3a6a], sp: 7, idle: 0.1 });
+    k.tree(40, Y(566), 3.6, LEAF.camphor, 510);
+    k.tree(75, Y(566), 3.6, LEAF.camphor, 511);
+  }
+  // Meizan Yokochō: the old bar alley, a warren of little tiled fronts, red lanterns strung over the lanes
+  {
+    const x0 = 104;
+    const x1 = 142;
+    img.fine(x0, Y(704), x1 - x0, 92, (X, Yy) => k.settPx(X, Yy, 512, C.stoneSet));
+    for (const u of [614, 642, 670]) {
+      for (let x = x0; x < x1 - 4; ) {
+        const w = R.int(6, 9);
+        const h = R.int(15, 19);
+        k.house(x, Y(u + h), Math.min(w, x1 - x) - 0.5, Math.round(h * 0.56), h - Math.round(h * 0.56), 'jp', {
+          ramp: R() < 0.7 ? C.kawara : C.redTile,
+          wall: R.pick([0xc8b898, 0x8a6a50, 0xd8ccb4]),
+          noren: R.pick([0x8a2a2a, 0x2a3a6a, 0xe8d8b0, 0x1a1a1a]),
+          bay: 3,
+          extra: (by) => {
+            const LX = (x + 1) * S;
+            for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) if (i * i + j * j < 6) img.px(LX + i, (by - 4) * S + j, 0xd83a2a);
+          },
+        });
+        x += w;
+      }
+    }
+    k.reserve(x0, Y(704), x1 - x0, 92);
+    for (const u of [612, 640, 668, 696]) {
+      for (let X = x0 * S; X < x1 * S; X++) {
+        const dy = Math.sin(((X % 42) / 42) * Math.PI) * 3;
+        img.px(X, Y(u) * S + dy, 0x2a2a2e);
+        if (X % 14 === 0) for (let j = 0; j < 5; j++) for (let i = -1; i <= 1; i++) img.px(X + i, Y(u) * S + dy + 1 + j, j === 0 || j === 4 ? 0x2a1a14 : 0xe84a3a);
+      }
+      k.walkers([[x0 + 2, u], [x1 - 2, u]], 2, u, { sp: 2.2, gap: 40 });
+    }
+  }
+  // a hotel with a pool on its roof, looking at the volcano
+  office(158, 300, 21, 46, { fh: 22, plain: true, sign: false, vert: true, wall: 0xe0dcd0, roofC: 0xb4b0a8, extra: (by) => {
+    const rx = 160;
+    const ry = by - 46 + 3;
+    img.fine(rx, ry, 17, 16, (X2, Yy2, x, y) => {
+      const e = Math.min(x - rx, rx + 17 - x, y - ry, ry + 16 - y);
+      if (e < 1.2) return (X2 >> 2) % 2 ? 0xc8b890 : 0xb8a880;
+      return hashPx(X2 >> 1, Yy2 >> 1, 513) < 0.1 ? 0xc8f0fa : Yy2 % 12 < 2 ? 0x5ac8e8 : 0x3ab0d8;
+    });
+  } });
+  // the footbridge over the avenue, on its own above the trams; stairs down to each pavement
+  {
+    const fu = 708;
+    for (const x of [72, 103]) {
+      img.fine(x, Y(fu + 3), 5, 12, (X, Yy) => {
+        const q = Yy % 6;
+        return q === 0 ? C.granite[4] : q < 4 ? C.granite[2] : C.granite[0];
+      });
+    }
+    const deck = k.capture(72, Y(fu + 3), 36, 6, () => {
+      img.fine(72, Y(fu + 3), 36, 6, (X, Yy) => {
+        const j = Yy - Y(fu + 3) * S;
+        if (j < 2 || j > 15) return j < 2 ? 0x8ab0b8 : 0x4a6a72;
+        if (j < 4 || j > 13) return (X % 9) < 2 ? 0x4a6a72 : 0x6a8a92;
+        return (X >> 3) % 2 ? 0xc8c0b0 : 0xb8b0a0;
+      });
+    }, fu);
+    kit.loop(72, fu + 3, [deck], { d: 0.04 });
+    for (let X = 72 * S; X < 108 * S; X++) for (let j = 0; j < 6; j++) img.tintPx(X, Y(fu - 3) * S + j, 0.7);
+  }
+  // street trees along the cross streets, ash-dulled, in the pavement's edge
+  for (const u of STREETS) {
+    if (u === 1166) continue;
+    for (let x = 6; x < W; x += 15) {
+      if (COLUMNS.some((c) => Math.abs(x - c.x) < c.hw + 8)) continue;
+      for (const s of [-1, 1]) if (hashPx(x, u + s, 514) < 0.7) k.tree(x, Y(u + s * 8), 2.4 + hashPx(x, u, 515), LEAF.ashen, x * 3 + u + s);
     }
   }
 

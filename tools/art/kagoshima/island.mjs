@@ -51,6 +51,42 @@ export function paintIsland(k) {
       for (let j = 0; j < 15; j++) for (let i = 0; i < 9; i++) img.px(X + i, Yy + j, (j === 4 || j === 10) && i > 0 && i < 8 ? 0x2a3440 : c);
     }
   }
+  img.fine(66, Y(i0 + 70), 48, 28, (X, Yy) => k.settPx(X, Yy, 4275, C.granite));
+  k.reserve(66, Y(i0 + 70), 48, 28);
+  // down each side of the plaza, a stone wall and a bed of ash-tolerant cannas
+  for (const x of [66, 112]) img.fine(x, Y(i0 + 70), 2, 26, (X, Yy) => (hashPx(X, Yy >> 1, 4283) < 0.3 ? 0xd85a2a : hashPx(X >> 1, Yy >> 1, 4284) < 0.5 ? 0x4a7a3a : 0x3a6a30));
+  for (const [x, u] of [[70, i0 + 46], [110, i0 + 46], [70, i0 + 66], [110, i0 + 66]]) k.palm(x, Y(u), 4.6, x + u);
+  for (let q = 0; q < 4; q++) {
+    // the souvenir stalls with their striped awnings: komikan jam, daikon pickles, volcanic ash in little jars
+    const x = 75 + q * 8;
+    const u = i0 + 48;
+    const c = [0xd83a2a, 0xf0a020, 0x2a6ab8, 0x3a8a5a][q];
+    objects.push({
+      y: Y(u) + 1,
+      shadow: () => k.shadowRect(x + 1, Y(u) - 5, 7, 6, 0.55),
+      draw: () => {
+        const X = x * S;
+        const Yb = Y(u) * S;
+        for (let j = 0; j < 9; j++) for (let i = 0; i < 21; i++) img.px(X + i, Yb - j, j > 6 ? 0x8a6a44 : j > 3 ? (i >> 1) % 3 === 0 ? 0xf08a20 : (i >> 1) % 3 === 1 ? 0xe8e4d8 : 0x5a3a2a : 0x2a2420);
+        for (let j = 0; j < 7; j++) for (let i = -2; i < 23; i++) img.px(X + i, Yb - 9 - j, (i >> 2) % 2 ? c : 0xf0ece0);
+      },
+    });
+  }
+  // the hotel over the lava shore, its pines, its hot spring steaming
+  k.house(146, Y(i0 + 90), 30, 18, 24, 'block', { roofC: 0xa8a49c, wall: 0xe0d8c8, plainRoof: false, reserve: true });
+  img.fine(116, Y(i0 + 64), 62, 42, (X, Yy, x, y) => {
+    if (k.fineWater[Yy * k.FW + X] || k.shoreD[Yy * k.FW + X] < 7) return null;
+    const e = ((x - 146) / 30) ** 2 + ((y - Y(i0 + 42)) / 22) ** 2 + (fbm(x, y, { seed: 4276, scale: 7, octaves: 2 }) - 0.5) * 0.7;
+    if (e > 1 || (e > 0.84 && hashPx(X, Yy, 4285) > (1 - e) / 0.16)) return null;
+    return k.lawnPx(X, Yy, 0.25 + fbm(x, y, { seed: 4286, scale: 6 }) * 0.5, [0x4a5e3a, 0x5a7044, 0x6c8250]);
+  });
+  for (let q = 0; q < 16; q++) k.tree(118 + q * 3.5, Y(i0 + 34 + (q % 4) * 7), 3 + (q % 3) * 0.7, LEAF.pine, q + 4277, 'pine');
+  kit.emit(150, i0 + 44, vapour.slice(0, 2), { rate: 0.8, life: [1.6, 2.4], vy: 5, sx: 3, wf: 1, a: 0.26, tint: 1 });
+  for (let q = 0; q < 26; q++) {
+    const x = 4 + q * 6.6;
+    const u = i0 + 16 + (q % 3) * 6;
+    if (!k.wet(x, Y(u))) k.rockPx(x * S, Y(u) * S, 3 + (q % 4), LAVASTONE, q);
+  }
   // the long foot bath along the sea wall: a wooden trough of milky water, people sitting along both sides with their feet in it,
   // steam rising off it; the lava shore's black rocks beyond
   {
@@ -81,7 +117,7 @@ export function paintIsland(k) {
     });
     k.reserve(4, fy - 4, 62, 14);
     for (const x of [16, 34, 52]) kit.emit(x, fu - 2, vapour.slice(0, 2), { rate: 0.7, life: [1.4, 2.2], vy: 5, sx: 3, wf: 1, a: 0.3, tint: 1 });
-    // the visitor centre, its statue-less lawn of pines on the old lava, the shore path
+    // the visitor centre, its lawn of pines on the old lava, the shore path
     k.house(6, Y(i0 + 100), 34, 13, 7, 'jp', { ramp: C.slate, wall: 0xd8d0c0, door: true });
     k.grove(42, 68, i0 + 66, i0 + 100, 6, [LEAF.pine, LEAF.ashen], 4254, 3, 5, 'pine');
     k.strollers(30, i0 + 64, 20, 3, 4);
@@ -198,6 +234,17 @@ export function paintIsland(k) {
     for (const [xx, uu] of [[x - 4, u + 18], [x + 26, u + 22], [x - 6, u + 2]]) k.tree(xx, Y(uu), 5.5, LEAF.camphor, xx + uu);
     k.stoneLantern(x + 5, u + 3, false);
     k.stoneLantern(x + 18, u + 3, false);
+  }
+  {
+    const x0 = 6;
+    const u0 = i0 + 384;
+    img.fine(x0, Y(u0 + 34), 66, 34, (X, Yy) => rampColor([0x7a6a58, 0x8a7a66, 0x9a8a74], 0.2 + hashPx(X >> 2, Yy >> 2, 4278) * 0.6, X, Yy));
+    k.house(x0 + 2, Y(u0 + 34) - 12, 44, 10, 11, 'block', { roofC: 0x8a8e94, wall: 0xe8e4da, plainRoof: false, shop: false, reserve: false, bias: 1 });
+    for (let X = x0 * S; X < (x0 + 66) * S; X++) if ((X >> 1) % 3) img.rectPx(X, Y(u0 + 1) * S, 1, 3, 0x4a4e54);
+    k.standing(x0 + 4, Y(u0 + 26), 56, 20, 14, 4279, [0xf0f0f0, 0x2a3a6a]);
+    k.strollers(x0 + 32, u0 + 14, 26, 9, 8, { hat: 0xf0d030, cols: [0xf0f0f0, 0x2a3a6a], sp: 6, idle: 0.2 });
+    k.reserve(x0, Y(u0 + 34), 66, 34);
+    k.tree(x0 + 60, Y(u0 + 36), 3.8, LEAF.ashen, 4280);
   }
   // eruption shelters along the road: concrete half-pipes with a dark mouth, a yellow sign, every few hundred metres
   for (let u = i0 + 150; u < i1; u += 120) {
@@ -351,10 +398,10 @@ export function paintIsland(k) {
   for (let u = i0 + 968; u < i1 - 10; u += 26) k.stoneFace(2, 144, Y(u), 2, u, LAVASTONE);
   img.fine(2, Y(i1 + 20), 142, (i1 + 20) - (i0 + 960), (X, Yy, x, y) => {
     const u = 7168 - y;
-    if (k.isRes(x, y) || u < i0 + 962) return null;
+    if (u < i0 + 962 || ((x - 62) / 25) ** 2 + ((u - (i1 - 100)) / 16) ** 2 < 1) return null;
     const n = fbm(x, y, { seed: 4271, scale: 11, octaves: 3 });
-    if (n < 0.46) return null;
-    return k.lawnPx(X, Yy, (n - 0.46) * 2 + hashPx(X >> 2, Yy >> 2, 4272) * 0.2, [0x3e4e32, 0x4c5e3a, 0x5c7044]);
+    if (n < 0.44 || (n < 0.54 && hashPx(X, Yy, 4281) > (n - 0.44) / 0.1)) return null;
+    return hashPx(X >> 1, Yy, 4272) < 0.2 ? 0x6e7a56 : k.lawnPx(X, Yy, (n - 0.46) * 1.6 + hashPx(X >> 2, Yy >> 2, 4282) * 0.24, [0x3e4634, 0x4c563e, 0x5c6848]);
   });
   k.grove(4, 146, i0 + 962, i1 + 40, 90, [LEAF.pine, LEAF.ashen, LEAF.camellia], 4267, 2.6, 5, 'pine');
   for (let q = 0; q < 140; q++) {

@@ -2,7 +2,7 @@
 // the orange Sakurajima ferries crossing day and night, the fish farms' rings of floats with their feeding boat, fishing boats,
 // gulls, dolphins leaping, and the shadow of the ash plume drifting over the water. The water itself is the far layer.
 import { C, S, night, hashPx, scaleColor, rampColor, rng, fbm } from '../nagasaki/canvas.mjs';
-import { W, BAY, ISLAND } from './geo.mjs';
+import { W, BAY, ISLAND, SHINJIMA } from './geo.mjs';
 
 export function paintBay(k) {
   const { img, Y, U, kit, objects, glowPx } = k;
@@ -240,6 +240,66 @@ export function paintBay(k) {
   }));
   kit.spot([[100, 3640, 70, 120]], leap, { rate: 0.45, fps: 6 });
 
+  // Shinjima: pines over its low cliffs, a hamlet's few roofs and terraced plots, a stone jetty with a boat, a little torii at the water
+  {
+    const { x, u } = SHINJIMA;
+    const PINE = [0x1a3024, 0x28442c, 0x3a5a36, 0x527040];
+    k.forest(x - 26, x + 26, u - 38, u + 38, [PINE, [0x1e3424, 0x2c4a2e, 0x3e6038, 0x567a48]], 2861, 3.4, 5.6, (a, b) => !k.wet(a, Y(b)) && !k.anyWet(a - 4, Y(b) - 4, 8, 8) && ((a - (x - 4)) / 18) ** 2 + ((b - (u - 10)) / 18) ** 2 > 1 && !(Math.abs(a - (x - 7)) < 9 && b < u - 14));
+    img.fine(x - 22, Y(u + 8), 36, 36, (X, Yy, xx, yy) => {
+      if (k.fineWater[Yy * k.FW + X] || k.shoreD[Yy * k.FW + X] < 8) return null;
+      const e = ((xx - (x - 4)) / 16) ** 2 + ((yy - Y(u - 10)) / 15) ** 2 + (hashPx(X >> 2, Yy >> 2, 2864) - 0.5) * 0.2;
+      if (e > 1) return null;
+      const band = (yy + Math.sin(xx * 0.3) * 1.2) | 0;
+      if (band % 6 === 0) return hashPx(X >> 1, Yy >> 1, 2865) < 0.5 ? 0x4a4438 : 0x34302a;
+      return hashPx(X >> 1, Yy >> 1, 2862) < 0.6 ? (band % 12 < 6 ? 0x5a8a3a : 0x6a7c3e) : 0x46703a;
+    });
+    k.house(x - 16, Y(u - 2), 12, 7, 4, 'jp', { ramp: C.kawara, wall: 0xd8ccb0, door: true });
+    k.house(x - 2, Y(u - 6), 10, 6, 4, 'jp', { ramp: C.redTile, wall: 0xc8bca4, door: true });
+    k.house(x - 10, Y(u - 18), 11, 6, 4, 'jp', { ramp: C.kawara, wall: 0xe0d4bc, door: true });
+    const jy = Y(u - 30);
+    img.fine(x - 8, jy, 3, 22, (X, Yy) => (Yy % 9 === 0 ? C.granite[0] : k.settPx(X, Yy, 2863, C.granite)));
+    for (let Yy = jy * S; Yy < (jy + 22) * S; Yy++) for (let i = 0; i < 5; i++) if (k.wetPx((x - 5) * S + i, Yy)) img.px((x - 5) * S + i, Yy, 0x081820, 0.32);
+    kit.loop(x + 2, u - 42, [fisher(u, 0x3a5a8a)], { d: 0.02 });
+    objects.push({
+      y: jy + 1,
+      draw: () => {
+        const X = (x - 7) * S;
+        const Yb = (jy + 2) * S;
+        for (const s of [-1, 1]) for (let j = 0; j < 15; j++) for (let i = 0; i < 2; i++) img.px(X + s * 7 + i, Yb - j, C.vermilion[2]);
+        for (let i = -11; i <= 11; i++) for (let j = 0; j < 3; j++) img.px(X + i, Yb - 17 + j, j ? C.vermilion[2] : 0x2a2a2e);
+      },
+    });
+    k.strollers(x - 8, u - 12, 10, 8, 3);
+    kit.orbit(x, u, 30, gull, { ry: 22, w: 0.26, n: 2, d: 2.2, a: 0.9 });
+  }
+  // Tagiri: gas from the drowned Aira caldera bubbling up through the bay in a pale, sulphurous stain, ringed with rising bubbles
+  for (const [x, u, rx, ry, s2] of [[38, 3700, 26, 18, 1], [100, 4020, 22, 16, 2], [132, 3200, 16, 12, 3]]) {
+    img.fine(x - rx, Y(u + ry), rx * 2, ry * 2, (X, Yy, xx, yy) => {
+      const e = ((xx - x) / rx) ** 2 + ((yy - Y(u)) / ry) ** 2 + (fbm(xx, yy, { seed: 2870 + s2, scale: 8, octaves: 2 }) - 0.5) * 0.9;
+      if (e > 1) return null;
+      const a = (1 - e) * 0.34;
+      if (hashPx(X, Yy, 2875) > a * 2.6) return null;
+      return [hashPx(X >> 1, Yy, 2876) < 0.5 ? 0x8a9a72 : 0x6e8a78, 0.6];
+    });
+    const pop = [0, 1, 2, 3].map((f) => k.sprite(7, 5, u, (r) => {
+      const R2 = 2 + f * 2.4;
+      for (let a = 0; a < 6.3; a += 0.3) r.px(10 + Math.cos(a) * R2, 7 + Math.sin(a) * R2 * 0.6, 0xd8e0d0, 0.55 - f * 0.12);
+    }));
+    kit.spot([[x - rx * 0.7, u + ry * 0.7, rx * 1.4, ry * 1.4]], pop, { rate: 1.6, fps: 5, a: 0.8 });
+  }
+  // the Queen Kinkō-style cruiser, white with a blue band, on its circuit round the bay
+  const cruiser = k.hull(30, 9, 3600, 0x2a5a9a, 0xe8e8e0, (r, FL, FHh) => {
+    for (let j = 6; j < FHh - 6; j++) for (let i = 14; i < 72; i++) r.px(i, j, j === 6 ? 0xffffff : (i - 14) % 6 === 0 ? 0x4a5a6a : j % 3 ? 0xdcdcd4 : 0x8ab0c8);
+    for (let j = 9; j < FHh - 9; j++) for (let i = 58; i < 68; i++) r.px(i, j, 0x2a3a4a);
+  });
+  kit.path([[120, 3300], [150, 3560], [100, 3780], [48, 3640], [66, 3380], [120, 3300]], [cruiser], { sp: 7, mode: 'wrap', turn: 'rot', d: 0.02, s0: 0.1, wake: wake(3600) });
+  // a string of kayaks heading out towards the islet
+  const kayak = k.sprite(7, 2, 3800, (r) => {
+    for (let i = 0; i < 21; i++) for (let j = 1; j < 5; j++) if (Math.abs(i - 10) * 0.2 + Math.abs(j - 2.5) < 2) r.px(i, j, 0xe8a020);
+    r.rectPx(9, 2, 3, 2, 0x2a3a5a);
+    r.linePx(8, 0, 13, 5, 0xc8c8c0);
+  });
+  kit.path([[60, 3760], [90, 3800], [108, 3850], [80, 3900], [52, 3840], [60, 3760]], [kayak], { sp: 3, n: 4, gap: 11, mode: 'wrap', turn: 'rot', d: 0.02, s0: 0.3 });
   // the shadow of a plume of ash blown out over the bay, drifting across the water
   const plume = k.sprite(100, 60, 3300, (r) => {
     for (let j = 0; j < 180; j += 1)

@@ -37,8 +37,12 @@ export const landD = (x, u) => {
   if (u > BAY[0] + 900) d = Math.max(d, u - shoreU(x));
   return d;
 };
+/** Shinjima, "New Island", thrown up by the 1779 eruption: a low green islet out in the bay. */
+export const SHINJIMA = { x: 146, u: 3850, rx: 26, ry: 38 };
+export const onShinjima = (x, u) => ((x - SHINJIMA.x) / SHINJIMA.rx) ** 2 + ((u - SHINJIMA.u) / SHINJIMA.ry) ** 2 + (fbm(x, u, { seed: 93, scale: 12, octaves: 2 }) - 0.5) * 0.5 < 1;
 export function isWater(x, u) {
   if (u >= RIVER[0] + 3 && u <= RIVER[1] - 3) return true;
+  if (u > 3780 && u < 3920 && x > 110 && onShinjima(x, u)) return false;
   return u < L && landD(x, u) <= 0;
 }
 

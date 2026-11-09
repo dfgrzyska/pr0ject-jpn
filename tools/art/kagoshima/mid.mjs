@@ -102,10 +102,20 @@ export function buildMid() {
         // Sakurajima's ash soil, raked by the wind
         c = rampColor(ASH, n * 0.8 + (hashPx(X >> 3, Yy >> 1, 20) - 0.5) * 0.26, X, Yy);
         if (g < 0.08) c = scaleColor(c, 0.88);
+        if (Yy % S === 0 || X % S === 0 || true) {
+          const scrub = fbm(x, y, { seed: 26, scale: 7, octaves: 2 });
+          if (scrub > 0.6 && hashPx(X >> 1, Yy >> 1, 27) < (scrub - 0.6) * 4.4) c = hashPx(X >> 1, Yy >> 1, 28) < 0.55 ? 0x56603e : 0x6e7448;
+          const st = hashPx(X >> 2, Yy >> 2, 29);
+          if (st < 0.008) {
+            const dx = (X & 3) - 1.5;
+            const dy = (Yy & 3) - 1.5;
+            if (dx * dx + dy * dy < 3) c = dy < 0 ? 0x8a8680 : 0x4a4642;
+          }
+        }
       }
       if (d <= 6) {
         // the edge: a sea wall on the mainland, black sand on the island
-        if (u > ISLAND[0]) c = rampColor([0x2a2624, 0x3a3432, 0x4c4644], 0.2 + hashPx(X >> 1, Yy >> 1, 21) * 0.6, X, Yy);
+        if (u > BAY[0] + 300) c = rampColor([0x2a2624, 0x3a3432, 0x4c4644], 0.2 + hashPx(X >> 1, Yy >> 1, 21) * 0.6, X, Yy);
         else if (u > SENGAN[0]) c = d < 2 ? 0x6a6a66 : X % 12 === 0 ? 0x7a7a76 : Yy % 9 === 0 ? 0x7a7a76 : 0x9a968e;
       }
       img.px(X, Yy, c);
@@ -142,7 +152,7 @@ export function buildMid() {
           return k.settPx(X, Yy, 24, C.granite);
         }
         const ramp = p.u > ISLAND[0] ? [0x34302c, 0x443e38, 0x544e46] : [0x4a3a2a, 0x5a4834, 0x6a5840];
-        if (dd > 8.6) return hashPx(X >> 1, Yy >> 1, 22) < 0.5 ? scaleColor(ramp[0], 0.8) : scaleColor(ramp[1], 0.9);
+        if (dd > 8.4) return Math.floor(Math.atan2(yy - y, x - p.x) * 9) % 2 ? 0x7a766e : 0x4e4a44;
         return rampColor(ramp, 0.2 + fbm(x, yy, { seed: 2, scale: 3 }) * 0.5 + (hashPx(X, Yy, 25) - 0.5) * 0.2, X, Yy);
       });
     }
