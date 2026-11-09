@@ -412,8 +412,155 @@ export function paintHarbour(k) {
     for (let j = 0; j < 18; j++) for (let i = 0; i < 36; i++) img.px(X + i, Yy + j, j === 0 ? scaleColor(c, 1.3) : j === 17 ? scaleColor(c, 0.6) : i % 3 === 0 ? scaleColor(c, 0.84) : c);
     for (let i = 0; i < 36; i++) for (let j = 0; j < 3; j++) img.tintPx(X + i + 2, Yy + 18 + j, 0.66);
   }
+  // ---- the yard at work between the stacks
+  const HATS = [0x3a5a8a, 0x2a3a5a, 0xc86a2a, 0xd8d8d0];
+  // the lanes painted on the slabs: walkways in green, hatched bays, the transport road's edge
+  const paintLine = (x0, u0, x1, u1, c, dash = 0) => {
+    const n = Math.max(Math.abs(x1 - x0), Math.abs(u1 - u0)) * S;
+    for (let q = 0; q <= n; q++) {
+      if (dash && Math.floor(q / dash) % 2) continue;
+      const X = (x0 + ((x1 - x0) * q) / n) * S;
+      const Yy = Y(u0 + ((u1 - u0) * q) / n) * S;
+      img.px(X, Yy, c, 0.8);
+      img.px(X, Yy + 1, c, 0.8);
+    }
+  };
+  for (const [a, b, c, d, e] of [[2, 1614, 42, 1614, 0xe8c838], [2, 1619, 42, 1619, 0xe8c838], [2, 1656, 24, 1656, 0x4a9a6a], [2, 1672, 42, 1672, 0xe8c838], [2, 1690, 38, 1690, 0xe8c838], [2, 1712, 44, 1712, 0x4a9a6a], [2, 1762, 42, 1762, 0xe8c838], [2, 1788, 56, 1788, 0xe8c838], [42, 1614, 42, 1788, 0xe8c838]]) paintLine(a, b, c, d, e, e === 0x4a9a6a ? 0 : 9);
+  // a hatched bay
+  for (const [x0, u0, w, h] of [[26, 1658, 14, 12], [4, 1766, 16, 18]])
+    img.fine(x0, Y(u0 + h), w, h, (X, Yy, x, y) => {
+      const e = Math.min(x - x0, x0 + w - x, y - Y(u0 + h), Y(u0) - y);
+      if (e < 0.5) return 0xe8c838;
+      return e < 1.4 && (X + Yy) % 12 < 5 ? 0xe8c838 : null;
+    });
+  // a bow section in grey primer on its stands, wrapped in scaffold; welders on it
+  {
+    const x0 = 6;
+    const u0 = 1674;
+    const y0 = Y(u0 + 15);
+    img.fine(x0, y0, 24, 15, (X, Yy, x, y) => {
+      const t = (x - x0) / 24;
+      const hw = 7.2 * Math.min(1, (1 - t) * 3.4);
+      const dy = Math.abs(y - (y0 + 7.5));
+      if (dy > hw) return null;
+      const lit = 0.6 - (y - (y0 + 7.5)) * 0.05;
+      let c = rampColor([0x4e5862, 0x62707a, 0x7a8a94, 0x96a4ac], lit, X, Yy);
+      if (X % 18 < 2 || Yy % 15 < 1) c = scaleColor(c, 0.84);
+      if (hashPx(X >> 2, Yy >> 2, 1320) < 0.08) c = 0x8a3a2a;
+      return c;
+    });
+    for (let X = x0 * S; X < (x0 + 22) * S; X++) for (let j = 0; j < 7; j++) img.tintPx(X, (y0 + 15) * S + j, 0.68);
+    // the scaffold: poles and planks up its side
+    for (let X = x0 * S; X < (x0 + 22) * S; X += 12) for (let j = -6; j < 15 * S + 6; j++) if (j % 2 === 0) img.px(X, y0 * S + j, 0xc8ccd0);
+    for (const q of [0, 22, 44]) for (let X = x0 * S; X < (x0 + 22) * S; X++) {
+      img.px(X, y0 * S + q, 0xb09060);
+      img.px(X, y0 * S + q + 1, 0x7a5a38);
+    }
+    k.standing(x0 + 2, y0 + 1, 18, 12, 3, 1321, HATS);
+  }
+  const spark = [0, 1, 2].map((f) => k.sprite(5, 5, 1680, (r) => {
+    r.discPx(7, 7, 4 - f, 0xfff8d0, 0.8 - f * 0.2);
+    r.discPx(7, 7, 1.4, 0xffffff);
+    for (let q = 0; q < 6 + f * 2; q++) {
+      const a = q * 1.1 + f;
+      r.px(7 + Math.cos(a) * (2 + f * 2), 7 + Math.sin(a) * (2 + f * 2) + f, 0xffc860);
+    }
+  }, false));
+  kit.spot([[8, 1688, 20, 12], [6, 1712, 30, 18]], spark, { rate: 2.2, fps: 10 });
+  // the site cabins, lit, a bicycle rack beside them, the gas bottles in their cage and cable drums
+  for (const [x, u, w] of [[27, 1660, 7], [34, 1660, 7]]) k.house(x, Y(u + 9), w - 1, 3, 6, 'block', { roofC: 0x7a8a94, wall: 0xc8ccc8, plainRoof: true });
+  objects.push({
+    y: Y(1658),
+    draw: () => {
+      const X = 27 * S;
+      const Yb = Y(1658) * S;
+      for (let i = 0; i < 27; i += 4) for (let j = 0; j < 12; j++) img.px(X + i, Yb - j, j < 3 ? 0xd8d8d0 : i % 8 ? 0x3a7a5a : 0xc8302a);
+      for (let i = -1; i < 28; i++) img.px(X + i, Yb - 12, 0x5a5e66);
+      for (let i = -1; i < 28; i++) img.px(X + i, Yb, 0x3a3e46);
+      for (const dx of [36, 48]) {
+        img.discPx(X + dx, Yb - 6, 5.5, 0x7a5a38);
+        img.discPx(X + dx, Yb - 6, 3.6, 0x3a3e46);
+        img.discPx(X + dx, Yb - 6, 1.4, 0xb09060);
+      }
+    },
+  });
+  // the pallets in the green walkway's bay: drums, blue and yellow, in fours
+  for (let i = 0; i < 6; i++) {
+    const X = (6 + i * 5) * S;
+    const Yy = Y(1720) * S;
+    img.rectPx(X - 1, Yy + 8, 14, 2, C.wood[1]);
+    for (const [dx, dy] of [[0, 0], [6, 0], [0, 5], [6, 5]]) {
+      const c = i % 3 === 0 ? 0x2a5a9a : i % 3 === 1 ? 0xe8b830 : 0x5a6a72;
+      img.discPx(X + dx + 2, Yy + dy + 1, 2.6, scaleColor(c, 0.72));
+      img.discPx(X + dx + 2, Yy + dy, 2.6, c);
+      img.px(X + dx + 1, Yy + dy - 1, 0xffffff, 0.5);
+    }
+  }
+  // the mobile crane, outriggers down, its long boom over the transporter
+  objects.push({
+    y: Y(1768),
+    shadow: () => k.shadowRect(25, Y(1772), 14, 6, 0.5),
+    draw: () => {
+      const X = 26 * S;
+      const Yb = Y(1768) * S;
+      for (let i = 0; i < 39; i++) for (let j = 0; j < 12; j++) img.px(X + i, Yb - j, j === 0 ? 0x3a3a3e : j < 3 ? 0x1a1a1e : j === 11 ? 0xf0d040 : i > 34 ? 0x2a3a4a : (i >> 2) % 3 === 0 ? 0xb89020 : 0xd8b030);
+      for (const i of [0, 36]) for (const s of [-4, 16]) for (let j = 0; j < 3; j++) for (let q = 0; q < 5; q++) img.px(X + i + q, Yb + s - 7 + j, 0x4a4e54);
+      for (let t = 0; t <= 96; t++) {
+        const bx = X + 18 - t * 0.62;
+        const by = Yb - 13 - t * 0.5;
+        const w = 2.4 - t * 0.014;
+        for (let q = -w; q <= w; q++) img.px(bx + q, by, t % 8 < 2 ? 0x8a6a10 : q < 0 ? 0xf0d040 : 0xc8a020);
+      }
+      const hx = X + 18 - 96 * 0.62;
+      const hy = Yb - 13 - 48;
+      for (let j = 0; j < 34; j++) img.px(hx, hy + j, 0x24262a);
+      img.rectPx(hx - 2, hy + 34, 5, 5, 0xd8b030);
+    },
+  });
+  // the transporter: a long low platform on its many wheels, a hull block chained down on it, waiting for the crane
+  {
+    const X0 = 4 * S;
+    const Y0 = Y(1784) * S;
+    objects.push({
+      y: Y(1768),
+      shadow: () => k.shadowRect(5, Y(1782), 19, 13, 0.5),
+      draw: () => {
+        for (let j = 0; j < 39; j++) for (let i = 0; i < 54; i++) img.px(X0 + i, Y0 + j, j === 0 || j === 38 ? 0x1a1a1e : i % 9 < 2 ? 0x2a2a2e : 0xd89030);
+        for (let i = 2; i < 54; i += 8) {
+          img.rectPx(X0 + i, Y0 - 2, 5, 3, 0x141418);
+          img.rectPx(X0 + i, Y0 + 38, 5, 3, 0x141418);
+        }
+        for (let j = 5; j < 34; j++)
+          for (let i = 6; i < 48; i++) {
+            const e = Math.min(i - 6, 47 - i, j - 5, 33 - j);
+            img.px(X0 + i, Y0 + j, e < 2 ? 0xc06040 : i % 9 < 2 ? 0xa84a34 : j % 9 < 1 ? 0x6a2a20 : 0x8a3a2a);
+          }
+        for (const i of [14, 40]) for (let j = 2; j < 37; j++) if (j % 3) img.px(X0 + i, Y0 + j, 0xc8ccd0);
+      },
+    });
+  }
+  // a low stack of finished plate and the pipe racks along the road
+  for (const [x, u] of [[4, 1760], [14, 1760]]) {
+    const Xp = x * S;
+    const Yp = Y(u) * S;
+    for (let q = 0; q < 3; q++) for (let i = 0; i < 27; i++) for (let j = 0; j < 4; j++) img.px(Xp + i + q, Yp - q * 2 + j, j === 0 ? 0x96a4ac : j === 3 ? 0x4e5862 : 0x7a8a94);
+    for (let i = 0; i < 29; i++) for (let j = 0; j < 3; j++) img.tintPx(Xp + i + 1, Yp + 4 + j, 0.68);
+  }
   k.reserve(0, Y(1760), 44, 180);
-  for (const [x, y, n] of [[20, Y(1700), 4], [6, Y(1776), 4], [28, Y(1610), 3], [40, Y(1770), 3]]) k.crowd(x, y, 16, 8, n, [0x3a5a8a, 0x2a3a5a, 0xc86a2a]);
+  for (const [x, y, n] of [[20, Y(1700), 4], [6, Y(1776), 4], [28, Y(1610), 3], [40, Y(1770), 3], [30, Y(1650), 4], [8, Y(1694), 4], [20, Y(1716), 3], [26, Y(1776), 3]]) k.crowd(x, y, 14, 7, n, HATS);
+  // what moves: a forklift up and down the transport road, a flatbed with steel along the quay, cycling welders
+  const forklift = k.sprite(8, 5, 1700, (r) => {
+    for (let i = 3; i < 16; i++) for (let j = 2; j < 13; j++) r.px(i, j, j === 2 ? 0xffe060 : j === 12 ? 0xa88010 : i > 11 && j > 4 && j < 10 ? 0x2a3a4a : 0xe8c030);
+    for (let i = 4; i < 12; i++) for (const j of [1, 13]) r.px(i, j, 0x1a1a1e);
+    for (let i = 16; i < 23; i++) for (const j of [4, 10]) r.px(i, j, 0x8a8e94);
+    for (let i = 17; i < 23; i++) for (let j = 5; j < 10; j++) r.px(i, j, 0x7a5a38);
+  });
+  kit.path([[43, 1584], [43, 1766], [8, 1766]], [forklift], { sp: 6, mode: 'pp', hold: 3, turn: 'rot', d: 0.45 });
+  const flatbed = k.sprite(18, 6, 1700, (r) => {
+    for (let i = 0; i < 54; i++) for (let j = 2; j < 16; j++) r.px(i, j, i > 40 ? (i > 48 ? 0x2a3a4a : 0x3a6a9a) : j === 2 || j === 15 ? 0x2a2a2e : (i >> 2) % 2 ? 0x96a4ac : 0x7a8a94);
+    for (const i of [6, 16, 28, 44]) for (const j of [1, 16]) for (let q = 0; q < 5; q++) r.px(i + q, j, 0x14141a);
+  });
+  kit.path([[50, 1578], [50, 1880]], [flatbed], { sp: 8, mode: 'pp', hold: 6, turn: 'rot', d: 0.45 });
   // the dry dock opening east onto the harbour, a coaster on its keel blocks inside, the caisson gate
   {
     const u0 = 1790;

@@ -16,8 +16,6 @@ const CAMPHOR = [0x1a3422, 0x284a2c, 0x3a6236, 0x527c44];
 const SAKURA = Object.assign([0x7a4a5e, 0xa66a7c, 0xc88a9a, 0xe8b4c0], { kind: 'broadleaf' });
 const CAMELLIA = [0x16301e, 0x22462a, 0x305c34, 0x44743e];
 const PINE = Object.assign([0x16301f, 0x234629, 0x34603a, 0x4c7a48], { kind: 'pine' });
-const HYDRANGEA = [0x5a6ad0, 0x7a8ae8, 0x9a7ad8, 0xb48ae0, 0xd890c8, 0xe8e0f0];
-const AZALEA = [0xe86a9a, 0xf4a0c0, 0xffffff, 0xd84a7a, 0xf8e070];
 
 /** A tram stop on R1: a platform either side of the tracks, a shelter with its glass roof, people waiting. */
 /**
@@ -118,39 +116,6 @@ function terrace(k, x0, x1, u, amp = 3, ph = 0, h = 4) {
 
 /** A garden path or lane. */
 const path = (k, pts, hw = 1.5, surface = C.paving) => k.road(pts, hw, { side: 0, surface, kerb: scaleColor(surface[1], 0.8) });
-
-/** Flower beds: drifts of bushes, each drift its own colour, in banks across the lawn rather than scattered singly. */
-function flowers(k, x0, y0, w, h, cols, n, seed) {
-  const R = rng(seed);
-  const { img } = k;
-  const drifts = [];
-  for (let d = 0; d < Math.max(3, Math.round(n / 14)); d++) drifts.push([x0 + R() * w, y0 + R() * h, 5 + R() * 12, 2 + R() * 4, R() * 3.14]);
-  for (let i = 0; i < n; i++) {
-    const [dx, dy, drx, dry, rot] = drifts[i % drifts.length];
-    const a = R() * 6.283;
-    const q0 = Math.sqrt(R());
-    const ax = Math.cos(a) * drx * q0;
-    const ay = Math.sin(a) * dry * q0;
-    const x = dx + ax * Math.cos(rot) - ay * Math.sin(rot);
-    const y = dy + ax * Math.sin(rot) + ay * Math.cos(rot);
-    if (x < x0 || x > x0 + w || y < y0 || y > y0 + h || k.isRes(x, y) || k.wet(x, y)) continue;
-    const c = cols[(drifts.indexOf(drifts[i % drifts.length]) * 3 + (R() < 0.2 ? 1 : 0)) % cols.length];
-    const CX = Math.round(x * S);
-    const CY = Math.round(y * S);
-    const r = 2.5 + R() * 2;
-    for (let j = -r; j <= r + 1; j++)
-      for (let q = -r; q <= r; q++) {
-        if (q * q + j * j > r * r) continue;
-        img.tintPx(CX + q + 1, CY + j + 2, 0.76);
-      }
-    for (let j = -r; j <= r; j++)
-      for (let q = -r; q <= r; q++) {
-        if (q * q + j * j > r * r) continue;
-        const g = hashPx(CX + q, CY + j, seed);
-        img.px(CX + q, CY + j, g < 0.28 ? 0x2e5032 : g < 0.4 ? 0x3e6a3e : q + j < 0 ? scaleColor(c, 1.12) : g < 0.75 ? c : scaleColor(c, 0.82));
-      }
-  }
-}
 
 /** A Western house of the foreign settlement: hipped roof, white or stone walls, shuttered sashes, a veranda of posts. */
 function westernHouse(k, x, footU, w, rh, fh, opt = {}) {
@@ -577,15 +542,193 @@ export function paintOura(k) {
   // Mitsubishi No. 2 Dock House: two storeys of verandas, and the small Walker House
   westernHouse(k, 104, 2414, 52, 15, 16, { floors: 2, ramp: C.slate, slate: true, shutter: 0x4a7a6a, rail: 0x8aba9a, postGap: 4, chimneys: [112, 146] });
   westernHouse(k, 70, 2412, 28, 12, 9, { ramp: C.kawara, wall: 0xe8dcc4, chimneys: [76] });
-  // planting: palms, camellias, cherry, hydrangea and azalea beds, lamps and benches along the walks
-  for (const [x, u] of [[92, 2240], [150, 2250], [84, 2350], [116, 2360], [158, 2440], [96, 2452]]) k.palm(x, Y(u), 6, x + u);
-  k.grove(66, 166, 2210, 2560, 44, [CAMELLIA, CAMPHOR, SAKURA, SAKURA], 2211, 3, 5);
-  flowers(k, 66, Y(2290) + 2, 100, 80, HYDRANGEA, 240, 3);
-  flowers(k, 66, Y(2400) + 2, 100, 100, AZALEA, 260, 4);
-  flowers(k, 66, Y(2480) + 2, 100, 70, HYDRANGEA, 200, 5);
-  flowers(k, 66, Y(2560) + 2, 100, 70, AZALEA, 180, 6);
-  // the empty corner below the cathedral: camellias, a little grove, a stone wall's end
-  k.grove(66, 114, 2108, 2196, 16, [CAMELLIA, CAMPHOR, SAKURA], 2109, 3, 5);
+  // ---- the garden as a garden: each terrace's walk winds from one set of steps to the next through planned beds
+  const GRAVEL = [0x8e8674, 0xa09886, 0xb2aa98, 0xc2baa8];
+  /** A curve through the given points (they stay where they are, so the walks still meet what they join). */
+  const curved = (pts) => {
+    if (pts.length < 3) return pts;
+    const out = [];
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const p0 = pts[Math.max(0, i - 1)];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[Math.min(pts.length - 1, i + 2)];
+      for (let q = 0; q < 6; q++) {
+        const t = q / 6;
+        const at = (a, b, c, d) => 0.5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t);
+        out.push([at(p0[0], p1[0], p2[0], p3[0]), at(p0[1], p1[1], p2[1], p3[1])]);
+      }
+    }
+    out.push(pts[pts.length - 1]);
+    return out;
+  };
+  const WALKS = [
+    // north of the Alt and Ringer houses: up between them from the lower path, round a fountain, on to steps through the wall
+    [[115, 2206], [115, 2252], [115, 2259]],
+    [[72, 2262], [92, 2270], [108, 2262], [122, 2262], [138, 2270], [152, 2262], [156, 2280], [152, 2287]],
+    // behind the Glover house: from the west steps, under the wisteria, down past its east wing to the statue
+    [[68, 2372], [90, 2381], [116, 2375], [140, 2383], [160, 2372], [158, 2334], [138, 2322], [130, 2300]],
+    // above the Dock House: from the west walk to the bandstand and on to the top landing
+    [[68, 2412], [65, 2440], [88, 2456], [112, 2461], [140, 2454], [160, 2462], [166, 2484]],
+    // the top lawn: out to the lookout over the harbour; and round to the east
+    [[126, 2516], [110, 2532], [92, 2538]],
+    [[126, 2510], [146, 2520], [160, 2508], [166, 2490]],
+    // from the Oura stop along the wood's edge to the Lourdes grotto
+    [[r1X(2152) + R1_HW + 2, 2152], [78, 2148], [94, 2140], [108, 2146]],
+  ].map(curved);
+  for (const w of WALKS) k.road(w, 1.3, { side: 0, surface: GRAVEL, kerb: 0x6a6a5a });
+  // steps through the wall from the fountain walk to the path above
+  k.stairs(150, Y(2298), 5, 12);
+  // flowering hedges banked along the foot of each retaining wall, as they plant them on this hill
+  for (const [a, b, u0, col, seed2] of [
+    [76, 148, 2278, 0x5a7ae0, 2601], [156, 166, 2278, 0x8a6ae0, 2602],
+    [76, 166, 2390, 0xe85a90, 2603],
+    [72, 166, 2470, 0x7a6ae8, 2604],
+  ]) k.hedge(a, b, u0, u0 + 7, seed2, col, 0.68);
+  /** A bed cut in the lawn: a clipped box edge, a band of one flower round another. */
+  const bed = (x, u, w, h, outer, inner, seed2) => {
+    img.fine(x, Y(u + h), w, h, (X, Yy, xx, yy) => {
+      const e = Math.min(xx - x, x + w - xx, yy - Y(u + h), Y(u) - yy);
+      if (e < 0.5) return C.granite[2];
+      if (e < 1.1) return (X + Yy) % 3 ? 0x2a4a2c : 0x3a5a36;
+      const g = hashPx(X >> 1, Yy >> 1, seed2);
+      const c = e < 2.6 ? outer : inner;
+      if (g < 0.1) return 0x2e5032;
+      return g < 0.16 ? 0xfff0f4 : g < 0.66 ? c : scaleColor(c, 0.82);
+    });
+    k.reserve(x, Y(u + h), w, h);
+  };
+  // the parterre in front of the Glover house, symmetrical round its steps
+  bed(84, 2302, 18, 8, 0xf0e4c0, 0xd85a70, 2611);
+  bed(106, 2302, 18, 8, 0xf0e4c0, 0xd85a70, 2612);
+  bed(84, 2313, 18, 7, 0x8a6ae0, 0xf0d060, 2613);
+  bed(106, 2313, 18, 7, 0x8a6ae0, 0xf0d060, 2614);
+  // along the fountain walk, along the upper walks
+  for (const [x, u, w, h, a, b] of [
+    [78, 2248, 12, 7, 0xf0e4c0, 0x5a7ae0], [96, 2246, 10, 7, 0xf0e4c0, 0x8a6ae0], [128, 2246, 12, 7, 0xf0e4c0, 0x5a7ae0], [146, 2248, 10, 7, 0xf0e4c0, 0x8a6ae0],
+    [82, 2360, 12, 6, 0xe85a90, 0xf8e8f0], [98, 2386, 14, 6, 0xf0d060, 0xe85a70], [128, 2388, 14, 6, 0xf0d060, 0xe85a70], [146, 2360, 8, 8, 0xe85a90, 0xf8e8f0],
+    [78, 2444, 12, 6, 0xe85a90, 0xf0d060], [128, 2441, 14, 5, 0xe85a70, 0xf0e4c0], [146, 2466, 12, 5, 0xe85a90, 0xf0d060],
+    [132, 2524, 14, 7, 0xf0d060, 0xe85a70], [100, 2518, 8, 6, 0xf0d060, 0xe85a90], [150, 2496, 12, 6, 0xe85a90, 0xf8e8f0],
+  ]) bed(x, u, w, h, a, b, x * 3 + u);
+  // the fountain: a stone basin at the walks' meeting, its jet and ring of ripples
+  {
+    const FU = 2262;
+    const fy = Y(FU);
+    img.fine(108, fy - 6, 14, 12, (X, Yy, x, y) => {
+      const d = Math.hypot((x - 115) / 7, (y - fy) / 5.4);
+      if (d > 1) return null;
+      if (d > 0.82) return Math.floor(Math.atan2(y - fy, x - 115) * 8) % 2 ? C.granite[4] : C.granite[3];
+      return hashPx(X >> 1, Yy, 2621) < 0.14 ? 0xb8dce4 : rampColor([0x1e4a5a, 0x2a5e6e, 0x3a7482], 0.2 + (y - fy + 5) * 0.06, X, Yy);
+    });
+    k.reserve(108, fy - 6, 14, 12);
+    const jet = [0, 1, 2].map((f) => k.sprite(8, 12, FU, (r) => {
+      for (let q = 0; q < 26; q++) {
+        const a = (q * 2.399 + f) % 6.283;
+        const t = ((q * 0.137 + f * 0.33) % 1);
+        const h = 30 * t * (2 - t);
+        r.px(12 + Math.cos(a) * t * 8, 32 - h, 0xe8f6fa, 0.82);
+      }
+      for (let j = 8; j < 34; j++) r.px(12, j, 0xf0fafc, 0.6);
+    }, false));
+    kit.loop(111, FU + 9, jet, { fps: 6, fx: 1 });
+  }
+  // the wisteria pergola over the walk behind the house: posts, beams, its long purple racemes hanging
+  objects.push({
+    y: Y(2374),
+    shadow: () => k.shadowRect(100, Y(2382), 34, 8, 0.4),
+    draw: () => {
+      const X0 = 100 * S;
+      const WW = 32 * S;
+      const Yb = Y(2374) * S;
+      for (let i = 0; i <= WW; i += 24) for (const q of [0, -24]) for (let j = 0; j < 18; j++) img.px(X0 + i, Yb + q - j, j < 2 ? C.wood[3] : C.wood[1]);
+      for (const q of [-18, -42]) for (let i = -3; i < WW + 3; i++) for (let j = 0; j < 2; j++) img.px(X0 + i, Yb + q + j, j ? C.wood[0] : C.wood[3]);
+      for (let i = 0; i < WW; i++)
+        for (let j = -44; j < -18; j++) {
+          const g = hashPx(i >> 1, (j + 60) >> 1, 2631);
+          if (g < 0.4) continue;
+          img.px(X0 + i, Yb + j, g < 0.55 ? 0x3e6a3e : g < 0.82 ? 0x8a6ae0 : 0xb89af0);
+        }
+      for (let i = 2; i < WW; i += 5) {
+        const n = 4 + Math.floor(hashPx(i, 1, 2632) * 9);
+        for (let j = 0; j < n; j++) img.px(X0 + i, Yb - 18 + j, j % 2 ? 0x8a6ae0 : 0xb89af0);
+      }
+    },
+  });
+  // the bandstand on the walk above the Dock House: white posts, a slate roof, a little dome
+  {
+    const CX = 112;
+    const yb = Y(2466);
+    k.fill(CX - 8, yb - 8, 16, 11, C.granite, 2640, 3);
+    objects.push({
+      y: yb + 2,
+      shadow: () => k.shadowEllipse(CX + 3, yb, 10, 4, 0.5),
+      draw: () => {
+        const X = CX * S;
+        const Yb = yb * S;
+        for (const i of [-18, -6, 6, 18]) for (let j = 0; j < 21; j++) img.px(X + i, Yb - j, j < 2 ? 0xc8c4b8 : 0xf8f4ea);
+        for (let i = -21; i <= 21; i++) for (let j = 0; j < 3; j++) img.px(X + i, Yb - 21 - j, j ? 0xd8d4c8 : 0xfffcf4);
+        for (let j = 0; j < 16; j++) {
+          const hw = 24 - j * 1.3;
+          for (let i = -hw; i <= hw; i++) {
+            const q = i / hw;
+            img.px(X + i, Yb - 24 - j, q < -0.3 ? C.slate[3] : q < 0.4 ? C.slate[2] : C.slate[1]);
+          }
+        }
+        img.discPx(X, Yb - 41, 2, C.gold);
+        pool(CX, yb - 2, 8, 0xffe4b0, 0.08 + night(2466) * 0.2);
+      },
+    });
+    k.reserve(CX - 8, yb - 8, 16, 11);
+    k.crowd(CX - 6, yb - 2, 12, 2, 5);
+  }
+  // the lookout at the end of the top walk: flagged, a rail along the bank, a telescope, people pointing out the harbour
+  {
+    const ly = Y(2538);
+    k.fill(80, ly - 5, 14, 10, C.granite, 2650, 3);
+    for (let X = 79 * S; X < 94 * S; X++) for (let j = 0; j < 3; j++) img.px(X, (ly + 5) * S + j, j === 0 ? 0xe8e4d8 : X % 9 < 2 ? 0x5a5e66 : 0x8a8a84);
+    k.bench(82, ly - 4, 5);
+    k.reserve(79, ly - 5, 15, 11);
+    k.crowd(83, ly - 1, 9, 3, 4);
+  }
+  // the grotto: rough boulders in an arch, a white figure in it, candles lit before it, someone kneeling
+  {
+    const gu = 2150;
+    k.boulder(106, gu + 8, 5, 3, 2661, 0.7, C.rock);
+    k.boulder(114, gu + 7, 5, 3, 2662, 0.7, C.rock);
+    k.boulder(110, gu + 12, 6, 3, 2663, 0.8, C.rock);
+    objects.push({
+      y: Y(gu) + 1,
+      draw: () => {
+        const X = 110 * S;
+        const Yb = Y(gu) * S;
+        for (let j = 0; j < 27; j++) for (let i = -9; i <= 9; i++) if ((i / 9) ** 2 + ((j - 6) / 21) ** 2 < 1) img.px(X + i, Yb - j, 0x1a1a1e);
+        for (let j = 0; j < 12; j++) for (let i = -2; i <= 2; i++) img.px(X + i, Yb - 4 - j, i < 0 ? 0xffffff : 0xd8d4c8);
+        img.discPx(X, Yb - 18, 2, 0xf8f4ea);
+        for (let i = -9; i <= 9; i += 3) glowPx(X + i, Yb - (i % 2 ? 1 : 0), 0xffd070, 0.95);
+        pool(110, Y(gu) - 2, 7, 0xffc878, 0.14 + night(gu) * 0.24);
+      },
+    });
+    k.reserve(103, Y(gu + 14), 16, 16);
+    k.crowd(104, Y(gu) + 1, 12, 2, 3);
+  }
+  // specimen trees with room round them, palms by the houses, a few camellias at the walks' bends; no more scattered flowers
+  for (const [x, u] of [[163, 2252], [84, 2350], [116, 2352], [158, 2440], [96, 2452], [90, 2256]]) k.palm(x, Y(u), 6, x + u);
+  for (const [x, u, r, kind] of [[90, 2286, 5.5, CAMPHOR], [134, 2252, 4, SAKURA], [78, 2238, 3.4, SAKURA], [160, 2240, 4.5, CAMELLIA], [72, 2388, 5.5, CAMPHOR], [162, 2392, 5, CAMPHOR], [150, 2346, 3.6, SAKURA], [92, 2474, 5, CAMPHOR], [130, 2478, 4, SAKURA], [72, 2476, 3.4, CAMELLIA], [106, 2506, 3.6, SAKURA], [122, 2546, 3.4, CAMELLIA], [152, 2532, 5, CAMPHOR], [162, 2528, 3.4, SAKURA], [78, 2522, 4.5, CAMPHOR], [88, 2274, 4.5, CAMPHOR], [134, 2274, 4.5, CAMELLIA], [162, 2268, 3.6, SAKURA], [76, 2366, 4, CAMELLIA], [130, 2362, 3.4, SAKURA], [150, 2392, 3.6, SAKURA], [96, 2466, 3.6, SAKURA], [126, 2466, 3.6, CAMELLIA], [162, 2448, 4, CAMPHOR], [142, 2500, 3.6, CAMELLIA]]) {
+    if (!k.anyRes(x - 1, Y(u) - 1, 2, 2)) k.tree(x, Y(u), r, kind, x * 7 + u);
+  }
+  k.grove(66, 166, 2490, 2560, 7, [CAMELLIA, SAKURA], 2211, 3, 4.5);
+  for (const [x, u] of [[92, 2274], [140, 2274], [88, 2383], [142, 2385], [86, 2458], [142, 2456], [112, 2536], [150, 2522], [80, 2149]]) k.stoneLantern(x, u, true);
+  // along the walks: benches, little groups stopping to look at the beds, someone with a camera
+  for (const [x, u] of [[94, 2276], [132, 2276], [120, 2386], [96, 2462], [132, 2462], [116, 2520]]) k.bench(x, Y(u), 5);
+  k.strollers(115, 2264, 36, 4, 4);
+  k.strollers(110, 2378, 34, 4, 4);
+  k.strollers(110, 2458, 30, 3, 3);
+  k.strollers(146, 2514, 12, 4, 2);
+  k.walkers(WALKS[1].map(([x, u]) => [x, u + 1]), 2, 2262, { sp: 2.4, gap: 60 });
+  k.walkers(WALKS[3].map(([x, u]) => [x, u + 1]), 2, 2450, { sp: 2.4, gap: 70 });
+  k.walkers(WALKS[6].map(([x, u]) => [x, u + 1]), 1, 2150, { sp: 2.4, gap: 60 });
+  // the corner below the cathedral, thick with camellias and cherries round the walk to the grotto
+  k.grove(66, 114, 2108, 2196, 40, [CAMELLIA, CAMPHOR, SAKURA], 2109, 3, 5);
   for (const u of [2208, 2300, 2410, 2490]) {
     for (let x = 80; x < 166; x += 22) k.streetLamp(x, u);
     for (let x = 90; x < 160; x += 44) k.bench(x, Y(u + 3), 5);

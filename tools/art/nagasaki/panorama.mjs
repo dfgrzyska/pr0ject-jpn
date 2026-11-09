@@ -1343,5 +1343,5 @@ export function buildPanorama() {
       const q = rgb(mix(0x2a3852, 0x8ea0bc, lit));
       clouds.setRGBA(x, y, q[0], q[1], q[2], Math.round(a * 255));
     }
-  return { sky, clouds, city, near, ...Object.fromEntries(lights.map((r, i) => [`lights${i}`, r])) };
+  return { sky: sky.crop(0, 0, W, 290 * S), clouds, city, near, ...Object.fromEntries(lights.map((r, i) => [`lights${i}`, r])) };
 }

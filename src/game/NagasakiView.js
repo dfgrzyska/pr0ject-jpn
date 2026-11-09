@@ -21,6 +21,10 @@ export class NagasakiView {
     this.animate = !new URLSearchParams(location.search).has('noprops');
     const names = ['sky', 'city', 'lights0', 'lights1', 'lights2', 'lights3', 'near'];
     const d = DEPTH.mid - 0.5;
+    // (each layer is stored from its first used row: where that row belongs, in the game's pixels)
+    const top = scene.cache?.json?.get('bg_stage8')?.panoramaTop ?? {};
+    this.tops = names.map((n) => (top[n] ?? 0) / 3);
+    this.cloudTop = (top.clouds ?? 0) / 3;
     // (the layers are painted at 3x the game's resolution)
     this.layers = names.map((n, i) => scene.add.image(0, 0, `view_stage8_${n}`).setOrigin(0).setScale(1 / 3).setDepth(d + i * 0.01).setVisible(false));
     this.points = Array.from({ length: 36 }, (_, i) => scene.add.image(0, 0, 'props_stage8', `view_car_${i % 2}`).setScale(1 / 3).setDepth(d + 0.055).setVisible(false));
@@ -94,7 +98,7 @@ export class NagasakiView {
       const base = i === this.layers.length - 1 ? Math.min(baseY, s.H - 420) : baseY;
       const y = i === 0 ? Math.min(0, baseY) : Math.round((base + (1 - e) * SHIFT[i]) * 3) / 3;
       const glow = isLight ? Math.min(1, 0.55 + 0.18 * Math.sin(t * (0.45 + i * 0.09) + i * 2) + 0.1 * Math.sin(t * 1.7 + i) + this.flare * 0.5) : 1;
-      this.layers[i].setPosition(x, y).setAlpha(glow);
+      this.layers[i].setPosition(x, y + this.tops[i]).setAlpha(glow);
     }
     const cx = Math.round((-18 - this.px * SWAY[1]) * 3) / 3;
     const cy = Math.round((baseY + (1 - e) * SHIFT[1]) * 3) / 3;
@@ -118,7 +122,7 @@ export class NagasakiView {
     const skyX = Math.round((-18 - this.px * SWAY[0]) * 3) / 3;
     const skyY = Math.min(0, baseY);
     const drift = (t * 1.1) % 216;
-    this.clouds.forEach((c, i) => c.setVisible(true).setPosition(Math.round((skyX - drift + i * 216) * 3) / 3, skyY));
+    this.clouds.forEach((c, i) => c.setVisible(true).setPosition(Math.round((skyX - drift + i * 216) * 3) / 3, skyY + this.cloudTop));
     // the ropeway's two cars on their cables, one going down as the other comes up, slowing into each station;
     // nearer means bigger, and the summit's trees take them at the top
     this.gondolas.forEach((g2, i) => {

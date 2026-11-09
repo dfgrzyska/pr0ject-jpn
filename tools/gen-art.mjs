@@ -129,7 +129,20 @@ for (const { id, art } of STAGES) {
   if (art.buildPanorama) {
     const panorama = art.buildPanorama();
     mid.meta.panorama = Object.keys(panorama);
-    for (const [name, raster] of Object.entries(panorama)) write(`bg/${id}/view_${name}.png`, raster.toPNG());
+    // a layer is only as tall as what is on it: its empty rows at the top and bottom are not stored, its top noted for the game
+    mid.meta.panoramaTop = {};
+    for (const [name, raster] of Object.entries(panorama)) {
+      const used = (y) => {
+        for (let x = 0; x < raster.w; x++) if (raster.data[(y * raster.w + x) * 4 + 3]) return true;
+        return false;
+      };
+      let top = 0;
+      let end = raster.h;
+      while (top < end - 1 && !used(top)) top++;
+      while (end - 1 > top && !used(end - 1)) end--;
+      mid.meta.panoramaTop[name] = top;
+      write(`bg/${id}/view_${name}.png`, raster.crop(0, top, raster.w, end - top).toPNG());
+    }
   }
   write(`bg/${id}/meta.json`, Buffer.from(JSON.stringify(mid.meta)));
   if (preview) {
