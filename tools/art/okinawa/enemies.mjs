@@ -6,6 +6,7 @@
 // and the two terracotta shisa of the Tsuboya kilns with their spiral mane curls.
 // Every frame is three times the old one's size (old mask coordinate m -> fine (m + 1) * 3).
 import { HiSprite, S, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
+import { shisa } from './shisa540.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -287,71 +288,7 @@ export function manta(f) {
   return s.render();
 }
 
-// ---------------------------------------------------------------- boss: the shisa pair (45 x 43 -> 135 x 129)
-export function shisa(open, f) {
-  const s = new HiSprite(135, 129, RAMPS);
-  const cx = 67.5;
-  const clay = { pat: mix2(speckle({ amt: 0.3, dark: 0.12, light: 0.06, seed: open ? 3 : 4 }), mottle({ amt: 0.16, scale: 9 })) };
-  const turn = (f / 4) * TAU;
-  // the mane: a crown of spiral curls round the head, each turning (the frames), glazed dark
-  const curls = [];
-  for (let i = 0; i < 15; i++) {
-    const a = Math.PI * 0.95 + (i / 14) * Math.PI * 1.1;
-    curls.push([cx + Math.cos(a) * 40.5, 54 + Math.sin(a) * 36]);
-  }
-  for (const [x, y] of curls) s.ellipse(x, y, 10.5, 10.5, 'k', { pat: clay.pat });
-  for (const [x, y] of curls) {
-    for (let a = 0; a < Math.PI * 3.2; a += 0.06) {
-      const r = 1 + a * 0.85;
-      s.px(x + Math.cos(a + turn) * r, y + Math.sin(a + turn) * r, 0xd8a030, 0.9);
-    }
-    s.dot(x, y, 1.6, 0xffd040);
-  }
-  // the body and the front legs, a gold ball under the right paw of the open-mouthed one
-  s.ellipse(cx, 96, 30, 28, 'q', clay);
-  for (const dx of [-21, 21]) {
-    s.poly([[cx + dx - 10, 88], [cx + dx + 10, 88], [cx + dx + 9, 117], [cx + dx - 9, 117]], 'q', { ...clay, flat: 0.55 });
-    for (let k = 0; k < 4; k++) s.line(cx + dx - 7 + k * 5, 112, cx + dx - 7 + k * 5, 117, 0x5a2e18, 1);
-    // spiral curls on the legs
-    for (let a = 0; a < Math.PI * 2.4; a += 0.08) s.px(cx + dx + Math.cos(a) * (1 + a * 0.75), 98 + Math.sin(a) * (1 + a * 0.75), 0x5a2e18, 0.8);
-  }
-  if (open) {
-    s.ellipse(cx + 21, 118, 8, 7.5, 'y', { bias: 0.05 });
-    for (let a = 0; a < TAU; a += 0.5) s.line(cx + 21, 118, cx + 21 + Math.cos(a) * 7, 118 + Math.sin(a) * 6.5, 0xb07a10, 1, 0.5);
-  }
-  // ears, the head, curling brows, the big bulging eyes
-  for (const sx of [-1, 1]) s.ellipse(cx + sx * 27, 22, 9, 9, 'q', clay);
-  s.ellipse(cx, 54, 32, 30, 'q', clay);
-  for (const sx of [-1, 1]) {
-    for (let k = 0; k < 3; k++) s.ellipse(cx + sx * (12 + k * 7), 36 - k * 1.5, 4.6, 4, 'k', clay);
-    s.ellipse(cx + sx * 18, 48, 9, 8.4, 'W', { flat: 0.75 });
-    s.dot(cx + sx * (16 + (f % 2)), 49, 4.4, f % 4 === 3 ? 0xd02020 : INK);
-    s.dot(cx + sx * 15, 46.5, 1.4, 0xffffff);
-    for (let a = 0; a < TAU; a += 0.05) s.px(cx + sx * 18 + Math.cos(a) * 9.4, 48 + Math.sin(a) * 8.8, 0x3a1c10);
-  }
-  // the broad nose with its gold ridge and big nostrils
-  s.ellipse(cx, 64, 11, 6.5, 'q', { ...clay, bias: 0.08 });
-  s.line(cx - 9, 60, cx + 9, 60, 0xd8a030, 1);
-  for (const sx of [-1, 1]) s.ellipse(cx + sx * 5, 66, 2.6, 2, 'K', { flat: 0.1 });
-  if (open) {
-    // A: the mouth wide open, rows of teeth, fangs, the tongue
-    s.poly([[cx - 22, 70], [cx + 22, 70], [cx + 18, 88], [cx - 18, 88]], 'K', { flat: 0.12 });
-    s.poly([[cx - 14, 79], [cx + 14, 79], [cx + 10, 87], [cx - 10, 87]], 'R', { flat: 0.45 });
-    for (let x = cx - 19; x < cx + 19; x += 4.5) {
-      s.poly([[x, 70.5], [x + 3.5, 70.5], [x + 1.75, 74]], 'W', { flat: 0.75 });
-      s.poly([[x + 1, 88], [x + 4, 88], [x + 2.5, 85]], 'W', { flat: 0.65 });
-    }
-    for (const sx of [-1, 1]) s.poly([[cx + sx * 20, 70.5], [cx + sx * 16, 70.5], [cx + sx * 18, 79]], 'W', { flat: 0.85 });
-  } else {
-    // Un: the mouth shut on its teeth, the fangs showing at the corners
-    s.poly([[cx - 22, 74], [cx + 22, 74], [cx + 20, 81], [cx - 20, 81]], 'K', { flat: 0.12 });
-    for (let x = cx - 19; x < cx + 19; x += 4.5) s.poly([[x, 75], [x + 3.6, 75], [x + 3.6, 80], [x, 80]], 'W', { flat: 0.7 });
-    for (const sx of [-1, 1]) s.poly([[cx + sx * 21, 81], [cx + sx * 17, 81], [cx + sx * 19, 74]], 'W', { flat: 0.85 });
-  }
-  // whisker curls at the cheeks
-  for (const sx of [-1, 1]) for (let a = 0; a < Math.PI * 2.4; a += 0.08) s.px(cx + sx * 27 + Math.cos(a) * (1 + a * 0.6), 66 + Math.sin(a) * (1 + a * 0.6), 0x5a2e18, 0.8);
-  return s.render();
-}
+// ---------------------------------------------------------------- boss: the shisa pair (shisa540.mjs)
 
 export function okinawaEnemies(add) {
   for (let f = 0; f < 4; f++) {
