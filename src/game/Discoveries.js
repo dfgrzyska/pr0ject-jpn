@@ -4,6 +4,7 @@ import { STAGES } from '../data/stages.js';
 import { getLang } from '../i18n.js';
 import { pixelText } from './Hud.js';
 import { INK_FONT } from '../scenes/Boot.js';
+import { portrait } from './enemyArt.js';
 
 let storage;
 try { storage = globalThis.localStorage; } catch { /* private mode */ }
@@ -152,9 +153,11 @@ export class DiscoveryBook {
     g.lineStyle(1, 0xbba782).strokeRect(51, 55, 78, 63);
     this.title.setText(food ? words('SMAKI JAPONII', 'TASTES OF JAPAN') : words('ALBUM YOKAI', 'YOKAI ALBUM')).setPosition(90, 24);
     this.count.setText(`${this.entries.filter((entry) => discoveries.has(entry.id)).length} / ${this.entries.length}`).setPosition(90, 43);
-    this.art.setFrame(e.frame).setPosition(90, 87).setVisible(known).setScale(1);
-    const fit = Math.min(70 / this.art.width, 55 / this.art.height);
-    this.art.setScale(fit < 1 ? fit : Math.min(3, Math.floor(fit)));
+    // (a yōkai's portrait drawn at 540 px when there is one: fitted in logical pixels, then shown at its own scale)
+    const base = portrait(this.scene, this.art, e.frame);
+    this.art.setPosition(90, 87).setVisible(known).setScale(base);
+    const fit = Math.min(70 / (this.art.width * base), 55 / (this.art.height * base));
+    this.art.setScale(base * (fit < 1 ? fit : Math.min(3, Math.floor(fit))));
     this.secret.setPosition(90, 87).setVisible(!known);
     this.name.setText(known ? e.name : '???').setPosition(90, 128);
     this.city.setText(`${city.name}${food ? ` / ${e.place}` : ''}`).setPosition(90, 143);

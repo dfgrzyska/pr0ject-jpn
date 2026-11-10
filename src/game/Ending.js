@@ -5,6 +5,7 @@ import { INK_FONT } from '../scenes/Boot.js';
 import { pixelText } from './Hud.js';
 import { JapanMap } from './JapanMap.js';
 import { INK } from './Stamps.js';
+import { portrait } from './enemyArt.js';
 
 const W = VIEW.width;
 const D = DEPTH.overlay + 2;
@@ -164,7 +165,11 @@ export class Ending {
     this.groups = this.order.map((i, k) => {
       const st = STAGES[i];
       const card = st.waves.find((w) => w.type === 'boss')?.card ?? [st.name, ''];
-      const kids = (BOSSES[st.id] ?? []).map(([f, dx, dy, flip]) => s.add.image(dx, dy, 'sprites', f).setFlipX(!!flip));
+      // (their portraits drawn at 540 px where there are any)
+      const kids = (BOSSES[st.id] ?? []).map(([f, dx, dy, flip]) => {
+        const img = s.add.image(dx, dy, 'sprites', f).setFlipX(!!flip);
+        return img.setScale(portrait(s, img, f));
+      });
       const c = this.add(s.add.container(W / 2, H + 60 + k * 128, kids).setDepth(D + 2));
       const name = this.text(W / 2, 0, card[0], 0xffe080);
       const sub = this.text(W / 2, 0, card[1], 0xb0aec0);

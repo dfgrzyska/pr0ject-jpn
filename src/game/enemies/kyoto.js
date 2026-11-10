@@ -3,6 +3,7 @@
 import Phaser from 'phaser';
 import { DEPTH, VIEW } from '../../config.js';
 import { volley } from '../../difficulty.js';
+import { tailFrames } from '../enemyArt.js';
 import { slow, normal, fast, TAU, EXTRAS } from './shared.js';
 
 // the tanuki's shapeshifted copies: one hit and they turn back into leaves
@@ -172,7 +173,7 @@ export const kyoto = {
    */
   spawnKyubi(w, base) {
     const g = { kind: 'kyubi', state: 'dormant', t: 0, phase: 0, step: 0, timer: 1, parts: [], enraged: false, defeated: false, awake: false };
-    Object.assign(g, { home: w.x, homeY: 66, sway: 0, n: 0, tails: [], poseT: 0, blinkT: 2, stage: 1, sats: [], satT: 1, satI: 0 });
+    Object.assign(g, { home: w.x, homeY: 66, sway: 0, n: 0, tails: [], poseT: 0, blinkT: 2, stage: 1, sats: [], satT: 1, satI: 0, tailFrames: tailFrames() });
     const e = this.pool.spawn('kyubi_idle', g.home, g.homeY, { ...base, role: 'body', hp: KYUBI_HP, maxHp: KYUBI_HP, radius: 13, group: g, ghost: true, invuln: true });
     e.setDepth(DEPTH.air - 0.1).setAlpha(0);
     for (let i = 0; i < 9; i++) {
@@ -307,16 +308,17 @@ export const kyoto = {
         fl.t += dt;
         tl.x += fl.vx * dt;
         tl.y += fl.vy * dt;
-        tl.setAlpha(Math.max(0, 1 - fl.t / 0.6)).setScale(Math.max(0.2, 1 - fl.t)).setTint(0x3060c0).setTintMode(Phaser.TintModes.ADD);
-        if (Math.random() < dt * 30) s.fx.foxfire(tl.x + T.x * 0.6 * tl.scaleX, tl.y + (T.y - 7) * 0.6 * tl.scaleX, 1, 3);
+        tl.setAlpha(Math.max(0, 1 - fl.t / 0.6)).setScale(Math.max(0.2, 1 - fl.t) * tl.base).setTint(0x3060c0).setTintMode(Phaser.TintModes.ADD);
+        const sc = tl.scaleX / tl.base;
+        if (Math.random() < dt * 30) s.fx.foxfire(tl.x + T.x * 0.6 * sc, tl.y + (T.y - 7) * 0.6 * sc, 1, 3);
         if (fl.t >= 0.6) this.tailPool.kill(tl);
         continue;
       }
       if (!tl.grown) continue;
       tl.grown = Math.min(1, tl.grown + dt / 0.2);
       const lag = g.state === 'fight' ? -Math.cos(g.sway) * (g.enraged ? 0.26 : 0.18) + Math.sin(g.t * 4.5 - Math.abs(tl.i - 4) * 0.55) * 0.08 : 0;
-      tl.setVisible(true).setPosition(e.x + lag * 8, e.y + 7).setScale(0.3 + 0.7 * tl.grown).setRotation(lag * (0.65 + Math.abs(tl.i - 4) * 0.12)).setFlipX(T.flip).setAlpha(e.alpha);
-      tl.setFrame(`${T.frame}_${(f + (T.flip ? 1 : 0) + (tl.i % 2)) % 3}`);
+      tl.setVisible(true).setPosition(e.x + lag * 8, e.y + 7).setScale((0.3 + 0.7 * tl.grown) * tl.base).setRotation(lag * (0.65 + Math.abs(tl.i - 4) * 0.12)).setFlipX(T.flip).setAlpha(e.alpha);
+      tl.setFrame(`${T.frame}_${(f + (T.flip ? 1 : 0) + (tl.i % 2)) % g.tailFrames}`);
       if (e.flash > 0) tl.setTint(0x808080).setTintMode(Phaser.TintModes.ADD);
       else if (g.enraged) {
         const k = 0.6 + 0.4 * Math.sin(g.t * 9 + tl.i);

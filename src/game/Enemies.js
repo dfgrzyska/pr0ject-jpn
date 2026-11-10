@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BEANS, CAMPAIGN, DEPTH, ENEMIES, FAIR, HEAVY, PHASE, VIEW, WEAPONS } from '../config.js';
 import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
+import { enemyTexture } from './enemyArt.js';
 import { SKINS } from './skins.js';
 import { slow, normal, fast, DOWN, TAU, EXTRAS } from './enemies/shared.js';
 import { DAIMONJI, kyoto } from './enemies/kyoto.js';
@@ -28,15 +29,16 @@ export class Enemies {
   constructor(scene, skin = 'kyoto') {
     this.scene = scene;
     this.skin = SKINS[skin] ?? SKINS.kyoto;
-    this.pool = new Pool(scene, DEPTH.air);
-    this.heads = new Pool(scene, DEPTH.ground + 0.2);
-    this.wrecks = new Pool(scene, DEPTH.ground);
-    this.segPool = new Pool(scene, DEPTH.air - 0.12); // the octopus's tentacle segments
-    this.tailPool = new Pool(scene, DEPTH.air - 0.13); // Kyūbi's tails
+    // (the enemies' pools take a city's 540 px frames when its atlas is in: enemyArt.js)
+    this.pool = new Pool(scene, DEPTH.air, enemyTexture);
+    this.heads = new Pool(scene, DEPTH.ground + 0.2, enemyTexture);
+    this.wrecks = new Pool(scene, DEPTH.ground, enemyTexture);
+    this.segPool = new Pool(scene, DEPTH.air - 0.12, enemyTexture); // the octopus's tentacle segments
+    this.tailPool = new Pool(scene, DEPTH.air - 0.13, enemyTexture); // Kyūbi's tails
     this.heavy = null;
     this.bossGroup = null;
     this.dying = []; // bosses and heavies going down (goDown)
-    this.woundPool = new Pool(scene, DEPTH.air + 0.02);
+    this.woundPool = new Pool(scene, DEPTH.air + 0.02, enemyTexture);
     // telegraph lines (matchlock aim, Raijū's charge), redrawn every frame
     this.tele = scene.add.graphics().setDepth(DEPTH.airFx);
     // the journey gets harder city by city (CAMPAIGN): small fry tougher, shooters and turrets quicker
@@ -618,7 +620,7 @@ export class Enemies {
     const s = this.scene;
     const breathe = Math.floor(e.age * 1.25) % 2 ? 1 : 0;
     const rec = e.recoil || 0;
-    if (e.group?.kind !== 'volcano' && !e.oni) e.setOrigin(0.5, 0.5 + (rec - breathe) / e.height);
+    if (e.group?.kind !== 'volcano' && !e.oni) e.setOrigin(0.5, 0.5 + (rec - breathe) / e.displayHeight);
     if (e.group?.kind === 'kyubi') return; // (the fox shows its wounds by losing its tails)
     const frac = e.hp / e.maxHp;
     const lvl = frac < 1 / 3 ? 2 : frac < 2 / 3 ? 1 : 0;
@@ -641,16 +643,20 @@ export class Enemies {
   newWound(e) {
     const tex = this.scene.textures;
     const f = e.frame;
-    const h = e.oni ? Math.min(60, f.height) : f.height; // (the oni stands in the pond up to there)
+    const k = 1 / (e.base ?? 1); // texture pixels per logical one (3 for art drawn at 540 px)
+    const h = e.oni ? Math.min(60 * k, f.height) : f.height; // (the oni stands in the pond up to there)
     let ox = 0;
     let oy = 0;
+    // (sampled in texture pixels; the offsets kept in logical ones)
     for (let i = 0; i < 40; i++) {
-      const x = 4 + Math.floor(Math.random() * (f.width - 8));
-      const y = 4 + Math.floor(Math.random() * (h - 8));
-      const near = e.wounds.some((w) => Math.abs(w.ox - (x - f.width / 2)) + Math.abs(w.oy - (y - f.height / 2)) < 12);
-      if (!near && [[0, 0], [-3, 0], [3, 0], [0, -3], [0, 3]].every(([dx, dy]) => (tex.getPixelAlpha(x + dx, y + dy, e.texture.key, f.name) ?? 0) > 200)) {
-        ox = x - f.width / 2;
-        oy = y - f.height / 2;
+      const x = Math.round(4 * k) + Math.floor(Math.random() * (f.width - 8 * k));
+      const y = Math.round(4 * k) + Math.floor(Math.random() * (h - 8 * k));
+      const lx = (x - f.width / 2) / k;
+      const ly = (y - f.height / 2) / k;
+      const near = e.wounds.some((w) => Math.abs(w.ox - lx) + Math.abs(w.oy - ly) < 12);
+      if (!near && [[0, 0], [-3, 0], [3, 0], [0, -3], [0, 3]].every(([dx, dy]) => (tex.getPixelAlpha(x + dx * k, y + dy * k, e.texture.key, f.name) ?? 0) > 200)) {
+        ox = lx;
+        oy = ly;
         break;
       }
     }
@@ -799,7 +805,7 @@ export class Enemies {
         e.recoil *= Math.max(0, 1 - 18 * dt);
         if (e.recoil < 0.04) e.recoil = 0;
         if (!e.ground && e.type !== 'heavy' && e.type !== 'boss') {
-          e.setOrigin(0.5, e.recoil > 0 ? 0.5 + e.recoil / e.height : 0.5);
+          e.setOrigin(0.5, e.recoil > 0 ? 0.5 + e.recoil / e.displayHeight : 0.5);
         }
       }
       if (e.type === 'heavy' || e.type === 'boss') this.wounds(e, dt);

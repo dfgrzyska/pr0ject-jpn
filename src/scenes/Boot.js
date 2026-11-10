@@ -1,6 +1,11 @@
 import Phaser from 'phaser';
 import { keepForOffline } from '../pwa.js';
 import { installLegacyPixelGrid } from '../rendering.js';
+import { STAGES } from '../data/stages.js';
+import { CITY_ANIMS, registerEnemyAtlas, unregisterEnemyAtlas } from '../game/enemyArt.js';
+
+/** Whether a city's enemies are drawn at 540 px, in an atlas of their own (bg/<id>/enemies.png). */
+const enemyArt = (id) => STAGES.some((st) => st.id === id && st.enemyArt);
 
 export const FONT = 'pixel';
 /** The same letters without their dark outline: print on light paper (the stamp book). */
@@ -17,6 +22,7 @@ function queueStage(scene, id) {
   const tex = scene.textures;
   load.setPath('assets/');
   if (!tex.exists(`far_${id}`)) load.image(`far_${id}`, `bg/${id}/far.png`);
+  if (enemyArt(id) && !tex.exists(`enemies_${id}`)) load.atlas(`enemies_${id}`, `bg/${id}/enemies.png`, `bg/${id}/enemies.json`);
   const rest = (meta) => {
     for (const name of meta.panorama ?? []) if (!tex.exists(`view_${id}_${name}`)) load.image(`view_${id}_${name}`, `bg/${id}/view_${name}.png`);
     for (let i = 0; i < meta.chunks; i++) if (!tex.exists(`mid_${id}_${i}`)) load.image(`mid_${id}_${i}`, `bg/${id}/mid_${String(i).padStart(2, '0')}.png`);
@@ -34,7 +40,7 @@ function queueStage(scene, id) {
 export function stageReady(scene, id) {
   const meta = scene.cache.json.get(`bg_${id}`);
   const tex = scene.textures;
-  return Boolean(meta) && (meta.panorama ?? []).every(name => tex.exists(`view_${id}_${name}`)) && tex.exists(`far_${id}`) && (!meta.props || tex.exists(`props_${id}`)) && [...Array(meta.chunks).keys()].every((i) => tex.exists(`mid_${id}_${i}`));
+  return Boolean(meta) && (meta.panorama ?? []).every(name => tex.exists(`view_${id}_${name}`)) && tex.exists(`far_${id}`) && (!meta.props || tex.exists(`props_${id}`)) && (!enemyArt(id) || tex.exists(`enemies_${id}`)) && [...Array(meta.chunks).keys()].every((i) => tex.exists(`mid_${id}_${i}`));
 }
 
 export class Boot extends Phaser.Scene {
@@ -77,8 +83,16 @@ export class Boot extends Phaser.Scene {
     this.cache.bitmapFont.add(FONT, font('font'));
     this.cache.bitmapFont.add(INK_FONT, font('font_ink'));
 
-    const anim = (key, frames, frameRate, repeat = -1) =>
+    // (kept, so an animation a city's own atlas took over can come back when that atlas goes: cityArtOut)
+    this.legacyAnims = {};
+    this.cityAnims = {}; // key -> the city atlas it plays from now
+    const anim = (key, frames, frameRate, repeat = -1) => {
+      this.legacyAnims[key] = [frames, frameRate, repeat];
       this.anims.create({ key, frames: frames.map((frame) => ({ key: 'sprites', frame })), frameRate, repeat });
+    };
+    this.textures.on('addtexture', (key) => {
+      if (key.startsWith('enemies_')) this.cityArtIn(key);
+    });
     anim('flame', ['flame_0', 'flame_1', 'flame_2', 'flame_1'], 20);
     anim('popcorn', ['popcorn_0', 'popcorn_1'], 3);
     anim('shooter', ['shooter_0', 'shooter_1'], 4);
@@ -164,8 +178,35 @@ export class Boot extends Phaser.Scene {
     if (!this.retainedStages) return;
     // Keep metadata and shared atlases/fonts; remove GPU textures, including late downloads.
     for (const key of this.textures.getTextureKeys()) {
-      const city = /^(?:far|mid|props|view)_(stage\d+)(?:_|$)/.exec(key)?.[1];
-      if (city && !this.retainedStages.has(city)) this.textures.remove(key);
+      const city = /^(?:far|mid|props|view|enemies)_(stage\d+)(?:_|$)/.exec(key)?.[1];
+      if (city && !this.retainedStages.has(city)) {
+        if (key.startsWith('enemies_')) this.cityArtOut(key); // (its frames and animations go with it)
+        this.textures.remove(key);
+      }
+    }
+  }
+
+  /** A city's 540 px enemies are in: its frames are looked up there, its animations play from there. */
+  cityArtIn(key) {
+    registerEnemyAtlas(this.textures, key);
+    const tex = this.textures.get(key);
+    for (const [k, [frames, frameRate, repeat = -1]] of Object.entries(CITY_ANIMS)) {
+      if (!frames.every((f) => tex.has(f))) continue;
+      this.anims.remove(k);
+      this.anims.create({ key: k, frames: frames.map((frame) => ({ key, frame })), frameRate, repeat });
+      this.cityAnims[k] = key;
+    }
+  }
+
+  /** A city's atlas is going: its animations go back to the shared atlas (or away), its frames too. */
+  cityArtOut(key) {
+    unregisterEnemyAtlas(key);
+    for (const [k, from] of Object.entries(this.cityAnims)) {
+      if (from !== key) continue;
+      this.anims.remove(k);
+      delete this.cityAnims[k];
+      const legacy = this.legacyAnims[k];
+      if (legacy) this.anims.create({ key: k, frames: legacy[0].map((frame) => ({ key: 'sprites', frame })), frameRate: legacy[1], repeat: legacy[2] });
     }
   }
 }
