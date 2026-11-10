@@ -15,8 +15,8 @@ npm run art        # przegenerowanie grafik do public/assets/
 Wersja online: https://dfgrzyska.github.io/pr0ject-jpn/ — budowana automatycznie przy każdym pushu na `main`
 (`.github/workflows/pages.yml`; w Settings → Pages źródło musi być ustawione na „GitHub Actions”).
 
-Parametry do testów w adresie: `?stage=1` … `?stage=6` (ten etap pierwszy, reszta losowo — 1 Kioto, 2 Okinawa, 3 Sapporo, 4 Kagoshima, 5 Osaka, 6 Beppu), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność), `?ending` (od razu zakończenie po zmyślonej podróży),
-`?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5), `?ship=oni|kitsune|tsubame`,
+Parametry do testów w adresie: `?stage=1` … `?stage=8` (ten etap pierwszy, reszta losowo — 1 Kioto, 2 Okinawa, 3 Sapporo, 4 Kagoshima, 5 Osaka, 6 Beppu, 7 Hiroszima, 8 Nagasaki), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność), `?ending` (od razu zakończenie po zmyślonej podróży),
+`?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5), `?ship=oni|tsuru|tsubame` (`kitsune` też działa),
 `?noprops` (tło bez animacji). Z `?god` albo `?t=` pieczątek nie da się zdobyć.
 
 ## Panel debugowania
@@ -151,35 +151,40 @@ z łagodniejszymi liczbami (`EASY` w `src/config.js`, `src/difficulty.js`):
 
 | | Normalny | Łatwy |
 | --- | --- | --- |
-| Życia (Oni / Kitsune / Tsubame) | 3 / 3 / 2 | 5 / 5 / 4 |
+| Życia (każdy statek) | 3 | 4 |
 | Trafienie z gotową bombą | śmierć | bomba wybucha sama („AUTOBOMBA!”) |
-| Koniec gry | od nowa | „KONTYNUOWAĆ?” przez 10 s: dalej w tym samym miejscu, pełne życia, wynik od zera |
-| Utrata mocy po śmierci | −1 poziom | brak |
+| Koniec gry | od nowa | „KONTYNUOWAĆ?” przez 10 s: dalej w tym samym miejscu, pełne życia, wynik od zera — najwyżej 3 razy w grze |
+| Utrata mocy po śmierci | −1 poziom (wylatuje w górę ekranu, trzeba ją dogonić) | tak samo |
 | Nieśmiertelność po odrodzeniu | 2,5 s | 3,5 s |
-| Otarcia do nowej bomby | 40 | 30 |
-| Prędkość pocisków | ×1 | ×0,85 |
-| Pociski w wachlarzach i pierścieniach | wszystkie | ok. 30% mniej (7→5, 14→10; celowany środkowy zostaje) |
+| Otarcia do nowej bomby | zależnie od statku (40 / 32 / 20) | 75% tego |
+| Prędkość pocisków | ×1,05 | ×0,88 |
+| Pociski w wachlarzach i pierścieniach | wszystkie | ok. 20% mniej (celowany środkowy zostaje; trójki zostają trójkami) |
 | Rozprysk śnieżek, butelek sake, lawy, takoyaki | 4 | 3 |
 | Wrogowie nie strzelają w dolnej części ekranu | od 62% wysokości | od 55% (bossowie jak na normalnym) |
-| Cisza po wejściu wroga | 0,7 s | 1,0 s |
+| Cisza po wejściu wroga | 0,4 s | 0,65 s |
 | Strzelający drobni wrogowie | 25% | 12% |
+| Wytrzymałość drobnych wrogów (popcorn / nurek / nośnik / strzelec / wieżyczka) | 5 / 9 / 18 / 32 / 38 | 3 / 5 / 12 / 22 / 26 |
 | Ostrzeżenia (pioruny, gejzery, szczelina oni) | ×1 | ×1,3 |
-| Wytrzymałość bossów i minibossów | 100% | 75% |
+| Wytrzymałość bossów i minibossów | 100% | 80% |
 | Zacięcie przegrzanej broni (Beppu) | 1,8 s | 1,0 s |
 
 W grze przy mnożniku świeci zielone „ŁATWY”, a wyniki i koniec gry pokazują „TRYB ŁATWY” i liczbę kontynuacji.
 Łatwy ma osobny rekord. Kropka trafienia, broń gracza i punkty za wrogów są takie same.
 
+Na obu poziomach podróż trudnieje z miastem: od drugiego miasta drobni wrogowie mają +6% życia za każde już
+przebyte (najwyżej +40%), a strzelcy i wieżyczki przeładowują do 10% szybciej w ostatnim (`CAMPAIGN` w `src/config.js`).
+
 ## Statki
 
-Po starcie wybiera się jeden z trzech statków (malowania w kolorach japońskich sieci konbini).
-Parametry są w `SHIPS` w `src/config.js`.
+Po starcie wybiera się jeden z trzech statków (malowania w kolorach japońskich sieci konbini). Każdy ma 3 życia,
+ale gra się nimi inaczej: własna kropka trafienia, zasięg otarć, zdolność i bomba. Parametry są w `SHIPS`
+w `src/config.js` (środkowy statek nazywał się Kitsune; jego `id` zostało, więc zapamiętany wybór działa dalej).
 
-| Statek | Malowanie | Prędkość | Siła ognia | Życia |
-| --- | --- | --- | --- | --- |
-| ONI (ciężki) | biel, zielony dziób, niebieska rufa | wolny, ociężale goni palec | ×1,4 | 3 |
-| KITSUNE (standard) | biel z pasami pomarańczowym, zielonym, czerwonym | standard | ×1 | 3 |
-| TSUBAME (szybki) | niebiesko-biała jaskółka | szybki | ×1 | 2 |
+| Statek | Malowanie | Prędkość (palec) | Siła ognia | Kropka / otarcia | Zdolność | Bomba |
+| --- | --- | --- | --- | --- | --- | --- |
+| ONI (ciężki) | biel, zielony dziób, niebieska rufa | wolny, ociężale goni palec (240 px/s) | ×1,25, strzały bliżej siebie | 1,7 / 7 px | **Gniew szturmowy**: do +20% obrażeń im wyżej na ekranie; nieśmiertelny taranuje drobnych wrogów | **Wstrząs**: 75 obrażeń, krótkie (0,5 s) czyszczenie pocisków; 40 otarć |
+| TSURU (standard) | biel z pasami pomarańczowym, zielonym, czerwonym | standard (650 px/s) | ×1,05 | 1,4 / 8 px | **Talizmany ofuda**: co 12 otarć wokół statku krąży papierowy talizman (najwyżej dwa), który kasuje pocisk przy dotyku, a po 7 s leci we wroga (12 obrażeń) | **Senbazuru**: 45 obrażeń, skasowane pociski zamieniają się w papierowe żurawie lecące we wrogów; 32 otarcia |
+| TSUBAME (szybki) | niebiesko-biała jaskółka | szybki (1400 px/s) | ×0,95 | 1,1 / 11 px, znajdźki z 16 px | **Pęd jaskółki**: lot i otarcia ładują pęd, przy pełnym strzela o 30% szybciej | **Cięcie wiatru**: 25 obrażeń, 1,2 s nieśmiertelności; wraca po 20 otarciach |
 
 Wybór jest zapamiętywany; „jeszcze raz” wraca do ekranu wyboru z ostatnim statkiem.
 
@@ -194,9 +199,15 @@ Wybór jest zapamiętywany; „jeszcze raz” wraca do ekranu wyboru z ostatnim 
   róg bomby bez bomby steruje jak reszta ekranu.
 
 Punkty i bomba:
-- **Ocieranie się (graze)** — pocisk przelatujący tuż obok kropki statku (do 8 px, `GRAZE` w `src/config.js`)
-  daje 30 × mnożnik punktów i iskrę; gdy bomba jest zużyta, każde otarcie ładuje złoty pierścień wokół przycisku
-  bomby, a 40 otarć oddaje bombę („BOMBA GOTOWA”). Nie liczy się w czasie migania po odrodzeniu.
+- **Ocieranie się (graze)** — pocisk przelatujący tuż obok kropki statku (zasięg zależy od statku, `GRAZE`
+  w `src/config.js`) daje 30 × mnożnik punktów i iskrę; gdy bomba jest zużyta, każde otarcie ładuje złoty pierścień
+  wokół przycisku bomby, a po liczbie otarć statku bomba wraca („BOMBA GOTOWA”). Nie liczy się w czasie migania
+  po odrodzeniu.
+- **Skupienie ducha** — gdy bomba jest gotowa, otarcia ładują niebieski pierścień; 25 otarć daje 5 s skupienia:
+  strzały lecą o 25% szybciej i biją o 25% mocniej, wokół statku pulsują kręgi (`SURGE`).
+- **Przełamanie faz** — bossowie mają trzy fazy, minibossowie dwie. Przy przejściu wjeżdża napis „FAZA II” / „FAZA III”
+  z nazwą fazy, boss przez 0,9 s przyjmuje tylko 20% obrażeń (żeby mocny statek nie przeskoczył fazy), pociski wokół
+  niego znikają, a gracz dostaje „PRZEŁAMANIE!”: 5000 × mnożnik i 10 otarć do zużytej bomby (`PHASE`).
 - **Karty bossów** — 3 s przed minibossem i bossem przez ekran przejeżdża pasek z jego imieniem i podtytułem
   (pole `card` fali w `stageN.json`), z alarmem i okrzykiem kakegoe „yoo!”.
 - **Zatrzymanie akcji** — przy zestrzeleniu minibossa (0,3 s) i bossa (0,45 s) gra na chwilę zamiera w błysku,
@@ -242,7 +253,7 @@ Wrogowie (roboty w stylu Fushimi Inari):
 | Strzelec | kanonierka podwieszona pod belką torii | wlatuje, staje, strzela celowanymi seriami (`aimed`/`fan`), odlatuje |
 | Wieżyczka | kamienna latarnia tōrō z działem | na warstwie terenu, wachlarz (`fan`) lub pierścień (`ring`) |
 | Nurek | chōchin-obake — czerwony papierowy lampion-yōkai z parady stu demonów (jedno oko, zęby, wywalony język) | zawisa, celuje i pikuje w gracza |
-| Ciężki | tanuki — figurka z Shigaraki (kapelusz, butelka sake, zeszyt rachunków) | miniboss (ok. 150 s, nad Ryōan-ji): bębni w brzuch (pierścień na każde „pon”), rzuca butelkami sake z celownikiem na ziemi, zmienia się listkiem w trzy tanuki — kopie mają listek na kapeluszu i pękają od jednego trafienia; naraz najwyżej ok. 50 pocisków |
+| Ciężki | tanuki — figurka z Shigaraki (kapelusz, butelka sake, zeszyt rachunków) | miniboss (ok. 150 s, nad Ryōan-ji): bębni w brzuch (pierścień na każde „pon”), rzuca butelkami sake z celownikiem na ziemi, zmienia się listkiem w trzy tanuki — kopie mają listek na kapeluszu i wytrzymują kilka trafień (35); w drugiej fazie (po wypiciu sake) bębni szybciej i robi trzy kopie |
 | Nośnik | dron z klejnotem hōju (czerwony/niebieski/zielony) | zygzak, po ~4,6 s ucieka, zawsze zostawia znajdźkę |
 
 Znajdźki: czerwona — rozrzut, niebieska — laser, zielona — naprowadzane „lisie ognie”.
@@ -254,9 +265,12 @@ rozkładają się jeden po drugim od środka (podmuch pobudki zmiata resztki fal
 błędny ognik, który przez chwilę goni gracza. Ataki: kitsune-bi (z końca każdego ogona ognik, który zawisa
 i leci w gracza — im mniej ogonów, tym mniej ogników), Daimonji (znak 大 na zboczu zapala się kreska po kresce,
 w kolejności pisania, najpierw pierścienie ostrzeżenia — bezpiecznie jest między kreskami), smagnięcie ogonami
-(wachlarze z końców ogonów po kolei) i lisi taniec (spirala). Poniżej 35% życia wpada w szał: ogony płoną
-na niebiesko, dochodzą pierścienie, a spirala ma trzy ramiona (ale rzadsza). Między atakami jest chwila oddechu
-i naraz na ekranie jest najwyżej ok. 50 pocisków, także w szale. Mruga, a przy ataku otwiera pysk i rozpala oczy.
+(wachlarze z końców ogonów po kolei) i lisi taniec (spirala). Płomień utraconego ogona zostaje jako duchowy ognik
+przy lisie, więc walka się zaostrza zamiast słabnąć. Trzy fazy według ogonów: 9–7 — ataki z ogonów i jeden
+Daimonji; 6–4 (**lisie ogniki**) — ogniki stoją po bokach i strzelają w gracza, a 大 zapala się krzyżującymi się
+kreskami; 3–1 (**dziewięć duchowych płomieni**) — ogony płoną na niebiesko, ogniki krążą wokół lisa i sypią burzą
+płomieni, 大 płonie dwa razy, spirala ma trzy ramiona (ale rzadsza). Między atakami jest chwila oddechu i naraz
+na ekranie jest najwyżej ok. 50 pocisków. Mruga, a przy ataku otwiera pysk i rozpala oczy.
 
 ## Etap 2
 
@@ -297,8 +311,11 @@ Wrogowie mają skórki wyspiarskie (`src/game/skins.js`), zachowania są te same
 | Nośnik | szklana boja z ryukyuańskiego szkła w siatce |
 
 Boss: para shisa — „A” (otwarty pysk, złota kula) i „Un” (zamknięty pysk), wspólny pasek życia.
-Strzelają na zmianę wachlarzami, krzyżowymi pierścieniami, strumieniem i dużymi kulami;
-gdy jedna padnie, druga wpada w szał (szybsza, gęstsze serie). Po pokonaniu etap się kończy, bomba się odnawia.
+Strzelają na zmianę wachlarzami, krzyżowymi pierścieniami, strumieniem i dużymi kulami. Trzy fazy: harmonia A-Un
+(Un osłania A — A przyjmuje 60% obrażeń — i stawia strefy rezonansu tam, gdzie jest gracz); gdy razem mają poniżej 55%
+życia, **więź strażników**: między nimi świeci promień (miga, zanim zacznie ranić), a co kilka sekund zamieniają się
+miejscami po przekątnej; gdy jedna padnie, **ostatni strażnik Ryukyu**: druga wchłania jej duszę (+200 życia), rośnie
+i strzela atakami obu. Po pokonaniu etap się kończy, bomba się odnawia.
 
 ## Etap 3
 
@@ -341,8 +358,10 @@ zamieć (serie znoszone wiatrem — śnieg pokazuje, w którą stronę wieje), s
 
 Boss: niedźwiedź z Festiwalu Śniegu. Rzeźba wjeżdża na cokole i budzi się, gdy tło się zatrzyma.
 Faza 1: lód przepuszcza strzały, cele to dwie łapy (wachlarze, rzuty śnieżkami) i lodowe serce (pierścienie,
-zamarzające płatki); serce rozbija całą rzeźbę. Faza 2: brunatny niedźwiedź higuma — ryk z pierścieniami,
-zamachy łapami, łososie wijące się w locie i spadające sople; poniżej 35% życia wpada w szał.
+zamarzające płatki); serce rozbija całą rzeźbę, ale dopóki stoją obie łapy, przyjmuje tylko 30% obrażeń — najpierw
+trzeba odbić łapę. Faza 2: brunatny niedźwiedź higuma — ryk z pierścieniami, zamachy łapami, łososie wijące się
+w locie i spadające sople. Faza 3 (poniżej 45%, **zamieć Hokkaido**): boczny wiatr (zmienia kierunek co 5 s,
+z napisem „WIATR >>”) spycha statek i pociski, z góry spadają sople.
 
 ## Etap 4
 
@@ -377,12 +396,14 @@ w czasie burzy przyciemnione niebo i błyski. Pole `embersFrom` w `stage4.json` 
 
 Miniboss: Raijū, bestia piorunów z legend — nadciąga w burzy popiołowej nad zatoką. Słupy piorunów (najpierw miga
 linia ostrzegawcza), pary kul połączone łukiem prądu (przelot między nimi rani), szarża wzdłuż pokazanej linii
-z pasmem iskier.
+z pasmem iskier. Druga faza (**przeładowanie pioruna**): po szarży zostaje na 1,5 s żywa ścieżka iskier, a pary kul
+lecą po trzy.
 
 Boss: Sakurajima — wulkan stoi w miejscu, to szczyt etapu (pozycje krateru i kominów są w fali bossa w `stage4.json`,
 generator tła czyta te same liczby). Faza 1: dwa boczne kominy — bomby lawy rzucane łukiem z celownikiem na ziemi,
 słupy pary w dół zbocza, strumienie żaru. Faza 2: krater się otwiera — pierścienie erupcji, rzeki lawy (rzędy
-pocisków z jedną luką, która przesuwa się z każdym rzędem), wulkaniczne pioruny. Poniżej 30% wybucha na dobre.
+pocisków z jedną luką, która przesuwa się z każdym rzędem), wulkaniczne pioruny. Faza 3 (poniżej 40% krateru,
+**wielka erupcja**): dochodzą dwa pasy spływającej magmy, które powoli się przesuwają i zmuszają do zmiany pasa.
 Po pokonaniu krater stygnie i zostaje w tle.
 
 ## Osaka
@@ -427,14 +448,17 @@ samej fali albo fale z tym samym polem `duo` w `stage5.json`.
 Miniboss: lalka bunraku (Osaka to dom teatru bunraku) — samuraj prowadzony przez trzech lalkarzy w czerni.
 Lalki nie da się trafić (strzały przez nią przelatują); każdy lalkarz prowadzi jeden atak: omozukai — głowa
 i prawa ręka (miecz, szeroki wachlarz), hidarizukai — lewa ręka (strumień), ashizukai — nogi (tupnięcia
-i taniec). Zestrzelony lalkarz = bezwładna część; bez wszystkich trzech lalka upada.
+i taniec). Zestrzelony lalkarz = bezwładna część; bez wszystkich trzech lalka upada. Pozostali pracują szybciej
+(o 35%, **szalone tempo**), a ostatni sam prowadzi całą lalkę: **taniec miecza**, wszystkie ataki naraz.
 
-Boss: olbrzymia ośmiornica w opasce sprzedawcy takoyaki. Cztery macki z segmentów kołyszą się i podwijają,
-plują pierścieniami z końcówek, uderzają w dół (najpierw migająca linia), głowa rzuca takoyaki z celownikiem;
-trafienie w dowolny segment rani mackę. Po odcięciu wszystkich macek łeb staje się celem: spirala tuszu, na zmianę
-trzy duże kule tuszu i pierścień, grad takoyaki (salwa co sekundę: jedno ląduje przy graczu, drugie obok, każde
-rozpryskuje się na 3 pociski); poniżej 35% wpada w szał (spirala o trzech ramionach, ale rzadsza). Ataki są dobrane
-tak, żeby na ekranie było naraz najwyżej ok. 40 pocisków, także w szale.
+Boss: olbrzymia ośmiornica w opasce sprzedawcy takoyaki, osiem macek z segmentów w dwóch rzędach — kołyszą się
+i podwijają, plują pierścieniami z końcówek, uderzają (najpierw migająca linia), głowa rzuca takoyaki z celownikiem;
+trafienie w dowolny segment rani mackę. Faza 1: walczą cztery przednie macki, cztery boczne są cofnięte za korpusem
+(nie da się ich jeszcze odciąć, czasem plują pierścieniem), a osłonięty łeb przyjmuje 20% obrażeń. Faza 2
+(**kontratak z głębin**, po odcięciu przednich): boczne macki wysuwają się do przodu i uderzają po dwie naraz na
+krzyż, salwy trzech takoyaki; łeb przyjmuje 75%. Faza 3 (**zasłona z atramentu**, bez macek albo gdy łeb ma
+poniżej 40%): chmury tuszu nad wodą, szarże odrzutowe w stronę gracza, spirala tuszu, kule tuszu z pierścieniem
+i grad takoyaki. Ataki są dobrane tak, żeby na ekranie było naraz najwyżej ok. 40 pocisków.
 
 ## Beppu
 
@@ -476,16 +500,44 @@ ale przy pełnym pasku działa się zacinają na ~2 s — trzeba wlatywać i wyl
 
 Miniboss: krokodyl z Oniyamy (piekło krokodyli działa od 1923 roku). Zanurza się (widać tylko oczy i kręgi
 na wodzie, strzały przelatują) i płynie pod gracza, wynurza się z pierścieniem; kłapie szczękami — dwa rzędy
-„zębów” zamykają się na pozycji gracza; robi „obrót śmierci” — spirala i wybuchy wrzątku wokół gracza.
+„zębów” zamykają się na pozycji gracza; robi „obrót śmierci” — spirala i wybuchy wrzątku wokół gracza. Druga faza
+(**fałszywe cienie**): pod wodą płyną obok niego dwa fałszywe cienie, które przy wynurzeniu wybuchają wrzątkiem,
+a obrót śmierci budzi też gejzery na obu brzegach.
 
 Boss: czerwony oni z kolczastą maczugą kanabō, jak figury z Oniyamy. Śpi w stawie Chinoike i wynurza się
 z krwi, gdy przewijanie stanie. Zwykłe strzały ledwie go drapią — działają **fasolki Setsubun** („Oni wa soto,
 fuku wa uchi”): co kilka sekund przez ekran przelatuje drewniane pudełko masu, zestrzel je i złap fasolki —
-przez 9 s co druga salwa dorzuca parę świecących fasolek, które wirują w locie i pękają na oni w okruchy;
+przez 9 s statek rzuca 10 par świecących fasolek na sekundę (tyle samo przy każdej broni), które wirują w locie,
+lekko zbiegają się ku środkowi i pękają na oni w okruchy; samo zestrzelone masu pęka nad oni (60 obrażeń)
+i oni na sekundę się zatacza; kule naprowadzane w pierwszej kolejności celują w masu;
 póki działają, wokół statku krążą dwie fasolki (migają, gdy się kończą), a pasek nad paskiem temperatury pokazuje,
 ile zostało. Ataki: cios kanabō (zaznaczone
 miejsce uderzenia i szczelina z wybuchów biegnąca do gracza), tupnięcia budzące gejzery w całym ekranie, ryk
-z wachlarzami; poniżej 35% wpada w szał i kręci maczugą (spirala).
+z wachlarzami. Trzy fazy, a skóra pęka z każdą: żelazna maczuga (zwykłe strzały przechodzą w 25%); **złamany róg**
+(od 65% życia, 45%) — kolumny wrzącej pary przez staw z lukami; **krwawe piekło Chinoike** (od 30%, 70%, fasolki
+biją półtora raza mocniej) — kręci maczugą (spirala), a staw wrze: rzędy bąbli z luką wznoszą się od dołu ekranu.
+
+## Broń
+
+Znajdźki zmieniają broń (ten sam kolor podnosi moc, do 5), parametry są w `WEAPONS` w `src/config.js`:
+- **rozrzut** (czerwona) — wachlarz 3–7 śrucin w kącie 20–52°; przez pierwsze 0,22 s lotu śruciny biją o 35% mocniej,
+  więc najlepiej działa z bliska;
+- **laser** (niebieska) — wiązka przepala się przez jednego drobnego wroga (popcorn, nurek), tracąc 40% siły;
+- **naprowadzane** (zielona) — dwie igły i 2–4 kule; kula przez 0,18 s leci po swoim łuku, dopiero potem szuka celu
+  w promieniu 170 px, skręca do 3,8 rad/s i żyje 1,15 s. Nie namierza wroga, który dopiero wszedł na ekran
+  (jest wyżej niż 18 px albo widać go krócej niż 0,25 s), więc fale zdążą wlecieć.
+
+## Hiroszima i Nagasaki — bossowie
+
+Miniboss Hiroszimy, krab samuraj Heike-gani, w drugiej fazie (**złamany pancerz Heike**) odbija część strzałów
+w gardę z powrotem perłami i szybciej tnie nożycami. Boss, wielki tengu Sankibō z góry Misen: dopóki płoną obie
+pochodnie Kiezu-no-hi, ognista bariera przepuszcza 35% obrażeń; po ich zgaszeniu (**wachlarz Hauchiwa**) podmuch
+spycha statek w bok; poniżej 35% (**gniew góry Misen**) wracają dwie widmowe, nietykalne pochodnie, krążą szybciej
+i strzelają, a pierścień piór kręci się raz w jedną, raz w drugą stronę.
+
+Smok Ja-odori z Nagasaki (2100 życia): taniec nad dokami; od 65% (**spiralny korytarz**) krąży po środku ekranu,
+a z segmentów strzelają fajerwerki; od 30% (**złoty deszcz nad Inasą**) tańczy o 40% szybciej, perła dzieli się
+na dwie strzelające kule, a przez niebo przelatują krzyżowe salwy fajerwerków.
 
 ## Kolejność etapów
 
@@ -527,8 +579,9 @@ iOS: dźwięk startuje po pierwszym dotknięciu; przełącznik wyciszenia telefo
 
 ## Fale
 
-`src/data/stage1.json` … `stage6.json` — dane etapu (wygląd, muzyka, ostrzeżenia) i harmonogram fal,
-edytowalne bez zmian w kodzie:
+`src/data/stage1.json` … `stage8.json` — dane etapu (wygląd, muzyka, ostrzeżenia) i harmonogram fal,
+edytowalne bez zmian w kodzie. Gdy miniboss zniknie (zestrzelony albo odleciał), a do następnej fali zostało ponad
+4 s, gra dogrywa drobnych wrogów tego miasta co 2,6 s aż do niej (`FILL` w `src/config.js`, `Waves.fillGap`):
 
 ```json
 { "t": 4.0, "type": "popcorn", "x": 40, "path": "sine", "count": 6 }
