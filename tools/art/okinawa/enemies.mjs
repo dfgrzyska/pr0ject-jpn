@@ -265,7 +265,21 @@ export function manta(f) {
   };
   s.paint([0, 24, 195, 114], (x, y) => Math.abs(x - cx) <= hw(y), 'm', (x, y) => 0.5 + lift * 0.12 * (Math.abs(x - cx) / 87) - (y - 60) / 300, { pat: back });
   // the white shoulder chevrons of the reef manta, either side of the head
-  for (const sx of [-1, 1]) s.poly([[cx + sx * 8, 66], [cx + sx * 32, 52], [cx + sx * 40, 60], [cx + sx * 20, 78], [cx + sx * 9, 82]], 'E', { flat: 0.62, pat: mix2(mottle({ amt: 0.2, scale: 5 }), speckle({ amt: 0.2, dark: 0.08 })) });
+  // (drawn into the skin, not pasted on: pale where they are thickest, fading out into the dark at their edges, mottled)
+  for (const sx of [-1, 1]) {
+    const pts = [[cx + sx * 8, 66], [cx + sx * 32, 52], [cx + sx * 40, 60], [cx + sx * 20, 78], [cx + sx * 9, 82]];
+    for (let y = 44; y < 92; y++) for (let x = 0; x < 195; x++) {
+      if (s.mat[y * 195 + x] !== 'm') continue;
+      // how far inside the chevron (by the distance to its centre line)
+      const t = Math.min(1, Math.max(0, (x - cx) * sx - 6) / 34);
+      const cyl = 76 - t * 22;
+      const half = 12 * (1 - t * 0.75);
+      const d = Math.abs(y - cyl) / Math.max(1, half);
+      const n = Math.sin(x * 0.31 + y * 0.17) * 0.12 + Math.sin(x * 0.13 - y * 0.23) * 0.12;
+      const k = 1 - d + n;
+      if (k > 0) s.px(x, y, k > 0.55 ? 0xd8dce4 : k > 0.25 ? 0xa8b0bc : 0x6a7484, Math.min(0.9, k * 1.4));
+    }
+  }
   // the robot: a steel spine plate, panel lines and the cyan seams glowing along them, rivets
   s.poly([[cx - 6, 52], [cx + 6, 52], [cx + 8, 80], [cx, 86], [cx - 8, 80]], 'S', { flat: 0.55, pat: speckle({ amt: 0.2, dark: 0.06 }) });
   s.dot(cx, 64, 2.4, 0x3fd8e8);

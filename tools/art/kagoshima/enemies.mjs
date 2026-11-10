@@ -16,6 +16,7 @@ const RAMPS = {
   e: tones([0x3a3432, 0x5e5654, 0x8a807c]), // cooled rock, ash
   f: [0xa02a00, 0xff5a10, 0xff9a20, 0xffd060, 0xfff4c0], // molten lava
   g: tones([0x1a0e08, 0x3a2216, 0x6a4430]), // black-vinegar glaze
+  G2: [0x140a06, 0x3a2010, 0x6a3a1a, 0xa0622a, 0xd8a060], // the jars' amber-brown glaze
   t: tones([0x8a6a2a, 0xc8a050, 0xf0d890]), // straw
   z: tones([0x24502a, 0x3e7e3a, 0x7ab060]), // kappa green
   s: tones([0x4a3a1c, 0x7a6030, 0xb09450]), // its shell
@@ -86,20 +87,38 @@ export function tsuboBase(wreck) {
   const c = 28.5;
   const glaze = { pat: mix2(mottle({ amt: 0.18, scale: 6 }), speckle({ amt: 0.12, dark: 0.04, light: 0.04 })) };
   if (!wreck) {
-    // the jar from above: the round glazed shoulder, the drips of glaze, the neck and mouth with the vinegar in it
-    s.ellipse(c, c, 23, 23, 'g', { bias: 0.04, ...glaze });
-    for (let k = 0; k < 10; k++) {
-      const a = (k / 10) * TAU + 0.2;
-      s.line(c + Math.cos(a) * 15, c + Math.sin(a) * 15, c + Math.cos(a) * 21, c + Math.sin(a) * 21, 0x6a4430, 1, 0.6);
+    // the jar from above, set in the earth of the field: a ring of soil and straw round it; the glazed shoulder,
+    // warm amber-brown running to near-black, glossy, drips of a paler glaze running down it, a broad reflection of
+    // the sky on the side towards the light; the raised neck ring, the mouth with the vinegar dark in it
+    s.ellipse(c, c, 26, 26, 'e', { flat: 0.4, pat: mix2(speckle({ amt: 0.3, dark: 0.15, light: 0.1 }), fur((x, y) => Math.atan2(y - c, x - c) + 1.5, { amt: 0.2, len: 3, w: 1 })) });
+    s.paint([c - 23, c - 23, c + 23, c + 23], (x, y) => Math.hypot(x - c, y - c) < 22.5, 'G2', (x, y) => {
+      const nx = (x - c) / 22.5;
+      const ny = (y - c) / 22.5;
+      const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+      return 0.22 + 0.62 * Math.max(0, -nx * 0.5 - ny * 0.62 + nz * 0.6);
+    }, glaze);
+    // a few runs of paler glaze spilled down from the neck, uneven
+    for (const [a, len] of [[0.5, 6], [1.7, 3.5], [2.6, 7], [4.1, 4.5], [5.3, 5.5]]) {
+      let px = c + Math.cos(a) * 12.5;
+      let py = c + Math.sin(a) * 12.5;
+      for (let t = 1; t <= len; t++) {
+        const r = 12.5 + t;
+        const nx = c + Math.cos(a + Math.sin(t * 1.3 + a) * 0.06) * r;
+        const ny = c + Math.sin(a + Math.sin(t * 1.3 + a) * 0.06) * r;
+        s.tube(px, py, nx, ny, 1.5 - t / (len * 1.6), 'G2', { bias: 0.18 });
+        px = nx;
+        py = ny;
+      }
+      s.dot(px, py, 1.3, 0xc08a50, 0.9);
     }
-    s.dot(c - 12, c - 12, 2.6, 0xd8c0a0, 0.6);
-    s.dot(c - 9, c - 15, 1.2, 0xffffff, 0.8);
-    s.ellipse(c, c, 13.5, 13.5, 'g', { flat: 0.7, ...glaze });
-    s.ellipse(c, c, 10.5, 10.5, 'K', { flat: 0.15 });
-    s.ellipse(c, c, 9, 9, 'x', { flat: 0.3, pat: mottle({ amt: 0.2, scale: 4 }) });
-    // the vinegar's surface catching the sky
-    s.line(c - 5, c - 4, c + 1, c - 6, 0x8a5a30, 1, 0.8);
-    s.line(c - 4, c - 3, c - 1, c - 4, 0xd8a060, 1, 0.6);
+    // the sky's reflection: a soft arc of light, a hard glint
+    for (let a = -2.6; a < -1.0; a += 0.02) for (let r = 15; r < 19; r += 1) s.px(c + Math.cos(a) * r, c + Math.sin(a) * r, 0xf0d8b0, 0.22 + (1 - Math.abs(a + 1.8)) * 0.3);
+    s.dot(c - 9, c - 13, 1.6, 0xffffff, 0.9);
+    s.ellipse(c, c, 12.5, 12.5, 'G2', { bias: 0.14, ...glaze });
+    for (let a = 0; a < TAU; a += 0.03) s.px(c + Math.cos(a) * 12.5, c + Math.sin(a) * 12.5, 0x2a1408, 0.8);
+    s.ellipse(c, c, 9.5, 9.5, 'K', { flat: 0.12 });
+    s.ellipse(c + 1, c + 1, 7.6, 7.6, 'x', { flat: 0.22, pat: mottle({ amt: 0.2, scale: 3 }) });
+    s.line(c - 4, c - 3, c + 1, c - 5, 0xb07a40, 1, 0.8);
   } else {
     // smashed: shards of glaze, the spilt vinegar, a bit of the straw cap
     s.ellipse(c, c + 2, 20, 16, 'x', { flat: 0.25, pat: mottle({ amt: 0.2 }) });

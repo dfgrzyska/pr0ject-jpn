@@ -16,6 +16,7 @@ const RAMPS = {
   O: tones([0x8a1a10, 0xd0402a, 0xf8805a]), // octopus red
   H: tones([0xb0a8a0, 0xeae6de, 0xffffff]), // porcelain, a puppet's painted face
   X: tones([0x08070c, 0x16141e, 0x2e2a3a]), // the kuroko's black
+  Xk: [0x060508, 0x141220, 0x22202e, 0x3a3648, 0x5a5670], // its cotton, with a little sheen
   t: tones([0x8a6a3a, 0xc8a060, 0xecd08a]), // bamboo, skewers
   p: tones([0xc89a6a, 0xf0c89a, 0xfff0d8]), // paper of the lantern
   F: tones([0x9a6a10, 0xe2a830, 0xffe890]), // fugu yellow
@@ -174,86 +175,100 @@ export function nekoPaw(up) {
 export function ningyo(pose) {
   const s = new HiSprite(123, 147, RAMPS);
   const cx = M(19.5);
-  const silk = { pat: mix2(fur(Math.PI / 2, { amt: 0.12, len: 14, w: 2, gap: 0.03 }), speckle({ amt: 0.06 })) };
-  // the kimono, red brocade with gold, flaring to the hem; the hakama's folds
-  s.paint([0, 48, 123, 135], (x, y) => Math.abs(x - cx) < 18 + (y - 48) * 0.22, 'R', (x, y) => 0.6 - (x - cx) / 160, silk);
-  for (let y = 54; y < 132; y += 9) for (let x = -24; x <= 24; x += 9) {
-    const X = cx + x + ((y / 9) % 2) * 4.5;
-    if (Math.abs(X - cx) < 16 + (y - 48) * 0.22) {
-      // a gold kikkō-hexagon brocade
-      for (let k = 0; k < 6; k++) {
-        const a = (k / 6) * TAU;
-        const b = ((k + 1) / 6) * TAU;
-        s.line(X + Math.cos(a) * 3, y + Math.sin(a) * 3, X + Math.cos(b) * 3, y + Math.sin(b) * 3, 0xe2aa32, 1, 0.75);
-      }
+  const silk = (seed, a = Math.PI / 2) => ({ pat: mix2(fur(a, { amt: 0.12, len: 16, w: 2.2, gap: 0.03, seed }), speckle({ amt: 0.05 })) });
+  // the long hakama, striped, trailing past the feet as a puppet's does, falling in deep pleats
+  s.paint([cx - 40, 92, cx + 40, 146], (x, y) => Math.abs(x - cx) < 20 + (y - 92) * 0.36 && y < 144 - Math.abs(Math.sin((x - cx) * 0.18)) * 3, 'D', (x, y) => 0.58 - (x - cx) / 150 + (Math.floor((x - cx + 60) / 4) % 2 ? 0.05 : -0.05), silk(3));
+  for (const d of [-26, -14, -4, 6, 16, 28]) s.line(cx + d * 0.6, 96, cx + d * 1.25, 142, 0x1a1e34, 1);
+  // the kimono's body, red brocade, the gold kikkō pattern, its folds
+  s.paint([cx - 26, 46, cx + 26, 96], (x, y) => Math.abs(x - cx) < 18 + (y - 46) * 0.12, 'R', (x) => 0.6 - (x - cx) / 120, silk(5));
+  for (let y = 52; y < 94; y += 8) for (let x = -20; x <= 20; x += 8) {
+    const X = cx + x + ((y / 8) % 2) * 4;
+    if (Math.abs(X - cx) > 17) continue;
+    for (let k = 0; k < 6; k++) {
+      const a = (k / 6) * TAU;
+      const b = ((k + 1) / 6) * TAU;
+      s.line(X + Math.cos(a) * 2.6, y + Math.sin(a) * 2.6, X + Math.cos(b) * 2.6, y + Math.sin(b) * 2.6, 0xe2aa32, 1, 0.8);
     }
   }
-  for (const d of [-8, 0, 8]) s.line(cx + d, 92, cx + d * 1.4, 132, 0x8a1a1e, 1);
-  // the kamishimo: stiff shoulder wings of dark blue, crested
-  s.poly([[cx - 44, 48], [cx + 44, 48], [cx + 42, 60], [cx + 16, 62], [cx, 86], [cx - 16, 62], [cx - 42, 60]], 'D', { flat: 0.55, pat: speckle({ amt: 0.08 }) });
-  s.line(cx - 44, 48, cx + 44, 48, 0xa8d0ff, 1);
+  // the kataginu: its stiff wings sweeping out from the shoulders, starched, pleated, a white crest on each, its edges
+  // catching the light; falling to a point at the waist front and back
   for (const sx of [-1, 1]) {
-    s.ellipse(cx + sx * 28, 54, 3.6, 3.6, 'W', { flat: 0.75 });
-    s.dot(cx + sx * 28, 54, 1.6, 0x262941);
+    s.poly([[cx + sx * 6, 44], [cx + sx * 50, 40], [cx + sx * 54, 46], [cx + sx * 46, 56], [cx + sx * 16, 60], [cx + sx * 4, 90]], 'D', { flat: 0.52 - sx * 0.06, pat: fur(sx > 0 ? -0.08 : Math.PI + 0.08, { amt: 0.1, len: 20, w: 3 }) });
+    for (let k = 1; k < 5; k++) s.line(cx + sx * (10 + k * 9), 43 - k * 0.6, cx + sx * (10 + k * 8), 57 - k * 0.4, 0x1a1e34, 1, 0.8);
+    s.line(cx + sx * 6, 44, cx + sx * 50, 40, 0x8aa0d8, 1);
+    s.ellipse(cx + sx * 30, 49, 4.4, 4.4, 'W', { flat: 0.82 });
+    for (let k = 0; k < 4; k++) s.line(cx + sx * 30, 49, cx + sx * 30 + Math.cos(k * 1.57 + 0.78) * 3.6, 49 + Math.sin(k * 1.57 + 0.78) * 3.6, 0x262941, 1);
   }
-  // the crossed collar and the black obi
-  s.poly([[cx - 6, 46], [cx - 2, 46], [cx + 6, 74], [cx + 2, 76]], 'H', { flat: 0.75 });
-  s.poly([[cx + 6, 46], [cx + 2, 46], [cx - 2, 64], [cx - 5, 62]], 'H', { flat: 0.65 });
-  s.poly([[cx - 18, 87], [cx + 18, 87], [cx + 19, 93], [cx - 19, 93]], 'K', { flat: 0.45 });
-  // the arms: the left out holding its fan; the right with the sword, raised in pose 1
-  const arm = (ax, ay, bx, by) => s.tube(ax, ay, bx, by, 5.5, 'R', { rb: 4.6, ...silk });
+  // the collar crossed, the dagger's hilt at the belt, the black obi
+  s.poly([[cx - 5, 44], [cx - 1, 44], [cx + 6, 68], [cx + 2, 70]], 'H', { flat: 0.8 });
+  s.poly([[cx + 5, 44], [cx + 1, 44], [cx - 2, 60], [cx - 5, 58]], 'H', { flat: 0.68 });
+  s.poly([[cx - 19, 88], [cx + 19, 88], [cx + 20, 95], [cx - 20, 95]], 'K', { flat: 0.45, pat: fur(0, { amt: 0.1, len: 8, w: 2 }) });
+  s.tube(cx - 14, 92, cx - 2, 84, 1.8, 'K', { rb: 1.4 });
+  s.ellipse(cx - 13, 92, 2.4, 1.4, 'Y', { flat: 0.6 });
+  // the arms in the wide sleeves (the left fist on the hip, the right with the sword, raised in pose 1)
+  const sleeve = (ax, ay, bx, by, seed) => {
+    s.tube(ax, ay, bx, by, 7, 'R', { rb: 6, ...silk(seed, Math.atan2(by - ay, bx - ax)) });
+    s.poly([[bx - 7, by - 2], [bx + 7, by - 2], [bx + 8, by + 12], [bx - 6, by + 10]], 'R', { flat: 0.45, ...silk(seed + 1) }); // the sleeve hanging
+  };
   if (pose) {
-    arm(M(9), M(20), M(5), M(10));
-    s.ellipse(M(5), M(9), 3.6, 3.6, 'H', { flat: 0.75 });
-    s.tube(M(5), M(8), M(5), 2, 1.8, 'S', { rb: 1.2 });
-    s.line(M(5) - 1, 4, M(5) - 1, M(7), 0xffffff, 1);
-    s.ellipse(M(5), M(8.5), 4.5, 1.6, 'Y', { flat: 0.6 }); // the tsuba
+    sleeve(M(9), M(20), M(5), M(11), 7);
+    s.ellipse(M(5), M(10), 3.4, 3.4, 'H', { flat: 0.78 });
+    s.tube(M(5), M(9), M(5), 2, 1.8, 'S', { rb: 1.2 });
+    s.line(M(5) - 1, 4, M(5) - 1, M(8), 0xffffff, 1);
+    s.ellipse(M(5), M(9.5), 4.6, 1.6, 'Y', { flat: 0.6 });
   } else {
-    arm(M(9), M(20), M(6), M(30));
-    s.ellipse(M(6), M(31), 3.6, 3.6, 'H', { flat: 0.75 });
-    s.tube(M(6), M(32), M(6), M(43), 1.8, 'S', { rb: 1.2 });
-    s.ellipse(M(6), M(32.5), 4.5, 1.6, 'Y', { flat: 0.6 });
+    sleeve(M(9), M(20), M(6), M(29), 7);
+    s.ellipse(M(6), M(31), 3.4, 3.4, 'H', { flat: 0.78 });
+    s.tube(M(6), M(32), M(5), M(43), 1.8, 'S', { rb: 1.2 });
+    s.ellipse(M(6), M(32.5), 4.6, 1.6, 'Y', { flat: 0.6 });
   }
-  arm(M(29.5), M(20), M(33.5), M(28));
-  s.ellipse(M(33.5), M(29.5), 6, 6, 'H', { flat: 0.75 });
-  s.poly([[M(33.5), M(29.5)], [M(33.5) + 14, M(29.5) - 6], [M(33.5) + 12, M(29.5) + 8]], 'Y', { flat: 0.6 });
-  // the painted head: white gofun face, black hair in a samurai's topknot, the fierce brows, the eyes that roll
-  s.ellipse(cx, M(9), 18, 19.5, 'H', { bias: 0.05 });
-  s.poly([[cx - 18, 9], [cx + 18, 9], [cx + 18, 18], [cx + 12, 13], [cx - 12, 13], [cx - 18, 18]], 'K', { flat: 0.55, pat: fur(0, { amt: 0.2, len: 6, w: 1 }) });
-  s.ellipse(cx, 4, 6, 3.8, 'K', { flat: 0.6 }); // the topknot
-  s.line(cx, 0, cx, 4, 0x2a2638, 2);
+  sleeve(M(29.5), M(20), M(33), M(28), 9);
+  s.ellipse(M(33), M(29.5), 4, 4, 'H', { flat: 0.78 });
+  // the head, carved and painted: the white gofun face, a samurai's shaved pate and topknot, sidelocks, the brows set
+  // in a fierce slant, the eyes that roll, the red lines of rage, the mouth turned down
+  s.tube(cx, 46, cx, 36, 5, 'H', { flat: 0.7 }); // the neck
+  s.ellipse(cx, 24, 15, 17.5, 'H', { bias: 0.06, pat: speckle({ amt: 0.04 }) });
+  s.paint([cx - 16, 4, cx + 16, 20], (x, y) => ((x - cx) / 15.5) ** 2 + ((y - 24) / 18) ** 2 < 1 && y < 14 + Math.abs(x - cx) * 0.3, 'S', (x) => 0.62 - (x - cx) / 60, { pat: speckle({ amt: 0.08 }) }); // the shaved pate, blue-grey
+  for (const sx of [-1, 1]) s.paint([cx - 17, 8, cx + 17, 40], (x, y) => (x - cx) * sx > 11 && ((x - cx) / 16) ** 2 + ((y - 24) / 18) ** 2 < 1.04 && y < 34, 'K', () => 0.5, { pat: fur(Math.PI / 2, { amt: 0.2, len: 4, w: 1 }) });
+  s.poly([[cx - 3, 8], [cx + 3, 8], [cx + 2.4, -0.5], [cx - 2.4, -0.5]], 'K', { flat: 0.55, pat: fur(Math.PI / 2, { amt: 0.2, len: 3, w: 1 }) }); // the topknot
+  s.line(cx - 3.5, 7.5, cx + 3.5, 7.5, 0xffffff, 1);
   for (const sx of [-1, 1]) {
-    s.tube(cx + sx * 4, M(7.5), cx + sx * 14, M(6), 1.5, 'K', { rb: 2.2 }); // the brows, cut up in anger
-    s.ellipse(cx + sx * 8, M(9), 4.6, 2.6, 'W', { flat: 0.8 });
-    s.dot(cx + sx * (8 - (pose ? 2 : 0)), M(9) + 0.5, 1.8, INK);
-    s.line(cx + sx * 3.5, M(9) - 2.5, cx + sx * 12.5, M(9) - 3, 0xd8203a, 1, 0.8); // red kumadori lines
-    s.line(cx + sx * 12, M(9) + 3, cx + sx * 15, M(12), 0xd8203a, 1, 0.7);
+    s.tube(cx + sx * 3, 19, cx + sx * 12, 15, 1.8, 'K', { rb: 1.2 });
+    s.ellipse(cx + sx * 7, 22.5, 4, 2.4, 'W', { flat: 0.9 });
+    s.dot(cx + sx * (7 - (pose ? 1.6 : 0)), 22.6, 1.6, INK);
+    s.line(cx + sx * 3, 20, cx + sx * 12, 19, 0xd8203a, 1, 0.8);
+    s.line(cx + sx * 10, 27, cx + sx * 13, 33, 0xd8203a, 1, 0.75);
+    s.line(cx + sx * 4, 29, cx + sx * 6, 33, 0xb0a8a0, 1);
   }
-  s.line(cx, M(10), cx, M(11.5), 0xb0a8a0, 1);
-  s.poly([[cx - 4.5, M(13)], [cx + 4.5, M(13)], [cx + 3, M(13.8)], [cx - 3, M(13.8)]], 'R', { flat: 0.45 });
-  // the feet in tabi
-  for (const fx of [12, 23]) s.ellipse(M(fx) + 7, M(45), 7.4, 4.8, 'H', { flat: 0.6 });
+  s.line(cx, 24, cx, 28.5, 0xb0a8a0, 1);
+  s.poly([[cx - 4, 35], [cx + 4, 35], [cx + 3, 36.5], [cx - 3, 36.5]], 'R', { flat: 0.4 });
+  s.line(cx - 5, 36, cx - 6, 37.5, 0x8a1a1e, 1);
+  s.line(cx + 5, 36, cx + 6, 37.5, 0x8a1a1e, 1);
   return s.render();
 }
 
 export function kuroko(f) {
   const s = new HiSprite(45, 69, RAMPS);
   const cx = 22.5;
-  const black = { pat: fur(Math.PI / 2, { amt: 0.14, len: 12, w: 2, gap: 0.05 }) };
-  // the robe, the arms reaching up to work the puppet's rods
-  s.paint([0, 24, 45, 69], (x, y) => Math.abs(x - cx) < 10 + (y - 24) * 0.22, 'X', (x) => 0.55 - (x - cx) / 90, black);
+  const cloth = (seed, a = Math.PI / 2) => ({ pat: mix2(fur(a, { amt: 0.16, len: 12, w: 2, gap: 0.05, seed }), speckle({ amt: 0.05 })) });
+  // the black cotton robe, its folds catching what little light there is
+  s.paint([0, 24, 45, 69], (x, y) => Math.abs(x - cx) < 10 + (y - 24) * 0.22, 'Xk', (x, y) => 0.52 - (x - cx) / 70 - (y - 24) / 300, cloth(3));
+  for (const d of [-6, 0, 6]) s.line(cx + d * 0.6, 34, cx + d * 1.3, 68, 0x4a4660, 1, 0.7);
+  // the arms up at the puppet's controls, bare hands on the rods
   for (const sx of [-1, 1]) {
     const hx = cx + sx * (f ? 21 : 18);
-    s.tube(cx + sx * 7, 31, hx, 17, 3, 'X', black);
-    s.ellipse(hx, 15.5, 2.4, 2.4, 'H', { flat: 0.6 });
-    s.line(hx, 14, hx + sx * 2, 2, 0x8a6a3a, 1); // the rod
+    s.tube(cx + sx * 7, 31, hx, 18, 3.4, 'Xk', cloth(5 + sx, Math.atan2(18 - 31, hx - cx - sx * 7)));
+    s.line(cx + sx * 8, 30, hx - sx * 1, 19, 0x5a5672, 1, 0.6);
+    s.ellipse(hx, 16, 2.6, 2.6, 'H', { flat: 0.55 });
+    s.line(hx, 14, hx + sx * 2, 1, 0x8a6a3a, 1);
   }
-  // the hood, the gauze over the eyes
-  s.ellipse(cx, M(4.5), 10.6, 11.4, 'X', { bias: 0.02, ...black });
-  s.poly([[cx - 10, 5], [cx + 10, 5], [cx + 12, 28], [cx - 12, 28]], 'X', { flat: 0.42, ...black });
-  s.poly([[cx - 6, 13], [cx + 6, 13], [cx + 6, 17], [cx - 6, 17]], 'D', { flat: 0.4, pat: speckle({ amt: 0.2, dark: 0.3 }) });
-  s.dot(cx - 2.5, 15, 0.8, 0x8a8aa8);
-  s.dot(cx + 2.5, 15, 0.8, 0x8a8aa8);
+  // the hood falling to the shoulders, the gauze panel over the face, a shadow of the face behind it
+  s.ellipse(cx, M(4.5), 10.6, 11.4, 'Xk', { bias: 0.04, ...cloth(9) });
+  s.poly([[cx - 10, 5], [cx + 10, 5], [cx + 12, 28], [cx - 12, 28]], 'Xk', { flat: 0.42, ...cloth(10) });
+  for (const d of [-7, 0, 7]) s.line(cx + d * 0.8, 10, cx + d * 1.2, 27, 0x4a4660, 1, 0.6);
+  s.poly([[cx - 6.5, 11], [cx + 6.5, 11], [cx + 7, 21], [cx - 7, 21]], 'D', { flat: 0.32, pat: speckle({ amt: 0.3, dark: 0.3, light: 0.2 }) });
+  s.dot(cx - 2.6, 15, 1, 0x9a96b0, 0.8);
+  s.dot(cx + 2.6, 15, 1, 0x9a96b0, 0.8);
   return s.render();
 }
 

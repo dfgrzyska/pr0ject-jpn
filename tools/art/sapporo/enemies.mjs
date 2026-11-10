@@ -431,7 +431,10 @@ export function yukionna(f) {
       const i = y * 117 + x;
       if (s.mat[i] !== 'k') continue;
       const t = (y - 108) / 42;
-      if (((x * 7 + y * 13 + f * 5) % 17) / 17 < t * 1.1 || Math.sin(x * 0.9 + y * 0.3 + f) * 0.5 + 0.5 < t - 0.3) s.mat[i] = null;
+      // the hem tears into ragged tongues of white that thin and drift away (no checkerboard)
+      const tongue = 0.55 + Math.sin(x * 0.42 + f * 0.8) * 0.22 + Math.sin(x * 1.13 + f * 1.7) * 0.12;
+      if (t > tongue) s.mat[i] = null;
+      else if (t > tongue - 0.22) s.px(x, y, 0xeef4ff, 0.35 + (tongue - t) * 2.5); // thinning to mist at its ends
     }
   for (let k = 0; k < 18; k++) s.dot(28 + ((k * 23 + f * 9) % 62), 118 + ((k * 11 + f * 3) % 30), 0.9, 0xe8ffff, 0.85);
   // the face: pale under straight-cut bangs, long cold eyes, blue lips

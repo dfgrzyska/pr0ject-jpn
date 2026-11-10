@@ -83,17 +83,29 @@ export function hata(f) {
   const s = new HiSprite(69, 84, RAMPS);
   const cx = 34.5;
   const flex = [0, 1.5, 0, -1.5][f];
-  // the diamond of paper on its bamboo cross, in the colours of a signal flag: red and white halves, a blue band
+  const bow = [0, 1.6, 2.4, 1.6][f]; // the paper bellies in the wind between the spars
   const kite = [[cx, 3], [cx + 31 + flex, 30], [cx, 57], [cx - 31 - flex, 30]];
-  s.poly(kite, 'p', { flat: 0.68, pat: mix2(fur(0.4, { amt: 0.06, len: 20, w: 3 }), speckle({ amt: 0.05 })) });
-  s.paint([0, 0, 69, 60], (x, y) => x < cx && Math.abs(x - cx) / (31 + flex) + Math.abs(y - 30) / 27 < 1, 'l', () => 0.58, silk(5));
-  s.paint([0, 0, 69, 60], (x, y) => Math.abs(y - 30) < 3.5 && Math.abs(x - cx) / (31 + flex) + Math.abs(y - 30) / 27 < 1, 'B', () => 0.5);
+  const inKite = (x, y) => Math.abs(x - cx) / (31 + flex) + Math.abs(y - 30) / 27 < 1;
+  const washi = { pat: mix2(fur(0.4, { amt: 0.08, len: 22, w: 3 }), speckle({ amt: 0.1, dark: 0.04, light: 0.06 }), mottle({ amt: 0.08, scale: 6 })) };
+  // the washi diamond in the colours of a signal flag: the classic hata, white below, red above, a band of blue across
+  s.paint([0, 0, 69, 60], inKite, 'p', (x, y) => 0.7 - (x - cx) / 120 - Math.abs(y - 30) / 200 + bow * 0.01 * (1 - Math.abs(x - cx) / 31), washi);
+  s.paint([0, 0, 69, 60], (x, y) => inKite(x, y) && y < 26, 'l', (x, y) => 0.58 - (x - cx) / 120, washi);
+  s.paint([0, 0, 69, 60], (x, y) => inKite(x, y) && y > 26 && y < 33, 'B', (x) => 0.52 - (x - cx) / 120, washi);
+  // the bamboo spars showing through, their shadow; the paper's edge folded over the frame string
   s.line(cx, 4, cx, 56, 0x8a6a3a, 2);
-  s.line(cx - 30 - flex, 30, cx + 30 + flex, 30, 0x8a6a3a, 1);
-  // the bow line, the bridle, the tail of glass-coated line (biidoro yori) streaming
-  for (const [x, y] of kite) s.dot(x, y, 1.2, 0x5a3a20);
-  s.line(cx, 57, cx - 5 + f * 2, 66, 0xd8d0c0, 1);
-  for (let y = 66; y < 83; y += 0.5) s.px(cx - 5 + f * 2 + Math.sin(y * 0.4 + f) * 3, y, (Math.floor(y) % 4) ? 0xd8d0c0 : 0xffffff);
+  s.line(cx + 1.5, 5, cx + 1.5, 55, 0x000000, 1, 0.15);
+  for (let x = -30; x <= 30; x += 0.5) s.px(cx + x * (1 + flex / 31), 30 - (1 - (x / 30) ** 2) * (4 + bow), 0x8a6a3a);
+  for (let k = 0; k < 4; k++) {
+    const [x0, y0] = kite[k];
+    const [x1, y1] = kite[(k + 1) % 4];
+    s.line(x0, y0, x1, y1, 0xd8ccb0, 1, 0.9);
+  }
+  // the creases where it has flown before
+  s.line(cx - 14, 18, cx - 4, 40, 0xc8bca0, 1, 0.45);
+  s.line(cx + 10, 36, cx + 18, 24, 0xc8bca0, 1, 0.45);
+  // the bridle strings converging below, the line of glass-coated thread (biidoro yori) running away down
+  for (const [x, y] of [[cx, 10], [cx - 15, 30], [cx + 15, 30]]) s.line(x, y, cx - 2 + f, 62, 0xe8e0d0, 1, 0.55);
+  for (let y = 62; y < 83; y += 0.5) s.px(cx - 2 + f + Math.sin(y * 0.3 + f) * 2.5, y, (Math.floor(y * 2) % 5) ? 0xd8d0c0 : 0xffffff);
   return s.render();
 }
 
@@ -156,17 +168,29 @@ export function winchHead(i) {
   const dy = Math.cos(a);
   const px = Math.cos(a);
   const py = Math.sin(a);
-  // the jib: a lattice girder run out towards the target, the counterweight behind, the hook's cable
-  for (const sd of [-1, 1]) s.line(c + px * sd * 3.5, c + py * sd * 3.5, c + dx * 25 + px * sd * 2, c + dy * 25 + py * sd * 2, 0xd8a030, 2);
-  for (let k = 0; k < 6; k++) {
-    const t0 = 4 + k * 3.6;
-    s.line(c + dx * t0 + px * 3, c + dy * t0 + py * 3, c + dx * (t0 + 3.6) - px * 3, c + dy * (t0 + 3.6) - py * 3, 0xa87a20, 1);
+  const P = (t, n) => [c + dx * t + px * n, c + dy * t + py * n];
+  const steel = { pat: mix2(speckle({ amt: 0.18, dark: 0.08, light: 0.05 }), mottle({ amt: 0.14, scale: 4 })) };
+  // the hammerhead of the shipyard's giant cantilever crane, seen from above: the long truss jib out towards the
+  // target, its two chords laced with diagonals, the counter-jib behind with the machinery house and counterweight
+  for (const sd of [-1, 1]) s.tube(...P(-14, sd * 4.5), ...P(26, sd * 3), 1.6, 'm', { rb: 1.2, ...steel });
+  for (let k = 0; k < 10; k++) {
+    const t0 = -12 + k * 3.8;
+    s.tube(...P(t0, 4.2), ...P(t0 + 3.8, -4), 0.8, 'm');
+    s.tube(...P(t0, -4.2), ...P(t0 + 1.9, 0), 0.6, 'm', { bias: -0.1 });
   }
-  s.ellipse(c + dx * 25.5, c + dy * 25.5, 2.4, 2.4, 'K', { flat: 0.2 });
-  s.poly([[c - dx * 6 + px * 7, c - dy * 6 + py * 7], [c - dx * 6 - px * 7, c - dy * 6 - py * 7], [c - dx * 16 - px * 6, c - dy * 16 - py * 6], [c - dx * 16 + px * 6, c - dy * 16 + py * 6]], 'm', { flat: 0.4, pat: speckle({ amt: 0.15 }) });
-  // the operator's cab at the pivot
-  s.ellipse(c, c, 7, 7, 'y', { bias: 0.06 });
-  s.dot(c + dx * 2 - 1, c + dy * 2 - 1, 2, 0x8ad0ff);
+  for (let k = 0; k < 4; k++) s.dot(...P(-10 + k * 9, 4.6 * (k % 2 ? 1 : -1)), 1.6, 0x8a4a2a, 0.7); // rust
+  // the trolley out on the jib, the hook hanging under it
+  s.poly([P(17, 4), P(22, 4), P(22, -4), P(17, -4)], 'y', { flat: 0.6 });
+  s.dot(...P(19.5, 0), 1.4, INK);
+  s.tube(...P(24, -5), ...P(24, 5), 0.8, 'm');
+  // the machinery house, its roof, the counterweight block at the tail
+  s.poly([P(-4, 8), P(-15, 8), P(-15, -8), P(-4, -8)], 'm', { flat: 0.6, ...steel });
+  s.line(...P(-4, 0), ...P(-15, 0), 0x2a3a4a, 1);
+  s.poly([P(-17, 7), P(-25, 7), P(-25, -7), P(-17, -7)], 'K', { flat: 0.45, pat: speckle({ amt: 0.2 }) });
+  // the slewing cab at the pivot, its window towards the jib
+  s.ellipse(c, c, 6.2, 6.2, 'y', { bias: 0.06 });
+  s.dot(...P(2.5, 0), 2, 0x8ad0ff);
+  s.dot(c - 2, c - 2, 1, 0xffffff, 0.8);
   return s.render();
 }
 

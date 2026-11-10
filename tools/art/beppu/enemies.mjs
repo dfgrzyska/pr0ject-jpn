@@ -19,6 +19,7 @@ const RAMPS = {
   f: tones([0x4a3424, 0x86603e, 0xc09a70]), // macaque fur
   q: tones([0x7a2a2a, 0xb85048, 0xe8907a]), // its red face
   w: tones([0x8a6a3a, 0xc8a060, 0xf0d898]), // hinoki wood
+  u: [0x082a66, 0x1250a8, 0x2a7ad0, 0x6ab8f0, 0xd8f4ff], // Umi Jigoku's cobalt
   a: [0x2a7aa0, 0x5ab8d8, 0x9ae0f0, 0xd0f4ff, 0xffffff], // Umi Jigoku's blue water
   g: tones([0x5a5650, 0x8e8a82, 0xc8c4bc]), // Oniishibozu mud
   z: tones([0x1e2a16, 0x3e5a2a, 0x6e8a44]), // crocodile
@@ -198,27 +199,41 @@ export function nozzle(i) {
 export function boil(mud, f) {
   const s = new HiSprite(51, 51, RAMPS);
   const c = 25.5;
+  // the vent's pool: a rim of pale sinter crusted round it, the water (or mud) inside darker towards the throat
+  s.ellipse(c, c, 23, 21, 'E', { flat: 0.55, pat: mix2(speckle({ amt: 0.3, dark: 0.1, light: 0.2 }), mottle({ amt: 0.15, scale: 4 })) });
+  for (let a = 0; a < TAU; a += 0.05) s.px(c + Math.cos(a) * 21.5, c + Math.sin(a) * 19.5, 0xe8e0d0, 0.7);
+  const mat = mud ? 'g' : 'u';
+  s.paint([c - 21, c - 19, c + 21, c + 19], (x, y) => ((x - c) / 20) ** 2 + ((y - c) / 18) ** 2 < 1, mat, (x, y) => 0.2 + 0.45 * Math.min(1, Math.hypot((x - c) / 20, (y - c) / 18)) - (y - c) / 90, { glow: false, pat: mottle({ amt: 0.15, scale: 4, seed: 3 + f }) });
+  // ripples spreading from the centre, a burst ring
+  for (const r of [7 + f * 3, 13 + f * 3]) for (let a = 0; a < TAU; a += 0.04) s.px(c + Math.cos(a) * r, c + Math.sin(a) * r * 0.9, mud ? 0x4e4a44 : 0xd0f4ff, mud ? 0.6 : 0.5);
   if (mud) {
-    // grey mud domes swelling like shaven heads, one bursting into rings
+    // grey domes of mud swelling like shaven heads, each lit on top, dark at its foot, one bursting
     for (let k = 0; k < 6; k++) {
       const a = (k / 6) * TAU + f * 0.5;
-      const d = 8 + ((k + f) % 3) * 4.5;
-      const r = 4 + ((k + f) % 2) * 2.2;
-      s.ellipse(c + Math.cos(a) * d, c + Math.sin(a) * d, r, r * 0.9, 'g', { bias: 0.05, pat: speckle({ amt: 0.12 }) });
-      s.px(c + Math.cos(a) * d - r * 0.4, c + Math.sin(a) * d - r * 0.4, 0xf0eeea);
+      const d = 6 + ((k + f) % 3) * 4.5;
+      const r = 3 + ((k + f) % 2) * 1.8;
+      const x = c + Math.cos(a) * d;
+      const y = c + Math.sin(a) * d * 0.9;
+      for (let b = 0; b < TAU; b += 0.1) s.px(x + Math.cos(b) * (r + 0.8), y + Math.sin(b) * (r + 0.8) * 0.9, 0x3a3632, 0.8);
+      s.ellipse(x, y, r, r * 0.9, 'g', { bias: 0.15 });
+      s.dot(x - r * 0.35, y - r * 0.4, r * 0.3, 0xf0eeea, 0.9);
     }
-    s.ellipse(c, c, 6 + f * 2, 5.4 + f * 2, 'g', { bias: 0.1, pat: speckle({ amt: 0.12 }) });
-    for (let a = 0; a < TAU; a += 0.04) s.px(c + Math.cos(a) * (10 + f * 3), c + Math.sin(a) * (8.5 + f * 3), 0x5a5650, 0.7);
-    return s.render({ outline: 0 });
+    s.ellipse(c, c, 4 + f * 1.6, 3.6 + f * 1.4, 'g', { bias: 0.2 });
+    s.dot(c - 1.5, c - 1.5, 1.2, 0xffffff);
+  } else {
+    // bubbles boiling up, white-rimmed, a dome of water lifting at the centre, steam beginning to rise
+    for (let k = 0; k < 9; k++) {
+      const a = (k / 9) * TAU + f * 0.5;
+      const d = 5 + ((k + f) % 3) * 4.5;
+      const r = 1.8 + ((k + f) % 2) * 1.2;
+      const x = c + Math.cos(a) * d;
+      const y = c + Math.sin(a) * d * 0.9;
+      for (let b = 0; b < TAU; b += 0.15) s.px(x + Math.cos(b) * r, y + Math.sin(b) * r, 0xffffff, 0.85);
+      s.px(x - r * 0.4, y - r * 0.4, 0xffffff);
+    }
+    s.ellipse(c, c, 5 + f * 2, 4.6 + f * 2, 'u', { bias: 0.35 });
+    for (let k = 0; k < 3; k++) for (let y = 2; y < c - 6; y += 0.5) s.px(c - 8 + k * 8 + Math.sin(y * 0.5 + f + k) * 2, y + f * 2, 0xf4f8ff, 0.18 + (y / c) * 0.3);
   }
-  // the cobalt water churning, bubbles boiling up white
-  for (let k = 0; k < 9; k++) {
-    const a = (k / 9) * TAU + f * 0.5;
-    const d = 6 + ((k + f) % 3) * 5;
-    s.ellipse(c + Math.cos(a) * d, c + Math.sin(a) * d, 2.6 + ((k + f) % 2) * 1.6, 2.6 + ((k + f) % 2) * 1.6, 'a', { glow: true, flat: 0.75 });
-  }
-  s.ellipse(c, c, 5 + f * 2, 5 + f * 2, 'a', { glow: true, flat: 0.95 });
-  for (let a = 0; a < TAU; a += 0.03) s.px(c + Math.cos(a) * (15 + f * 2), c + Math.sin(a) * (14 + f * 2), 0xd0f4ff, 0.55);
   return s.render({ outline: 0 });
 }
 
