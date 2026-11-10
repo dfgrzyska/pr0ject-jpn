@@ -4,6 +4,7 @@
   "subtitle": "BEPPU - GORĄCE ŹRÓDŁA",
   "map": [131.49, 33.28, -6, -10],
   "skin": "beppu",
+  "enemyArt": true,
   "near": "steam",
   "shadows": true,
   "dark": [[0, 0.05], [3300, 0.15], [5450, 0.4], [7168, 0.65]],

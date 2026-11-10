@@ -235,7 +235,7 @@ export const beppu = {
 
   /** Stand in the pond with `vh` px of the sprite above the surface (rising from the blood). */
   oniStand(e, surf, vh) {
-    e.setCrop(0, 0, 63, vh);
+    e.setCrop(0, 0, 63 / e.base, vh / e.base); // (in the frame's own pixels: a 540 px frame is drawn at 3x)
     e.y = surf + 42 - vh;
     Object.assign(e.segs[0], { x: e.x, y: e.y - 20 });
   },

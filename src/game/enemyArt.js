@@ -57,6 +57,10 @@ export const CITY_ANIMS = {
   takoyaki: [four('takoyaki'), 8], fugu: [four('fugu'), 5], kushi: [four('kushi'), 12],
   kuroko: [['kuroko_0', 'kuroko_1'], 3], tako: [['tako_0', 'tako_1'], 2],
   ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`ame_${c}`, [four(`ame_${c}`), 8]])),
+  // Beppu
+  imp: [four('imp'), 8], kamado: [four('kamado'), 6], saru: [four('saru'), 10],
+  boil: [['boil_0', 'boil_1'], 10], mudboil: [['mudboil_0', 'mudboil_1'], 5],
+  ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`oke_${c}`, [four(`oke_${c}`), 4]])),
 };
 
 /** Kyūbi's tails: how many swaying frames each one has in the atlas it comes from. */
