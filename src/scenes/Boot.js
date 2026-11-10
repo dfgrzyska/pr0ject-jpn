@@ -51,6 +51,7 @@ export class Boot extends Phaser.Scene {
   preload() {
     this.load.setPath('assets/');
     this.load.atlas('sprites', 'sprites.png', 'sprites.json');
+    this.load.atlas('portraits', 'portraits.png', 'portraits.json'); // the album's and the parade's enemies at 540 px
     this.load.image('font', 'font.png');
     this.load.image('font_ink', 'font_ink.png');
     this.load.json('fontMeta', 'font.json');

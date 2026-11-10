@@ -38,7 +38,7 @@ function triangle(m, a, b, c, ch) {
 }
 
 /** The spine of tail i (left half, 0..4) in swaying frame f, relative to the root: [{ x, y, r, t }]. */
-function spine(i, f) {
+export function spine(i, f) {
   const phase = (f / SWAY) * Math.PI * 2 + i * 0.9;
   const a = tailAngle(i) + Math.sin(phase) * 0.05;
   const ux = Math.cos(a);
@@ -88,7 +88,7 @@ function tailMask(i, f, hw, hh) {
 }
 
 /** Half-size of the mask that holds every frame of tail i (root in the middle). */
-function tailBox(i) {
+export function tailBox(i) {
   let hw = 0;
   let hh = 0;
   for (let f = 0; f < SWAY; f++)

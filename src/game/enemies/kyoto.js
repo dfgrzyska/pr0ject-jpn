@@ -3,7 +3,7 @@
 import Phaser from 'phaser';
 import { DEPTH, VIEW } from '../../config.js';
 import { volley } from '../../difficulty.js';
-import { tailFrames } from '../enemyArt.js';
+import { enemyTexture, tailFrames } from '../enemyArt.js';
 import { slow, normal, fast, TAU, EXTRAS } from './shared.js';
 
 // the tanuki's shapeshifted copies: one hit and they turn back into leaves
@@ -278,7 +278,9 @@ export const kyoto = {
       }
       sp.x += (tx - sp.x) * Math.min(1, dt * 5);
       sp.y += (ty - sp.y) * Math.min(1, dt * 5);
-      sp.setFrame(`kitsunebi_${Math.floor(g.t * 8 + i) % 2}`).setAlpha(e.alpha);
+      // (its own four flickering frames at 540 px, the old two otherwise)
+      const hi = enemyTexture('kyubi_spirit_0') !== 'sprites';
+      sp.setFrame(hi ? `kyubi_spirit_${Math.floor(g.t * 10 + i) % 4}` : `kitsunebi_${Math.floor(g.t * 8 + i) % 2}`).setAlpha(e.alpha);
       if (g.enraged) sp.setTint(0x6aa8ff);
     });
     if (g.stage < 2 || !this.canFire(e) || g.gate > 0) return;
@@ -350,7 +352,7 @@ export const kyoto = {
     s.fx.foxfire(x, y, 8, 5);
     s.fx.light(x, y, 0.8, false, 0x80b0ff);
     // its flame stays on, a spirit circling the fox
-    g.sats.push(this.segPool.spawn('kitsunebi_0', x, y, { ang: 0 }).setDepth(DEPTH.air - 0.12));
+    g.sats.push(this.segPool.spawn(enemyTexture('kyubi_spirit_0') !== 'sprites' ? 'kyubi_spirit_0' : 'kitsunebi_0', x, y, { ang: 0 }).setDepth(DEPTH.air - 0.12));
     s.sfx.explode('s');
     s.cameras.main.shake(160, 0.004);
     g.poseT = 0.35;

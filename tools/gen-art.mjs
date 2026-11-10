@@ -3,6 +3,7 @@
 //   node tools/gen-art.mjs --preview      -> also writes previews to tools/preview/
 //   node tools/gen-art.mjs --only=stage1  -> only that stage's backgrounds & props (leaves shared assets untouched)
 //   node tools/gen-art.mjs --only=shared  -> only shared sprites, icons, font, map & ending
+//   node tools/gen-art.mjs --only=enemies -> only the cities' 540 px enemies (bg/<id>/enemies.*) and the portraits
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,6 +22,11 @@ import * as osaka from './art/osaka/index.mjs';
 import * as beppu from './art/beppu/index.mjs';
 import * as nagasaki from './art/nagasaki/index.mjs';
 import * as hiroshima from './art/hiroshima/index.mjs';
+import { kyotoEnemies, KYOTO_PORTRAITS } from './art/kyoto/enemies.mjs';
+
+// cities whose enemies are drawn at 540 px (docs/enemies-540-plan.md): their atlas, and what of it the album
+// and the bosses' parade show (src/game/enemyArt.js; the stage file says "enemyArt": true)
+const ENEMY_ART = [{ id: 'stage1', build: kyotoEnemies, portraits: KYOTO_PORTRAITS }];
 
 // background generators per stage (id = folder under public/assets/bg/)
 const STAGES = [
@@ -102,6 +108,24 @@ write('ending.png', ending.toPNG());
 write('ending_clouds.png', buildEndingClouds().toPNG());
 write('ending_night.png', buildEndingNight().toPNG());
 if (preview) writeFileSync(join(previewDir, 'ending_x1.png'), ending.toPNG());
+}
+
+if (!only || only === 'enemies') {
+  console.log('enemies at 540 px');
+  const portraits = [];
+  for (const { id, build, portraits: names } of ENEMY_ART) {
+    const list = [];
+    build((name, raster) => list.push({ name, raster }));
+    const { raster, json } = packAtlas(list, 1024, 2, 'enemies.png');
+    mkdirSync(join(assets, 'bg', id), { recursive: true });
+    write(`bg/${id}/enemies.png`, raster.toPNG());
+    write(`bg/${id}/enemies.json`, Buffer.from(JSON.stringify(json)));
+    for (const n of names) portraits.push(list.find((e) => e.name === n) ?? (() => { throw new Error(`no portrait ${n} in ${id}`); })());
+    if (preview) writeFileSync(join(previewDir, `${id}_enemies.png`), raster.toPNG());
+  }
+  const { raster, json } = packAtlas(portraits, 512, 2, 'portraits.png');
+  write('portraits.png', raster.toPNG());
+  write('portraits.json', Buffer.from(JSON.stringify(json)));
 }
 
 for (const { id, art } of STAGES) {

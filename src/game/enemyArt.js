@@ -30,7 +30,16 @@ export function unregisterEnemyAtlas(key) {
  * comes in, every one of these whose frames are all in it replaces the shared-atlas one of the same key
  * (so e.play('tanuki') in the game code doesn't change); when it goes, the shared one comes back.
  */
-export const CITY_ANIMS = {};
+const four = (name) => [0, 1, 2, 3].map((i) => `${name}_${i}`);
+export const CITY_ANIMS = {
+  // Kyoto
+  popcorn: [four('popcorn'), 8],
+  shooter: [four('shooter'), 6],
+  diver: [four('diver'), 6],
+  tanuki: [four('tanuki'), 4],
+  tanuki_leaf: [four('tanuki_leaf'), 4],
+  ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`carrier_${c}`, [four(`carrier_${c}`), 10]])),
+};
 
 /** Kyūbi's tails: how many swaying frames each one has in the atlas it comes from. */
 export function tailFrames() {

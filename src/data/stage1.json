@@ -4,6 +4,7 @@
   "subtitle": "KIOTO - DAWNA STOLICA",
   "map": [135.77, 35.01, 12, -8],
   "skin": "kyoto",
+  "enemyArt": true,
   "near": "sakura",
   "dark": [[0, 0.05], [5800, 0.1], [6600, 0.75]],
   "scroll": { "far": 12, "mid": 30, "near": 64, "anchor": 420, "stop": 6880 },
