@@ -4,6 +4,7 @@
   "subtitle": "OSAKA - KUIDAORE",
   "map": [135.5, 34.69, 6, 10],
   "skin": "osaka",
+  "enemyArt": true,
   "near": "osaka",
   "shadows": true,
   "dark": [[0, 0.05], [1900, 0.15], [2950, 0.55], [3750, 1]],

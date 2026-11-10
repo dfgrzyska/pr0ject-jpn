@@ -53,6 +53,10 @@ export const CITY_ANIMS = {
   kazan: [four('kazan'), 8], kazan_s: [four('kazan_s'), 10], teppo: [four('teppo'), 10], kappa: [four('kappa'), 7],
   ripple: [['ripple_0', 'ripple_1', 'ripple_2'], 6], raiju: [four('raiju'), 10],
   vent: [['vent_0', 'vent_1'], 4], crater: [['crater_0', 'crater_1'], 3],
+  // Osaka
+  takoyaki: [four('takoyaki'), 8], fugu: [four('fugu'), 5], kushi: [four('kushi'), 12],
+  kuroko: [['kuroko_0', 'kuroko_1'], 3], tako: [['tako_0', 'tako_1'], 2],
+  ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`ame_${c}`, [four(`ame_${c}`), 8]])),
 };
 
 /** Kyūbi's tails: how many swaying frames each one has in the atlas it comes from. */
