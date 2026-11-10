@@ -94,9 +94,13 @@ export const WEAPONS = {
   colorToType: { red: 'spread', blue: 'laser', green: 'homing' },
   typeToColor: { spread: 'red', laser: 'blue', homing: 'green' },
   basic: { interval: 1 / 12, damage: 1, speed: 360 },
-  spread: { interval: 1 / 12, damage: 0.8, speed: 300, pellets: [3, 5, 5, 7, 7], arc: [24, 40, 48, 60, 72] },
-  laser: { interval: 1 / 30, damage: [0.9, 1.1, 1.35, 1.6, 1.9], speed: 480, sprite: [1, 1, 2, 2, 3], sideFrom: 2 },
-  homing: { interval: 1 / 6, damage: 1.4, speed: 210, turn: 6, life: 1.6, orbs: [2, 2, 3, 3, 4] },
+  // close: pellets hit harder for their first `close` s of flight (point blank)
+  spread: { interval: 1 / 12, damage: 0.8, speed: 300, pellets: [3, 5, 5, 7, 7], arc: [20, 32, 38, 46, 52], close: 0.22, closeBonus: 1.35 },
+  // pierce: the beam goes on through this many small fry (popcorn, divers), keeping `pierceKeep` of its damage
+  laser: { interval: 1 / 30, damage: [0.9, 1.1, 1.35, 1.6, 1.9], speed: 480, sprite: [1, 1, 2, 2, 3], sideFrom: 2, pierce: 1, pierceKeep: 0.6 },
+  // arm: s flying straight before the orb starts seeking; range: px it looks for a target in; lockY / lockSeen:
+  // an enemy is only sought once it is this far down the screen and has been on it this long (waves get to come in)
+  homing: { interval: 1 / 6, damage: 1.4, speed: 210, turn: 3.8, life: 1.15, orbs: [2, 2, 3, 3, 4], arm: 0.18, range: 170, lockY: 18, lockSeen: 0.25 },
 };
 
 // Grazing: a bullet passing within `radius` px of the hit dot (without hitting) scores and, while the bomb

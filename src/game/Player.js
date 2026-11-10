@@ -295,6 +295,10 @@ export class Player {
     s.homing = false;
     s.life = 2;
     s.bean = false;
+    s.close = 0;
+    s.pierce = 0;
+    s.hitE = null;
+    s.arm = 0;
     if (extra) Object.assign(s, extra);
     if (hot) s.setTint(0xffb070);
     return s;
@@ -315,19 +319,20 @@ export class Player {
         break;
       }
       case 'spread': {
-        const { speed, damage, pellets, arc } = WEAPONS.spread;
+        const { speed, damage, pellets, arc, close, closeBonus } = WEAPONS.spread;
         const n = pellets[lv];
         const a = Phaser.Math.DegToRad(arc[lv]);
         for (let i = 0; i < n; i++) {
           const ang = (i / (n - 1) - 0.5) * a;
-          this.shot('ps_spread', x, y - 7, Math.sin(ang) * speed, -Math.cos(ang) * speed, damage, 2.5);
+          // point blank: harder while the pellet is young (see updateShots)
+          this.shot('ps_spread', x, y - 7, Math.sin(ang) * speed, -Math.cos(ang) * speed, damage * closeBonus, 2.5, { close });
         }
         break;
       }
       case 'laser': {
-        const { speed, damage, sprite, sideFrom } = WEAPONS.laser;
+        const { speed, damage, sprite, sideFrom, pierce } = WEAPONS.laser;
         const frame = `ps_laser_${sprite[lv]}`;
-        this.shot(frame, x, y - 12, 0, -speed, damage[lv], 1.5 + sprite[lv]);
+        this.shot(frame, x, y - 12, 0, -speed, damage[lv], 1.5 + sprite[lv], { pierce });
         if (this.level >= sideFrom && this.volleys % 3 === 0) {
           const s = WEAPONS.basic.speed;
           this.shot('ps_needle', x - 7, y - 2, -20, -s, 0.6, 2);
@@ -414,7 +419,7 @@ export class Player {
   }
 
   launchOrbs() {
-    const { speed, damage, orbs, life } = WEAPONS.homing;
+    const { speed, damage, orbs, life, arm } = WEAPONS.homing;
     const n = orbs[this.level - 1];
     this.scene.sfx.shot('homing');
     for (let i = 0; i < n; i++) {
@@ -423,6 +428,7 @@ export class Player {
       const s = this.shot('ps_homing_0', this.x + side * 6, this.y, Math.cos(ang) * speed, Math.sin(ang) * speed, damage, 3, {
         homing: true,
         life,
+        arm,
       });
       s.play('homing');
     }
@@ -433,7 +439,9 @@ export class Player {
     const turn = WEAPONS.homing.turn;
     for (const s of this.shots.live) {
       s.life -= dt;
-      if (s.homing) {
+      if (s.close > 0 && (s.close -= dt) <= 0) s.damage /= WEAPONS.spread.closeBonus; // out of point-blank range
+      if (s.homing && (s.arm -= dt) <= 0) {
+        // armed: seek the nearest target in range (before that the orb flies out along its launch arc)
         const t = enemies.nearest(s.x, s.y);
         {
           // no target: curve back to flying straight up

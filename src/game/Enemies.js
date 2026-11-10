@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BEANS, DEPTH, ENEMIES, FAIR, VIEW } from '../config.js';
+import { BEANS, DEPTH, ENEMIES, FAIR, VIEW, WEAPONS } from '../config.js';
 import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
 import { SKINS } from './skins.js';
@@ -202,12 +202,15 @@ export class Enemies {
     return e;
   }
 
+  /** The target a homing orb at (x, y) seeks: within its range, never one that has only just come on screen. */
   nearest(x, y) {
+    const { range, lockY, lockSeen } = WEAPONS.homing;
     let best = null;
-    let bd = Infinity;
+    let bd = range * range;
     for (const e of this.pool.live) {
-      if (e.y < 0 || e.hp <= 0 || e.ghost || e.invuln) continue;
-      const d = (e.x - x) ** 2 + (e.y - y) ** 2 + (e.ground ? 900 : 0);
+      if (e.y < lockY || e.seen < lockSeen || e.hp <= 0 || e.ghost || e.invuln) continue;
+      // a Setsubun masu box comes first: its beans are what hurt the oni
+      const d = (e.x - x) ** 2 + (e.y - y) ** 2 + (e.ground ? 900 : 0) - (e.type === 'masu' ? 6400 : 0);
       if (d < bd) {
         bd = d;
         best = e;

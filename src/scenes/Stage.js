@@ -799,7 +799,7 @@ export class Stage extends Phaser.Scene {
     for (const s of p.shots.live) {
       if (s.dead) continue;
       for (const e of enemies) {
-        if (e.dead || e.hp <= 0 || e.ghost || e.pass || e.y < -e.radius + 2) continue;
+        if (e.dead || e.hp <= 0 || e.ghost || e.pass || e.y < -e.radius + 2 || e === s.hitE) continue;
         const r = e.radius + s.radius;
         const dx = e.x - s.x;
         const dy = e.y - s.y;
@@ -807,7 +807,12 @@ export class Stage extends Phaser.Scene {
           this.enemies.damage(e, s.damage, false, s.bean);
           if (s.bean) this.fx.beanPop(s.x, s.y - 2);
           else if (Math.random() < 0.5) this.fx.spark(s.x, s.y - 2);
-          p.shots.kill(s);
+          if (s.pierce > 0 && (e.type === 'popcorn' || e.type === 'diver')) {
+            // the laser burns on through small fry, weaker
+            s.pierce--;
+            s.hitE = e;
+            s.damage *= WEAPONS.laser.pierceKeep;
+          } else p.shots.kill(s);
           break;
         }
       }
