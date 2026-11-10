@@ -20,6 +20,7 @@ const KYUBI_TAIL = Array.from({ length: 9 }, (_, i) => {
   return { frame: `kyubi_tail_${j}`, flip: i > 4, x: i > 4 ? -x : x, y, a: i > 4 ? -Math.PI - a : a };
 });
 const KYUBI_ORDER = [0, 8, 1, 7, 2, 6, 3, 5, 4]; // drawn outer to centre, and lost in that order (the centre one last)
+const KYUBI_HP = 1850;
 // the 大 laid out in fire beds on the Daimonji slope at the end of the Kyoto strip, stroke by stroke in the order
 // it is written ([x, u], as in tools/art/kyoto/mid.mjs)
 export const DAIMONJI = [
@@ -163,12 +164,15 @@ export const kyoto = {
   /**
    * Waits at the head of the 大 on the Daimonji slope while fox-fire gathers; when the scroll stops it condenses
    * out of the flames and its nine tails unfurl. Every ninth of its life it loses a tail, which burns away into
-   * a wisp hunting the player; the attacks fired from the tail tips thin out with them.
+   * a wisp hunting the player, and its flame stays on as a spirit flame circling the fox: the attacks from the
+   * tail tips thin out, the spirits make up for it and more. Three phases (by the tails it has left):
+   * 9-7 the tails' fans and one Daimonji; 6-4 the spirits flank it, firing from the sides, the 大 burning in
+   * crossing strokes; 3-1 nine spirit flames ring the fox in a storm, the 大 lit twice over.
    */
   spawnKyubi(w, base) {
     const g = { kind: 'kyubi', state: 'dormant', t: 0, phase: 0, step: 0, timer: 1, parts: [], enraged: false, defeated: false, awake: false };
-    Object.assign(g, { home: w.x, homeY: 66, sway: 0, n: 0, tails: [], poseT: 0, blinkT: 2 });
-    const e = this.pool.spawn('kyubi_idle', g.home, g.homeY, { ...base, role: 'body', hp: 1430, maxHp: 1430, radius: 13, group: g, ghost: true, invuln: true });
+    Object.assign(g, { home: w.x, homeY: 66, sway: 0, n: 0, tails: [], poseT: 0, blinkT: 2, stage: 1, sats: [], satT: 1, satI: 0 });
+    const e = this.pool.spawn('kyubi_idle', g.home, g.homeY, { ...base, role: 'body', hp: KYUBI_HP, maxHp: KYUBI_HP, radius: 13, group: g, ghost: true, invuln: true });
     e.setDepth(DEPTH.air - 0.1).setAlpha(0);
     for (let i = 0; i < 9; i++) {
       const tl = this.tailPool.spawn(`${KYUBI_TAIL[i].frame}_0`, e.x, e.y, { i, lost: false, fly: null, grown: 0 });
@@ -234,14 +238,58 @@ export const kyoto = {
     e.setFrame(g.poseT > 0 ? 'kyubi_cast' : g.blinkT < 0.12 ? 'kyubi_blink' : 'kyubi_idle');
     const want = Math.max(1, Math.ceil((9 * e.hp) / e.maxHp - 1e-6));
     while (g.n > want) this.kyubiLoseTail(g);
-    if (!g.enraged && e.hp < e.maxHp * 0.35) {
-      Object.assign(g, { enraged: true, timer: 0.8, phase: 0, step: 0 });
-      s.hud.show('', 'KYUBI WPADA W SZAŁ!', 1.6, true);
+    if (g.stage === 1 && g.n <= 6) {
+      Object.assign(g, { phase: 0, step: 0 });
+      this.phaseBreak(g, e.x, e.y, 2, 'LISIE OGNIKI');
+    } else if (g.stage === 2 && g.n <= 3) {
+      Object.assign(g, { enraged: true, phase: 0, step: 0 });
+      this.phaseBreak(g, e.x, e.y, 3, 'DZIEWIĘĆ DUCHOWYCH PŁOMIENI');
     }
     this.layKyubi(g, dt);
+    this.kyubiSpirits(g, e, dt);
     g.timer -= dt * (g.enraged ? 1.15 : 1);
     if (g.timer > 0 || !this.canFire(e)) return;
     this.kyubiAttack(g, e);
+  },
+
+  /**
+   * The spirit flames of the lost tails: in phase 2 they hang at the fox's flanks and fire at the player one
+   * after another; in phase 3 they ring it, turning, each one throwing a flame out along the ring (a storm).
+   */
+  kyubiSpirits(g, e, dt) {
+    const n = g.sats.length;
+    if (!n) return;
+    const s = this.scene;
+    g.sats.forEach((sp, i) => {
+      let tx;
+      let ty;
+      if (g.stage >= 3) {
+        const a = g.t * 1.5 + (i * TAU) / n;
+        tx = e.x + Math.cos(a) * 40;
+        ty = e.y + 4 + Math.sin(a) * 30;
+        sp.ang = a;
+      } else {
+        const side = i % 2 ? 1 : -1;
+        const row = Math.floor(i / 2);
+        tx = e.x + side * (42 + row * 10) + Math.sin(g.t * 2 + i) * 3;
+        ty = e.y + 2 + row * 13 + Math.cos(g.t * 1.7 + i) * 4;
+      }
+      sp.x += (tx - sp.x) * Math.min(1, dt * 5);
+      sp.y += (ty - sp.y) * Math.min(1, dt * 5);
+      sp.setFrame(`kitsunebi_${Math.floor(g.t * 8 + i) % 2}`).setAlpha(e.alpha);
+      if (g.enraged) sp.setTint(0x6aa8ff);
+    });
+    if (g.stage < 2 || !this.canFire(e) || g.gate > 0) return;
+    if ((g.satT -= dt) > 0) return;
+    const sp = g.sats[g.satI++ % n];
+    if (g.stage >= 3) {
+      // the storm: out along the ring, turning with it
+      s.bullets.shot('eb_fox_s', sp.x, sp.y, sp.ang + Math.PI / 2, slow + 4, 1.8);
+      g.satT = 0.3;
+    } else {
+      s.bullets.shot('eb_fox_s', sp.x, sp.y, Math.atan2(s.player.y - sp.y, s.player.x - sp.x), slow + 8, 1.8);
+      g.satT = 0.6;
+    }
   },
 
   /** The tails on the body: swaying, unfurling, flashing with it, ablaze in blue when it rages; lost ones flying off. */
@@ -298,6 +346,8 @@ export const kyoto = {
     const y = e.y + T.y;
     s.fx.foxfire(x, y, 8, 5);
     s.fx.light(x, y, 0.8, false, 0x80b0ff);
+    // its flame stays on, a spirit circling the fox
+    g.sats.push(this.segPool.spawn('kitsunebi_0', x, y, { ang: 0 }).setDepth(DEPTH.air - 0.12));
     s.sfx.explode('s');
     s.cameras.main.shake(160, 0.004);
     g.poseT = 0.35;
@@ -331,9 +381,11 @@ export const kyoto = {
       case 'daimonji': {
         if (g.step === 0) {
           // the 大 on the slope catches fire stroke by stroke, the way it is written (warning rings first); the
-          // safe places are between the strokes
+          // safe places are between the strokes. Phase 2: the strokes cross, the last first, a beat apart;
+          // phase 3: the whole 大 burns twice over
+          const strokes = g.stage === 2 ? [...DAIMONJI].reverse() : g.stage >= 3 ? [...DAIMONJI, ...DAIMONJI] : DAIMONJI;
           let k = 0;
-          for (const st of DAIMONJI) {
+          for (const st of strokes) {
             for (let j = 0; j < st.length - 1; j++) {
               const [ax, au] = st[j];
               const [bx, bu] = st[j + 1];

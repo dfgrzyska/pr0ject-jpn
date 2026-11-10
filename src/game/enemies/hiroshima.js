@@ -11,6 +11,10 @@ import { DEPTH, VIEW } from '../../config.js';
 import { volley } from '../../difficulty.js';
 import { slow, normal, fast, DOWN, TAU } from './shared.js';
 
+// Sankibō: the Tengu's HP and each brazier's; `barrier`: what gets through its barrier of fire while both
+// braziers burn; below `wrath` of its life, phase 3; `gale`: px/s its fan's wind pushes the ship
+const SANKIBO = { body: 1390, brazier: 280, barrier: 0.35, wrath: 0.35, gale: 20 };
+
 export const hiroshima = {
   // ---------------------------------------------------------------- Armored Seto Oyster (shooter)
   oysterShooter(e, dt, b) {
@@ -196,6 +200,12 @@ export const hiroshima = {
   },
 
   // ---------------------------------------------------------------- Stage Boss: Itsukushima Sankibō (Great Tengu)
+  /**
+   * Three phases: the guardian of the eternal flame (while both Kiezu-no-hi braziers burn, a barrier of fire
+   * round the Tengu lets only SANKIBO.barrier of a hit through); with the braziers out, the Hauchiwa fan, its
+   * gale blowing the ship sideways; below SANKIBO.wrath of its life the wrath of Misen: phantom braziers,
+   * untouchable, circle it faster and fire, and its feather storm turns both ways.
+   */
   spawnSankibo(w, base) {
     const g = {
       kind: 'sankibo',
@@ -214,13 +224,16 @@ export const hiroshima = {
       homeY: 64,
       galeDir: 1,
       slashes: null,
+      stage: 1,
+      take: { body: SANKIBO.barrier },
+      sats: [],
     };
     const body = this.pool.spawn('sankibo_0', w.x, -46, {
       ...base,
       role: 'body',
       group: g,
-      hp: 980,
-      maxHp: 980,
+      hp: SANKIBO.body,
+      maxHp: SANKIBO.body,
       radius: 17,
     });
     body.play('sankibo');
@@ -234,8 +247,8 @@ export const hiroshima = {
         role: 'brazier',
         group: g,
         orbitPhase: ph,
-        hp: 240,
-        maxHp: 240,
+        hp: SANKIBO.brazier,
+        maxHp: SANKIBO.brazier,
         radius: 7.5,
         pts: 4000,
       });
@@ -258,18 +271,23 @@ export const hiroshima = {
     s.fx.text(e.x, e.y - 12, `+${pts}`, 1.2, 0xffb868);
     this.remove(e);
     const liveBr = g.braziers.filter((br) => !br.dead && br.hp > 0 && br.group === g);
-    if (!liveBr.length && !g.enraged && g.body && !g.body.dead) {
-      this.enrageSankibo(g);
+    if (!liveBr.length && g.stage === 1 && g.body && !g.body.dead) {
+      // the eternal flame is out: the barrier falls, the fan comes out
+      g.take = null;
+      this.phaseBreak(g, g.body.x, g.body.y, 2, 'WACHLARZ HAUCHIWA');
     }
   },
 
   enrageSankibo(g) {
     if (g.enraged) return;
     g.enraged = true;
+    g.take = null;
     const s = this.scene;
-    s.fx.flash(0.35, 0.35);
     s.sfx.shout?.();
-    s.hud.show('SANKIBŌ WPADA W SZAŁ!', 'WICHURA Z GÓRY MISEN!', 2.0);
+    this.phaseBreak(g, g.body.x, g.body.y, 3, 'GNIEW GÓRY MISEN');
+    // the braziers burn again, phantoms out of reach
+    for (const ph of [0, Math.PI]) g.sats.push(this.segPool.spawn('brazier_0', g.body.x, g.body.y, { orbitPhase: ph }).setDepth(DEPTH.air - 0.08).setAlpha(0.7).setTint(0x9ad0ff));
+    for (const sp of g.sats) sp.play('brazier');
   },
 
   updateSankibo(g, dt) {
@@ -288,8 +306,23 @@ export const hiroshima = {
       const swaySpd = g.enraged ? 1.35 : 0.85;
       body.x = g.home + 30 * Math.sin(g.t * swaySpd);
       body.y = g.homeY + 6 * Math.sin(g.t * 1.9);
-      if (!g.enraged && body.hp / body.maxHp < 0.4) this.enrageSankibo(g);
+      if (!g.enraged && body.hp / body.maxHp < SANKIBO.wrath) this.enrageSankibo(g);
     }
+    // phase 1: the barrier of fire round it while the braziers burn
+    if (g.take && g.state === 'fight') {
+      this.tele.lineStyle(1, 0xff9a48, 0.35 + 0.2 * Math.sin(g.t * 9));
+      this.tele.strokeCircle(body.x, body.y, 21 + Math.sin(g.t * 5));
+    }
+    // phase 3: the phantom braziers circle faster and fire now and then
+    g.sats.forEach((sp, i) => {
+      const ang = g.t * 2.9 + sp.orbitPhase;
+      sp.setPosition(body.x + Math.cos(ang) * 40, body.y + Math.sin(ang) * 20 + 4);
+      if (g.state === 'fight' && !g.slashes && g.patternIndex % 3 !== 0 && this.canFire(body) && Math.floor((g.t - dt) * 0.6 + i * 0.5) < Math.floor(g.t * 0.6 + i * 0.5)) {
+        b.fan(sp.x, sp.y + 4, Math.atan2(s.player.y - sp.y, s.player.x - sp.x), 2, 0.4, normal * 0.9);
+      }
+    });
+    // phase 2 on: the Hauchiwa gale blows the ship sideways while the fan is out
+    if (g.stage >= 2 && s.parallax.windTarget !== 0 && s.player.alive) s.player.pull = { x: g.galeDir > 0 ? VIEW.width + 400 : -400, y: s.player.y, k: SANKIBO.gale };
 
     // Update orbiting Sacred Eternal Flame Braziers + golden spiritual tether lines
     const liveBr = g.braziers.filter((br) => !br.dead && br.hp > 0 && br.group === g);
@@ -386,10 +419,11 @@ export const hiroshima = {
           b.fan(br.x, br.y + 4, Math.atan2(pl.y - br.y, pl.x - br.x), g.enraged ? 4 : 3, 0.55, normal * 0.92);
         }
       } else {
-        // Enraged without braziers: double counter-rotating Tengu storm ring!
+        // without braziers: the Tengu storm ring (in its wrath it turns back and forth, the phantoms fire with it)
         const n = volley(12);
+        const turn = g.enraged && g.step % 2 ? -0.3 : 0.3;
         for (let i = 0; i < n; i++) {
-          b.shot('eb_feather_0', body.x, body.y + 10, (i / n) * TAU + g.step * 0.3, normal * 0.95, 2.0, { spin: true });
+          b.shot('eb_feather_0', body.x, body.y + 10, (i / n) * TAU + g.step * turn, normal * 0.95, 2.0, { spin: true });
         }
       }
       g.timer = g.enraged ? 0.68 : 0.85;

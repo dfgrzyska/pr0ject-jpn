@@ -4,6 +4,9 @@ import Phaser from 'phaser';
 import { DEPTH, FAIR, VIEW } from '../../config.js';
 import { slow, normal, DOWN, TAU } from './shared.js';
 
+// Sakurajima: HP of each side vent and of the crater; below `erupt` of the crater's life it erupts (phase 3)
+const VOLCANO = { vent: 360, crater: 1330, erupt: 0.4 };
+
 export const kagoshima = {
   /** Tanegashima matchlock: a red aim line follows the player, locks and blinks, then one fast shot along it. */
   snipe(e, dt, b) {
@@ -181,8 +184,9 @@ export const kagoshima = {
   /**
    * The volcano is the summit itself and never moves (all parts are ground targets). Two side vents
    * first: lava bombs thrown in arcs, steam columns, ember sprays. With both vents gone the crater opens:
-   * eruption rings, rivers of lava rolling down with one gap, volcanic lightning. Below 30% it erupts.
-   * Positions come from the boss wave (the background generator reads the same numbers).
+   * eruption rings, rivers of lava rolling down with one gap, volcanic lightning. Below VOLCANO.erupt of the
+   * crater's life the great Plinian eruption: lightning in the ash, and streams of magma pouring down the slope
+   * in lanes that have to be left. Positions come from the boss wave (the background generator reads the same numbers).
    */
   spawnVolcano(w, base) {
     const s = this.scene;
@@ -194,8 +198,8 @@ export const kagoshima = {
       g.parts.push(e);
       return e;
     };
-    for (const v of w.vents) part('vent_0', 'vent', v, 286, 9, 5000).play('vent');
-    g.crater = part('crater_shut', 'crater', w.crater, 990, 15, 0);
+    for (const v of w.vents) part('vent_0', 'vent', v, VOLCANO.vent, 9, 5000).play('vent');
+    g.crater = part('crater_shut', 'crater', w.crater, VOLCANO.crater, 15, 0);
     g.maxTotal = g.parts.reduce((sum, p) => sum + p.maxHp, 0);
     this.bossGroup = g;
     return g.crater;
@@ -229,10 +233,9 @@ export const kagoshima = {
         bit.vx += (bit.x - c.x) * 0.9 * dt;
       }
     }
-    if (g.stage === 2 && !g.enraged && c.hp < c.maxHp * 0.3) {
-      g.enraged = true;
-      g.timer = 0.6;
-      s.hud.show('', 'SAKURAJIMA WYBUCHA!', 1.6, true);
+    if (g.stage === 2 && c.hp < c.maxHp * VOLCANO.erupt) {
+      Object.assign(g, { enraged: true, phase: 0, step: 0 });
+      this.phaseBreak(g, c.x, c.y, 3, 'WIELKA ERUPCJA');
       s.cameras.main.shake(800, 0.006);
     }
     g.timer -= dt * (g.enraged ? 1.4 : 1);
@@ -289,11 +292,21 @@ export const kagoshima = {
       g.step = 0;
       g.timer = 1;
     };
-    switch (g.phase % 3) {
+    switch (g.phase % (g.enraged ? 4 : 3)) {
+      case 3: {
+        // the Plinian eruption: streams of magma pour down the slope in two lanes, slowly moving over: get out
+        if (g.step === 0) g.lanes = [20 + Math.random() * 50, 110 + Math.random() * 50];
+        g.lanes = g.lanes.map((x, i) => Phaser.Math.Clamp(x + (i ? -1 : 1) * 14 * (g.step ? 1 : 0), 14, VIEW.width - 14));
+        for (const x of g.lanes) b.beam(x, { warn: 0.9, live: 0.9, w: 14, kind: 'steam', y0: c.y + 14 });
+        b.fan(c.x, c.y + 10, this.aimAt(c, 0, 10), 3, 0.5, slow);
+        g.timer = 1.5;
+        if (++g.step >= 3) next();
+        break;
+      }
       case 0:
         // eruption rings
         if (g.step === 0) s.cameras.main.shake(400, 0.004);
-        b.ring(c.x, c.y + 4, g.enraged ? 22 : 18, g.step * 0.19, g.step % 2 ? normal : slow, g.step % 2 === 0);
+        b.ring(c.x, c.y + 4, g.enraged ? 16 : 18, g.step * 0.19, g.step % 2 ? normal : slow, g.step % 2 === 0);
         g.timer = 0.5;
         if (++g.step >= 4) next();
         break;
@@ -330,12 +343,11 @@ export const kagoshima = {
     this.wrecks.spawn('vent_dead', e.x, e.y, { u: e.u });
     this.remove(e);
     if (g.parts.some((p) => p.role === 'vent' && !p.dead && p.group === g)) return;
-    Object.assign(g, { stage: 2, phase: 0, step: 0, timer: 1.4 });
+    Object.assign(g, { phase: 0, step: 0, timer: 1.4 });
     g.crater.invuln = false;
     g.crater.play('crater');
     s.bullets.cancelAll(s.fx);
-    s.fx.flash(0.5, 0.4);
     s.cameras.main.shake(700, 0.006);
-    s.hud.show('KRATER SIĘ OTWIERA!', '', 2);
+    this.phaseBreak(g, g.crater.x, g.crater.y, 2, 'KRATER SIĘ OTWIERA!');
   },
 };

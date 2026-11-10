@@ -9,6 +9,10 @@ import { slow, normal, DOWN, TAU, EXTRAS } from './shared.js';
 export const YUKI = { hp: 860, time: 52, crystals: 5, crystalLife: 6.5, mist: 4.6, pull: 26, whiteout: 4.4 };
 const MIRROR = { hp: 45, weight: 0, score: 1500, radius: 11, explosion: 'm' };
 const CRYSTAL = { hp: 12, weight: 0, score: 100, radius: 6, explosion: 's' };
+// The Snow Festival bear: HP of the ice heart, each paw and the bear inside; `guard`: what the heart takes of a
+// hit while both paws stand; the blizzard below `storm` of the bear's life: `wind` px/s pushing the ship,
+// `drift` px/s pushing the bullets
+const KUMA = { heart: 400, paw: 220, bear: 1060, guard: 0.3, storm: 0.45, wind: 22, drift: 16 };
 
 export const sapporo = {
   /** The ice lantern's shell breaks: the bare flame flares up and fires faster. */
@@ -553,6 +557,8 @@ export const sapporo = {
    * Both paws and the ice heart are separate targets; the sculpture's body is solid ice. Breaking the
    * heart shatters the sculpture: phase 2 is the brown higuma that was inside.
    */
+  // Phases: the ice sculpture (its heart guarded while both paws stand), the higuma, the Hokkaido blizzard
+  // below KUMA.storm of its life (a crosswind pushing the ship and the bullets, icicles from the eaves)
   spawnKuma(w, base) {
     const s = this.scene;
     const y = -36;
@@ -566,10 +572,12 @@ export const sapporo = {
       return e;
     };
     // parts before the body, so shots reach them first
-    part('kuma_heart_0', 'heart', 0, 4, 330, 6, 6000).play('kuma_heart');
-    part('kuma_paw', 'paw', -22, -13, 165, 7, 3000).setFlipX(true);
-    part('kuma_paw', 'paw', 22, -13, 165, 7, 3000);
-    g.body = part('kuma_ice', 'body', 0, 0, 770, 20, 0);
+    part('kuma_heart_0', 'heart', 0, 4, KUMA.heart, 6, 6000).play('kuma_heart');
+    part('kuma_paw', 'paw', -22, -13, KUMA.paw, 7, 3000).setFlipX(true);
+    part('kuma_paw', 'paw', 22, -13, KUMA.paw, 7, 3000);
+    g.body = part('kuma_ice', 'body', 0, 0, KUMA.bear, 20, 0);
+    g.take = { heart: KUMA.guard }; // the heart, guarded while both paws stand
+    Object.assign(g, { windDir: 1, windT: 0, icT: 1 });
     g.body.pass = true; // shots go through the ice to reach the paws and the heart
     g.maxTotal = g.parts.reduce((sum, p) => sum + p.maxHp, 0);
     this.bossGroup = g;
@@ -598,7 +606,7 @@ export const sapporo = {
     }
     g.t += dt;
     g.roar -= dt;
-    if (g.stage === 2) body.setFrame(g.roar > 0 ? 'kuma_1' : 'kuma_0');
+    if (g.stage >= 2) body.setFrame(g.roar > 0 ? 'kuma_1' : 'kuma_0');
     if (g.state === 'wake') {
       // shakes off the snow, then rises from the pedestal into the air
       const k = Math.max(0, Math.min(1, (g.t - 1.3) / 1.2));
@@ -632,12 +640,12 @@ export const sapporo = {
     }
     const sp = g.enraged ? 1.5 : 1;
     place(g.home + (g.stage === 1 ? 12 : 26) * Math.sin(g.t * 0.5 * sp), g.homeY + 4 * Math.sin(g.t * 0.9 * sp));
-    if (g.stage === 2 && !g.enraged && body.hp < body.maxHp * 0.35) {
-      g.enraged = true;
-      g.timer = 0.5;
-      g.roar = 1;
-      s.hud.show('', 'NIEDŹWIEDŹ WPADA W SZAŁ!', 1.6, true);
+    if (g.stage === 2 && body.hp < body.maxHp * KUMA.storm) {
+      // the roar brings the blizzard
+      Object.assign(g, { enraged: true, roar: 1.2, phase: 0, step: 0, windT: 0 });
+      this.phaseBreak(g, body.x, body.y, 3, 'ZAMIEĆ HOKKAIDO');
     }
+    if (g.stage >= 3) this.kumaBlizzard(g, dt);
     g.timer -= dt * (g.enraged ? 1.4 : 1);
     if (g.timer > 0) return;
     if (g.stage === 1) this.kumaIce(g, alive);
@@ -700,13 +708,13 @@ export const sapporo = {
           g.roar = 1.4;
           s.cameras.main.shake(500, 0.004);
         }
-        b.ring(body.x, body.y + 14, g.enraged ? 22 : 18, g.step * 0.17, g.step % 2 ? normal : slow, g.step === 1);
+        b.ring(body.x, body.y + 14, g.stage >= 3 ? 16 : 18, g.step * 0.17, g.step % 2 ? normal : slow, g.step === 1);
         g.timer = 0.45;
         if (++g.step >= 3) next();
         break;
       case 1: {
         const side = g.step % 2 ? 1 : -1;
-        b.fan(body.x + side * 24, body.y - 15, this.aimAt(body, side * 24, -15), g.enraged ? 13 : 11, 1.4, normal);
+        b.fan(body.x + side * 24, body.y - 15, this.aimAt(body, side * 24, -15), g.stage >= 3 ? 9 : 11, 1.4, normal);
         g.timer = 0.5;
         if (++g.step >= 6) next();
         break;
@@ -722,6 +730,25 @@ export const sapporo = {
     }
   },
 
+  /** Phase 3: a crosswind (turning every few seconds, with a warning) pushes the ship and the bullets; icicles fall. */
+  kumaBlizzard(g, dt) {
+    const s = this.scene;
+    if ((g.windT -= dt) <= 0) {
+      g.windDir = -g.windDir;
+      g.windT = 5;
+      s.fx.text(Phaser.Math.Clamp(s.player.x, 40, VIEW.width - 40), s.player.y - 26, g.windDir > 0 ? 'WIATR >>' : '<< WIATR', 1.2, 0xd8f0ff);
+    }
+    const ramp = Math.min(1, (5 - g.windT) / 0.8); // it builds up after turning
+    s.parallax.windTarget = g.windDir * 70 * ramp;
+    const pl = s.player;
+    if (pl.alive) pl.pull = { x: g.windDir > 0 ? VIEW.width + 400 : -400, y: pl.y, k: KUMA.wind * ramp };
+    for (const b of s.bullets.pool.live) if (!b.dead) b.x += g.windDir * KUMA.drift * ramp * dt;
+    if ((g.icT -= dt) <= 0 && s.bombClear <= 0) {
+      g.icT = 1.7;
+      for (let k = 0; k < 2; k++) s.bullets.shot('icicle', 12 + Math.random() * (VIEW.width - 24), 8, DOWN, 0, 1.8, { ay: 150, maxV: 150, safe: 0.7 });
+    }
+  },
+
   /** A paw or the heart of the sculpture breaks off. The heart takes the whole sculpture with it. */
   kumaPartDown(e) {
     const s = this.scene;
@@ -732,6 +759,7 @@ export const sapporo = {
     s.fx.shards(e.x, e.y, 16);
     s.fx.text(e.x, e.y - 12, `${pts}`, 1.2, 0xffe080);
     this.remove(e);
+    if (e.role === 'paw') g.take = null; // a paw gone: the heart is open
     if (e.role !== 'heart') return;
     for (const p of g.parts)
       if (!p.dead && p.group === g && p.role === 'paw') {
@@ -740,12 +768,14 @@ export const sapporo = {
         p.hp = 0;
         this.remove(p);
       }
-    Object.assign(g, { stage: 2, state: 'break', t: 0, phase: 0, step: 0, roar: 1.6 });
+    Object.assign(g, { state: 'break', t: 0, phase: 0, step: 0, roar: 1.6 });
+    g.take = null;
     g.body.radius = 20;
     s.bullets.cancelAll(s.fx);
     s.fx.flash(0.7, 0.5);
     s.fx.shards(g.body.x, g.body.y, 40);
     s.cameras.main.shake(700, 0.006);
-    s.hud.show('LÓD PĘKA!', 'TO PRAWDZIWY NIEDŹWIEDŹ!', 2.2);
+    this.phaseBreak(g, g.body.x, g.body.y, 2, 'PRZEBUDZENIE HIGUMY');
+    s.fx.text(g.body.x, g.body.y + 30, 'LÓD PĘKA!', 1.6, 0xd8f0ff);
   },
 };

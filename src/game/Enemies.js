@@ -642,6 +642,12 @@ export class Enemies {
     if (e.group?.kind === 'jaodori') {
       for (const p of e.group.body) this.segPool.kill(p);
       this.segPool.kill(e.group.pearl);
+      if (e.group.pearl2) this.segPool.kill(e.group.pearl2);
+    }
+    // what circles a boss and goes with it (Kyūbi's spirit flames, Sankibō's phantom braziers)
+    if (e.group?.sats && (e.role === 'body' || e.role === 'head')) {
+      for (const sp of e.group.sats) this.segPool.kill(sp);
+      e.group.sats = [];
     }
     if (e.wounds) for (const w of e.wounds) this.woundPool.kill(w);
     e.wounds = null;
@@ -650,7 +656,7 @@ export class Enemies {
     if (e.burnt) for (const bt of e.burnt) if (bt) this.woundPool.kill(bt);
     e.burnt = null;
     if (e.decoys) this.dropDecoys(e);
-    if (e.kind === 'yukionna' || (e.group?.kind === 'sankibo' && e.role === 'body')) this.scene.parallax.windTarget = 0; // blizzard / Tengu gale dies down
+    if (e.kind === 'yukionna' || ((e.group?.kind === 'sankibo' || e.group?.kind === 'kuma') && e.role === 'body')) this.scene.parallax.windTarget = 0; // blizzard / Tengu gale dies down
     if (e.kind === 'yukionna') this.yukiCleanup(e); // her mist, the whiteout, the whirlwind's drag
     if (e.group?.kind === 'kyubi' && e.role === 'body') for (const tl of e.group.tails) this.tailPool.kill(tl);
     if (e === this.heavy) this.heavy = null;

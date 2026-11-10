@@ -1,4 +1,4 @@
-import { DEPTH } from '../../config.js';
+import { DEPTH, VIEW } from '../../config.js';
 import { volley } from '../../difficulty.js';
 import { DOWN, TAU, slow, normal, fast, EXTRAS } from './shared.js';
 
@@ -270,8 +270,14 @@ export const nagasaki = {
     return Math.atan2(side * Math.sin(e.rotation) + 0.5 * Math.cos(e.rotation), side * Math.cos(e.rotation) - 0.5 * Math.sin(e.rotation));
   },
 
+  /**
+   * The festival dragon chasing its pearl, in three phases: the dance over the docks (fans from the mouth,
+   * paired curling streams, a lantern procession with an announced safe lane); below 65% it coils round the
+   * middle of the screen, fireworks bursting from its body; below 30% the golden rain over Inasa: it dances
+   * 40% faster, its pearl splits into two orbs that fire at the player, and fireworks cross the sky.
+   */
   spawnJaodori(w, base) {
-    const g = { kind: 'jaodori', t: 0, ft: 0, phase: 0, step: 0, timer: 1.3, parts: [], defeated: false };
+    const g = { kind: 'jaodori', t: 0, ft: 0, phase: 0, step: 0, timer: 1.3, parts: [], defeated: false, stage: 1, coil: 0, fwT: 1, orbT: 1, xT: 2 };
     // over the night view from Inasa it rises out of the city's lights, small and far at first; elsewhere it
     // comes down from the top of the screen
     const rise = !!this.scene.stage.panorama;
@@ -305,9 +311,15 @@ export const nagasaki = {
       e.y += 32 * dt;
       if (e.y >= 72) e.state = 'fight';
     } else {
-      g.ft += dt;
-      e.x = 90 + Math.sin(g.ft * .65) * 39;
-      e.y = 72 + Math.sin(g.ft * 1.1) * 9;
+      g.ft += dt * (g.stage >= 3 ? 1.4 : 1);
+      // phase 2 on: it coils round the middle of the screen (eased in), still swaying
+      g.coil = Math.min(1, g.coil + (g.stage >= 2 ? dt / 1.5 : 0));
+      const wx = 90 + Math.sin(g.ft * .65) * 39;
+      const wy = 72 + Math.sin(g.ft * 1.1) * 9;
+      const cx = 90 + Math.cos(g.ft * .9) * 48;
+      const cy = 100 + Math.sin(g.ft * .9) * 30;
+      e.x = wx + (cx - wx) * g.coil;
+      e.y = wy + (cy - wy) * g.coil;
     }
     e.setRotation(Math.cos(g.ft * .65) * .22 * Math.min(1, g.ft));
     g.pearl.setPosition(e.x + Math.cos(g.ft * .65) * 20 * size, e.y + 29 * size).setScale(size).setAlpha(e.alpha);
@@ -320,7 +332,23 @@ export const nagasaki = {
       p.setPosition(e.x + dx * size, e.y + dy * size);
       p.setScale((1 - i * .035) * size).setAlpha(e.alpha);
     }
-    if (e.state !== 'fight' || !this.canFire(e)) return;
+    if (g.pearl2) {
+      // phase 3: the pearl split into two orbs circling the head
+      const a = g.t * 2.2;
+      g.pearl.setPosition(e.x + Math.cos(a) * 26, e.y + 10 + Math.sin(a) * 16);
+      g.pearl2.setPosition(e.x - Math.cos(a) * 26, e.y + 10 - Math.sin(a) * 16).setAlpha(e.alpha);
+    }
+    if (e.state !== 'fight') return;
+    if (g.stage === 1 && e.hp < e.maxHp * 0.65) {
+      Object.assign(g, { phase: 0, step: 0, lane: null });
+      this.phaseBreak(g, e.x, e.y, 2, 'SPIRALNY KORYTARZ');
+    } else if (g.stage === 2 && e.hp < e.maxHp * 0.3) {
+      Object.assign(g, { phase: 0, step: 0, lane: null, enraged: true });
+      g.pearl2 = this.segPool.spawn('n_pearl', g.pearl.x, g.pearl.y).setDepth(DEPTH.air - .05);
+      this.phaseBreak(g, e.x, e.y, 3, 'ZŁOTY DESZCZ NAD INASĄ');
+    }
+    if (!this.canFire(e)) return;
+    this.jaodoriFireworks(g, e, dt);
     g.timer -= dt;
     const b = this.scene.bullets;
     const mx = e.x - Math.sin(e.rotation) * 18;
@@ -355,6 +383,34 @@ export const nagasaki = {
       }
       g.timer = .75;
       if (++g.step >= 3) { g.phase++; g.step = 0; g.timer = 1.5; }
+    }
+  },
+  /** Phases 2 and 3: fireworks bursting from the body, the split pearl's orbs firing, crossed salvos. */
+  jaodoriFireworks(g, e, dt) {
+    if (g.stage < 2 || g.gate > 0) return;
+    const s = this.scene;
+    const b = s.bullets;
+    if ((g.fwT -= dt) <= 0) {
+      // a segment bursts into a small ring of sparks
+      const seg = g.body[1 + Math.floor(Math.random() * (g.body.length - 1))];
+      b.ring(seg.x, seg.y, g.stage >= 3 ? 7 : 6, Math.random() * TAU, slow);
+      s.fx.light(seg.x, seg.y, 0.6, false, 0xf2c35e);
+      g.fwT = g.stage >= 3 ? 1.1 : 0.9;
+    }
+    if (g.stage < 3) return;
+    if ((g.orbT -= dt) <= 0) {
+      // the orbs of the split pearl, by turns
+      const o = (g.orbN = (g.orbN ?? 0) + 1) % 2 ? g.pearl : g.pearl2;
+      b.fire(o.x, o.y, Math.atan2(s.player.y - o.y, s.player.x - o.x), normal);
+      g.orbT = 0.7;
+    }
+    if ((g.xT -= dt) <= 0) {
+      // fireworks crossing the sky: two lines of sparks from the top corners
+      for (const side of [-1, 1]) {
+        const x0 = side < 0 ? 4 : VIEW.width - 4;
+        for (let k = 0; k < 4; k++) b.shot('eb_s', x0, 6 + k * 9, DOWN + side * 0.62, slow, 1.8);
+      }
+      g.xT = 3.2;
     }
   },
 };

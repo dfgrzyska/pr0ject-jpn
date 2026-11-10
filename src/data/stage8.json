@@ -161,6 +161,6 @@
     {"t":204,"type":"carrier","x":90,"color":"blue"},
     {"t":206,"type":"diver","x":55,"count":2},
     {"t":210,"type":"popcorn","x":124,"path":"row","count":4},
-    {"t":226,"type":"boss","boss":"jaodori","x":90,"hp":1050,"card":["JA-ODORI","SMOK ŚWIĘTA KUNCHI"]}
+    {"t":226,"type":"boss","boss":"jaodori","x":90,"hp":2100,"card":["JA-ODORI","SMOK ŚWIĘTA KUNCHI"]}
   ]
 }
