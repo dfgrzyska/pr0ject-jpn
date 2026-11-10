@@ -146,6 +146,10 @@
     { "t": 202, "type": "popcorn", "x": 20, "path": "arc", "count": 6 },
     { "t": 203, "type": "popcorn", "x": 160, "path": "arc", "count": 6 },
     { "t": 205, "type": "carrier", "x": 90, "color": "green" },
+    { "t": 207.5, "type": "popcorn", "x": 50, "path": "sine", "count": 5 },
+    { "t": 209.5, "type": "shooter", "x": 130, "pattern": "fan" },
+    { "t": 212, "type": "diver", "x": 60, "count": 2 },
+    { "t": 214.5, "type": "popcorn", "x": 156, "path": "arc", "count": 5 },
     { "t": 219, "type": "boss", "card": ["SAKURAJIMA", "ŻYWY WULKAN"], "x": 90, "boss": "volcano", "crater": [90, 7088], "vents": [[40, 7050], [140, 7050]] }
   ]
 }

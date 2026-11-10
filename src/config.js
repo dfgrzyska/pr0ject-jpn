@@ -180,6 +180,21 @@ export const ENEMIES = {
   steam: { hp: 1, weight: 0, score: 0, radius: 17, explosion: 's' },
 };
 
+// Minibosses' HP (the wave's own `hp` wins); below `phase2` of its life each one breaks into its second phase
+export const HEAVY = { hp: { tanuki: 750, manta: 780, raiju: 800, wani: 820, heikegani: 820 }, phase2: 0.5 };
+
+// The journey gets harder city by city: from the second city on, small fry have `hp` more HP for each city
+// already flown (at most `hpMax`), and shooters and turrets reload up to `react` faster by the last one
+export const CAMPAIGN = { hp: 0.06, hpMax: 0.4, react: 0.1 };
+
+// A miniboss gone (shot down or flown off) with the next wave more than `gap` s away: the city's own small
+// fry keep coming every `every` s until `lead` s before it
+export const FILL = { gap: 4, every: 2.6, lead: 1.5 };
+
+// Spirit surge: with the bomb ready, `need` grazes put the ship in a surge for `time` s: its shots fly `speed`
+// times as fast and hit `damage` times as hard
+export const SURGE = { need: 25, time: 5, speed: 1.25, damage: 1.25 };
+
 // Beppu: flying through steam heats the guns (stronger shots); too long and they jam until they cool
 export const HEAT = {
   rise: 0.34, // per second inside a steam cloud

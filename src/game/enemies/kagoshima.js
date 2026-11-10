@@ -133,8 +133,10 @@ export const kagoshima = {
       }
       case 1: {
         // orbs joined by an arc, drifting at the player and turning
-        const a = this.aimAt(e, 0, 10);
-        b.pair(e.x, e.y + 10, Math.cos(a) * 30, Math.sin(a) * 30 + 10, 14, e.step % 2 ? 1.9 : -1.9);
+        const a0 = this.aimAt(e, 0, 10);
+        // (second phase: a chain of three)
+        for (const a of e.p2 ? [a0 - 0.5, a0, a0 + 0.5] : [a0]) b.pair(e.x, e.y + 10, Math.cos(a) * 30, Math.sin(a) * 30 + 10, 14, e.step % 2 ? 1.9 : -1.9);
+        const a = a0;
         b.fan(e.x, e.y + 10, a, 3, 0.6, slow);
         e.timer = 1.1;
         if (++e.step >= 4) this.nextPattern(e);
@@ -165,6 +167,11 @@ export const kagoshima = {
     const dy = ty - e.y;
     const dist = Math.hypot(dx, dy);
     const step = (d.back ? 140 : 300) * dt;
+    // second phase: the charge leaves a live trail of sparks for a moment
+    if (e.p2 && !d.back && (d.trail = (d.trail ?? 0) - dt) <= 0) {
+      d.trail = 0.09;
+      b.zone(e.x, e.y, 6, { warn: 0.12, live: 1.5 });
+    }
     if (!d.back && (d.spark -= dt) <= 0 && e.y < this.scene.H * FAIR.noFireBelow) {
       d.spark = 0.05;
       b.fire(e.x, e.y, Math.atan2(dy, dx) + (Math.random() < 0.5 ? 1.6 : -1.6), slow * 0.6);

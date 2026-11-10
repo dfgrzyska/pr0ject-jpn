@@ -1,4 +1,4 @@
-import { BEANS, DEPTH, HEAT, PLAYER, SCORE, VIEW } from '../config.js';
+import { BEANS, DEPTH, HEAT, PLAYER, SCORE, SURGE, VIEW } from '../config.js';
 import { isEasy } from '../difficulty.js';
 import { FONT } from '../scenes/Boot.js';
 import { getLang, tr } from '../i18n.js';
@@ -301,6 +301,14 @@ export class Hud {
         this.bar.lineStyle(2, 0xffe080, 0.85);
         this.bar.beginPath();
         this.bar.arc(this.bombBtn.x, this.bombBtn.y, 15, a, a + (Math.PI * 2 * p.grazeCharge) / p.grazePerBomb());
+        this.bar.strokePath();
+      } else if (p.bombs > 0 && (p.surgeCharge > 0 || p.surge > 0)) {
+        // with the bomb ready, the grazes fill a blue ring towards a spirit surge (full and pulsing during one)
+        const a = -Math.PI / 2;
+        const k = p.surge > 0 ? 1 : p.surgeCharge / SURGE.need;
+        this.bar.lineStyle(2, 0x9ad8ff, p.surge > 0 ? 0.55 + 0.4 * Math.sin(this.scene.t * 14) : 0.8);
+        this.bar.beginPath();
+        this.bar.arc(this.bombBtn.x, this.bombBtn.y, 15, a, a + Math.PI * 2 * k);
         this.bar.strokePath();
       }
     }

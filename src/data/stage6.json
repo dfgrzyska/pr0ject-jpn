@@ -162,6 +162,9 @@
     { "t": 206, "type": "popcorn", "x": 20, "path": "arc", "count": 6 },
     { "t": 207.5, "type": "popcorn", "x": 160, "path": "arc", "count": 6 },
     { "t": 210, "type": "carrier", "x": 90, "path": "zigzag", "color": "red" },
+    { "t": 212, "type": "popcorn", "x": 130, "path": "sine", "count": 5 },
+    { "t": 214, "type": "diver", "x": 50, "count": 2 },
+    { "t": 216, "type": "popcorn", "x": 90, "path": "row", "count": 5 },
     { "t": 219.5, "type": "boss", "card": ["ONI", "CZERWONY DEMON Z CHINOIKE"], "x": 90, "boss": "oni", "pond": [90, 7050] }
   ]
 }

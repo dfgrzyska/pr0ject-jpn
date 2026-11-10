@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BEANS, DEPTH, ENEMIES, FAIR, PHASE, VIEW, WEAPONS } from '../config.js';
+import { BEANS, CAMPAIGN, DEPTH, ENEMIES, FAIR, HEAVY, PHASE, VIEW, WEAPONS } from '../config.js';
 import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
 import { SKINS } from './skins.js';
@@ -12,6 +12,9 @@ import { osaka } from './enemies/osaka.js';
 import { beppu } from './enemies/beppu.js';
 import { nagasaki } from './enemies/nagasaki.js';
 import { hiroshima } from './enemies/hiroshima.js';
+// the second phases of the minibosses (Yuki-onna and the Oranda-bune have theirs; the bunraku puppet's go by
+// its puppeteers): its name on the banner
+const HEAVY_P2 = { tanuki: 'TANUKI PIJE SAKE', manta: 'KORALOWA SPIRALA', raiju: 'PRZEŁADOWANIE PIORUNA', wani: 'FAŁSZYWE CIENIE', heikegani: 'ZŁAMANY PANCERZ HEIKE' };
 // the two halves of a burst volcanic bomb
 const FRAG = { hp: 1, weight: 0, score: 50, radius: 3, explosion: 's' };
 
@@ -36,6 +39,10 @@ export class Enemies {
     this.woundPool = new Pool(scene, DEPTH.air + 0.02);
     // telegraph lines (matchlock aim, Raijū's charge), redrawn every frame
     this.tele = scene.add.graphics().setDepth(DEPTH.airFx);
+    // the journey gets harder city by city (CAMPAIGN): small fry tougher, shooters and turrets quicker
+    const done = Math.min(7, scene.pos ?? 0);
+    this.toughness = 1 + Math.min(CAMPAIGN.hpMax, CAMPAIGN.hp * done);
+    this.haste = 1 / (1 - (CAMPAIGN.react * done) / 7);
   }
 
   get live() {
@@ -74,6 +81,7 @@ export class Enemies {
       u: 0,
       ...EXTRAS,
     };
+    if (w.hp == null && def.weight > 0 && w.type !== 'boss' && w.type !== 'heavy') base.hp = Math.round(base.hp * this.toughness);
     base.maxHp = base.hp;
     const look = this.skin[w.look ?? w.type]; // look: an alternative skin entry, e.g. the Kyoto tanuki
     if (!look && w.type !== 'boss') return; // e.g. snowploughs exist only in Sapporo
@@ -138,7 +146,8 @@ export class Enemies {
         e.zig = Math.random() < 0.5 ? -1 : 1;
         break;
       case 'heavy':
-        e = this.pool.spawn(look.frame, w.x, -30, { ...base, kind: look.kind ?? null, song: w.music ?? null });
+        e = this.pool.spawn(look.frame, w.x, -30, { ...base, kind: look.kind ?? null, song: w.music ?? null, p2: false });
+        if (w.hp == null && HEAVY.hp[look.kind ?? 'manta']) e.hp = e.maxHp = HEAVY.hp[look.kind ?? 'manta'];
         if (look.anim) e.play(look.anim);
         this.heavy = e;
         e.patternIndex = 0;
@@ -248,6 +257,11 @@ export class Enemies {
     if (crabBlock) {
       // Heike-gani's iron pincers deflect frontal shots unless flanked from the sides
       if (Math.random() < 0.45) this.scene.fx.spark(e.x, e.y + 14);
+      // its broken armour (second phase) throws some of it back as pearls
+      if (e.p2 && Math.random() < 0.12 && this.scene.t > (e.reflT ?? 0) && this.canFire(e)) {
+        e.reflT = this.scene.t + 0.3;
+        this.scene.bullets.shot('eb_pearl', e.x, e.y + 14, this.aimAt(e, 0, 14), normal, 2.2);
+      }
       e.hp -= amount * 0.15;
       if (e.hp <= 0) this.destroy(e, byBomb);
       return;
@@ -660,6 +674,7 @@ export class Enemies {
     if (e.kind === 'yukionna') this.yukiCleanup(e); // her mist, the whiteout, the whirlwind's drag
     if (e.group?.kind === 'kyubi' && e.role === 'body') for (const tl of e.group.tails) this.tailPool.kill(tl);
     if (e === this.heavy) this.heavy = null;
+    if (e.type === 'heavy') this.scene.waves?.fillGap?.(this.scene.t, this.skin); // no dead air after a miniboss
     if (e.oni) e.setCrop(); // pooled: the next enemy must not come out cropped
     e.setOrigin(0.5, 0.5); // (breathing)
     this.pool.kill(e);
@@ -694,6 +709,11 @@ export class Enemies {
           break;
         case 'heavy':
           if (e.gate > 0) e.gate -= dt;
+          if (!e.p2 && HEAVY_P2[e.kind ?? 'manta'] && e.state === 'fight' && e.hp < e.maxHp * HEAVY.phase2) {
+            // the miniboss's second phase
+            e.p2 = true;
+            this.phaseBreak(e, e.x, e.y, 2, HEAVY_P2[e.kind ?? 'manta']);
+          }
           if (e.kind === 'yukionna') this.yukiOnna(e, dt, b);
           else if (e.kind === 'tanuki') this.tanuki(e, dt, b);
           else if (e.kind === 'raiju') this.raiju(e, dt, b);
@@ -902,7 +922,7 @@ export class Enemies {
     } else if (e.state === 'attack') {
       e.x += Math.sin(e.age * 1.3) * 6 * dt;
       if (e.sniper) return this.snipe(e, dt, b);
-      e.timer -= dt;
+      e.timer -= dt * this.haste;
       if (e.timer <= 0) {
         if (this.canFire(e) && e.bounce) {
           // the Kamado pot boils over: a wide spray that ricochets off the screen edges
@@ -1075,7 +1095,7 @@ export class Enemies {
     }
     e.heat = e.pattern === 'puff' && this.canFire(e) && e.timer < 0.55; // a steam nozzle glows red before it fires
     if (this.canFire(e)) {
-      e.timer -= dt;
+      e.timer -= dt * this.haste;
       if (e.timer <= 0) {
         e.timer = e.pattern === 'lob' ? 2.5 : 2.2;
         const mx = e.x + Math.cos(ang) * 6;
@@ -1145,10 +1165,11 @@ export class Enemies {
       e.timer = 0.45;
       if (++e.step >= 4) this.nextPattern(e);
     } else {
-      // two-armed spiral
+      // two-armed spiral (the manta's second phase: two coral spirals turning against each other)
       const a = e.step * 0.38;
       b.fire(e.x, e.y + 4, a, slow, true);
       b.fire(e.x, e.y + 4, a + Math.PI, slow, true);
+      if (e.p2 && e.step % 2) for (const k of [0.5, 1.5]) b.fire(e.x, e.y + 4, -a + k * Math.PI, slow);
       e.timer = 0.11;
       if (++e.step >= 22) this.nextPattern(e);
     }

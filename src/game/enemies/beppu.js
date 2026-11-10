@@ -153,6 +153,8 @@ export const beppu = {
         e.spin = 0;
         b.zone(pl.x, pl.y, 12, { warn: 1.0, live: 0.5 });
         for (const [dx, dy] of [[-34, -14], [34, -14], [0, 30]]) b.zone(Phaser.Math.Clamp(pl.x + dx, 12, VIEW.width - 12), Phaser.Math.Clamp(pl.y + dy, 30, s.H - 16), 11, { warn: 1.2, live: 0.5 });
+        // second phase: geysers along both banks as well
+        if (e.p2) for (const x of [12, VIEW.width - 12]) for (const k of [0.5, 0.75]) b.zone(x, s.H * k, 11, { warn: 1.3, live: 0.5 });
         e.timer = 0.6;
         if (++e.step >= 2) this.nextPattern(e);
     }
@@ -170,6 +172,8 @@ export const beppu = {
       if ((d.ripple -= dt) <= 0) {
         d.ripple = 0.18;
         s.fx.puff('splash', e.x + (Math.random() - 0.5) * 8, e.y - 6, 0.3);
+        // second phase: two false shadows ripple along beside it
+        if (e.p2) for (const side of [-1, 1]) s.fx.puff('splash', Phaser.Math.Clamp(e.x + side * 46, 10, VIEW.width - 10) + (Math.random() - 0.5) * 8, e.y - 6, 0.3);
       }
       if (d.t > 1.4) Object.assign(d, { phase: 'rise', t: 0 });
     } else if (d.phase === 'rise') {
@@ -180,6 +184,8 @@ export const beppu = {
         e.snapT = 0.5;
         s.fx.puff('splash', e.x, e.y + 20, 0.4);
         s.fx.puff('splash', e.x, e.y - 10, 0.4);
+        // the false shadows burst up too, as scalding spouts
+        if (e.p2) for (const side of [-1, 1]) b.zone(Phaser.Math.Clamp(e.x + side * 46, 12, VIEW.width - 12), e.y + 6, 11, { warn: 0.3, live: 0.45 });
         if (this.canFire(e)) {
           b.ring(e.x, e.y + 10, 14, Math.random() * TAU, slow);
           b.fan(e.x, e.y + 30, this.aimAt(e, 0, 30), 5, 0.7, normal);

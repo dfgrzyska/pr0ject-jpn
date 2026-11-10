@@ -155,6 +155,9 @@
     { "t": 205, "type": "popcorn", "x": 90, "path": "row", "count": 7, "spacing": 11 },
     { "t": 207, "type": "shooter", "x": 90, "pattern": "fan" },
     { "t": 209, "type": "carrier", "x": 90, "path": "zigzag", "color": "blue" },
+    { "t": 211.5, "type": "popcorn", "x": 40, "path": "sine", "count": 4 },
+    { "t": 213.5, "type": "diver", "x": 140, "count": 2 },
+    { "t": 215.5, "type": "popcorn", "x": 90, "path": "row", "count": 5, "spacing": 14 },
     { "t": 219.4, "type": "boss", "card": ["HIGUMA", "NIEDŹWIEDŹ Z FESTIWALU ŚNIEGU"], "x": 90, "boss": "kuma" }
   ]
 }

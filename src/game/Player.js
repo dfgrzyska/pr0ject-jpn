@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BEANS, BOMB, DEPTH, FROST, GRAZE, HEAT, MOMENTUM, OFUDA, PLAYER, SHIPS, VIEW, WEAPONS } from '../config.js';
+import { BEANS, BOMB, DEPTH, FROST, GRAZE, HEAT, MOMENTUM, OFUDA, PLAYER, SHIPS, SURGE, VIEW, WEAPONS } from '../config.js';
 import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
 
@@ -28,6 +28,8 @@ export class Player {
     this.ofudaCharge = 0; // grazes towards the next talisman
     this.momentum = 0; // Tsubame: 0..1, faster fire (MOMENTUM)
     this.rage = 0; // Oni: extra damage, higher up the screen
+    this.surge = 0; // s left of a spirit surge (SURGE)
+    this.surgeCharge = 0; // grazes towards it, while the bomb is ready
 
     this.setShip(SHIPS[1]);
     this.bombs = 1;
@@ -91,6 +93,7 @@ export class Player {
     this.frozen = 0;
     this.momentum = 0;
     this.rage = 0;
+    this.surge = 0;
     for (const o of this.ofuda) o.on = false;
     this.bank = 0;
     this.thrust = 0;
@@ -290,6 +293,14 @@ export class Player {
       if (this.momentum > 0.95 && Math.random() < dt * 20) this.scene.fx.spark(this.x + (Math.random() - 0.5) * 6, this.y + 8);
     }
     if (sh.ofuda) this.updateOfuda(dt);
+    if (this.surge > 0) {
+      // spirit surge: rings pulse out from the ship
+      this.surge -= dt;
+      if ((this.surgeRing = (this.surgeRing ?? 0) - dt) <= 0) {
+        this.surgeRing = 0.3;
+        this.scene.fx.rings.push({ x: this.x, y: this.y, r: 7, life: 0.3 });
+      }
+    }
   }
 
   /** Tsuru: a talisman folded from the grazes starts circling the ship. */
@@ -363,7 +374,12 @@ export class Player {
     const s = this.shots.spawn(frame, x, y);
     s.vx = vx;
     s.vy = vy;
-    s.damage = damage * this.ship.damage * (1 + this.rage) * (hot ? HEAT.boost : 1);
+    const surge = this.surge > 0;
+    s.damage = damage * this.ship.damage * (1 + this.rage) * (hot ? HEAT.boost : 1) * (surge ? SURGE.damage : 1);
+    if (surge) {
+      s.vx *= SURGE.speed;
+      s.vy *= SURGE.speed;
+    }
     s.radius = radius;
     s.homing = false;
     s.life = 2;
@@ -470,7 +486,16 @@ export class Player {
       this.ofudaCharge = 0;
       this.addOfuda();
     }
-    if (this.bombs > 0) return;
+    if (this.bombs > 0) {
+      // the bomb is ready: the grazes build up a spirit surge instead
+      if (this.surge <= 0 && ++this.surgeCharge >= SURGE.need) {
+        this.surgeCharge = 0;
+        this.surge = SURGE.time;
+        s.fx.text(this.x, this.y - 18, 'SKUPIENIE DUCHA!', 1.2, 0x9ad8ff);
+        s.sfx.powerUp();
+      }
+      return;
+    }
     if (++this.grazeCharge >= this.grazePerBomb()) {
       this.grazeCharge = 0;
       this.bombs = 1;
@@ -618,6 +643,8 @@ export class Player {
     s.score.death();
     this.beanT = 0;
     this.momentum = 0;
+    this.surge = 0;
+    this.surgeCharge = 0;
     for (const o of this.ofuda) o.on = false;
     // lose power; the lost level drops as a pickup that can be caught again
     const lost = Math.min(rules().deathPowerLoss, this.level - 1);

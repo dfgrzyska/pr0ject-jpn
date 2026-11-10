@@ -6,7 +6,7 @@ import { rules } from '../../difficulty.js';
 import { slow, normal, DOWN, TAU, EXTRAS } from './shared.js';
 
 // the bunraku puppet's three black-clad puppeteers
-const KUROKO = { hp: 140, weight: 0, score: 2000, radius: 7, explosion: 'm' };
+const KUROKO = { hp: 220, weight: 0, score: 2000, radius: 7, explosion: 'm' };
 // The octopus: eight arms [dx, dy, resting angle, sway phase, front row, angle once forward], their HP, the
 // head's; `take`: how much of a hit the head takes in phases 1 and 2 (the arms guard it); below `rage` of
 // its life the head breaks into phase 3 even with arms left
@@ -60,7 +60,9 @@ export const osaka = {
    * A samurai puppet worked by three black-clad puppeteers, as in Osaka's bunraku theatre. The puppet
    * itself can't be hurt (shots pass through it); each puppeteer drives one attack — the head and right
    * arm (the sword), the left arm (a sweeping stream), the legs (stamps and the dance). Shoot a
-   * puppeteer and that part goes limp; with all three down the puppet collapses.
+   * puppeteer and that part goes limp; with all three down the puppet collapses. The ones left work it
+   * faster (a third faster with two of them), and the last one alone works the whole puppet: the final
+   * sword dance, every attack at once.
    */
   spawnKuroko(e, base) {
     Object.assign(e, { invuln: true, pass: true, kuroko: [] });
@@ -76,8 +78,13 @@ export const osaka = {
   bunraku(e, dt, b) {
     const s = this.scene;
     const alive = e.kuroko.filter((k) => !k.dead && k.master === e && k.hp > 0);
-    const has = (role) => alive.some((k) => k.role === role);
+    // the last puppeteer works the whole puppet
+    const has = (role) => (alive.length === 1 && e.state === 'fight') || alive.some((k) => k.role === role);
     e.hp = alive.reduce((sum, k) => sum + k.hp, 0);
+    if (e.state === 'fight' && alive.length && alive.length < 3 && (e.stage ?? 1) < 4 - alive.length) {
+      this.phaseBreak(e, e.x, e.y, 4 - alive.length, alive.length === 1 ? 'TANIEC MIECZA' : 'SZALONE TEMPO');
+    }
+    const sp = alive.length < 3 ? 1.35 : 1; // fewer hands, faster
     if (e.state === 'enter') {
       e.y += Math.max(6, (70 - e.y) * 0.8) * dt;
       if (e.y >= 69) Object.assign(e, { state: 'fight', fight: 0, tOmo: 1.2, tHidari: 2.2, tAshi: 1.6, stream: 0, streamT: 0 });
@@ -91,14 +98,14 @@ export const osaka = {
       if (has('ashi')) e.x += (90 + 36 * Math.sin(e.fight * 0.8) - e.x) * Math.min(1, dt * 2);
       e.setRotation((has('omo') ? 0 : 0.12) + (has('hidari') ? 0 : -0.1)); // limp parts tilt it
       if (this.canFire(e)) {
-        if (has('omo') && (e.tOmo -= dt) <= 0) {
+        if (has('omo') && (e.tOmo -= dt * sp) <= 0) {
           // head and right arm: the sword comes down, a wide aimed fan
           e.setFrame('ningyo_1');
           s.time.delayedCall(350, () => !e.dead && e.setFrame('ningyo_0'));
           b.fan(e.x - 8, e.y - 4, this.aimAt(e, -8, -4), 7, 1.1, normal);
           e.tOmo = 1.5;
         }
-        if (has('hidari') && e.stream <= 0 && (e.tHidari -= dt) <= 0) {
+        if (has('hidari') && e.stream <= 0 && (e.tHidari -= dt * sp) <= 0) {
           e.stream = 14;
           e.streamT = 0;
         }
@@ -108,7 +115,7 @@ export const osaka = {
           e.streamT = 0.07;
           if (--e.stream <= 0) e.tHidari = 2.6;
         }
-        if (has('ashi') && (e.tAshi -= dt) <= 0) {
+        if (has('ashi') && (e.tAshi -= dt * sp) <= 0) {
           // the feet stamp: a ring from the floor of the stage
           b.ring(e.x, e.y + 22, 14, Math.random() * TAU, slow, true);
           s.cameras.main.shake(150, 0.003);

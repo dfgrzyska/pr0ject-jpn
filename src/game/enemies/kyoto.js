@@ -6,7 +6,7 @@ import { volley } from '../../difficulty.js';
 import { slow, normal, fast, TAU, EXTRAS } from './shared.js';
 
 // the tanuki's shapeshifted copies: one hit and they turn back into leaves
-const DECOY = { hp: 1, weight: 0, score: 300, radius: 13, explosion: 's' };
+const DECOY = { hp: 35, weight: 0, score: 300, radius: 13, explosion: 's' }; // a copy takes some shooting
 // Kyūbi's tails, in step with tools/art/kyoto/kyubi.mjs: tail i (0 = far left, 4 = straight up, 8 = far right)
 // fans out from a root 7 px under the body's centre; x, y = where its tip is from the body's centre, a = the
 // way it points. The right-hand tails are the left-hand ones mirrored.
@@ -33,7 +33,8 @@ export const kyoto = {
   /**
    * Tanuki (Shigaraki figurine): waddles about, drums its belly (a ring of bullets on every "pon"),
    * lobs sake flasks at the player, and shapeshifts — a leaf on its hat, a puff of leaves, and two
-   * copies that keep the leaf on. The real one has no leaf. Copies burst into leaves at one hit.
+   * copies that keep the leaf on. The real one has no leaf. Copies take a few hits before they burst into
+   * leaves. Second phase (it has had its sake): it drums faster and makes three copies.
    */
   tanuki(e, dt, b) {
     const s = this.scene;
@@ -79,7 +80,7 @@ export const kyoto = {
             }
           }
         }
-        e.timer = 0.28;
+        e.timer = e.p2 ? 0.2 : 0.28;
         if (++e.step >= 16) {
           e.play('tanuki');
           this.nextPattern(e);
@@ -102,7 +103,7 @@ export const kyoto = {
   tanukiTrick(e, b) {
     const s = this.scene;
     const lineup = () => {
-      const slots = Phaser.Utils.Array.Shuffle([40, 90, 140]);
+      const slots = Phaser.Utils.Array.Shuffle(e.decoys.length > 2 ? [24, 68, 112, 156] : [40, 90, 140]);
       e.tx = slots[0];
       e.decoys.forEach((d, i) => (d.tx = slots[i + 1]));
     };
@@ -115,9 +116,9 @@ export const kyoto = {
       s.fx.flash(0.25, 0.25);
       s.sfx.explode('s');
       e.play('tanuki');
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < (e.p2 ? 3 : 2); i++) {
         const d = this.pool.spawn('tanuki_leaf_0', e.x, e.y, {
-          ...EXTRAS, type: 'decoy', def: DECOY, hp: 1, maxHp: 1, radius: DECOY.radius, age: 0, seen: 1, state: 'fight', timer: 1.1 + i * 0.5, flash: 0, flashCool: 0,
+          ...EXTRAS, type: 'decoy', def: DECOY, hp: DECOY.hp, maxHp: DECOY.hp, radius: DECOY.radius, age: 0, seen: 1, state: 'fight', timer: 1.1 + i * 0.5, flash: 0, flashCool: 0,
           ground: false, head: null, master: e, tx: e.x,
         });
         d.play('tanuki_leaf').setDepth(DEPTH.air - 0.1);

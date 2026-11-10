@@ -158,7 +158,7 @@ export const hiroshima = {
         b.shot('eb_pearl', e.x + 14, e.y + 14, aR - 0.14 + i * 0.05, sp, 2.2);
       }
       s.music.synth?.hyoshigi?.(s.music.ctx.currentTime + 0.01, 0.55);
-      e.timer = 0.62;
+      e.timer = e.p2 ? 0.46 : 0.62; // (its samurai fury: the scissors snap faster)
       if (++e.step >= 4) this.nextPattern(e);
     } else if (pat === 1) {
       // Pattern 1: Iron Pincer Shield Wall — blocks frontal fire (flank from sides!), then counter-snaps!

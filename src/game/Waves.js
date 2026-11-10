@@ -1,4 +1,4 @@
-import { ENEMIES } from '../config.js';
+import { ENEMIES, FILL, VIEW } from '../config.js';
 
 const GAP = { popcorn: 0.3, diver: 0.45 };
 
@@ -24,6 +24,24 @@ export class Waves {
   upcoming(type, t, window) {
     for (let i = this.next; i < this.list.length && this.list[i].t <= t + window; i++) if (this.list[i].type === type) return this.list[i];
     return null;
+  }
+
+  /**
+   * A miniboss is gone (shot down or flown off): if the next wave is a while away, the city's own small fry
+   * (its popcorn, divers and shooters, taken in turn and mirrored now and then) keep coming until just before it.
+   */
+  fillGap(t) {
+    const next = this.list[this.next];
+    if (!next || next.t - t < FILL.gap) return;
+    const from = this.list.filter((w) => (w.type === 'popcorn' || w.type === 'diver' || w.type === 'shooter') && !w.card && !w.duo);
+    if (!from.length) return;
+    let k = this.fillK ?? 0;
+    for (let at = t + 1; at <= next.t - FILL.lead; at += FILL.every) {
+      const w = from[(k * 7) % from.length];
+      this.expand({ ...w, t: at, x: k % 2 ? VIEW.width - w.x : w.x });
+      k++;
+    }
+    this.fillK = k;
   }
 
   get done() {
