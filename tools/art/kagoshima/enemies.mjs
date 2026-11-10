@@ -6,6 +6,7 @@
 // wolfish blue-black body in a mane of lightning; and the volcano itself, its vents and summit crater.
 // Every frame is three times the old one's size (old mask coordinate m -> fine (m + 1) * 3).
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
+import * as V from './volcano540.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -355,12 +356,12 @@ export function kagoshimaEnemies(add) {
   add('tsubo_lid_0', tsuboLid(false));
   add('tsubo_lid_1', tsuboLid(true));
   for (const c of ['red', 'blue', 'green']) for (let k = 0; k < 3; k++) add(`shirokuma_${c}_${k}`, shirokuma(c, k));
-  add('vent_0', vent(0, false));
-  add('vent_1', vent(1, false));
-  add('vent_dead', vent(0, true));
-  add('crater_shut', crater('shut', 0));
-  add('crater_0', crater('open', 0));
-  add('crater_1', crater('open', 1));
-  add('crater_cold', crater('cold', 0));
+  add('vent_0', V.vent(0, false));
+  add('vent_1', V.vent(1, false));
+  add('vent_dead', V.vent(0, true));
+  add('crater_shut', V.crater('shut', 0));
+  add('crater_0', V.crater('open', 0));
+  add('crater_1', V.crater('open', 1));
+  add('crater_cold', V.crater('cold', 0));
 }
 export const KAGOSHIMA_PORTRAITS = ['kappa_0', 'raiju_0', 'vent_0', 'crater_0'];
