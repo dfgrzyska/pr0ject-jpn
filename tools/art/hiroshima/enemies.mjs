@@ -6,6 +6,7 @@
 // his crow's wings, feather fan and ringed staff, and the iron braziers of Misen's flame that has never gone out.
 // Every frame is three times the old one's size (old mask coordinate m -> fine (m + 1) * 3).
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
+import { sankibo as sankibo540 } from './tengu540.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -382,6 +383,6 @@ export function hiroshimaEnemies(add) {
   add('hidoro_base', hidoroBase(false));
   add('hidoro_wreck', hidoroBase(true));
   for (let i = 0; i < 16; i++) add(`hidoro_head_${i}`, hidoroHead(i));
-  for (const p of ['0', '1', '2', '3', 'fan_l', 'fan_r']) add(`sankibo_${p}`, sankibo(p));
+  for (const p of ['0', '1', '2', '3', 'fan_l', 'fan_r']) add(`sankibo_${p}`, sankibo540(p)); // tengu540.mjs
 }
 export const HIROSHIMA_PORTRAITS = ['heike_0', 'sankibo_0', 'brazier_0'];
