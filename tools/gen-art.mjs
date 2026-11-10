@@ -28,6 +28,7 @@ import { sapporoEnemies, SAPPORO_PORTRAITS } from './art/sapporo/enemies.mjs';
 import { kagoshimaEnemies, KAGOSHIMA_PORTRAITS } from './art/kagoshima/enemies.mjs';
 import { osakaEnemies, OSAKA_PORTRAITS } from './art/osaka/enemies.mjs';
 import { beppuEnemies, BEPPU_PORTRAITS } from './art/beppu/enemies.mjs';
+import { hiroshimaEnemies, HIROSHIMA_PORTRAITS } from './art/hiroshima/enemies.mjs';
 
 // cities whose enemies are drawn at 540 px (docs/enemies-540-plan.md): their atlas, and what of it the album
 // and the bosses' parade show (src/game/enemyArt.js; the stage file says "enemyArt": true)
@@ -38,6 +39,7 @@ const ENEMY_ART = [
   { id: 'stage4', build: kagoshimaEnemies, portraits: KAGOSHIMA_PORTRAITS },
   { id: 'stage5', build: osakaEnemies, portraits: OSAKA_PORTRAITS },
   { id: 'stage6', build: beppuEnemies, portraits: BEPPU_PORTRAITS },
+  { id: 'stage7', build: hiroshimaEnemies, portraits: HIROSHIMA_PORTRAITS },
 ];
 
 // background generators per stage (id = folder under public/assets/bg/)

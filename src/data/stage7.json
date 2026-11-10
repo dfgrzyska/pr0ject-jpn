@@ -4,6 +4,7 @@
   "subtitle": "HIROSZIMA - WYSPA ŚWIĄTYNI",
   "map": [132.45, 34.39, -8, -14],
   "skin": "hiroshima",
+  "enemyArt": true,
   "near": "momiji",
   "weather": [[0, 0.3], [85, 0.15], [135, 0.55], [185, 0.9]],
   "dark": [[0, 0.03], [2900, 0.1], [4800, 0.28], [6200, 0.45], [7168, 0.62]],
