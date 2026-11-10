@@ -438,8 +438,9 @@ export class Enemies {
     }
     const pts = PHASE.bonus * s.score.mult;
     s.score.add(pts);
-    s.fx.text(x, y - 26, 'PRZEŁAMANIE!', 1.4, 0xffe080);
-    s.fx.text(x, y - 14, `${pts}`, 1.2, 0xffe080);
+    // (under it: above, the boss bar and the points for the part just broken are in the way)
+    s.fx.text(x, y + 34, 'PRZEŁAMANIE!', 1.4, 0xffe080);
+    s.fx.text(x, y + 46, `${pts}`, 1.2, 0xffe080);
     const p = s.player;
     if (p.bombs === 0) p.grazeCharge = Math.min(p.grazePerBomb() - 1, p.grazeCharge + PHASE.charge);
     s.hud.show(`FAZA ${['I', 'II', 'III'][n - 1]}`, title, 1.8);
