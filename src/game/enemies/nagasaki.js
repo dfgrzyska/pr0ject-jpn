@@ -284,7 +284,7 @@ export const nagasaki = {
     const y0 = rise ? Math.round(this.scene.H * 0.56) : -30;
     const e = this.pool.spawn('n_ja_0', 90, y0, { ...base, group: g, radius: 15, state: rise ? 'rise' : 'enter', pass: rise, harmless: rise });
     e.play('n_ja'); g.parts.push(e); g.maxTotal = e.maxHp;
-    if (rise) e.setScale(0.3).setAlpha(0);
+    if (rise) e.setScale(0.3 * e.base).setAlpha(0);
     // Decorative puppet body has no collision: the clearly exposed head is the target.
     g.body = Array.from({ length: 9 }, (_, i) => this.segPool.spawn('n_segment', 90, rise ? y0 + 6 : -60)
       .setDepth(DEPTH.air - .1 - i * .001).setAlpha(rise ? 0 : 1));
@@ -305,7 +305,7 @@ export const nagasaki = {
       e.y = g.y0 + (72 - g.y0) * ease;
       e.x = 90 + Math.sin(k * Math.PI) * 18;
       size = 0.3 + 0.7 * ease;
-      e.setScale(size).setAlpha(Math.min(1, k * 2.5));
+      e.setScale(size * e.base).setAlpha(Math.min(1, k * 2.5));
       if (k >= 1) Object.assign(e, { state: 'fight', pass: false, harmless: false });
     } else if (e.state === 'enter') {
       e.y += 32 * dt;
@@ -322,7 +322,7 @@ export const nagasaki = {
       e.y = wy + (cy - wy) * g.coil;
     }
     e.setRotation(Math.cos(g.ft * .65) * .22 * Math.min(1, g.ft));
-    g.pearl.setPosition(e.x + Math.cos(g.ft * .65) * 20 * size, e.y + 29 * size).setScale(size).setAlpha(e.alpha);
+    g.pearl.setPosition(e.x + Math.cos(g.ft * .65) * 20 * size, e.y + 29 * size).setScale(size * g.pearl.base).setAlpha(e.alpha);
     for (let i = 0; i < g.body.length; i++) {
       // Delayed head trajectory and a travelling ripple keep the puppet long and articulated.
       // Analytic offsets also keep its shape stable at different frame rates and during the rise.
@@ -330,7 +330,7 @@ export const nagasaki = {
       const dx = (Math.sin(lag * .65) - Math.sin(g.ft * .65)) * 39 + Math.sin(g.t * 2 - i * .55) * 7;
       const dy = -12 - i * 7 + (Math.sin(lag * 1.1) - Math.sin(g.ft * 1.1)) * 9;
       p.setPosition(e.x + dx * size, e.y + dy * size);
-      p.setScale((1 - i * .035) * size).setAlpha(e.alpha);
+      p.setScale((1 - i * .035) * size * p.base).setAlpha(e.alpha);
     }
     if (g.pearl2) {
       // phase 3: the pearl split into two orbs circling the head

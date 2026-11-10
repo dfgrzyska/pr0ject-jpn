@@ -82,7 +82,7 @@
     { "t": 96, "type": "carrier", "x": 90, "path": "zigzag", "color": "blue" },
     { "t": 98.5, "type": "popcorn", "x": 90, "path": "row", "count": 6 },
 
-    { "t": 104, "type": "heavy", "card": ["HEIKE-GANI", "KRAB SAMURAJ Z DANNOURY"], "x": 90 },
+    { "t": 104, "type": "heavy", "card": ["TAKA-ASHI-GANI", "OLBRZYMI KRAB Z GŁĘBIN"], "x": 90 },
     { "t": 114, "type": "popcorn", "x": 24, "path": "arc", "count": 5 },
     { "t": 122, "type": "popcorn", "x": 156, "path": "arc", "count": 5 },
 

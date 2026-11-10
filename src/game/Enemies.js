@@ -15,7 +15,7 @@ import { nagasaki } from './enemies/nagasaki.js';
 import { hiroshima } from './enemies/hiroshima.js';
 // the second phases of the minibosses (Yuki-onna and the Oranda-bune have theirs; the bunraku puppet's go by
 // its puppeteers): its name on the banner
-const HEAVY_P2 = { tanuki: 'TANUKI PIJE SAKE', manta: 'KORALOWA SPIRALA', raiju: 'PRZEŁADOWANIE PIORUNA', wani: 'FAŁSZYWE CIENIE', heikegani: 'ZŁAMANY PANCERZ HEIKE' };
+const HEAVY_P2 = { tanuki: 'TANUKI PIJE SAKE', manta: 'KORALOWA SPIRALA', raiju: 'PRZEŁADOWANIE PIORUNA', wani: 'FAŁSZYWE CIENIE', heikegani: 'PĘKNIĘTY PANCERZ' };
 // the two halves of a burst volcanic bomb
 const FRAG = { hp: 1, weight: 0, score: 50, radius: 3, explosion: 's' };
 

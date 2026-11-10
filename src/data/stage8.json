@@ -9,6 +9,7 @@
     2
   ],
   "skin": "nagasaki",
+  "enemyArt": true,
   "near": "harbor",
   "nightFrom": 70,
   "dark": [

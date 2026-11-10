@@ -2,11 +2,12 @@
 // printed with white seigaiha waves; the rough, flaking oysters of the Seto Inland Sea with a pearl in the
 // mantle; Miyajima's shamoji paddles come alive as tsukumogami; momiji manjū, the maple-leaf cakes, branded
 // and baked golden; the stone lanterns of the shore at Itsukushima; the Heike crab with the scowling face of
-// a drowned Heike samurai in its shell; and Sankibō, the great tengu of Mount Misen, in yamabushi dress with
+// a drowned Heike samurai in its shell (now the taka-ashi-gani, the long-legged spider crab: crab540.mjs); and Sankibō, the great tengu of Mount Misen, in yamabushi dress with
 // his crow's wings, feather fan and ringed staff, and the iron braziers of Misen's flame that has never gone out.
 // Every frame is three times the old one's size (old mask coordinate m -> fine (m + 1) * 3).
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
 import { sankibo as sankibo540 } from './tengu540.mjs';
+import { crab } from './crab540.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -375,11 +376,11 @@ export function hiroshimaEnemies(add) {
     add(`tsuru_${f}`, tsuru(f));
     add(`shamoji_${f}`, shamoji(f));
     for (const c of ['red', 'blue', 'green']) add(`manju_${c}_${f}`, manju(c, f));
-    add(`heike_${f}`, heike(f));
+    add(`heike_${f}`, crab(f)); // the taka-ashi-gani, crab540.mjs
     add(`brazier_${f}`, brazier(f));
   }
   for (let f = 0; f < 3; f++) add(`kaki_${f}`, kaki(f));
-  add('heike_guard', heike('guard'));
+  add('heike_guard', crab('guard'));
   add('hidoro_base', hidoroBase(false));
   add('hidoro_wreck', hidoroBase(true));
   for (let i = 0; i < 16; i++) add(`hidoro_head_${i}`, hidoroHead(i));
