@@ -4,6 +4,7 @@
   "subtitle": "SAPPORO - ŚNIEŻNA NOC",
   "map": [141.35, 43.06, -26, 0],
   "skin": "sapporo",
+  "enemyArt": true,
   "near": "snow",
   "dark": [[0, 0.3], [1700, 0.55], [2600, 0.8], [3500, 1]],
   "scroll": { "far": 12, "mid": 30, "near": 64, "anchor": 420 },

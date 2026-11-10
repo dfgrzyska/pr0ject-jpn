@@ -24,12 +24,14 @@ import * as nagasaki from './art/nagasaki/index.mjs';
 import * as hiroshima from './art/hiroshima/index.mjs';
 import { kyotoEnemies, KYOTO_PORTRAITS } from './art/kyoto/enemies.mjs';
 import { okinawaEnemies, OKINAWA_PORTRAITS } from './art/okinawa/enemies.mjs';
+import { sapporoEnemies, SAPPORO_PORTRAITS } from './art/sapporo/enemies.mjs';
 
 // cities whose enemies are drawn at 540 px (docs/enemies-540-plan.md): their atlas, and what of it the album
 // and the bosses' parade show (src/game/enemyArt.js; the stage file says "enemyArt": true)
 const ENEMY_ART = [
   { id: 'stage1', build: kyotoEnemies, portraits: KYOTO_PORTRAITS },
   { id: 'stage2', build: okinawaEnemies, portraits: OKINAWA_PORTRAITS },
+  { id: 'stage3', build: sapporoEnemies, portraits: SAPPORO_PORTRAITS },
 ];
 
 // background generators per stage (id = folder under public/assets/bg/)
