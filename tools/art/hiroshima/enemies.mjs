@@ -323,8 +323,16 @@ export function sankibo(pose) {
     s.dot(cx + sx * 8, 37.5, 1.6, 0xd8a020);
     s.px(cx + sx * 8, 37.5, INK);
   }
-  s.tube(cx, 36, cx, 64, 4.2, 't', { rb: 3.2, bias: 0.14 }); // the long nose
-  s.ellipse(cx, 64, 3.6, 3.2, 't', { bias: 0.1 });
+  // the long nose of a daitengu, jutting out at the viewer: a thick cone foreshortened, lit on its left, the tip
+  // tilting up a little, wrinkles at the bridge, its shadow thrown across the beard
+  // the nose sticks out sideways and a little up, the head turned three quarters, as in the masks: a thick cone
+  // from the brow to a blunt tip, lit along its top, its shadow on the cheek and beard below
+  s.poly([[cx + 1, 46], [cx + 17, 50], [cx + 16, 54], [cx + 2, 53]], 'K', { flat: 0.08 });
+  s.poly([[cx - 3, 37], [cx + 3, 39], [cx + 20, 43.5], [cx + 21, 46.5], [cx + 3, 49], [cx - 3, 46]], 't', { ball: [cx + 4, 41, 18, 8], bias: 0.1 });
+  s.ellipse(cx + 20, 45, 2.6, 2.4, 't', { bias: 0.2 });
+  s.line(cx, 39.5, cx + 19, 43.2, 0xff9a80, 1, 0.85);
+  s.px(cx + 19, 47, 0x3a0806);
+  for (let k = 0; k < 3; k++) s.line(cx - 3 + k * 1.6, 36, cx - 3 + k * 1.6, 41, 0x6a0e0c, 1, 0.8);
   s.dot(cx - 1.5, 42, 1.2, 0xffb8a0);
   s.poly([[cx - 6, 14], [cx + 6, 14], [cx + 5, 24], [cx - 5, 24]], 'K', { flat: 0.45 });
   s.dot(cx, 19, 1.8, 0xe2aa32);

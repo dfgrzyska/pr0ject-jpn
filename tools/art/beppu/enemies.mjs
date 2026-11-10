@@ -6,6 +6,7 @@
 // tiger-skinned, with his spiked iron kanabō, risen from the blood pond. Setsubun's masu of roasted beans.
 // Every frame is three times the old one's size (old mask coordinate m -> fine (m + 1) * 3).
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
+import { oni as oni540 } from './oni540.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -282,108 +283,7 @@ export function waniSub() {
   return s.render({ outline: 0 });
 }
 
-// ---------------------------------------------------------------- boss: the red oni with his kanabō (63 x 68 -> 189 x 204), poses 0 rest, 1 raised, 2 smash, 3 hurt
-export function oni(pose) {
-  const s = new HiSprite(189, 204, RAMPS);
-  const cx = M(30.5);
-  const flesh = { pat: skinPat(9) };
-  // the kanabō: an iron club studded with spikes, swung by pose
-  const club = (x0, y0, x1, y1) => {
-    const n = 40;
-    for (let k = 0; k <= n; k++) {
-      const t = k / n;
-      const x = M(x0) + (M(x1) - M(x0)) * t;
-      const y = M(y0) + (M(y1) - M(y0)) * t;
-      s.ellipse(x, y, 4.6 + t * 5, 4.6 + t * 5, 'i', { pat: speckle({ amt: 0.15 }) });
-    }
-    const dx = M(x1) - M(x0);
-    const dy = M(y1) - M(y0);
-    const l = Math.hypot(dx, dy);
-    for (let t = 0.3; t <= 1; t += 0.1) for (const sd of [-1, 1]) {
-      const x = M(x0) + dx * t;
-      const y = M(y0) + dy * t;
-      const r = 4.6 + t * 5;
-      const ox = (-dy / l) * sd;
-      const oy = (dx / l) * sd;
-      s.poly([[x + ox * r - dx / l * 1.6, y + oy * r - dy / l * 1.6], [x + ox * (r + 4.5), y + oy * (r + 4.5)], [x + ox * r + dx / l * 1.6, y + oy * r + dy / l * 1.6]], 'S', { flat: 0.75 });
-    }
-    s.ellipse(M(x0), M(y0), 4, 4, 'Y', { flat: 0.6 }); // the grip's ring
-  };
-  // the legs, gold anklets, bare feet
-  for (const sx of [-1, 1]) {
-    const lx = cx + sx * 21;
-    s.tube(lx, 147, lx, 186, 10, 'O', { rb: 9, ...flesh });
-    s.tube(lx - 10, 177, lx + 10, 177, 2.6, 'Y');
-    s.ellipse(lx + sx * 2, 194, 14, 8, 'O', { ...flesh });
-    for (let k = -1; k <= 1; k++) s.poly([[lx + sx * 2 + k * 6 - 2, 199], [lx + sx * 2 + k * 6 + 2, 199], [lx + sx * 2 + k * 6, 203]], 'W', { flat: 0.8 });
-  }
-  // the tiger-skin loincloth, its striped fur ragged at the hem
-  s.paint([cx - 42, 125, cx + 42, 156], (x, y) => Math.abs(x - cx) < 39 - (y - 125) * 0.1 && y < 150 + Math.sin(x * 0.8) * 4, 'y', (x) => 0.6 - (x - cx) / 160, { pat: fur(Math.PI / 2, { amt: 0.2, len: 4, w: 1.2 }) });
-  s.shade([cx - 42, 125, cx + 42, 156], (x, y) => tigerAt(x, y, 1.2), -0.55);
-  // the torso, heavily muscled: pectorals, the belly, a gold-buckled belt
-  s.ellipse(cx, M(34), 42, 37, 'O', { bias: 0.02, ...flesh });
-  for (const sx of [-1, 1]) {
-    s.ellipse(cx + sx * 16, 88, 15, 11, 'O', { ...flesh, bias: 0.06 });
-    s.line(cx + sx * 4, 98, cx + sx * 28, 96, 0x7a1410, 1, 0.8);
-  }
-  for (let k = 0; k < 3; k++) for (const sx of [-1, 1]) s.ellipse(cx + sx * 7, 108 + k * 8, 6, 3.4, 'O', { ...flesh, bias: 0.04 });
-  s.line(cx, 80, cx, 124, 0x7a1410, 1);
-  s.poly([[cx - 38, 121], [cx + 38, 121], [cx + 39, 128], [cx - 39, 128]], 'h', { flat: 0.5 });
-  s.ellipse(cx, 124, 7.8, 7, 'Y', { bias: 0.06 });
-  s.dot(cx, 124, 2.4, 0x9a5f10);
-  // the left arm (viewer's right) on the hip, a gold armband
-  s.tube(M(44), M(27), M(50), M(37), 9, 'O', { rb: 8.5, ...flesh });
-  s.tube(M(44) + 6, M(31) - 4, M(50) - 6, M(32), 3, 'Y');
-  s.ellipse(M(50.5), M(40), 9.5, 9.5, 'O', flesh);
-  // the right arm and the kanabō
-  if (pose === 1) {
-    club(10, 12, 26, 0);
-    s.tube(M(17), M(27), M(10), M(12), 9.5, 'O', { rb: 8, ...flesh });
-    s.ellipse(M(10), M(12), 9, 9, 'O', flesh);
-  } else if (pose === 2) {
-    club(11, 40, 2, 64);
-    s.tube(M(17), M(27), M(12), M(40), 9.5, 'O', { rb: 8, ...flesh });
-    s.ellipse(M(11.5), M(40), 9, 9, 'O', flesh);
-  } else {
-    club(11, 40, 6, 4);
-    s.tube(M(17), M(27), M(12), M(38), 9.5, 'O', { rb: 8, ...flesh });
-    s.ellipse(M(11.5), M(39), 9, 9, 'O', flesh);
-  }
-  s.tube(M(13) + 2, M(31), M(16) + 2, M(32), 3, 'Y');
-  // the head: a wild mane of black hair, two gold horns, the jutting brow, glaring gold eyes, the tusks
-  for (let k = 0; k < 15; k++) {
-    const a = Math.PI * 0.9 + (k / 14) * Math.PI * 1.2;
-    s.tube(cx, 42, cx + Math.cos(a) * 40, 42 + Math.sin(a) * 34, 7, 'h', { rb: 1.6, pat: fur(a, { amt: 0.24, len: 6, w: 1.2, seed: k }) });
-  }
-  s.ellipse(cx, 44, 28, 28.5, 'O', { bias: 0.02, ...flesh });
-  for (const sx of [-1, 1]) {
-    // the horns, ringed, curving up and out
-    for (let k = 0; k < 8; k++) {
-      const t = k / 7;
-      s.ellipse(cx + sx * (14 + t * 7), 16 - t * 18, 4.4 - t * 3, 4.4 - t * 3, 'y', { bias: 0.08 });
-    }
-    for (let k = 1; k < 4; k++) s.line(cx + sx * (14 + k * 1.8) - 3, 16 - k * 4.4, cx + sx * (14 + k * 1.8) + 3, 16 - k * 4.4, 0x9a6a10, 1);
-    // the brow ridge, knotted; the eyes
-    s.tube(cx + sx * 3, 33, cx + sx * 22, 29, 3.6, 'O', { rb: 2.6, bias: 0.12 });
-    if (pose === 3) s.line(cx + sx * 6, 39, cx + sx * 18, 42, INK, 2);
-    else {
-      s.ellipse(cx + sx * 12, 39.5, 6.6, 5.4, 'Y', { flat: 0.8 });
-      s.dot(cx + sx * 11, 40, 2.6, INK);
-      s.px(cx + sx * 11 - 1, 39, 0xffffff);
-      s.line(cx + sx * 5, 35, cx + sx * 19, 34, INK, 2);
-    }
-    // the cheeks' folds
-    s.line(cx + sx * 8, 52, cx + sx * 15, 58, 0x7a1410, 1);
-  }
-  // the broad nose, the mouth with its tusks
-  s.ellipse(cx, 50, 8, 6.4, 'O', { bias: 0.1 });
-  for (const sx of [-1, 1]) s.dot(cx + sx * 3.4, 52, 1.8, 0x5a0a08);
-  const mo = pose === 3 ? 13 : 10;
-  s.poly([[cx - 16, 58], [cx + 16, 58], [cx + 13, 58 + mo], [cx - 13, 58 + mo]], 'K', { flat: 0.15 });
-  for (let x = cx - 13; x < cx + 13; x += 4.4) s.poly([[x, 58.5], [x + 3.8, 58.5], [x + 1.9, 61.5]], 'W', { flat: 0.75 });
-  for (const sx of [-1, 1]) s.poly([[cx + sx * 13, 58 + mo], [cx + sx * 9, 58 + mo], [cx + sx * 11, 54]], 'W', { flat: 0.9 });
-  return s.render();
-}
+// ---------------------------------------------------------------- boss: the red oni (oni540.mjs)
 
 // ---------------------------------------------------------------- Setsubun: a wooden masu of roasted beans (15 -> 51)
 export function masu() {
@@ -422,8 +322,11 @@ export function beppuEnemies(add) {
   add('wani_0', wani(false));
   add('wani_1', wani(true));
   add('wani_sub', waniSub());
-  for (let p = 0; p < 3; p++) add(`oni_${p}`, oni(p));
-  add('oni_hurt', oni(3));
+  // the oni (oni540.mjs), and the same with his left horn snapped off, from phase 2 on
+  for (const broken of [false, true]) {
+    for (let p = 0; p < 3; p++) add(`oni_${p}${broken ? '_b' : ''}`, oni540(p, broken));
+    add(`oni_hurt${broken ? '_b' : ''}`, oni540(3, broken));
+  }
   add('masu', masu());
 }
 export const BEPPU_PORTRAITS = ['oni_0'];

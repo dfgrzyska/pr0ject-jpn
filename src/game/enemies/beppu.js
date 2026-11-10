@@ -289,7 +289,9 @@ export const beppu = {
     if (!g.act) g.sway += dt * (g.enraged ? 0.7 : 0.45);
     e.x = g.home + 22 * Math.sin(g.sway);
     this.oniStand(e, surf, 60);
-    e.setFrame(e.hurtT > 0 && e.pose === 0 ? 'oni_hurt' : `oni_${e.pose}`);
+    const frame = e.hurtT > 0 && e.pose === 0 ? 'oni_hurt' : `oni_${e.pose}`;
+    // from phase 2 his left horn is snapped off (when the city's art has those frames)
+    e.setFrame(g.stage >= 2 && e.texture.has(`${frame}_b`) ? `${frame}_b` : frame);
     // a fresh masu of beans every few seconds (at most two in the air)
     if ((g.masuT -= dt) <= 0) {
       g.masuT = g.enraged ? 5 : 6.5;
