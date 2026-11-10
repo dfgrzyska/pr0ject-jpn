@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BEANS, DEPTH, ENEMIES, FAIR, VIEW, WEAPONS } from '../config.js';
+import { BEANS, DEPTH, ENEMIES, FAIR, PHASE, VIEW, WEAPONS } from '../config.js';
 import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
 import { SKINS } from './skins.js';
@@ -240,6 +240,10 @@ export class Enemies {
     if (boss) {
       this.scene.sfx.bossHit((e.oni && !bean) || crabBlock);
       amount /= rules().bossHp; // easy: they give in sooner
+      // breaking into a new phase: most of the damage is shrugged off for a moment (see phaseBreak)
+      const gt = e.group ?? (e.type === 'heavy' ? e : e.master);
+      if (gt?.gate > 0) amount *= PHASE.take;
+      if (e.group?.take && e.role in e.group.take) amount *= e.group.take[e.role]; // guarded parts (the octopus's head)
     }
     if (crabBlock) {
       // Heike-gani's iron pincers deflect frontal shots unless flanked from the sides
@@ -249,11 +253,12 @@ export class Enemies {
       return;
     }
     if (e.oni && !bean) {
-      // the oni's hide: normal shots barely chip it (no flash), a bomb does half
-      e.hp -= amount * (byBomb ? 0.5 : BEANS.armor);
+      // the oni's hide: normal shots barely chip it (no flash; less so as it cracks, phase by phase), a bomb does half
+      e.hp -= amount * (byBomb ? 0.5 : (e.group?.armor ?? BEANS.armor));
       if (e.hp <= 0) this.destroy(e, byBomb);
       return;
     }
+    if (e.oni) amount *= e.group?.beanK ?? 1;
     if (e.oyster && !byBomb) {
       if (!e.shellOpen) {
         amount *= 0.3;
@@ -359,7 +364,16 @@ export class Enemies {
       if (e.horiz) wr.setRotation(-e.dir * Math.PI / 2);
     } else s.fx.explode(e.x, e.y, big ? 'm' : e.def.explosion); // (a boss's body stays a moment: goDown)
     if (e.type === 'carrier') s.spawnPickup(e.color, e.x, e.y, -40);
-    if (e.type === 'masu') s.spawnPickup('mame', e.x, e.y, -40);
+    if (e.type === 'masu') {
+      s.spawnPickup('mame', e.x, e.y, -40);
+      // the box bursts over the oni: a handful of beans hits him at once, and he staggers
+      const g = this.bossGroup;
+      if (g?.kind === 'oni' && !g.defeated && !g.body.dead && g.awake) {
+        this.damage(g.body, BEANS.masuHit, false, true);
+        g.stagger = BEANS.stagger;
+        s.fx.text(g.body.x, g.body.y - 34, 'ONI WA SOTO!', 1, 0xffe080);
+      }
+    }
     if (big) {
       const { x, y } = e;
       this.goDown(e);
@@ -391,9 +405,40 @@ export class Enemies {
     return hv && hv.y > 0 ? { hp: hv.hp, max: hv.maxHp } : null;
   }
 
+  /**
+   * A boss breaking into phase n (2 or 3): "FAZA II" and the phase's name come up, it shrugs most damage off
+   * for a moment and holds its fire, the bullets round it are cancelled, and the player is paid for the break:
+   * points and a step towards a spent bomb. `g` is the boss group (or a heavy itself), (x, y) where it broke.
+   */
+  phaseBreak(g, x, y, n, title) {
+    const s = this.scene;
+    g.gate = PHASE.gate;
+    g.stage = n;
+    if (typeof g.timer === 'number') g.timer = Math.max(g.timer, PHASE.gate);
+    const r2 = PHASE.clear ** 2;
+    for (const b of s.bullets.pool.live) {
+      if (!b.dead && (b.x - x) ** 2 + (b.y - y) ** 2 < r2) {
+        if (Math.random() < 0.5) s.fx.spark(b.x, b.y);
+        s.bullets.pool.kill(b);
+      }
+    }
+    const pts = PHASE.bonus * s.score.mult;
+    s.score.add(pts);
+    s.fx.text(x, y - 26, 'PRZEŁAMANIE!', 1.4, 0xffe080);
+    s.fx.text(x, y - 14, `${pts}`, 1.2, 0xffe080);
+    const p = s.player;
+    if (p.bombs === 0) p.grazeCharge = Math.min(p.grazePerBomb() - 1, p.grazeCharge + PHASE.charge);
+    s.hud.show(`FAZA ${['I', 'II', 'III'][n - 1]}`, title, 1.8);
+    s.fx.flash(0.35, 0.3);
+    s.fx.shockwave(x, y);
+    s.cameras.main.shake(300, 0.006);
+    s.sfx.explode('m');
+  }
+
   updateBossGroup(dt) {
     const g = this.bossGroup;
     if (!g || g.defeated) return;
+    if (g.gate > 0) g.gate -= dt;
     if (g.kind === 'jaodori') return this.updateJaodori(g, dt);
     if (g.kind === 'kuma') return this.updateKuma(g, dt);
     if (g.kind === 'volcano') return this.updateVolcano(g, dt);
@@ -642,6 +687,7 @@ export class Enemies {
           this.carrier(e, dt);
           break;
         case 'heavy':
+          if (e.gate > 0) e.gate -= dt;
           if (e.kind === 'yukionna') this.yukiOnna(e, dt, b);
           else if (e.kind === 'tanuki') this.tanuki(e, dt, b);
           else if (e.kind === 'raiju') this.raiju(e, dt, b);

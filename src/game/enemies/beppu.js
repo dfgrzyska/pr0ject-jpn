@@ -8,6 +8,9 @@ import { slow, normal, DOWN, TAU, EXTRAS } from './shared.js';
 const IMP = { hp: 4, weight: 1, score: 200, radius: 5, explosion: 's' };
 // a wooden masu of Setsubun beans flying across the oni fight
 const MASU = { hp: 5, weight: 0, score: 300, radius: 7, explosion: 's' };
+// The red oni's three phases: his hide lets `armor` of normal damage through, more as it cracks (a horn breaks
+// at `at[0]` of his life, the club at `at[1]`); in the last phase beans hit `beanK` times as hard
+const ONI = { hp: 1350, armor: [0.25, 0.45, 0.7], at: [0.65, 0.3], beanK: 1.5 };
 
 export const beppu = {
   /** Beppu: is (x, y) inside a steam cloud? */
@@ -203,15 +206,17 @@ export const beppu = {
    * The oni sleeps in the blood pond and rises when the scroll stops. Normal shots barely chip his hide:
    * Setsubun beans do the damage ("Oni wa soto!"). Masu boxes of beans fly across the screen; shoot one
    * and catch the beans. Attacks: the kanabō smash (a marked spot, then a fissure of eruptions running
-   * at the player), stomps that set off geysers, roaring fans; enraged
-   * below 35% he also swings the club round in a spiral. The pond position comes from the boss wave.
+   * at the player), stomps that set off geysers, roaring fans. Three phases, his hide cracking with each (ONI):
+   * the iron kanabō; a broken horn, with columns of scalding steam across the pond; Chinoike's blood hell,
+   * the club swung round in a spiral and the pond boiling up from below. A masu shot down bursts over him and
+   * makes him stagger. The pond position comes from the boss wave.
    */
   spawnOni(w, base) {
     const s = this.scene;
     const [x, u] = w.pond;
     const g = { kind: 'oni', state: 'dormant', t: 0, phase: 0, step: 0, timer: 1, parts: [], enraged: false, defeated: false, awake: false };
-    Object.assign(g, { home: x, u, sway: 0, masuT: 0, masuSide: 1, act: null, poseT: 0 });
-    const e = this.pool.spawn('oni_0', x, s.parallax.screenY(u), { ...base, role: 'body', hp: 855, maxHp: 855, radius: 18, group: g, invuln: true, oni: true, pose: 0, hurtT: 0, shoutT: 0 });
+    Object.assign(g, { home: x, u, sway: 0, masuT: 0, masuSide: 1, act: null, poseT: 0, stage: 1, armor: ONI.armor[0], beanK: 1, stagger: 0 });
+    const e = this.pool.spawn('oni_0', x, s.parallax.screenY(u), { ...base, role: 'body', hp: ONI.hp, maxHp: ONI.hp, radius: 18, group: g, invuln: true, oni: true, pose: 0, hurtT: 0, shoutT: 0 });
     e.segs = [{ x, y: 0, r: 12 }]; // the head
     e.setDepth(DEPTH.air - 0.1).setAlpha(0);
     g.body = e;
@@ -283,9 +288,24 @@ export const beppu = {
       g.masuT = g.enraged ? 5 : 6.5;
       if (this.pool.live.filter((m) => m.type === 'masu' && !m.dead).length < 2) this.spawnMasu(g);
     }
-    if (!g.enraged && e.hp < e.maxHp * 0.35) {
-      Object.assign(g, { enraged: true, timer: 0.8, phase: 0, step: 0 });
-      s.hud.show('', 'ONI WPADA W SZAŁ!', 1.6, true);
+    if (g.stage === 1 && e.hp < e.maxHp * ONI.at[0]) {
+      // a horn snaps off: his hide gives way more
+      Object.assign(g, { armor: ONI.armor[1], phase: 0, step: 0, act: null });
+      e.pose = 0;
+      this.phaseBreak(g, e.x, e.y - 20, 2, 'ZŁAMANY RÓG');
+      s.fx.shards(e.x + 10, e.y - 34, 12);
+    } else if (g.stage === 2 && e.hp < e.maxHp * ONI.at[1]) {
+      // the club breaks, the pond boils: Chinoike's blood hell
+      Object.assign(g, { armor: ONI.armor[2], beanK: ONI.beanK, enraged: true, phase: 0, step: 0, act: null });
+      e.pose = 0;
+      this.phaseBreak(g, e.x, e.y - 20, 3, 'KRWAWE PIEKŁO CHINOIKE');
+      s.fx.debris(e.x, e.y, 14, 0x6a4a3a, 1.4);
+    }
+    if (g.stagger > 0) {
+      // reeling from a masu of beans: no attacks for a moment
+      g.stagger -= dt;
+      e.hurtT = Math.max(e.hurtT, 0.05);
+      if (!g.act) return;
     }
     if (g.act) return this.oniSmash(g, e, dt);
     g.timer -= dt * (g.enraged ? 1.35 : 1);
@@ -297,7 +317,7 @@ export const beppu = {
     const s = this.scene;
     const b = s.bullets;
     const pl = s.player;
-    const list = g.enraged ? ['smash', 'spin', 'stomp', 'spin', 'roar'] : ['smash', 'stomp', 'roar'];
+    const list = g.stage >= 3 ? ['smash', 'spin', 'boil', 'stomp', 'spin', 'roar'] : g.stage === 2 ? ['smash', 'geysers', 'stomp', 'roar'] : ['smash', 'stomp', 'roar'];
     const next = () => {
       g.phase++;
       g.step = 0;
@@ -338,6 +358,31 @@ export const beppu = {
         b.ring(e.x, e.y + 28, g.enraged ? 14 : 10, g.step * 0.3, slow);
         g.timer = 1.4;
         if (++g.step >= 3) next();
+        break;
+      }
+      case 'geysers': {
+        // the broken horn: columns of scalding steam burst up the pond, one after another, with gaps to stand in
+        const cols = [22, 58, 94, 130, 166];
+        const safe = Math.floor(Math.random() * cols.length);
+        cols.forEach((x, i) => {
+          if (i === safe || (g.step % 2 === 1 && i === (safe + 2) % cols.length)) return;
+          for (let y = s.H * 0.36, j = 0; y < s.H - 6; y += 30, j++) b.zone(x, y, 11, { warn: 1.05 + j * 0.05, live: 0.45 });
+        });
+        s.cameras.main.shake(250, 0.004);
+        g.timer = 1.9;
+        if (++g.step >= 2) next();
+        break;
+      }
+      case 'boil': {
+        // the pond boils over: bubbles rise from the bottom of the screen in rows with gaps, fire rings from him
+        const gap = Math.floor(Math.random() * 6);
+        for (let i = 0; i < 7; i++) {
+          if (i === gap) continue;
+          s.bullets.shot('eb_s', 12 + i * 26 + (Math.random() - 0.5) * 6, s.H - 2, -Math.PI / 2 + (Math.random() - 0.5) * 0.1, slow * 0.9, 1.8);
+        }
+        if (g.step % 2 === 0) b.ring(e.x, e.y + 20, 12, g.step * 0.4, slow);
+        g.timer = 0.9;
+        if (++g.step >= 6) next();
         break;
       }
       case 'spin': {

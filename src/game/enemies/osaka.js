@@ -7,6 +7,19 @@ import { slow, normal, DOWN, TAU, EXTRAS } from './shared.js';
 
 // the bunraku puppet's three black-clad puppeteers
 const KUROKO = { hp: 140, weight: 0, score: 2000, radius: 7, explosion: 'm' };
+// The octopus: eight arms [dx, dy, resting angle, sway phase, front row, angle once forward], their HP, the
+// head's; `take`: how much of a hit the head takes in phases 1 and 2 (the arms guard it); below `rage` of
+// its life the head breaks into phase 3 even with arms left
+const TAKO = {
+  arms: [
+    [-26, 18, 2.35, 0, true], [-9, 22, 1.95, 1.7, true], [9, 22, 1.19, 3.1, true], [26, 18, 0.79, 4.6, true],
+    [-38, 4, 2.95, 0.8, false, 2.2], [-32, 12, 2.6, 2.4, false, 1.85], [32, 12, 0.54, 3.9, false, 1.29], [38, 4, 0.19, 5.4, false, 0.94],
+  ],
+  armHp: 140,
+  headHp: 980,
+  take: [0.2, 0.75],
+  rage: 0.4,
+};
 
 export const osaka = {
   // ---------------------------------------------------------------- Osaka: manzai duos
@@ -118,20 +131,27 @@ export const osaka = {
 
   // ---------------------------------------------------------------- Osaka boss: the octopus
   /**
-   * A giant octopus with a takoyaki vendor's headband rises from Osaka Bay. Four tentacles (chains of
-   * segments that sway and curl) shoot rings from their tips, slam straight down after a warning, and
-   * the head lobs takoyaki. Cut every tentacle and the head can be hit: ink spirals, ink blobs,
-   * takoyaki barrages; below 35% it goes into a rage.
+   * A giant octopus with a takoyaki vendor's headband rises from Osaka Bay, eight tentacles (chains of
+   * segments that sway and curl) round its mantle in two rows. Three phases (TAKO):
+   * 1. the full fan: the four front arms fight (rings from the tips, slams straight down after a warning,
+   *    takoyaki from the head), the four side arms are held back behind the body, guarding it: only now and
+   *    then they spit a ring, they can't be cut yet, and the guarded head takes a fifth of any hit;
+   * 2. the four front arms cut, the side arms swing forward: slams two at a time crossing over (X), takoyaki
+   *    volleys; the head takes most of a hit now;
+   * 3. every arm cut (or the head hurt below `rage`): ink clouds, jet dashes across the bay, ink spirals and
+   *    takoyaki barrages from the bare head.
    */
   spawnTako(w, base) {
-    const g = { kind: 'tako', state: 'enter', t: 0, phase: 0, step: 0, timer: 1.2, parts: [], enraged: false, defeated: false, awake: false, head: null, home: w.x, homeY: 62, slam: null };
-    for (const [dx, dy, rest, phase] of [[-24, 14, 2.35, 0], [-9, 20, 1.95, 1.7], [9, 20, 1.19, 3.1], [24, 14, 0.79, 4.6]]) {
-      const t = this.pool.spawn('ttip', w.x + dx, -60, { ...base, role: 'tentacle', group: g, dx, dy, rest, phase, hp: 187, maxHp: 187, radius: 3.5, pts: 3000, segs: [] });
+    const g = { kind: 'tako', state: 'enter', t: 0, phase: 0, step: 0, timer: 1.2, parts: [], enraged: false, defeated: false, awake: false, head: null, home: w.x, homeY: 62, slams: [], stage: 1, take: { head: TAKO.take[0] }, dash: null };
+    // [dx, dy, resting angle, sway phase, front row?]; the side arms swing to `fwd` once they come forward
+    for (const [dx, dy, rest, phase, front, fwd] of TAKO.arms) {
+      const t = this.pool.spawn('ttip', w.x + dx, -60, { ...base, role: 'tentacle', group: g, dx, dy, rest, rest0: rest, fwd, phase, front, hp: TAKO.armHp, maxHp: TAKO.armHp, radius: 3.5, pts: 3000, segs: [], invuln: !front });
       for (let i = 0; i < 8; i++) t.segs.push(this.segPool.spawn(`tseg_${i < 3 ? 0 : i < 6 ? 1 : 2}`, t.x, t.y, { r: i < 3 ? 5 : i < 6 ? 4 : 3 }));
-      t.setDepth(DEPTH.air - 0.11);
+      t.setDepth(DEPTH.air - (front ? 0.11 : 0.115));
+      if (!front) for (const sg of t.segs) sg.setDepth(DEPTH.air - 0.125);
       g.parts.push(t);
     }
-    g.head = this.pool.spawn('tako_0', w.x, -60, { ...base, role: 'head', group: g, hp: 880, maxHp: 880, radius: 18, invuln: true });
+    g.head = this.pool.spawn('tako_0', w.x, -60, { ...base, role: 'head', group: g, hp: TAKO.headHp, maxHp: TAKO.headHp, radius: 18 });
     g.head.play('tako');
     g.head.setDepth(DEPTH.air - 0.1);
     g.parts.push(g.head);
@@ -147,37 +167,50 @@ export const osaka = {
     if (g.state === 'enter') {
       h.y += Math.max(10, (g.homeY - h.y) * 1.2) * dt;
       if (h.y >= g.homeY - 1) Object.assign(g, { state: 'fight', awake: true, timer: 0.8 });
-    } else {
+    } else if (g.dash) this.takoDash(g, h, dt);
+    else {
       h.x = g.home + 16 * Math.sin(g.t * 0.5 * (g.enraged ? 1.5 : 1));
       h.y = g.homeY + 4 * Math.sin(g.t * 1.1);
     }
     const arms = g.parts.filter((p) => p.role === 'tentacle' && !p.dead && p.group === g);
-    if (g.slam) this.slamStep(g, dt);
-    for (const t of arms) this.layTentacle(g, t);
-    if (g.state !== 'fight') return;
-    if (!arms.length && h.invuln) {
-      h.invuln = false;
-      Object.assign(g, { phase: 0, step: 0, timer: 1.4, slam: null });
-      s.bullets.cancelAll(s.fx);
-      s.fx.flash(0.4, 0.3);
-      s.hud.show('MACKI ODCIĘTE!', '', 2);
+    if (g.slams.length) this.slamStep(g, dt);
+    for (const t of arms) {
+      // side arms swing forward in phase 2
+      if (g.stage >= 2 && !t.front) t.rest += (t.fwd - t.rest) * Math.min(1, dt * 2);
+      this.layTentacle(g, t);
+      if (!t.front) t.setAlpha(t.invuln ? 0.8 : 1);
     }
-    if (!h.invuln && !g.enraged && h.hp < h.maxHp * 0.35) {
-      g.enraged = true;
-      g.timer = 0.5;
-      s.hud.show('', 'OŚMIORNICA WŚCIEKŁA!', 1.6, true);
+    if (g.state !== 'fight') return;
+    // phase 3: the ink hangs in clouds over the water round it
+    if (g.stage >= 3 && Math.random() < dt * 4) s.fx.smoke(h.x + (Math.random() - 0.5) * 70, h.y + 16 + Math.random() * 50, 2, 7);
+    if (g.stage === 1 && !arms.some((t) => t.front)) {
+      // the front row cut: the side arms come forward and can be cut, the head is open to most of a hit
+      for (const t of arms) t.invuln = false;
+      Object.assign(g, { phase: 0, step: 0, slams: [] });
+      g.take.head = TAKO.take[1];
+      this.phaseBreak(g, h.x, h.y, 2, 'KONTRATAK Z GŁĘBIN');
+    } else if (g.stage === 2 && (!arms.length || h.hp < h.maxHp * TAKO.rage)) {
+      // all arms gone (what is left is torn off): the bare head, in a rage
+      for (const t of arms) this.tentacleDown(t);
+      Object.assign(g, { phase: 0, step: 0, slams: [], enraged: true });
+      g.take.head = 1;
+      this.phaseBreak(g, h.x, h.y, 3, 'ZASŁONA Z ATRAMENTU');
+      s.fx.text(h.x, h.y + 30, 'MACKI ODCIĘTE!', 1.6, 0xffe080);
     }
     g.timer -= dt * (g.enraged ? 1.2 : 1); // (its rage less frantic than the others': the screen fills fast)
-    if (g.timer > 0) return;
-    if (arms.length) this.takoArms(g, arms);
+    if (g.timer > 0 || g.dash) return;
+    const live = arms.filter((t) => !t.dead);
+    if (g.stage < 3 && live.length) this.takoArms(g, live);
     else this.takoHead(g, h);
   },
 
   /** Chain a tentacle's segments out from the head: a resting angle, a sway, a curl towards the tip. */
   layTentacle(g, t) {
     const h = g.head;
-    const k = g.slam?.arm === t ? g.slam.k : 0; // 0..1 straighten and stretch straight down
+    const sl = g.slams.find((q) => q.arm === t);
+    const k = sl ? sl.k : 0; // 0..1 straighten and stretch along the slam
     const len = 8.5 + k * 4.5;
+    const aim = sl ? sl.dir : DOWN;
     const sway = Math.sin(g.t * 1.2 + t.phase);
     let x = h.x + t.dx;
     let y = h.y + t.dy;
@@ -186,7 +219,7 @@ export const osaka = {
       const f = (i + 1) / (n + 1);
       let a = t.rest + sway * 0.45 * f + Math.sin(g.t * 2.3 + t.phase + i * 0.6) * 0.18 * f;
       if (t.recoil > 0) a += Math.sin(g.t * 28 - i * 0.9) * (t.recoil * 0.18) * f;
-      a += (DOWN - a) * k;
+      a += (aim - a) * k;
       x += Math.cos(a) * len;
       y += Math.sin(a) * len;
       if (i < n) t.segs[i].setPosition(x, y);
@@ -204,62 +237,109 @@ export const osaka = {
       g.step = 0;
       g.timer = 1;
     };
+    const fighting = arms.filter((t) => !t.invuln); // (the guarding side arms only spit a ring now and then)
     switch (g.phase % 3) {
       case 0: {
         // the tips spit small rings, one arm after another
-        const t = arms[g.step % arms.length];
-        if (this.canFire(t)) b.ring(t.x, t.y, 7, g.step * 0.4, slow);
+        const t = g.stage === 1 && g.step % 3 === 2 ? arms.find((q) => q.invuln) ?? fighting[0] : fighting[g.step % fighting.length];
+        if (t && this.canFire(t)) b.ring(t.x, t.y, 7, g.step * 0.4, slow);
         g.timer = 0.6;
-        if (++g.step >= arms.length * 2) next();
+        if (++g.step >= fighting.length * 2) next();
         break;
       }
       case 1:
-        // slams run in slamStep; three in a row
-        if (!g.slam) {
+        // slams run in slamStep: three in a row; in phase 2 two arms at once, crossing over
+        if (!g.slams.length) {
           if (g.step >= 3) next();
-          else g.slam = { arm: arms[Math.floor(Math.random() * arms.length)], t: 0, k: 0, burst: false };
+          else if (g.stage >= 2 && fighting.length >= 2) {
+            const left = fighting.filter((t) => t.dx < 0);
+            const right = fighting.filter((t) => t.dx > 0);
+            const a = (left.length ? left : fighting)[Math.floor(Math.random() * (left.length || fighting.length))];
+            const c = (right.length ? right : fighting.filter((t) => t !== a))[0];
+            for (const [arm, sx] of [[a, 1], [c, -1]]) if (arm) g.slams.push({ arm, t: 0, k: 0, burst: false, dir: DOWN - sx * 0.5 });
+          } else if (fighting.length) g.slams.push({ arm: fighting[Math.floor(Math.random() * fighting.length)], t: 0, k: 0, burst: false, dir: DOWN });
+          else g.step++;
         }
         g.timer = 0.1;
         break;
-      default:
-        // takoyaki thrown where the player is
-        b.lob(h.x - 12 + Math.random() * 24, h.y + 10, Phaser.Math.Clamp(pl.x + (Math.random() - 0.5) * 40, 10, VIEW.width - 10), pl.y, 1.15, 'takoyaki');
-        g.timer = 0.55;
-        if (++g.step >= 5) next();
+      default: {
+        // takoyaki thrown where the player is (a volley of three in phase 2)
+        const n = g.stage >= 2 ? 3 : 1;
+        for (let i = 0; i < n; i++) b.lob(h.x - 12 + Math.random() * 24, h.y + 10, Phaser.Math.Clamp(pl.x + (i - (n - 1) / 2) * 46 + (Math.random() - 0.5) * 20, 10, VIEW.width - 10), pl.y, 1.15, 'takoyaki', n > 1 ? Math.max(2, rules().lobBurst - 1) : undefined);
+        g.timer = n > 1 ? 1.1 : 0.55;
+        if (++g.step >= (n > 1 ? 3 : 5)) next();
+      }
     }
   },
 
-  /** A slam: the arm rears and blinks (a line shows where), whips straight down, bursts, pulls back. */
+  /** A slam: the arm rears and blinks (a line shows where), whips out along its line, bursts, pulls back. */
   slamStep(g, dt) {
     const s = this.scene;
-    const sl = g.slam;
-    if (sl.arm.dead) {
-      g.slam = null;
+    const h = g.head;
+    let done = 0;
+    for (const sl of g.slams) {
+      if (sl.arm.dead) {
+        sl.over = true;
+        done++;
+        continue;
+      }
+      sl.t += dt;
+      const bx = h.x + sl.arm.dx;
+      const by = h.y + sl.arm.dy;
+      if (sl.t < 0.7) {
+        sl.k = 0;
+        sl.arm.flash = Math.floor(sl.t * 20) % 2 ? 0.02 : 0;
+        if (Math.floor(sl.t * 14) % 2) {
+          this.tele.lineStyle(2, 0xff7050, 0.55);
+          this.tele.lineBetween(bx, by, bx + Math.cos(sl.dir) * 120, by + Math.sin(sl.dir) * 120);
+        }
+      } else if (sl.t < 0.95) sl.k = (sl.t - 0.7) / 0.25;
+      else if (sl.t < 1.45) {
+        sl.k = 1;
+        if (!sl.burst) {
+          sl.burst = true;
+          s.bullets.ring(sl.arm.x, sl.arm.y, 8, Math.random() * TAU, slow);
+          s.cameras.main.shake(200, 0.004);
+        }
+      } else if (sl.t < 1.85) sl.k = 1 - (sl.t - 1.45) / 0.4;
+      else {
+        sl.over = true;
+        done++;
+      }
+    }
+    if (done === g.slams.length) {
+      g.slams = [];
       g.step++;
+    } else if (done) g.slams = g.slams.filter((sl) => !sl.over);
+  },
+
+  /** Phase 3: a jet dash, the head shooting across the bay towards the player's side, inking the water. */
+  takoDash(g, h, dt) {
+    const d = g.dash;
+    d.t += dt;
+    const s = this.scene;
+    if (d.t < 0.5) {
+      // it draws in and blinks
+      h.flash = Math.floor(d.t * 20) % 2 ? 0.02 : 0;
+      if (Math.floor(d.t * 14) % 2) {
+        this.tele.lineStyle(2, 0x9a7ac8, 0.5);
+        this.tele.lineBetween(h.x, h.y, d.x, d.y);
+      }
       return;
     }
-    sl.t += dt;
-    const h = g.head;
-    const bx = h.x + sl.arm.dx;
-    if (sl.t < 0.7) {
-      sl.k = 0;
-      sl.arm.flash = Math.floor(sl.t * 20) % 2 ? 0.02 : 0;
-      if (Math.floor(sl.t * 14) % 2) {
-        this.tele.lineStyle(2, 0xff7050, 0.55);
-        this.tele.lineBetween(bx, h.y + sl.arm.dy, bx, h.y + sl.arm.dy + 120);
-      }
-    } else if (sl.t < 0.95) sl.k = (sl.t - 0.7) / 0.25;
-    else if (sl.t < 1.45) {
-      sl.k = 1;
-      if (!sl.burst) {
-        sl.burst = true;
-        s.bullets.ring(sl.arm.x, sl.arm.y, 8, Math.random() * TAU, slow);
-        s.cameras.main.shake(200, 0.004);
-      }
-    } else if (sl.t < 1.85) sl.k = 1 - (sl.t - 1.45) / 0.4;
-    else {
-      g.slam = null;
-      g.step++;
+    const k = Math.min(1, (d.t - 0.5) / 0.45);
+    h.x = d.x0 + (d.x - d.x0) * k;
+    h.y = d.y0 + (d.y - d.y0) * Math.sin(k * Math.PI); // down towards the player and back up
+    if (Math.random() < dt * 30) s.fx.puff('wisp_s_1', h.x + (Math.random() - 0.5) * 20, h.y + 10, 0.5);
+    if (k >= 1 && !d.burst) {
+      d.burst = true;
+      if (this.canFire(h)) s.bullets.ring(h.x, h.y + 10, 12, Math.random() * TAU, slow);
+      g.home = Phaser.Math.Clamp(h.x, 50, VIEW.width - 50);
+      g.t = 0;
+    }
+    if (d.t > 1.2) {
+      g.dash = null;
+      g.timer = 0.6;
     }
   },
 
@@ -275,7 +355,15 @@ export const osaka = {
       g.step = 0;
       g.timer = 1;
     };
-    switch (g.phase % 3) {
+    switch (g.phase % 4) {
+      case 3: {
+        // a jet dash: down at the player's side of the bay and back up, a ring where it turns
+        const H = this.scene.H;
+        g.dash = { t: 0, x0: h.x, y0: h.y, x: Phaser.Math.Clamp(pl.x, 34, VIEW.width - 34), y: Math.min(h.y + 70, H * 0.45), burst: false };
+        if (++g.step >= 1) next();
+        g.timer = 0.4;
+        break;
+      }
       case 0: {
         // ink spiral from the siphon: three arms in a rage, but sparser, so no more ink at once
         const n = g.enraged ? 3 : 2;

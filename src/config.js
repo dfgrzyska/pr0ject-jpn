@@ -203,8 +203,17 @@ export const BEANS = {
   time: 9, // s of beans per masu box
   damage: 2,
   speed: 260,
-  armor: 0.12, // fraction of normal damage the oni takes
+  rate: 10, // pairs thrown a second, whatever the weapon
+  spread: 8, // px/s sideways: the pair closes in a little on the oni
+  armor: 0.12, // fraction of normal damage the oni takes (before his phases crack it: see beppu.js)
+  masuHit: 60, // a box shot down bursts over the oni
+  stagger: 1.0, // s he reels and holds his attacks after that
 };
+
+// A boss (or heavy) breaking into its next phase: a moment it shrugs most damage off (`take` gets through, for
+// `gate` s, so a high-powered ship can't burn through a phase before it shows), enemy bullets round it are
+// cancelled, the player scores `bonus` x multiplier and `charge` grazes towards a spent bomb
+export const PHASE = { gate: 0.9, take: 0.2, clear: 64, bonus: 5000, charge: 10 };
 
 export const FAIR = {
   noFireAfterEnter: 0.4, // s: enemies never shoot right after appearing

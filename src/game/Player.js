@@ -340,6 +340,15 @@ export class Player {
       this.fireTimer += w.interval;
       this.volley();
     }
+    // Setsubun: a pair of roasted beans thrown at a steady rate, the same with every weapon
+    if (this.beanT > 0) {
+      this.beanTimer = (this.beanTimer ?? 0) - dt;
+      while (this.beanTimer <= 0) {
+        this.beanTimer += 1 / BEANS.rate;
+        const { damage, speed, spread } = BEANS;
+        for (const side of [-1, 1]) this.shot('ps_bean_0', this.x + side * 4, this.y - 6, -side * spread, -speed, damage, 3, { bean: true });
+      }
+    }
     if (this.weapon === 'homing') {
       this.orbTimer -= dt * k;
       while (this.orbTimer <= 0) {
@@ -411,11 +420,6 @@ export class Player {
         this.shot('ps_needle', x + 3, y - 6, 0, -speed, damage, 2);
         break;
       }
-    }
-    // Setsubun: a pair of roasted beans thrown with every other volley
-    if (this.beanT > 0 && this.volleys % 2 === 0) {
-      const { damage, speed } = BEANS;
-      for (const side of [-1, 1]) this.shot('ps_bean_0', x + side * 4, y - 6, side * 30, -speed, damage, 3, { bean: true });
     }
   }
 
