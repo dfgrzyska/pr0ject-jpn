@@ -4,6 +4,7 @@
   "subtitle": "OKINAWA - RAJSKIE WYSPY",
   "map": [127.68, 26.21, -4, -33],
   "skin": "okinawa",
+  "enemyArt": true,
   "near": "tropic",
   "shadows": true,
   "dark": [[0, 0.05]],

@@ -39,6 +39,11 @@ export const CITY_ANIMS = {
   tanuki: [four('tanuki'), 4],
   tanuki_leaf: [four('tanuki_leaf'), 4],
   ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`carrier_${c}`, [four(`carrier_${c}`), 10]])),
+  // Okinawa
+  tobiuo: [four('tobiuo'), 10], hari: [four('hari'), 6], habu: [four('habu'), 7],
+  manta: [[0, 1, 2, 3, 4, 5].map((i) => `manta_${i}`), 7],
+  shisa_a: [four('shisa_a'), 4], shisa_un: [four('shisa_un'), 4],
+  ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`glass_${c}`, [four(`glass_${c}`), 10]])),
 };
 
 /** Kyūbi's tails: how many swaying frames each one has in the atlas it comes from. */

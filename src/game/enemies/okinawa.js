@@ -81,7 +81,7 @@ export const okinawa = {
       // the survivor takes in its twin's soul: some life back, bigger, both attacks at once
       const last = alive[0];
       last.hp = Math.min(last.maxHp, last.hp + SHISA.soul);
-      last.setScale(1.2);
+      last.setScale(1.2 * last.base);
       last.radius *= 1.2;
       Object.assign(g, { enraged: true, phase: 0, step: 0, swap: null });
       last.home = Math.round(VIEW.width / 2);
@@ -89,7 +89,7 @@ export const okinawa = {
       this.phaseBreak(g, last.x, last.y, 3, 'OSTATNI STRAŻNIK RYUKYU');
       s.fx.light(last.x, last.y, 1.4, false, 0xffd080);
     }
-    if (g.stage >= 3) alive[0].setScale(1.2);
+    if (g.stage >= 3) alive[0].setScale(1.2 * alive[0].base);
     // phase 2: the bond between them, blinking on before it hurts
     if (g.stage === 2 && alive.length === 2) {
       const [p, q] = alive;
