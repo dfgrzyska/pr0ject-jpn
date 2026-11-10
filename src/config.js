@@ -26,11 +26,12 @@ export const DEPTH = {
 };
 
 export const PLAYER = {
-  hitRadius: 1.5, // the visible dot in the middle of the ship (same for every ship)
+  hitRadius: 1.5, // the visible dot in the middle of the ship (a ship's own `hit` stands in for it)
   pickupRadius: 11,
   invulnerable: 2.5, // s after respawn
   respawnDelay: 1.0,
   deathPowerLoss: 1, // power levels lost on death (dropped as a pickup)
+  lostPowerVy: -140, // the lost level is flung up the screen: it has to be chased, not caught on respawning
   maxPower: 5,
 };
 
@@ -39,36 +40,57 @@ export const PLAYER = {
 //   touchGain  px of ship travel per px of finger travel
 //   dragSpeed  how fast the ship can chase the finger, px/s (the heavy ship lags behind)
 //   damage     multiplier for every shot
+//   hit        radius of the hit dot, px; graze: how close a bullet must pass to graze; pickup: reach for pickups
+//   perBomb    grazes to earn the spent bomb back
+//   perk       what the ship does that the others don't (shown on the selection screen; see Player)
+//   bomb       its bomb: damage to everything on screen, s of invulnerability, s enemy bullets stay cancelled
 //   flameY     engine flame offset below the sprite centre
 //   stats      [speed, power] shown as pips (out of 3) on the selection screen
+// (ids stay as they were: the last ship picked is kept in the browser by id; Tsuru was called Kitsune)
 export const SHIPS = [
   {
     id: 'oni',
     name: 'ONI',
     role: 'CIĘŻKI',
+    perk: 'GNIEW SZTURMOWY',
     color: 0x6ae486,
     frame: 'ship_oni',
     life: 'icon_life_oni',
-    speed: 76,
+    speed: 78,
     touchGain: 1.0,
-    dragSpeed: 230,
-    damage: 1.4,
+    dragSpeed: 240,
+    damage: 1.25,
     lives: 3,
+    hit: 1.7,
+    graze: 7,
+    pickup: 11,
+    perBomb: 40,
+    spread: 0.75, // its shots fly closer together
+    rage: 0.2, // up to this much more damage the higher up the screen it flies
+    ram: true, // while invulnerable it rams small fry to bits
+    bomb: { kind: 'shock', damage: 75, invulnerable: 2.2, clear: 0.5 },
     flameY: 8,
     stats: [1, 3],
   },
   {
     id: 'kitsune',
-    name: 'KITSUNE',
+    name: 'TSURU',
     role: 'STANDARD',
+    perk: 'TALIZMANY OFUDA',
     color: 0xffb868,
     frame: 'ship',
     life: 'icon_life',
-    speed: 100,
+    speed: 112,
     touchGain: 1.15,
-    dragSpeed: 950,
-    damage: 1,
+    dragSpeed: 650,
+    damage: 1.05,
     lives: 3,
+    hit: 1.4,
+    graze: 8,
+    pickup: 11,
+    perBomb: 32,
+    ofuda: true, // grazes fold paper talismans that circle the ship (OFUDA)
+    bomb: { kind: 'cranes', damage: 45, invulnerable: 2.2, clear: 1.0 },
     flameY: 8.5,
     stats: [2, 2],
   },
@@ -76,18 +98,33 @@ export const SHIPS = [
     id: 'tsubame',
     name: 'TSUBAME',
     role: 'SZYBKI',
+    perk: 'PĘD JASKÓŁKI',
     color: 0x5cacf2,
     frame: 'ship_tsubame',
     life: 'icon_life_tsubame',
-    speed: 132,
+    speed: 150,
     touchGain: 1.35,
-    dragSpeed: 1500,
-    damage: 1,
-    lives: 2,
+    dragSpeed: 1400,
+    damage: 0.95,
+    lives: 3,
+    hit: 1.1,
+    graze: 11,
+    pickup: 16,
+    perBomb: 20, // a lighter bomb, back twice as often
+    momentum: true, // flying and grazing build up speed: faster fire (MOMENTUM)
+    bomb: { kind: 'cut', damage: 25, invulnerable: 1.2, clear: 0.6 },
     flameY: 6,
-    stats: [3, 2],
+    stats: [3, 1],
   },
 ];
+
+// Tsuru: every `every` grazes a paper talisman starts circling the ship (at most `max`); it cancels an enemy
+// bullet that touches it, or after `life` s flies off at the nearest enemy
+export const OFUDA = { every: 12, max: 2, life: 7, damage: 12, orbit: 13, reach: 5 };
+
+// Tsubame: momentum builds while the ship flies (faster than `moving` px/s) and with every graze, ebbs while it
+// hovers; full momentum fires `fire` faster
+export const MOMENTUM = { moving: 40, gain: 0.3, graze: 0.07, ebb: 0.2, fire: 0.3 };
 
 // Weapons: basic -> pickups switch type (keep level) or raise level (same colour).
 export const WEAPONS = {
@@ -128,14 +165,14 @@ export const SCORE = {
 
 // Enemy archetypes: same behaviour in every city, only the look changes.
 export const ENEMIES = {
-  popcorn: { hp: 3, weight: 1, score: 100, radius: 5, explosion: 's' },
-  shooter: { hp: 22, weight: 2, score: 300, radius: 9, explosion: 'm' },
-  turret: { hp: 26, weight: 3, score: 400, radius: 7, explosion: 'm', ground: true },
-  diver: { hp: 5, weight: 1, score: 150, radius: 6, explosion: 's' },
+  popcorn: { hp: 5, weight: 1, score: 100, radius: 5, explosion: 's' },
+  shooter: { hp: 32, weight: 2, score: 300, radius: 9, explosion: 'm' },
+  turret: { hp: 38, weight: 3, score: 400, radius: 7, explosion: 'm', ground: true },
+  diver: { hp: 9, weight: 1, score: 150, radius: 6, explosion: 's' },
   heavy: { hp: 600, weight: 5, score: 8000, radius: 19, explosion: 'l' }, // Kyūbi / tanuki (Kyoto), manta (Okinawa), Yuki-onna (Sapporo), Raijū (Kagoshima), bunraku puppet (Osaka)
   // stage boss, one entry per part (Okinawa: two shisa sharing one HP bar; Sapporo: the bear, parts set their own HP)
   boss: { hp: 572, weight: 6, score: 15000, radius: 15, explosion: 'l' },
-  carrier: { hp: 12, weight: 2, score: 500, radius: 7, explosion: 's' },
+  carrier: { hp: 18, weight: 2, score: 500, radius: 7, explosion: 's' },
   // Sapporo: rotary snowplough driving along the streets, sweeping a stream of snow
   plow: { hp: 30, weight: 3, score: 600, radius: 8, explosion: 'm', ground: true },
   // Beppu environment (no score, no multiplier): a hot-spring vent that erupts, a drifting steam cloud
@@ -170,29 +207,30 @@ export const BEANS = {
 };
 
 export const FAIR = {
-  noFireAfterEnter: 0.7, // s: enemies never shoot right after appearing
+  noFireAfterEnter: 0.4, // s: enemies never shoot right after appearing
+  speed: 1.05, // every enemy bullet
   noFireBelow: 0.62, // fraction of screen height: no shots from the lower part
   popcornFireChance: 0.25,
   bulletSpeed: { slow: 52, normal: 66, fast: 80 },
 };
 
 // Easy mode (ŁATWY, picked on the ship screen): the same cities, waves, bosses and attacks with gentler
-// numbers, two more lives, a bomb that goes off by itself when you're hit, and continues. Each entry stands in
-// for the normal value named beside it (src/difficulty.js).
+// numbers, one more life, a bomb that goes off by itself when you're hit, and three continues. Each entry
+// stands in for the normal value named beside it (src/difficulty.js).
 export const EASY = {
-  extraLives: 2, // on top of the ship's own
+  extraLives: 1, // on top of the ship's own
   autoBomb: true, // hit with the bomb ready: it goes off instead
-  continues: true, // game over: carry on where you fell, score from zero
+  continues: 3, // game over: carry on where you fell, score from zero (this many times in a game)
   invulnerable: 3.5, // s after respawn (PLAYER.invulnerable)
-  deathPowerLoss: 0, // (PLAYER.deathPowerLoss)
-  grazePerBomb: 30, // (GRAZE.perBomb)
-  bulletSpeed: 0.85, // every enemy bullet
-  volley: 0.7, // bullets in fans and rings, keeping odd counts odd (the aimed bullet in the middle stays)
+  grazeBomb: 0.75, // of the ship's grazes per bomb
+  bulletSpeed: 0.88, // every enemy bullet (FAIR.speed)
+  volley: 0.8, // bullets in fans and rings, keeping odd counts odd (the aimed bullet in the middle stays)
   lobBurst: 3, // pellets where a lobbed snowball lands (4)
-  noFireAfterEnter: 1.0, // (FAIR)
+  noFireAfterEnter: 0.65, // (FAIR)
   noFireBelow: 0.55, // (FAIR; bosses keep the normal line)
   popcornFireChance: 0.12, // (FAIR)
   warn: 1.3, // warning time of beams and scalding zones
-  bossHp: 0.75, // bosses, heavies and their parts
+  bossHp: 0.8, // bosses, heavies and their parts
   heatJam: 1.0, // s (HEAT.jam)
+  enemyHp: { popcorn: 3, shooter: 22, turret: 26, diver: 5, carrier: 12 }, // small fry as tough as they used to be
 };

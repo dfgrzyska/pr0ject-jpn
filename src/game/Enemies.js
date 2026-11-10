@@ -56,7 +56,7 @@ export class Enemies {
     const base = {
       type: w.type,
       def,
-      hp: w.hp ?? def.hp,
+      hp: w.hp ?? rules().enemyHp?.[w.type] ?? def.hp,
       radius: def.radius,
       age: 0,
       seen: 0, // time since it became visible

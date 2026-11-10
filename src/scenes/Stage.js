@@ -151,7 +151,7 @@ export class Stage extends Phaser.Scene {
     for (const [pool, n] of [[b.pool, 90], [b.lobs, 8], [b.marks, 8], [this.player.shots, 50], [f.parts, 80], [f.petals, 60], [f.sparks, 30], [f.smokes, 30], [f.air, 12], [f.lights, 12], [f.scorch, 10], [f.ground, 6], [e.pool, 30], [e.heads, 8], [e.wrecks, 8], [e.woundPool, 8]])
       pool.warm(n);
 
-    const qShip = SHIPS.findIndex((sh) => sh.id === q.get('ship'));
+    const qShip = SHIPS.findIndex((sh) => sh.id === q.get('ship') || sh.name.toLowerCase() === q.get('ship')); // (?ship=tsuru too)
     this.shipIndex = qShip >= 0 ? qShip : loadShipIndex();
     this.select = null;
     this.journey = null;
@@ -390,7 +390,7 @@ export class Stage extends Phaser.Scene {
     this.state = 'over';
     this.music.play('over', true);
     this.endTimer = 1.8;
-    if (rules().continues) {
+    if (this.continues < rules().continues) {
       // easy: a countdown to carry on (see update); its panel comes up once the explosion is over
       this.contT = 11.3;
       this.contShown = 0;
@@ -426,6 +426,7 @@ export class Stage extends Phaser.Scene {
       ['WYNIK', 0xb0aec0],
       [String(this.score.score).padStart(8, '0'), 0xffffff, 2],
       '',
+      [`POZOSTAŁO KONTYNUACJI: ${rules().continues - this.continues}`, 0xb0aec0],
       ['PEŁNE ŻYCIA, WYNIK OD ZERA', 0xb0aec0],
       ['DOTKNIJ / ENTER - TAK', 0xffe080, 1, true],
     ]);
@@ -821,7 +822,7 @@ export class Stage extends Phaser.Scene {
     if (!p.alive) return;
 
     // pickups
-    const pr2 = PLAYER.pickupRadius ** 2;
+    const pr2 = (p.ship.pickup ?? PLAYER.pickupRadius) ** 2;
     for (const k of this.pickups.live) {
       if ((k.x - p.x) ** 2 + (k.y - p.y) ** 2 < pr2) {
         this.pickups.kill(k);
@@ -831,7 +832,8 @@ export class Stage extends Phaser.Scene {
 
     if (p.entering > 0) return;
     const vulnerable = p.invulnerable <= 0 && !p.god;
-    const hr = PLAYER.hitRadius;
+    const hr = p.ship.hit ?? PLAYER.hitRadius;
+    const gr = p.ship.graze ?? GRAZE.radius;
     for (const b of this.bullets.pool.live) {
       if (b.safe > 0 || b.dead) continue; // icicles blinking before they fall
       const r = b.radius + hr;
@@ -842,12 +844,22 @@ export class Stage extends Phaser.Scene {
         return;
       }
       // grazing: close enough to feel the heat (not while blinking after a respawn)
-      if (!b.grazed && p.invulnerable <= 0 && d2 < (r + GRAZE.radius) ** 2) {
+      if (!b.grazed && p.invulnerable <= 0 && d2 < (r + gr) ** 2) {
         b.grazed = true;
         p.graze(b);
       }
     }
-    if (!vulnerable) return;
+    if (!vulnerable) {
+      // Oni, invulnerable (just back, or bombing): rams small fry to bits
+      if (p.ship.ram) {
+        for (const e of enemies) {
+          if (e.dead || e.ghost || e.ground || (e.type !== 'popcorn' && e.type !== 'diver')) continue;
+          const r = e.radius * 0.7 + 4;
+          if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < r * r) this.enemies.damage(e, 999);
+        }
+      }
+      return;
+    }
     // lightning and steam columns, the arcs between Raijū's orbs
     if (this.bullets.hazardAt(p.x, p.y, hr)) {
       p.hit();

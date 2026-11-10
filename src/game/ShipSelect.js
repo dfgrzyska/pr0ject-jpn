@@ -26,6 +26,7 @@ export class ShipSelect {
     );
     this.names = SHIPS.map((s, i) => pixelText(scene, SLOT_X[i], 0, s.name).setDepth(d));
     this.role = pixelText(scene, W / 2, 0, '').setDepth(d);
+    this.perk = pixelText(scene, W / 2, 0, '').setDepth(d); // what the ship does that the others don't
     this.labels = ['PRĘDKOŚĆ', 'SIŁA OGNIA', 'ŻYCIA'].map((l) => pixelText(scene, 34, 0, l, 0).setDepth(d).setTint(0xb0aec0));
     this.pips = [0, 1].map(() => [0, 1, 2].map(() => scene.add.image(0, 0, 'sprites', 'pip_off').setScale(2).setDepth(d)));
     this.lifeIcons = [0, 1, 2, 3, 4].map(() => scene.add.image(0, 0, 'sprites', 'icon_life').setDepth(d));
@@ -50,7 +51,8 @@ export class ShipSelect {
     this.labels.forEach((l, i) => (l.y = this.detailY + 14 + i * 14));
     this.pips.forEach((row, r) => row.forEach((p, i) => p.setPosition(124 + i * 7, this.detailY + 21 + r * 14)));
     this.lifeIcons.forEach((ic, i) => ic.setPosition(126 + i * 10, this.detailY + 49));
-    this.modeY = this.detailY + 66;
+    this.perk.y = this.detailY + 63;
+    this.modeY = this.detailY + 80;
     this.modeLabel.y = this.modeY - 7;
     this.mode.y = this.modeY;
     this.modeInfo.y = this.modeY + 14;
@@ -66,6 +68,7 @@ export class ShipSelect {
     this.flames.forEach((f, k) => f.setVisible(k === this.index));
     this.names.forEach((n, k) => n.setTint(k === this.index ? ship.color : 0x6a6880));
     this.role.setText(tr(ship.role)).setTint(ship.color);
+    this.perk.setText(tr(ship.perk ?? '')).setTint(ship.color);
     ship.stats.forEach((v, r) => this.pips[r].forEach((p, k) => p.setFrame(k < v ? 'pip_on' : 'pip_off')));
     this.lifeIcons.forEach((ic, k) => ic.setFrame(ship.life).setVisible(k < ship.lives + rules().extraLives));
     const easy = isEasy();
@@ -109,7 +112,7 @@ export class ShipSelect {
   }
 
   destroy() {
-    for (const o of [this.back, this.dim, this.box, this.title, this.role, this.hint, this.start, this.modeLabel, this.mode, this.modeInfo]) o.destroy();
+    for (const o of [this.back, this.dim, this.box, this.title, this.role, this.perk, this.hint, this.start, this.modeLabel, this.mode, this.modeInfo]) o.destroy();
     for (const o of [...this.ships, ...this.flames, ...this.names, ...this.labels, ...this.pips.flat(), ...this.lifeIcons]) o.destroy();
   }
 }

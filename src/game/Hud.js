@@ -1,5 +1,5 @@
 import { BEANS, DEPTH, HEAT, PLAYER, SCORE, VIEW } from '../config.js';
-import { isEasy, rules } from '../difficulty.js';
+import { isEasy } from '../difficulty.js';
 import { FONT } from '../scenes/Boot.js';
 import { getLang, tr } from '../i18n.js';
 import { canInstall } from '../pwa.js';
@@ -300,7 +300,7 @@ export class Hud {
         const a = -Math.PI / 2;
         this.bar.lineStyle(2, 0xffe080, 0.85);
         this.bar.beginPath();
-        this.bar.arc(this.bombBtn.x, this.bombBtn.y, 15, a, a + (Math.PI * 2 * p.grazeCharge) / rules().grazePerBomb);
+        this.bar.arc(this.bombBtn.x, this.bombBtn.y, 15, a, a + (Math.PI * 2 * p.grazeCharge) / p.grazePerBomb());
         this.bar.strokePath();
       }
     }

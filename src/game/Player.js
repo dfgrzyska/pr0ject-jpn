@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BEANS, BOMB, DEPTH, FROST, GRAZE, HEAT, PLAYER, SHIPS, VIEW, WEAPONS } from '../config.js';
+import { BEANS, BOMB, DEPTH, FROST, GRAZE, HEAT, MOMENTUM, OFUDA, PLAYER, SHIPS, VIEW, WEAPONS } from '../config.js';
 import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
 
@@ -23,6 +23,11 @@ export class Player {
     this.beanOrbit = [0, 1].map(() => scene.add.image(0, 0, 'sprites', 'ps_bean').setDepth(DEPTH.player + 0.02).setVisible(false));
     // Sapporo: Yuki-onna's frost, the block of ice the ship is caught in when it freezes over
     this.iceBlock = scene.add.image(0, 0, 'sprites', 'ice_block').setDepth(DEPTH.player + 0.08).setVisible(false);
+    // Tsuru: paper talismans circling the ship (OFUDA)
+    this.ofuda = Array.from({ length: OFUDA.max }, () => ({ on: false, t: 0, s: scene.add.image(0, 0, 'sprites', 'orizuru_0').setScale(0.5).setTint(0xfff4e0).setDepth(DEPTH.player + 0.03).setVisible(false) }));
+    this.ofudaCharge = 0; // grazes towards the next talisman
+    this.momentum = 0; // Tsubame: 0..1, faster fire (MOMENTUM)
+    this.rage = 0; // Oni: extra damage, higher up the screen
 
     this.setShip(SHIPS[1]);
     this.bombs = 1;
@@ -69,6 +74,7 @@ export class Player {
     if (!v) this.noseGlow?.setVisible(false);
     if (!v) this.beanOrbit?.forEach((b) => b.setVisible(false));
     if (!v) this.iceBlock?.setVisible(false);
+    if (!v) this.ofuda?.forEach((o) => o.s.setVisible(false));
   }
 
   /** Fly in from the bottom edge. */
@@ -83,6 +89,9 @@ export class Player {
     this.jam = 0;
     this.frost = 0;
     this.frozen = 0;
+    this.momentum = 0;
+    this.rage = 0;
+    for (const o of this.ofuda) o.on = false;
     this.bank = 0;
     this.thrust = 0;
     this.prevX = this.x;
@@ -201,6 +210,7 @@ export class Player {
       this.prevY = this.y;
       const vy = dt > 0 ? dy / dt : 0;
       this.vy = vy;
+      this.perks(dt);
       const thrustTarget = vy < -8 ? Math.min(1, -vy / this.ship.speed) : vy > 8 ? Math.max(-0.4, (-vy / this.ship.speed) * 0.45) : 0;
       this.thrust += (thrustTarget - this.thrust) * Math.min(1, 14 * dt);
       const bankRate = 13 * (this.ship.speed / 100);
@@ -268,16 +278,70 @@ export class Player {
     this.updateShots(dt);
   }
 
+  /** What each ship does on its own: Oni's fury up the screen, Tsubame's momentum, Tsuru's talismans. */
+  perks(dt) {
+    const sh = this.ship;
+    const H = this.scene.H;
+    this.rage = sh.rage ? sh.rage * Phaser.Math.Clamp((H * 0.7 - this.y) / (H * 0.45), 0, 1) : 0;
+    if (sh.momentum) {
+      const moving = Math.hypot(this.vx, this.vy) > MOMENTUM.moving;
+      this.momentum = Phaser.Math.Clamp(this.momentum + (moving ? MOMENTUM.gain : -MOMENTUM.ebb) * dt, 0, 1);
+      // at full momentum, the engine streams sparks
+      if (this.momentum > 0.95 && Math.random() < dt * 20) this.scene.fx.spark(this.x + (Math.random() - 0.5) * 6, this.y + 8);
+    }
+    if (sh.ofuda) this.updateOfuda(dt);
+  }
+
+  /** Tsuru: a talisman folded from the grazes starts circling the ship. */
+  addOfuda() {
+    const o = this.ofuda.find((q) => !q.on);
+    if (!o) return;
+    o.on = true;
+    o.t = OFUDA.life;
+    this.scene.sfx.pickup();
+    this.scene.fx.text(this.x, this.y - 18, 'OFUDA!', 1, 0xfff4e0);
+  }
+
+  /** The talismans circle the ship, each one cancelling a bullet it touches; in the end they fly off at an enemy. */
+  updateOfuda(dt) {
+    const s = this.scene;
+    let i = 0;
+    for (const o of this.ofuda) {
+      const a = s.t * 4 + (i++ * Math.PI * 2) / this.ofuda.length;
+      const x = this.x + Math.cos(a) * OFUDA.orbit;
+      const y = this.y + Math.sin(a) * OFUDA.orbit * 0.8;
+      o.s.setVisible(o.on && this.alive).setPosition(Math.round(x), Math.round(y)).setRotation(a + Math.PI / 2);
+      if (!o.on || !this.alive) continue;
+      for (const b of s.bullets.pool.live) {
+        if (b.dead) continue;
+        const r = OFUDA.reach + (b.radius ?? 2);
+        if ((b.x - x) ** 2 + (b.y - y) ** 2 < r * r) {
+          s.bullets.pool.kill(b);
+          s.fx.spark(x, y);
+          s.fx.spark(b.x, b.y);
+          o.on = false;
+          break;
+        }
+      }
+      if (o.on && (o.t -= dt) <= 0) {
+        o.on = false;
+        this.shot('orizuru_0', x, y, 0, -120, OFUDA.damage, 4, { homing: true, life: 1.6 }).setScale(0.55).setRotation(0);
+      }
+    }
+  }
+
   // ---------------------------------------------------------------- weapons
   fire(dt) {
     const w = WEAPONS[this.weapon];
-    this.fireTimer -= dt;
+    // Tsubame's momentum: faster fire
+    const k = 1 + (this.ship.momentum ? MOMENTUM.fire * this.momentum : 0);
+    this.fireTimer -= dt * k;
     while (this.fireTimer <= 0) {
       this.fireTimer += w.interval;
       this.volley();
     }
     if (this.weapon === 'homing') {
-      this.orbTimer -= dt;
+      this.orbTimer -= dt * k;
       while (this.orbTimer <= 0) {
         this.orbTimer += WEAPONS.homing.interval;
         this.launchOrbs();
@@ -290,7 +354,7 @@ export class Player {
     const s = this.shots.spawn(frame, x, y);
     s.vx = vx;
     s.vy = vy;
-    s.damage = damage * this.ship.damage * (hot ? HEAT.boost : 1);
+    s.damage = damage * this.ship.damage * (1 + this.rage) * (hot ? HEAT.boost : 1);
     s.radius = radius;
     s.homing = false;
     s.life = 2;
@@ -315,13 +379,14 @@ export class Player {
       case 'basic': {
         const n = 1 + this.level;
         const { speed, damage } = WEAPONS.basic;
-        for (let i = 0; i < n; i++) this.shot('ps_needle', x + (i - (n - 1) / 2) * 6, y - 6, 0, -speed, damage, 2);
+        const gap = 6 * (this.ship.spread ?? 1);
+        for (let i = 0; i < n; i++) this.shot('ps_needle', x + (i - (n - 1) / 2) * gap, y - 6, 0, -speed, damage, 2);
         break;
       }
       case 'spread': {
         const { speed, damage, pellets, arc, close, closeBonus } = WEAPONS.spread;
         const n = pellets[lv];
-        const a = Phaser.Math.DegToRad(arc[lv]);
+        const a = Phaser.Math.DegToRad(arc[lv] * (this.ship.spread ?? 1));
         for (let i = 0; i < n; i++) {
           const ang = (i / (n - 1) - 0.5) * a;
           // point blank: harder while the pellet is young (see updateShots)
@@ -396,13 +461,23 @@ export class Player {
     s.score.add(GRAZE.points * s.score.mult);
     s.fx.spark(b.x, b.y);
     s.sfx.graze();
+    if (this.ship.momentum) this.momentum = Math.min(1, this.momentum + MOMENTUM.graze);
+    if (this.ship.ofuda && ++this.ofudaCharge >= OFUDA.every) {
+      this.ofudaCharge = 0;
+      this.addOfuda();
+    }
     if (this.bombs > 0) return;
-    if (++this.grazeCharge >= rules().grazePerBomb) {
+    if (++this.grazeCharge >= this.grazePerBomb()) {
       this.grazeCharge = 0;
       this.bombs = 1;
       s.fx.text(this.x, this.y - 18, 'BOMBA GOTOWA', 1.2, 0xffe080);
       s.sfx.powerUp();
     }
+  }
+
+  /** Grazes to earn the spent bomb back: the ship's own count (fewer on easy). */
+  grazePerBomb() {
+    return Math.round((this.ship.perBomb ?? GRAZE.perBomb) * rules().grazeBomb);
   }
 
   /** A macaque grabs something: a power level, else the bomb. Nothing to take: null (it bites instead). */
@@ -491,17 +566,27 @@ export class Player {
   bomb() {
     if (!this.alive || this.bombs <= 0 || this.entering > 0 || this.scene.ceasefire) return false;
     this.bombs = 0;
-    this.invulnerable = Math.max(this.invulnerable, BOMB.invulnerable);
+    // each ship's own bomb: Oni's shockwave hits hardest, Tsuru's turns the cancelled bullets into paper cranes,
+    // Tsubame's wind cut is light and short, but back twice as soon
+    const bm = this.ship.bomb ?? { kind: 'shock', damage: BOMB.damage, invulnerable: BOMB.invulnerable, clear: BOMB.clearTime };
+    this.invulnerable = Math.max(this.invulnerable, bm.invulnerable);
     const s = this.scene;
     s.sfx.bomb();
     s.stampChance = false; // no stamp for this city now
     s.run.bombs++;
-    s.bombClear = BOMB.clearTime;
+    s.bombClear = bm.clear;
+    const cranes = bm.kind === 'cranes' ? s.bullets.pool.live.filter((b) => !b.dead).slice(0, 24).map((b) => [b.x, b.y]) : [];
     s.bullets.cancelAll(s.fx);
-    s.fx.flash(0.75, 0.45);
+    s.fx.flash(bm.kind === 'cut' ? 0.45 : 0.75, bm.kind === 'cut' ? 0.3 : 0.45);
     s.fx.shockwave(this.x, this.y);
-    s.fx.petalBurst(this.x, this.y, 48);
-    s.enemies.damageAll(BOMB.damage);
+    if (bm.kind === 'shock') s.fx.shockwave(this.x, this.y - 30);
+    s.fx.petalBurst(this.x, this.y, bm.kind === 'cut' ? 20 : 48);
+    s.enemies.damageAll(bm.damage);
+    for (const [cx, cy] of cranes) {
+      this.shot('orizuru_0', cx, cy, (Math.random() - 0.5) * 60, -90, 2, 4, { homing: true, life: 1.8, arm: 0.12 }).setScale(0.55);
+      s.score.add(20 * s.score.mult);
+    }
+    s.fx.text(this.x, this.y - 24, bm.kind === 'shock' ? 'WSTRZĄS!' : bm.kind === 'cranes' ? 'SENBAZURU!' : 'CIĘCIE WIATRU!', 1.2, this.ship.color);
     return true;
   }
 
@@ -528,12 +613,18 @@ export class Player {
     s.fx.flash(0.35, 0.3);
     s.score.death();
     this.beanT = 0;
+    this.momentum = 0;
+    for (const o of this.ofuda) o.on = false;
     // lose power; the lost level drops as a pickup that can be caught again
     const lost = Math.min(rules().deathPowerLoss, this.level - 1);
     if (lost > 0) {
       this.level -= lost;
       const color = WEAPONS.typeToColor[this.weapon];
-      if (color) s.spawnPickup(color, this.x, Math.min(this.y, s.H - 60), -70);
+      if (color) {
+        // flung up the screen (pickups fall back at 90 px/s²), but never off its top: it tops out 30 px down
+        const y = Math.min(this.y, s.H - 60);
+        s.spawnPickup(color, this.x, y, -Math.min(-PLAYER.lostPowerVy, Math.sqrt(180 * Math.max(0, y - 30))));
+      }
     }
     this.respawnTimer = PLAYER.respawnDelay;
     if (this.lives <= 0) s.gameOver();
