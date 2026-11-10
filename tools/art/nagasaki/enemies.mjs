@@ -6,6 +6,8 @@
 // green-and-gold head and its body on poles, chasing the golden pearl.
 // Every frame is three times the old one's size (the old frames had no outline, so m -> fine m * 3).
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
+import * as SHIP from './oranda540.mjs';
+import * as DRAGON from './dragon540.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -373,15 +375,17 @@ export function nagasakiEnemies(add) {
     add(`n_biidoro_${f}`, biidoro(f));
     add(`n_hata_${f}`, hata(f));
     for (const c of ['red', 'blue', 'green']) add(`n_castella_${c}_${f}`, castella(c, f));
-    add(`n_ja_${f}`, jaHead(f));
+    add(`n_ja_${f}`, DRAGON.jaHead(f));
   }
   for (let f = 0; f < 2; f++) {
-    add(`n_oranda_${f}`, oranda(f));
-    add(`n_oranda_gun_${f}`, orandaGun(f, false));
+    add(`n_oranda_${f}`, SHIP.oranda(f));
+    add(`n_oranda_gun_${f}`, SHIP.orandaGun(f, false));
   }
-  add('n_oranda_burnt', orandaGun(0, true));
-  add('n_segment', jaSegment());
-  add('n_pearl', jaPearl());
+  add('n_oranda_burnt', SHIP.orandaGun(0, true));
+  add('n_segment', DRAGON.jaSegment('body'));
+  add('n_segment_leg', DRAGON.jaSegment('leg'));
+  add('n_segment_tail', DRAGON.jaSegment('tail'));
+  add('n_pearl', DRAGON.jaPearl());
   add('n_winch_base', winchBase(false));
   add('n_winch_wreck', winchBase(true));
   for (let i = 0; i < 16; i++) add(`n_winch_${i}`, winchHead(i));

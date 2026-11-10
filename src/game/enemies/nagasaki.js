@@ -1,6 +1,7 @@
 import { DEPTH, VIEW } from '../../config.js';
 import { volley } from '../../difficulty.js';
 import { DOWN, TAU, slow, normal, fast, EXTRAS } from './shared.js';
+import { hasEnemyFrame } from '../enemyArt.js';
 
 // the Dutch-ship float's two broadside batteries: separate targets riding on its sides
 const BATTERY = { hp: 85, weight: 0, score: 2500, radius: 6, explosion: 'm' };
@@ -286,7 +287,12 @@ export const nagasaki = {
     e.play('n_ja'); g.parts.push(e); g.maxTotal = e.maxHp;
     if (rise) e.setScale(0.3 * e.base).setAlpha(0);
     // Decorative puppet body has no collision: the clearly exposed head is the target.
-    g.body = Array.from({ length: 9 }, (_, i) => this.segPool.spawn('n_segment', 90, rise ? y0 + 6 : -60)
+    // the body: plain lengths, the ones with legs, the tail's end (the 540 px art has them; the old one only plain)
+    const segFrame = (i) => {
+      const name = i === 8 ? 'n_segment_tail' : i % 3 === 1 ? 'n_segment_leg' : 'n_segment';
+      return hasEnemyFrame(name) ? name : 'n_segment';
+    };
+    g.body = Array.from({ length: 9 }, (_, i) => this.segPool.spawn(segFrame(i), 90, rise ? y0 + 6 : -60)
       .setDepth(DEPTH.air - .1 - i * .001).setAlpha(rise ? 0 : 1));
     g.pearl = this.segPool.spawn('n_pearl', 90, rise ? y0 + 4 : -40).setDepth(DEPTH.air - .05).setAlpha(rise ? 0 : 1);
     g.y0 = y0;

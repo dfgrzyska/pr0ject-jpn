@@ -17,6 +17,11 @@ export function enemyTexture(frame) {
   return where.get(frame) ?? 'sprites';
 }
 
+/** Is this frame in a city atlas that is in now? */
+export function hasEnemyFrame(frame) {
+  return where.has(frame);
+}
+
 export function registerEnemyAtlas(textures, key) {
   for (const name of textures.get(key).getFrameNames()) where.set(name, key);
 }
