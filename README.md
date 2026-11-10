@@ -199,6 +199,7 @@ Wybór jest zapamiętywany; „jeszcze raz” wraca do ekranu wyboru z ostatnim 
   róg bomby bez bomby steruje jak reszta ekranu.
 
 Punkty i bomba:
+- **Bomba** — każda niszczy drobnych wrogów na ekranie; statki różnią się siłą bomby tylko wobec bossów i minibossów.
 - **Ocieranie się (graze)** — pocisk przelatujący tuż obok kropki statku (zasięg zależy od statku, `GRAZE`
   w `src/config.js`) daje 30 × mnożnik punktów i iskrę; gdy bomba jest zużyta, każde otarcie ładuje złoty pierścień
   wokół przycisku bomby, a po liczbie otarć statku bomba wraca („BOMBA GOTOWA”). Nie liczy się w czasie migania
@@ -513,8 +514,8 @@ i oni na sekundę się zatacza; kule naprowadzane w pierwszej kolejności celuj�
 póki działają, wokół statku krążą dwie fasolki (migają, gdy się kończą), a pasek nad paskiem temperatury pokazuje,
 ile zostało. Ataki: cios kanabō (zaznaczone
 miejsce uderzenia i szczelina z wybuchów biegnąca do gracza), tupnięcia budzące gejzery w całym ekranie, ryk
-z wachlarzami. Trzy fazy, a skóra pęka z każdą: żelazna maczuga (zwykłe strzały przechodzą w 25%); **złamany róg**
-(od 65% życia, 45%) — kolumny wrzącej pary przez staw z lukami; **krwawe piekło Chinoike** (od 30%, 70%, fasolki
+z wachlarzami. Trzy fazy, a skóra pęka z każdą: żelazna maczuga (zwykłe strzały przechodzą w 12%); **złamany róg**
+(od 65% życia, 25%) — kolumny wrzącej pary przez staw z lukami; **krwawe piekło Chinoike** (od 30%, 45%, fasolki
 biją półtora raza mocniej) — kręci maczugą (spirala), a staw wrze: rzędy bąbli z luką wznoszą się od dołu ekranu.
 
 ## Broń
@@ -524,7 +525,8 @@ Znajdźki zmieniają broń (ten sam kolor podnosi moc, do 5), parametry są w `W
   więc najlepiej działa z bliska;
 - **laser** (niebieska) — wiązka przepala się przez jednego drobnego wroga (popcorn, nurek), tracąc 40% siły;
 - **naprowadzane** (zielona) — dwie igły i 2–4 kule; kula przez 0,18 s leci po swoim łuku, dopiero potem szuka celu
-  w promieniu 170 px, skręca do 3,8 rad/s i żyje 1,15 s. Nie namierza wroga, który dopiero wszedł na ekran
+  w promieniu 170 px, skręca do 3,8 rad/s i żyje 1,15 s (na wyższym ekranie dłużej, tak żeby dolatywała do bossów
+  tak samo przy 9:16 i 9:21). Nie namierza wroga, który dopiero wszedł na ekran
   (jest wyżej niż 18 px albo widać go krócej niż 0,25 s), więc fale zdążą wlecieć.
 
 ## Hiroszima i Nagasaki — bossowie

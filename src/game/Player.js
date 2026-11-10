@@ -523,7 +523,10 @@ export class Player {
   }
 
   launchOrbs() {
-    const { speed, damage, orbs, life, arm } = WEAPONS.homing;
+    const { speed, damage, orbs, arm } = WEAPONS.homing;
+    // (the orbs' reach grows with a taller screen, by the way from the ship (H - 44) up to where the bosses
+    // hover (~70): the same reach to them at 9:16 and 9:21)
+    const life = WEAPONS.homing.life * Math.max(1, (this.scene.H - 114) / (VIEW.minHeight - 114));
     const n = orbs[this.level - 1];
     this.scene.sfx.shot('homing');
     for (let i = 0; i < n; i++) {

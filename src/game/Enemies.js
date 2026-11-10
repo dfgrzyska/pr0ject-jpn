@@ -307,8 +307,13 @@ export class Enemies {
     if (e.hp <= 0) this.destroy(e, byBomb);
   }
 
+  /** A bomb: small fry on screen go down whatever the bomb (the ships' bombs differ only against bosses). */
   damageAll(amount) {
-    for (const e of this.pool.live) if (e.y > -e.radius && e.y < this.scene.H + e.radius) this.damage(e, amount, true);
+    for (const e of this.pool.live) {
+      if (e.y <= -e.radius || e.y >= this.scene.H + e.radius) continue;
+      const big = e.type === 'boss' || e.type === 'heavy' || e.type === 'kuroko';
+      this.damage(e, big ? amount : Math.max(amount, e.hp), true);
+    }
   }
 
   destroy(e, byBomb = false) {

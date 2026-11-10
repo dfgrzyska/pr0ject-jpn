@@ -10,7 +10,8 @@ const IMP = { hp: 4, weight: 1, score: 200, radius: 5, explosion: 's' };
 const MASU = { hp: 5, weight: 0, score: 300, radius: 7, explosion: 's' };
 // The red oni's three phases: his hide lets `armor` of normal damage through, more as it cracks (a horn breaks
 // at `at[0]` of his life, the club at `at[1]`); in the last phase beans hit `beanK` times as hard
-const ONI = { hp: 1350, armor: [0.25, 0.45, 0.7], at: [0.65, 0.3], beanK: 1.5 };
+// (tuned so the beans still decide it: about 30 s with every masu caught, over a minute with none)
+const ONI = { hp: 1700, armor: [0.12, 0.25, 0.45], at: [0.65, 0.3], beanK: 1.5 };
 
 export const beppu = {
   /** Beppu: is (x, y) inside a steam cloud? */
