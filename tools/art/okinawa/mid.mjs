@@ -6,10 +6,12 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeCanvas, S, hashPx, scaleColor, rampColor, fbm, mix } from '../nagasaki/canvas.mjs';
-import { W, L, isWater, landD, shallowS, reefD, kindAt, beachW, KIND, VILLAGE, FIELDS, NAHA, SHURI, JUNGLE, MAIN_S } from './geo.mjs';
+import { W, L, isWater, landD, shallowS, reefD, kindAt, beachW, KIND, VILLAGE, CAVE, NAHA, SHURI, JUNGLE, BASE, MAIN_S } from './geo.mjs';
 import { C, tools } from './common.mjs';
 import { paintKerama, paintResort, paintOpenSea, paintLiveSea } from './sea.mjs';
-import { paintBise, paintFields } from './bise.mjs';
+import { paintBise } from './bise.mjs';
+import { paintGangala, paintCave } from './gangala.mjs';
+import { paintBase } from './kadena.mjs';
 import { paintNaha } from './naha.mjs';
 import { paintShuri, paintYanbaru, paintKori } from './north.mjs';
 
@@ -102,9 +104,10 @@ export function buildMid() {
         const g2 = fbm(x, y, { seed: 53, scale: 4, octaves: 2 });
         c = g2 > 0.42 || hashPx(X >> 1, Yy >> 1, 54) < g2 ? k.lawnPx(X, Yy, 0.15 + g2 * 0.6, C.scrub, true) : rampColor(C.lane, 0.06 + g2 * 0.3, X, Yy);
       }
-      else if (u < FIELDS[1]) c = rampColor(C.redEarth, 0.2 + nn * 0.7, X, Yy);
+      else if (u < CAVE[1]) continue; // (the valley and the cave lay their own)
       else if (u < NAHA[1]) continue; // (Naha lays its own)
       else if (u < SHURI[1]) c = k.lawnPx(X, Yy, 0.2 + nn * 0.65, GRASS2, true);
+      else if (u < BASE[1]) continue; // (the air base lays its own)
       else c = k.lawnPx(X, Yy, 0.15 + nn * 0.55, C.scrub, true);
       img.px(X, Yy, c);
     }
@@ -113,9 +116,11 @@ export function buildMid() {
   paintKerama(k);
   paintResort(k);
   paintBise(k);
-  paintFields(k);
+  paintGangala(k);
+  paintCave(k);
   paintNaha(k);
   paintShuri(k);
+  paintBase(k);
   paintYanbaru(k);
   paintKori(k);
   paintOpenSea(k);
@@ -154,6 +159,7 @@ export function buildMid() {
   // the turrets' pads: dressed coral stone, drawn on the ground (a roof that stands over one hides it)
   for (const p of pads) {
     if (p.x === 90 && p.u === 3670) continue;
+    if ((p.u > CAVE[0] && p.u < CAVE[1]) || (p.u > BASE[0] && p.u < BASE[1])) continue; // (the cave and the base build their own)
     const y = Y(p.u);
     img.fine(p.x - 11, y - 11, 22, 22, (X, Yy, xx, yy) => {
       const dd = Math.hypot(xx - p.x, yy - y);

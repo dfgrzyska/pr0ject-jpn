@@ -82,6 +82,26 @@ export class Parallax {
     this.camX = VIEW.width / 2;
     this.camY = VIEW.maxHeight * CAMERA_ROW;
     this.props = new Props(scene, stage.id, meta, this);
+    // Okinawa: the caverns of Gyokusendō. Under the ground the clouds and gulls are gone, the rock closes in at the
+    // sides, and going in (and coming out into the day) the eyes take a moment (all under the enemies and bullets)
+    this.cave = stage.cave ?? null;
+    this.caveK = 0;
+    this.caveWas = false;
+    this.caveFlash = 0;
+    if (this.cave) {
+      if (!scene.textures.exists('caveShade')) {
+        const t = scene.textures.createCanvas('caveShade', 90, 1);
+        const ctx = t.getContext();
+        for (let x = 0; x < 90; x++) {
+          const e = Math.min(x, 89 - x) / 26;
+          ctx.fillStyle = `rgba(4,3,8,${(Math.max(0, 1 - e) ** 1.6 * 0.7).toFixed(3)})`;
+          ctx.fillRect(x, 0, 1, 1);
+        }
+        t.refresh();
+      }
+      this.caveShade = scene.add.image(0, 0, 'caveShade').setOrigin(0, 0).setDepth(DEPTH.mid + 0.9).setVisible(false);
+      this.caveRect = scene.add.rectangle(0, 0, VIEW.width, VIEW.maxHeight, 0x000000, 1).setOrigin(0, 0).setDepth(DEPTH.mid + 0.95).setAlpha(0);
+    }
     if (this.nearKind === 'ash')
       this.stormRect = scene.add.rectangle(0, 0, VIEW.width, VIEW.maxHeight, 0x14141e, 1).setOrigin(0, 0).setDepth(DEPTH.near - 0.05).setAlpha(0);
   }
@@ -135,8 +155,31 @@ export class Parallax {
     this.camX += (follow - this.camX) * Math.min(1, dt * 3);
     this.camY = H * CAMERA_ROW;
     this.props.update(dt, H);
+    if (this.cave) this.updateCave(dt, H);
     this.updateNear(dt, scrolling, H);
     this.updateClouds(dt, H);
+  }
+
+  /** The cave: how much of the screen is under the ground, the rock walls' shade on it, the eyes adjusting. */
+  updateCave(dt, H) {
+    const [c0, c1] = this.cave;
+    const top = Math.max(0, this.screenY(c1));
+    const bot = Math.min(H, this.screenY(c0));
+    this.caveK = Math.max(0, bot - top) / H;
+    this.caveShade.setVisible(bot > top);
+    if (bot > top) this.caveShade.setPosition(0, top).setDisplaySize(VIEW.width, bot - top);
+    // passing the mouth (or the way out) under the camera: a moment of dark going in, of glare coming out
+    const inside = this.stripU(this.camY) > c0 && this.stripU(this.camY) < c1;
+    if (inside !== this.caveWas) {
+      this.caveWas = inside;
+      this.caveFlash = 1;
+      this.caveRect.setFillStyle(inside ? 0x000000 : 0xfff6e0);
+      this.flashIn = inside;
+    }
+    if (this.caveFlash > 0) {
+      this.caveFlash = Math.max(0, this.caveFlash - dt / (this.flashIn ? 0.9 : 0.6));
+      this.caveRect.setAlpha((this.flashIn ? 0.45 : 0.35) * this.caveFlash ** 1.5);
+    }
   }
 
   /** How dark the city is where the screen is now (0 by day .. 1 at night). */
@@ -157,7 +200,7 @@ export class Parallax {
   updateClouds(dt, H) {
     const scroll = this.lastTop === null ? 0 : this.uTop - this.lastTop;
     this.lastTop = this.uTop;
-    const a = 0.13 * (1 - this.darkness(H)) * this.props.fade;
+    const a = 0.13 * (1 - this.darkness(H)) * this.props.fade * (1 - this.caveK);
     for (const c of this.clouds) {
       c.y += scroll + 6 * dt;
       c.x += 3 * dt;
@@ -180,7 +223,9 @@ export class Parallax {
     }
     else this.spawnSakura(dt, fall, scrolling);
     const ship = this.scene.player?.alive ? this.scene.player : null;
+    const sky = 1 - this.caveK; // (no sky in the cave)
     for (const p of this.near.live) {
+      if (this.cave) p.setAlpha((p.frame.name.startsWith('gull') ? 0.85 : 0.3) * sky);
       if (ship && this.nearKind === 'steam') {
         const dx = p.x - ship.x;
         const dy = p.y - ship.y;

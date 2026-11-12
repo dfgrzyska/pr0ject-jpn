@@ -13,11 +13,14 @@ export const smooth = (a, b, x) => {
 export const MAIN_S = 760; // south coast of the main island
 export const MAIN_N = 4650; // north coast
 export const ROAD_U = 1150; // the coast road
-export const VILLAGE = [1350, 2350];
-export const FIELDS = [2350, 2560];
+export const VILLAGE = [1350, 1760];
+export const GANGALA = [1760, 2090]; // the Valley of Gangala: a collapsed cave, a gorge of forest under limestone walls
+export const CAVE = [2090, 2560]; // Gyokusendō: the lit caverns under the ground, in at the valley's head, out at Naha
 export const NAHA = [2560, 3200];
 export const SHURI = [3200, 3850];
-export const JUNGLE = [3850, 4650];
+export const JUNGLE = [3850, 4650]; // (the coast's shape: the forest itself starts above the air base)
+export const BASE = [3850, 4250]; // Kadena air base: two runways, shelters, the ramp
+export const FOREST0 = BASE[1];
 
 // [u, x, r, kind]: islands are unions of these discs. k = the Kerama islands off the start (white beaches, rocky points),
 // l = the lighthouse island, o = Kōri island at the end of its bridge, s = the phantom sandbar, nothing but white sand
@@ -140,7 +143,14 @@ export const isWater = (x, u) => landD(x, u) <= 0;
 export const isLand = (x, u) => landD(x, u) > beachW(kindAt(x, u));
 
 // ------------------------------------------------------------ roads
-export const roadX = (u) => 90 + 22 * Math.sin((u - JUNGLE[0]) / 120) * (1 - smooth(4560, 4640, u)) + 110 * (1 - smooth(3780, 3950, u));
+// (in from the west and along the air base's fence, Route 58, then winding up through the forest)
+const forestRoadX = (u) => 90 + 22 * Math.sin((u - JUNGLE[0]) / 120) * (1 - smooth(4560, 4640, u));
+export const ROUTE58_X = 7;
+export const roadX = (u) => {
+  const west = -14 + (ROUTE58_X + 14) * smooth(3800, 3880, u);
+  const k = smooth(4200, 4320, u);
+  return west * (1 - k) + forestRoadX(u) * k;
+};
 export const ROAD = [3800, 4640];
 export const BRIDGE = [4628, 5032];
 export const ISLAND_ROAD = [[91, BRIDGE[1]], [100, 5064], [112, 5092], [124, 5118], [130, 5132]];

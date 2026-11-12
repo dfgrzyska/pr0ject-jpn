@@ -1,10 +1,8 @@
 // Bise under its fukugi: sand lanes winding between tight rows of trees, every homestead inside its own windbreak with a coral wall,
 // a hinpun screen behind the gate, a red-tile house with a shisa on the ridge, an annex, a kitchen garden; the old banyan at the
-// crossing where the elders play sanshin, a soba shop, a bicycle hire, the water-buffalo cart plodding up the main lane. Then the
-// cane fields and pineapples on red earth, a field half cut, the sugar mill smoking.
+// crossing where the elders play sanshin, a soba shop, a bicycle hire, the water-buffalo cart plodding up the main lane.
 import { S, hashPx, scaleColor, rampColor, rng, fbm, mix } from '../nagasaki/canvas.mjs';
-import { puff } from '../props.mjs';
-import { W, VILLAGE, FIELDS, isLand } from './geo.mjs';
+import { W, VILLAGE, isLand } from './geo.mjs';
 import { C } from './common.mjs';
 
 const lanePaint = (k, seed) => (X, Yy) => rampColor(C.lane, 0.45 + hashPx(X >> 2, Yy >> 2, seed) * 0.3 + hashPx(X, Yy, seed + 1) * 0.18, X, Yy);
@@ -143,7 +141,7 @@ export function paintBise(k) {
   // the old banyan over the crossing in the middle of the village: a great crown, hanging roots, a bench round it, the elders with their sanshin
   {
     const cx = 66;
-    const cu = 1900;
+    const cu = 1585;
     objects.push({
       y: Y(cu) + 3,
       draw: () => {
@@ -161,7 +159,7 @@ export function paintBise(k) {
     k.crowd(cx - 9, Y(cu) + 4, 18, 3, 7, [0x3a5a8a, 0xe8e0c8, 0x6a3a2a, 0x3a3a4a]);
   }
   // a soba shop on the main lane under its banner, a stack of crates; the bicycle hire at the village's foot
-  for (const [x, u, noren] of [[100, 1690, 0x2a3a6a], [100, 2110, 0x8a2a2a]])
+  for (const [x, u, noren] of [[100, 1690, 0x2a3a6a], [100, 1470, 0x8a2a2a]])
     if (!k.anyRes(x, Y(u + 18), 16, 20))
       house(x, Y(u + 18), 16, 11, {
         faceH: 5,
@@ -249,158 +247,4 @@ export function paintBise(k) {
   kit.path(up(1), cart, { sp: 2.6, mode: 'pp', hold: 6, turn: 'rot', fps: 2, s0: 0.42, d: 0.45 });
   // a kitchen garden of street trees at the lanes' feet
   void mix;
-}
-
-export function paintFields(k) {
-  const { img, Y, kit, objects } = k;
-  const { plant, wall } = k.t;
-  const g = rng(2350);
-  const [f0, f1] = FIELDS;
-  const caneAt = [];
-  // the farm road across the foot of the fields, its windbreak
-  k.road([[-6, f0 + 3], [W + 6, f0 + 3]], 2.4, { side: 0, kerb: C.lane[0], paint: (X, Yy) => rampColor(C.lane, 0.3 + hashPx(X >> 2, Yy, 2351) * 0.5, X, Yy), piece: true });
-  /** A field, its rows and its crop. */
-  const field = (x0, x1, u0, u1, kind, n) => {
-    img.fine(x0, Y(u1), x1 - x0, u1 - u0, (X, Yy, x, y) => {
-      if (kind === 'cane') {
-        const col = (X - x0 * S) % 9;
-        const leaf = hashPx(X >> 1, Yy >> 2, 2352 + n);
-        if (col < 2) return rampColor(C.redEarth, 0.25, X, Yy);
-        return leaf < 0.14 ? C.cane[3] : leaf < 0.5 ? C.cane[2] : col < 5 ? C.cane[1] : C.cane[0];
-      }
-      if (kind === 'pine') {
-        const cx = Math.floor((X - x0 * S) / 12);
-        const cy = Math.floor((Yy - Y(u1) * S) / 12);
-        const dx = (X - x0 * S) % 12 - 6;
-        const dy = (Yy - Y(u1) * S) % 12 - 6;
-        const a = Math.atan2(dy, dx);
-        const r = 5 * (0.6 + 0.4 * Math.abs(Math.cos(a * 4 + cx + cy)));
-        if (Math.hypot(dx, dy) < r) return hashPx(X, Yy, 2353) < 0.4 ? 0x2e5a2a : Math.hypot(dx, dy) < 2 ? 0xc89a30 : 0x3e7232;
-        return rampColor(C.redEarth, 0.3 + hashPx(X >> 1, Yy >> 1, 2354) * 0.4, X, Yy);
-      }
-      if (kind === 'fallow') return k.lawnPx(X, Yy, 0.2 + fbm(x, y, { seed: 41, scale: 6 }) * 0.6, C.grass, true);
-      // ploughed, the furrows turning the red earth over, a seedbed of something new
-      const q = Yy % 9;
-      return q < 3 ? rampColor(C.redEarth, 0.1, X, Yy) : q < 6 ? rampColor(C.redEarth, 0.45 + hashPx(X >> 1, Yy >> 1, 2355) * 0.2, X, Yy) : rampColor(C.redEarth, 0.8, X, Yy);
-    });
-    k.reserve(x0, Y(u1), x1 - x0, u1 - u0);
-    if (kind === 'cane') caneAt.push([x0, x1, u0, u1]);
-  };
-  let n = 0;
-  for (let u = f0 + 8; u < f1 - 12; ) {
-    const fh = Math.min(f1 - u - 6, 46 + Math.floor(g() * 26));
-    for (let x = 0; x < W; ) {
-      const fw = Math.min(W - x, 34 + Math.floor(g() * 26));
-      const r = g();
-      const kind = r < 0.55 ? 'cane' : r < 0.78 ? 'pine' : r < 0.9 ? 'plough' : 'fallow';
-      const inYard = u < 2446;
-      const x1 = inYard ? Math.min(x + fw - 2, 118) : x + fw - 2;
-      if (x1 - (x + 2) > 12) field(x + 2, x1, u, u + fh, kind, n++);
-      x += fw;
-    }
-    // the windbreak of fukugi along the farm road between them
-    for (let x = 6; x < W; x += 9) if (!k.isRes(x, Y(u + fh + 3))) k.tree(x + g() * 3, Y(u + fh + 3), 3.5 + g(), [0x0f2a1a, 0x1a4428, 0x2a6234, 0x4a8a44], Math.floor(g() * 1e8), 'fukugi');
-    u += fh + 8;
-  }
-  // the gusts: pale flashes of long leaves sweeping over the cane, in place, patch after patch
-  const gust = k.sprite(24, 24, 2450, (r) => {
-    for (let q = 0; q < 220; q++) {
-      const X = hashPx(q, 1, 2356) * 72;
-      const Yy = hashPx(q, 2, 2356) * 72;
-      for (let i = 0; i < 5; i++) r.px(X + i, Yy + i * 0.3, 0xe8f0a0, 0.6);
-    }
-  });
-  const parts = [];
-  for (const [x0, x1, u0, u1] of caneAt)
-    for (let u = u0 + 24; u <= u1; u += 24) for (let x = x0; x + 24 <= x1; x += 24) parts.push([0, x, u, -(x * 0.06 + u * 0.01) + fbm(x, u, { seed: 97, scale: 40 }) * 2]);
-  if (parts.length) kit.wave([gust], parts, { w: 1.2, a0: 0, a1: 0.5, pw: 4 });
-
-  // the sugar mill: corrugated sheds, the boiler house, a brick chimney smoking; its yard, cane stacked high, a truck tipping
-  {
-    const mx = 128;
-    const mu = 2428;
-    img.fine(mx - 6, Y(mu + 6), W - mx + 6, mu + 6 - f0 - 6, (X, Yy, x, y) => rampColor(C.lane, 0.15 + fbm(x, y, { seed: 2216, scale: 4 }) * 0.4 + (hashPx(X >> 3, Yy >> 3, 2217) - 0.5) * 0.2, X, Yy));
-    k.reserve(mx - 6, Y(mu + 6), W - mx + 6, mu + 6 - f0 - 6);
-    wall([[mx - 6, Y(mu + 6)], [mx - 6, Y(f0 + 6)]], 1.2);
-    const my = Y(mu);
-    objects.push({
-      y: my + 30,
-      shadow: () => k.shadowRect(mx + 3, my + 4, 38, 30, 0.5),
-      draw: () => {
-        img.fine(mx, my, 38, 24, (X, Yy, x, y) => {
-          if ((y - my) > 11 && (y - my) < 12.4) return 0x6a7078;
-          const north = y - my < 12;
-          let c = (X - mx * S) % 9 < 2 ? 0x8a9098 : north ? 0xb4bac0 : 0x9aa0a8;
-          if (hashPx(X >> 1, Yy >> 3, 2218) < 0.05) c = mix(c, 0xa8704a, 0.6); // rust, running down the sheets
-          return c;
-        });
-        img.fine(mx, my + 24, 38, 6, (X, Yy) => {
-          const j = Yy - (my + 24) * S;
-          if (j < 2) return 0x3a3a42;
-          const i = X - mx * S;
-          if (i > 18 && i < 42) return j % 3 === 0 ? 0x2a2a32 : 0x3a3a42;
-          return (i >> 1) % 4 ? 0xd8d4c8 : 0xc0bcb0;
-        });
-        img.fine(mx + 26, my - 10, 10, 12, (X, Yy, x, y) => (y - (my - 10) < 0.5 ? C.tile[3] : (X >> 2) % 2 ? C.tile[1] : C.tile[2]));
-        for (let j = 0; j < 40; j++) {
-          const hw = 6 - j * 0.04;
-          for (let i = -hw; i <= hw; i++) img.px((mx + 31.5) * S + i, (my - 8) * S - j, j % 3 === 0 ? 0x5a3a2c : i < -1 ? 0xa06e54 : 0x7a4e3c);
-        }
-        img.discPx((mx + 31.5) * S, (my - 8) * S - 40, 4, 0x1a1414);
-      },
-    });
-    k.reserve(mx - 1, my - 12, 40, 44);
-    // the stacks of cut cane in the yard
-    for (let q = 0; q < 6; q++) {
-      const x = mx + 1 + q * 7;
-      const y = my + 36 + (q % 2) * 6;
-      for (let j = 0; j < 15; j++) for (let i = 0; i < 18; i++) img.px(x * S + i, y * S + j, j > 12 ? 0x4a3a20 : (j >> 1) % 2 ? C.cane[0] : hashPx(i >> 1, j, 2219) < 0.5 ? C.cane[2] : C.cane[3]);
-      for (let i = 0; i < 18; i++) for (let j = 0; j < 3; j++) img.tintPx(x * S + i + 1, y * S + 15 + j, 0.7);
-    }
-    k.standing(mx + 2, my + 46, 40, 8, 5, 2220, [0x5a7ab0, 0x3a3a4a, 0xe8e0c8]);
-    kit.emit(mx + 32, mu + 22, [6, 9, 12, 15].map((r) => [0, 1].map((v) => kit.frame(puff(r, r * 13 + v + 211, [0x8a8a90, 0xa8a8b0, 0xc8c8cc, 0xe8e8ea])))), { rate: 1.4, life: [3, 4], vy: 9, sx: 1, wf: 1, a: 0.6, d: 1 });
-    // the road in from the farm road
-    k.road([[mx + 18, f0 + 3], [mx + 18, mu - 28]], 2.4, { side: 0, kerb: C.lane[0], paint: (X, Yy) => rampColor(C.lane, 0.3 + hashPx(X >> 2, Yy, 2221) * 0.5, X, Yy), piece: true });
-  }
-  for (const [x, u] of [[124, 2446], [150, 2446]]) if (!k.anyRes(x, Y(u + 16), 24, 18)) field(x, x + 22, u, u + 16, x > 140 ? 'plough' : 'cane', n++);
-  // the harvest: one field half cut, stubble and bundles, the cutters at work, a little truck loaded high
-  {
-    const best = caneAt.filter(([x0, , u0]) => u0 < 2470 && x0 < 80).sort((a, b) => b[1] - b[0] - (a[1] - a[0]))[0];
-    if (best) {
-      const [x0, x1, u0, u1] = best;
-      const cut = u0 + (u1 - u0) * 0.45;
-      img.fine(x0, Y(cut), x1 - x0, cut - u0, (X, Yy) => {
-        const col = (X - x0 * S) % 9;
-        if (col < 2) return rampColor(C.redEarth, 0.3, X, Yy);
-        const v = hashPx(X, Yy, 2222);
-        return v < 0.3 ? 0xc8b878 : v < 0.6 ? 0xa89858 : 0x8a7a48;
-      });
-      for (let q = 0; q < 12; q++) {
-        const X = (x0 + 3 + g() * (x1 - x0 - 8)) * S;
-        const Yy = Y(u0 + 3 + g() * (cut - u0 - 6)) * S;
-        for (let j = 0; j < 3; j++) for (let i = 0; i < 14; i++) img.px(X + i, Yy + j, j ? C.cane[2] : C.cane[3]);
-        img.rectPx(X + 5, Yy, 2, 3, 0x8a6a3a);
-      }
-      const tx = x0 + (x1 - x0) * 0.6;
-      const tu = u0 + 5;
-      objects.push({
-        y: Y(tu) + 2,
-        shadow: () => k.shadowRect(tx + 1, Y(tu), 14, 6, 0.55),
-        draw: () => {
-          const X = tx * S;
-          const Yy = Y(tu) * S;
-          for (let j = 0; j < 15; j++) for (let i = 0; i < 39; i++) img.px(X + i, Yy + j, i > 30 ? (j > 3 && j < 12 ? 0x2a3a4a : 0x3a6ab0) : j % 3 === 0 ? C.cane[0] : hashPx(i >> 1, j, 2223) < 0.5 ? C.cane[2] : C.cane[3]);
-        },
-      });
-      const cutter = (f) => k.sprite(4, 5, 2450, (r) => {
-        r.discPx(4, 2, 2, 0xe8e0c8);
-        for (let j = 4; j < 10; j++) for (let i = 2; i < 7; i++) r.px(i, j, 0x5a7ab0);
-        for (let j = 10; j < 14; j++) for (const i of [3, 5]) r.px(i, j, 0x3a3a4a);
-        r.linePx(f ? 1 : 7, 5, f ? -1 : 10, f ? 8 : 3, 0xc0c4c8);
-      });
-      kit.wander((x0 + x1) / 2, cut - 3, (x1 - x0) / 2 - 4, 4, [cutter(0), cutter(1)], { n: 4, sp: 2, idle: 0.6, turn: 'flip', fps: 2, d: 0.45 });
-    }
-  }
-  void plant;
-  void scaleColor;
 }

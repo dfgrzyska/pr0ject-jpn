@@ -279,9 +279,15 @@ Okinawa, ok. 3,5 min: morze z wyspami Kerama (zalesione wzgórza, białe plaże 
 wodzie Japonii, łodzie nurków z bąblami na powierzchni, kajaki i chatka na plaży), rafami i łodziami sabani →
 plaża kurortu (parasole, hotel z podjazdem i parkingiem od drogi nadmorskiej, basen; przy brzegu motorówka z paralotnią, banana boat i skutery wodne) → wioska Bise pod drzewami fukugi (główna uliczka schodzi do drogi nadmorskiej): piaszczyste, kręte uliczki w gęstych
 szpalerach fukugi, każde obejście w osobnym pierścieniu drzew z koralowym murkiem, ekranem hinpun za bramą,
-domem pod czerwoną dachówką z shisa na kalenicy, przybudówką i grządkami, rowerzyści i spacerowicze → pola trzciny cukrowej i ananasów
-(żniwa: na pół ścięte pole ze ścierniskiem i snopkami, ścinacze trzciny, ciężarówka załadowana pod sufit; cukrownia z blaszaną
-halą, kotłownią, ceglanym kominem w dymie i stertami trzciny na placu otwartym na ostatnią uliczkę wioski) → Naha w drodze na Shuri: zbocze z grobami-żółwiami
+domem pod czerwoną dachówką z shisa na kalenicy, przybudówką i grządkami, rowerzyści i spacerowicze → Dolina Gangala
+(zapadnięta dawno jaskinia: wąwóz subtropikalnego lasu między wapiennymi ścianami, drewniana kładka z grupą i przewodnikiem,
+paprocie drzewiaste, Cave Café we wnęce skały u wejścia ze stolikami pod girlandą żarówek, dawne jaskinie modlitewne w ścianach,
+wielki banian Ufushu Gajumaru spuszczający korzenie po klifie, smugi światła przez korony) → jaskinia Gyokusendō: na końcu
+doliny ścieżka schodzi pod skalny nawis i lot wchodzi pod ziemię (chmury i mewy znikają, skała zamyka się po bokach ekranu,
+oczy na chwilę przyzwyczajają się do ciemności): sale stalagmitów w złotym, zielonym, niebieskim i fioletowym świetle,
+podziemna rzeka świecąca na niebiesko nad łachami piasku, wodospad, las „włóczni”, tarasy wapienne z jeziorkami, stalowe
+pomosty z lampkami, kolumny, po których przesuwa się kolor, krople na wodzie; schody w górę i wyjście do Nahy pod oślepiającym
+dniem → Naha w drodze na Shuri: zbocze z grobami-żółwiami
 kamekōbaka (przed jednym rodzina świętuje Shīmī na kocu z pudełkami jedzenia), ulica garncarzy Tsuboya
 Yachimun-dōri (bruk z płyt wapienia, warsztaty pod czerwoną dachówką, galerie, shisa na słupkach bram, garnki
 i dzbany, stary piec schodkowy noborigama z drewnem na opał i deskami suszących się naczyń, koty), rynek
@@ -289,8 +295,10 @@ Makishi pod szklanym dachem (stragany z kolorowymi rybami, homarami, małżami o
 i owocami) z pasażem Heiwa-dōri, sklepy z koszulami kariyushi, sanshinami i sata andagi → Kokusai-dōri
 zamknięta dla parady eisa (chorąży, bębniarze z ōdaiko i shime-daiko, tancerki, klaun chondārā), restauracja
 w stylu Ryūkyū z dziedzińcem, plac z zespołem sanshin → zamek Shuri (brukowane podejście od końca Kokusai-dōri przez Shureimon i bramę
-w zakrzywionych murach na pasiasty dziedziniec pod halą Seiden) → las Yanbaru: kręta droga (wjeżdża zza
-wschodniej krawędzi, od drogi wzdłuż wybrzeża, za zamkiem) z żółtymi znakami ostrzegającymi przed ptakami kuina (i kuinami
+w zakrzywionych murach na pasiasty dziedziniec pod halą Seiden) → baza lotnicza Kadena (droga 58 wzdłuż zachodniego
+płotu, dwa długie pasy startowe z oznakowaniem, równoległa droga kołowania, płyta z dwoma tankowcami, wieża kontrolna,
+hangary, rzędy schronohangarów z myśliwcami, magazyny, parking, zbiorniki paliwa, osiedle z boiskiem do baseballu przy
+bramie; myśliwiec kołuje, inny startuje) → las Yanbaru: kręta droga (odbija od drogi 58 za płotem bazy) z żółtymi znakami ostrzegającymi przed ptakami kuina (i kuinami
 przebiegającymi przez jezdnię), wodospad Hiji spadający ze skalnego progu do jeziorka, strumień do klifów pod
 wiszącym mostkiem i drogą, ścieżka z tarasem widokowym, mgła płynąca nad koronami → most Kōri: dwa kilometry
 prosto nad szmaragdową płycizną, z latarniami, cieniem na wodzie i jadącymi autami → wyspa Kōri (domy, trzcina,
@@ -386,6 +394,9 @@ ma; śmieciarki zamiatające popiół, kępy rdestu, pod kraterem spadające bom
 
 Daleka warstwa to zatoka w szarej mgiełce, bliska — opadający popiół, od zboczy wulkanu żar unoszący się w górę,
 w czasie burzy przyciemnione niebo i błyski. Pole `embersFrom` w `stage4.json` mówi, od której sekundy leci żar.
+Od czasu do czasu Sakurajima trzęsie ziemią (sekundy w polu `quakes` w `stage4.json`): napis „TRZĘSIENIE ZIEMI!”, niski
+pomruk, ekran drga przez ok. 2,5 s, sypie się popiół i żwir. Tylko do oglądania i słuchania — nigdy przy minibossie
+ani bossie, a drgania robione są sinusami, nie przez losowe wstrząsy kamery, więc nie zmieniają przebiegu gry.
 
 | Archetyp | Wygląd | Mechanika |
 | --- | --- | --- |
@@ -607,7 +618,7 @@ i zapisuje w `meta.json`, gdzie co stoi i jak się porusza — `tools/art/props.
 | Mapa | Co żyje |
 |---|---|
 | Kioto | płynące Kamo i Katsura z tratwami płatków sakury, łódki pod Togetsukyō, podmuchy wiatru w gaju bambusowym, falujące odbicie Złotego Pawilonu i karpie w stawie, trzy strumienie Otowa, riksze w Gion i w bambusach, maiko pod czerwonymi parasolkami i turyści na Hanamikōji, pielgrzymi w tunelach torii, lis między kopcami i smugi słońca, łopoczące chorągwie nobori w Fushimi, migoczące ognie 大 z dymem, kanie nad Kamo, spacerowicze w kimonach i smugi światła w gaju bambusowym, mnich grabiący żwir w Ryōan-ji, strażnicy ognia z pochodniami i iskry nad 大 |
-| Okinawa | fale napływające na każdą plażę i biała piana na rafach, błyski na lagunach, łodzie sabani i prom z kilwaterem, bąble nurków przy Keramie, cienie żółwi morskich, ławic ryb i mant, wyskakujące humbaki z fontannami i płetwami ogonowymi, rowerzyści w Bise, wodospad Hiji z pyłem wodnym, kuiny na drodze w Yanbaru, mgła nad lasem, auta na moście Kōri, podmuchy wiatru nad trzciną cukrową, parada eisa na Kokusai-dōri, flagi nad ulicą, noren w drzwiach warsztatów Tsuboya i koty na bruku, kupujący pod dachem pasażu, chorągwie na dziedzińcu Shuri, błyskająca latarnia morska, ścinacze trzciny i dym z cukrowni, paralotnia, banana boat i skutery przy plaży kurortu, ulewy przesuwające się nad morzem |
+| Okinawa | fale napływające na każdą plażę i biała piana na rafach, błyski na lagunach, łodzie sabani i prom z kilwaterem, bąble nurków przy Keramie, cienie żółwi morskich, ławic ryb i mant, wyskakujące humbaki z fontannami i płetwami ogonowymi, rowerzyści w Bise, smugi światła w Dolinie Gangala, wodospad i świecąca rzeka w Gyokusendō, kolorowe światła na kolumnach, kołujący i startujący myśliwiec w Kadenie, wodospad Hiji z pyłem wodnym, kuiny na drodze w Yanbaru, mgła nad lasem, auta na moście Kōri, parada eisa na Kokusai-dōri, flagi nad ulicą, noren w drzwiach warsztatów Tsuboya i koty na bruku, kupujący pod dachem pasażu, chorągwie na dziedzińcu Shuri, błyskająca latarnia morska, paralotnia, banana boat i skutery przy plaży kurortu, ulewy przesuwające się nad morzem |
 | Sapporo | projekcja świetlna na śnieżnym zamku, wyciąg krzesełkowy, skoczek na skoczni Ōkurayama, samochody w centrum (ruch lewostronny), tramwaj w Susukino, śnieg zsuwający się z dachów, parujące studzienki, gasnące i zapalające się okna biurowców, kupujący i para na targu Nijō, dym z kominów, para nad nurtem zamarzniętej rzeki, migające neony Susukino, para z ramenowni, łyżwiarze na stawie w parku Nakajima, zegar na TV Tower odliczający czas etapu, ratrak na zeskoku i flagi kibiców, dzieci na sankach, odśnieżający mieszkańcy, rzeźbiarze z piłami przy żurawiu |
 | Kagoshima | diabelski młyn na dworcu Chūō, tramwaje na trawiastych torach, para z gorącego piasku i pomocnicy z łopatami, promy na Sakurajimę, łódź karmiąca na farmie ryb, cień chmury popiołu nad zatoką, wyskakujące delfiny, kolumna popiołu z krateru, para z otworów i szczelin, pulsująca lawa, para nad kąpielą dla stóp, śmieciarki popiołu w kurzu, bomby wulkaniczne pod kraterem |
 | Osaka | oba diabelskie młyny (na Tempozan kolory przebiegają po obręczy), ruch na alejach i przecznicach, statki na rzekach i kanale Dōtonbori, pociągi pod szklanym dachem Umedy, łabędzie w fosach i karpie w stawie, neony zapalające się litera po literze i biegające światła na billboardach, krab machający szczypcami i ośmiornica, kołyszące się girlandy lampionów, fontanna, drgające odbicia neonów w wodzie, dryfujące łodzie rybackie, tłum na moście Ebisu i spacerowicze nad kanałem, para nad straganami z takoyaki, gasnące i zapalające się okna biurowców Umedy, gołębie zrywające się z placów przy zamku, para nad yatai na Tempozan, holowniki przy dźwigach w zatoce |

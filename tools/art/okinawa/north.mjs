@@ -4,7 +4,7 @@
 // shrimp wagon, its beach and the Heart Rocks.
 import { S, hashPx, scaleColor, rampColor, rng, fbm, mix } from '../nagasaki/canvas.mjs';
 import { puff } from '../props.mjs';
-import { W, NAHA, ROAD, JUNGLE, BRIDGE, ISLAND_ROAD, roadX, isWater, landD } from './geo.mjs';
+import { W, NAHA, ROAD, JUNGLE, FOREST0, BRIDGE, ISLAND_ROAD, roadX, isWater, landD } from './geo.mjs';
 import { C, KURO } from './common.mjs';
 
 const STONE = [0x7e786a, 0x9a9482, 0xb2ac98, 0xcac4ae];
@@ -310,7 +310,7 @@ export function paintYanbaru(k) {
     const bx = roadX(bu);
     for (const dx of [-5, 4.6]) img.fine(bx + dx, Y(bu + 5), 1, 10, (X, Yy) => (Yy % 6 === 0 ? 0x8a887f : 0xe0ded6));
   }
-  for (const [u, side] of [[3990, 1], [4250, -1], [4560, 1], [4120, -1]]) {
+  for (const [u, side] of [[4290, -1], [4560, 1], [4410, -1]]) {
     const x = roadX(u) + side * 6.6;
     objects.push({
       y: Y(u) + 1,
@@ -327,8 +327,8 @@ export function paintYanbaru(k) {
   }
   // a roadside stall with bananas and a rest stop at the forest's foot, the road's lay-by
   {
-    const x = roadX(4040) + 7;
-    const u = 4040;
+    const x = roadX(4350) + 7;
+    const u = 4350;
     img.fine(x, Y(u + 12), 30, 16, (X, Yy) => k.asphaltPx(X, Yy));
     k.reserve(x, Y(u + 12), 30, 16);
     k.t.house(x + 3, Y(u + 11), 22, 7, { faceH: 3.6, reserve: false, shisa: true, seed: 4041 });
@@ -362,7 +362,7 @@ export function paintYanbaru(k) {
   const TROPIC = Object.assign([0x1c4a22, 0x2f7a2e, 0x52a83a, 0x9ad25a], { kind: 'tropic' });
   const FERN = Object.assign([0x174222, 0x2a6a30, 0x48963c, 0x86c860], { kind: 'fern' });
   const DEEP = Object.assign([0x123a1c, 0x1e5a26, 0x348030, 0x5ca044], { kind: 'tropic' });
-  k.forest(0, W, JUNGLE[0] + 4, JUNGLE[1] + 14, [DEEP, TROPIC, TROPIC, DEEP, FERN, TROPIC, DEEP, ITAJI, TROPIC, FERN], 3851, 5, 8.5, (x, u) => landD(x, u) > 7 && Math.abs(x - roadX(u)) > 12.5 && k.pads.every((p) => Math.hypot(p.x - x, p.u - u) > 15));
+  k.forest(0, W, FOREST0 + 4, JUNGLE[1] + 14, [DEEP, TROPIC, TROPIC, DEEP, FERN, TROPIC, DEEP, ITAJI, TROPIC, FERN], 3851, 5, 8.5, (x, u) => landD(x, u) > 7 && Math.abs(x - roadX(u)) > 12.5 && k.pads.every((p) => Math.hypot(p.x - x, p.u - u) > 15));
   // kuina darting across the road, a flash of red bill
   const kuina = [0, 1].map((f) => k.sprite(5, 4, 4200, (r) => {
     for (let i = 0; i < 9; i++) for (let j = 1; j < 6; j++) r.px(i, j, j < 2 ? 0x5e5640 : 0x4a4434);
@@ -371,10 +371,10 @@ export function paintYanbaru(k) {
     r.rectPx(f ? 3 : 1, 8, 1, 3, 0xd8302a);
     r.rectPx(f ? 6 : 8, 8, 1, 3, 0xd8302a);
   }));
-  for (const u of [4010, 4180, 4290, 4520]) kit.path([[roadX(u) - 8, u], [roadX(u) + 8, u + 3]], kuina, { sp: 7, mode: 'pp', hold: 4 + yr() * 4, turn: 'flip', fps: 8, s0: yr(), d: 0.45 });
+  for (const u of [4285, 4380, 4520]) kit.path([[roadX(u) - 8, u], [roadX(u) + 8, u + 3]], kuina, { sp: 7, mode: 'pp', hold: 4 + yr() * 4, turn: 'flip', fps: 8, s0: yr(), d: 0.45 });
   // mist drifting over the canopy
   const mist = [36, 45, 54].map((r, i) => kit.frame(puff(r, 71 + i * 13, [0xc8d4d0, 0xd8e2de, 0xe6eeea, 0xf4f8f6])));
-  for (const [u, s0] of [[3960, 0.2], [4120, 0.7], [4310, 0.4], [4480, 0.9], [4600, 0.1]]) kit.path([[-40, u], [220, u + 20]], mist, { sp: 2.5, n: 2, gap: 130, turn: 'none', fps: 0.2, a: 0.32, d: 0.7, fx: 1, s0 });
+  for (const [u, s0] of [[4310, 0.4], [4480, 0.9], [4600, 0.1]]) kit.path([[-40, u], [220, u + 20]], mist, { sp: 2.5, n: 2, gap: 130, turn: 'none', fps: 0.2, a: 0.32, d: 0.7, fx: 1, s0 });
   // birds over the forest
   void wall;
   void W;
