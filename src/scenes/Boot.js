@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { keepForOffline } from '../pwa.js';
 import { installLegacyPixelGrid } from '../rendering.js';
 import { STAGES } from '../data/stages.js';
+import { setFontScale } from '../game/fontScale.js';
 import { CITY_ANIMS, registerEnemyAtlas, registerSharedHi, spriteAnimTexture, unregisterEnemyAtlas } from '../game/enemyArt.js';
 
 /** Whether a city's enemies are drawn at 540 px, in an atlas of their own (bg/<id>/enemies.png). */
@@ -56,6 +57,8 @@ export class Boot extends Phaser.Scene {
     this.load.image('font', 'font.png');
     this.load.image('font_ink', 'font_ink.png');
     this.load.json('fontMeta', 'font.json');
+    this.load.image('font540', 'font540.png'); // the same font at 540 px (the same layout times three)
+    this.load.image('font540_ink', 'font540_ink.png');
     this.load.image('japan', 'japan.png'); // the map between stages (at 540 px)
     this.load.atlas('menu', 'menu.png', 'menu.json'); // the title screen (at 540 px)
     this.load.image('menu_waves', 'menu_waves.png');
@@ -73,14 +76,17 @@ export class Boot extends Phaser.Scene {
     this.textures.get('japan').setFilter(Phaser.Textures.FilterMode.LINEAR); // (the city menu shows it at 0.8)
     const meta = this.cache.json.get('fontMeta');
     // Phaser 4: Parse returns the whole cache entry ({ data, texture, frame })
+    // the 540 px font when it is there (shown at a third by pixelText), else the 1x one
+    const fine = this.textures.exists('font540') && this.textures.exists('font540_ink') ? 3 : 1;
+    setFontScale(1 / fine);
     const font = (image) =>
       Phaser.GameObjects.RetroFont.Parse(this, {
-        image,
-        width: meta.cellW,
-        height: meta.cellH,
+        image: fine === 3 ? image.replace('font', 'font540') : image,
+        width: meta.cellW * fine,
+        height: meta.cellH * fine,
         chars: meta.chars,
         charsPerRow: meta.perRow,
-        spacing: { x: meta.gap, y: meta.gap },
+        spacing: { x: meta.gap * fine, y: meta.gap * fine },
       });
     this.cache.bitmapFont.add(FONT, font('font'));
     this.cache.bitmapFont.add(INK_FONT, font('font_ink'));

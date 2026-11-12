@@ -1,6 +1,7 @@
 import { BEANS, DEPTH, HEAT, PLAYER, SCORE, SURGE, VIEW } from '../config.js';
 import { isEasy } from '../difficulty.js';
 import { FONT } from '../scenes/Boot.js';
+import { fontScale } from './fontScale.js';
 import { getLang, tr } from '../i18n.js';
 import { canInstall } from '../pwa.js';
 import { landmarkAt } from '../data/landmarks.js';
@@ -18,7 +19,20 @@ const WEAPON_ICON = { basic: 'wpn_basic', spread: 'wpn_spread', laser: 'wpn_lase
  * The text comes out in the language chosen (see i18n.js). font: FONT, or INK_FONT on light paper.
  */
 export function pixelText(scene, x, y, str, origin = 0.5, font = FONT) {
-  const t = scene.add.bitmapText(Math.round(x), Math.round(y), font, tr(str)).setLetterSpacing(-1);
+  const k = fontScale(); // (a third for the 540 px font)
+  const t = scene.add.bitmapText(Math.round(x), Math.round(y), font, tr(str)).setLetterSpacing(-1 / k);
+  if (k !== 1) {
+    // a 540 px font: shown at a third, and every scale or line spacing asked of it is in the 1x font's terms
+    t.setScale(k);
+    const setScale = t.setScale;
+    t.setScale = function (sx, sy = sx) {
+      return setScale.call(this, sx * k, sy * k);
+    };
+    const setLineSpacing = t.setLineSpacing;
+    t.setLineSpacing = function (v) {
+      return setLineSpacing.call(this, v / k);
+    };
+  }
   const measure = t.getTextBounds;
   t.getTextBounds = function (round) {
     const bounds = measure.call(this, round);

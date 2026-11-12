@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { packAtlas, packAtlasTight } from './lib/spritekit.mjs';
 import { Raster } from './lib/raster.mjs';
 import { buildSprites } from './art/sprites.mjs';
-import { buildFont, FONT } from './art/font.mjs';
+import { buildFont, buildFont540, FONT } from './art/font.mjs';
 import { buildJapanMap } from './art/japan.mjs';
 import { menuAtlas, menuWaves, menuWashi } from './art/menu.mjs';
 import { buildEnding, buildEndingClouds, buildEndingNight } from './art/ending.mjs';
@@ -101,6 +101,8 @@ console.log('font');
 const font = buildFont();
 write('font.png', font.raster.toPNG());
 write('font_ink.png', buildFont(false).raster.toPNG()); // the same glyphs without the outline, same layout
+write('font540.png', buildFont540().raster.toPNG()); // the same at 540 px (cells three times the size)
+write('font540_ink.png', buildFont540(false).raster.toPNG());
 // non-ASCII escaped, so the glyph list survives any charset handling on the way to the browser
 const asciiJson = (o) => JSON.stringify(o).replace(/[\u0080-￿]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
 write('font.json', Buffer.from(asciiJson({ ...FONT, chars: font.chars })));
