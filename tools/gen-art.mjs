@@ -31,6 +31,7 @@ import { beppuEnemies, BEPPU_PORTRAITS } from './art/beppu/enemies.mjs';
 import { hiroshimaEnemies, HIROSHIMA_PORTRAITS } from './art/hiroshima/enemies.mjs';
 import { nagasakiEnemies, NAGASAKI_PORTRAITS } from './art/nagasaki/enemies.mjs';
 import { addCracks } from './art/cracks540.mjs';
+import { shared540 } from './art/shared540/index.mjs';
 
 // cities whose enemies are drawn at 540 px (docs/enemies-540-plan.md): their atlas, and what of it the album
 // and the bosses' parade show (src/game/enemyArt.js; the stage file says "enemyArt": true)
@@ -125,6 +126,16 @@ write('ending.png', ending.toPNG());
 write('ending_clouds.png', buildEndingClouds().toPNG());
 write('ending_night.png', buildEndingNight().toPNG());
 if (preview) writeFileSync(join(previewDir, 'ending_x1.png'), ending.toPNG());
+}
+
+// the shared sprites at 540 px (effects, bullets, the ship): sprites540, the same frame names three times the size
+if (!only || only === 'shared540') {
+  console.log('sprites540');
+  const list = [];
+  shared540((name, raster) => list.push({ name, raster }));
+  const { raster, json } = packAtlasTight(list, 1024, 2, 'sprites540.png');
+  write('sprites540.png', raster.toPNG());
+  write('sprites540.json', Buffer.from(JSON.stringify(json)));
 }
 
 if (!only || only === 'enemies') {

@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { keepForOffline } from '../pwa.js';
 import { installLegacyPixelGrid } from '../rendering.js';
 import { STAGES } from '../data/stages.js';
-import { CITY_ANIMS, registerEnemyAtlas, unregisterEnemyAtlas } from '../game/enemyArt.js';
+import { CITY_ANIMS, registerEnemyAtlas, registerSharedHi, spriteAnimTexture, unregisterEnemyAtlas } from '../game/enemyArt.js';
 
 /** Whether a city's enemies are drawn at 540 px, in an atlas of their own (bg/<id>/enemies.png). */
 const enemyArt = (id) => STAGES.some((st) => st.id === id && st.enemyArt);
@@ -51,6 +51,7 @@ export class Boot extends Phaser.Scene {
   preload() {
     this.load.setPath('assets/');
     this.load.atlas('sprites', 'sprites.png', 'sprites.json');
+    this.load.atlas('sprites540', 'sprites540.png', 'sprites540.json'); // (the same frames at 540 px, where drawn)
     this.load.atlas('portraits', 'portraits.png', 'portraits.json'); // the album's and the parade's enemies at 540 px
     this.load.image('font', 'font.png');
     this.load.image('font_ink', 'font_ink.png');
@@ -87,9 +88,11 @@ export class Boot extends Phaser.Scene {
     // (kept, so an animation a city's own atlas took over can come back when that atlas goes: cityArtOut)
     this.legacyAnims = {};
     this.cityAnims = {}; // key -> the city atlas it plays from now
+    registerSharedHi(this.textures);
     const anim = (key, frames, frameRate, repeat = -1) => {
       this.legacyAnims[key] = [frames, frameRate, repeat];
-      this.anims.create({ key, frames: frames.map((frame) => ({ key: 'sprites', frame })), frameRate, repeat });
+      const tex = spriteAnimTexture(frames);
+      this.anims.create({ key, frames: frames.map((frame) => ({ key: tex, frame })), frameRate, repeat });
     };
     this.textures.on('addtexture', (key) => {
       if (key.startsWith('enemies_')) this.cityArtIn(key);
@@ -207,7 +210,7 @@ export class Boot extends Phaser.Scene {
       this.anims.remove(k);
       delete this.cityAnims[k];
       const legacy = this.legacyAnims[k];
-      if (legacy) this.anims.create({ key: k, frames: legacy[0].map((frame) => ({ key: 'sprites', frame })), frameRate: legacy[1], repeat: legacy[2] });
+      if (legacy) this.anims.create({ key: k, frames: legacy[0].map((frame) => ({ key: spriteAnimTexture(legacy[0]), frame })), frameRate: legacy[1], repeat: legacy[2] });
     }
   }
 }

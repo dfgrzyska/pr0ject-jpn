@@ -6,6 +6,23 @@
 import { RENDER_SCALE } from '../config.js';
 
 const where = new Map(); // frame name -> texture key of the city atlas that has it
+const hi = new Set(); // frames sprites540 has: the shared sprites (effects, bullets, the ship...) at 540 px
+
+/** sprites540 is in: its frames are taken from there (docs/graphics-540-plan.md, step 6). */
+export function registerSharedHi(textures) {
+  if (!textures.exists('sprites540')) return;
+  for (const name of textures.get('sprites540').getFrameNames()) hi.add(name);
+}
+
+/** The texture a shared frame comes from: sprites540 when it has it, else the old sprites atlas. */
+export function spriteTexture(frame) {
+  return hi.has(frame) ? 'sprites540' : 'sprites';
+}
+
+/** The texture for an animation of shared frames: sprites540 only when it has every one of them. */
+export function spriteAnimTexture(frames) {
+  return frames.every((f) => hi.has(f)) ? 'sprites540' : 'sprites';
+}
 
 /** Scale a sprite from this texture is shown at (city atlases are drawn at RENDER_SCALE). */
 export function baseScale(key) {
@@ -14,7 +31,7 @@ export function baseScale(key) {
 
 /** The texture an enemy frame comes from: its city's atlas when that is in, else the shared one. */
 export function enemyTexture(frame) {
-  return where.get(frame) ?? 'sprites';
+  return where.get(frame) ?? spriteTexture(frame);
 }
 
 /** Is this frame in a city atlas that is in now? */

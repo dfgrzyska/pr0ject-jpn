@@ -71,3 +71,25 @@ grafiki, zachowując istniejące przesunięcia, paralaksę oraz moment pojawieni
 
 Statki gracza, HUD i menu pozostają w obecnej oprawie, dopóki nie zostanie ustalony
 osobny zakres ich modernizacji.
+
+## 6. Wspólne sprite’y w 540 px (zakres ustalony w listopadzie 2026)
+
+Wspólny atlas `sprites.png` zostaje bez zmian (jest wzorcem rozmiarów dla testów i rezerwą). Obok niego powstaje
+`sprites540.png` (+ `.json`) z tymi samymi nazwami klatek w dokładnie 3 × rozmiarze; gra bierze klatkę stamtąd,
+jeśli ją tam znajdzie (jak atlasy wrogów miast), i pokazuje ją w skali 1/3. Wczytywany razem z `sprites` przed
+ekranem tytułowym. Kolejność prac i co wchodzi:
+
+| Grupa | Klatki | Uwagi |
+| --- | --- | --- |
+| A. Wybuchy i efekty | `expl_s/m/l`, `smoke`, `spark`, `debris`, `debris_hot`, `shard`, `splash`, `splat`, `scorch`, `muzzle`, `flame`, `bloodball`, `lavaball` | najczęściej na ekranie |
+| B. Pociski wrogów | `eb_s`, `eb_m` (9 kolorów i klatki błysku), `eb_fox`, `eb_fox_s`, `eb_ice`, `eb_ink`, `eb_ink_m`, `eb_lava`, `eb_pearl`, `eb_bubble`, `eb_feather`, `eb_steam`, `orb`, `snowball`, `icicle`, `salmon`, `tokkuri`, `tako_ball`, `kitsunebi`, `misen_fire`, `n_keg`, `lob_mark` | promienie trafień bez zmian; rdzeń pocisku musi pozostać najjaśniejszy na ekranie |
+| C. Statek gracza i jego rzeczy | `ship*` (3 statki × 3 przechyły), `ps_*` (strzały), `hitbox`, `ice_block`, `orizuru`, `orizuru_glow`, `pickup_*` | |
+| D. HUD | `btn_*`, `icon_*`, `wpn_*`, `pip_*`, `stamp_icon` | najpierw makieta do akceptacji: font pikselowy zostaje w 1 × |
+
+Poza zakresem: drobinki 1–3 px (`ashf`, `dot`, `drop`, `dust`, `flake`, `leaf`, `petal`, `momiji`, `streak`,
+`ember`, `bean_bit`, `n_traffic`), elementy tła (`cloud`, `cshadow`, `mist`, `gull`, `n_view_*`, `steam`;
+`steamf` już jest w 3 ×), `glow` (miękki gradient), ikony potraw, pieczątki i pieczęcie miast (album i menu).
+
+Kontrole: test rozmiarów 3 × dla każdej klatki `sprites540`, `?hitbox` także dla pocisków i znajdziek,
+porównanie zapisu ataków przed i po (te same ziarna), czytelność na najciemniejszych etapach (Osaka, Nagasaki).
+

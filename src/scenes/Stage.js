@@ -167,7 +167,8 @@ export class Stage extends Phaser.Scene {
     this.stampChance = false;
     this.debugStart = Number(q.get('t')) || 0;
     this.player.god = q.has('god');
-    // debug: ?hitbox outlines what can be hit (green: shots, red: ramming, the extra circles of tentacles and coils)
+    // debug: ?hitbox outlines what can be hit (green: shots, red: ramming, blue: the extra circles of tentacles and coils,
+    // magenta: enemy bullets, yellow: the player's shots, white: the ship)
     this.hitboxes = q.has('hitbox') ? this.add.graphics().setDepth(DEPTH.overlay + 3) : null;
     if (WEAPONS[q.get('weapon')]) this.player.weapon = q.get('weapon');
     if (q.get('power')) this.player.level = Phaser.Math.Clamp(Number(q.get('power')), 1, PLAYER.maxPower);
@@ -897,6 +898,9 @@ export class Stage extends Phaser.Scene {
       if (!e.ground && !e.harmless) g.lineStyle(w, 0xff4040, 0.8).strokeCircle(e.x, e.y, e.thief ? e.radius + 3 : e.radius * 0.7);
       if (e.segs) for (const sg of e.segs) g.lineStyle(w, 0x40c0ff, 0.9).strokeCircle(sg.x, sg.y, sg.r);
     }
+    // enemy bullets (magenta) and the player's shots (yellow)
+    for (const b of this.bullets.pool.live) if (!b.dead) g.lineStyle(w, 0xff40ff, 0.9).strokeCircle(b.x, b.y, b.radius);
+    for (const sh of this.player.shots.live) if (!sh.dead) g.lineStyle(w, 0xffe040, 0.8).strokeCircle(sh.x, sh.y, sh.radius);
     const p = this.player;
     g.lineStyle(w, 0xffffff, 0.9).strokeCircle(p.x, p.y, p.ship.hit ?? PLAYER.hitRadius);
   }

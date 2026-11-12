@@ -924,6 +924,7 @@ export class Enemies {
       const k = e.seen / e.hatch;
       e.setRotation(Math.sin(e.age * (8 + k * 16)) * 0.3 * k);
       if (k > 0.75) e.setFrame('tamago_1');
+      else if (k > 0.45 && e.texture.has('tamago_hair')) e.setFrame('tamago_hair'); // (a hairline crack first)
       if (k >= 1) this.hatchEgg(e);
     }
     if (e.age >= e.fireAt && this.canFire(e)) {

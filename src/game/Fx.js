@@ -112,7 +112,7 @@ export class Fx {
       p.wait = 0.08 + Math.random() * 0.14;
       p.a0 = 0.65;
       p.ground = ground;
-      p.setScale(0.6).setVisible(false).setRotation(Math.floor(Math.random() * 4) * (Math.PI / 2));
+      p.setScale(0.6 * p.base).setVisible(false).setRotation(Math.floor(Math.random() * 4) * (Math.PI / 2));
     }
   }
 
@@ -162,7 +162,7 @@ export class Fx {
     p.grow = 0.6;
     p.drag = 0;
     p.ground = ground;
-    p.setScale(size).setTint(tint).setBlendMode(Phaser.BlendModes.ADD);
+    p.setScale(size * p.base).setTint(tint).setBlendMode(Phaser.BlendModes.ADD);
   }
 
   spark(x, y) {
@@ -281,7 +281,7 @@ export class Fx {
       p.grow = -0.5;
       p.life = p.max = 0.35 + Math.random() * 0.3;
       p.a0 = 0.85;
-      p.setScale(0.5 + Math.random() * 0.4);
+      p.setScale((0.5 + Math.random() * 0.4) * p.base);
     }
   }
 
@@ -363,7 +363,7 @@ export class Fx {
         p.x += p.vx * dt;
         p.y += p.vy * dt;
         if (p.spin) p.rotation += p.spin * dt;
-        if (p.grow) p.setScale(p.scaleX + p.grow * dt);
+        if (p.grow) p.setScale(p.scaleX + p.grow * p.base * dt); // (base: 1/3 for a frame from sprites540)
         const k = p.life / p.max;
         p.setAlpha(p.a0 * Math.min(1, k * 2.5) * (pool === this.smokes ? calm : 1));
         if (p.life <= 0) pool.kill(p);

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BEANS, BOMB, DEPTH, FROST, GRAZE, HEAT, MOMENTUM, OFUDA, PLAYER, SHIPS, SURGE, VIEW, WEAPONS } from '../config.js';
 import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
+import { baseScale, spriteTexture } from './enemyArt.js';
 
 const WEAPON_NAMES = { basic: 'PODSTAWOWA', spread: 'ROZRZUT', laser: 'LASER', homing: 'NAPROWADZANE' };
 const WEAPON_TINT = { spread: 0xff8a6a, laser: 0x8ac8ff, homing: 0x9cf09a };
@@ -60,7 +61,7 @@ export class Player {
   setShip(ship) {
     this.ship = ship;
     this.lives = this.fullLives();
-    this.sprite.setFrame(ship.frame);
+    this.shipFrame(ship.frame);
   }
 
   /** The ship's lives at the start of a game (two more on easy). */
@@ -223,7 +224,7 @@ export class Player {
       if (firing && this.entering <= 0 && this.jam <= 0) this.fire(dt);
     }
     const f = this.ship.frame;
-    this.sprite.setFrame(this.bank < -0.35 ? `${f}_l` : this.bank > 0.35 ? `${f}_r` : f);
+    this.shipFrame(this.bank < -0.35 ? `${f}_l` : this.bank > 0.35 ? `${f}_r` : f);
     this.sprite.setPosition(this.x, this.y).setRotation(this.bank * 0.065);
     this.flame.setPosition(this.x, this.y + this.ship.flameY).setScale(1 - this.thrust * 0.12, 1 + this.thrust * 0.45);
     this.dot.setPosition(this.x, this.y);
@@ -235,7 +236,7 @@ export class Player {
     const blink = this.invulnerable > 0 && Math.floor(this.invulnerable * 16) % 2 === 0;
     // a flash at the nose with each volley, sparks trailing from the engines
     this.muzzleT -= dt;
-    this.muzzle.setVisible(this.alive && this.muzzleT > 0).setPosition(this.x, this.y - Math.ceil(this.sprite.height / 2) - 1);
+    this.muzzle.setVisible(this.alive && this.muzzleT > 0).setPosition(this.x, this.y - Math.ceil(this.sprite.displayHeight / 2) - 1);
     if (this.alive && (this.trailT -= dt) <= 0) {
       this.trailT = 0.035 - this.thrust * 0.014;
       const fx = this.scene.fx;
@@ -253,7 +254,7 @@ export class Player {
     const hotGlow = this.alive && this.jam <= 0 && this.heat >= HEAT.boostAt;
     const laserGlow = this.alive && this.weapon === 'laser' && this.muzzleT > -0.05;
     if (hotGlow || laserGlow) {
-      const noseY = this.y - Math.ceil(this.sprite.height / 2);
+      const noseY = this.y - Math.ceil(this.sprite.displayHeight / 2);
       const pulse = 0.9 + Math.sin(this.scene.t * 24) * 0.1;
       const sc = (hotGlow ? 0.5 + (this.heat - HEAT.boostAt) * 0.45 : 0.38 + this.level * 0.07) * pulse;
       const tint = hotGlow && laserGlow ? 0xffd8a8 : hotGlow ? 0xff9848 : 0x68c0ff;
@@ -336,7 +337,8 @@ export class Player {
       }
       if (o.on && (o.t -= dt) <= 0) {
         o.on = false;
-        this.shot('orizuru_0', x, y, 0, -120, OFUDA.damage, 4, { homing: true, life: 1.6 }).setScale(0.55).setRotation(0);
+        const o = this.shot('orizuru_0', x, y, 0, -120, OFUDA.damage, 4, { homing: true, life: 1.6 });
+        o.setScale(0.55 * o.base).setRotation(0);
       }
     }
   }
@@ -615,7 +617,8 @@ export class Player {
     s.fx.petalBurst(this.x, this.y, bm.kind === 'cut' ? 20 : 48);
     s.enemies.damageAll(bm.damage);
     for (const [cx, cy] of cranes) {
-      this.shot('orizuru_0', cx, cy, (Math.random() - 0.5) * 60, -90, 2, 4, { homing: true, life: 1.8, arm: 0.12 }).setScale(0.55);
+      const o = this.shot('orizuru_0', cx, cy, (Math.random() - 0.5) * 60, -90, 2, 4, { homing: true, life: 1.8, arm: 0.12 });
+      o.setScale(0.55 * o.base);
       s.score.add(20 * s.score.mult);
     }
     s.fx.text(this.x, this.y - 24, bm.kind === 'shock' ? 'WSTRZĄS!' : bm.kind === 'cranes' ? 'SENBAZURU!' : 'CIĘCIE WIATRU!', 1.2, this.ship.color);
@@ -666,5 +669,14 @@ export class Player {
 
   weaponName() {
     return WEAPON_NAMES[this.weapon];
+  }
+
+  /** The ship's frame, from sprites540 when it is drawn there (shown at a third), else the old atlas. */
+  shipFrame(frame) {
+    const key = spriteTexture(frame);
+    if (this.sprite.frame?.name === frame && this.sprite.texture.key === key) return;
+    if (this.sprite.texture.key !== key) this.sprite.setTexture(key, frame);
+    else this.sprite.setFrame(frame);
+    this.sprite.setScale(baseScale(key));
   }
 }

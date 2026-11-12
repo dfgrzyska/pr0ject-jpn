@@ -1,4 +1,4 @@
-import { baseScale } from './enemyArt.js';
+import { baseScale, spriteTexture } from './enemyArt.js';
 
 // Sprite pool: reuse sprites instead of creating/destroying them during play.
 // `resolve` (the enemies' pools: enemyTexture) picks the texture a frame comes from; each sprite keeps the
@@ -13,7 +13,7 @@ export class Pool {
   }
 
   spawn(frame, x, y, props) {
-    const key = this.resolve ? this.resolve(frame) : 'sprites';
+    const key = this.resolve ? this.resolve(frame) : spriteTexture(frame);
     let s = this.free.pop();
     if (!s) s = this.scene.add.sprite(0, 0, key, frame);
     // (setting the depth makes Phaser re-sort the whole scene, even to the same value: only when it differs)
@@ -28,6 +28,15 @@ export class Pool {
     s.dead = false;
     if (props) Object.assign(s, props);
     this.live.push(s);
+    return s;
+  }
+
+  /** Show another frame, from whichever atlas has it (sprites540 or the old one), at that atlas's scale. */
+  reframe(s, frame) {
+    const key = this.resolve ? this.resolve(frame) : spriteTexture(frame);
+    if (s.texture.key !== key) s.setTexture(key, frame);
+    else s.setFrame(frame);
+    s.base = baseScale(key);
     return s;
   }
 

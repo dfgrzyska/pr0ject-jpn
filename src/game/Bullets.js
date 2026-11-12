@@ -225,7 +225,7 @@ export class Bullets {
         const g = b.grow;
         const k = Math.min(1, b.age / g.t);
         b.radius = g.r0 + (g.r1 - g.r0) * k;
-        b.setScale(0.45 + 0.55 * k);
+        b.setScale((0.45 + 0.55 * k) * b.base);
         b.vx *= 1 - Math.min(1, g.drag * dt);
         b.vy *= 1 - Math.min(1, g.drag * dt);
         if (g.frames) b.setFrame(g.frames[Math.floor(b.age * 7) % g.frames.length]);
@@ -392,7 +392,7 @@ export class Bullets {
         b.vx = 0;
         b.vy = 0;
         b.pulse = null; // (it hangs as a crystal, at the sprites' own scale)
-        b.setScale(1).setFrame(f.frame ?? 'eb_ice');
+        this.pool.reframe(b, f.frame ?? 'eb_ice').setScale(b.base);
         b.radius = 2.2;
       }
     } else if (b.age >= f.at + f.hold) {

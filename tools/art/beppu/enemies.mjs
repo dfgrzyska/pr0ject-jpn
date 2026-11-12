@@ -37,7 +37,11 @@ export function tamago(crack) {
   // the minerals' stain, brown-grey in a band, the shell's pores
   s.shade([4, 18, 30, 34], (x, y) => y > 24 + Math.sin(x * 0.5) * 2, -0.12);
   s.dot(12, 11, 2.2, 0xffffff, 0.8);
-  if (crack) {
+  if (crack === 'hair') {
+    // the first hairline crack across the middle (step 2a: before the split)
+    const pts = [[8, 18], [11, 19], [15, 16], [19, 20], [22, 18]];
+    for (let k = 0; k < pts.length - 1; k++) s.line(pts[k][0], pts[k][1], pts[k + 1][0], pts[k + 1][1], 0x5a4a3a, 1);
+  } else if (crack) {
     // the shell splitting, something red inside, a horn pushing through
     const pts = [[4, 18], [8, 15], [11, 19], [15, 14], [19, 20], [23, 15], [27, 19], [29, 17]];
     for (let k = 0; k < pts.length - 1; k++) s.line(pts[k][0], pts[k][1], pts[k + 1][0], pts[k + 1][1], 0x3a2a1a, 1);
@@ -321,6 +325,7 @@ export function masu() {
 
 export function beppuEnemies(add) {
   for (let f = 0; f < 2; f++) add(`tamago_${f}`, tamago(f));
+  add('tamago_hair', tamago('hair')); // step 2a: a hairline crack before the split
   for (let f = 0; f < 4; f++) {
     add(`imp_${f}`, imp(f));
     add(`kamado_${f}`, kamado(f));

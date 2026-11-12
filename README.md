@@ -17,7 +17,7 @@ Wersja online: https://dfgrzyska.github.io/pr0ject-jpn/ — budowana automatyczn
 
 Parametry do testów w adresie: `?stage=1` … `?stage=8` (ten etap pierwszy, reszta losowo — 1 Kioto, 2 Okinawa, 3 Sapporo, 4 Kagoshima, 5 Osaka, 6 Beppu, 7 Hiroszima, 8 Nagasaki), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność), `?ending` (od razu zakończenie po zmyślonej podróży),
 `?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5), `?ship=oni|tsuru|tsubame` (`kitsune` też działa),
-`?noprops` (tło bez animacji), `?hitbox` (obrysy trafień: zielony — strzały, czerwony — taranowanie, niebieski — dodatkowe koła macek i segmentów, biały — statek). Z `?god` albo `?t=` pieczątek nie da się zdobyć.
+`?noprops` (tło bez animacji), `?hitbox` (obrysy trafień: zielony — strzały, czerwony — taranowanie, niebieski — dodatkowe koła macek i segmentów, różowy — pociski wrogów, żółty — strzały gracza, biały — statek). Z `?god` albo `?t=` pieczątek nie da się zdobyć.
 
 ## Panel debugowania
 
@@ -647,6 +647,12 @@ nazwy co stare, więc kod gry ich nie zmienia (`src/game/enemyArt.js`: skąd bra
 Sprite z takiego atlasu jest pokazywany w skali `e.base` (1/3), więc każde `setScale`/`setCrop` we wrogach
 mnoży się przez `e.base`. Portrety do albumu yōkai są w `portraits.png`.
 `node tools/gen-art.mjs --only=enemies` buduje wszystkie atlasy wrogów i portrety.
+
+**Wspólne sprite’y w 540 px.** Wybuchy, pociski z motywem (perły, atrament, bańki, pióra, tokkuri, ogniki…),
+strzały gracza i trzy statki są narysowane od nowa w `tools/art/shared540/` i trafiają do `sprites540.png`
+(+ `.json`) pod tymi samymi nazwami co w `sprites.png`, w dokładnie 3 × rozmiarze. Gra bierze klatkę z
+`sprites540`, gdy ją tam znajdzie (`spriteTexture` w `src/game/enemyArt.js`), i pokazuje ją w skali 1/3;
+reszta zostaje ze starego atlasu. `node tools/gen-art.mjs --only=shared540` buduje ten atlas.
 
 Efekty wspólne dla wszystkich miast (`tools/art/fx.mjs`, `src/game/Fx.js`):
 - **Wybuchy** to kula ognia, a po niej kłęby dymu, odłamki i kawałki zależne od miasta: płatki sakury
