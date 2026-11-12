@@ -148,7 +148,7 @@ const forestRoadX = (u) => 90 + 22 * Math.sin((u - JUNGLE[0]) / 120) * (1 - smoo
 export const ROUTE58_X = 7;
 export const roadX = (u) => {
   const west = -14 + (ROUTE58_X + 14) * smooth(3800, 3880, u);
-  const k = smooth(4200, 4320, u);
+  const k = smooth(4250, 4305, u); // (past the runways' ends and the base's northern fence)
   return west * (1 - k) + forestRoadX(u) * k;
 };
 export const ROAD = [3800, 4640];

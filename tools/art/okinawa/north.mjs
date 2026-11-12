@@ -327,8 +327,8 @@ export function paintYanbaru(k) {
   }
   // a roadside stall with bananas and a rest stop at the forest's foot, the road's lay-by
   {
-    const x = roadX(4350) + 7;
     const u = 4350;
+    const x = roadX(u) - 37; // (west of the road: the stream runs down its east side here)
     img.fine(x, Y(u + 12), 30, 16, (X, Yy) => k.asphaltPx(X, Yy));
     k.reserve(x, Y(u + 12), 30, 16);
     k.t.house(x + 3, Y(u + 11), 22, 7, { faceH: 3.6, reserve: false, shisa: true, seed: 4041 });

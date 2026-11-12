@@ -324,13 +324,13 @@ export function paintCave(k) {
 
   // the lights: lamps along the walkway, floods on the great columns and over the halls, lamps under the river
   const HALL = (u) =>
-    u < 2190 ? [0xffb048, 0xffd878] : u < 2290 ? [0x3ad0c0, 0x4aa8ff] : u < 2335 ? [0xa8dcff, 0xe0f4ff] : u < 2455 ? [0xff58c8, 0x8a6aff, 0x58ff9a] : [0xff9a48, 0xffc860];
+    u < 2190 ? [0xffb048, 0xffd878] : u < 2290 ? [0x3ad0c0, 0x4aa8ff] : u < 2335 ? [0xa8dcff, 0xe0f4ff] : u < 2455 ? [0xffc050, 0x6a7aff, 0x58ff9a] : [0xff9a48, 0xffc860];
   const lights = [];
   const light = (x, u, c, r, amt, z = 9, water = 0) => lights.push({ x, y: Y(u), u, c: [((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255], r, k: amt, z, water });
   for (let u = C0 + 10, i = 0; u < C1 - 8; u += 15, i++) light(walkX(u) + (i % 2 ? 2.4 : -2.4), u, 0xffcc88, 14, 0.9, 4);
   for (const f of forms) if (f.kind === 'column') {
     const cs = HALL(f.u);
-    light(f.x - 8, f.u - 7, cs[0], 30, 1.6, 7);
+    light(f.x - 8, f.u - 7, cs[0], 30, 1.3, 7);
     light(f.x + 7, f.u + 5, cs[cs.length - 1], 22, 1.0, 7);
   }
   for (let u = C0 + 26, i = 0; u < C1 - 20; u += 16 + g() * 8, i++) {
@@ -549,7 +549,7 @@ export function paintCave(k) {
   }, false));
   kit.spot([[riverX(2215) - 6, 2236, 10, 40], [30, 2504, 30, 40]], ring, { rate: 2.2, fps: 6, a: 0.8 });
   // the motion-sensor lights: soft colour washing over the great columns, one hue into the next
-  const wash = [0xff58c8, 0x58ff9a, 0x5a8aff].map((c) => k.sprite(28, 28, 2300, (r) => {
+  const wash = [0xffb848, 0x58ff9a, 0x5a8aff].map((c) => k.sprite(28, 28, 2300, (r) => {
     for (let j = 0; j < 84; j++)
       for (let i = 0; i < 84; i++) {
         const d = Math.hypot(i - 42, j - 42) / 42;
