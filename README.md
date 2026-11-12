@@ -1,4 +1,4 @@
-# pr0ject-jpn — Kioto, Okinawa, Sapporo, Kagoshima, Osaka, Beppu
+# pr0ject-jpn — Kioto, Okinawa, Sapporo, Kagoshima, Osaka, Beppu, Hiroszima, Nagasaki
 
 Pionowy shmup w przeglądarce (Phaser 4.2.1, WebGL), rozdzielczość wewnętrzna 180×320–420,
 skalowanie całkowitą wielokrotnością pikseli urządzenia.
