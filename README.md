@@ -630,11 +630,23 @@ Cała grafika jest generowana kodem (`tools/`) do zwykłych plików PNG w `publi
 atlas sprite'ów (`sprites.png` + `sprites.json`), font pikselowy z polskimi znakami, a dla każdego etapu
 `bg/stageN/far.png`, 4 kawałki warstwy środkowej `bg/stageN/mid_XX.png` (180×1792) i atlas ruchomych
 części tła `bg/stageN/props.png` (+ `props.json`; ich lista jest w `meta.json`).
-Generatory teł: `tools/art/kyoto/`, `tools/art/okinawa/`, `tools/art/sapporo/`, `tools/art/kagoshima/`, `tools/art/osaka/`, `tools/art/beppu/` (`node tools/gen-art.mjs --only=stage6` buduje jeden etap). Każdy plik można podmienić ręcznie
+Generatory teł: `tools/art/kyoto/`, `tools/art/okinawa/`, `tools/art/sapporo/`, `tools/art/kagoshima/`, `tools/art/osaka/`, `tools/art/beppu/`, `tools/art/hiroshima/`, `tools/art/nagasaki/` (`node tools/gen-art.mjs --only=stage6` buduje jeden etap). Każdy plik można podmienić ręcznie
 rysowaną grafiką o tych samych wymiarach/nazwach ramek. `node tools/gen-art.mjs --preview` zapisuje
 powiększone podglądy do `tools/preview/`.
 
-Statki i wrogowie to maski znaków (`tools/art/sprites.mjs`) z automatycznym cieniowaniem i obrysem.
+Statki i wspólne sprite'y to maski znaków (`tools/art/sprites.mjs`) z automatycznym cieniowaniem i obrysem.
+
+**Wrogowie miast w 540 px.** Wrogowie i bossowie wszystkich ośmiu miast są narysowani od nowa w potrójnej
+rozdzielczości, z teksturami i tuszowym konturem, w miarę wiernie japońskim wzorom (glazurowane shisa z Tsuboya,
+oni z emaki, czerwony tengu z wachlarzem, krab taka-ashi-gani, statek VOC z drzeworytów Nagasaki, smok
+ja-odori jak z farbowanych tkanin). Narzędzia rysunkowe to `tools/lib/hisprite.mjs` (kształty, cieniowanie
+rampami, wzory: futro, łuski, spękania), a rysunki są w `tools/art/<miasto>/enemies.mjs` (i plikach obok,
+np. `dragon540.mjs`, `oni540.mjs`). Każde miasto ma własny atlas `bg/stageN/enemies.png` (+ `.json`),
+włączany polem `"enemyArt": true` w `stageN.json` i wczytywany razem z tłami miasta; jego ramki mają te same
+nazwy co stare, więc kod gry ich nie zmienia (`src/game/enemyArt.js`: skąd brać ramkę i podmiana animacji).
+Sprite z takiego atlasu jest pokazywany w skali `e.base` (1/3), więc każde `setScale`/`setCrop` we wrogach
+mnoży się przez `e.base`. Portrety do albumu yōkai są w `portraits.png`.
+`node tools/gen-art.mjs --only=enemies` buduje wszystkie atlasy wrogów i portrety.
 
 Efekty wspólne dla wszystkich miast (`tools/art/fx.mjs`, `src/game/Fx.js`):
 - **Wybuchy** to kula ognia, a po niej kłęby dymu, odłamki i kawałki zależne od miasta: płatki sakury
