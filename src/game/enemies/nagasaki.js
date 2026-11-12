@@ -337,6 +337,9 @@ export const nagasaki = {
       const dy = -12 - i * 7 + (Math.sin(lag * 1.1) - Math.sin(g.ft * 1.1)) * 9;
       p.setPosition(e.x + dx * size, e.y + dy * size);
       p.setScale((1 - i * .035) * size * p.base).setAlpha(e.alpha);
+      // Each scale section points along the chain (local +y toward the tail) so the body reads as one coil.
+      const prev = i === 0 ? e : g.body[i - 1];
+      p.setRotation(Math.atan2(p.y - prev.y, p.x - prev.x) - Math.PI / 2);
     }
     if (g.pearl2) {
       // phase 3: the pearl split into two orbs circling the head

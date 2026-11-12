@@ -139,38 +139,59 @@ export function jaHead(f) {
 
 // ---------------------------------------------------------------- lengths of the body (19 -> 57)
 export function jaSegment(kind = 'body') {
+  // A length of the body as a capsule running down the frame (+y towards the tail): the game turns each length along
+  // the line of the body and they overlap into one serpent, so the scales, the belly plates and the spine run on from
+  // one to the next, and only the flanks get the dark edge (not the ends).
   const s = new HiSprite(57, 57, RAMPS);
   const c = 28.5;
-  // a clawed leg reaching out from under it
+  const w = kind === 'tail' ? 13 : 17;
   if (kind === 'leg') {
     for (const sx of [-1, 1]) {
-      s.tube(c + sx * 14, c + 6, c + sx * 25, c + 14, 3.6, 'b', { rb: 2.6 });
-      s.tube(c + sx * 25, c + 14, c + sx * 26, c + 15, 2.6, 'b');
-      flame(s, c + sx * 20, c + 8, sx > 0 ? -0.8 : Math.PI + 0.8, 12, 3, 51 + sx); // the elbow flame
-      for (let k = -1; k <= 1; k++) s.tube(c + sx * 25, c + 14, c + sx * (27 + k * 1.5), c + 20 + Math.abs(k), 1.2, 'h', { rb: 0.4 });
+      s.tube(c + sx * 12, c - 4, c + sx * 23, c + 6, 3.4, 'b', { rb: 2.6 });
+      s.tube(c + sx * 23, c + 6, c + sx * 25, c + 13, 2.6, 'b', { rb: 2 });
+      flame(s, c + sx * 21, c, sx > 0 ? -0.6 : Math.PI + 0.6, 12, 3, 51 + sx); // the elbow flame
+      for (let k = -1; k <= 1; k++) s.tube(c + sx * 25, c + 13, c + sx * (26 + k * 2), c + 19 + Math.abs(k), 1.2, 'h', { rb: 0.4 });
     }
   }
-  // the body: a length of serpent running up and down the screen, rows of scales over its back, the green belly
-  // plates showing along both flanks, the ridge of its spine down the middle
-  const w = kind === 'tail' ? 16 : 21;
-  const hh = kind === 'tail' ? 15 : 19;
-  // flat-lit: the pieces overlap into one long body, so none of them may read as a ball
-  s.paint([c - w - 1, c - hh - 1, c + w + 1, c + hh + 1], (x, y) => ((x - c) / w) ** 2 + ((y - c) / hh) ** 2 < 1, 'b', (x, y) => 0.6 - (x - c) / 70 - (y - c) / 160, { pat: mottle({ amt: 0.1, scale: 6 }) });
-  scales(s, [c - w, c - hh, c + w, c + hh], 5.2);
-  for (const sx of [-1, 1]) {
-    s.paint([0, 0, 57, 57], (x, y) => s.mat[Math.floor(y) * 57 + Math.floor(x)] === 'b' && (x - c) * sx > w * 0.72, 'g', (x) => 0.56 - (x - c) / 80, { pat: speckle({ amt: 0.08 }) });
-    for (let y = 2; y < 56; y += 3.6) for (let x = 0; x < 57; x++) if (s.mat[Math.floor(y) * 57 + x] === 'g' && (x - c) * sx > 0) s.px(x, y, 0x1a3a1e, 0.85);
-  }
-  // the dark crest of its spine, spiking up at the top of each length
-  spikes(s, c, c - hh + 6, -Math.PI / 2, 0.9, 12, 5, kind === 'tail' ? 7 : 3);
-  // the flames along the spine
-  flame(s, c - w + 4, c - 4, Math.PI + 0.35, kind === 'tail' ? 14 : 12, 3.2, kind === 'tail' ? 61 : 71);
   if (kind === 'tail') {
-    // the tail's end: a great flame and a spiky tuft
-    flame(s, c, c + 6, Math.PI / 2 + 0.3, 26, 6, 81);
-    spikes(s, c + 6, c + 10, Math.PI / 2 - 0.2, 1.2, 14, 6, 91);
+    flame(s, c, c + 14, Math.PI / 2, 22, 6, 81);
+    spikes(s, c, c + 16, Math.PI / 2, 1.1, 12, 6, 91);
   }
-  return s.render();
+  // the body: lit evenly along its length, round across it
+  // its tail-side end lies over the next length: round it off like a plate (the head-side end goes under the one before)
+  const endY = (kind === 'tail' ? 46 : 57) - w;
+  s.paint([c - w, 0, c + w, kind === 'tail' ? 46 : 57], (x, y) => Math.abs(x - c) < w * (kind === 'tail' ? Math.min(1, (46 - y) / 30 + 0.4) : 1) && (y < endY || ((x - c) / w) ** 2 + ((y - endY) / w) ** 2 < 1), 'b', (x) => {
+    const u = (x - c) / w;
+    return 0.3 + 0.55 * Math.max(0, Math.sqrt(Math.max(0, 1 - u * u)) * 0.8 - u * 0.35);
+  }, { pat: mottle({ amt: 0.08, scale: 6 }) });
+  scales(s, [c - w, -2, c + w, 57], 5.2);
+  for (const sx of [-1, 1]) {
+    s.paint([0, 0, 57, 57], (x, y) => s.mat[Math.floor(y) * 57 + Math.floor(x)] === 'b' && (x - c) * sx > w * 0.68, 'g', (x) => 0.55 - (x - c) / 80, { pat: speckle({ amt: 0.08 }) });
+    for (let y = 1; y < 57; y += 3.6) for (let x = 0; x < 57; x++) if (s.mat[Math.floor(y) * 57 + x] === 'g' && (x - c) * sx > 0) s.px(x, y, 0x1a3a1e, 0.85);
+  }
+  // the spine: a ridge of dark spikes down the middle, a flame fin licking from it
+  for (let y = 4; y < (kind === 'tail' ? 40 : 54); y += 9) s.poly([[c - 2.2, y + 5], [c + 2.2, y + 5], [c, y - 1]], 'm', { flat: 0.5 });
+  flame(s, c, 26, kind === 'leg' ? -Math.PI / 2 : Math.PI + 0.25, 11, 3, kind === 'tail' ? 61 : 71);
+  // the dark edge down the flanks only
+  const img = s.render({ outline: 0 });
+  for (let y = 0; y < 57; y++) for (const sx of [-1, 1]) {
+    for (let x = sx > 0 ? 56 : 0; x >= 0 && x < 57; x -= sx) {
+      if (img.alpha(x, y)) {
+        img.set(x, y, INK);
+        if (img.alpha(x - sx, y)) img.set(x - sx, y, INK);
+        break;
+      }
+    }
+  }
+  // and the rounded end's rim
+  for (let x = 0; x < 57; x++) for (let y = 56; y > endY - 2; y--) {
+    if (img.alpha(x, y)) {
+      img.set(x, y, INK);
+      if (img.alpha(x, y - 1)) img.set(x, y - 1, 0x101430);
+      break;
+    }
+  }
+  return img;
 }
 
 // ---------------------------------------------------------------- the gyoku, the flaming pearl (11 -> 33)
