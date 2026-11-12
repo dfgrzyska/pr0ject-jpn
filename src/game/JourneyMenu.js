@@ -8,6 +8,7 @@ import { titleLayout } from '../data/titleLayout.js';
 import { discoveries } from './Discoveries.js';
 import { YOKAI, FOODS } from '../data/discoveries.js';
 import { hasStamp } from './Stamps.js';
+import { sharedArt } from './enemyArt.js';
 
 const FINE = 1 / RENDER_SCALE; // the menu's art and the map are drawn at 540 px
 const CITY_KEY = 'shmupjp.startCity';
@@ -37,7 +38,7 @@ export class JourneyMenu {
     this.clouds = [0, 1].map((i) => add(scene.add.image(30 + i * 100, 0, 'sprites', `cloud_${i}`).setAlpha(0.09), DEPTH.overlay));
     this.gfx = add(scene.add.graphics(), DEPTH.overlay + 1.5);
     this.labels = STAGES.map((s) => add(pixelText(scene, 0, 0, s.name)));
-    this.ship = add(scene.add.image(0, 0, 'sprites', SHIPS[scene.shipIndex].frame), DEPTH.overlay + 2);
+    this.ship = add(sharedArt(scene.add.image(0, 0, 'sprites', SHIPS[scene.shipIndex].frame)), DEPTH.overlay + 2);
     this.logo = add(scene.add.image(90, 0, 'menu', 'logo').setScale(FINE));
     this.tagline = add(pixelText(scene, 90, 0, 'LEĆ PRZEZ JAPONIĘ').setTint(0xffdba8));
     this.caption = add(pixelText(scene, 90, 0, 'OSIEM MIAST. JEDNA PODRÓŻ.').setTint(0xc8ac85));

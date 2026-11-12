@@ -3,9 +3,11 @@
 import { fx540 } from './fx540.mjs';
 import { bullets540 } from './bullets540.mjs';
 import { ships540 } from './ships540.mjs';
+import { ui540 } from './ui540.mjs';
 
 export function shared540(add) {
   fx540(add); // A: explosions and effects
   bullets540(add); // B: the enemies' themed bullets, and the player's shots
   ships540(add); // C: the three ships, level and banking
+  ui540(add); // C and D: the hit dot, pickups, the talismans; the HUD's buttons and icons
 }

@@ -2,6 +2,7 @@ import { DEPTH, SHIPS, VIEW } from '../config.js';
 import { isEasy, rules, setEasy } from '../difficulty.js';
 import { pixelText } from './Hud.js';
 import { tr } from '../i18n.js';
+import { sharedArt } from './enemyArt.js';
 
 const W = VIEW.width;
 const SLOT_X = [32, 90, 148];
@@ -20,7 +21,7 @@ export class ShipSelect {
     this.box = scene.add.graphics().setDepth(d);
     this.back = pixelText(scene, 27, 12, '< WRÓĆ').setDepth(d);
     this.title = pixelText(scene, W / 2, 0, 'WYBIERZ STATEK').setDepth(d).setTint(0xffd6e5);
-    this.ships = SHIPS.map((s, i) => scene.add.image(SLOT_X[i], 0, 'sprites', s.frame).setScale(2).setDepth(d + 1));
+    this.ships = SHIPS.map((s, i) => sharedArt(scene.add.image(SLOT_X[i], 0, 'sprites', s.frame)).setScale(2).setDepth(d + 1));
     this.flames = SHIPS.map((s, i) =>
       scene.add.sprite(SLOT_X[i], 0, 'sprites', 'flame_0').setOrigin(0.5, 0).setScale(2).setDepth(d).play('flame'),
     );
@@ -28,8 +29,8 @@ export class ShipSelect {
     this.role = pixelText(scene, W / 2, 0, '').setDepth(d);
     this.perk = pixelText(scene, W / 2, 0, '').setDepth(d); // what the ship does that the others don't
     this.labels = ['PRĘDKOŚĆ', 'SIŁA OGNIA', 'ŻYCIA'].map((l) => pixelText(scene, 34, 0, l, 0).setDepth(d).setTint(0xb0aec0));
-    this.pips = [0, 1].map(() => [0, 1, 2].map(() => scene.add.image(0, 0, 'sprites', 'pip_off').setScale(2).setDepth(d)));
-    this.lifeIcons = [0, 1, 2, 3, 4].map(() => scene.add.image(0, 0, 'sprites', 'icon_life').setDepth(d));
+    this.pips = [0, 1].map(() => [0, 1, 2].map(() => sharedArt(scene.add.image(0, 0, 'sprites', 'pip_off')).setScale(2).setDepth(d)));
+    this.lifeIcons = [0, 1, 2, 3, 4].map(() => sharedArt(scene.add.image(0, 0, 'sprites', 'icon_life')).setDepth(d));
     this.modeLabel = pixelText(scene, 34, 0, 'TRYB', 0).setDepth(d).setTint(0xb0aec0);
     this.mode = pixelText(scene, 140, 0, '').setDepth(d);
     this.modeInfo = pixelText(scene, W / 2, 0, '').setDepth(d).setTint(0x8a8aa8);

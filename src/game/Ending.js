@@ -6,6 +6,7 @@ import { pixelText } from './Hud.js';
 import { JapanMap } from './JapanMap.js';
 import { INK } from './Stamps.js';
 import { portrait } from './enemyArt.js';
+import { sharedArt } from './enemyArt.js';
 
 const W = VIEW.width;
 const D = DEPTH.overlay + 2;
@@ -188,7 +189,7 @@ export class Ending {
     this.clouds = this.add(s.add.tileSprite(0, top + 236, W, 34, 'ending_clouds').setTileScale(FINE, FINE).setOrigin(0, 0).setDepth(D + 0.6).setAlpha(0.85));
     // the ship flying past the mountain towards the sun, its engine burning
     const ship = SHIPS[s.shipIndex];
-    this.ship = this.add(s.add.sprite(-20, H + 20, 'sprites', ship.frame).setDepth(D + 1));
+    this.ship = this.add(sharedArt(s.add.sprite(-20, H + 20, 'sprites', ship.frame)).setDepth(D + 1));
     this.flame = this.add(s.add.sprite(0, 0, 'sprites', 'flame_0').setDepth(D + 0.9).play('flame'));
     this.flameY = ship.flameY;
     // petals drifting off the branch and the trees

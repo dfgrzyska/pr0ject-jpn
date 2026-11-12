@@ -2,6 +2,7 @@ import { DEPTH, RENDER_SCALE, VIEW } from '../config.js';
 import { MAP, project } from '../data/japan.js';
 import { pixelText } from './Hud.js';
 import { INK, PALE, hasStamp } from './Stamps.js';
+import { sharedArt } from './enemyArt.js';
 
 const FLIGHT = 2.6; // s for the ship to fly to the next city
 const W = VIEW.width;
@@ -25,7 +26,7 @@ export class JapanMap {
     this.bg = scene.add.rectangle(0, 0, W, VIEW.maxHeight, 0x0c1830).setOrigin(0, 0).setDepth(d);
     this.img = scene.add.image(0, 0, 'japan').setOrigin(0, 0).setScale(1 / RENDER_SCALE).setDepth(d);
     this.gfx = scene.add.graphics().setDepth(d + 1);
-    this.ship = scene.add.sprite(0, 0, 'sprites', scene.player.ship.frame).setDepth(d + 3);
+    this.ship = sharedArt(scene.add.sprite(0, 0, 'sprites', scene.player.ship.frame)).setDepth(d + 3);
     this.labels = order.map((i, k) => {
       const shadow = pixelText(scene, 0, 0, stages[i].name).setDepth(d + 2).setTint(0x0b0a12);
       const text = pixelText(scene, 0, 0, stages[i].name).setDepth(d + 2).setTint(k <= pos ? 0xffe080 : k === pos + 1 ? 0xffffff : 0x8a8aa8);
@@ -34,7 +35,7 @@ export class JapanMap {
     // the cities whose stamp is in the book wear a little seal
     // (a pale seal for a stamp won on easy only)
     this.seals = order.map((i) =>
-      hasStamp(stages[i].id, true) ? scene.add.image(0, 0, 'sprites', 'stamp_icon').setDepth(d + 2).setTint(INK[stages[i].id]).setAlpha(hasStamp(stages[i].id) ? 1 : PALE + 0.2) : null,
+      hasStamp(stages[i].id, true) ? sharedArt(scene.add.image(0, 0, 'sprites', 'stamp_icon')).setDepth(d + 2).setTint(INK[stages[i].id]).setAlpha(hasStamp(stages[i].id) ? 1 : PALE + 0.2) : null,
     );
     const next = stages[order[pos + 1]];
     this.title = pixelText(scene, W / 2, 0, finale ? 'PODRÓŻ UKOŃCZONA' : 'PODRÓŻ PO JAPONII').setDepth(d + 2).setTint(0xffd6e5);

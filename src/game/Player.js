@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { BEANS, BOMB, DEPTH, FROST, GRAZE, HEAT, MOMENTUM, OFUDA, PLAYER, SHIPS, SURGE, VIEW, WEAPONS } from '../config.js';
 import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
-import { baseScale, spriteTexture } from './enemyArt.js';
+import { baseScale, sharedArt, spriteTexture } from './enemyArt.js';
 
 const WEAPON_NAMES = { basic: 'PODSTAWOWA', spread: 'ROZRZUT', laser: 'LASER', homing: 'NAPROWADZANE' };
 const WEAPON_TINT = { spread: 0xff8a6a, laser: 0x8ac8ff, homing: 0x9cf09a };
@@ -12,7 +12,7 @@ export class Player {
     this.scene = scene;
     this.sprite = scene.add.sprite(0, 0, 'sprites', 'ship').setDepth(DEPTH.player);
     this.flame = scene.add.sprite(0, 0, 'sprites', 'flame_0').setOrigin(0.5, 0).setDepth(DEPTH.player - 0.1).play('flame');
-    this.dot = scene.add.image(0, 0, 'sprites', 'hitbox').setDepth(DEPTH.player + 0.1);
+    this.dot = sharedArt(scene.add.image(0, 0, 'sprites', 'hitbox')).setDepth(DEPTH.player + 0.1);
     this.muzzle = scene.add.image(0, 0, 'sprites', 'muzzle_0').setDepth(DEPTH.player + 0.05).setVisible(false); // flash at the nose
     this.noseGlow = scene.add.image(0, 0, 'sprites', 'glow').setDepth(DEPTH.player - 0.05).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.bank = 0;
@@ -21,11 +21,11 @@ export class Player {
     this.trailT = 0;
     this.shots = new Pool(scene, DEPTH.playerShot);
     // Setsubun: two beans circling the ship while it has beans to throw (blinking as they run out)
-    this.beanOrbit = [0, 1].map(() => scene.add.image(0, 0, 'sprites', 'ps_bean').setDepth(DEPTH.player + 0.02).setVisible(false));
+    this.beanOrbit = [0, 1].map(() => sharedArt(scene.add.image(0, 0, 'sprites', 'ps_bean')).setDepth(DEPTH.player + 0.02).setVisible(false));
     // Sapporo: Yuki-onna's frost, the block of ice the ship is caught in when it freezes over
-    this.iceBlock = scene.add.image(0, 0, 'sprites', 'ice_block').setDepth(DEPTH.player + 0.08).setVisible(false);
+    this.iceBlock = sharedArt(scene.add.image(0, 0, 'sprites', 'ice_block')).setDepth(DEPTH.player + 0.08).setVisible(false);
     // Tsuru: paper talismans circling the ship (OFUDA)
-    this.ofuda = Array.from({ length: OFUDA.max }, () => ({ on: false, t: 0, s: scene.add.image(0, 0, 'sprites', 'orizuru_0').setScale(0.5).setTint(0xfff4e0).setDepth(DEPTH.player + 0.03).setVisible(false) }));
+    this.ofuda = Array.from({ length: OFUDA.max }, () => ({ on: false, t: 0, s: sharedArt(scene.add.image(0, 0, 'sprites', 'orizuru_0')).setScale(0.5).setTint(0xfff4e0).setDepth(DEPTH.player + 0.03).setVisible(false) }));
     this.ofudaCharge = 0; // grazes towards the next talisman
     this.momentum = 0; // Tsubame: 0..1, faster fire (MOMENTUM)
     this.rage = 0; // Oni: extra damage, higher up the screen

@@ -5,6 +5,7 @@ import { fontScale } from './fontScale.js';
 import { getLang, tr } from '../i18n.js';
 import { canInstall } from '../pwa.js';
 import { landmarkAt } from '../data/landmarks.js';
+import { sharedArt } from './enemyArt.js';
 
 const W = VIEW.width;
 // Line pitch for panels: 7px glyphs + raised Polish accents need 14px to never touch the line above.
@@ -52,22 +53,22 @@ export class Hud {
     this.easy = this.text(84, 2, 'ŁATWY', 0).setDepth(d).setTint(0x9cf09a).setAlpha(0.7).setVisible(false); // easy mode, in play
     this.bar = scene.add.graphics().setDepth(d);
     this.lives = [];
-    for (let i = 0; i < 6; i++) this.lives.push(scene.add.image(7 + i * 9, 20, 'sprites', 'icon_life').setDepth(d));
-    this.weapon = scene.add.image(7, 0, 'sprites', 'wpn_basic').setDepth(d);
+    for (let i = 0; i < 6; i++) this.lives.push(sharedArt(scene.add.image(7 + i * 9, 20, 'sprites', 'icon_life')).setDepth(d));
+    this.weapon = sharedArt(scene.add.image(7, 0, 'sprites', 'wpn_basic')).setDepth(d);
     this.pips = [];
-    for (let i = 0; i < PLAYER.maxPower; i++) this.pips.push(scene.add.image(15 + i * 5, 0, 'sprites', 'pip_off').setDepth(d));
-    this.bombBtn = scene.add.image(0, 0, 'sprites', 'btn_bomb').setDepth(d);
-    this.pauseBtn = scene.add.image(W - 10, 10, 'sprites', 'btn_pause').setDepth(d).setAlpha(0.7);
-    this.soundBtn = scene.add.image(W - 28, 10, 'sprites', 'btn_sound_on').setDepth(d).setAlpha(0.7);
-    this.bookBtn = scene.add.image(12, 12, 'sprites', 'btn_book').setDepth(DEPTH.overlay + 3).setVisible(false); // on the title screen
+    for (let i = 0; i < PLAYER.maxPower; i++) this.pips.push(sharedArt(scene.add.image(15 + i * 5, 0, 'sprites', 'pip_off')).setDepth(d));
+    this.bombBtn = sharedArt(scene.add.image(0, 0, 'sprites', 'btn_bomb')).setDepth(d);
+    this.pauseBtn = sharedArt(scene.add.image(W - 10, 10, 'sprites', 'btn_pause')).setDepth(d).setAlpha(0.7);
+    this.soundBtn = sharedArt(scene.add.image(W - 28, 10, 'sprites', 'btn_sound_on')).setDepth(d).setAlpha(0.7);
+    this.bookBtn = sharedArt(scene.add.image(12, 12, 'sprites', 'btn_book')).setDepth(DEPTH.overlay + 3).setVisible(false); // on the title screen
     // the language switch, under it: PL EN, the one in use lit
     this.langPl = pixelText(scene, 8, 29, 'PL').setDepth(DEPTH.overlay + 3).setVisible(false);
     this.langEn = pixelText(scene, 22, 29, 'EN').setDepth(DEPTH.overlay + 3).setVisible(false);
     // the debug panel's switch, top right under the buttons: on the title screen and while paused
     this.debugBtn = pixelText(scene, W - 4, 29, 'DEBUG', 0).setOrigin(1, 0.5).setDepth(DEPTH.overlay + 3).setVisible(false);
-    this.installBtn = scene.add.image(12, 46, 'sprites', 'btn_install').setDepth(DEPTH.overlay + 3).setAlpha(0.85).setVisible(false);
+    this.installBtn = sharedArt(scene.add.image(12, 46, 'sprites', 'btn_install')).setDepth(DEPTH.overlay + 3).setAlpha(0.85).setVisible(false);
     // the stamp still to be won in this city: its seal under the lives, fading away after a death or a bomb
-    this.stampIcon = scene.add.image(7, 30, 'sprites', 'stamp_icon').setDepth(d).setVisible(false);
+    this.stampIcon = sharedArt(scene.add.image(7, 30, 'sprites', 'stamp_icon')).setDepth(d).setVisible(false);
     this.stampFade = 0;
     this.placeBand = scene.add.rectangle(W / 2, 0, W - 8, 15, 0x0b0a12, 0.7).setDepth(d).setVisible(false);
     this.placeName = this.text(W / 2, 0, '').setDepth(d + 1).setTint(0xffe4ad).setVisible(false);
@@ -215,13 +216,13 @@ export class Hud {
     let y = Math.round(this.H / 2 - total / 2);
     for (const line of lines) {
       if (line && line.image) {
-        this.overlayItems.push(this.scene.add.image(W / 2, y + line.h / 2, 'sprites', line.image).setDepth(DEPTH.overlay + 1));
+        this.overlayItems.push(sharedArt(this.scene.add.image(W / 2, y + line.h / 2, 'sprites', line.image)).setDepth(DEPTH.overlay + 1));
         y += line.h;
         continue;
       }
       if (line && line.sprite) {
         // legend row: icon + left-aligned label
-        this.overlayItems.push(this.scene.add.image(line.x, y + 7, 'sprites', line.sprite).setDepth(DEPTH.overlay + 1));
+        this.overlayItems.push(sharedArt(this.scene.add.image(line.x, y + 7, 'sprites', line.sprite)).setDepth(DEPTH.overlay + 1));
         const t = this.text(line.x + 9, y, line.text, 0).setDepth(DEPTH.overlay + 1).setTint(line.tint ?? 0xffffff);
         this.overlayItems.push(t);
         y += LINE;

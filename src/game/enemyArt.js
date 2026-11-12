@@ -19,6 +19,35 @@ export function spriteTexture(frame) {
   return hi.has(frame) ? 'sprites540' : 'sprites';
 }
 
+/**
+ * An image or sprite made on the old atlas, moved to sprites540 when its frame is drawn there: from then on its
+ * setScale is in the old art's terms (the third of the 540 px art is applied under it) and setFrame takes a frame
+ * from whichever atlas has it. Returns the object.
+ */
+export function sharedArt(obj) {
+  if (obj.sharedArt) return obj;
+  obj.sharedArt = true;
+  const rawScale = obj.setScale;
+  const rawFrame = obj.setFrame;
+  let lx = obj.scaleX;
+  let ly = obj.scaleY;
+  const apply = () => rawScale.call(obj, lx * baseScale(obj.texture.key), ly * baseScale(obj.texture.key));
+  obj.setScale = function (x, y = x) {
+    lx = x;
+    ly = y;
+    apply();
+    return this;
+  };
+  obj.setFrame = function (frame, ...rest) {
+    const key = spriteTexture(frame);
+    if (this.texture.key !== key) this.setTexture(key, frame);
+    else rawFrame.call(this, frame, ...rest);
+    apply();
+    return this;
+  };
+  return obj.setFrame(obj.frame.name);
+}
+
 /** The texture for an animation of shared frames: sprites540 only when it has every one of them. */
 export function spriteAnimTexture(frames) {
   return frames.every((f) => hi.has(f)) ? 'sprites540' : 'sprites';
