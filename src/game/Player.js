@@ -11,9 +11,9 @@ export class Player {
   constructor(scene) {
     this.scene = scene;
     this.sprite = scene.add.sprite(0, 0, 'sprites', 'ship').setDepth(DEPTH.player);
-    this.flame = scene.add.sprite(0, 0, 'sprites', 'flame_0').setOrigin(0.5, 0).setDepth(DEPTH.player - 0.1).play('flame');
+    this.flame = sharedArt(scene.add.sprite(0, 0, 'sprites', 'flame_0')).setOrigin(0.5, 0).setDepth(DEPTH.player - 0.1).play('flame');
     this.dot = sharedArt(scene.add.image(0, 0, 'sprites', 'hitbox')).setDepth(DEPTH.player + 0.1);
-    this.muzzle = scene.add.image(0, 0, 'sprites', 'muzzle_0').setDepth(DEPTH.player + 0.05).setVisible(false); // flash at the nose
+    this.muzzle = sharedArt(scene.add.image(0, 0, 'sprites', 'muzzle_0')).setDepth(DEPTH.player + 0.05).setVisible(false); // flash at the nose
     this.noseGlow = scene.add.image(0, 0, 'sprites', 'glow').setDepth(DEPTH.player - 0.05).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.bank = 0;
     this.thrust = 0;
