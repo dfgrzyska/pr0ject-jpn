@@ -96,7 +96,14 @@ export const beppu = {
       return this.waniSegs(e);
     }
     e.fight += dt;
-    if (e.snapT > 0 && (e.snapT -= dt) <= 0 && !e.sub) e.setFrame('wani_0');
+    if (e.snapT > 0) {
+      // the snap: half open, wide open, half shut again, shut (only to look at; the teeth fly at the snap itself)
+      e.snapT -= dt;
+      if (!e.sub) {
+        const half = e.texture.has('wani_half') && (e.snapDur - e.snapT < 0.05 || e.snapT < 0.07);
+        e.setFrame(e.snapT <= 0 ? 'wani_0' : half ? 'wani_half' : 'wani_1');
+      }
+    }
     if (e.sub) return this.waniDive(e, dt, b);
     if (e.roll > 0) {
       // death roll: the whole body spins, a spiral of scalding water flies out of the jaws
@@ -141,8 +148,8 @@ export const beppu = {
             const n = a - side * DOWN; // across the aim line, towards it
             b.shot('eb_s', mouth.x, mouth.y, a + side * th, v, 1.8, { ax: Math.cos(n) * acc, ay: Math.sin(n) * acc });
           }
-        e.setFrame('wani_1');
-        e.snapT = 0.3;
+        e.setFrame(e.texture.has('wani_half') ? 'wani_half' : 'wani_1');
+        e.snapT = e.snapDur = 0.3;
         s.sfx.explode('s');
         e.timer = 0.95;
         if (++e.step >= 3) this.nextPattern(e);
@@ -181,8 +188,8 @@ export const beppu = {
       e.flash = Math.floor(d.t * 20) % 2 ? 0.02 : 0;
       if (d.t > 0.35) {
         e.ghost = false;
-        e.setFrame('wani_1');
-        e.snapT = 0.5;
+        e.setFrame(e.texture.has('wani_half') ? 'wani_half' : 'wani_1');
+        e.snapT = e.snapDur = 0.5;
         s.fx.puff('splash', e.x, e.y + 20, 0.4);
         s.fx.puff('splash', e.x, e.y - 10, 0.4);
         // the false shadows burst up too, as scalding spouts

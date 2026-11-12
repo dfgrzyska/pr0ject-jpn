@@ -123,6 +123,7 @@ export const CITY_ANIMS = {
   // Nagasaki
   n_lantern: [four('n_lantern'), 5], n_biidoro: [four('n_biidoro'), 5], n_hata: [four('n_hata'), 7],
   n_ja: [four('n_ja'), 6], n_oranda: [['n_oranda_0', 'n_oranda_1'], 5],
+  n_cannon_smoke: [four('n_cannon_smoke'), 10, 0], // (once: gun smoke out of a port)
   ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`n_castella_${c}`, [four(`n_castella_${c}`), 5]])),
 };
 

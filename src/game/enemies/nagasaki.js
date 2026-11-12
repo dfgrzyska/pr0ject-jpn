@@ -10,6 +10,14 @@ const BATTERY = { hp: 85, weight: 0, score: 2500, radius: 6, explosion: 'm' };
 const JA_BODY = 0.4;
 
 export const nagasaki = {
+  /** Gun smoke rolling out of a port the way it fired (only to look at). */
+  gunSmoke(x, y, a) {
+    if (NO_PROPS || !hasEnemyFrame('n_cannon_smoke_0')) return;
+    const sp = this.segPool.spawn('n_cannon_smoke_0', x, y).setOrigin(0.05, 0.5).setRotation(a).setDepth(DEPTH.air + 0.02);
+    sp.setScale(sp.base * 1.5);
+    sp.play('n_cannon_smoke').once('animationcomplete', (anim) => anim.key === 'n_cannon_smoke' && sp.active && this.segPool.kill(sp));
+  },
+
   /** A pulsing glow round the pearl (and its twin in phase 3), only to look at. */
   pearlGlow(g, e) {
     if (NO_PROPS || !hasEnemyFrame('n_pearl')) return;
@@ -187,6 +195,7 @@ export const nagasaki = {
         e.flashSide = v.side;
         e.flashT = 0.08;
         s.fx.smoke(x, y, 1, 1);
+        this.gunSmoke(x, y, a);
         v.port++;
         v.t = 0.1;
         if (v.port >= 5) {

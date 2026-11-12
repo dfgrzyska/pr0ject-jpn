@@ -264,14 +264,16 @@ export function wani(open) {
     s.px(cx + dx - 1, y - 1, 0x9ab060);
   }
   // the long snout; the jaws open on a pink mouth and rows of teeth
-  const jaw = open ? 21 : 15;
+  const o = open === true ? 1 : open || 0; // how far the jaws are open, 0..1 (half way: the snap's in-between)
+  const jaw = 15 + 6 * o;
   s.paint([0, M(45), 87, 204], (x, y) => {
     const t = (y - M(45)) / (204 - M(45));
     return t < 0.96 && Math.abs(x - cx) < (t < 0.28 ? 18 - t * 8 : jaw * 0.7 - (t - 0.28) * jaw * 0.55);
   }, 'z', (x, y) => 0.6 - (x - cx) / 60 - (y - 150) / 400, hide);
-  if (open) {
-    s.paint([0, 155, 87, 202], (x, y) => y > 158 && y < 196 && Math.abs(x - cx) < 12 - (y - 158) * 0.25, 'P', () => 0.45);
-    for (let y = 160; y < 196; y += 4) for (const sx of [-1, 1]) s.poly([[cx + sx * (12.5 - (y - 158) * 0.25), y], [cx + sx * (12.5 - (y - 158) * 0.25), y + 3], [cx + sx * (10 - (y - 158) * 0.25), y + 1.5]], 'W', { flat: 0.85 });
+  if (o) {
+    const mw = (y) => (12 - (y - 158) * 0.25) * (0.35 + 0.65 * o); // the gape, narrower half open
+    s.paint([0, 155, 87, 202], (x, y) => y > 158 && y < 196 && Math.abs(x - cx) < mw(y), 'P', () => 0.45);
+    for (let y = 160; y < 196; y += 4) for (const sx of [-1, 1]) s.poly([[cx + sx * (mw(y) + 0.5), y], [cx + sx * (mw(y) + 0.5), y + 3], [cx + sx * (mw(y) - 2), y + 1.5]], 'W', { flat: 0.85 });
   } else {
     for (let y = 160; y < 196; y += 5) for (const sx of [-1, 1]) s.poly([[cx + sx * (10.5 - (y - 158) * 0.15), y], [cx + sx * (12 - (y - 158) * 0.15), y + 1.5], [cx + sx * (10.5 - (y - 158) * 0.15), y + 3]], 'W', { flat: 0.8 });
   }
@@ -341,6 +343,7 @@ export function beppuEnemies(add) {
   for (let i = 0; i < 16; i++) add(`nozzle_${i}`, nozzle(i));
   add('wani_0', wani(false));
   add('wani_1', wani(true));
+  add('wani_half', wani(0.5)); // step 2a: the jaws half way, in and out of a snap
   add('wani_sub', waniSub());
   // the oni (oni540.mjs), and the same with his left horn snapped off, from phase 2 on
   for (const broken of [false, true]) {

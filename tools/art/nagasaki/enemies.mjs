@@ -8,6 +8,7 @@
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
 import * as SHIP from './oranda540.mjs';
 import * as DRAGON from './dragon540.mjs';
+import { Raster, fbm } from '../../lib/raster.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -393,6 +394,37 @@ export function jaPearl() {
   return s.render();
 }
 
+/**
+ * Gun smoke out of a gun port (4 frames, drawn rolling out to the right: the game turns it to the way the gun
+ * fires): a flash of fire at the muzzle first, then a grey-white billow rolling out and thinning.
+ */
+export function cannonSmoke(f) {
+  const w = 66;
+  const h = 42;
+  const out = new Raster(w, h);
+  const t = (f + 1) / 4;
+  const puffs = [];
+  for (let i = 0; i < 6; i++) {
+    const u = i / 5;
+    puffs.push([6 + u * 46 * (0.4 + t * 0.6), h / 2 + Math.sin(i * 2.1 + f) * 5 * t, 4 + u * 7 * t + 5 * t]);
+  }
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      let v = 0;
+      for (const [px, py, r] of puffs) v = Math.max(v, 1 - Math.hypot(x - px, y - py) / r);
+      if (v <= 0) continue;
+      v += (fbm(x, y + f * 5, { seed: 23, scale: 6, octaves: 2 }) - 0.5) * 0.5;
+      const a = Math.min(1, v * 2.4) * (1 - t * 0.55);
+      if (a < 0.15) continue;
+      // lit from above: white on top, grey under; fire-tinged near the muzzle in the first frame
+      const top = y < h / 2 - 2;
+      let c = v > 0.55 ? (top ? 0xffffff : 0xe8e4ec) : top ? 0xd0ccd8 : 0x9a96a8;
+      if (f === 0 && x < 16) c = v > 0.5 ? 0xfff0a0 : 0xffa040;
+      out.set(x, y, c, Math.round(a * 4) / 4);
+    }
+  return out;
+}
+
 export function nagasakiEnemies(add) {
   for (let f = 0; f < 4; f++) {
     add(`n_lantern_${f}`, lantern(f));
@@ -406,6 +438,7 @@ export function nagasakiEnemies(add) {
     add(`n_oranda_gun_${f}`, SHIP.orandaGun(f, false));
   }
   add('n_oranda_burnt', SHIP.orandaGun(0, true));
+  for (let f = 0; f < 4; f++) add(`n_cannon_smoke_${f}`, cannonSmoke(f)); // step 2a: the broadsides' gun smoke
   add('n_segment', DRAGON.jaSegment('body'));
   add('n_segment_leg', DRAGON.jaSegment('leg'));
   add('n_segment_tail', DRAGON.jaSegment('tail'));
