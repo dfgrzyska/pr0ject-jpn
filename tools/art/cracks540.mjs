@@ -18,7 +18,7 @@ function crack(seed, W = 30, H = 30) {
     for (let i = 0; i < len; i++) {
       zig = -zig; // a split zigzags along the grain, it doesn't meander
       const a = ang + zig * (0.35 + r() * 0.5);
-      const step = 2.6 + r() * 1.8;
+      const step = 2.2 + r() * 1.5;
       const nx = px + Math.cos(a) * step;
       const ny = py + Math.sin(a) * step;
       const w = w0 * (1 - (i / len) * 0.8);
@@ -67,5 +67,5 @@ function crack(seed, W = 30, H = 30) {
 
 /** Adds crack_0..2 to a city's enemy list. */
 export function addCracks(add) {
-  [11, 4, 38].forEach((seed, i) => add(`crack_${i}`, crack(seed)));
+  [[11, 24, 24], [4, 27, 21], [38, 24, 24]].forEach(([seed, w, h], i) => add(`crack_${i}`, crack(seed, w, h))); // (3x the old 8x8, 9x7, 8x8)
 }
