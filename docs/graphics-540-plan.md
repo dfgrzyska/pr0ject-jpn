@@ -93,3 +93,9 @@ Poza zakresem: drobinki 1–3 px (`ashf`, `dot`, `drop`, `dust`, `flake`, `leaf`
 Kontrole: test rozmiarów 3 × dla każdej klatki `sprites540`, `?hitbox` także dla pocisków i znajdziek,
 porównanie zapisu ataków przed i po (te same ziarna), czytelność na najciemniejszych etapach (Osaka, Nagasaki).
 
+Stan (listopad 2026): grupy A–D zrobione, a także font (`font540`, pokazywany w 1/3 przez `pixelText`).
+Wybuchy, pociski z motywem, strzały i statki narysowane od nowa; ikony HUD-u, znajdźki i drobne efekty
+przebudowane z grafiki 1 × (każdy piksel 3 × 3, wygładzone narożniki, fazowanie). Zostały w 1 ×: dym i ślady
+spalenizny (miękkie krawędzie z przezroczystością), `glow`, `orizuru_glow`, drobinki z listy „poza zakresem”,
+ikony potraw, pieczątki i pieczęcie miast. Zapis ataków po zmianach zgodny dla każdej powtarzalnej walki.
+
