@@ -30,6 +30,7 @@ import { osakaEnemies, OSAKA_PORTRAITS } from './art/osaka/enemies.mjs';
 import { beppuEnemies, BEPPU_PORTRAITS } from './art/beppu/enemies.mjs';
 import { hiroshimaEnemies, HIROSHIMA_PORTRAITS } from './art/hiroshima/enemies.mjs';
 import { nagasakiEnemies, NAGASAKI_PORTRAITS } from './art/nagasaki/enemies.mjs';
+import { addCracks } from './art/cracks540.mjs';
 
 // cities whose enemies are drawn at 540 px (docs/enemies-540-plan.md): their atlas, and what of it the album
 // and the bosses' parade show (src/game/enemyArt.js; the stage file says "enemyArt": true)
@@ -132,6 +133,7 @@ if (!only || only === 'enemies') {
   for (const { id, build, portraits: names } of ENEMY_ART) {
     const list = [];
     build((name, raster) => list.push({ name, raster }));
+    addCracks((name, raster) => list.push({ name, raster })); // boss wounds drawn at this atlas's detail
     const { raster, json } = packAtlas(list, 1024, 2, 'enemies.png');
     mkdirSync(join(assets, 'bg', id), { recursive: true });
     write(`bg/${id}/enemies.png`, raster.toPNG());
