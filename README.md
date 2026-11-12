@@ -283,8 +283,10 @@ domem pod czerwoną dachówką z shisa na kalenicy, przybudówką i grządkami, 
 (zapadnięta dawno jaskinia: wąwóz subtropikalnego lasu między wapiennymi ścianami, drewniana kładka z grupą i przewodnikiem,
 paprocie drzewiaste, Cave Café we wnęce skały u wejścia ze stolikami pod girlandą żarówek, dawne jaskinie modlitewne w ścianach,
 wielki banian Ufushu Gajumaru spuszczający korzenie po klifie, smugi światła przez korony) → jaskinia Gyokusendō: na końcu
-doliny ścieżka schodzi pod skalny nawis i lot wchodzi pod ziemię (chmury i mewy znikają, skała zamyka się po bokach ekranu,
-oczy na chwilę przyzwyczajają się do ciemności): sale stalagmitów w złotym, zielonym, niebieskim i fioletowym świetle,
+doliny ścieżka schodzi pod skalny nawis i lot wchodzi pod ziemię (nawis ze stalaktytami przelatuje nad ekranem szybciej niż
+ziemia, chmury i mewy znikają, po bokach przesuwają się skalne okapy, a nad dnem kiście nacieków — warstwa stropu w paralaksie;
+oczy na chwilę przyzwyczajają się do ciemności): sale stalagmitów, polewy naciekowe w pierścieniach, draperie u stóp ścian, bloki
+obrywu, kałuże odbijające światła w złotym, zielonym, niebieskim i fioletowym świetle,
 podziemna rzeka świecąca na niebiesko nad łachami piasku, wodospad, las „włóczni”, tarasy wapienne z jeziorkami, stalowe
 pomosty z lampkami, kolumny, po których przesuwa się kolor, krople na wodzie; schody w górę i wyjście do Nahy pod oślepiającym
 dniem → Naha w drodze na Shuri: zbocze z grobami-żółwiami

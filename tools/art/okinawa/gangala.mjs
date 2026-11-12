@@ -293,34 +293,61 @@ export function paintCave(k) {
 
   // the formations: stalagmites, columns in the halls, the forest of spears; each cone of limestone a height
   const forms = [];
-  const tryForm = (x, u, r, h, kind) => {
-    if (!free(x, u, r)) return false;
-    for (const f of forms) if (Math.hypot(f.x - x, f.u - u) < (f.r + r) * 0.75) return false;
-    forms.push({ x, u, r, h, kind });
+  const FK = { mite: 1, spear: 2, column: 3, dome: 4, block: 5 };
+  const tryForm = (x, u, r, h, kind, overlap = 0.75) => {
+    if (!free(x, u, kind === 'dome' ? r * 0.6 : r)) return false;
+    for (const f of forms) if (Math.hypot(f.x - x, f.u - u) < (f.r + r) * (f.kind === 'dome' || kind === 'dome' ? 0.3 : overlap)) return false;
+    // a stalagmite is seldom round from above: leaning, grown together with a neighbour, drawn out along a crack
+    const el = kind === 'mite' || kind === 'block' ? 1 + g() * (kind === 'block' ? 0.5 : 0.7) : 1;
+    const ang = g() * Math.PI;
+    forms.push({ x, u, r, h, kind, fk: FK[kind], el, ca: Math.cos(ang), sa: Math.sin(ang) });
     return true;
   };
   const COLUMNS = [[132, 2168], [44, 2252], [140, 2390], [96, 2440], [120, 2520]];
   for (const [x, u] of COLUMNS) tryForm(x, u, 6.5, 16, 'column') || tryForm(x + 10, u + 6, 6.5, 16, 'column');
-  for (let q = 0; q < 3600; q++) {
+  // flowstone domes first, low and wide, the stalagmites growing on and round them
+  for (let q = 0; q < 220; q++) {
+    const u = C0 + 20 + g() * (C1 - C0 - 50);
+    const x = 14 + g() * (W - 28);
+    if (fbm(x, u, { seed: 343, scale: 20, octaves: 2 }) < 0.5) continue;
+    tryForm(x, u, 5 + g() * 5, 2.4 + g() * 1.6, 'dome');
+  }
+  for (let q = 0; q < 5200; q++) {
     const u = C0 + g() * (C1 - C0);
     const x = g() * W;
     const spears = u > 2335 && u < 2455;
-    const r = spears ? 0.9 + g() * 1.4 : 1.6 + g() * g() * 4.4;
+    // breakdown: blocks fallen from the roof, here and there
+    if (!spears && g() < 0.015) {
+      const r = 1.5 + g() * 1.6;
+      tryForm(x, u, r, 1.6 + g() * 2.2, 'block');
+      continue;
+    }
+    const r = spears ? 0.9 + g() * 1.4 : 1.4 + g() * g() * 4.6;
     // they grow in clusters, open floor between (the forest of spears thicker, but in clumps too)
     const m = fbm(x, u, { seed: 343, scale: 20, octaves: 2 });
-    if (g() > (m - (spears ? 0.36 : 0.46)) * 3.2) continue;
-    tryForm(x, u, r, r * (spears ? 3.4 : 2.7), spears ? 'spear' : 'mite');
+    if (g() > (m - (spears ? 0.34 : 0.4)) * 3.6) continue;
+    if (!tryForm(x, u, r, r * (spears ? 3.4 : 2.6 + g() * 0.8), spears ? 'spear' : 'mite')) continue;
+    // and the little ones round a big one
+    if (!spears && r > 3.2)
+      for (let n = 2 + Math.floor(g() * 4); n > 0; n--) {
+        const a = g() * 6.283;
+        const rr = 0.7 + g() * 1.3;
+        const dd = r + rr * (0.6 + g() * 0.8);
+        tryForm(x + Math.cos(a) * dd, u + Math.sin(a) * dd, rr, rr * 2.8, 'mite', 0.6);
+      }
   }
   const CELL = 8;
   const gw = Math.ceil(W / CELL) + 1;
   const grid = new Map();
-  for (const f of forms)
-    for (let cx = Math.floor((f.x - f.r) / CELL); cx <= Math.floor((f.x + f.r) / CELL); cx++)
-      for (let cu = Math.floor((f.u - f.r) / CELL); cu <= Math.floor((f.u + f.r) / CELL); cu++) {
+  for (const f of forms) {
+    const ext = f.r * f.el * 1.25; // (drawn out, knobbly: it reaches past its radius)
+    for (let cx = Math.max(0, Math.floor((f.x - ext) / CELL)); cx <= Math.min(gw - 1, Math.floor((f.x + ext) / CELL)); cx++)
+      for (let cu = Math.floor((f.u - ext) / CELL); cu <= Math.floor((f.u + ext) / CELL); cu++) {
         const key = cu * gw + cx;
         if (!grid.has(key)) grid.set(key, []);
         grid.get(key).push(f);
       }
+  }
 
   // the lights: lamps along the walkway, floods on the great columns and over the halls, lamps under the river
   const HALL = (u) =>
@@ -347,7 +374,7 @@ export function paintCave(k) {
   const lgw = Math.ceil(W / LCELL) + 1;
   const lgrid = new Map();
   for (const l of lights)
-    for (let cx = Math.floor((l.x - l.r) / LCELL); cx <= Math.floor((l.x + l.r) / LCELL); cx++)
+    for (let cx = Math.max(0, Math.floor((l.x - l.r) / LCELL)); cx <= Math.min(lgw - 1, Math.floor((l.x + l.r) / LCELL)); cx++)
       for (let cy = Math.floor((l.y - l.r) / LCELL); cy <= Math.floor((l.y + l.r) / LCELL); cy++) {
         const key = cy * lgw + cx;
         if (!lgrid.has(key)) lgrid.set(key, []);
@@ -359,7 +386,8 @@ export function paintCave(k) {
   // ------------------------------------------------------------ the height of the rock, fine pixel by fine pixel
   const H = new Float32Array(FW * rows);
   const KIND = new Uint8Array(FW * rows); // 0 floor, 1 wall, 2 formation, 3 water, 4 terrace pool, 5 terrace rim
-  const SPEAR = new Uint8Array(FW * rows);
+  const FKP = new Uint8Array(FW * rows); // which kind of formation the pixel is on
+  const RIM = new Float32Array(FW * rows); // where on it (0 at its foot .. 1 at its top), for the growth rings
   const TIP = new Uint8Array(FW * rows); // the wet tips of the formations, catching every light
   const AO = new Float32Array(FW * rows); // the floor darkening where it meets a formation
   for (let j = 0; j < rows; j++) {
@@ -391,17 +419,29 @@ export function paintCave(k) {
       const cell = grid.get(Math.floor(u / CELL) * gw + Math.floor(x / CELL));
       if (cell && kind !== 3)
         for (const f of cell) {
-          const d = Math.hypot(x - f.x, u - f.u);
+          const ex = x - f.x;
+          const eu = u - f.u;
+          const qa = (ex * f.ca + eu * f.sa) / f.el;
+          const qb = -ex * f.sa + eu * f.ca;
+          let d = f.kind === 'block' ? (Math.max(Math.abs(qa), Math.abs(qb)) * 0.6 + Math.hypot(qa, qb) * 0.5) + (fbm(x * 2, u * 2, { seed: 345, scale: 1.2 }) - 0.5) * f.r * 0.5 : Math.hypot(qa, qb);
+          if (f.kind === 'mite' || f.kind === 'spear') d += (fbm(x * 2, u * 2, { seed: 346, scale: 1.5 }) - 0.5) * f.r * 0.25; // knobbly
           if (d >= f.r) continue;
-          const fh = f.h * (1 - d / f.r) ** (f.kind === 'column' ? 0.7 : 1.35);
+          const t = 1 - d / f.r;
+          const fh = f.kind === 'dome' ? f.h * Math.sqrt(1 - (1 - t) ** 2) : f.kind === 'block' ? f.h * Math.min(1, t * 4) : f.h * t ** (f.kind === 'column' ? 0.7 : 1.35);
           if (d > f.r * 0.86 && kind !== 1) AO[i] = Math.max(AO[i], 1 - (d - f.r * 0.86) / (f.r * 0.14));
-          if (fh > h) {
-            TIP[i] = d < f.r * 0.16 ? 1 : 0;
-            h = fh + (kind === 1 ? h * 0.3 : 0);
+          const top = f.kind === 'dome' && kind === 2 ? h + fh * 0.5 : fh; // (a stalagmite on a dome stands on it)
+          if (top > h) {
+            TIP[i] = d < f.r * 0.16 && f.kind !== 'dome' && f.kind !== 'block' ? 1 : 0;
+            h = top + (kind === 1 ? h * 0.3 : 0);
             kind = 2;
-            SPEAR[i] = f.kind === 'spear' ? 1 : 0;
+            FKP[i] = f.fk;
+            RIM[i] = t;
           }
         }
+      if (kind === 0 && fbm(x, u, { seed: 344, scale: 7, octaves: 2 }) > 0.67) {
+        kind = 6; // a pool of still water on the floor, mirroring the lights
+        h = -0.2;
+      }
       H[i] = h;
       KIND[i] = kind;
     }
@@ -431,17 +471,43 @@ export function paintCave(k) {
       if (kind === 3) alb = 0x0a2a44;
       else if (kind === 4) alb = 0x6ab0b8;
       else if (kind === 5) alb = 0xe8dcc0;
+      else if (kind === 6) alb = 0x141c22;
       else if (kind === 2) {
-        alb = rampColor([0xb0a080, 0xcec0a0, 0xe4d8ba, 0xf6eed8], 0.35 + Math.min(1, h / 10) * 0.6 + (v - 0.5) * 0.2, X, Yy);
-        if (SPEAR[i] && h > 1.5) alb = mix(alb, 0xf4ecd8, 0.4);
+        const fk = FKP[i];
+        const t = RIM[i];
+        if (fk === 4) {
+          // flowstone: rings of orange and cream laid down layer on layer
+          const band = (t * 2.2 + fbm(x, u, { seed: 347, scale: 3 }) * 0.8) % 1;
+          alb = band < 0.2 ? 0xd09a64 : band < 0.55 ? 0xf0dab4 : band < 0.7 ? 0xc48c58 : 0xfaecd0;
+        } else if (fk === 5) {
+          alb = rampColor([0x5e5448, 0x766a5a, 0x8e806c, 0xa49680], 0.3 + t * 0.4 + (v - 0.5) * 0.3, X, Yy);
+          if (hashPx(X >> 1, Yy, 348) < 0.05 || hashPx(X, Yy >> 1, 349) < 0.05) alb = 0x3a342c; // its fractures
+        } else {
+          alb = rampColor([0xb0a080, 0xcec0a0, 0xe4d8ba, 0xf6eed8], 0.35 + Math.min(1, h / 10) * 0.6 + (v - 0.5) * 0.2, X, Yy);
+          if ((t * (fk === 3 ? 9 : 5)) % 1 < 0.14) alb = scaleColor(alb, 0.82); // growth rings
+          if (fk === 2 && h > 1.5) alb = mix(alb, 0xf4ecd8, 0.4);
+          else if (fbm(x, u, { seed: 350, scale: 3 }) > 0.62) alb = mix(alb, 0xd8a468, 0.35); // iron-stained
+        }
       } else if (kind === 1) {
-        const band = (h * 0.55 + fbm(x, u, { seed: 335, scale: 5 }) * 2.2) % 1;
-        alb = band < 0.3 ? 0xa87a52 : band < 0.55 ? 0xd2b48a : band < 0.75 ? 0x8a6a4c : 0xe2ccaa;
-      } else alb = rampColor([0x4a4234, 0x5a5040, 0x6a604c, 0x7a705a], 0.3 + v * 0.4 + h * 0.3, X, Yy);
+        const wd = Math.max(caveL(u) - x, x - caveR(u));
+        if (wd < 7) {
+          // draperies hanging down the foot of the wall: thin curtains of calcite, light shining through their edges
+          const fold = (u * 0.8 + fbm(x, u, { seed: 351, scale: 3 }) * 2.4) % 1;
+          alb = fold < 0.18 ? 0x5a4030 : fold < 0.42 ? 0xe8c890 : fold < 0.6 ? 0xc89060 : fold < 0.8 ? 0xf4e2bc : 0xa87048;
+        } else {
+          const band = (h * 0.55 + fbm(x, u, { seed: 335, scale: 5 }) * 2.2) % 1;
+          alb = band < 0.3 ? 0xa87a52 : band < 0.55 ? 0xd2b48a : band < 0.75 ? 0x8a6a4c : 0xe2ccaa;
+        }
+      } else {
+        alb = rampColor([0x4a4234, 0x5a5040, 0x6a604c, 0x7a705a], 0.3 + v * 0.4 + h * 0.3, X, Yy);
+        const crust = fbm(x, u, { seed: 352, scale: 4 });
+        if (crust > 0.58) alb = mix(alb, 0xb8a888, 0.45); // a crust of calcite
+        if (hashPx(X >> 1, Yy >> 1, 353) < 0.04) alb = scaleColor(alb, 0.7); // grit, pebbles
+      }
       // the lights falling on it
-      let lr = 0.1 + dl * 0.9;
-      let lg = 0.1 + dl * 0.9;
-      let lb = 0.14 + dl * 0.84;
+      let lr = 0.13 + dl * 0.87;
+      let lg = 0.12 + dl * 0.88;
+      let lb = 0.16 + dl * 0.82;
       const cand = lgrid.get(Math.floor(y / LCELL) * lgw + Math.floor(x / LCELL));
       if (cand)
         for (const l of cand) {
@@ -479,6 +545,16 @@ export function paintCave(k) {
         gg = 26 + glow * 150 + (rip > 0.62 ? glow * 80 : 0);
         b = 52 + glow * 200 + (rip > 0.62 ? glow * 50 : 0);
         r = r * (1 - dl) + 40 * dl;
+      } else if (kind === 6) {
+        // still water: dark, the lights mirrored in it, a bright rim where it laps the rock
+        r = 14 + (lr - 0.1) * 210;
+        gg = 18 + (lg - 0.1) * 210;
+        b = 26 + (lb - 0.1) * 220;
+        if (KIND[Math.max(0, i - 1)] !== 6 || KIND[Math.min(KIND.length - 1, i + 1)] !== 6 || KIND[Math.max(0, i - FW)] !== 6) {
+          r += 30;
+          gg += 30;
+          b += 34;
+        }
       } else if (kind === 4) {
         // the rimstone pools: still water over pale calcite, the light deep in them
         r *= 0.8;
@@ -486,7 +562,7 @@ export function paintCave(k) {
         b *= 1.3;
       }
       // a wet sparkle where the light is strong
-      if (kind !== 3 && (lr + lg + lb) > 1.2 && hashPx(X, Yy, 337) > 0.992) {
+      if (kind !== 3 && kind !== 6 && (lr + lg + lb) > (kind === 2 ? 0.9 : 1.2) && hashPx(X, Yy, 337) > (kind === 2 ? 0.984 : 0.992)) {
         r += 70;
         gg += 70;
         b += 70;
@@ -519,6 +595,114 @@ export function paintCave(k) {
       if (d > 8.6) return STEEL[0];
       return scaleColor((X + Yy) % 6 < 1 ? STEEL[1] : STEEL[2], d < 1.5 ? 0.6 : 0.42);
     });
+
+  // ------------------------------------------------------------ the roof: rock and hanging formations over the flight, nearer the
+  // eye than the floor, so they pass faster (Props' z): the overhang of the mouth going over, the rock closing in at the sides,
+  // clumps of stalactites drifting by, and the overhang of the way out. All under the enemies and their bullets.
+  const ROOF = [0x120e0c, 0x221c18, 0x342c26, 0x4c4038, 0x6c5e52, 0x94826e];
+  const rr = rng(4100);
+  const hex = (c) => [(c >> 16) & 255, (c >> 8) & 255, c & 255];
+  const shade = (c, k2) => scaleColor(c, k2);
+  /** A stalactite in fine pixels: from (X, Yy) pointing along (dx, dy), base half-width w, length n; lit by c from its tip side. */
+  const stal = (r, X, Yy, dx, dy, w, n, c, glow) => {
+    for (let q = 0; q < n; q++) {
+      const t = q / n;
+      const hw = Math.max(0.5, w * (1 - t) ** 0.8);
+      for (let a = -Math.ceil(hw); a <= Math.ceil(hw); a++) {
+        if (Math.abs(a) > hw) continue;
+        const side = a / hw; // -1..1 across
+        const lit = 0.35 + 0.65 * Math.max(0, 0.5 - side * 0.5) * (0.4 + 0.6 * t);
+        const col = mix(ROOF[2 + Math.min(3, Math.floor(t * 3))], c, Math.min(1, t * 0.8) * 0.7);
+        r.px(Math.round(X + dx * q - dy * a), Math.round(Yy + dy * q + dx * a), shade(col, lit + (q % 7 === 0 ? -0.1 : 0)));
+      }
+    }
+    if (glow) r.px(Math.round(X + dx * n), Math.round(Yy + dy * n), 0xfff4d8, 0.9); // the drop at the tip
+  };
+  /** A frame of roof rock: inside(fx, fy) says where the rock is, edge(fx, fy) how near its rim (0..1, lit there by c). */
+  const roofFrame = (w, h, inside, edge, c, extra) =>
+    k.sprite(w, h, 2300, (r) => {
+      for (let j = 0; j < h * S; j++)
+        for (let i = 0; i < w * S; i++) {
+          if (!inside(i, j)) continue;
+          const e = edge(i, j);
+          const n = fbm(i / 4, j / 4, { seed: 4101, scale: 3, octaves: 3 });
+          let col = rampColor(ROOF, 0.1 + n * 0.55 + e * 0.35, i, j);
+          if (e > 0.6) col = mix(col, c, (e - 0.6) * 1.6);
+          if (hashPx(i >> 1, j >> 1, 4102) < 0.04) col = shade(col, 0.7);
+          r.px(i, j, col);
+        }
+      extra(r);
+    }, false);
+  // the overhang at the mouth: rock across the whole way, its front lit by the day, stalactites hanging from it
+  const archFrame = (flip, c) => {
+    const w = 192;
+    const h = 84;
+    const lip = (i) => (40 + (fbm(i / 9, flip ? 7 : 3, { seed: 4103, scale: 4 }) - 0.5) * 22 + 8 * Math.sin(i / 40)) * S;
+    const sy = (j) => (flip ? h * S - 1 - j : j);
+    return roofFrame(w, h, (i, j) => sy(j) < lip(i), (i, j) => Math.max(0, 1 - (lip(i) - sy(j)) / 30), c, (r) => {
+      for (let q = 0; q < 90; q++) {
+        const i = Math.floor(rr() * w * S);
+        const len = (6 + rr() * rr() * 34) * S * 0.5;
+        const wb = 2 + rr() * 5;
+        const j0 = lip(i) - 3;
+        stal(r, i, flip ? h * S - 1 - j0 : j0, 0, flip ? -1 : 1, wb, len, c, rr() < 0.5);
+      }
+    });
+  };
+  const ARCH_IN = archFrame(false, 0xffdcaa);
+  const ARCH_OUT = archFrame(true, 0xfff0d0);
+  kit.loop(-6, C0 + 62, [ARCH_IN], { z: 0.75, ax: 90, au: C0 + 20, d: 0.97 });
+  kit.loop(-6, C1 + 30, [ARCH_OUT], { z: 0.75, ax: 90, au: C1 - 12, d: 0.97 });
+  // the rock closing in at the sides, one piece after another, its rim lit in the colour of the hall
+  const sideFrame = (right, c, seed) => {
+    const w = 40;
+    const h = 120;
+    const rim = (j) => (12 + fbm(seed, j / 10, { seed: 4104, scale: 3, octaves: 2 }) * 16 + Math.sin(j / 40 + seed) * 4) * S;
+    const sx = (i) => (right ? w * S - 1 - i : i);
+    const fade = (j) => Math.min(1, j / 30, (h * S - 1 - j) / 30); // the ends tapering into the next piece
+    return roofFrame(w, h, (i, j) => sx(i) < rim(j) * (0.55 + 0.45 * fade(j)), (i, j) => Math.max(0, 1 - (rim(j) * (0.55 + 0.45 * fade(j)) - sx(i)) / 24), c, (r) => {
+      for (let q = 0; q < 26; q++) {
+        const j = Math.floor(rr() * h * S);
+        const i0 = rim(j) * (0.55 + 0.45 * fade(j)) - 3;
+        const len = (4 + rr() * rr() * 16) * S * 0.5;
+        stal(r, right ? w * S - 1 - i0 : i0, j, right ? -1 : 1, 0.15 * (rr() - 0.5), 1.5 + rr() * 3.5, len, c, rr() < 0.4);
+      }
+    });
+  };
+  const sides = {};
+  for (let u = C0 + 46, n = 0; u < C1 - 60; u += 104, n++) {
+    const c = HALL(u)[0];
+    const key = (k2) => `${c}_${k2}_${n % 2}`;
+    sides[key('l')] ??= sideFrame(false, c, n % 2 ? 3 : 9);
+    sides[key('r')] ??= sideFrame(true, c, n % 2 ? 6 : 12);
+    kit.loop(-14, u + 120, [sides[key('l')]], { z: 0.45, ax: 90, au: u + 60, d: 0.96, a: 0.95 });
+    kit.loop(W - 26, u + 172, [sides[key('r')]], { z: 0.45, ax: 90, au: u + 112, d: 0.96, a: 0.95 });
+  }
+  // clumps of stalactites hanging from the roof, nearer than the floor: soda straws, a drop shining on every tip
+  const clump = (c) => k.sprite(26, 26, 2300, (r) => {
+    const cx = 39;
+    const cy = 39;
+    for (let j = 0; j < 78; j++)
+      for (let i = 0; i < 78; i++) {
+        const d = Math.hypot(i - cx, j - cy) / (12 + fbm(i / 6, j / 6, { seed: 4105, scale: 2 }) * 8);
+        if (d < 1) r.px(i, j, rampColor(ROOF, 0.15 + (1 - d) * 0.3, i, j), Math.min(1, (1 - d) * 3));
+      }
+    for (let q = 0; q < 34; q++) {
+      const a = rr() * 6.283;
+      const r0 = 6 + rr() * 8;
+      const len = 6 + rr() * 22;
+      stal(r, cx + Math.cos(a) * r0, cy + Math.sin(a) * r0, Math.cos(a) * 0.4, 0.92, 1 + rr() * 2.4, len, c, true);
+    }
+  }, false);
+  const clumps = {};
+  for (let q = 0; q < 16; q++) {
+    const u = C0 + 40 + rr() * (C1 - C0 - 100);
+    const x = 18 + rr() * (W - 62);
+    const c = HALL(u)[q % HALL(u).length];
+    clumps[c] ??= clump(c);
+    kit.loop(x, u + 13, [clumps[c]], { z: 0.3, ax: 90, au: u, d: 0.95, a: 0.85 });
+  }
+  void hex;
 
   // ------------------------------------------------------------ what moves: the falls, light on the water, drips, the colours changing
   {
