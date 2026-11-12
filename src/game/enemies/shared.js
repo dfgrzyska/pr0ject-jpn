@@ -26,6 +26,7 @@ export const EXTRAS = {
   duo: null, // Osaka manzai pair
   rage: false, // its partner fell: furious
   segs: null, // tentacle segments (extra hit circles)
+  shotSegs: null, // circles only shots hit, each taking its `take` of the damage (Ja-odori's body)
   kuroko: null, // the puppet's puppeteers (and the Dutch-ship float's batteries)
   burnt: null, // the float's burnt-out sides
   master: null,

@@ -808,8 +808,10 @@ export class Stage extends Phaser.Scene {
         const r = e.radius + s.radius;
         const dx = e.x - s.x;
         const dy = e.y - s.y;
-        if (dx * dx + dy * dy < r * r || this.hitSegs(e.segs, s.x, s.y, s.radius, 1)) {
-          this.enemies.damage(e, s.damage, false, s.bean);
+        // (shotSegs: circles only shots hit, each taking `take` of the damage: the dragon's body)
+        const part = dx * dx + dy * dy < r * r || this.hitSegs(e.segs, s.x, s.y, s.radius, 1) ? 1 : this.hitShotSegs(e.shotSegs, s.x, s.y, s.radius);
+        if (part) {
+          this.enemies.damage(e, s.damage * part, false, s.bean);
           if (s.bean) this.fx.beanPop(s.x, s.y - 2);
           else if (Math.random() < 0.5) this.fx.spark(s.x, s.y - 2);
           if (s.pierce > 0 && (e.type === 'popcorn' || e.type === 'diver')) {
@@ -897,12 +899,20 @@ export class Stage extends Phaser.Scene {
       g.lineStyle(w, 0x40ff60, e.ghost || e.pass ? 0.35 : 0.9).strokeCircle(e.x, e.y, e.radius);
       if (!e.ground && !e.harmless) g.lineStyle(w, 0xff4040, 0.8).strokeCircle(e.x, e.y, e.thief ? e.radius + 3 : e.radius * 0.7);
       if (e.segs) for (const sg of e.segs) g.lineStyle(w, 0x40c0ff, 0.9).strokeCircle(sg.x, sg.y, sg.r);
+      if (e.shotSegs) for (const sg of e.shotSegs) g.lineStyle(w, 0x40ff60, 0.5).strokeCircle(sg.x, sg.y, sg.r); // (shots only)
     }
     // enemy bullets (magenta) and the player's shots (yellow)
     for (const b of this.bullets.pool.live) if (!b.dead) g.lineStyle(w, 0xff40ff, 0.9).strokeCircle(b.x, b.y, b.radius);
     for (const sh of this.player.shots.live) if (!sh.dead) g.lineStyle(w, 0xffe040, 0.8).strokeCircle(sh.x, sh.y, sh.radius);
     const p = this.player;
     g.lineStyle(w, 0xffffff, 0.9).strokeCircle(p.x, p.y, p.ship.hit ?? PLAYER.hitRadius);
+  }
+
+  /** The share of a hit the first shot-only circle under (x, y) takes, or 0. */
+  hitShotSegs(segs, x, y, r) {
+    if (!segs) return 0;
+    for (const sg of segs) if ((sg.x - x) ** 2 + (sg.y - y) ** 2 < (sg.r + r) ** 2) return sg.take;
+    return 0;
   }
 
   hitSegs(segs, x, y, r, scale) {

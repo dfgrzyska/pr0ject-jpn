@@ -6,6 +6,9 @@ import { hasEnemyFrame } from '../enemyArt.js';
 // the Dutch-ship float's two broadside batteries: separate targets riding on its sides
 const BATTERY = { hp: 85, weight: 0, score: 2500, radius: 6, explosion: 'm' };
 
+// Ja-odori's body segments take this share of a hit on the head
+const JA_BODY = 0.4;
+
 export const nagasaki = {
   /** A pulsing glow round the pearl (and its twin in phase 3), only to look at. */
   pearlGlow(g, e) {
@@ -352,6 +355,11 @@ export const nagasaki = {
       // Each scale section points along the chain (local +y toward the tail) so the body reads as one coil.
       const prev = i === 0 ? e : g.body[i - 1];
       p.setRotation(Math.atan2(p.y - prev.y, p.x - prev.x) - Math.PI / 2);
+      // the scaled body can be shot too, for JA_BODY of a hit on the head (it is not solid to fly into)
+      const sg = (e.shotSegs ??= [])[i] ?? (e.shotSegs[i] = { x: 0, y: 0, r: 0, take: JA_BODY });
+      sg.x = p.x;
+      sg.y = p.y;
+      sg.r = 6 * (1 - i * 0.035) * size;
     }
     if (g.pearl2) {
       // phase 3: the pearl split into two orbs circling the head

@@ -17,6 +17,8 @@ import { hiroshima } from './enemies/hiroshima.js';
 // its puppeteers): its name on the banner
 const HEAVY_P2 = { tanuki: 'TANUKI PIJE SAKE', manta: 'KORALOWA SPIRALA', raiju: 'PRZEŁADOWANIE PIORUNA', wani: 'FAŁSZYWE CIENIE', heikegani: 'PĘKNIĘTY PANCERZ' };
 // the two halves of a burst volcanic bomb
+// the manta's escorts (its second phase): two small rays on its wingtips
+const ESCORT = { hp: 45, weight: 0, score: 400, radius: 7, explosion: 's' };
 const FRAG = { hp: 1, weight: 0, score: 50, radius: 3, explosion: 's' };
 
 // How a boss or heavy goes out once its chain of blasts is over (see goDown), and the colour of what a
@@ -742,6 +744,7 @@ export class Enemies {
             // the miniboss's second phase
             e.p2 = true;
             this.phaseBreak(e, e.x, e.y, 2, HEAVY_P2[e.kind ?? 'manta']);
+            if ((e.kind ?? 'manta') === 'manta') this.mantaEscorts(e);
           }
           if (e.kind === 'yukionna') this.yukiOnna(e, dt, b);
           else if (e.kind === 'tanuki') this.tanuki(e, dt, b);
@@ -760,6 +763,9 @@ export class Enemies {
           break;
         case 'decoy':
           this.decoy(e, dt, b);
+          break;
+        case 'escort':
+          this.mantaEscort(e, dt, b);
           break;
         case 'frag':
           e.vy += 70 * dt;
@@ -1146,6 +1152,35 @@ export class Enemies {
           b.ring(mx, my, 10, e.shots * 0.31, slow);
         } else b.fan(mx, my, ang, 5, 0.84, slow);
       }
+    }
+  }
+
+  /** The manta's second phase: two small rays come up under its wingtips and fly with it. */
+  mantaEscorts(m) {
+    for (const side of [-1, 1]) {
+      const e = this.pool.spawn('manta_0', m.x + side * 34, m.y + 30, {
+        ...EXTRAS, type: 'escort', def: ESCORT, hp: ESCORT.hp, maxHp: ESCORT.hp, radius: ESCORT.radius, age: 0, seen: 1, state: 'fight',
+        timer: side < 0 ? 1.2 : 1.95, flash: 0, flashCool: 0, ground: false, head: null, master: m, side,
+      });
+      e.play('manta').setScale(0.45 * e.base).setDepth(DEPTH.air - 0.05);
+    }
+  }
+
+  /** An escort ray: it keeps to its wingtip, swaying, and fires an aimed shot now and then; it goes with the manta. */
+  mantaEscort(e, dt, b) {
+    const m = e.master;
+    if (!m || m.dead || m.hp <= 0 || m.state === 'leave') {
+      this.scene.fx.explode(e.x, e.y, 's');
+      this.remove(e);
+      return;
+    }
+    const tx = m.x + e.side * 34 + Math.sin(e.age * 2.2 + e.side) * 5;
+    const ty = m.y + 12 + Math.sin(e.age * 1.7 + e.side * 1.3) * 5;
+    e.x += (tx - e.x) * Math.min(1, dt * 5);
+    e.y += (ty - e.y) * Math.min(1, dt * 5);
+    if ((e.timer -= dt) <= 0) {
+      e.timer = 1.5;
+      if (this.canFire(e)) b.fire(e.x, e.y + 4, this.aimAt(e, 0, 4), slow);
     }
   }
 
