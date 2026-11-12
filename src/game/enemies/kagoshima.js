@@ -2,7 +2,8 @@
 // Methods of Enemies (src/game/Enemies.js mixes them in), so `this` is the enemies of the stage.
 import Phaser from 'phaser';
 import { DEPTH, FAIR, VIEW } from '../../config.js';
-import { slow, normal, DOWN, TAU } from './shared.js';
+import { slow, normal, DOWN, TAU, NO_PROPS } from './shared.js';
+import { hasEnemyFrame } from '../enemyArt.js';
 
 // Sakurajima: HP of each side vent and of the crater; below `erupt` of the crater's life it erupts (phase 3)
 const VOLCANO = { vent: 360, crater: 1330, erupt: 0.4 };
@@ -98,6 +99,7 @@ export const kagoshima = {
    */
   raiju(e, dt, b) {
     const s = this.scene;
+    this.raijuSparks(e);
     if (e.state === 'enter') {
       e.y += Math.max(6, (64 - e.y) * 0.8) * dt;
       if (e.y >= 63) Object.assign(e, { state: 'fight', fight: 0, timer: 0.8, patternIndex: 0, step: 0, dash: null });
@@ -148,6 +150,17 @@ export const kagoshima = {
         e.timer = 0.6;
         if (++e.step >= 2) this.nextPattern(e);
     }
+  },
+
+  /** Lightning crackling in its fur (only to look at): brighter as it winds up a charge, and in phase 2. */
+  raijuSparks(e) {
+    if (!hasEnemyFrame('raiju_spark_0') || NO_PROPS) return;
+    if (!e.fxLayer) e.fxLayer = this.segPool.spawn('raiju_spark_0', e.x, e.y).setDepth(e.depth + 0.01).setBlendMode(Phaser.BlendModes.ADD);
+    const windup = e.dash && e.dash.t < 0.8;
+    const t = e.fight ?? 0;
+    e.fxLayer.setFrame(`raiju_spark_${Math.floor(t * (windup ? 24 : 12)) % 4}`)
+      .setPosition(e.x, e.y).setScale(e.scaleX, e.scaleY).setFlipX(e.flipX).setVisible(e.visible)
+      .setAlpha(e.alpha * (windup ? 1 : e.p2 ? 0.85 : 0.5 + 0.3 * (Math.floor(t * 3) % 2)));
   },
 
   raijuDash(e, dt, b) {
@@ -352,7 +365,9 @@ export const kagoshima = {
     if (g.parts.some((p) => p.role === 'vent' && !p.dead && p.group === g)) return;
     Object.assign(g, { phase: 0, step: 0, timer: 1.4 });
     g.crater.invuln = false;
-    g.crater.play('crater');
+    // (the crust breaking open, then the lava churning; to look at only, the crater is open to shots at once)
+    if (this.scene.anims.exists('crater_open') && hasEnemyFrame('crater_open_0')) g.crater.play('crater_open').chain('crater');
+    else g.crater.play('crater');
     s.bullets.cancelAll(s.fx);
     s.cameras.main.shake(700, 0.006);
     this.phaseBreak(g, g.crater.x, g.crater.y, 2, 'KRATER SIĘ OTWIERA!');

@@ -342,6 +342,9 @@ export function beppuEnemies(add) {
     for (let p = 0; p < 3; p++) add(`oni_${p}${broken ? '_b' : ''}`, oni540(p, broken));
     add(`oni_hurt${broken ? '_b' : ''}`, oni540(3, broken));
   }
+  // step 2a: phase 3, the kanabō split open as well (and the horn still snapped)
+  for (let p = 0; p < 3; p++) add(`oni_${p}_c`, oni540(p, true, true));
+  add('oni_hurt_c', oni540(3, true, true));
   add('masu', masu());
 }
 export const BEPPU_PORTRAITS = ['oni_0'];

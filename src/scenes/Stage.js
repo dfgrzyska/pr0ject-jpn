@@ -167,6 +167,8 @@ export class Stage extends Phaser.Scene {
     this.stampChance = false;
     this.debugStart = Number(q.get('t')) || 0;
     this.player.god = q.has('god');
+    // debug: ?hitbox outlines what can be hit (green: shots, red: ramming, the extra circles of tentacles and coils)
+    this.hitboxes = q.has('hitbox') ? this.add.graphics().setDepth(DEPTH.overlay + 3) : null;
     if (WEAPONS[q.get('weapon')]) this.player.weapon = q.get('weapon');
     if (q.get('power')) this.player.level = Phaser.Math.Clamp(Number(q.get('power')), 1, PLAYER.maxPower);
 
@@ -740,6 +742,7 @@ export class Stage extends Phaser.Scene {
     this.fx.update(dt, this.parallax);
     if (playing) this.scenicView?.update(dt);
     if (playing) this.collide();
+    if (this.hitboxes) this.drawHitboxes();
 
     if (playing && this.stage.boss) {
       if (this.bossDown && (this.scenicView ? this.scenicView.done : (this.bossClearT -= dt) <= 0)) this.stageClear();
@@ -882,6 +885,20 @@ export class Stage extends Phaser.Scene {
         return;
       }
     }
+  }
+
+  /** ?hitbox: the circles collide() tests, drawn over the sprites they belong to (only watches, changes nothing). */
+  drawHitboxes() {
+    const g = this.hitboxes.clear();
+    const w = 1 / RENDER_SCALE; // one buffer pixel wide
+    for (const e of this.enemies.live) {
+      if (e.dead) continue;
+      g.lineStyle(w, 0x40ff60, e.ghost || e.pass ? 0.35 : 0.9).strokeCircle(e.x, e.y, e.radius);
+      if (!e.ground && !e.harmless) g.lineStyle(w, 0xff4040, 0.8).strokeCircle(e.x, e.y, e.thief ? e.radius + 3 : e.radius * 0.7);
+      if (e.segs) for (const sg of e.segs) g.lineStyle(w, 0x40c0ff, 0.9).strokeCircle(sg.x, sg.y, sg.r);
+    }
+    const p = this.player;
+    g.lineStyle(w, 0xffffff, 0.9).strokeCircle(p.x, p.y, p.ship.hit ?? PLAYER.hitRadius);
   }
 
   hitSegs(segs, x, y, r, scale) {

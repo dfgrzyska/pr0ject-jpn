@@ -48,7 +48,7 @@ function ink(s, pts, c = SINEW, a = 0.85) {
   for (let k = 0; k < pts.length - 1; k++) s.line(pts[k][0], pts[k][1], pts[k + 1][0], pts[k + 1][1], c, 1, a);
 }
 
-function kanabo(s, x0, y0, x1, y1) {
+function kanabo(s, x0, y0, x1, y1, cracked = false) {
   const r0 = 4.6;
   const r1 = 10.5;
   const dx = x1 - x0;
@@ -92,9 +92,32 @@ function kanabo(s, x0, y0, x1, y1) {
   const ty = y0 - (dy / l) * 9;
   s.ellipse(tx, ty, 3.4, 3.4, 'y', { flat: 0.6 });
   s.poly([[tx - 3, ty + 2], [tx + 3, ty + 2], [tx + 4, ty + 16], [tx - 4, ty + 16]], 'r', { flat: 0.55, pat: fur(Math.PI / 2, { amt: 0.3, len: 7, w: 1 }) });
+  if (!cracked) return;
+  // phase 3: the iron split along the shaft, hell's red glowing out of the split, a chip knocked off the head
+  const at = (t, side) => {
+    const r = r0 + (r1 - r0) * Math.min(1, t * 1.25);
+    return [x0 + dx * t + nx * r * side, y0 + dy * t + ny * r * side];
+  };
+  const pts = [];
+  for (let k = 0; k <= 9; k++) {
+    const t = 0.5 + k * 0.05;
+    pts.push(at(t, (k % 2 ? 0.35 : -0.25) * (1 - k / 12)));
+  }
+  for (let k = 1; k < pts.length; k++) {
+    s.line(pts[k - 1][0], pts[k - 1][1], pts[k][0], pts[k][1], 0x1a0608, k > 2 && k < 8 ? 3 : 2);
+    s.line(pts[k - 1][0], pts[k - 1][1], pts[k][0], pts[k][1], k > 2 && k < 8 ? 0xff3a1a : 0x8a1a10, 1);
+  }
+  // a branch off it, and the notch where a piece is gone (the stud with it)
+  const [bx, by] = pts[5];
+  const [ex, ey] = at(0.68, 0.95);
+  s.line(bx, by, ex, ey, 0x1a0608, 2);
+  s.line(bx, by, (bx + ex) / 2, (by + ey) / 2, 0xff5a2a, 1);
+  const [cxp, cyp] = at(0.86, 1);
+  s.ellipse(cxp, cyp, 4.5, 4.5, 'i', { bias: -0.35 });
+  s.dot(cxp - nx, cyp - ny, 2.2, 0x1a0608);
 }
 
-export function oni(pose, broken = false) {
+export function oni(pose, broken = false, cracked = false) {
   const s = new HiSprite(189, 204, RAMPS);
   const cx = 94.5;
   const hurt = pose === 3;
@@ -118,7 +141,7 @@ export function oni(pose, broken = false) {
 
   // ---- the kanabō: on the shoulder (0, 3), raised overhead (1), smashed down at his side (2)
   const clubAt = { 0: [56, 112, 18, 8], 1: [70, 34, 8, 2], 2: [52, 120, 14, 196], 3: [56, 112, 18, 10] }[pose];
-  if (pose !== 1) kanabo(s, ...clubAt);
+  if (pose !== 1) kanabo(s, ...clubAt, cracked);
 
   // ---- the legs: sinewy, knees knobbed, splayed in a crouch; three-clawed feet; hair on the shins; gold anklets
   for (const sx of [-1, 1]) {
@@ -192,7 +215,7 @@ export function oni(pose, broken = false) {
     s.ellipse(36, 66, 8.5, 8.5, 'O', { bias: 0.08, ...F });
     s.tube(36, 66, handR[0], handR[1], 7.5, 'O', { rb: 6.5, ...F });
     bodyHair(s, 38, 62, handR[0], handR[1] + 6, 7, 7);
-    kanabo(s, ...clubAt);
+    kanabo(s, ...clubAt, cracked);
     s.ellipse(handR[0], handR[1], 8.5, 8.5, 'O', F);
     s.ellipse(handL[0], handL[1], 8.5, 8.5, 'O', F);
   } else {

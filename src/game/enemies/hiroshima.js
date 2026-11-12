@@ -10,6 +10,7 @@ import Phaser from 'phaser';
 import { DEPTH, VIEW } from '../../config.js';
 import { volley } from '../../difficulty.js';
 import { slow, normal, fast, DOWN, TAU } from './shared.js';
+import { hasEnemyFrame } from '../enemyArt.js';
 
 // Sankibō: the Tengu's HP and each brazier's; `barrier`: what gets through its barrier of fire while both
 // braziers burn; below `wrath` of its life, phase 3; `gale`: px/s its fan's wind pushes the ship
@@ -87,8 +88,17 @@ export const hiroshima = {
   },
 
   // ---------------------------------------------------------------- Heike-gani (Samurai Crab Miniboss)
+  /** Phase 2 (PĘKNIĘTY PANCERZ): the same crab with its carapace split (only to look at). */
+  heikeWorn(e) {
+    if (!e.p2 || !hasEnemyFrame('heike_0_c')) return;
+    const anim = e.anims.isPlaying ? e.anims.currentAnim?.key : null;
+    if (anim === 'heike') e.play({ key: 'heike_c', startFrame: e.anims.currentFrame?.index ?? 0 });
+    else if (!anim && e.frame.name === 'heike_guard') e.setFrame('heike_guard_c');
+  },
+
   updateHeike(e, dt, b) {
     const s = this.scene;
+    this.heikeWorn(e);
     if (e.state === 'enter') {
       e.y += Math.max(8, (68 - e.y) * 0.9) * dt;
       if (e.y >= 67) {
@@ -357,6 +367,7 @@ export const hiroshima = {
       if (allDone) g.slashes = null;
     }
 
+    if (g.fanUp > 0 && (g.fanUp -= dt) <= 0 && body.frame.name.startsWith('sankibo_fan_up')) body.setFrame(g.galeDir > 0 ? 'sankibo_fan_r' : 'sankibo_fan_l');
     if (g.state !== 'fight' || !this.canFire(body)) return;
 
     g.timer -= dt;
@@ -369,6 +380,11 @@ export const hiroshima = {
         g.galeDir = -g.galeDir;
         body.anims.stop();
         body.setFrame(g.galeDir > 0 ? 'sankibo_fan_r' : 'sankibo_fan_l');
+        // (the wind-up, the fan raised overhead for a moment before the sweep: only to look at, the gale is on)
+        if (hasEnemyFrame('sankibo_fan_up_r')) {
+          body.setFrame(g.galeDir > 0 ? 'sankibo_fan_up_r' : 'sankibo_fan_up_l');
+          g.fanUp = 0.12;
+        }
         s.parallax.windTarget = g.galeDir * (g.enraged ? 78 : 58);
         s.fx.text(body.x, body.y - 22, 'KAZE YO!', 0.8, 0xffd898);
       }

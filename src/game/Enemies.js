@@ -367,6 +367,7 @@ export class Enemies {
     if (e.type === 'decoy') {
       // a fake tanuki turns back into leaves
       s.fx.leaves(e.x, e.y, 16);
+      this.tanukiPoof(e.x, e.y);
       s.sfx.explode('s');
       s.fx.text(e.x, e.y - 14, `${e.def.score * s.score.mult}`, 0.9, 0x9cf09a);
       this.remove(e);
@@ -639,6 +640,15 @@ export class Enemies {
     }
   }
 
+  /**
+   * Randomness for looks only (where cracks go): its own sequence, so what a sprite shows can never shift the
+   * game's own random draws (the cracks are placed by trying spots on the current frame until one is solid).
+   */
+  vrand() {
+    this.vseed = ((this.vseed ?? 20260) * 1664525 + 1013904223) >>> 0;
+    return this.vseed / 4294967296;
+  }
+
   /** A crack somewhere on the body (a solid spot of the sprite, away from its edge and the other cracks). */
   newWound(e) {
     const tex = this.scene.textures;
@@ -649,8 +659,8 @@ export class Enemies {
     let oy = 0;
     // (sampled in texture pixels; the offsets kept in logical ones)
     for (let i = 0; i < 40; i++) {
-      const x = Math.round(4 * k) + Math.floor(Math.random() * (f.width - 8 * k));
-      const y = Math.round(4 * k) + Math.floor(Math.random() * (h - 8 * k));
+      const x = Math.round(4 * k) + Math.floor(this.vrand() * (f.width - 8 * k));
+      const y = Math.round(4 * k) + Math.floor(this.vrand() * (h - 8 * k));
       const lx = (x - f.width / 2) / k;
       const ly = (y - f.height / 2) / k;
       const near = e.wounds.some((w) => Math.abs(w.ox - lx) + Math.abs(w.oy - ly) < 12);
@@ -660,7 +670,7 @@ export class Enemies {
         break;
       }
     }
-    const w = this.woundPool.spawn(`crack_${Math.floor(Math.random() * 3)}`, e.x, e.y, { ox, oy, flip: Math.random() < 0.5 });
+    const w = this.woundPool.spawn(`crack_${Math.floor(this.vrand() * 3)}`, e.x, e.y, { ox, oy, flip: this.vrand() < 0.5 });
     return w;
   }
 
@@ -669,6 +679,8 @@ export class Enemies {
       for (const p of e.group.body) this.segPool.kill(p);
       this.segPool.kill(e.group.pearl);
       if (e.group.pearl2) this.segPool.kill(e.group.pearl2);
+      for (const h of e.group.halos ?? []) if (h) this.segPool.kill(h);
+      e.group.halos = null;
     }
     // what circles a boss and goes with it (Kyūbi's spirit flames, Sankibō's phantom braziers)
     if (e.group?.sats && (e.role === 'body' || e.role === 'head')) {
@@ -677,6 +689,8 @@ export class Enemies {
     }
     if (e.wounds) for (const w of e.wounds) this.woundPool.kill(w);
     e.wounds = null;
+    if (e.fxLayer) this.segPool.kill(e.fxLayer); // a decorative layer over it (Raijū's crackling)
+    e.fxLayer = null;
     if (e.head) this.heads.kill(e.head);
     if (e.kuroko) for (const k of e.kuroko) if (!k.dead && k.master === e) this.pool.kill(k);
     if (e.burnt) for (const bt of e.burnt) if (bt) this.woundPool.kill(bt);
@@ -684,7 +698,10 @@ export class Enemies {
     if (e.decoys) this.dropDecoys(e);
     if (e.kind === 'yukionna' || ((e.group?.kind === 'sankibo' || e.group?.kind === 'kuma') && e.role === 'body')) this.scene.parallax.windTarget = 0; // blizzard / Tengu gale dies down
     if (e.kind === 'yukionna') this.yukiCleanup(e); // her mist, the whiteout, the whirlwind's drag
-    if (e.group?.kind === 'kyubi' && e.role === 'body') for (const tl of e.group.tails) this.tailPool.kill(tl);
+    if (e.group?.kind === 'kyubi' && e.role === 'body') {
+      for (const tl of e.group.tails) this.tailPool.kill(tl);
+      for (let i = 0; i < 9; i++) this.kyubiTipOut(e.group, i);
+    }
     if (e === this.heavy) this.heavy = null;
     if (e.type === 'heavy') this.scene.waves?.fillGap?.(this.scene.t, this.skin); // no dead air after a miniboss
     if (e.oni) e.setCrop(); // pooled: the next enemy must not come out cropped

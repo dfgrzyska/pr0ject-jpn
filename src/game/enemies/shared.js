@@ -37,6 +37,7 @@ export const EXTRAS = {
   harmless: false, // no contact damage (bean boxes)
   oni: false, // only Setsubun beans really hurt it
   wounds: null, // a weakened boss's cracks (sprites riding on it)
+  fxLayer: null, // a decorative layer riding on it (Raijū's crackling)
   recoil: 0, // brief upward visual jolt on hit
   vx: 0,
   vy: 0,
@@ -48,3 +49,6 @@ export const EXTRAS = {
   crane: false,
   guarding: false,
 };
+
+// ?noprops: no decorative layers over the enemies (tip flames, crackling, steam), only what plays
+export const NO_PROPS = typeof location !== 'undefined' && new URLSearchParams(location.search).has('noprops');

@@ -3,8 +3,8 @@
 import Phaser from 'phaser';
 import { DEPTH, VIEW } from '../../config.js';
 import { volley } from '../../difficulty.js';
-import { enemyTexture, tailFrames } from '../enemyArt.js';
-import { slow, normal, fast, TAU, EXTRAS } from './shared.js';
+import { enemyTexture, hasEnemyFrame, tailFrames } from '../enemyArt.js';
+import { slow, normal, fast, TAU, EXTRAS, NO_PROPS } from './shared.js';
 
 // the tanuki's shapeshifted copies: one hit and they turn back into leaves
 const DECOY = { hp: 35, weight: 0, score: 300, radius: 13, explosion: 's' }; // a copy takes some shooting
@@ -56,6 +56,7 @@ export const kyoto = {
       e.state = 'leave';
       return;
     }
+    this.tanukiPose(e, dt);
     // waddle; while shapeshifted, walk to its place in the line-up instead
     const goal = e.tx ?? 90 + 30 * Math.sin(e.fight * 0.6);
     e.x += (goal - e.x) * Math.min(1, dt * (e.tx === null ? 2 : 4));
@@ -66,6 +67,7 @@ export const kyoto = {
         // hara-tsuzumi: paws up, paws down on the belly — pon, poko
         e.anims.stop();
         e.setFrame(e.step % 2 ? 'tanuki_drum_1' : 'tanuki_drum_0');
+        e.beat = 0; // (tanukiPose follows through: the paws bounce off the belly, then go up high)
         if (e.step % 2) {
           const pon = e.step % 4 === 1;
           b.ring(e.x, e.y + 8, pon ? 12 : 8, e.step * 0.21, pon ? slow : normal, !pon);
@@ -99,6 +101,38 @@ export const kyoto = {
       default:
         this.tanukiTrick(e, b);
     }
+  },
+
+  /**
+   * Poses that only show what is going on (the attacks don't wait for them): in the second phase's break it
+   * drinks its sake, and between drum beats the paws bounce off the belly and rise for the next one.
+   */
+  tanukiPose(e, dt) {
+    if (e.p2 && !e.sake && hasEnemyFrame('tanuki_sake_0')) {
+      // what it was showing, to go back to (the leaf on the hat is a tell: it must come back)
+      e.sake = { t: 0, key: e.anims.isPlaying ? e.anims.currentAnim?.key : null, frame: e.frame.name };
+      e.anims.stop();
+    }
+    if (e.sake && e.sake.t < 0.9) {
+      e.sake.t += dt;
+      if (e.sake.t < 0.9) e.setFrame(`tanuki_sake_${Math.min(3, Math.floor((e.sake.t / 0.9) * 4))}`);
+      else if (e.sake.key) e.play(e.sake.key);
+      else e.setFrame(e.sake.frame);
+      return;
+    }
+    if (e.beat === undefined || e.beat === null || e.anims.isPlaying || e.patternIndex % 3 !== 0) return;
+    e.beat += dt;
+    if (e.beat > 0.09 && hasEnemyFrame('tanuki_drum_2')) {
+      e.setFrame(e.frame.name === 'tanuki_drum_1' ? 'tanuki_drum_2' : e.frame.name === 'tanuki_drum_0' ? 'tanuki_drum_3' : e.frame.name);
+      e.beat = null;
+    }
+  },
+
+  /** A copy crumbling into leaves where it stood (to look at; the copy itself is already gone). */
+  tanukiPoof(x, y) {
+    if (!hasEnemyFrame('tanuki_poof_0')) return;
+    const sp = this.segPool.spawn('tanuki_poof_0', x, y).setDepth(DEPTH.air - 0.1);
+    sp.play('tanuki_poof').once('animationcomplete', (anim) => anim.key === 'tanuki_poof' && sp.active && this.segPool.kill(sp));
   },
 
   tanukiTrick(e, b) {
@@ -157,6 +191,7 @@ export const kyoto = {
     for (const d of e.decoys ?? []) {
       if (d.dead || d.master !== e) continue;
       this.scene.fx.leaves(d.x, d.y, 10);
+      this.tanukiPoof(d.x, d.y);
       this.pool.kill(d);
     }
     e.decoys = [];
@@ -321,6 +356,7 @@ export const kyoto = {
       const lag = g.state === 'fight' ? -Math.cos(g.sway) * (g.enraged ? 0.26 : 0.18) + Math.sin(g.t * 4.5 - Math.abs(tl.i - 4) * 0.55) * 0.08 : 0;
       tl.setVisible(true).setPosition(e.x + lag * 8, e.y + 7).setScale((0.3 + 0.7 * tl.grown) * tl.base).setRotation(lag * (0.65 + Math.abs(tl.i - 4) * 0.12)).setFlipX(T.flip).setAlpha(e.alpha);
       tl.setFrame(`${T.frame}_${(f + (T.flip ? 1 : 0) + (tl.i % 2)) % g.tailFrames}`);
+      this.kyubiTipFire(g, tl, T);
       if (e.flash > 0) tl.setTint(0x808080).setTintMode(Phaser.TintModes.ADD);
       else if (g.enraged) {
         const k = 0.6 + 0.4 * Math.sin(g.t * 9 + tl.i);
@@ -328,6 +364,38 @@ export const kyoto = {
         if (Math.random() < dt * 4) s.fx.foxfire(e.x + T.x, e.y + T.y, 1, 2);
       } else tl.clearTint();
     }
+  },
+
+  /** A small fox-fire burning on the tip of a tail it still has (only to look at: no hits, no shots). */
+  kyubiTipFire(g, tl, T) {
+    if (!hasEnemyFrame('kyubi_spirit_0') || NO_PROPS) return;
+    const e = g.body;
+    g.tipFx ??= [];
+    let fx = g.tipFx[tl.i];
+    if (!fx) {
+      fx = g.tipFx[tl.i] = this.segPool.spawn('kyubi_spirit_0', e.x, e.y).setDepth(DEPTH.air - 0.11).setBlendMode(Phaser.BlendModes.ADD);
+    }
+    // the tail turns about where it is laid (its frame's centre); the tip goes round with it
+    const sc = (0.3 + 0.7 * tl.grown) * 0.9; // (a little in from the very tip, so it sits on the fur)
+    const dx = T.x * sc;
+    const dy = (T.y - 7) * sc;
+    const c = Math.cos(tl.rotation);
+    const sn = Math.sin(tl.rotation);
+    fx.setPosition(tl.x + dx * c - dy * sn, tl.y + dx * sn + dy * c - 2)
+      .setFrame(`kyubi_spirit_${Math.floor(g.t * 12 + tl.i * 1.7) % 4}`)
+      .setScale(0.7 * sc * fx.base)
+      .setRotation(tl.rotation * 0.5)
+      .setAlpha(e.alpha * (0.8 + 0.2 * Math.sin(g.t * 11 + tl.i)))
+      .setVisible(tl.visible);
+  },
+
+  /** The tip flames go when their tails do (torn off, or the fox gone). */
+  kyubiTipOut(g, i) {
+    const fx = g.tipFx?.[i];
+    if (!fx) return;
+    fx.setBlendMode(Phaser.BlendModes.NORMAL);
+    this.segPool.kill(fx);
+    g.tipFx[i] = null;
   },
 
   /** Where the tips of the tails it still has are, left to right: [{ x, y, a }]. */
@@ -346,6 +414,7 @@ export const kyoto = {
     const tl = g.tails[i];
     const T = KYUBI_TAIL[i];
     tl.lost = true;
+    this.kyubiTipOut(g, i);
     tl.fly = { t: 0, vx: Math.cos(T.a) * 34, vy: Math.sin(T.a) * 34 - 12 };
     const x = e.x + T.x;
     const y = e.y + T.y;

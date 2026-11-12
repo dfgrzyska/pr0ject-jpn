@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import { DEPTH, VIEW } from '../../config.js';
 import { rules } from '../../difficulty.js';
 import { slow, normal, DOWN, TAU, EXTRAS } from './shared.js';
+import { hasEnemyFrame } from '../enemyArt.js';
 
 // the bunraku puppet's three black-clad puppeteers
 const KUROKO = { hp: 220, weight: 0, score: 2000, radius: 7, explosion: 'm' };
@@ -167,6 +168,19 @@ export const osaka = {
     return g.head;
   },
 
+  /** Its eyes follow the player and blink now and then (only to look at). */
+  takoEyes(g, h) {
+    if (!hasEnemyFrame('tako_eyes_0')) return;
+    if (!h.fxLayer) h.fxLayer = this.segPool.spawn('tako_eyes_1', h.x, h.y).setDepth(h.depth + 0.01);
+    const dx = this.scene.player.x - h.x;
+    const blink = g.t % 3.3 < 0.13 || (g.t % 7.9 > 4 && g.t % 7.9 < 4.12);
+    h.fxLayer.setFrame(`tako_eyes_${blink ? 3 : dx < -28 ? 0 : dx > 28 ? 2 : 1}`)
+      .setPosition(h.x, h.y).setScale(h.scaleX, h.scaleY).setVisible(h.visible).setAlpha(h.alpha);
+    // (it lights up with the head when hit)
+    if (h.isTinted) h.fxLayer.setTint(h.tintTopLeft).setTintMode(h.tintMode);
+    else h.fxLayer.clearTint();
+  },
+
   updateTako(g, dt) {
     const s = this.scene;
     const h = g.head;
@@ -179,6 +193,7 @@ export const osaka = {
       h.x = g.home + 16 * Math.sin(g.t * 0.5 * (g.enraged ? 1.5 : 1));
       h.y = g.homeY + 4 * Math.sin(g.t * 1.1);
     }
+    this.takoEyes(g, h);
     const arms = g.parts.filter((p) => p.role === 'tentacle' && !p.dead && p.group === g);
     if (g.slams.length) this.slamStep(g, dt);
     for (const t of arms) {

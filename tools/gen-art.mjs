@@ -7,7 +7,7 @@
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { packAtlas } from './lib/spritekit.mjs';
+import { packAtlas, packAtlasTight } from './lib/spritekit.mjs';
 import { Raster } from './lib/raster.mjs';
 import { buildSprites } from './art/sprites.mjs';
 import { buildFont, FONT } from './art/font.mjs';
@@ -134,7 +134,10 @@ if (!only || only === 'enemies') {
     const list = [];
     build((name, raster) => list.push({ name, raster }));
     addCracks((name, raster) => list.push({ name, raster })); // boss wounds drawn at this atlas's detail
-    const { raster, json } = packAtlas(list, 1024, 2, 'enemies.png');
+    // skyline-packed, 1024 wide; a city that would go over 2048 tall goes 2048 wide instead (WebGL-safe sizes)
+    let packed = packAtlasTight(list, 1024, 2, 'enemies.png');
+    if (packed.json.meta.size.h > 2048) packed = packAtlasTight(list, 2048, 2, 'enemies.png');
+    const { raster, json } = packed;
     mkdirSync(join(assets, 'bg', id), { recursive: true });
     write(`bg/${id}/enemies.png`, raster.toPNG());
     write(`bg/${id}/enemies.json`, Buffer.from(JSON.stringify(json)));

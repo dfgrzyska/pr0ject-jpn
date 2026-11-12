@@ -1,7 +1,9 @@
 // Okinawa: the twin shisa (the boss).
 // Methods of Enemies (src/game/Enemies.js mixes them in), so `this` is the enemies of the stage.
 import { DEPTH, VIEW } from '../../config.js';
+import Phaser from 'phaser';
 import { slow, normal, DOWN } from './shared.js';
+import { hasEnemyFrame } from '../enemyArt.js';
 
 // The twin shisa: each one's HP; in phase 1 Un guards A (A takes `guard` of a hit while Un stands); phase 2
 // comes once the pair is down to `bond` of their life together (the bond between them hurts, they change
@@ -29,10 +31,41 @@ export const okinawa = {
     return g.parts[0];
   },
 
+  /** The soul's flight to the survivor (0.9 s): how far the survivor has grown with it, 0..1. */
+  shisaSoul(g, last, dt) {
+    const so = g.soul;
+    if (!so || !hasEnemyFrame('shisa_soul_0')) return 1;
+    so.t += dt;
+    const k = Math.min(1, so.t / 0.9);
+    if (k >= 1) {
+      if (so.sp) this.scene.fx.light(last.x, last.y, 1.2, false, 0xffd080);
+      this.shisaSoulOut(g);
+      return 1;
+    }
+    if (!so.sp) {
+      so.sp = this.segPool.spawn('shisa_soul_0', so.x, so.y).setDepth(DEPTH.air - 0.05).setBlendMode(Phaser.BlendModes.ADD);
+      so.sp.play('shisa_soul');
+    }
+    // an arc up and over to it, head first, the tail trailing
+    const e = k * k * (3 - 2 * k);
+    const x = so.x + (last.x - so.x) * e;
+    const y = so.y + (last.y - so.y) * e - Math.sin(k * Math.PI) * 26;
+    so.sp.setRotation(Math.atan2(y - so.sp.y, x - so.sp.x) + Math.PI / 2).setPosition(x, y).setScale(so.sp.base * (1.8 - 0.8 * k));
+    return e;
+  },
+
+  shisaSoulOut(g) {
+    if (g.soul?.sp) this.segPool.kill(g.soul.sp);
+    g.soul = null;
+  },
+
   /** The twin shisa's fight: swaying, the survivor's rage, fans, crossfire rings, a stream and orbs. */
   updateShisa(g, dt) {
     const alive = g.parts.filter((p) => !p.dead && p.group === g && p.hp > 0);
-    if (!alive.length) return;
+    if (!alive.length) {
+      this.shisaSoulOut(g);
+      return;
+    }
     const s = this.scene;
     g.t += dt;
     const sp = g.enraged ? 1.6 : 1;
@@ -81,15 +114,20 @@ export const okinawa = {
       // the survivor takes in its twin's soul: some life back, bigger, both attacks at once
       const last = alive[0];
       last.hp = Math.min(last.maxHp, last.hp + SHISA.soul);
-      last.setScale(1.2 * last.base);
       last.radius *= 1.2;
+      // (to look at: the fallen twin's soul flies over and the survivor swells with it, over the break)
+      const fallen = g.parts.find((p) => p !== last);
+      g.soul = { t: 0, x: fallen.x, y: fallen.y, sp: null };
       Object.assign(g, { enraged: true, phase: 0, step: 0, swap: null });
       last.home = Math.round(VIEW.width / 2);
       last.homeY = 66;
       this.phaseBreak(g, last.x, last.y, 3, 'OSTATNI STRAŻNIK RYUKYU');
       s.fx.light(last.x, last.y, 1.4, false, 0xffd080);
     }
-    if (g.stage >= 3) alive[0].setScale(1.2 * alive[0].base);
+    if (g.stage >= 3) {
+      const grow = this.shisaSoul(g, alive[0], dt);
+      alive[0].setScale((1 + 0.2 * grow) * alive[0].base);
+    }
     // phase 2: the bond between them, blinking on before it hurts
     if (g.stage === 2 && alive.length === 2) {
       const [p, q] = alive;

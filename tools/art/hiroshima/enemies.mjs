@@ -208,6 +208,41 @@ export function hidoroHead(i) {
 }
 
 // ---------------------------------------------------------------- heavy: the Heike crab (42 x 30 -> 132 x 96): two strides, and its guard
+/** The carapace split by a blow: cracks running out from one spot, a lit lip on their upper side, a chip gone. */
+function crackedShell(r) {
+  const cx = 66;
+  const cy = 38;
+  const onShell = (x, y) => {
+    const t = (y - (cy - 20)) / 40;
+    return t > 0.05 && t < 0.95 && Math.abs(x - cx) < 17 * Math.sin(Math.PI * Math.min(1, 0.25 + t * 0.85)) * (1 - Math.max(0, t - 0.7) * 1.1) && r.alpha(x, y);
+  };
+  const hit = [cx + 5, cy - 4];
+  let sd = 77;
+  const rnd = () => ((sd = (sd * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const crack = (x, y, a, n, w) => {
+    for (let i = 0; i < n; i++) {
+      const b = a + (i % 2 ? 1 : -1) * (0.3 + rnd() * 0.4);
+      const nx = x + Math.cos(b) * 3;
+      const ny = y + Math.sin(b) * 3;
+      for (let t = 0; t <= 1; t += 0.2) {
+        const px = Math.round(x + (nx - x) * t);
+        const py = Math.round(y + (ny - y) * t);
+        if (!onShell(px, py)) return;
+        r.set(px, py, 0x2a0a04);
+        if (w > 1) r.set(px + 1, py, 0x2a0a04);
+        if (onShell(px, py - 1)) r.set(px, py - 1, 0xffc890, 0.8);
+      }
+      if (i === 1 && n > 3) crack(nx, ny, a + (rnd() < 0.5 ? 1 : -1) * 0.9, 3, 1);
+      x = nx;
+      y = ny;
+    }
+  };
+  for (const a of [-2.6, -1.4, -0.4, 0.7, 1.6, 2.4]) crack(hit[0], hit[1], a, 9, 2);
+  // the chip knocked out where the blow landed: darker flesh of the shell showing
+  for (let y = -3; y <= 3; y++) for (let x = -3; x <= 3; x++) if (x * x + y * y <= 8 && onShell(hit[0] + x, hit[1] + y)) r.set(hit[0] + x, hit[1] + y, x + y < 0 ? 0x3a1004 : 0x6a2410);
+  return r;
+}
+
 export function heike(mode) {
   const s = new HiSprite(132, 96, RAMPS);
   const cx = 66;
@@ -381,9 +416,13 @@ export function hiroshimaEnemies(add) {
   }
   for (let f = 0; f < 3; f++) add(`kaki_${f}`, kaki(f));
   add('heike_guard', crab('guard'));
+  // step 2a: phase 2's cracked shell (PĘKNIĘTY PANCERZ): the same crab, its carapace split from a blow
+  for (let f = 0; f < 4; f++) add(`heike_${f}_c`, crackedShell(crab(f)));
+  add('heike_guard_c', crackedShell(crab('guard')));
   add('hidoro_base', hidoroBase(false));
   add('hidoro_wreck', hidoroBase(true));
   for (let i = 0; i < 16; i++) add(`hidoro_head_${i}`, hidoroHead(i));
   for (const p of ['0', '1', '2', '3', 'fan_l', 'fan_r']) add(`sankibo_${p}`, sankibo540(p)); // tengu540.mjs
+  for (const p of ['fan_up_l', 'fan_up_r']) add(`sankibo_${p}`, sankibo540(p)); // step 2a: the wind-up before a sweep
 }
 export const HIROSHIMA_PORTRAITS = ['heike_0', 'sankibo_0', 'brazier_0'];

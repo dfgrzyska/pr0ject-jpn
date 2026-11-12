@@ -7,6 +7,7 @@
 // Every frame is three times the old one's size (old mask coordinate m -> fine (m + 1) * 3).
 import { HiSprite, S, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
 import { shisa } from './shisa540.mjs';
+import { Raster, fbm } from '../../lib/raster.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -304,6 +305,37 @@ export function manta(f) {
 
 // ---------------------------------------------------------------- boss: the shisa pair (shisa540.mjs)
 
+/**
+ * A hitodama: the soul of the fallen shisa, a teardrop of golden fire with a wavering tail (4 frames), flying
+ * to the survivor in the third phase's break.
+ */
+export function soul(f) {
+  const w = 36;
+  const h = 54;
+  const out = new Raster(w, h);
+  const cx = w / 2;
+  const cy = 16;
+  const r = 9;
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      // the round head, and a tail that thins and sways below it
+      const ty = (y - cy) / (h - cy - 4);
+      const sway = Math.sin(ty * 5 - f * (Math.PI / 2)) * 4 * ty;
+      const tw = r * (1 - ty) ** 1.4;
+      const head = 1 - Math.hypot(x - cx, (y - cy) * 1.05) / r;
+      const tail = ty > 0 && ty < 1 ? 1 - Math.abs(x - cx - sway) / Math.max(0.5, tw) : -1;
+      let v = Math.max(head, tail * 0.9);
+      v += (fbm(x, y + f * 6, { seed: 61, scale: 5, octaves: 2 }) - 0.5) * 0.35;
+      const halo = 1 - Math.hypot(x - cx, y - cy) / (r + 7);
+      if (v > 0.6) out.set(x, y, 0xffffff);
+      else if (v > 0.38) out.set(x, y, 0xfff0a0);
+      else if (v > 0.16) out.set(x, y, 0xffb840, 0.9);
+      else if (v > 0) out.set(x, y, 0xe06a10, 0.65);
+      else if (halo > 0) out.set(x, y, 0xffc860, Math.round(halo * 3) / 3 * 0.35);
+    }
+  return out;
+}
+
 export function okinawaEnemies(add) {
   for (let f = 0; f < 4; f++) {
     add(`tobiuo_${f}`, tobiuo(f));
@@ -317,5 +349,6 @@ export function okinawaEnemies(add) {
   add('coral_wreck', coralBase(true));
   for (let i = 0; i < 16; i++) add(`coral_head_${i}`, coralHead(i));
   for (let f = 0; f < MANTA_FRAMES; f++) add(`manta_${f}`, manta(f));
+  for (let f = 0; f < 4; f++) add(`shisa_soul_${f}`, soul(f)); // step 2a: the third phase's soul
 }
 export const OKINAWA_PORTRAITS = ['shisa_a_0', 'shisa_un_0'];

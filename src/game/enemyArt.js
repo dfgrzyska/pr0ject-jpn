@@ -43,11 +43,13 @@ export const CITY_ANIMS = {
   diver: [four('diver'), 6],
   tanuki: [four('tanuki'), 4],
   tanuki_leaf: [four('tanuki_leaf'), 4],
+  tanuki_poof: [['tanuki_poof_0', 'tanuki_poof_1', 'tanuki_poof_2'], 12, 0], // (once: a copy going back to leaves)
   ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`carrier_${c}`, [four(`carrier_${c}`), 10]])),
   // Okinawa
   tobiuo: [four('tobiuo'), 10], hari: [four('hari'), 6], habu: [four('habu'), 7],
   manta: [[0, 1, 2, 3, 4, 5].map((i) => `manta_${i}`), 7],
   shisa_a: [four('shisa_a'), 4], shisa_un: [four('shisa_un'), 4],
+  shisa_soul: [four('shisa_soul'), 12],
   ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`glass_${c}`, [four(`glass_${c}`), 10]])),
   // Sapporo
   enaga: [four('enaga'), 11], momonga: [['momonga_0', 'momonga_1'], 5], wisp: [four('wisp'), 10],
@@ -58,6 +60,7 @@ export const CITY_ANIMS = {
   kazan: [four('kazan'), 8], kazan_s: [four('kazan_s'), 10], teppo: [four('teppo'), 10], kappa: [four('kappa'), 7],
   ripple: [['ripple_0', 'ripple_1', 'ripple_2'], 6], raiju: [four('raiju'), 10],
   vent: [['vent_0', 'vent_1'], 4], crater: [['crater_0', 'crater_1'], 3],
+  crater_open: [four('crater_open'), 5, 0], // (once: the crust breaking, then 'crater')
   // Osaka
   takoyaki: [four('takoyaki'), 8], fugu: [four('fugu'), 5], kushi: [four('kushi'), 12],
   kuroko: [['kuroko_0', 'kuroko_1'], 3], tako: [['tako_0', 'tako_1'], 2],
@@ -68,6 +71,7 @@ export const CITY_ANIMS = {
   ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`oke_${c}`, [four(`oke_${c}`), 4]])),
   // Hiroshima
   tsuru: [four('tsuru'), 9], shamoji: [four('shamoji'), 7], heike: [four('heike'), 6],
+  heike_c: [[0, 1, 2, 3].map((i) => `heike_${i}_c`), 6], // (its cracked shell in phase 2)
   sankibo: [four('sankibo'), 5], brazier: [four('brazier'), 9],
   ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`manju_${c}`, [four(`manju_${c}`), 6]])),
   // Nagasaki

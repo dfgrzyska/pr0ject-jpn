@@ -6,6 +6,7 @@
 // with a twisted towel tied round its head like a takoyaki seller.
 // Every frame is three times the old one's size (old mask coordinate m -> fine (m + 1) * 3).
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
+import { Raster } from '../../lib/raster.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -332,6 +333,42 @@ export function ttip() {
   return s.render();
 }
 
+/**
+ * Tako's eyes over its head frame (step 2a): looking left (0), ahead (1), right (2) after the player, and
+ * shut (3) for a blink. Only the eyes are drawn; the brows over them are kept from the head frame.
+ */
+export function takoEyes(look) {
+  const head = tako(0);
+  const out = new Raster(head.w, head.h);
+  const cx = M(30.5);
+  for (const sx of [-1, 1]) {
+    const ex = cx + sx * 27;
+    const ey = M(26);
+    const px = cx + sx * 25 + [-4.5, 0, 4.5][Math.min(look, 2)];
+    const py = M(27) + 1.5;
+    const skin = head.get(Math.round(ex), Math.round(ey - 20)); // the head's skin just above, for the lids
+    for (let y = Math.floor(ey - 14); y <= ey + 14; y++)
+      for (let x = Math.floor(ex - 16); x <= ex + 16; x++) {
+        const u = (x + 0.5 - ex) / 15;
+        const v = (y + 0.5 - ey) / 13;
+        if (u * u + v * v > 1 || !head.alpha(x, y)) continue;
+        // the brow runs over the top of the eye (from (12, 22) out to (42, 18.5)): it and the outline stay
+        const t = Math.max(0, Math.min(1, ((x - cx) * sx - 12) / 30));
+        const brow = M(22) + (M(18.5) - M(22)) * t;
+        if (u * u + v * v > (look === 3 ? 1.02 : 0.86) || y < brow + 4) continue;
+        if (look === 3) {
+          // shut: the lid down over it, its rim a dark line across the middle
+          out.set(x, y, Math.abs(v - 0.15) < 0.12 ? 0x5a0a08 : skin);
+          continue;
+        }
+        const d = Math.hypot(x + 0.5 - px, y + 0.5 - py);
+        if (d < 7.2) out.set(x, y, d < 2.4 && x < px && y < py ? 0xffffff : 0x14101c);
+        else out.set(x, y, v > 0.45 ? 0xd8d0c8 : 0xfffaf0); // the white, a little shaded underneath
+      }
+  }
+  return out;
+}
+
 export function osakaEnemies(add) {
   for (let f = 0; f < 4; f++) {
     add(`takoyaki_${f}`, takoyaki(f));
@@ -349,6 +386,7 @@ export function osakaEnemies(add) {
   add('kuroko_1', kuroko(1));
   add('tako_0', tako(0));
   add('tako_1', tako(1));
+  for (let k = 0; k < 4; k++) add(`tako_eyes_${k}`, takoEyes(k)); // step 2a: following the player, blinking
   for (let i = 0; i < 3; i++) add(`tseg_${i}`, tseg(i));
   add('ttip', ttip());
 }

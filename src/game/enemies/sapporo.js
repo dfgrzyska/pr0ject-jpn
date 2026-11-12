@@ -3,6 +3,7 @@
 import Phaser from 'phaser';
 import { DEPTH, VIEW } from '../../config.js';
 import { slow, normal, DOWN, TAU, EXTRAS } from './shared.js';
+import { hasEnemyFrame } from '../enemyArt.js';
 
 // Yuki-onna: her strength, how long she stays, her crystals (how many at once, how long they last), the mist,
 // the whirlwind's drag (px/s) and the whiteout (s); her mirrors and the crystals as enemies
@@ -564,7 +565,7 @@ export const sapporo = {
     const y = -36;
     const u = s.parallax.stripU(y);
     const g = { kind: 'kuma', state: 'dormant', t: 0, phase: 0, step: 0, timer: 1, parts: [], enraged: false, defeated: false };
-    Object.assign(g, { awake: false, stage: 1, home: w.x, homeY: 76, restY: 0, roar: 0, body: null });
+    Object.assign(g, { awake: false, stage: 1, home: w.x, homeY: 76, restY: 0, roar: 0, roarLen: 1, body: null, sats: [] });
     const part = (frame, role, dx, dy, hp, radius, pts) => {
       const e = this.pool.spawn(frame, w.x + dx, y + dy, { ...base, role, dx, dy, u, hp, maxHp: hp, radius, pts, group: g, invuln: true, ground: true });
       e.setDepth(DEPTH.ground + (role === 'body' ? 0.3 : 0.35));
@@ -606,7 +607,8 @@ export const sapporo = {
     }
     g.t += dt;
     g.roar -= dt;
-    if (g.stage >= 2) body.setFrame(g.roar > 0 ? 'kuma_1' : 'kuma_0');
+    if (g.stage >= 2) body.setFrame(`kuma_${g.roar > 0 ? 1 : 0}${g.stage >= 3 && hasEnemyFrame('kuma_0f') ? 'f' : ''}`); // (rimed in the blizzard)
+    this.kumaBreath(g, body);
     if (g.state === 'wake') {
       // shakes off the snow, then rises from the pedestal into the air
       const k = Math.max(0, Math.min(1, (g.t - 1.3) / 1.2));
@@ -629,6 +631,8 @@ export const sapporo = {
     if (g.state === 'break') {
       // the ice falls away and the real bear roars
       place(g.home + Math.round(Math.random() * 2 - 1), g.homeY);
+      const thaw = Math.floor((g.t / 1.4) * 5); // chunks of the sculpture falling off, then the bear itself
+      if (thaw < 4 && hasEnemyFrame('kuma_thaw_0')) body.setFrame(`kuma_thaw_${thaw}`);
       if (g.t >= 1.4) {
         g.state = 'fight';
         g.t = 0;
@@ -650,6 +654,26 @@ export const sapporo = {
     if (g.timer > 0) return;
     if (g.stage === 1) this.kumaIce(g, alive);
     else this.kumaBear(g, body);
+  },
+
+  /** The roar's breath: a cloud of steam rolling out of the jaws while it roars (only to look at). */
+  kumaBreath(g, body) {
+    if (!hasEnemyFrame('kuma_breath_0')) return;
+    if (g.roar > g.roarLen || g.roar <= 0) g.roarLen = Math.max(1, g.roar); // a new roar: how long this one lasts
+    let sp = g.sats[0];
+    if (g.roar <= 0) {
+      sp?.setVisible(false);
+      return;
+    }
+    if (!sp) {
+      sp = this.segPool.spawn('kuma_breath_0', body.x, body.y).setDepth(DEPTH.air - 0.15);
+      g.sats.push(sp);
+    }
+    const k = 1 - g.roar / g.roarLen;
+    sp.setFrame(`kuma_breath_${Math.min(3, Math.floor(k * 4))}`)
+      .setPosition(body.x, body.y + 4.5)
+      .setVisible(body.visible)
+      .setAlpha(body.alpha * Math.min(1, g.roar * 3));
   },
 
   /** Phase 1: paw swipes, heart pulses, a frozen snowflake from the heart while the paws lob snowballs. */

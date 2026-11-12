@@ -237,6 +237,34 @@ Ogony muszą zachować punkty wylotu z `KYUBI_TAIL`.
 | Miniboss: Oranda-bune | holenderski statek z kunchi: olinowanie, malowane burty, działa (`n_oranda_gun`), spalona burta (`n_oranda_burnt`); 106 px szerokości, największa klatka w mieście |
 | Boss: Ja-odori | głowa smoka z wąsami i grzywą, segmenty ciała z łuskami i drążkami tancerzy, złota perła; druga perła fazy 3 jako osobna klatka; detal musi wytrzymać wynurzanie od skali 0,3 |
 
+### Stan kroku 2a (listopad 2026)
+
+Zrobione (klatki w atlasach miast, sterowanie w `src/game/enemies/`; wszystko tylko do oglądania, czasy i wzory
+ataków bez zmian, co sprawdza zapis ataków przed i po z tym samym ziarnem losowania):
+- **Kioto:** tanuki pije sake na przejściu do fazy 2 (`tanuki_sake_0..3`), bębnienie w 4 klatkach
+  (`tanuki_drum_2/3` między uderzeniami), kopie rozsypują się w liście (`tanuki_poof_0..2`); ogniki na czubkach
+  ogonów Kyūbi (warstwa ADD z klatek `kyubi_spirit`). Odrywanie ogona zostaje sekwencją w kodzie (dryf, zanik,
+  niebieski ogień).
+- **Okinawa:** w fazie 3 dusza poległej shisa (hitodama, `shisa_soul_0..3`) leci łukiem do ocalałej, która rośnie
+  razem z nią.
+- **Sapporo:** rzeźba kruszy się w niedźwiedzia na przejściu fazy (`kuma_thaw_0..3`), oszroniona sierść
+  w zamieci fazy 3 (`kuma_0f/1f`), kłąb oddechu przy ryku (`kuma_breath_0..3`).
+- **Kagoshima:** skorupa krateru pęka i odpada w lawę na początku fazy 2 (`crater_open_0..3`), wyładowania
+  w sierści Raijū (`raiju_spark_0..3`, ADD, mocniejsze przy zamachu do szarży i w fazie 2).
+- **Osaka:** oczy Tako śledzą gracza i mrugają (`tako_eyes_0..3`).
+- **Beppu:** w fazie 3 pęknięta kanabō (`oni_*_c`).
+- **Hiroszima:** pęknięty pancerz kraba w fazie 2 (`heike_*_c`; po zmianie na taka-ashi-gani nie ma już maski
+  samuraja), zamach wachlarzem Sankibō z klatką uniesienia (`sankibo_fan_up_l/r`).
+- **Nagasaki:** ciało smoka jako jeden ciągły wąż (segmenty obrócone wzdłuż łańcucha), pulsująca poświata perły
+  (i drugiej perły w fazie 3).
+- **Wspólne:** pęknięcia bossów w 540 px (`crack_0..2` w każdym atlasie miasta), osobne losowanie dla wyglądu
+  (`Enemies.vrand`), warstwy dekoracyjne wyłączane przez `?noprops`, `?hitbox` z obrysami trafień, ciaśniejsze
+  pakowanie atlasów (`packAtlasTight`).
+
+Świadomie inaczej niż w planie: narysowane stany zniszczeń zamiast losowych pęknięć zrobione tylko tam, gdzie niosą
+znaczenie (róg i maczuga Oni, pancerz kraba, szron niedźwiedzia); u reszty zostają pęknięcia w 540 px. Reakcja na
+trafienie zostaje błyskiem i odrzutem (osobne klatki grymasu myliłyby się z zapowiedziami ataków, np. rykiem).
+
 ## Krok 3. Warunek ukończenia każdego miasta
 
 Tak samo jak w `graphics-540-plan.md`, krok 4, oraz dodatkowo:

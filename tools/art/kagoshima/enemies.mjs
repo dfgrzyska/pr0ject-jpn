@@ -6,6 +6,7 @@
 // wolfish blue-black body in a mane of lightning; and the volcano itself, its vents and summit crater.
 // Every frame is three times the old one's size (old mask coordinate m -> fine (m + 1) * 3).
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
+import { breakOpen, lightning } from '../breakopen.mjs';
 import * as V from './volcano540.mjs';
 
 const INK = 0x14101c;
@@ -279,9 +280,15 @@ export function raiju(f) {
   s.ellipse(cx, M(23.8), 4.6, 3, 'K', { bias: 0.1 });
   s.line(cx - 10, M(28), cx + 10, M(28), INK, 2);
   for (const sx of [-1, 1]) s.poly([[cx + sx * 7, M(28)], [cx + sx * 3.5, M(28)], [cx + sx * 5.5, M(30.5)]], 'W', { flat: 0.85 });
-  // stray sparks
-  for (let k = 0; k < 6; k++) s.dot(((k * 13 + f * 7) % 49) * 3 + 3, ((k * 7 + f * 5) % 46) * 3 + 3, 1, 0xe8ffff);
-  return s.render();
+  // stray sparks (put on after the outline: outlined, they were dark dots)
+  const r = s.render();
+  for (let k = 0; k < 6; k++) {
+    const x = ((k * 13 + f * 7) % 49) * 3 + 3;
+    const y = ((k * 7 + f * 5) % 46) * 3 + 3;
+    r.set(x, y, 0xffffff);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) r.set(x + dx, y + dy, 0x9af4ff, 0.8);
+  }
+  return r;
 }
 
 // ---------------------------------------------------------------- boss: Sakurajima's side vents (23 -> 69) and summit crater (47 x 35 -> 141 x 105)
@@ -382,5 +389,10 @@ export function kagoshimaEnemies(add) {
   add('crater_0', V.crater('open', 0));
   add('crater_1', V.crater('open', 1));
   add('crater_cold', V.crater('cold', 0));
+  // step 2a: the crater's crust breaking open as the second phase begins; lightning crackling in Raijū's fur
+  const shut = V.crater('shut', 0);
+  const open = V.crater('open', 0);
+  [0.15, 0.4, 0.62, 0.85].forEach((k, i) => add(`crater_open_${i}`, breakOpen(shut, open, k, { seed: 512, cells: 34, centre: [0.5, 0.45], seam: 0xff6a10, lip: 0xffd080 })));
+  for (let f = 0; f < 4; f++) add(`raiju_spark_${f}`, lightning(raiju(0), f, { arcs: 5, seed: 31 }));
 }
 export const KAGOSHIMA_PORTRAITS = ['kappa_0', 'raiju_0', 'vent_0', 'crater_0'];

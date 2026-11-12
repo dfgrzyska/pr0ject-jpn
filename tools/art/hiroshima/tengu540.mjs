@@ -98,7 +98,7 @@ function hauchiwa(s, x, y, ang, r, seed) {
 export function sankibo(pose) {
   const s = new HiSprite(156, 132, RAMPS);
   const cx = 78;
-  const beat = { 0: 1, 1: 0.35, 2: -0.2, 3: 0.35, fan_l: 0.6, fan_r: 0.6 }[pose];
+  const beat = { 0: 1, 1: 0.35, 2: -0.2, 3: 0.35, fan_l: 0.6, fan_r: 0.6, fan_up_l: 0.85, fan_up_r: 0.85 }[pose];
   const fanPose = pose === 'fan_l' || pose === 'fan_r';
   const bob = pose === '2' ? 2 : pose === '0' ? -1 : 0;
   const S = skin(9);
@@ -160,19 +160,22 @@ export function sankibo(pose) {
 
   // ---- the arms: shoulders bare and heavy, the forearms bound
   // right (viewer's left): the fist with the rosary, or (fan_l) the fan
-  const fanL = pose === 'fan_l';
-  const fanR = pose === 'fan_r' || !fanPose;
+  // (fan_up_l / fan_up_r: the wind-up, the fan raised high in that hand before the sweep)
+  const upL = pose === 'fan_up_l';
+  const upR = pose === 'fan_up_r';
+  const fanL = pose === 'fan_l' || upL;
+  const fanR = (pose === 'fan_r' || !fanPose) && !upL;
   {
     const shoulder = [cx - 24, 40 + bob];
-    const elbow = fanL ? [cx - 38, 40 + bob] : [cx - 32, 56 + bob];
-    const hand = fanL ? [cx - 50, 30 + bob] : [cx - 34, 72 + bob];
+    const elbow = upL ? [cx - 38, 32 + bob] : fanL ? [cx - 38, 40 + bob] : [cx - 32, 56 + bob];
+    const hand = upL ? [cx - 34, 18 + bob] : fanL ? [cx - 50, 30 + bob] : [cx - 34, 72 + bob];
     s.ellipse(shoulder[0], shoulder[1] + 2, 9, 8.5, 't', { bias: 0.05, ...S });
     ink(s, [[shoulder[0] - 5, shoulder[1] + 6], [shoulder[0] + 3, shoulder[1] + 9]]);
     s.tube(shoulder[0], shoulder[1] + 3, elbow[0], elbow[1], 7, 't', { rb: 6, ...S });
     bound(s, elbow[0], elbow[1], hand[0], hand[1], 5.4);
     s.ellipse(hand[0], hand[1] + 2, 5.4, 5, 't', S);
     for (let k = -1; k <= 1; k++) s.ellipse(hand[0] + k * 3, hand[1] + 4.5, 1.6, 1.6, 't', { bias: 0.12 });
-    if (fanL) hauchiwa(s, hand[0], hand[1], -Math.PI / 2 - 0.5, 24, 60);
+    if (fanL) hauchiwa(s, hand[0], hand[1], upL ? -Math.PI / 2 + 0.7 : -Math.PI / 2 - 0.5, 24, 60);
     else {
       // the rosary round the fist, its tail hanging with a gilt charm
       for (let a = 0; a < TAU; a += 0.5) s.ellipse(hand[0] + Math.cos(a) * 6, hand[1] + 2 + Math.sin(a) * 3, 1.3, 1.3, 'b', { bias: 0.12 });
@@ -183,15 +186,15 @@ export function sankibo(pose) {
   // left (viewer's right): the fan raised, or (fan_r) swung out wide; in fan_l it is the rosary hand
   {
     const shoulder = [cx + 24, 40 + bob];
-    const elbow = pose === 'fan_r' ? [cx + 40, 42 + bob] : fanL ? [cx + 32, 56 + bob] : [cx + 36, 48 + bob];
-    const hand = pose === 'fan_r' ? [cx + 54, 40 + bob] : fanL ? [cx + 34, 72 + bob] : [cx + 42, 34 + bob];
+    const elbow = upR ? [cx + 38, 32 + bob] : pose === 'fan_r' ? [cx + 40, 42 + bob] : fanL ? [cx + 32, 56 + bob] : [cx + 36, 48 + bob];
+    const hand = upR ? [cx + 34, 18 + bob] : pose === 'fan_r' ? [cx + 54, 40 + bob] : fanL ? [cx + 34, 72 + bob] : [cx + 42, 34 + bob];
     s.ellipse(shoulder[0], shoulder[1] + 2, 9, 8.5, 't', { bias: 0.05, ...S });
     ink(s, [[shoulder[0] + 5, shoulder[1] + 6], [shoulder[0] - 3, shoulder[1] + 9]]);
     s.tube(shoulder[0], shoulder[1] + 3, elbow[0], elbow[1], 7, 't', { rb: 6, ...S });
     bound(s, elbow[0], elbow[1], hand[0], hand[1], 5.4);
     s.tube(elbow[0] - 4, elbow[1] + 1, elbow[0] + 4, elbow[1] + 1, 2.2, 'y'); // a gold armlet
     s.ellipse(hand[0], hand[1], 5.4, 5, 't', S);
-    if (fanR) hauchiwa(s, hand[0], hand[1] - 2, pose === 'fan_r' ? 0.1 : -Math.PI / 2 + 0.25, 24, 70);
+    if (fanR) hauchiwa(s, hand[0], hand[1] - 2, pose === 'fan_r' ? 0.1 : upR ? -Math.PI / 2 - 0.7 : -Math.PI / 2 + 0.25, 24, 70);
     else for (let a = 0; a < TAU; a += 0.5) s.ellipse(hand[0] + Math.cos(a) * 6, hand[1] + 2 + Math.sin(a) * 3, 1.3, 1.3, 'b', { bias: 0.12 });
   }
 

@@ -7,6 +7,7 @@
 // and the bear: first the Snow Festival's carved snow sculpture, then the higuma inside it.
 // Every frame is three times the old one's size (old mask coordinate m -> fine (m + 1) * 3).
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
+import { thaw, frost, breath } from './kuma2a.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -499,7 +500,11 @@ export function bear(phase, roar) {
       s.line(M(x0), M(y0), M(x1), M(y1), 0x7a98c8, 1);
       s.line(M(x0) - 1, M(y0) - 1, M(x1) - 1, M(y1) - 1, 0xffffff, 1, 0.8);
     }
-    for (let k = 0; k < 40; k++) s.px(20 + ((k * 37) % 160), 20 + ((k * 53) % 150), 0xc8e0f8, 0.6);
+    for (let k = 0; k < 40; k++) {
+      const x = 20 + ((k * 37) % 160);
+      const y = 20 + ((k * 53) % 150);
+      if (s.mat[y * s.w + x]) s.px(x, y, 0xc8e0f8, 0.6); // (only on the snow: off it they outlined into stray dots)
+    }
   } else {
     // the higuma: small furious red eyes, the black nose, the jaws, claws on the feet
     for (const ex of [27.5, 37.5]) {
@@ -579,6 +584,13 @@ export function sapporoEnemies(add) {
   add('kuma_ice', bear(1, false));
   add('kuma_0', bear(2, false));
   add('kuma_1', bear(2, true));
+  // step 2a: the thaw over the phase break, the frosted coat of the blizzard, the roar's breath
+  const ice = bear(1, false);
+  const b0 = bear(2, false);
+  [0.15, 0.4, 0.62, 0.85].forEach((k, i) => add(`kuma_thaw_${i}`, thaw(ice, b0, k)));
+  add('kuma_0f', frost(b0));
+  add('kuma_1f', frost(bear(2, true)));
+  for (let f = 0; f < 4; f++) add(`kuma_breath_${f}`, breath(f));
   add('kuma_paw', kumaPaw());
   for (let f = 0; f < 2; f++) add(`kuma_heart_${f}`, kumaHeart(f));
 }

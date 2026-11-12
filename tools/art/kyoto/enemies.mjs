@@ -2,7 +2,7 @@
 // as fine, each frame exactly three times the old one's size so the game's pivots stay put.
 // Old mask coordinates (m) map to fine ones as (m + 1) * 3: the old 1 px outline border becomes 3 fine px.
 import { HiSprite, S, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
-import { mix } from '../../lib/raster.mjs';
+import { mix, Raster, fbm } from '../../lib/raster.mjs';
 import { body as kyubiBody, tail as kyubiTail } from './kyubi540.mjs'; // (the white fox of the Inari shrines)
 
 const RAMPS = {
@@ -64,7 +64,7 @@ export function popcorn(f) {
 function tanukiBody(s, pose, leaf, breath = null) {
   const CX = M(26.5) - S / 2 + 0.5; // centre of the old mask, in fine pixels
   const E = (x, y, rx, ry, mat, o) => s.ellipse(M(x) - S / 2, M(y) - S / 2, rx * S, ry * S, mat, o);
-  const big = breath ?? (pose === 'idle1' || pose === 'drum1' ? 0.6 : 0);
+  const big = breath ?? ({ idle1: 0.6, drum1: 0.6, drum2: 1.1, sake1: 0.3, sake2: 0.5 }[pose] ?? 0);
   const glaze = { pat: mix2(speckle({ amt: 0.4, dark: 0.16, light: 0.07, seed: 11 }), mottle({ amt: 0.2, scale: 10, seed: 12 }), crackle({ amt: 0.3, scale: 14, width: 0.03 })) };
   // tail, feet, the round glazed body and the belly
   E(43, 47, 6, 4, 'g', glaze);
@@ -117,9 +117,43 @@ function tanukiBody(s, pose, leaf, breath = null) {
     s.poly([[M(42), M(36)], [M(50), M(36)], [M(50), M(46)], [M(42), M(46)]], 'F', { flat: 0.6, pat: fur(Math.PI / 2, { amt: 0.14, len: 3, w: 1, gap: 0.03 }) });
     s.poly([[M(42), M(36)], [M(43), M(36)], [M(43), M(46)], [M(42), M(46)]], 'N', { flat: 0.5 });
     for (const x of [45, 47.5]) for (let y = M(38); y < M(45); y += 2.5) s.line(M(x), y, M(x) + 3, y, 0x3a3048, 1);
+  } else if (pose.startsWith('drum')) {
+    // hara-tsuzumi: paws up (0), down on the belly (1), bouncing off it (2), raised high for the next beat (3)
+    const [hx, hy] = { drum0: [17.5, 23], drum1: [9.5, 39], drum2: [12, 34], drum3: [19, 18] }[pose];
+    for (const sx of [-1, 1]) s.tube(CX + sx * 14.5 * S, M(30), CX + sx * hx * S, M(hy), 3.2 * S, 'G2', glaze);
+    if (pose === 'drum1') for (const sx of [-1, 1]) s.line(CX + sx * 5 * S, M(41), CX + sx * 7 * S, M(44), 0x5a3a20, 1, 0.7); // the belly giving under the blow
   } else {
-    const down = pose === 'drum1';
-    for (const sx of [-1, 1]) s.tube(CX + sx * 14.5 * S, M(30), CX + sx * (down ? 9.5 : 17.5) * S, M(down ? 39 : 23), 3.2 * S, 'G2', glaze);
+    // sake (the second phase): the flask raised (0), drunk from (1, 2: eyes shut on the gulp), lowered, flushed (3)
+    const k = Number(pose.slice(4));
+    const [hx, hy] = [[10, 26], [17, 22], [17, 21], [9, 35]][k];
+    s.tube(M(12), M(30), M(hx), M(hy), 3.2 * S, 'G2', glaze);
+    const fx = M(hx) - 4 * S;
+    const fy = M(hy) - (k === 3 ? -4 : 3) * S;
+    // the neck: tipped to the mouth while drinking, a short stub either way
+    const [tx, ty] = k === 1 || k === 2 ? [M(23), M(23.5)] : [fx + 1.5 * S, fy - 5 * S];
+    const nl = Math.hypot(tx - fx, ty - fy);
+    const nx = fx + ((tx - fx) / nl) * 6.5 * S;
+    const ny = fy + ((ty - fy) / nl) * 6.5 * S;
+    s.tube(fx, fy, nx, ny, 1.6 * S, 'W');
+    s.ellipse(fx, fy, 4 * S, 5.5 * S, 'W', { pat: mix2(speckle({ amt: 0.2, dark: 0.08 }), crackle({ amt: 0.2, scale: 7 })) });
+    s.paint([fx - 4.5 * S, fy - 1.5 * S, fx + 4.5 * S, fy + 1.5 * S], (x, y) => ((x - fx) / (4 * S)) ** 2 + ((y - fy) / (5.5 * S)) ** 2 <= 1, 'B', (x) => 0.75 - (x - fx + 4 * S) / 60);
+    s.line(fx, fy + 1.5 * S, fx, fy + 4 * S, INK, 1);
+    if (k >= 2) {
+      // eyes shut tight on the gulp, then the flush of the sake on the cheeks
+      for (const ex of [21.5, 31.5]) {
+        s.ellipse(M(ex) - S / 2, M(17) - S / 2, 2.4 * S, 2.2 * S, 'K', glaze);
+        s.line(M(ex) - S / 2 - 5, M(17) - S / 2 + 1, M(ex) - S / 2, M(17) - S / 2 - 2, 0xfff0d8, 1);
+        s.line(M(ex) - S / 2, M(17) - S / 2 - 2, M(ex) - S / 2 + 5, M(17) - S / 2 + 1, 0xfff0d8, 1);
+      }
+    }
+    if (k === 3)
+      for (const ex of [19, 34]) // the sake flush on the cheeks
+        for (let y = -6; y <= 6; y++) for (let x = -10; x <= 10; x++) if ((x / 10) ** 2 + (y / 6) ** 2 <= 1) s.px(M(ex) + x, M(22) + y, 0xff4a4a, 0.45 * (1 - (x / 10) ** 2 - (y / 6) ** 2) + 0.15);
+    // the ledger stays in the other paw
+    s.tube(M(41), M(30), M(45), M(37), 3.2 * S, 'G2', glaze);
+    s.poly([[M(42), M(36)], [M(50), M(36)], [M(50), M(46)], [M(42), M(46)]], 'F', { flat: 0.6, pat: fur(Math.PI / 2, { amt: 0.14, len: 3, w: 1, gap: 0.03 }) });
+    s.poly([[M(42), M(36)], [M(43), M(36)], [M(43), M(46)], [M(42), M(46)]], 'N', { flat: 0.5 });
+    for (const x of [45, 47.5]) for (let y = M(38); y < M(45); y += 2.5) s.line(M(x), y, M(x) + 3, y, 0x3a3048, 1);
   }
   // the glaze shine
   for (const [x, y, r] of [[17.5, 30.5, 1.2], [21, 34, 0.8]]) s.dot(M(x), M(y), r, 0xfff6e8, 0.45);
@@ -136,6 +170,46 @@ export function tanuki(pose, leaf = false, breath = null) {
   const s = new HiSprite(165, 180, RAMPS);
   tanukiBody(s, pose, leaf, breath);
   return s.render();
+}
+
+/** A copy turning back into leaves (3 frames): the figure crumbles from its edges into a swirl of leaves. */
+export function tanukiPoof(f) {
+  const base = tanuki('idle0', true);
+  const w = base.w;
+  const h = base.h;
+  const out = new Raster(w, h);
+  const k = [0.3, 0.55, 0.8][f];
+  const cx = w / 2;
+  const cy = h * 0.55;
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const a = base.alpha(x, y);
+      if (!a) continue;
+      const edge = Math.hypot((x - cx) / (w * 0.5), (y - cy) / (h * 0.55));
+      const v = fbm(x, y, { seed: 33, scale: 9, octaves: 2 }) * 0.6 + edge * 0.55;
+      if (v < 1.05 - k) out.set(x, y, base.get(x, y), (a / 255) * (1 - k * 0.5)); // what is left, fading
+    }
+  // leaves flying out from the body, further each frame (a fixed scatter, so the frames follow on)
+  let sd = 909;
+  const rnd = () => ((sd = (sd * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const greens = [0x1d6a3a, 0x3a9a48, 0x7ac85a, 0xc8a040];
+  for (let i = 0; i < 16; i++) {
+    const ang = rnd() * Math.PI * 2;
+    const r0 = 10 + rnd() * 30;
+    const r = r0 + k * (30 + rnd() * 40);
+    const lx = cx + Math.cos(ang) * r;
+    const ly = cy + Math.sin(ang) * r * 0.9 - k * 12;
+    const rot = ang + f * 1.3 + i;
+    const c = greens[i % 4];
+    for (let t = -8; t <= 8; t++)
+      for (let u = -4; u <= 4; u++) {
+        if ((t / 8.5) ** 2 + (u / 3.8) ** 2 > 1 - (t > 0 ? t / 30 : 0)) continue;
+        const px = lx + Math.cos(rot) * t - Math.sin(rot) * u;
+        const py = ly + Math.sin(rot) * t + Math.cos(rot) * u;
+        out.set(Math.round(px), Math.round(py), u === 0 ? 0x123a20 : (t / 8.5) ** 2 + (u / 3.8) ** 2 > 0.7 ? 0x0e2a18 : c, 1 - k * 0.4);
+      }
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------- shooter: a gunship hung under a torii lintel (23 x 15 -> 69 x 45)
@@ -330,6 +404,11 @@ export function kyotoEnemies(add) {
   }
   add('tanuki_drum_0', tanuki('drum0'));
   add('tanuki_drum_1', tanuki('drum1'));
+  // step 2a: the in-between drum beats, the sake of the second phase, a copy going back to leaves
+  add('tanuki_drum_2', tanuki('drum2'));
+  add('tanuki_drum_3', tanuki('drum3'));
+  for (let k = 0; k < 4; k++) add(`tanuki_sake_${k}`, tanuki(`sake${k}`));
+  for (let f = 0; f < 3; f++) add(`tanuki_poof_${f}`, tanukiPoof(f));
   for (const pose of ['idle', 'blink', 'cast']) add(`kyubi_${pose}`, kyubiBody(pose));
   for (let i = 0; i <= 4; i++) for (let f = 0; f < TAIL_COUNT; f++) add(`kyubi_tail_${i}_${f}`, kyubiTail(i, f));
 }

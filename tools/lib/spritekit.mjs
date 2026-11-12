@@ -202,3 +202,63 @@ export function packAtlas(entries, width = 512, padding = 2, imageName = 'sprite
   const json = { frames, meta: { image: imageName, format: 'RGBA8888', size: { w: width, h: height }, scale: '1' } };
   return { raster: atlas, json };
 }
+
+/**
+ * packAtlas with a skyline packer (each frame goes where it sits lowest, then furthest left): tighter than the
+ * shelves above when the frames vary a lot in size (the city enemy atlases). Same output format.
+ */
+export function packAtlasTight(entries, width = 1024, padding = 2, imageName = 'enemies.png') {
+  const items = entries
+    .map((e, i) => ({ ...e, i }))
+    .sort((a, b) => b.raster.h - a.raster.h || b.raster.w - a.raster.w);
+  let sky = [{ x: 0, w: width, y: 0 }]; // segments of the top edge of what is packed so far
+  for (const it of items) {
+    const w = it.raster.w + padding;
+    const h = it.raster.h + padding;
+    let best = null;
+    for (let i = 0; i < sky.length; i++) {
+      const x = sky[i].x;
+      if (x + w > width - padding) break;
+      // the height this frame would rest at over the segments it spans
+      let y = 0;
+      let left = w;
+      for (let j = i; j < sky.length && left > 0; j++) {
+        y = Math.max(y, sky[j].y);
+        left -= sky[j].w;
+      }
+      if (left > 0) continue;
+      if (!best || y < best.y || (y === best.y && x < best.x)) best = { x, y };
+    }
+    it.x = best.x + padding;
+    it.y = best.y + padding;
+    // raise the skyline under the frame
+    const x0 = best.x;
+    const x1 = best.x + w;
+    const next = [];
+    for (const s of sky) {
+      if (s.x + s.w <= x0 || s.x >= x1) next.push(s);
+      else {
+        if (s.x < x0) next.push({ x: s.x, w: x0 - s.x, y: s.y });
+        if (s.x + s.w > x1) next.push({ x: x1, w: s.x + s.w - x1, y: s.y });
+      }
+    }
+    next.push({ x: x0, w, y: best.y + h });
+    next.sort((a, b) => a.x - b.x);
+    sky = [];
+    for (const s of next) {
+      const last = sky[sky.length - 1];
+      if (last && last.y === s.y && last.x + last.w === s.x) last.w += s.w;
+      else sky.push({ ...s });
+    }
+  }
+  const height = Math.max(...items.map((it) => it.y + it.raster.h)) + padding;
+  const atlas = new Raster(width, height);
+  const frames = {};
+  for (const it of items) {
+    atlas.blit(it.raster, it.x, it.y);
+    const { w, h } = it.raster;
+    frames[it.name] = { frame: { x: it.x, y: it.y, w, h }, rotated: false, trimmed: false, spriteSourceSize: { x: 0, y: 0, w, h }, sourceSize: { w, h } };
+  }
+  const json = { frames, meta: { image: imageName, format: 'RGBA8888', size: { w: width, h: height }, scale: '1' } };
+  return { raster: atlas, json };
+}

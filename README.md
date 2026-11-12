@@ -17,7 +17,7 @@ Wersja online: https://dfgrzyska.github.io/pr0ject-jpn/ — budowana automatyczn
 
 Parametry do testów w adresie: `?stage=1` … `?stage=8` (ten etap pierwszy, reszta losowo — 1 Kioto, 2 Okinawa, 3 Sapporo, 4 Kagoshima, 5 Osaka, 6 Beppu, 7 Hiroszima, 8 Nagasaki), `?t=120` (start od 120 s etapu), `?god` (nieśmiertelność), `?ending` (od razu zakończenie po zmyślonej podróży),
 `?weapon=laser&power=5` (broń `basic|spread|laser|homing`, moc 1–5), `?ship=oni|tsuru|tsubame` (`kitsune` też działa),
-`?noprops` (tło bez animacji). Z `?god` albo `?t=` pieczątek nie da się zdobyć.
+`?noprops` (tło bez animacji), `?hitbox` (obrysy trafień: zielony — strzały, czerwony — taranowanie, niebieski — dodatkowe koła macek i segmentów, biały — statek). Z `?god` albo `?t=` pieczątek nie da się zdobyć.
 
 ## Panel debugowania
 

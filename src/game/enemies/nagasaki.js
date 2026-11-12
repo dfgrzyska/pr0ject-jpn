@@ -1,12 +1,24 @@
 import { DEPTH, VIEW } from '../../config.js';
 import { volley } from '../../difficulty.js';
-import { DOWN, TAU, slow, normal, fast, EXTRAS } from './shared.js';
+import { DOWN, TAU, slow, normal, fast, EXTRAS, NO_PROPS } from './shared.js';
 import { hasEnemyFrame } from '../enemyArt.js';
 
 // the Dutch-ship float's two broadside batteries: separate targets riding on its sides
 const BATTERY = { hp: 85, weight: 0, score: 2500, radius: 6, explosion: 'm' };
 
 export const nagasaki = {
+  /** A pulsing glow round the pearl (and its twin in phase 3), only to look at. */
+  pearlGlow(g, e) {
+    if (NO_PROPS || !hasEnemyFrame('n_pearl')) return;
+    g.halos ??= [];
+    [g.pearl, g.pearl2].forEach((p, i) => {
+      if (!p) return;
+      const h = (g.halos[i] ??= this.segPool.spawn('n_pearl', p.x, p.y).setDepth(p.depth - 0.01).setBlendMode('ADD'));
+      const k = 0.5 + 0.5 * Math.sin(g.t * 4 + i * Math.PI);
+      h.setPosition(p.x, p.y).setScale(p.scaleX * (1.7 + 0.35 * k)).setAlpha(p.alpha * (0.22 + 0.18 * k)).setVisible(p.visible);
+    });
+  },
+
   biidoro(e, dt, b) {
     if (e.state === 'enter') {
       e.y += Math.max(10, (e.stopY - e.y) * 2) * dt;
@@ -347,6 +359,7 @@ export const nagasaki = {
       g.pearl.setPosition(e.x + Math.cos(a) * 26, e.y + 10 + Math.sin(a) * 16);
       g.pearl2.setPosition(e.x - Math.cos(a) * 26, e.y + 10 - Math.sin(a) * 16).setAlpha(e.alpha);
     }
+    this.pearlGlow(g, e);
     if (e.state !== 'fight') return;
     if (g.stage === 1 && e.hp < e.maxHp * 0.65) {
       Object.assign(g, { phase: 0, step: 0, lane: null });

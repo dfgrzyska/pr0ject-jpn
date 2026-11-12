@@ -290,8 +290,9 @@ export const beppu = {
     e.x = g.home + 22 * Math.sin(g.sway);
     this.oniStand(e, surf, 60);
     const frame = e.hurtT > 0 && e.pose === 0 ? 'oni_hurt' : `oni_${e.pose}`;
-    // from phase 2 his left horn is snapped off (when the city's art has those frames)
-    e.setFrame(g.stage >= 2 && e.texture.has(`${frame}_b`) ? `${frame}_b` : frame);
+    // from phase 2 his left horn is snapped off, in phase 3 the kanabō is split too (when the city's art has those frames)
+    const worn = g.stage >= 3 && e.texture.has(`${frame}_c`) ? '_c' : g.stage >= 2 && e.texture.has(`${frame}_b`) ? '_b' : '';
+    e.setFrame(`${frame}${worn}`);
     // a fresh masu of beans every few seconds (at most two in the air)
     if ((g.masuT -= dt) <= 0) {
       g.masuT = g.enraged ? 5 : 6.5;
