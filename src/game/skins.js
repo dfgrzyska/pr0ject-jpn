@@ -1,14 +1,15 @@
 // Per-city looks for the six archetypes: behaviour is shared, only the sprites change.
-// '{c}' in carrier names is replaced by the carrier colour (red / blue / green).
+// '{c}' in carrier names is replaced by the carrier colour (red / blue / green). scale: shown smaller than drawn
+// (Nagasaki's lanterns, kites, glass and castella came out bigger than the other cities' enemies).
 // Sapporo adds mechanics on top: flocks with a bonus, ice armour, gliding divers, lobbing turrets,
 // snowploughs and its own miniboss patterns (kind).
 export const SKINS = {
   nagasaki: {
     nagasaki: true,
-    popcorn: { frame: 'n_lantern_0', anim: 'n_lantern' },
-    shooter: { frame: 'n_biidoro_0', anim: 'n_biidoro' },
-    diver: { frame: 'n_hata_0', anim: 'n_hata' },
-    carrier: { frame: 'n_castella_{c}_0', anim: 'n_castella_{c}' },
+    popcorn: { frame: 'n_lantern_0', anim: 'n_lantern', scale: 0.75 },
+    shooter: { frame: 'n_biidoro_0', anim: 'n_biidoro', scale: 0.8 },
+    diver: { frame: 'n_hata_0', anim: 'n_hata', scale: 0.7 },
+    carrier: { frame: 'n_castella_{c}_0', anim: 'n_castella_{c}', scale: 0.75 },
     heavy: { frame: 'n_oranda_0', anim: 'n_oranda', kind: 'oranda' },
     turret: { base: 'n_winch_base', head: 'n_winch_', wreck: 'n_winch_wreck', pattern: 'tide' },
   },

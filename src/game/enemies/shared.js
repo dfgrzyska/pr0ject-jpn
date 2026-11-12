@@ -19,6 +19,7 @@ export const EXTRAS = {
   kind: null,
   song: null, // heavy with its own theme
   decoys: null,
+  shades: null,
   split: false, // volcanic bomb: bursts into two fragments
   sniper: false, // matchlock: aims a line, then one fast shot
   lidded: false, // vinegar jar: armoured while the lid is on

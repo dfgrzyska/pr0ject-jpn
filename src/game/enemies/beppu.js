@@ -181,8 +181,9 @@ export const beppu = {
         d.ripple = 0.18;
         s.fx.puff('splash', e.x + (Math.random() - 0.5) * 8, e.y - 6, 0.3);
         // second phase: two false shadows ripple along beside it
-        if (e.p2) for (const side of [-1, 1]) s.fx.puff('splash', Phaser.Math.Clamp(e.x + side * 46, 10, VIEW.width - 10) + (Math.random() - 0.5) * 8, e.y - 6, 0.3);
+        if (e.p2) for (const sh of this.waniShades(e)) s.fx.puff('splash', sh.x + (Math.random() - 0.5) * 8, sh.y - 6, 0.3);
       }
+      if (e.p2) this.waniShades(e);
       if (d.t > 1.4) Object.assign(d, { phase: 'rise', t: 0 });
     } else if (d.phase === 'rise') {
       e.flash = Math.floor(d.t * 20) % 2 ? 0.02 : 0;
@@ -193,7 +194,8 @@ export const beppu = {
         s.fx.puff('splash', e.x, e.y + 20, 0.4);
         s.fx.puff('splash', e.x, e.y - 10, 0.4);
         // the false shadows burst up too, as scalding spouts
-        if (e.p2) for (const side of [-1, 1]) b.zone(Phaser.Math.Clamp(e.x + side * 46, 12, VIEW.width - 12), e.y + 6, 11, { warn: 0.3, live: 0.45 });
+        if (e.p2) for (const sh of this.waniShades(e)) b.zone(Phaser.Math.Clamp(sh.x, 12, VIEW.width - 12), sh.y + 6, 11, { warn: 0.3, live: 0.45 });
+        this.waniShadesOut(e);
         if (this.canFire(e)) {
           b.ring(e.x, e.y + 10, 14, Math.random() * TAU, slow);
           b.fan(e.x, e.y + 30, this.aimAt(e, 0, 30), 5, 0.7, normal);
@@ -204,6 +206,25 @@ export const beppu = {
       }
     }
     this.waniSegs(e);
+  },
+
+  /**
+   * Phase two: the two false shadows swimming beside it under the water, drawn just like the real one
+   * (its submerged frame) so the player can't tell which is which until they surface. Returns them.
+   */
+  waniShades(e) {
+    e.shades ??= [];
+    [-1, 1].forEach((side, i) => {
+      const sh = (e.shades[i] ??= this.segPool.spawn('wani_sub', e.x, e.y).setDepth(e.depth - 0.01));
+      const x = Phaser.Math.Clamp(e.x + side * (46 + 5 * Math.sin(e.age * 2.3 + side)), 14, VIEW.width - 14);
+      sh.setPosition(x, e.y + 4 * Math.sin(e.age * 1.7 + i * 2)).setRotation(e.rotation + 0.12 * Math.sin(e.age * 2 + i)).setScale(e.scaleX).setAlpha(e.alpha);
+    });
+    return e.shades;
+  },
+
+  waniShadesOut(e) {
+    for (const sh of e.shades ?? []) if (sh) this.segPool.kill(sh);
+    e.shades = null;
   },
 
   /** Hit circles for the long body: the snout and the tail, following the rotation. */

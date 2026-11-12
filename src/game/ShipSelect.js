@@ -23,7 +23,7 @@ export class ShipSelect {
     this.title = pixelText(scene, W / 2, 0, 'WYBIERZ STATEK').setDepth(d).setTint(0xffd6e5);
     this.ships = SHIPS.map((s, i) => sharedArt(scene.add.image(SLOT_X[i], 0, 'sprites', s.frame)).setScale(2).setDepth(d + 1));
     this.flames = SHIPS.map((s, i) =>
-      scene.add.sprite(SLOT_X[i], 0, 'sprites', 'flame_0').setOrigin(0.5, 0).setScale(2).setDepth(d).play('flame'),
+      sharedArt(scene.add.sprite(SLOT_X[i], 0, 'sprites', 'flame_0')).setOrigin(0.5, 0).setScale(2).setDepth(d).play('flame'),
     );
     this.names = SHIPS.map((s, i) => pixelText(scene, SLOT_X[i], 0, s.name).setDepth(d));
     this.role = pixelText(scene, W / 2, 0, '').setDepth(d);

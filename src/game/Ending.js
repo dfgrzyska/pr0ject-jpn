@@ -190,7 +190,7 @@ export class Ending {
     // the ship flying past the mountain towards the sun, its engine burning
     const ship = SHIPS[s.shipIndex];
     this.ship = this.add(sharedArt(s.add.sprite(-20, H + 20, 'sprites', ship.frame)).setDepth(D + 1));
-    this.flame = this.add(s.add.sprite(0, 0, 'sprites', 'flame_0').setDepth(D + 0.9).play('flame'));
+    this.flame = this.add(sharedArt(s.add.sprite(0, 0, 'sprites', 'flame_0')).setDepth(D + 0.9).play('flame'));
     this.flameY = ship.flameY;
     // petals drifting off the branch and the trees
     this.petals = [];

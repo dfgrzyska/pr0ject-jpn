@@ -206,6 +206,7 @@ export class Enemies {
       default:
         return;
     }
+    if (look?.scale) e.setScale((e.base *= look.scale));
     e.setDepth(e.ground ? DEPTH.ground : DEPTH.air + (w.type === 'heavy' ? -0.1 : 0));
     if (w.type === 'steam') e.setDepth(DEPTH.player - 0.2); // over enemies and shots, under the ship and bullets
     if (this.skin.duos && w.duo) {
@@ -698,6 +699,7 @@ export class Enemies {
     if (e.burnt) for (const bt of e.burnt) if (bt) this.woundPool.kill(bt);
     e.burnt = null;
     if (e.decoys) this.dropDecoys(e);
+    if (e.shades) this.waniShadesOut(e); // the crocodile's false shadows
     if (e.kind === 'yukionna' || ((e.group?.kind === 'sankibo' || e.group?.kind === 'kuma') && e.role === 'body')) this.scene.parallax.windTarget = 0; // blizzard / Tengu gale dies down
     if (e.kind === 'yukionna') this.yukiCleanup(e); // her mist, the whiteout, the whirlwind's drag
     if (e.group?.kind === 'kyubi' && e.role === 'body') {
@@ -1025,7 +1027,6 @@ export class Enemies {
       e.y += Math.sin(e.ang) * e.v * dt;
       if (this.scene.parallax.nearKind === 'sakura' || this.scene.parallax.nearKind === 'momiji') {
         const px = this.scene.parallax;
-        const leaf = px.nearKind === 'momiji' ? 'momiji_' : 'petal_';
         for (const bit of px.bitsLive) {
           const dx = bit.x - e.x;
           const dy = bit.y - e.y;
@@ -1040,41 +1041,6 @@ export class Enemies {
               bit.setAlpha(0.92);
             }
           }
-        }
-        // Kyoto only: diving lanterns trail petals (Miyajima's shamoji just part the falling leaves)
-        if (px.nearKind === 'sakura' && Math.random() < dt * 28) {
-          const nx = -Math.sin(e.ang);
-          const ny = Math.cos(e.ang);
-          const bx = e.x - Math.cos(e.ang) * 6;
-          const by = e.y - Math.sin(e.ang) * 6;
-          const side = Math.random() < 0.5 ? -1 : 1;
-          const b = px.bit(
-            `${leaf}${Math.floor(Math.random() * 4)}`,
-            bx + nx * side * 4,
-            by + ny * side * 4,
-            28 + Math.random() * 26,
-            nx * side * (65 + Math.random() * 45),
-            px.nearKind === 'momiji' ? 1 : 0,
-            14,
-            Math.random() * 3,
-            0.055,
-          );
-          b.setAlpha(0.88);
-          const s2 = -side;
-          const wp = this.scene.fx.part(
-            this.scene.fx.parts,
-            `${leaf}${Math.floor(Math.random() * 4)}`,
-            bx + nx * s2 * 4,
-            by + ny * s2 * 4,
-          );
-          wp.vx = nx * s2 * (70 + Math.random() * 55);
-          wp.vy = ny * s2 * (45 + Math.random() * 35) + 18;
-          wp.drag = 1.6;
-          wp.g = 18;
-          wp.spin = s2 * (10 + Math.random() * 6);
-          wp.life = wp.max = 0.5 + Math.random() * 0.2;
-          wp.a0 = 0.92;
-          wp.setScale(1.1);
         }
       }
     }
