@@ -12,6 +12,7 @@
   "boss": true,
   "end": 232,
   "embersFrom": 168,
+  "quakes": [27, 63, 146, 186],
   "music": { "schedule": [[0, "s4_intro"], [30, "s4_build"], [62, "s4_full"]], "heavy": "s4_heavy", "boss": "s4_boss" },
   "warnings": { "heavy": "RAIJU NADCHODZI", "boss": "SAKURAJIMA SIĘ BUDZI", "bossDown": "SAKURAJIMA UCICHŁA!" },
   "weather": [[0, 0.35], [36, 0.45], [86, 0.6], [132, 0.75], [172, 0.9]],

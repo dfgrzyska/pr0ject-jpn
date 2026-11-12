@@ -14,6 +14,7 @@ import { Interlude } from '../game/Interlude.js';
 import { Ending } from '../game/Ending.js';
 import { PauseMenu } from '../game/PauseMenu.js';
 import { Shadows } from '../game/Shadows.js';
+import { Quake } from '../game/Quake.js';
 import { Parallax } from '../game/Parallax.js';
 import { Player } from '../game/Player.js';
 import { Pool } from '../game/Pool.js';
@@ -125,6 +126,7 @@ export class Stage extends Phaser.Scene {
     this.pickups = new Pool(this, DEPTH.pickup);
     this.player = new Player(this);
     this.shadows = this.stage.shadows ? new Shadows(this) : null;
+    this.quake = this.stage.quakes ? new Quake(this, this.stage.quakes) : null; // Kagoshima's earthquakes
     // N comes from stage 1 (x10 by the end of stage 1 without dying); the multiplier carries over
     const step =
       SCORE.multiplierStep === 'auto'
@@ -742,6 +744,8 @@ export class Stage extends Phaser.Scene {
     this.foodTrail.update(dt);
     this.fx.update(dt, this.parallax);
     if (playing) this.scenicView?.update(dt);
+    if (playing) this.quake?.update(dt);
+    else this.quake?.stop();
     if (playing) this.collide();
     if (this.hitboxes) this.drawHitboxes();
 

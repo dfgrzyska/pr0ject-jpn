@@ -143,6 +143,27 @@ export class Sfx {
     this.sweep(2400, 80, 1.0, 0.18, t + 0.22);
   }
 
+  /** Kagoshima's earthquake: a deep rumble swelling and dying away, with a crack of rock in it. */
+  quake() {
+    if (this.muted) return;
+    const t = this.now();
+    const s = this.s;
+    const src = this.ctx.createBufferSource();
+    src.buffer = s.noise;
+    src.loop = true;
+    const lp = s.filter('lowpass', 140, 1.5);
+    const g = s.gain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.5, t + 0.25);
+    g.gain.setValueAtTime(0.5, t + 1.0);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 2.4);
+    src.connect(lp).connect(g).connect(this.out);
+    src.start(t);
+    src.stop(t + 2.5);
+    this.blip('sine', 46, 30, 2.2, 0.3, t);
+    this.blip('square', 160, 50, 0.25, 0.05, t + 0.05, s.filter('lowpass', 600));
+  }
+
   /** The player's ship going down: a falling squeal and a crunch. */
   hit() {
     if (this.muted) return;
