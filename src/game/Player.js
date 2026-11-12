@@ -337,8 +337,8 @@ export class Player {
       }
       if (o.on && (o.t -= dt) <= 0) {
         o.on = false;
-        const o = this.shot('orizuru_0', x, y, 0, -120, OFUDA.damage, 4, { homing: true, life: 1.6 });
-        o.setScale(0.55 * o.base).setRotation(0);
+        const c = this.shot('orizuru_0', x, y, 0, -120, OFUDA.damage, 4, { homing: true, life: 1.6 });
+        c.setScale(0.55 * c.base).setRotation(0);
       }
     }
   }
