@@ -56,7 +56,7 @@ const mod = new SourceTextModule(readFileSync(new URL('../../src/game/Discoverie
 await mod.link(async (path) => {
   const exports = path.includes('config') ? config : path.includes('data/discoveries') ? { YOKAI, FOODS, createDiscoveryStore }
     : path.includes('stages') ? { STAGES: stages } : path.includes('i18n') ? { getLang: () => language }
-      : path.includes('Hud') ? { pixelText } : path.includes('enemyArt') ? { portrait: (scene, img, frame) => (img.setFrame(frame), 1) } : { INK_FONT: 'ink' };
+      : path.includes('Hud') ? { pixelText } : path.includes('enemyArt') ? { portrait: (scene, img, frame) => (img.setFrame(frame), 1), sharedArt: (o) => o } : { INK_FONT: 'ink' };
   return new SyntheticModule(Object.keys(exports), function () { for (const [k, v] of Object.entries(exports)) this.setExport(k, v); });
 });
 await mod.evaluate();

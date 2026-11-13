@@ -134,13 +134,16 @@ export function tailFrames() {
 
 /**
  * The portraits of the yōkai album and the bosses' parade (portraits.png, drawn at RENDER_SCALE): set
- * `img` to `frame` from there when it has it, else from the shared atlas. Returns the image's base scale.
+ * `img` to `frame` from there when it has it, else from sprites540 (the dishes), else from the old atlas.
+ * Returns the image's base scale.
  */
 export function portrait(scene, img, frame) {
   const tex = scene.textures;
   const hi = Boolean(tex?.exists?.('portraits') && tex.get('portraits').has(frame));
-  const key = hi ? 'portraits' : 'sprites';
+  // (the dishes are drawn at 540 px in the shared atlas rather than among the portraits)
+  const shared = !hi && Boolean(tex?.exists?.('sprites540') && tex.get('sprites540').has(frame));
+  const key = hi ? 'portraits' : shared ? 'sprites540' : 'sprites';
   if (img.texture && img.texture.key !== key) img.setTexture(key, frame);
   else img.setFrame(frame);
-  return hi ? 1 / RENDER_SCALE : 1;
+  return hi || shared ? 1 / RENDER_SCALE : 1;
 }
