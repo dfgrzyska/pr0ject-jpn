@@ -191,13 +191,8 @@ export const encounters = {
     const route = ft => ({ x: 90 + Math.sin(ft * 0.65) * 52, y: 88 + Math.sin(ft * 1.3) * 10 });
     const speed = g.stage >= 3 ? 1.4 : 1;
     const future = route(g.ft + 1.95 * speed);
-    ink.lineStyle(1, GOLD, 0.55);
-    let prev = route(g.ft);
-    for (let i = 1; i <= 24; i++) {
-      const q = route(g.ft + i / 12 * speed);
-      ink.lineBetween(prev.x, prev.y, q.x, q.y); prev = q;
-    }
-    ink.strokeCircle(future.x, future.y, 9);
+    // (no lines tracing its path: only a small ring where it will be when a rocket would reach it)
+    ink.lineStyle(1, GOLD, 0.55).strokeCircle(future.x, future.y, 9);
     let busy = false;
     for (const pad of g.launchers) {
       pad.y = s.H - 83;
@@ -236,8 +231,6 @@ export const encounters = {
       const r = pad.rocket;
       r.t += dt;
       const target = route(g.ft + Math.max(0, 1.95 - r.t) * speed);
-      ink.lineStyle(1, SAFE, 0.65).lineBetween(pad.x, pad.y - 18, pad.x, 88);
-      ink.strokeCircle(pad.x, 88, 22);
       ink.lineStyle(1, GOLD, 0.85).strokeCircle(target.x, target.y, 10);
       if (r.t < 1.2) {
         ink.fillStyle(GOLD, 1).fillRect(pad.x - 10, pad.y - 13, 20 * (1 - r.t / 1.2), 2);
