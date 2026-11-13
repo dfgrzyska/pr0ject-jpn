@@ -2474,11 +2474,44 @@ export function buildMid() {
         for (let i = -6; i <= 2; i++) img.px((x + 17) * S + i, (y + 10) * S - Math.abs(i + 2) * 0.3, 0xffb0a0);
         pool(x + 20, y + 12, 22, 0xff5030, 0.4);
       } else {
-        img.disc(x + 16, y + 12, 12, 0xd8302a);
-        img.disc(x + 16, y + 12, 9, 0xe8c070);
-        for (let k = 0; k < 5; k++) img.line(x + 10, y + 8 + k * 2, x + 22, y + 9 + k * 2, 0xf4e0a0);
-        img.disc(x + 12, y + 12, 2.5, 0xf2ece0);
-        img.rect(x + 18, y + 6, 2, 10, 0x6a3a1a);
+        // ramen: a bowl seen from the side (it read as a red and white disc from above), chopsticks lifting the
+        // noodles out of the broth, a slice of naruto, half an egg and a sheet of nori in it, steam rising
+        const X0 = x * S;
+        const Y0 = y * S;
+        for (let j = 0; j <= 13 * S; j++) {
+          // the bowl: wide at the rim, narrowing to its foot, lit on the left
+          const half = 14 * S - j * 0.42;
+          for (let i = -half; i <= half; i++) {
+            const lit = i < -half * 0.45 ? 0xf05a40 : i > half * 0.55 ? 0xa82018 : 0xd8302a;
+            img.px(X0 + 16 * S + i, Y0 + 12 * S + j, Math.abs(i) > half - 1.5 ? 0x5a0c08 : lit);
+          }
+        }
+        img.rect(x + 11, y + 25, 10, 1, 0x5a0c08); // its foot
+        for (let i = -38; i <= 38; i++) {
+          // the white raimon band round it, the red key pattern in it
+          const Yb = Y0 + 15 * S;
+          for (let j = 0; j < 6; j++) img.px(X0 + 16 * S + i, Yb + j, 0xf6f0e4);
+          const t = ((i + 40) % 8);
+          img.px(X0 + 16 * S + i, Yb + (t < 4 ? 1 : 4), 0xc82018);
+          if (t === 0 || t === 4) for (let j = 1; j <= 4; j++) img.px(X0 + 16 * S + i, Yb + j, 0xc82018);
+        }
+        // the broth's surface just showing over the rim, what floats in it
+        img.ellipse(x + 16, y + 12, 13, 2, 0xe0963a);
+        img.disc(x + 8, y + 11, 2.5, 0xf6f0ec); // naruto, its pink swirl
+        for (let a = 0; a < 6; a += 0.4) img.px(Math.round((x + 8) * S + Math.cos(a) * a * 0.9), Math.round((y + 11) * S + Math.sin(a) * a * 0.9), 0xe86a8a);
+        img.ellipse(x + 23, y + 11, 3, 2, 0xfaf6ea); img.disc(x + 23, y + 11, 1.2, 0xf0a020); // half an egg
+        img.rect(x + 27, y + 4, 3, 8, 0x1e3424); // nori, standing up at the back
+        for (let Yf = (y + 4) * S; Yf < (y + 12) * S; Yf += 3) img.px((x + 28) * S, Yf, 0x3e6a48);
+        // the chopsticks, and the noodles hanging from them back into the bowl
+        img.line(x + 4, y - 1, x + 30, y + 3, 0xc89058);
+        img.line(x + 4, y + 1, x + 30, y + 4, 0x9a6a38);
+        for (let n = 0; n < 6; n++) {
+          const nx = (x + 13) * S + n * 3;
+          for (let Yf = (y + 1) * S + 2; Yf < (y + 11) * S; Yf++) img.px(nx + Math.round(Math.sin(Yf * 0.55 + n) * 1.5), Yf, n % 2 ? 0xf4d468 : 0xe8bc48);
+        }
+        // the steam, in three wavering wisps
+        for (const [sx, ph] of [[x + 7, 0], [x + 21, 1.7], [x + 26, 3.1]])
+          for (let Yf = (y - 7) * S; Yf < (y - 1) * S; Yf++) img.px(Math.round(sx * S + Math.sin(Yf * 0.35 + ph) * 3), Yf, 0xf4f0ff);
         pool(x + 16, y + 12, 20, 0xff6a40, 0.35);
       }
       for (let j = 0; j < 38; j++) glow(x + j, y - 3, NEON[((j >> 2) + k) % NEON.length], 0.9);
