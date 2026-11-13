@@ -7,7 +7,7 @@
 // and the bear: first the Snow Festival's carved snow sculpture, then the higuma inside it.
 // Every frame is three times the old one's size (old mask coordinate m -> fine (m + 1) * 3).
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
-import { thaw, frost, breath } from './kuma2a.mjs';
+import { thaw, frost, breath, melt } from './kuma2a.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -528,6 +528,51 @@ export function bear(phase, roar) {
   return s.render();
 }
 
+// ---------------------------------------------------------------- the boss fight's festival bonfire (32 x 28 -> 96 x 84)
+// Seen from above: a ring of stones capped with snow, the snow round it melted back to dark wet ground, logs laid
+// crosswise, a bed of embers, and the flames licking up (four frames: the tongues sway and leap), sparks.
+export function bonfire(f) {
+  const s = new HiSprite(96, 84, RAMPS);
+  const cx = 48;
+  const cy = 50;
+  // the melted ring: wet dark ground, a rim of slush
+  s.ellipse(cx, cy + 2, 40, 28, 'w', { flat: 0.55, pat: snowPat(11) });
+  s.ellipse(cx, cy + 2, 34, 23, 'c', { flat: 0.12, pat: mottle({ amt: 0.25, scale: 4, seed: 4 }) });
+  // the stones, each with a cap of snow
+  for (let k = 0; k < 13; k++) {
+    const a = (k / 13) * TAU + 0.2;
+    const x = cx + Math.cos(a) * 26;
+    const y = cy + 2 + Math.sin(a) * 17;
+    s.ellipse(x, y, 4.6, 3.8, 'x', { bias: 0.1, pat: speckle({ amt: 0.2, dark: 0.1 }) });
+    s.ellipse(x - 0.6, y - 1.4, 3, 1.8, 'w', { flat: 0.75 });
+  }
+  // the logs, crosswise, charred at the middle
+  for (const [a, l] of [[0.5, 19], [-0.5, 19], [1.57, 15], [2.6, 16]]) {
+    const dx = Math.cos(a) * l;
+    const dy = Math.sin(a) * l * 0.6;
+    s.tube(cx - dx, cy + 2 - dy, cx + dx, cy + 2 + dy, 3.2, 'c', { rb: 2.6 });
+  }
+  // the bed of embers
+  s.ellipse(cx, cy + 2, 13, 8.5, 'o', { flat: 0.3, pat: mottle({ amt: 0.45, scale: 3, seed: 7 + f }) });
+  // the flames: broad tongues leaning up the screen, swaying frame to frame; a yellow heart at the root
+  const sway = [0, 2, 0.6, -1.8][f];
+  const tongues = [[-12, 24, 1.15], [-5, 36, 1.35], [4, 31, 1.25], [12, 23, 1.05], [0, 44, 1.5]];
+  for (const [ox, ht, wd] of tongues) {
+    const lean = sway * (ht / 30) + Math.sin(f * 1.9 + ox) * 1.6;
+    const lift = [0, 4, -3, 2][(f + Math.abs(ox)) % 4];
+    const top = cy - ht - lift;
+    s.paint([cx + ox - 16, top - 2, cx + ox + 16, cy + 8], (x, y) => {
+      const k = (cy + 6 - y) / (cy + 6 - top); // 0 at the base, 1 at the tip
+      if (k < 0 || k > 1) return false;
+      const half = 7 * wd * Math.sin(Math.PI * Math.min(1, k * 0.8 + 0.2)) * (1 - k * 0.7);
+      return Math.abs(x - (cx + ox + lean * k * k)) < half;
+    }, 'o', (x, y) => Math.min(0.9, 0.35 + ((cy + 6 - y) / (cy + 6 - top)) * 0.6));
+  }
+  s.ellipse(cx + sway * 0.4, cy - 4, 7, 9, 'o', { flat: 0.62 });
+  s.ellipse(cx + sway * 0.4, cy - 1, 4, 4, 'o', { flat: 0.74 });
+  return s.render();
+}
+
 export function kumaPaw() {
   const s = new HiSprite(51, 51, RAMPS);
   s.ellipse(25.5, 28.5, 17.5, 17.5, 'w', { pat: snowPat(31) });
@@ -591,6 +636,9 @@ export function sapporoEnemies(add) {
   add('kuma_0f', frost(b0));
   add('kuma_1f', frost(bear(2, true)));
   for (let f = 0; f < 4; f++) add(`kuma_breath_${f}`, breath(f));
+  // the boss fight's bonfire, and the sculpture melting in it (after one, two, three passes through the fire)
+  for (let f = 0; f < 4; f++) add(`kuma_fire_${f}`, bonfire(f));
+  for (let n = 1; n <= 3; n++) add(`kuma_melt_${n}`, melt(ice, n));
   add('kuma_paw', kumaPaw());
   for (let f = 0; f < 2; f++) add(`kuma_heart_${f}`, kumaHeart(f));
 }

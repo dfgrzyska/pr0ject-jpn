@@ -277,15 +277,8 @@ export class Enemies {
       e.hp = Math.max(e.maxHp * 0.75, e.hp - amount);
       return;
     }
-    if (e.group?.kind === 'tako' && e.role === 'tentacle') {
-      const pinned = e.group.slams.some(sl => sl.arm === e && sl.pinned);
-      amount *= pinned ? 2.5 : 0.06;
-    }
-    // A strong ship can empty an exposed head before the arms have changed rows.
-    // Keep the final sliver for the bare-head phase, otherwise the last arm has no boss left to finish.
-    if (e.group?.kind === 'tako' && e.role === 'head' && e.group.stage < 3) {
-      amount = Math.min(amount, Math.max(0, e.hp - e.maxHp * 0.32));
-    }
+    // the octopus: an arm stuck in a mooring pile takes much more of a hit (osaka.js, TAKO)
+    if (e.group?.kind === 'tako' && e.role === 'tentacle' && e.group.slams.some((sl) => sl.arm === e && sl.pinned)) amount *= 2.5;
     if (crabBlock) {
       // Heike-gani's iron pincers deflect frontal shots unless flanked from the sides
       if (Math.random() < 0.45) this.scene.fx.spark(e.x, e.y + 14);
@@ -366,6 +359,10 @@ export class Enemies {
       this.tentacleDown(e);
       return;
     }
+    if (e.group?.kind === 'sankibo' && e.role === 'brazier') {
+      this.brazierDown(e);
+      return;
+    }
     if (e.group?.kind === 'sankibo' && e.role === 'body') {
       for (const br of e.group.braziers) {
         if (!br.dead && br.group === e.group) {
@@ -432,9 +429,11 @@ export class Enemies {
     const g = this.bossGroup;
     if (e.type === 'boss' && g && !g.defeated && g.parts.every((p) => p.dead || p.hp <= 0 || p.group !== g)) {
       g.defeated = true;
-      if (g.duelGhost) this.segPool.kill(g.duelGhost);
-      g.padArt?.forEach((a) => a.destroy());
-      g.padArt = null;
+      // the fight's own art (fireworks launchers, mooring piles, the bonfire) goes with it
+      for (const k of ['padArt', 'pileArt', 'fireArt']) {
+        for (const a of [g[k]].flat()) a?.destroy();
+        g[k] = null;
+      }
       s.onBossDefeated();
     }
   }

@@ -114,3 +114,56 @@ export function breath(f) {
     }
   return out;
 }
+
+/**
+ * The sculpture melting in the furnace (n = 1..3 passes through the fire): cracks that glow orange from the heat
+ * run through the ice, more of them each time, the ice round them wet and glassy, drips at the bottom edges.
+ */
+export function melt(ice, n) {
+  const w = ice.w;
+  const h = ice.h;
+  const out = new Raster(w, h);
+  out.data.set(ice.data);
+  let sd = 9100 + n * 17;
+  const rnd = () => ((sd = (sd * 1664525 + 1013904223) >>> 0) / 4294967296);
+  // the cracks: borders of Voronoi cells, more cells (finer crazing) with each melt; the cells keep their seeds,
+  // so the cracks of the first melt stay in the later ones
+  const cells = [];
+  let s0 = 777;
+  const rnd0 = () => ((s0 = (s0 * 1664525 + 1013904223) >>> 0) / 4294967296);
+  for (let i = 0; i < [0, 9, 20, 34][n]; i++) cells.push([rnd0() * w, h * 0.12 + rnd0() * h * 0.8]);
+  const dist = new Float32Array(w * h);
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      let b1 = 1e9;
+      let b2 = 1e9;
+      for (const [cx, cy] of cells) {
+        const d = (x - cx) ** 2 + (y - cy) ** 2;
+        if (d < b1) { b2 = b1; b1 = d; } else if (d < b2) b2 = d;
+      }
+      dist[y * w + x] = Math.sqrt(b2) - Math.sqrt(b1);
+    }
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      if (ice.alpha(x, y) < 140) continue;
+      // keep the cracks off the very edge of the figure, where they would read as outline
+      let inner = true;
+      for (const [dx, dy] of [[3, 0], [-3, 0], [0, 3], [0, -3]]) if (ice.alpha(x + dx, y + dy) < 140) inner = false;
+      const d = dist[y * w + x] + (fbm(x * 0.15, y * 0.15, 2, 3) - 0.5) * 1.4;
+      if (inner && d < 1.1) out.set(x, y, d < 0.5 ? 0xfff0c0 : 0xff9a40, 1); // the glowing seam
+      else if (inner && d < 3.2) out.set(x, y, 0xffb070, 0.42 * (1 - (d - 1.1) / 2.1)); // its warm glow in the ice
+      else if (d < 7 + n * 2) out.set(x, y, 0xe8f8ff, 0.12 + 0.05 * n); // wet, glassy ice
+    }
+  // drips: short runs of clear water hanging from the bottom edges of the figure
+  for (let k = 0; k < 6 + n * 5; k++) {
+    const x = Math.floor(w * 0.2 + rnd() * w * 0.6);
+    let y = h - 1;
+    while (y > 0 && ice.alpha(x, y) < 140) y--;
+    if (y <= 0) continue;
+    const len = 3 + Math.floor(rnd() * (4 + n * 3));
+    for (let j = 1; j <= len; j++) out.set(x, y + j, 0xbfe8ff, 0.85 - j * 0.05);
+    out.set(x, y + len + 1, 0xffffff, 0.9);
+  }
+  void INK;
+  return out;
+}

@@ -11,7 +11,7 @@ try {
   await new Promise(r => setTimeout(r, 1200));
   browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true,
     args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-  for (const H of (process.env.BOSS_HEIGHT ? [Number(process.env.BOSS_HEIGHT)] : [320, 420])) for (const city of (process.env.BOSS_CITY ? [Number(process.env.BOSS_CITY)] : [2, 3, 5, 7, 8])) {
+  for (const H of (process.env.BOSS_HEIGHT ? [Number(process.env.BOSS_HEIGHT)] : [320, 420])) for (const city of (process.env.BOSS_CITY ? [Number(process.env.BOSS_CITY)] : [3, 5, 8])) {
     const stage = JSON.parse(readFileSync(`src/data/stage${city}.json`, 'utf8'));
     const at = stage.waves.find(w => w.type === 'boss').t;
     const page = await browser.newPage({ viewport: { width: 540, height: H * 3 }, hasTouch: H === 420 });
@@ -33,15 +33,7 @@ try {
           p.tx = 90; p.ty = s.H - 44;
           if (g) {
             const alive = g.parts.filter(e => !e.dead && e.hp > 0 && e.group === g);
-            if (city === 2 && alive.length) {
-              const d = g.duel;
-              if (g.open) { p.tx = alive[0].x; p.ty = Math.max(205, alive[0].y + 60); }
-              else if (d && d.t < 1.3) {
-                p.ty = d.target.y + 35;
-                p.tx = d.source.x + (d.target.x - d.source.x) * (p.ty - d.source.y) / (d.target.y - d.source.y);
-              } else if (d) { p.tx = d.angle < Math.PI / 2 ? 18 : 162; p.ty = 220; }
-              else { p.tx = 90; p.ty = 180; }
-            } else if (city === 3) {
+            if (city === 3) {
               if (g.stage === 1 && g.fire) {
                 const c = g.charge;
                 const from = c?.from ?? g.body;
@@ -51,18 +43,11 @@ try {
               } else { p.tx = g.body.x; }
               audit.maxMelts = Math.max(audit.maxMelts, g.melts ?? 0);
             } else if (city === 5) {
-              const sl = g.slams.find(a => !a.arm.dead && a.t >= 0 && a.t < 1.1) ?? g.slams.find(a => a.pinned) ?? g.slams.find(a => !a.arm.dead);
-              if (sl && !g.open) {
-                const post = g.posts[(g.trapTurn ?? 1) % 3];
-                p.tx = sl.t < 1.1 ? post.x : sl.to.x;
-                p.ty = sl.t < 1.1 ? post.y : sl.to.y + 48;
-              } else { p.tx = g.head.x; }
-            } else if (city === 7) {
-              const a = g.ember;
-              if (a && a.t < 1.4) {
-                const y = Math.min(205, s.H * .61), x = g.body.x - g.galeDir * 50;
-                p.tx = a.from.x + (x - a.from.x) * (p.ty - a.from.y) / (y - a.from.y);
-              } else { p.tx = g.body.x; }
+              const pin = g.slams.find(q => q.pinned);
+              const pile = g.piles?.[Math.floor(audit.frames / 600) % 3];
+              if (pin) { p.tx = pin.to.x; p.ty = pin.to.y + 40; }
+              else if (g.open > 0 || !pile) { p.tx = g.head.x; }
+              else { p.tx = pile.x + 8; p.ty = pile.y + 14; }
             } else if (city === 8 && g.launchers) {
               if (g.open) p.tx = alive[0]?.x ?? 90;
               else {
@@ -121,16 +106,6 @@ try {
       });
       assert(armor.alive && armor.stage === 1 && armor.melts < 3 && armor.after >= armor.floor);
     }
-    if (city === 5) {
-      const armor = await page.evaluate(() => {
-        const s = game.scene.getScene('Stage'), g = s.enemies.bossGroup, hp = g.head.hp;
-        s.enemies.damage(g.head, 1e9, true);
-        const alive = !g.head.dead && g.head.hp >= g.head.maxHp * .32;
-        g.head.hp = hp;
-        return alive;
-      });
-      assert(armor, 'a bomb cannot kill the head before the last phase and strand surviving arms');
-    }
     const paused = await page.evaluate(() => {
       const s = game.scene.getScene('Stage'), before = s.enemies.bossGroup.t;
       s.paused = true; for (let i = 0; i < 60; i++) s.update(0, 1000 / 60);
@@ -172,16 +147,13 @@ try {
       return s.state === 'clear' && s.enemies.bossGroup.defeated;
     });
     assert(cleared, 'victory reaches the results without a dangling mechanism');
-    if (city === 2) {
+    if (city === 3) {
       const overflow = await page.evaluate(async () => {
         const { setLang } = await import('/src/i18n.js');
         const s = game.scene.getScene('Stage'), bad = [];
         const labels = [
-          ['SKŁÓĆ STRAŻNIKÓW', 'NAPROWADŹ RYK NA DRUGIEGO'],
-          ['RYK WIDMA', 'NAPROWADŹ RYK NA DRUGIEGO'],
           ['STOP LODOWĄ SKORUPĘ', 'ZWAB 3 SZARŻE PRZEZ OGIEŃ'],
-          ['ZAKLINUJ MACKĘ', 'ZWAB NA ZŁOTY PAL I STRZELAJ'],
-          ['ODWRÓĆ ŻAR', 'NAPROWADŹ GO NA PAS WIATRU'],
+          ['PALE W ZATOCE', 'STAŃ PRZY PALU, MACKA UTKNIE'],
           ['FAJERWERKI', 'ŁADUJ WYRZUTNIĘ POD SMOKIEM'],
         ];
         for (const lang of ['pl', 'en']) {

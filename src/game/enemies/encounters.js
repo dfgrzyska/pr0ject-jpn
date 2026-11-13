@@ -1,5 +1,4 @@
-import { clamp, mix, segmentDistance, emberPoint } from './encounterGeometry.js';
-import { DOWN } from './shared.js';
+import { clamp, mix, segmentDistance } from './encounterGeometry.js';
 import { baseScale, enemyTexture, hasEnemyFrame } from '../enemyArt.js';
 import { DEPTH, JAODORI } from '../../config.js';
 
@@ -23,104 +22,58 @@ export const encounters = {
     this.scene.sfx.explode('m');
   },
 
-  updateShisa(g, dt) {
-    const s = this.scene, p = s.player, ink = this.tele;
-    const alive = g.parts.filter(e => living(e) && e.group === g);
-    if (!alive.length) return;
-    g.t += dt;
-    if (alive.some(e => e.state === 'enter')) {
-      for (const e of alive) {
-        e.y = Math.min(e.homeY, e.y + 42 * dt);
-        if (e.y >= e.homeY) e.state = 'fight';
-      }
-      return;
-    }
-    const total = alive.reduce((n, e) => n + e.hp, 0);
-    if (g.stage === 1 && (total < g.maxTotal * 0.55 || alive.length === 1)) {
-      g.duel = null;
-      this.phaseBreak(g, alive[0].x, alive[0].y, 2, 'SKŁÓCENI STRAŻNICY');
-    }
-    if (g.stage === 2 && alive.length === 1) {
-      const last = alive[0], fallen = g.parts.find(e => e !== last);
-      last.hp = Math.min(last.maxHp, last.hp + 200);
-      last.radius *= 1.2;
-      g.soul = { t: 0, x: fallen.x, y: fallen.y, sp: null };
-      g.duelGhost = this.segPool.spawn(fallen.role === 'a' ? 'shisa_a_0' : 'shisa_un_0', fallen.x, fallen.y).setAlpha(0.45).setTint(0xa8e6ff);
-      g.duel = null;
-      g.enraged = true;
-      this.phaseBreak(g, last.x, last.y, 3, 'RYK WIDMOWEGO STRAŻNIKA');
-    }
-    if (g.stage === 3) alive[0].setScale(alive[0].base * (1 + 0.2 * this.shisaSoul(g, alive[0], dt)));
-    g.open = Math.max(0, (g.open ?? 0) - dt);
-    g.take = { a: g.open ? 1.6 : 0.12, un: g.open ? 1.6 : 0.12 };
-    this.encounterHint(g, g.stage === 3 ? 'RYK WIDMA' : 'SKŁÓĆ STRAŻNIKÓW', 'NAPROWADŹ RYK NA DRUGIEGO');
-    const turn = (g.turn ?? 0) % 2;
-    const source = alive.length === 2 ? alive[turn] : { x: turn ? 142 : 38, y: 66 };
-    const target = alive.length === 2 ? alive[1 - turn] : alive[0];
-    if (!g.duel) {
-      const move = (e, x, y) => { e.x += (x - e.x) * Math.min(1, dt * 3); e.y += (y - e.y) * Math.min(1, dt * 3); };
-      if (alive.length === 2) move(source, turn ? 130 : 50, 68);
-      move(target, turn ? 72 : 108, 140);
-    }
-    if (alive.length === 1) {
-      // A spectral attacker remains after the twin dies, so the counter still works.
-      g.duelGhost?.setPosition(source.x, source.y);
-      ink.lineStyle(2, GOLD, 0.6).strokeCircle(source.x, source.y, 13);
-      ink.lineBetween(source.x - 8, source.y - 15, source.x - 4, source.y - 6);
-      ink.lineBetween(source.x + 8, source.y - 15, source.x + 4, source.y - 6);
-    }
-    if (g.open) {
-      for (const e of alive) ink.lineStyle(1, SAFE, 0.9).strokeCircle(e.x, e.y, e.radius + 5);
-      return;
-    }
-    if (g.gate > 0 || !p.alive || p.entering > 0 || s.ceasefire || s.bombClear > 0) { g.duel = null; return; }
-    if (!g.duel) {
-      g.timer -= dt;
-      if (g.timer > 0) return;
-      g.duel = { t: 0, source: { x: source.x, y: source.y }, target, angle: DOWN, hit: false };
-    }
-    const d = g.duel;
-    if (!living(d.target)) { g.duel = null; return; }
-    d.t += dt;
-    // Aim for 1.3s, then hold the final direction for 0.8s before firing.
-    if (d.t < 1.3) d.angle = Math.atan2(p.y - d.source.y, p.x - d.source.x);
-    const end = { x: d.source.x + Math.cos(d.angle) * s.H * 1.5, y: d.source.y + Math.sin(d.angle) * s.H * 1.5 };
-    const fired = d.t >= 2.1;
-    ink.lineStyle(fired ? 7 : 1.5, fired ? GOLD : WARN, fired ? 0.85 : 0.7);
-    ink.lineBetween(d.source.x, d.source.y, end.x, end.y);
-    ink.lineStyle(1, SAFE, 0.8).strokeCircle(d.target.x, d.target.y, d.target.radius + 5);
-    if (fired && !d.hit && segmentDistance(d.target, d.source, end) < d.target.radius + 3) {
-      d.hit = true;
-      this.encounterOpen(g, d.target, 4.5, 'WIĘŹ PRZERWANA!');
-      g.take = { a: 1.6, un: 1.6 };
-      this.damage(d.target, 80);
-      g.duel = null;
-      g.turn = (g.turn ?? 0) + 1;
-      g.timer = 1.3;
-      return;
-    }
-    if (fired && segmentDistance(p, d.source, end) < 5) p.hit();
-    if (d.t >= 2.55) { g.duel = null; g.turn = (g.turn ?? 0) + 1; g.timer = 1.5; }
-  },
-
   kumaFurnace(g, dt) {
     const s = this.scene, p = s.player, body = g.body, ink = this.tele;
     const fire = g.fire = { x: 90, y: Math.min(190, s.H * 0.55) };
-    ink.fillStyle(0x383849, 1).fillRoundedRect(fire.x - 17, fire.y - 10, 34, 20, 4);
-    ink.lineStyle(2, GOLD, 0.95).strokeEllipse(fire.x, fire.y, 34, 20);
-    for (let i = -1; i <= 1; i++) {
-      const h = 12 + 4 * Math.sin(g.t * 9 + i * 2);
-      ink.fillStyle(i ? 0xff6838 : 0xffe597, 0.95).fillTriangle(fire.x + i * 8 - 6, fire.y + 3, fire.x + i * 8 + 6, fire.y + 3, fire.x + i * 8, fire.y - h);
+    const fx = s.fx;
+    // the Snow Festival bonfire: its art (four frames of flame), the glow it throws on the snow, sparks
+    if (!g.fireArt && hasEnemyFrame('kuma_fire_0')) {
+      const key = enemyTexture('kuma_fire_0');
+      g.fireArt = s.add.image(0, 0, key, 'kuma_fire_0').setScale(baseScale(key)).setDepth(DEPTH.ground + 0.6);
     }
-    for (let i = 0; i < 3; i++) ink.fillStyle(i < g.melts ? SAFE : 0x7bb8df, 1).fillCircle(80 + i * 10, fire.y + 17, 3);
+    if (g.fireArt) g.fireArt.setPosition(fire.x, fire.y - 3).setFrame(`kuma_fire_${Math.floor(g.t * 9) % 4}`);
+    else {
+      ink.fillStyle(0x383849, 1).fillRoundedRect(fire.x - 17, fire.y - 10, 34, 20, 4);
+      ink.fillStyle(0xff6838, 0.95).fillTriangle(fire.x - 7, fire.y + 3, fire.x + 7, fire.y + 3, fire.x, fire.y - 14);
+    }
+    if ((g.glowT = (g.glowT ?? 0) - dt) <= 0) {
+      g.glowT = 0.14;
+      fx.light(fire.x, fire.y - 6, 1.7 + Math.random() * 0.3, true, 0xff9040);
+      const sp = fx.part(fx.parts, 'dot_1', fire.x + (Math.random() - 0.5) * 12, fire.y - 10, { vx: (Math.random() - 0.5) * 14, vy: -26 - Math.random() * 22, drag: 0.6, life: 0.5 + Math.random() * 0.4, a0: 0.95 });
+      sp.setTint(Math.random() < 0.5 ? 0xffd070 : 0xff8030);
+    }
+    // the shell, melting: the sculpture's cracks glow and widen with each pass through the fire, it drips
+    if (g.melts > 0 && hasEnemyFrame(`kuma_melt_${g.melts}`) && body.frame.name !== `kuma_melt_${g.melts}`) body.setFrame(`kuma_melt_${g.melts}`);
+    if (g.melts > 0 && Math.random() < dt * (3 + g.melts * 3)) {
+      const d = fx.part(fx.parts, 'drop_0', body.x + (Math.random() - 0.5) * 34, body.y + 18 + Math.random() * 8, { vy: 30, g: 120, drag: 0, life: 0.45 });
+      d.setTint(0xbfe8ff);
+    }
+    // a pass through the fire leaves the bear in flames and steam for a moment
+    if (g.burn > 0) {
+      g.burn -= dt;
+      if (Math.random() < dt * 40) {
+        const fl = fx.part(fx.parts, 'dot_1', body.x + (Math.random() - 0.5) * 30, body.y + (Math.random() - 0.3) * 30, { vx: (Math.random() - 0.5) * 10, vy: -40 - Math.random() * 30, drag: 1, life: 0.35 + Math.random() * 0.25, a0: 1, grow: 1.5 });
+        fl.setTint(Math.random() < 0.4 ? 0xffe080 : 0xff6a28).setBlendMode('ADD');
+      }
+      if (Math.random() < dt * 8) fx.puff('wisp_s_1', body.x + (Math.random() - 0.5) * 26, body.y - 6, 0.6);
+      body.setTint(Math.floor(g.burn * 14) % 2 ? 0xffc890 : 0xffffff);
+    } else if (g.burn !== undefined) { body.clearTint(); g.burn = undefined; }
+    // the three melts to go, under the fire: ice crystals that turn to flames as they melt
+    for (let i = 0; i < 3; i++) {
+      const x = 78 + i * 12, y = fire.y + 21;
+      if (i < g.melts) {
+        ink.fillStyle(0xff8030, 1).fillTriangle(x - 3.5, y + 3, x + 3.5, y + 3, x, y - 5);
+        ink.fillStyle(0xffe080, 1).fillTriangle(x - 1.8, y + 3, x + 1.8, y + 3, x, y - 1.5);
+      } else {
+        ink.lineStyle(1.5, 0xd8f4ff, 0.95);
+        for (let k = 0; k < 3; k++) {
+          const an = (k / 3) * Math.PI;
+          ink.lineBetween(x - Math.cos(an) * 4, y - Math.sin(an) * 4, x + Math.cos(an) * 4, y + Math.sin(an) * 4);
+        }
+      }
+    }
     this.encounterHint(g, 'STOP LODOWĄ SKORUPĘ', 'ZWAB 3 SZARŻE PRZEZ OGIEŃ');
     if (Math.hypot(p.x - fire.x, p.y - fire.y) < 11 && s.bombClear <= 0) p.hit();
-    // Cracks remain between attempts and clearly communicate the three permanent melts.
-    for (let i = 0; i < g.melts; i++) {
-      const x = body.x - 12 + i * 15;
-      ink.lineStyle(2, GOLD, 1).lineBetween(x, body.y - 17, x + 7, body.y);
-      ink.lineBetween(x + 7, body.y, x - 2, body.y + 19);
-    }
     if (!p.alive || p.entering > 0 || s.ceasefire) {
       g.charge = null; body.harmless = true;
       body.x += (g.home - body.x) * Math.min(1, dt * 3);
@@ -136,20 +89,29 @@ export const encounters = {
     const c = g.charge;
     c.t += dt;
     if (c.t < 1.4) c.to = { x: clamp(p.x, 20, 160), y: clamp(p.y, 110, s.H - 25) };
-    if (c.t < 2.1) {
-      ink.lineStyle(c.t < 1.4 ? 1 : 3, WARN, 0.8).lineBetween(c.from.x, c.from.y, c.to.x, c.to.y);
-      ink.strokeCircle(c.to.x, c.to.y, 10);
-    } else if (c.t < 2.95) {
+    if (c.t < 2.1) this.kumaChargeTrack(g, c);
+    else if (c.t < 2.95) {
       const prev = { x: body.x, y: body.y }, k = clamp((c.t - 2.1) / 0.85, 0, 1);
       body.setPosition(mix(c.from.x, c.to.x, k), mix(c.from.y, c.to.y, k));
+      // the charge kicks up snow behind it
+      if (Math.random() < dt * 50) fx.part(fx.parts, 'flake_1', body.x + (Math.random() - 0.5) * 20, body.y + 16, { vx: (Math.random() - 0.5) * 40, vy: -10 - Math.random() * 20, drag: 3, life: 0.5, a0: 0.9 });
       if (!c.melted && segmentDistance(fire, prev, body) < 17) {
         c.melted = true;
         g.melts++;
-        s.fx.shards(body.x, body.y, 18, true);
-        s.fx.smoke(body.x, body.y, 8, 16);
-        s.fx.text(90, fire.y - 28, `LÓD ${g.melts}/3`, 1.6, SAFE);
+        g.burn = 1.1;
+        fx.shards(body.x, body.y, 22, true);
+        fx.smoke(body.x, body.y, 10, 18);
+        for (let k = 0; k < 6; k++) fx.puff('wisp_s_1', fire.x + (Math.random() - 0.5) * 30, fire.y - Math.random() * 16, 0.8);
+        fx.shockwave(fire.x, fire.y);
+        fx.light(fire.x, fire.y, 3, true, 0xffb060);
+        s.cameras.main.shake(220, 0.006);
+        fx.text(90, fire.y - 34, g.melts < 3 ? `SKORUPA TOPNIEJE ${g.melts}/3` : 'SKORUPA PĘKA!', 1.6, 0xffd070);
         s.sfx.explode('m');
         if (g.melts === 3) {
+          g.fireArt?.destroy();
+          g.fireArt = null;
+          body.clearTint();
+          g.burn = undefined;
           g.charge = null;
           g.take = null;
           body.harmless = true;
@@ -167,136 +129,34 @@ export const encounters = {
     }
   },
 
-  takoTraps(g, dt) {
-    g.open = Math.max(0, (g.open ?? 0) - dt);
-    if (g.stage >= 3) return;
-    g.take.head = g.open ? 1.5 : 0.08;
-    const y = Math.min(190, this.scene.H * 0.56);
-    g.posts = [42, 90, 138].map(x => ({ x, y }));
-    for (const post of g.posts) {
-      this.tele.fillStyle(0x35485c, 1).fillRect(post.x - 7, y - 9, 14, 18);
-      this.tele.lineStyle(2, GOLD, 1).strokeRect(post.x - 7, y - 9, 14, 18);
-      this.tele.lineBetween(post.x - 10, y - 4, post.x + 10, y - 4);
+  /** The coming charge, on the snow: a wide band the bear's width, chevrons running along it, claw marks at its end. */
+  kumaChargeTrack(g, c) {
+    const ink = this.tele;
+    const locked = c.t >= 1.4;
+    const dx = c.to.x - c.from.x, dy = c.to.y - c.from.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
+    const half = 13;
+    const pulse = locked ? 0.3 + 0.12 * Math.sin(c.t * 30) : 0.1 + 0.05 * Math.sin(c.t * 8);
+    ink.fillStyle(WARN, pulse).fillPoints([
+      { x: c.from.x + nx * half, y: c.from.y + ny * half }, { x: c.to.x + nx * half, y: c.to.y + ny * half },
+      { x: c.to.x - nx * half, y: c.to.y - ny * half }, { x: c.from.x - nx * half, y: c.from.y - ny * half },
+    ], true);
+    ink.lineStyle(1, WARN, locked ? 0.95 : 0.5);
+    for (const sd of [-1, 1]) ink.lineBetween(c.from.x + nx * half * sd, c.from.y + ny * half * sd, c.to.x + nx * half * sd, c.to.y + ny * half * sd);
+    // chevrons running towards the end, faster once it is locked on
+    const step = 16, shift = (c.t * (locked ? 70 : 30)) % step;
+    ink.lineStyle(2, locked ? 0xffe0c8 : WARN, locked ? 0.95 : 0.6);
+    for (let d = shift; d < len - 6; d += step) {
+      const x = c.from.x + ux * d, y = c.from.y + uy * d;
+      ink.lineBetween(x - ux * 5 + nx * 7, y - uy * 5 + ny * 7, x, y);
+      ink.lineBetween(x - ux * 5 - nx * 7, y - uy * 5 - ny * 7, x, y);
     }
-    this.encounterHint(g, 'ZAKLINUJ MACKĘ', 'ZWAB NA ZŁOTY PAL I STRZELAJ');
-    if (g.open) this.tele.lineStyle(2, SAFE, 1).strokeCircle(g.head.x, g.head.y, 24);
-  },
-
-  takoArms(g, arms) {
-    if (g.slams.length || g.open || g.gate > 0 || !this.canFire(g.head)) { g.timer = 0.2; return; }
-    const available = arms.filter(t => !t.invuln);
-    if (!available.length) return;
-    const index = (g.trapTurn ?? 0) % available.length;
-    const selected = [available[index]];
-    if (g.stage >= 2 && available.length > 1) selected.push(available[(index + Math.ceil(available.length / 2)) % available.length]);
-    g.trapTurn = (g.trapTurn ?? 0) + 1;
-    g.slams = selected.map((arm, i) => ({ arm, t: -i * 1.1, k: 0, to: { x: this.scene.player.x, y: this.scene.player.y }, pinned: false }));
-    g.timer = 1.2;
-  },
-
-  slamStep(g, dt) {
-    const s = this.scene, p = s.player;
-    for (const sl of g.slams) {
-      if (sl.arm.dead || sl.arm.group !== g) { sl.over = true; continue; }
-      sl.t += dt;
-      if (sl.t < 0) continue;
-      const from = { x: g.head.x + sl.arm.dx, y: g.head.y + sl.arm.dy };
-      if (sl.t < 1.1) sl.to = { x: clamp(p.x, 16, 164), y: clamp(p.y, 115, Math.min(245, s.H - 35)) };
-      if (sl.t < 1.85) {
-        this.tele.lineStyle(sl.t < 1.1 ? 1 : 2, WARN, 0.8).lineBetween(from.x, from.y, sl.to.x, sl.to.y);
-        this.tele.strokeCircle(sl.to.x, sl.to.y, 9);
-      } else if (sl.t < 2.2) sl.k = (sl.t - 1.85) / 0.35;
-      else {
-        sl.k = 1;
-        if (!sl.landed) {
-          sl.landed = true;
-          const post = g.posts?.find(q => Math.hypot(sl.to.x - q.x, sl.to.y - q.y) < 17);
-          if (post) {
-            sl.to = { ...post }; sl.pinned = true;
-            sl.arm.radius = 8;
-            s.fx.text(post.x, post.y - 18, 'STRZELAJ!', 1.6, SAFE);
-            s.fx.spark(post.x, post.y);
-          } else if (this.canFire(g.head)) s.bullets.ring(sl.to.x, sl.to.y, 6, 0, 32);
-        }
-        const hold = sl.pinned ? 6 : 2.7;
-        if (sl.pinned) this.tele.lineStyle(2, SAFE, 1).strokeCircle(sl.to.x, sl.to.y, 12);
-        if (sl.t > hold) { sl.pinned = false; sl.arm.radius = 3.5; sl.k = Math.max(0, 1 - (sl.t - hold) / 0.6); }
-        if (sl.t > hold + 0.6) sl.over = true;
-      }
-    }
-    g.slams = g.slams.filter(sl => !sl.over);
-  },
-
-  updateSankibo(g, dt) {
-    const s = this.scene, p = s.player, e = g.body, ink = this.tele;
-    if (!living(e)) return;
-    g.t += dt;
-    if (g.state === 'enter') {
-      e.y = Math.min(g.homeY, e.y + 40 * dt);
-      if (e.y === g.homeY) { g.state = 'fight'; g.awake = true; g.timer = 1.5; }
-    }
-    g.braziers.forEach((br, i) => {
-      br.setPosition(i ? 148 : 32, e.y + 34);
-      br.invuln = true; br.harmless = true;
-    });
-    if (g.state !== 'fight') return;
-    if (g.stage === 1 && e.hp < e.maxHp * 0.65) this.phaseBreak(g, e.x, e.y, 2, 'WIATR ZMIENIA KIERUNEK');
-    if (g.stage === 2 && e.hp < e.maxHp * 0.3) { g.enraged = true; this.phaseBreak(g, e.x, e.y, 3, 'GNIEW GÓRY MISEN'); }
-    g.open = Math.max(0, (g.open ?? 0) - dt);
-    g.take = { body: g.open ? 1.5 : 0.08 };
-    this.encounterHint(g, 'ODWRÓĆ ŻAR', 'NAPROWADŹ GO NA PAS WIATRU');
-    ink.lineStyle(2, g.open ? SAFE : GOLD, 0.9).strokeCircle(e.x, e.y, 22);
-    if (g.open) { s.parallax.windTarget = 0; return; }
-    if (!p.alive || p.entering > 0 || s.ceasefire || s.bombClear > 0 || g.gate > 0) {
-      g.ember = null; s.parallax.windTarget = 0; return;
-    }
-    if (!g.ember) {
-      g.timer -= dt;
-      if (g.timer > 0) return;
-      const side = g.stage === 1 ? 1 : ((g.emberTurn ?? 0) % 2 ? -1 : 1);
-      g.emberTurn = (g.emberTurn ?? 0) + 1;
-      g.galeDir = side;
-      const br = g.braziers[side > 0 ? 0 : 1];
-      g.ember = { t: 0, from: { x: br.x, y: br.y }, control: { x: p.x, y: p.y }, end: { x: 90, y: e.y } };
-      e.anims.stop(); e.setFrame(side > 0 ? 'sankibo_fan_r' : 'sankibo_fan_l');
-    }
-    const a = g.ember;
-    a.t += dt;
-    const guideY = Math.min(205, s.H * 0.61);
-    // Project the aimed ray onto the wind band, then bend it 50 units with the fan.
-    if (a.t < 1.4) {
-      const x = clamp(a.from.x + (p.x - a.from.x) * (guideY - a.from.y) / Math.max(25, p.y - a.from.y), -40, 220);
-      a.control = { x, y: guideY };
-      a.end = { x: x + g.galeDir * 50, y: e.y };
-    }
-    ink.lineStyle(1, SAFE, 0.5).lineBetween(12, guideY, 168, guideY);
-    const inlet = e.x - g.galeDir * 50;
-    ink.strokeCircle(inlet, guideY, 12);
-    ink.lineStyle(2, GOLD, 0.8).lineBetween(74, guideY + 15, 106, guideY + 15);
-    ink.lineBetween(g.galeDir > 0 ? 106 : 74, guideY + 15, g.galeDir > 0 ? 100 : 80, guideY + 10);
-    let prev = a.from;
-    for (let i = 1; i <= 24; i++) {
-      const q = emberPoint(a.from, a.control, a.end, i / 24);
-      ink.lineStyle(1, a.t < 1.4 ? GOLD : SAFE, 0.6).lineBetween(prev.x, prev.y, q.x, q.y);
-      prev = q;
-    }
-    if (a.t < 2.2) return; // 0.8s of locked trajectory to get out of its way
-    s.parallax.windTarget = g.galeDir * 55;
-    const k = clamp((a.t - 2.2) / 1.6, 0, 1);
-    const q = emberPoint(a.from, a.control, a.end, k);
-    ink.fillStyle(WARN, 1).fillCircle(q.x, q.y, 6);
-    ink.fillStyle(GOLD, 1).fillCircle(q.x, q.y, 3);
-    if (segmentDistance(p, a.last ?? q, q) < 7) p.hit();
-    a.last = q;
-    if (k === 1) {
-      if (Math.hypot(q.x - e.x, q.y - e.y) < 20) {
-        this.encounterOpen(g, e, 4.5, 'PIECZĘĆ PĘKŁA!');
-        g.take.body = 1.5;
-        this.damage(e, 100);
-      } else s.fx.text(90, guideY - 20, 'ŻAR CHYBIŁ', 1.5, GOLD);
-      g.ember = null; g.timer = 1.6;
-      s.parallax.windTarget = 0;
-      e.play('sankibo');
+    // the claw marks where it will land
+    ink.lineStyle(2, WARN, locked ? 1 : 0.7);
+    for (let k = -1; k <= 1; k++) {
+      const ox = c.to.x + nx * k * 5, oy = c.to.y + ny * k * 5;
+      ink.lineBetween(ox - ux * 8 - nx * 2, oy - uy * 8 - ny * 2, ox + ux * 8 + nx * 2, oy + uy * 8 + ny * 2);
     }
   },
 

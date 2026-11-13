@@ -371,9 +371,11 @@ przelatują). Wzory: zamarzające płatki (pociski zatrzymują się w kształt �
 zamieć (serie znoszone wiatrem — śnieg pokazuje, w którą stronę wieje), sople (mrugają u góry, potem spadają).
 
 Boss: niedźwiedź z Festiwalu Śniegu. Rzeźba wjeżdża na cokole i budzi się, gdy tło się zatrzyma.
-Faza 1: lód przepuszcza strzały, cele to dwie łapy (wachlarze, rzuty śnieżkami) i lodowe serce (pierścienie,
-zamarzające płatki); serce rozbija całą rzeźbę, ale dopóki stoją obie łapy, przyjmuje tylko 30% obrażeń — najpierw
-trzeba odbić łapę. Faza 2: brunatny niedźwiedź higuma — ryk z pierścieniami, zamachy łapami, łososie wijące się
+Faza 1: lodowej rzeźby nie da się zestrzelić (lód przepuszcza 2% obrażeń) — trzeba ją stopić. Na środku placu
+płonie festiwalowe ognisko; niedźwiedź szarżuje w gracza (szeroki czerwony pas na śniegu ze strzałkami, ślad pazurów
+w celu), więc trzeba go sprowokować tak, żeby przebiegł przez ogień. Każde przejście zostawia na rzeźbie żarzące się
+pęknięcia, niedźwiedź płonie i paruje, a pod ogniskiem kolejny z trzech kryształków lodu zmienia się w płomyk; po
+trzecim skorupa pęka. Faza 2: brunatny niedźwiedź higuma — ryk z pierścieniami, zamachy łapami, łososie wijące się
 w locie i spadające sople. Faza 3 (poniżej 45%, **zamieć Hokkaido**): boczny wiatr (zmienia kierunek co 5 s,
 z napisem „WIATR >>”) spycha statek i pociski, z góry spadają sople.
 
@@ -476,6 +478,9 @@ trafienie w dowolny segment rani mackę. Faza 1: walczą cztery przednie macki, 
 krzyż, salwy trzech takoyaki; łeb przyjmuje 75%. Faza 3 (**zasłona z atramentu**, bez macek albo gdy łeb ma
 poniżej 40%): chmury tuszu nad wodą, szarże odrzutowe w stronę gracza, spirala tuszu, kule tuszu z pierścieniem
 i grad takoyaki. Ataki są dobrane tak, żeby na ekranie było naraz najwyżej ok. 40 pocisków.
+W fazach 1 i 2 w zatoce stoją trzy drewniane pale cumownicze: uderzenie macki celuje w gracza, a kto stoi przy palu,
+ten ściąga je na pal — macka się w nim klinuje („ZAKLINOWANA!”) na 4 s i bierze 2,5× obrażeń; odcięta w tym stanie
+odsłania głowę na 4,5 s i zmiata pociski z ekranu. To bonus, walkę da się wygrać i bez pali.
 
 ## Beppu
 

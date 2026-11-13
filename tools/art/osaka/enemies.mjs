@@ -369,6 +369,36 @@ export function takoEyes(look) {
   return out;
 }
 
+// ---------------------------------------------------------------- the boss fight's mooring piles (18 -> 54)
+// A wooden pile driven into the bay, seen from above: its sawn top with the growth rings, an iron band, a hemp
+// mooring rope wound round it, weed at the waterline and a ring of foam where the water laps it.
+export function takoPile() {
+  const s = new HiSprite(54, 54, RAMPS);
+  const c = 27;
+  // foam and the darker water it stirs
+  for (let k = 0; k < 40; k++) {
+    const a = (k / 40) * TAU + Math.sin(k * 2.3) * 0.06;
+    const r = 19.5 + Math.sin(k * 1.7) * 1.4 + (k % 3) * 0.6;
+    if (Math.sin(k * 0.9) > -0.55) s.dot(c + Math.cos(a) * r, c + Math.sin(a) * r, 1.1 + (k % 2) * 0.5, 0xe8f4ff, 0.75);
+  }
+  // weed and barnacles at the waterline
+  s.ellipse(c, c + 1, 17, 17, 'G', { flat: 0.3, pat: mottle({ amt: 0.3, scale: 3 }) });
+  for (let k = 0; k < 7; k++) s.dot(c + Math.cos(k * 0.9 + 0.4) * 16, c + Math.sin(k * 0.9 + 0.4) * 16, 0.9, 0xd8d0c0, 0.9); // barnacles
+  // the pile: a log seen end on, an iron band round it
+  s.ellipse(c, c, 15, 15, 'S', { bias: 0.08 });
+  s.ellipse(c, c, 13, 13, 'N', { bias: 0.06, pat: speckle({ amt: 0.15, dark: 0.1 }) });
+  for (const r of [10, 7, 4]) s.paint([c - 13, c - 13, c + 13, c + 13], (x, y) => Math.abs(Math.hypot(x - c + 0.6, y - c - 0.4) - r) < 0.55, 'N', () => 0.2);
+  for (let k = 0; k < 4; k++) s.line(c, c, c + Math.cos(k * 1.7) * 11, c + Math.sin(k * 1.7) * 11, 0x4a2e18, 1, 0.6); // its cracks
+  // the hemp rope wound round it, its loose end trailing off
+  for (let k = 0; k < 22; k++) {
+    const a = (k / 22) * TAU;
+    s.dot(c + Math.cos(a) * 14, c + Math.sin(a) * 14, 1.7, k % 2 ? 0xd8b870 : 0xb08a48);
+  }
+  for (let k = 0; k < 9; k++) s.dot(c + 14 + k * 1.3, c + 3 + k * 1.5, 1.5, k % 2 ? 0xd8b870 : 0xb08a48);
+  s.dot(c - 4, c - 5, 1.6, 0xfff0d0, 0.6); // the light on the sawn top
+  return s.render();
+}
+
 export function osakaEnemies(add) {
   for (let f = 0; f < 4; f++) {
     add(`takoyaki_${f}`, takoyaki(f));
@@ -389,5 +419,6 @@ export function osakaEnemies(add) {
   for (let k = 0; k < 4; k++) add(`tako_eyes_${k}`, takoEyes(k)); // step 2a: following the player, blinking
   for (let i = 0; i < 3; i++) add(`tseg_${i}`, tseg(i));
   add('ttip', ttip());
+  add('tako_pile', takoPile()); // the boss fight's mooring piles
 }
 export const OSAKA_PORTRAITS = ['neko_base', 'tako_0'];
