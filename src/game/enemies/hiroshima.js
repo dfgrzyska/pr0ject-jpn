@@ -92,7 +92,9 @@ export const hiroshima = {
   heikeWorn(e) {
     if (!e.p2 || !hasEnemyFrame('heike_0_c')) return;
     const anim = e.anims.isPlaying ? e.anims.currentAnim?.key : null;
-    if (anim === 'heike') e.play({ key: 'heike_c', startFrame: e.anims.currentFrame?.index ?? 0 });
+    // AnimationFrame.index is one-based; play.startFrame is zero-based.
+    // Passing the last frame's index directly crashes Phaser during the phase change.
+    if (anim === 'heike') e.play({ key: 'heike_c', startFrame: (e.anims.currentFrame?.index ?? 1) - 1 });
     else if (!anim && e.frame.name === 'heike_guard') e.setFrame('heike_guard_c');
   },
 
