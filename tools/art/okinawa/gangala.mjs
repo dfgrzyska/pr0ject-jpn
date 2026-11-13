@@ -367,7 +367,7 @@ export function paintCave(k) {
 
   // the lights: lamps along the walkway, floods on the great columns and over the halls, lamps under the river
   const HALL = (u) =>
-    u < 2190 ? [0xffb048, 0xffd878] : u < 2290 ? [0xffb060, 0x4aa8ff, 0xffd090] : u < 2335 ? [0xa8dcff, 0xe0f4ff] : u < 2455 ? [0xffc050, 0x6a7aff, 0x58ff9a] : [0xff9a48, 0xffc860];
+    u < 2190 ? [0xffb048, 0xffd878] : u < 2290 ? [0xffb060, 0x4aa8ff, 0xffd090] : u < 2335 ? [0xa8dcff, 0xe0f4ff] : u < 2455 ? [0xffc050, 0x6a9aff, 0xe0ecff] : [0xff9a48, 0xffc860];
   const lights = [];
   const light = (x, u, c, r, amt, z = 9, water = 0) => lights.push({ x, y: Y(u), u, c: [((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255], r, k: amt, z, water });
   for (let u = C0 + 10, i = 0; u < C1 - 8; u += 15, i++) light(walkX(u) + (i % 2 ? 2.4 : -2.4), u, 0xffcc88, 14, 0.9, 4);
@@ -487,7 +487,13 @@ export function paintCave(k) {
           if (f.kind === 'mite' || f.kind === 'spear') d += (fbm(x * 2, u * 2, { seed: 346, scale: 1.5 }) - 0.5) * f.r * 0.25; // knobbly
           if (d >= f.r) continue;
           const t = 1 - d / f.r;
-          const fh = f.kind === 'dome' ? f.h * Math.sqrt(1 - (1 - t) ** 2) : f.kind === 'block' ? f.h * Math.min(1, t * 4) : f.h * t ** (f.kind === 'column' ? 0.7 : 1.35);
+          if (f.kind !== 'dome') {
+            // (the stalagmites, columns and blocks stand up out of the floor: drawn in 3/4 further on; here only the
+            // floor darkening round their feet)
+            if (kind !== 1) AO[i] = Math.max(AO[i], Math.min(1, t * 2.2));
+            continue;
+          }
+          const fh = f.h * Math.sqrt(1 - (1 - t) ** 2);
           if (d > f.r * 0.86 && kind !== 1) AO[i] = Math.max(AO[i], 1 - (d - f.r * 0.86) / (f.r * 0.14));
           const top = f.kind === 'dome' && kind === 2 ? h + fh * 0.5 : fh; // (a stalagmite on a dome stands on it)
           if (top > h) {
@@ -658,6 +664,191 @@ export function paintCave(k) {
       return scaleColor((X + Yy) % 6 < 1 ? STEEL[1] : STEEL[2], d < 1.5 ? 0.6 : 0.42);
     });
 
+  // ------------------------------------------------------------ standing formations, in 3/4 like the rest of the game: every
+  // stalagmite a cone rising from its foot (lit on whichever side faces a lamp, growth rings round it, drip streaks down
+  // it, a wet drop shining at its tip), the columns as pillars climbing into the dark of the roof, fallen blocks squat
+  // and angular; draperies standing along the feet of the walls. Drawn back to front, so the nearer cover the farther.
+  const lightAt = (px, py, pz, nx, ny, nz) => {
+    let lr = 0.1;
+    let lg = 0.1;
+    let lb = 0.14;
+    const cand = lgrid.get(Math.floor(py / LCELL) * lgw + Math.floor(px / LCELL));
+    if (cand)
+      for (const l of cand) {
+        if (l.water) continue;
+        const dx = l.x - px;
+        const dy = l.y - py;
+        const d = Math.hypot(dx, dy);
+        if (d >= l.r * 1.15) continue;
+        const dz = l.z - pz;
+        const dd = Math.hypot(dx, dy, dz) || 1;
+        const lam = Math.max(0, (nx * dx + ny * dy + nz * dz) / dd);
+        const f = Math.max(0, 1 - d / (l.r * 1.15)) ** 1.4 * l.k * (0.15 + 0.95 * lam);
+        lr += l.c[0] * f;
+        lg += l.c[1] * f;
+        lb += l.c[2] * f;
+      }
+    return [lr, lg, lb];
+  };
+  const fineAt = (x, y) => {
+    const X = Math.floor(x * S);
+    const j = Math.floor(y * S) - yTop * S;
+    return j >= 0 && j < rows && X >= 0 && X < FW ? j * FW + X : -1;
+  };
+  const standing = forms.filter((f) => f.kind !== 'dome').sort((a, b) => b.u - a.u); // (the farthest, highest up the strip, first)
+  for (const f of standing) {
+    const by = Y(f.u); // the foot, on the screen's y
+    const r = f.r * (f.kind === 'block' ? 1 : 0.92);
+    const Hv = f.kind === 'column' ? 30 : f.kind === 'block' ? f.h * 0.9 : f.h * (f.kind === 'spear' ? 1.05 : 0.95);
+    const lean = (hashPx(Math.round(f.x * 7), Math.round(f.u * 7), 370) - 0.5) * (f.kind === 'spear' ? 0.25 : 0.5);
+    const near = fineAt(f.x, by);
+    const bounce = near >= 0 ? 0.6 * Math.exp(-DW[near] / (S * 2.4)) : 0;
+    const wet = f.wet;
+    const prof = (t) => f.kind === 'column' ? 0.62 + 0.38 * (1 - t) ** 3 + 0.25 * t ** 4 : f.kind === 'block' ? 1 - t ** 4 : (1 - t) ** (f.kind === 'spear' ? 0.75 : 0.95);
+    const X0 = Math.floor((f.x - r * 1.4 - Math.abs(lean) * Hv * 0.2) * S);
+    const X1 = Math.ceil((f.x + r * 1.4 + Math.abs(lean) * Hv * 0.2) * S);
+    const Y0 = Math.floor((by - Hv - 1) * S);
+    const Y1 = Math.ceil((by + r * 0.55) * S);
+    // its shadow on the floor, thrown down and away a little
+    for (let Yy = Math.floor(by * S); Yy <= Y1 + 2; Yy++)
+      for (let X = X0; X <= X1 + 4; X++) {
+        const dx = X / S - f.x - 0.8;
+        const dy = Yy / S - by - 0.3;
+        if ((dx / (r * 1.2)) ** 2 + (dy / (r * 0.6)) ** 2 < 1) img.tintPx(X, Yy, wet ? 0.8 : 0.6);
+      }
+    for (let Yy = Y0; Yy <= Y1; Yy++)
+      for (let X = X0; X <= X1; X++) {
+        const dy = (Yy + 0.5) / S - by; // negative up the formation
+        const t = Math.max(0, Math.min(1, -dy / Hv));
+        const cx = f.x + lean * t * Hv * 0.2;
+        const knob = f.kind === 'column' ? 1 + 0.08 * Math.sin(-dy * 1.7 + f.x) : 1 + 0.16 * (fbm(f.x * 3 + X * 0.2, -dy * 0.8, { seed: 371, scale: 1.4 }) - 0.5);
+        const w = r * prof(t) * knob;
+        const dx = (X + 0.5) / S - cx;
+        let inBody = dy <= 0 && dy >= -Hv && Math.abs(dx) <= w;
+        const inFoot = (dx / r) ** 2 + (dy / (r * 0.5)) ** 2 <= 1;
+        if (!inBody && !inFoot) continue;
+        if (f.kind === 'column' && t > 0.7 && hashPx(X, Yy, 372) > 1 - (t - 0.7) * 2.4) continue; // into the dark above
+        // the surface: round across, leaning back, facing the viewer
+        const s2 = Math.max(-1, Math.min(1, dx / Math.max(0.3, inBody ? w : r)));
+        const nx = s2;
+        const ny = Math.sqrt(Math.max(0, 1 - s2 * s2)) * 0.85;
+        const nz = inBody ? (f.kind === 'column' ? 0.15 : 0.45) : 0.9;
+        const pz = inBody ? t * Hv * 1.2 : 0;
+        const [lr, lg, lb] = lightAt(cx + dx, by, pz, nx, ny, nz);
+        // its stone: cream, paler up the cone, rings of growth, streaks where the drips run down, rust stains
+        let alb;
+        if (f.kind === 'block') alb = rampColor([0x5e5448, 0x766a5a, 0x8e806c, 0xa49680], 0.35 + t * 0.4 + (hashPx(X >> 1, Yy >> 1, 373) - 0.5) * 0.3, X, Yy);
+        else {
+          alb = rampColor([0xa89676, 0xc8b894, 0xe2d4b2, 0xf6ecd4], 0.3 + t * 0.55 + (hashPx(X >> 1, Yy >> 1, 374) - 0.5) * 0.15, X, Yy);
+          if ((t * (f.kind === 'column' ? 14 : 6) + fbm(X * 0.1, 0, { seed: 375, scale: 2 })) % 1 < 0.12) alb = scaleColor(alb, 0.84);
+          if (hashPx(X, 0, 376) < 0.12) alb = scaleColor(alb, 0.9); // the drip streaks, top to bottom
+          if (fbm(f.x * 5 + dx, -dy, { seed: 377, scale: 2.5 }) > 0.64) alb = mix(alb, 0xc8884a, 0.4);
+        }
+        let rr = ((alb >> 16) & 255) * (lr + bounce * 0.25);
+        let gg = ((alb >> 8) & 255) * (lg + bounce * 0.75);
+        let bb = (alb & 255) * (lb + bounce * 0.95);
+        // the outline against what is behind: a thin darker edge, and the rim of light on the lit side
+        if (inBody && Math.abs(dx) > w - 0.34) {
+          rr *= 0.7;
+          gg *= 0.7;
+          bb *= 0.7;
+        }
+        if (inBody && f.kind !== 'block' && t > 0.9 && Math.abs(dx) < 0.5 && f.kind !== 'column') {
+          rr = 255;
+          gg = 250;
+          bb = 235; // the drop at the tip
+        }
+        img.px(X, Yy, (Math.min(255, Math.round(rr)) << 16) | (Math.min(255, Math.round(gg)) << 8) | Math.min(255, Math.round(bb)));
+      }
+    if (wet)
+      // where a pillar stands in the water: a ring of ripples lit from below
+      for (let a = 0; a < 6.3; a += 0.04) img.px(Math.round((f.x + Math.cos(a) * r * 1.25) * S), Math.round((by + Math.sin(a) * r * 0.62) * S), 0xd8faff, 0.7);
+  }
+  // draperies: thin curtains of calcite standing along the feet of the walls, light glowing through their folds
+  for (let u = C0 + 30; u < C1 - 30; u += 0.34) {
+    for (const side of [-1, 1]) {
+      if (fbm(side * 50, u, { seed: 378, scale: 9 }) < 0.5) continue;
+      const foot = side < 0 ? caveL(u) + 0.3 : caveR(u) - 0.3;
+      const y = Y(u);
+      const near = fineAt(foot - side * 1.5, y);
+      if (near < 0 || KIND[near] === 3 || KIND[near] === 4) continue;
+      const hh = 4 + fbm(side * 9, u, { seed: 379, scale: 3 }) * 9;
+      const fold = (u * 2.3 + fbm(side, u, { seed: 380, scale: 1.2 }) * 2) % 1;
+      const X = Math.round((foot - side * (0.4 + fold * 1.4)) * S);
+      const [lr, lg, lb] = lightAt(foot - side * 2, y, 3, -side * 0.6, 0.6, 0.3);
+      for (let q = 0; q < hh * S; q++) {
+        const tq = q / (hh * S);
+        const band = fold < 0.25 ? 0.62 : fold < 0.6 ? 1.05 : 0.85;
+        const c = mix(0xf0d098, 0xd89058, tq * 0.6);
+        const k2 = band * (1 - tq * 0.35);
+        img.px(X, Math.round(y * S) - q, (Math.min(255, ((c >> 16) & 255) * lr * k2) << 16) | (Math.min(255, ((c >> 8) & 255) * lg * k2) << 8) | Math.min(255, (c & 255) * lb * k2), 0.85 - tq * 0.4);
+      }
+    }
+  }
+
+  // ------------------------------------------------------------ the glow: whatever is bright (the water, the lamps, the lit tips)
+  // bleeds a soft light round itself, as it does in the real cave (worked out at a third of the resolution, blurred, added)
+  {
+    const LW = W;
+    const LH = C1 - C0;
+    const glow = [new Float32Array(LW * LH), new Float32Array(LW * LH), new Float32Array(LW * LH)];
+    for (let j = 0; j < LH; j++)
+      for (let x = 0; x < LW; x++) {
+        let r = 0;
+        let gg = 0;
+        let b = 0;
+        for (let q = 0; q < 9; q++) {
+          const c = img.rgbaPx(x * S + (q % 3), (yTop + j) * S + Math.floor(q / 3));
+          if (!c) continue;
+          const lum = 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
+          const k2 = Math.max(0, lum - 120) / 135;
+          r += c[0] * k2;
+          gg += c[1] * k2;
+          b += c[2] * k2;
+        }
+        glow[0][j * LW + x] = r / 9;
+        glow[1][j * LW + x] = gg / 9;
+        glow[2][j * LW + x] = b / 9;
+      }
+    const blur = (a, rad) => {
+      const t = new Float32Array(a.length);
+      for (let pass = 0; pass < 3; pass++) {
+        for (let j = 0; j < LH; j++) {
+          let acc = 0;
+          for (let x = -rad; x <= rad; x++) acc += a[j * LW + Math.max(0, Math.min(LW - 1, x))];
+          for (let x = 0; x < LW; x++) {
+            t[j * LW + x] = acc / (2 * rad + 1);
+            acc += a[j * LW + Math.min(LW - 1, x + rad + 1)] - a[j * LW + Math.max(0, x - rad)];
+          }
+        }
+        for (let x = 0; x < LW; x++) {
+          let acc = 0;
+          for (let j = -rad; j <= rad; j++) acc += t[Math.max(0, Math.min(LH - 1, j)) * LW + x];
+          for (let j = 0; j < LH; j++) {
+            a[j * LW + x] = acc / (2 * rad + 1);
+            acc += t[Math.min(LH - 1, j + rad + 1) * LW + x] - t[Math.max(0, j - rad) * LW + x];
+          }
+        }
+      }
+    };
+    for (const ch of glow) blur(ch, 3);
+    for (let Yy = yTop * S; Yy < (yTop + LH) * S; Yy++)
+      for (let X = 0; X < FW; X++) {
+        const c = img.rgbaPx(X, Yy);
+        if (!c || !c[3]) continue;
+        // (bilinear from the third-resolution glow)
+        const gx = Math.max(0, Math.min(LW - 1.001, (X + 0.5) / S - 0.5));
+        const gy = Math.max(0, Math.min(LH - 1.001, (Yy + 0.5) / S - 0.5 - yTop));
+        const x0 = Math.floor(gx);
+        const y0 = Math.floor(gy);
+        const fx = gx - x0;
+        const fy = gy - y0;
+        const at2 = (a) => a[y0 * LW + x0] * (1 - fx) * (1 - fy) + a[y0 * LW + x0 + 1] * fx * (1 - fy) + a[(y0 + 1) * LW + x0] * (1 - fx) * fy + a[(y0 + 1) * LW + x0 + 1] * fx * fy;
+        const k2 = 0.9;
+        img.setRGBAPx(X, Yy, Math.min(255, c[0] + at2(glow[0]) * k2), Math.min(255, c[1] + at2(glow[1]) * k2), Math.min(255, c[2] + at2(glow[2]) * k2), c[3]);
+      }
+  }
+
   // ------------------------------------------------------------ the roof: rock and hanging formations over the flight, nearer the
   // eye than the floor, so they pass faster (Props' z): the overhang of the mouth going over, the rock closing in at the sides,
   // clumps of stalactites drifting by, and the overhang of the way out. All under the enemies and their bullets.
@@ -766,6 +957,59 @@ export function paintCave(k) {
   }
   void hex;
 
+  // ------------------------------------------------------------ the roof's great draperies, and beams of light through the air
+  {
+    const curtain = (c, seed) => k.sprite(34, 30, 2300, (r2) => {
+      const g2 = rng(seed);
+      const folds = 9 + Math.floor(g2() * 5);
+      for (let q = 0; q < folds; q++) {
+        const x0 = 6 + (q / folds) * 90 + g2() * 6;
+        const len = 30 + g2() * 55;
+        const wv = 4 + g2() * 6;
+        for (let j = 0; j < len; j++) {
+          const t = j / len;
+          const half = wv * (1 - t * 0.7);
+          const sway = Math.sin(j / 9 + q) * 2;
+          for (let i = -half; i <= half; i++) {
+            const a = 1 - Math.abs(i) / (half + 0.5);
+            const band = ((j + q * 7) % 11) < 2 ? 0.72 : 1;
+            const lit = (0.45 + 0.55 * a) * band * (0.6 + t * 0.5);
+            const col = mix(ROOF[3], c, Math.min(1, t * 1.2));
+            r2.px(x0 + i + sway, j, scaleColor(col, lit), Math.min(1, 0.95 - t * 0.25));
+          }
+          if (j === Math.floor(len) - 1) r2.px(x0 + sway, j + 1, 0xfff4d8, 0.9);
+        }
+      }
+      for (let i = 0; i < 102; i++) for (let j = 0; j < 8 + Math.sin(i / 7) * 4; j++) r2.px(i, j, rampColor(ROOF, 0.1 + j * 0.04, i, j)); // the rock they hang from
+    }, false);
+    const curtains = {};
+    for (let q = 0; q < 9; q++) {
+      const u = C0 + 70 + q * ((C1 - C0 - 130) / 8) + rr() * 14;
+      const x = q % 2 ? 4 + rr() * 30 : W - 38 - rr() * 30;
+      const c = HALL(u)[0];
+      curtains[c] ??= curtain(c, 4200 + q);
+      kit.loop(x, u + 15, [curtains[c]], { z: 0.6, ax: 90, au: u, d: 0.965, a: 0.95 });
+    }
+    // beams of the floods, slanting down through the damp air
+    const beam = (c) => k.sprite(20, 50, 2300, (r2) => {
+      for (let j = 0; j < 150; j++)
+        for (let i = 0; i < 60; i++) {
+          const cx = 10 + j * 0.27;
+          const half = 4 + j * 0.09;
+          const a = Math.max(0, 1 - Math.abs(i - cx) / half) * Math.min(1, j / 20) * Math.max(0, 1 - j / 150);
+          if (a > 0.02) r2.px(i, j, c, a * 0.32);
+        }
+    }, false);
+    const beams = {};
+    for (let q = 0; q < 10; q++) {
+      const u = C0 + 50 + rr() * (C1 - C0 - 100);
+      const x = 10 + rr() * (W - 40);
+      const c = HALL(u)[q % HALL(u).length];
+      beams[c] ??= beam(c);
+      kit.loop(x, u + 30, [beams[c]], { z: 0.35, ax: 90, au: u + 10, d: 0.955, a: 0.8 });
+    }
+  }
+
   // ------------------------------------------------------------ what moves: the falls, light on the water, drips, the colours changing
   {
     const fw = Math.ceil(riverW(FALLS) * 2 + 2);
@@ -784,6 +1028,9 @@ export function paintCave(k) {
     const spray = [6, 9].map((r) => [0, 1].map((v) => kit.frame(puff(r, r * 5 + v + 41, [0x5a8aa8, 0x7aaac8, 0xa8d4ec, 0xd8f0ff]))));
     kit.emit(riverX(FALLS), FALLS - 6, spray, { rate: 1.6, life: [0.8, 1.4], vy: 3, sx: 3, wf: 0, a: 0.4 });
   }
+  const ring = [5, 8, 11].map((r) => k.sprite(r / 1.5 + 2, r / 3 + 2, 2300, (q) => {
+    for (let a = 0; a < 6.3; a += 0.06) q.px(r + 3 + Math.cos(a) * r, r / 2 + 3 + Math.sin(a) * r * 0.5, 0xd8f4ff, 0.7);
+  }, false));
   const glint = k.sprite(5, 2, 2300, (r) => {
     for (let i = 0; i < 15; i++) for (let j = 0; j < 6; j++) if (Math.abs(j - 3) < 2 - Math.abs(i - 7) / 5) r.px(i, j, 0xc8f4ff, 0.8);
   }, false);
@@ -807,12 +1054,31 @@ export function paintCave(k) {
     if ((WET[i] === 1 || WET[i] === 2) && DI[i] / S > 2.5) ripples.push([ripples.length % 3, x - 9, u + 7, g() * 6.28]);
   }
   kit.wave(caustic, ripples, { w: 0.9, a0: 0.05, a1: 0.7, pw: 2 });
-  const ring = [5, 8, 11].map((r) => k.sprite(r / 1.5 + 2, r / 3 + 2, 2300, (q) => {
-    for (let a = 0; a < 6.3; a += 0.06) q.px(r + 3 + Math.cos(a) * r, r / 2 + 3 + Math.sin(a) * r * 0.5, 0xd8f4ff, 0.7);
-  }, false));
+  // drips falling from the roof into the pools: rings spreading; a mist hanging low over the water; motes of light drifting
+  const dripRects = [];
+  const mistAt = [];
+  for (let q = 0; q < 900 && dripRects.length < 30; q++) {
+    const x = 10 + g() * (W - 20);
+    const u = C0 + 40 + g() * (C1 - C0 - 70);
+    const i = Math.floor((Y(u) - yTop) * S) * FW + Math.floor(x * S);
+    if ((WET[i] === 1 || WET[i] === 2) && DI[i] / S > 3) {
+      dripRects.push([x - 4, u + 4, 8, 8]);
+      if (dripRects.length % 3 === 0) mistAt.push([x, u]);
+    }
+  }
+  kit.spot(dripRects, ring, { rate: 4, fps: 7, a: 0.85 });
+  const mist = [10, 14, 18].map((r2) => [0, 1].map((v) => kit.frame(puff(r2, r2 * 3 + v + 61, [0x7ab8c8, 0x9ad0dc, 0xbce4ec, 0xdcf4f8]))));
+  for (const [x, u] of mistAt) kit.emit(x, u - 2, mist, { rate: 0.5, life: [4, 6], vy: 1.5, sx: 6, wf: 0.3, a: 0.16 });
+  const mote = k.sprite(2, 2, 2300, (r2) => {
+    for (let j = 0; j < 6; j++) for (let i = 0; i < 6; i++) {
+      const d = Math.hypot(i - 2.5, j - 2.5) / 3;
+      if (d < 1) r2.px(i, j, 0xfff6d8, (1 - d) ** 1.5);
+    }
+  }, false);
+  for (let q = 0; q < 14; q++) kit.wander(20 + g() * (W - 40), C0 + 40 + g() * (C1 - C0 - 80), 16, 22, [mote], { n: 3, sp: 2.5, turn: 'none', fps: 1, idle: 0.1, a: 0.75 });
   kit.spot([[riverX(2215) - 6, 2236, 10, 40], [30, 2504, 30, 40]], ring, { rate: 2.2, fps: 6, a: 0.8 });
   // the motion-sensor lights: soft colour washing over the great columns, one hue into the next
-  const wash = [0xffb848, 0x58ff9a, 0x5a8aff].map((c) => k.sprite(28, 28, 2300, (r) => {
+  const wash = [0xffb848, 0x9ae8ff, 0x5a8aff].map((c) => k.sprite(28, 28, 2300, (r) => {
     for (let j = 0; j < 84; j++)
       for (let i = 0; i < 84; i++) {
         const d = Math.hypot(i - 42, j - 42) / 42;
