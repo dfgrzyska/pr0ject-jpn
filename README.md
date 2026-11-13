@@ -485,13 +485,24 @@ z zakrzywionym szczytem karahafu, gęsta zabudowa → Kannawa: zbocze ciasno upa
 Ideyu-zaka z lampionami i ludźmi w yukatach, kuchnia parowa jigoku-mushi, kąpiel dla stóp, ryokany z ogrodami i taras widokowy,
 a w górze zbocza tarasy strzechowych chatek Myōban, w których na niebieskiej glince rośnie sól kąpielowa
 yu-no-hana (para sączy się spod okapów) →
-„piekła” (jigoku) na żwirowych dziedzińcach w ogrodach (bramy tam, gdzie dochodzą ścieżki; parking
-autokarów i parking zajazdu z wjazdami na główną ścieżkę): kobaltowy Umi Jigoku z czerwoną kapliczką i ogromnymi
-liśćmi lilii wiktorii, koszykiem jajek gotujących się na bambusowym stelażu i barierką ze zwiedzającymi, szare błoto Oniishibozu, kolorowe stawy Kamado z kucharzem-oni na kotle, mleczny Shiraike
-z mostkiem → zagrody krokodyli Oniyama z figurą czerwonego oni → lasy Takasakiyamy z polaną pełną makaków
+piekła Beppu (jigoku) odwzorowane według mapy „Jigoku Meguri”, każde w ogrodzie za murkiem i żywopłotem, z bramą
+i kasą: **Umi** — kobaltowy staw z wirującą mleczną wodą i kłębami pary, kosz jajek na bambusowym stelażu, barierka ze
+zwiedzającymi, schody w górę przez rząd czerwonych torii do kapliczki na wzgórzu, staw z liliami wiktorii i kwitnącymi
+lotosami pod czerwonym mostkiem, szklarnia, mały czerwony staw, pawilon z pomarańczowym dachem, zadaszona kąpiel stóp →
+**Oniishibozu** — szara glina wulkaniczna popękana w płyty i porośnięta mchem, kilkanaście stawów błota z kopułami
+„głów mnichów” i ich kręgami, kładki z barierkami, ciemna drewniana łaźnia Oniishi-no-yu, kąpiel stóp, szare głazy →
+uliczka pamiątek i parking autokarów → **Kamado** — pętla przez sześć „dzielnic” z tabliczkami numerów: 1 parujący staw,
+2 czerwony oni-kucharz na kotle, 3 błękitny staw, 4 bulgocząca glina, 5 duży mlecznoniebieski staw, 6 pomarańczowy;
+w środku kąpiel stóp, źródełko do picia, budka z parą na gardło, sklep, figurki oni, „Happy Bell” w kształcie serca →
+**Yama** — dymiące wzgórze z gorących skał, a wokół mały ogród zoologiczny: słonica na piaszczystym wybiegu z sadzawką
+i sianem, hipopotamy w ciepłym stawie, różowe flamingi, kapibary w gorącej kąpieli → **Shiraike** — japoński ogród wokół
+mlecznobiałego stawu z czerwonym mostkiem, kamienne latarnie, kamienna pagoda, przycięte sosny, pawilon ryb
+tropikalnych z otwartym basenem arapaimy i piranii → zagrody krokodyli Oniyama z figurą czerwonego oni → lasy Takasakiyamy z polaną pełną makaków
 i kolejką linową na Tsurumi rozpiętą wysoko nad koronami (pylony z siedzącymi makakami, stacje z dojściami, dwa czerwone
-wagoniki z cieniami) i świątynią przy kamiennych schodach → kamienna niecka gejzeru Tatsumaki z widownią i przejściem
-wzdłuż wschodniego muru → krwistoczerwony staw Chinoike (dwa sklepy przy ścieżce, czerwony strumień spływający
+wagoniki z cieniami) i świątynią przy kamiennych schodach → **Tatsumaki** — w ogrodzie paproci i palm grota z ciemnej, mokrej skały otwarta na południe,
+nad wylotem gejzeru kamienna płyta ograniczająca wytrysk (bez niej sięgałby 50 m), żywa para i bryzgi spod płyty, przed
+grotą widownia z ławkami w półkolu pełna czekających na wybuch, tablica z godziną erupcji, herbaciarnia; wyżej dwa
+mniejsze otwory w skalnych nieckach i parujący staw → krwistoczerwony staw Chinoike (dwa sklepy przy ścieżce, czerwony strumień spływający
 za wschodnią krawędź).
 
 Znak rozpoznawczy miasta to kolumny pary wychodzące spomiędzy domów. Są żywe: w tle jest narysowana tylko

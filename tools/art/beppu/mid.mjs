@@ -265,10 +265,11 @@ export function buildMid() {
       return c;
     }
     if (u < TATSUMAKI[1]) {
-      // bare hot rock with a pale mineral crust
-      let c = rampColor(C.rock, 0.2 + n * 0.6, X, Yr);
-      if (n > 0.62 && g > 0.6) c = 0xb0a890;
-      else if (g < 0.08) c = scaleColor(c, 0.8);
+      // Tatsumaki's garden: moss and lawn, paths of wet rock, a pale crust where the spray falls
+      const moss = fbm(x, u, { seed: 124, scale: 5, octaves: 2 });
+      let c = moss > 0.52 ? rampColor([0x2a4a24, 0x36582c, 0x426a34, 0x50783c], 0.3 + n * 0.5, X, Yr) : rampColor(C.lawn, 0.2 + n * 0.6, X, Yr);
+      if (n < 0.28) c = rampColor(C.rock, 0.3 + n, X, Yr);
+      if (g < 0.08) c = scaleColor(c, 0.84);
       return c;
     }
     // red earth stained by the iron in the water, pale salts where it dried
@@ -3598,10 +3599,8 @@ export function buildMid() {
     const eastX = (u) => dodge(156 + 10 * Math.sin(u / 120 + 0.3), u, 4);
     const westX = (u) => dodge(20 + 6 * Math.sin(u / 60 + 1.2), u, 4);
     gravelPath(eastX, HELLS[0], HELLS[1]);
-    gravelPath(westX, HELLS[0], 3560);
     {
       for (let u = HELLS[0] + 6; u < HELLS[1]; u += 9) if (vr() < 0.35) crowd(eastX(u) - 3, Y(u), 6, 2, 2, true);
-      for (let u = HELLS[0] + 6; u < 3556; u += 9) if (vr() < 0.35) crowd(westX(u) - 3, Y(u), 6, 2, 2, true);
       const tr = (c, u0, u1, at, s0, yk) => {
         const pts = [];
         for (let u = u0; u <= u1; u += 16) pts.push([Math.round(at(u)) + (vr() < 0.5 ? -2 : 2), u]);
@@ -3609,8 +3608,12 @@ export function buildMid() {
       };
       for (const [c, s0, yk] of [[0xd04040, 0.1, false], [0x3a6ad0, 0.3, false], [0xe8e8f0, 0.5, false], [0x2b3c78, 0.7, true], [0xe8c040, 0.85, false], [0x8a2a3a, 0.2, true], [0x3a3a4a, 0.6, false]]) tr(c, HELLS[0] + 10, HELLS[1] - 10, eastX, s0, yk);
     }
-    /** A hell's courtyard: raked gravel inside a low stone wall, a clipped hedge outside it, rocks and shrubs. */
-    const yard = (x0, u0, x1, u1, seed) => {
+    /**
+     * A hell's grounds: a low stone wall with a clipped hedge inside it, and within, its own ground: 'garden' (moss and
+     * lawn under trees, the Japanese garden of Umi and Shiraike), 'ash' (the grey volcanic clay of Oniishibozu, cracked
+     * and steaming), 'paving' (Kamado's worn concrete and gravel), 'zoo' (Yama: trodden earth, sand, scrubby grass).
+     */
+    const yard = (x0, u0, x1, u1, seed, kind = 'garden') => {
       for (let Yr = Y(u1) * S; Yr < Y(u0) * S; Yr++)
         for (let X = x0 * S; X < x1 * S; X++) {
           const x = (X + 0.5) / S;
@@ -3618,21 +3621,51 @@ export function buildMid() {
           if (isRes(x, y) && padFree(x, y)) continue; // (the ground goes on under the vents)
           const u = L - y;
           const e = Math.min(x - x0, x1 - x, u - u0, u1 - u);
+          const g = hashPx(X, Yr, seed + 1);
+          const n = fbm(x, u, { seed, scale: 9, octaves: 2 });
           let c;
           if (e < 0.7) c = (X + Yr) % 9 === 0 ? 0x6e6a60 : C.stone[3]; // the wall's coping
           else if (e < 1.5) c = C.stone[0];
           else if (e < 4) {
-            // the clipped hedge
             const t = hashPx(X >> 1, Yr >> 1, seed);
-            c = e > 3.4 ? 0x1e3a22 : t < 0.2 ? 0x4e7a44 : t < 0.65 ? 0x34603a : 0x2a4e30;
+            c = e > 3.4 ? 0x1e3a22 : t < 0.2 ? 0x4e7a44 : t < 0.65 ? 0x34603a : 0x2a4e30; // the clipped hedge
+          } else if (kind === 'garden') {
+            // moss under the trees, lawn in the open, patches of gravel
+            const moss = fbm(x, u, { seed: seed + 3, scale: 5, octaves: 2 });
+            c = moss > 0.55 ? rampColor([0x2a4a24, 0x36582c, 0x426a34, 0x50783c], 0.3 + n * 0.5, X, Yr) : rampColor(C.lawn, 0.25 + n * 0.6, X, Yr);
+            if (n < 0.3) c = rampColor(C.gravel, 0.4 + hashPx(X >> 1, Yr >> 1, seed + 4) * 0.4, X, Yr);
+            if (g < 0.08) c = scaleColor(c, 0.86);
+            else if (g > 0.995) c = 0xf4f0e0;
+          } else if (kind === 'ash' && fbm(x, u, { seed: seed + 12, scale: 13, octaves: 2 }) > 0.56) {
+            // (moss and ferns where the ground has cooled)
+            c = rampColor([0x2a4a24, 0x36582c, 0x426a34, 0x50783c], 0.3 + n * 0.5, X, Yr);
+            if (g < 0.08) c = scaleColor(c, 0.86);
+          } else if (kind === 'ash') {
+            // grey volcanic clay, crazed into plates as it dries, darker where it is wet, salts in the cracks
+            const plate = fbm(x * 1.6, u * 1.6, { seed: seed + 5, scale: 2.2 });
+            c = rampColor([0x5e5a54, 0x6e6a62, 0x7e7a70, 0x8e8a80], 0.3 + n * 0.5 + (plate - 0.5) * 0.3, X, Yr);
+            if (Math.abs(plate - 0.5) < 0.02) c = 0x3e3a34;
+            else if (Math.abs(plate - 0.5) < 0.04) c = 0xb8b2a2;
+            if (fbm(x, u, { seed: seed + 6, scale: 14 }) > 0.62) c = scaleColor(c, 0.84); // (damp)
+            if (g < 0.05) c = scaleColor(c, 0.8);
+            else if (g > 0.985) c = 0xc8c2b0;
+          } else if (kind === 'paving') {
+            // big concrete flags, stained by the steam, gravel beds between them
+            const bed = fbm(x, u, { seed: seed + 7, scale: 16, octaves: 2 }) > 0.56;
+            if (bed) c = rampColor(C.gravel, 0.3 + hashPx(X >> 1, Yr >> 1, seed + 8) * 0.5, X, Yr);
+            else {
+              const t = hashPx(Math.floor(X / 18), Math.floor(Yr / 18), seed + 9);
+              c = rampColor(C.walk, 0.3 + n * 0.3 + (t - 0.5) * 0.25, X, Yr);
+              if (X % 18 === 0 || Yr % 18 === 0) c = scaleColor(c, 0.86);
+              if (fbm(x, u, { seed: seed + 10, scale: 4 }) > 0.66) c = mix(c, 0xb8a888, 0.35); // mineral stains
+            }
+            if (g < 0.05) c = scaleColor(c, 0.88);
           } else {
-            // raked gravel: combed lines swinging gently round the yard
-            const wob = Math.sin(x / 13 + seed) * 2.2;
-            const rake = Math.sin((u + wob) * 2.2);
-            c = rampColor(C.gravel, 0.35 + rake * 0.2 + (fbm(x, u, { seed, scale: 9 }) - 0.5) * 0.4, X, Yr);
-            const g = hashPx(X, Yr, seed + 1);
-            if (g < 0.06) c = scaleColor(c, 0.86);
-            else if (g > 0.96) c = 0xd4c8b2;
+            // the zoo: trodden earth and sand, tufts of grass
+            const grass = fbm(x, u, { seed: seed + 11, scale: 6, octaves: 2 });
+            c = grass > 0.56 ? rampColor(C.grass, 0.3 + n * 0.5, X, Yr) : rampColor([0x8a7458, 0x9a8466, 0xaa9474, 0xbaa484], 0.3 + n * 0.5, X, Yr);
+            if (g < 0.06) c = scaleColor(c, 0.85);
+            else if (g > 0.99) c = 0xd8c8a8;
           }
           img.px(X, Yr, c);
         }
@@ -3648,10 +3681,6 @@ export function buildMid() {
         else azalea(x, y, 2 + rand() * 1.6, rand.pick([0xe86a9a, 0xf0a0c0, 0xe8e8e8]));
       }
     };
-    yard(30, 3330, 146, 3500, 171);
-    yard(8, 3560, 146, 3830, 172);
-    yard(8, 4040, 146, 4400, 173);
-    yard(52, 4404, 146, 4490, 174);
     /** A hell's enclosure: an entrance gate building with a tiled roof, a ticket window, a signboard on two posts. */
     const gate = (x, u, w, name) => {
       house(x, Y(u), w, 11, 5, { ramp: ROOF.kawara, hip: true, wood: true, noren: name });
@@ -3667,20 +3696,221 @@ export function buildMid() {
         },
       });
     };
-    // Umi Jigoku: the cobalt "sea hell", a red shrine, giant lily pads, a greenhouse of them
-    hotPool(76, 3420, 46, 30, C.cobalt, 81, C.rock);
-    plume(70, Y(3410), 2.2);
-    plume(98, Y(3428), 1.6);
-    plume(50, Y(3432), 1.4);
+    /** A little sign at a stop on the tour: a white board on two posts, a red number on it (1 to 9). */
+    const DIGITS = ['111', '010', '111', '111', '101', '111', '111', '111', '111', '111'];
+    const DIG = {
+      1: ['010', '110', '010', '010', '111'],
+      2: ['111', '001', '111', '100', '111'],
+      3: ['111', '001', '111', '001', '111'],
+      4: ['101', '101', '111', '001', '001'],
+      5: ['111', '100', '111', '001', '111'],
+      6: ['111', '100', '111', '101', '111'],
+      7: ['111', '001', '010', '010', '010'],
+    };
+    void DIGITS;
+    const stopSign = (x, y, num, c = 0xc8302a) => {
+      const X = Math.round(x * S);
+      const Yy = Math.round(y * S);
+      objects.push({
+        y: y + 1,
+        shadow: () => {
+          for (let k = 0; k < 10; k++) for (let t = -1; t <= 1; t++) img.tintPx(X + 4 + k, Yy + 1 + Math.floor(k * 0.55) + t, 0.74);
+        },
+        draw: () => {
+          for (const i of [1, 9]) for (let j = -4; j < 1; j++) img.px(X + i, Yy + j, 0x3a2a1c);
+          for (let j = -13; j < -3; j++) for (let i = -1; i < 12; i++) img.px(X + i, Yy + j, i === -1 || i === 11 || j === -13 || j === -4 ? 0x2a1e18 : 0xf4ecdc);
+          const d = DIG[num];
+          for (let j = 0; j < 5; j++) for (let i = 0; i < 3; i++) if (d[j][i] === '1') img.px(X + 1 + i, Yy - 11 + j, c);
+          // and 丁目 beside it, small
+          for (let i = 5; i < 10; i++) img.px(X + i, Yy - 11, 0x2a1a14);
+          for (let j = -11; j < -6; j++) img.px(X + 7, Yy + j, 0x2a1a14);
+          for (let i = 5; i < 10; i++) img.px(X + i, Yy - 7, 0x2a1a14);
+        },
+      });
+      reserveRect(x - 1, y - 5, 5, 6);
+    };
+    /** A red arched bridge across (x0..x1) at u, rails with a post at every step, its shadow on the water. */
+    const redBridge = (x0, x1, u, w = 12) => {
+      const X0 = Math.round(x0 * S);
+      const X1 = Math.round(x1 * S);
+      const YC = Y(u) * S;
+      for (let X = X0; X < X1; X++) {
+        const t = (X - X0) / (X1 - X0);
+        const arch = Math.round(Math.sin(t * Math.PI) * 9 * ((x1 - x0) / 68));
+        for (let j = 0; j < w; j++) {
+          const yr = YC - w / 2 + j - arch;
+          const e = Math.min(j, w - 1 - j);
+          img.px(X, yr, e < 2 ? (j < w / 2 ? 0xf0604a : 0x9a2a1e) : X % 5 === 0 ? 0x8a6a4a : 0xa0805a);
+        }
+        for (let j = 0; j < 3; j++) img.tintPx(X + 3, YC + w / 2 + 1 + j - Math.floor(arch / 3), 0.72);
+        if (X % 12 === 0) for (const yr of [YC - w / 2 - arch, YC + w / 2 - 2 - arch]) for (let j = -3; j < 0; j++) img.px(X, yr + j, 0x9a2a1e);
+        if (X % 12 === 0) for (const yr of [YC - w / 2 - arch, YC + w / 2 - 2 - arch]) img.px(X, yr - 3, 0xe8b040); // the brass caps
+      }
+      reserveRect(x0, Y(u) - w / S / 2 - 4, x1 - x0, w / S + 6);
+    };
+    /** A foot bath: a long tub of hot water under a little roof, a bench along it, feet in it. */
+    const footbath = (x, y, w, ramp = C.milk) => {
+      const X = Math.round(x * S);
+      const Yy = Math.round(y * S);
+      const fr = rng(X * 3 + Yy);
+      objects.push({
+        y: y + 9,
+        shadow: () => shadowRect(x + 2, y + 2, w, 9, 0.6),
+        draw: () => {
+          // the tub, the water, the bench
+          for (let j = 0; j < 18; j++)
+            for (let i = 0; i < w * S; i++) {
+              const e = Math.min(i, w * S - 1 - i, j, 17 - j);
+              let c;
+              if (e < 2) c = C.stone[e ? 2 : 3];
+              else if (j > 13) c = (i >> 2) % 2 ? C.wood[2] : C.wood[1];
+              else c = rampColor(ramp, 0.4 + Math.sin(i * 0.4 + j) * 0.15, X + i, Yy + j);
+              img.px(X + i, Yy + 9 + j, c);
+            }
+          // people sitting on the bench, feet in the water
+          for (let i = 6; i < w * S - 6; i += 8 + Math.floor(fr() * 5)) {
+            if (fr() < 0.3) continue;
+            personPx(X + i, Yy + 22, fr, { coat: fr.pick(COATS) });
+            img.px(X + i, Yy + 17, 0xe8c0a0);
+            img.px(X + i + 2, Yy + 17, 0xe8c0a0);
+          }
+          // the roof over it: dark tiles, its posts
+          for (let j = 0; j < 12; j++)
+            for (let i = -3; i < w * S + 3; i++) img.px(X + i, Yy + j, j < 2 ? ROOF.dark[3] : j > 9 ? ROOF.dark[0] : (j + (i >> 2)) % 3 === 0 ? ROOF.dark[1] : ROOF.dark[2]);
+          for (const i of [0, w * S - 2]) for (let j = 12; j < 28; j++) img.px(X + i, Yy + j, C.wood[0]);
+        },
+      });
+      reserveRect(x - 1, y - 1, w + 2, 12);
+      kit.emit(Math.round(x + w / 2), Math.round(U(y + 6)), [2, 3].map(puffFrames), { rate: 0.8, life: [1.4, 2.2], vy: 5, sx: w * 0.3, wf: 0.5, a: 0.4, d: 1.1, tint: 1 });
+    };
+    /** Bubbles over a pool: domes of mud or clay, lit, with the rings they leave (Oniishibozu, Kamado's 4-chōme). */
+    const mudDomes = (x, u, rx, ry, n, ramp = C.mud, light = 0xe4e0d8) => {
+      const br = rng(x * 7 + u);
+      for (let k = 0; k < n; k++) {
+        const bx = x + (br() - 0.5) * rx * 1.4;
+        const by = Y(u) + (br() - 0.5) * ry * 1.4;
+        if (((bx - x) / rx) ** 2 + ((by - Y(u)) / ry) ** 2 > 0.62) continue;
+        const r = (1.2 + br() * br() * 3.2) * S;
+        const CX = bx * S;
+        const CY = by * S;
+        // the rings round it, spreading
+        for (const rr of [1.5, 2.1]) for (let a = 0; a < 6.3; a += 0.08) img.px(Math.round(CX + Math.cos(a) * r * rr), Math.round(CY + Math.sin(a) * r * rr * 0.8), scaleColor(ramp[2], 1.08), 0.6);
+        for (let Yy = Math.floor(CY - r - 1); Yy <= CY + r + 1; Yy++)
+          for (let X = Math.floor(CX - r - 1); X <= CX + r + 1; X++) {
+            const dx = (X + 0.5 - CX) / r;
+            const dy = (Yy + 0.5 - CY) / r;
+            const d = dx * dx + dy * dy;
+            if (d > 1) continue;
+            const l = dx + dy;
+            let c = l < -0.8 ? light : l < -0.25 ? ramp[3] : l < 0.45 ? ramp[2] : l < 0.95 ? ramp[1] : ramp[0];
+            if (d > 0.82) c = scaleColor(c, 0.78);
+            img.px(X, Yy, c);
+          }
+      }
+    };
+
+    // ============================================================ UMI JIGOKU: the sea hell
+    // The cobalt pond swirling with steam, a basket of eggs boiling in it, the shrine up a hill of red torii, the
+    // lotus pond with the giant water lilies and a red bridge, the glasshouse of tropical lilies, the little red pond,
+    // a foot bath, the gift hall with its orange roof; all in a garden thick with trees.
+    yard(8, 3305, 146, 3505, 171, 'garden');
     {
-      const x = 128;
-      const y = Y(3478);
-      house(x, y, 22, 11, 6, { ramp: ROOF.dark, hip: true, wall: 0xc8382a });
-      torii(x + 11, y + 29, 12, 7);
-      reserveRect(x + 2, y + 21, 18, 10);
-      lampPost(x - 2, y + 28);
+      const UMI = [0x0c4a8a, 0x1468b0, 0x2a8ad0, 0x4aaee8, 0x8ad4f4];
+      const cx = 92;
+      const cu = 3420;
+      hotPool(cx, cu, 34, 25, UMI, 81, C.rock);
+      // the milky cobalt swirling: pale bands turning round its middle, brightest where the steam boils up
+      img.fine(cx - 34, Y(cu) - 25, 68, 50, (X, Yr, x, y) => {
+        const dx = (x - cx) / 34;
+        const dy = (y - Y(cu)) / 25;
+        const d = Math.hypot(dx, dy);
+        if (d > 0.84) return null;
+        const a = Math.atan2(dy, dx);
+        const sw = Math.sin(a * 2 + d * 9 + fbm(x, y, { seed: 801, scale: 6 }) * 4);
+        if (sw > 0.86) return [0xa8e4fc, 0.5 * (1 - d)];
+        if (sw < -0.9) return [0x0a3a70, 0.35];
+        return null;
+      });
+      for (const [dx, dy, s] of [[-6, -4, 2.4], [10, 3, 2], [-16, 8, 1.4], [14, -10, 1.5]]) plume(cx + dx, Y(cu) + dy, s);
+      // the basket of eggs on its bamboo frame, out over the water at the near bank
+      {
+        const bx = 70;
+        const by = Y(3402);
+        const BX = bx * S;
+        const BY = by * S;
+        objects.push({
+          y: by + 4,
+          draw: () => {
+            for (const X of [BX - 12, BX + 15])
+              for (let j = -18; j < 8; j++) {
+                img.px(X, BY + j, 0x8a7a4a);
+                img.px(X + 1, BY + j, 0x6a5a34);
+                if ((j + 18) % 7 === 0) img.px(X, BY + j, 0xc8b878);
+              }
+            for (let i = -12; i < 16; i++) {
+              img.px(BX + i, BY - 18, 0xc8b878);
+              img.px(BX + i, BY - 17, 0x8a7a4a);
+            }
+            for (let j = -17; j < -8; j++) img.px(BX + 1, BY + j, 0x5a4a30);
+            for (let j = 0; j < 9; j++)
+              for (let i = -6; i < 9; i++) {
+                if (Math.abs(i - 1.5) + Math.abs(j - 4) * 0.4 > 8) continue;
+                img.px(BX + i, BY - 9 + j, (i + j) % 2 ? 0xb8945a : 0x9a7a44);
+              }
+            for (const [i, j] of [[-3, -9], [0, -10], [3, -9], [6, -10], [-1, -7], [2, -7], [5, -7]]) {
+              img.px(BX + i, BY + j, 0xf8f4ea);
+              img.px(BX + i + 1, BY + j, 0xf0ece2);
+              img.px(BX + i, BY + j + 1, 0xd8d0c0);
+            }
+          },
+        });
+        kit.emit(bx, 3402, [2, 3, 4].map(puffFrames), { rate: 2, life: [1.6, 2.4], vy: 7, sx: 1, wf: 0.5, a: 0.7, d: 1.1, tint: 1 });
+      }
+      // the rail round the near shore and its visitors
+      const rail = [];
+      for (let a = 0.25; a <= Math.PI - 0.25; a += 0.04) rail.push([cx + Math.cos(a) * 38, Y(cu) + Math.sin(a) * 28]);
+      objects.push({
+        y: Y(cu) + 28,
+        draw: () => {
+          for (let k = 0; k + 1 < rail.length; k++) {
+            const [x0, y0] = rail[k];
+            const [x1, y1] = rail[k + 1];
+            img.linePx(x0 * S, y0 * S, x1 * S, y1 * S, 0x6a5a44);
+            img.linePx(x0 * S, y0 * S + 1, x1 * S, y1 * S + 1, 0x3a2e22);
+            if (k % 4 === 0) for (let j = 0; j < 5; j++) img.px(Math.round(x0 * S), Math.round(y0 * S) + j, 0x2a2018);
+          }
+        },
+      });
+      rail.forEach(([x, y]) => reserveRect(x - 1, y - 1, 3, 4));
+      const er = rng(6631);
+      for (const [x, y] of rail.filter(() => er() < 0.3)) folk(x, y + 2.6);
+      for (const [c, s0] of [[0xd04040, 0.2], [0x3a6ad0, 0.6], [0xe8e8f0, 0.9]])
+        kit.path(rail.filter((_, i) => i % 6 === 0).map(([x, y]) => [Math.round(x), U(Math.round(y) + 3)]), [stepper(c, 0, 3400), stepper(c, 1, 3400)], { sp: 3, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0 });
     }
-    hotPool(118, 3365, 24, 12, [0x2a5a3a, 0x3a6a46, 0x4a7a52, 0x5a8a5e], 82, C.rock);
+    // the shrine on the hill: a stair of stone up through a row of red torii to the little red shrine at the top
+    {
+      const sx = 134;
+      // the hill: a mound of green with rocks in it
+      img.fine(sx - 12, Y(3500), 24, 60, (X, Yr, x, y) => {
+        const u = L - y;
+        const e = Math.abs(x - sx) / (12 - Math.max(0, 3460 - u) * 0.1);
+        if (e > 1 || u < 3438) return null;
+        const c = rampColor([0x24402a, 0x305232, 0x3e6438, 0x4e7440], 0.3 + (1 - e) * 0.4 - (x - sx) * 0.02, X, Yr);
+        return hashPx(X >> 1, Yr >> 1, 820) < 0.06 ? 0x6e6a62 : c;
+      });
+      // the stairs
+      for (let u = 3440; u < 3480; u += 0.34) {
+        const Yr = Math.round(Y(u) * S);
+        for (let X = (sx - 3) * S; X < (sx + 3) * S; X++) img.px(X, Yr, Math.round(u * 3) % 3 === 0 ? C.stone[0] : X < (sx - 2.5) * S || X >= (sx + 2.5) * S ? C.stone[1] : C.stone[3]);
+      }
+      reserveRect(sx - 4, Y(3482), 8, 44);
+      for (const u of [3442, 3452, 3462, 3472]) torii(sx, Y(u), 8, 6);
+      house(sx - 8, Y(3500), 16, 9, 5, { ramp: ROOF.dark, hip: true, wall: 0xc8382a });
+      lampPost(sx - 7, Y(3440));
+      for (const u of [3446, 3466]) folk(sx + (u % 4 ? 1 : -1), Y(u));
+    }
+    // the lotus pond, lower left: green water nearly covered by giant lily pads and lotus in flower, a red bridge over it
+    hotPool(40, 3346, 28, 15, [0x2a5a3a, 0x3a6a46, 0x4a7a52, 0x5a8a5e], 82, C.rock);
     /** A Victoria lily pad: veined from its middle, its rim turned up, red on the outside. */
     const lily = (x, y, r, flower) => {
       const CX = x * S;
@@ -3709,11 +3939,37 @@ export function buildMid() {
         img.discPx(CX + R + 2, CY - R + 1, 1.6, 0xfff4c8);
       }
     };
-    for (let k = 0; k < 9; k++) lily(100 + (k % 5) * 8 + (rand() - 0.5) * 3, Y(3365) + (k < 5 ? -4 : 4) + (rand() - 0.5) * 2, 3.2 + rand() * 0.6, k % 4 === 0);
-    // the greenhouse: a glass vault on a white frame, tropical green showing through
     {
-      const x = 42;
-      const y = Y(3384);
+      const lr = rng(6640);
+      for (let k = 0; k < 22; k++) {
+        const x = 40 + (lr() - 0.5) * 48;
+        const y = Y(3346) + (lr() - 0.5) * 22;
+        if (((x - 40) / 26) ** 2 + ((y - Y(3346)) / 13) ** 2 > 0.85 || Math.abs(y - Y(3346)) < 3) continue;
+        lily(x, y, 2.4 + lr() * 1.4, lr() < 0.3);
+      }
+      // the lotus: leaves standing up out of the water, pink flowers on them
+      for (let k = 0; k < 16; k++) {
+        const x = 40 + (lr() - 0.5) * 46;
+        const y = Y(3346) + (lr() - 0.5) * 20;
+        if (((x - 40) / 26) ** 2 + ((y - Y(3346)) / 13) ** 2 > 0.8 || Math.abs(y - Y(3346)) < 3) continue;
+        img.discPx(x * S, y * S, 3.4, 0x4a8a3a);
+        img.discPx(x * S - 1, y * S - 1, 2.2, 0x6aa84a);
+        if (lr() < 0.6) {
+          for (let p = 0; p < 6; p++) img.discPx(x * S + Math.cos(p) * 2.2 + 3, y * S + Math.sin(p) * 2.2 - 4, 1.6, p % 2 ? 0xf0a0c0 : 0xf8c8dc);
+          img.px(Math.round(x * S + 3), Math.round(y * S - 4), 0xffe070);
+        }
+      }
+      redBridge(12, 68, 3346, 10);
+      folk(32, Y(3346) - 6);
+      folk(50, Y(3346) - 6, { yukata: true });
+      kit.path([[14, 3346], [66, 3346]], [stepper(0xe8e0d0, 0, 3346, true), stepper(0xe8e0d0, 1, 3346, true)], { sp: 3, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0: 0.3 });
+    }
+    // the little red pond (Umi's own), and the glasshouse of tropical lilies, up the west side
+    hotPool(30, 3392, 11, 7, C.blood, 83, C.rock);
+    plume(30, Y(3392), 1);
+    {
+      const x = 12;
+      const y = Y(3488);
       const w = 40;
       const h = 15;
       objects.push({
@@ -3743,98 +3999,35 @@ export function buildMid() {
         },
       });
       reserveRect(x - 1, y - 1, w + 2, h + 8);
-      // a walk from its door to the pond's bridge path
     }
-    gate(8, 3330, 34, 0x2b3c78);
+    // the gift hall with its orange roof by the gate, a foot bath by the pond
+    house(60, Y(3376), 30, 11, 6, { ramp: ROOF.orange, hip: true, wall: 0xf0e8d8, noren: 0x2b3c78 });
+    crowd(60, Y(3376) + 18, 30, 3, 6, true);
+    footbath(96, Y(3464), 20, [0x2a7ab8, 0x3a8ac8, 0x5aa8e0, 0x8ac8f0]);
+    gate(8, 3308, 34, 0x2b3c78);
     {
-      const ring = [];
-      for (let a = 2.95; a >= 0.15; a -= 0.14) ring.push([76 + Math.cos(a) * 53, 3420 - Math.sin(a) * 37]);
-      flags([[westX(3402), 3402], ...ring, [Math.round(eastX(3404)), 3404]], 2.6);
-      flags([[62, 3370], [62, 3383]], 2.2);
-      flags([[62, 3370], [62, 3362], [90, 3362]], 2.2);
+      flags([[25, 3312], [25, 3338], [14, 3346]], 2.6);
+      flags([[68, 3346], [96, 3352], [100, 3388]], 2.4);
+      flags([[110, 3388], [128, 3396], [134, 3424], [134, 3438]], 2.4);
+      flags([[50, 3420], [50, 3448], [32, 3466]], 2.4);
+      flags([[134, 3424], [Math.round(eastX(3426)), 3426]], 2.6);
     }
-    // eggs cooking in Umi Jigoku: a basket hung from a bamboo frame into the cobalt water, steam boiling off it;
-    // a railing round the near shore with visitors along it (some strolling, live)
+
+    // ============================================================ ONIISHIBOZU JIGOKU: the monks' heads
+    // Grey mud boiling in pools among grey rocks, bubbles swelling like shaven heads and bursting; a dark wooden
+    // bath house, the old gate, boardwalks between the pools, steam everywhere.
+    yard(8, 3540, 146, 3835, 172, 'ash');
     {
-      const er = rng(6631);
-      const bx = 44;
-      const by = Y(3400);
-      const BX = bx * S;
-      const BY = by * S;
-      objects.push({
-        y: by + 4,
-        draw: () => {
-          for (const X of [BX - 12, BX + 15]) for (let j = -18; j < 8; j++) {
-            img.px(X, BY + j, 0x8a7a4a);
-            img.px(X + 1, BY + j, 0x6a5a34);
-            if ((j + 18) % 7 === 0) img.px(X, BY + j, 0xc8b878);
-          }
-          for (let i = -12; i < 16; i++) {
-            img.px(BX + i, BY - 18, 0xc8b878);
-            img.px(BX + i, BY - 17, 0x8a7a4a);
-          }
-          for (let j = -17; j < -8; j++) img.px(BX + 1, BY + j, 0x5a4a30);
-          for (let j = 0; j < 9; j++)
-            for (let i = -6; i < 9; i++) {
-              if (Math.abs(i - 1.5) + Math.abs(j - 4) * 0.4 > 8) continue;
-              img.px(BX + i, BY - 9 + j, (i + j) % 2 ? 0xb8945a : 0x9a7a44);
-            }
-          for (const [i, j] of [[-3, -9], [0, -10], [3, -9], [6, -10], [-1, -7], [2, -7], [5, -7]]) {
-            img.px(BX + i, BY + j, 0xf8f4ea);
-            img.px(BX + i + 1, BY + j, 0xf0ece2);
-            img.px(BX + i, BY + j + 1, 0xd8d0c0);
-          }
-        },
-      });
-      kit.emit(bx, 3402, [2, 3, 4].map(puffFrames), { rate: 2, life: [1.6, 2.4], vy: 7, sx: 1, wf: 0.5, a: 0.7, d: 1.1, tint: 1 });
-      const rail = [];
-      for (let a = 0.2; a <= Math.PI - 0.2; a += 0.04) rail.push([76 + Math.cos(a) * 49, Y(3420) + Math.sin(a) * 33]);
-      objects.push({
-        y: Y(3420) + 33,
-        draw: () => {
-          for (let k = 0; k + 1 < rail.length; k++) {
-            const [x0, y0] = rail[k];
-            const [x1, y1] = rail[k + 1];
-            img.linePx(x0 * S, y0 * S, x1 * S, y1 * S, 0x6a5a44);
-            img.linePx(x0 * S, y0 * S + 1, x1 * S, y1 * S + 1, 0x3a2e22);
-            if (k % 4 === 0) for (let j = 0; j < 5; j++) img.px(Math.round(x0 * S), Math.round(y0 * S) + j, 0x2a2018);
-          }
-        },
-      });
-      rail.forEach(([x, y]) => reserveRect(x - 1, y - 1, 3, 4));
-      for (const [x, y] of rail.filter(() => er() < 0.28)) folk(x, y + 2.6);
-      for (const [c, s0] of [[0xd04040, 0.2], [0x3a6ad0, 0.6], [0xe8e8f0, 0.9]])
-        kit.path(rail.filter((_, i) => i % 6 === 0).map(([x, y]) => [Math.round(x), U(Math.round(y) + 3)]), [stepper(c, 0, 3400), stepper(c, 1, 3400)], { sp: 3, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0 });
-    }
-    // Oniishibozu: grey mud pools with bubbles like shaven monks' heads, boardwalks to look from
-    for (const [x, u, rx, ry] of [[66, 3610, 30, 17], [112, 3770, 28, 16], [40, 3770, 20, 13], [124, 3612, 16, 11], [76, 3700, 12, 8]]) {
-      hotPool(x, u, rx, ry, C.mud, 90 + u, C.stone);
-      for (let k = 0; k < rx / 2; k++) {
-        const bx = x + (rand() - 0.5) * rx * 1.3;
-        const by = Y(u) + (rand() - 0.5) * ry * 1.3;
-        if (((bx - x) / rx) ** 2 + ((by - Y(u)) / ry) ** 2 > 0.6) continue;
-        const r = (1.5 + rand() * 2.2) * S;
-        const CX = bx * S;
-        const CY = by * S;
-        for (let Yy = Math.floor(CY - r - 1); Yy <= CY + r + 1; Yy++)
-          for (let X = Math.floor(CX - r - 1); X <= CX + r + 1; X++) {
-            const dx = (X + 0.5 - CX) / r;
-            const dy = (Yy + 0.5 - CY) / r;
-            const d = dx * dx + dy * dy;
-            if (d > 1) continue;
-            const l = dx + dy;
-            let c = l < -0.8 ? 0xe4e0d8 : l < -0.25 ? C.mud[3] : l < 0.45 ? C.mud[2] : l < 0.95 ? C.mud[1] : C.mud[0];
-            if (d > 0.82) c = scaleColor(c, 0.78);
-            img.px(X, Yy, c);
-          }
+      const MUD = [[64, 3602, 28, 15], [112, 3762, 26, 15], [40, 3770, 20, 12], [124, 3606, 15, 10], [90, 3712, 12, 8], [30, 3724, 11, 7], [100, 3806, 14, 7], [36, 3650, 10, 6], [132, 3712, 10, 7], [58, 3700, 7, 5], [126, 3650, 9, 5]];
+      for (const [x, u, rx, ry] of MUD) {
+        hotPool(x, u, rx, ry, C.mud, 90 + u, C.stone);
+        mudDomes(x, u, rx, ry, Math.round(rx * 1.2));
+        plume(x, Y(u), 1.2);
       }
-      plume(x, Y(u), 1.2);
-    }
-    // a boardwalk across the yard between the big pools, a rail each side, its people
-    {
+      // the boardwalks between them, rails each side, people
       const a = flags([[22, 3562], [22, 3698]], 2.6);
-      const b = flags([[92, 3700], [97, 3700], [98, 3640], [100, 3596], [146, 3586], [Math.round(eastX(3586)), 3586]], 2.6);
-      const c = flags([[97, 3700], [78, 3745], [76, 3802]], 2.6);
+      const b = flags([[92, 3696], [97, 3696], [98, 3640], [100, 3590], [146, 3584], [Math.round(eastX(3584)), 3584]], 2.6);
+      const c = flags([[97, 3696], [70, 3700], [72, 3740], [76, 3800]], 2.6);
       const vr2 = rng(6672);
       for (const pts of [[...a, ...b], c]) {
         for (let k = 0; k + 1 < pts.length; k++) {
@@ -3847,43 +4040,97 @@ export function buildMid() {
         }
       }
       for (const [c1, s0] of [[0xd04040, 0.1], [0x3a6ad0, 0.5], [0xe8e8f0, 0.8]]) kit.path([...a, ...b], [stepper(c1, 0, 3650), stepper(c1, 1, 3650)], { sp: 3.5, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0 });
-      for (const [x, u, rx, ry] of [[66, 3610, 30, 17], [112, 3770, 28, 16], [40, 3770, 20, 13]]) poolRail(x, u, rx, ry, 6);
-      const yy = Y(3700);
-      const X0 = 12 * S;
-      const X1 = 92 * S;
-      for (let Yr = (yy - 3) * S; Yr < (yy + 3) * S + 3; Yr++) for (let X = X0; X < X1 + 3; X++) img.tintPx(X + 2, Yr + 2, 0.8);
-      for (let Yr = (yy - 3) * S; Yr < (yy + 3) * S; Yr++)
-        for (let X = X0; X < X1; X++) img.px(X, Yr, Yr < (yy - 3) * S + 2 || Yr >= (yy + 3) * S - 2 ? 0x4a3424 : X % 6 === 0 ? 0x4a3424 : hashPx(X >> 3, Yr >> 2, 104) < 0.5 ? 0x8e6a4a : 0x76583e);
-      reserveRect(12, yy - 3, 80, 6);
-      crowd(16, yy - 2, 72, 3, 9, true);
-    }
-    gate(4, 3560, 32, 0x5a5a5a); // (on the south wall, where the west path comes up)
-    // Kamado Jigoku: pools in different colours and the red oni cook on his giant pot
-    for (const [x, u, ramp] of [[36, 4090, C.milk], [80, 4130, C.blood], [126, 4100, C.cobalt], [108, 4320, C.mud], [48, 4340, C.jade], [86, 4260, C.milk], [26, 4254, C.cobalt]]) {
-      hotPool(x, u, 17, 10, ramp, x + u);
-      plume(x, Y(u), 1.1);
-      poolRail(x, u, 17, 10, 6);
-    }
-    {
-      const main = flags([[89, 4041], [100, 4082], [106, 4116], [100, 4160], [88, 4205], [62, 4240], [60, 4285], [75, 4312], [78, 4362], [78, 4399]], 2.8);
-      flags([[100, 4082], [62, 4088]], 2.4);
-      flags([[61, 4256], [50, 4256]], 2.4);
-      flags([[78, 4362], [66, 4352]], 2.4);
-      flags([[75, 4312], [90, 4316]], 2.4);
-      const wr = rng(6673);
-      for (const [c, s0, yk] of [[0xd04040, 0.1, false], [0x3a6ad0, 0.3, false], [0xe8e8f0, 0.55, false], [0x2b3c78, 0.75, true], [0xe8c040, 0.9, false]]) kit.path(main, [stepper(c, 0, 4200, yk), stepper(c, 1, 4200, yk)], { sp: 3.5, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0 });
-      for (let k = 0; k + 1 < main.length; k++) {
-        const n = Math.floor(Math.hypot(main[k + 1][0] - main[k][0], main[k + 1][1] - main[k][1]) / 12);
-        for (let i = 0; i < n; i++) {
-          if (wr() < 0.45) continue;
-          const t = i / n;
-          folk(main[k][0] + (main[k + 1][0] - main[k][0]) * t + (wr() - 0.5) * 3, Y(main[k][1] + (main[k + 1][1] - main[k][1]) * t));
-        }
+      for (const [x, u, rx, ry] of MUD.slice(0, 3)) poolRail(x, u, rx, ry, 6);
+      // the dark wooden bath house (Oniishi-no-yu) at the top, its smoke stack, and a hut by the gate
+      house(14, Y(3830), 44, 13, 7, { ramp: ROOF.dark, hip: true, wood: true, noren: 0x5a5a5a });
+      plume(52, Y(3826), 1.6);
+      house(118, Y(3830), 24, 10, 5, { ramp: ROOF.dark, hip: false, wood: true, noren: 0x2b3c78 });
+      footbath(62, Y(3818), 20, C.mud.map((v) => scaleColor(v, 1.15)));
+      // grey boulders heaped round, ash-grey and lichened
+      const br = rng(6673);
+      for (let k = 0; k < 60; k++) {
+        const x = 12 + br() * 130;
+        const y = Y(3546 + br() * 280);
+        if (!anyRes(x - 3, y - 3, 6, 6)) rockPx(x * S, y * S, 2 + br() * 4.5, C.stone, 900 + k);
       }
     }
+    gate(4, 3540, 32, 0x5a5a5a); // (on the south wall, where the west path comes up)
+
+    // the souvenir row off the coach park: stalls of eggs and steamed buns, combs and hot-spring powder under their awnings, a
+    // paved street from the main path to the west, steam off the steamers; flags on from it to Kamado's gate
     {
-      const x = 106;
-      const y = Y(4190);
+      const U0 = 3944;
+      const HW = 6;
+      const xEnd = Math.round(eastX(U0)) - 4;
+      for (let Yr = Y(U0 + HW) * S; Yr < Y(U0 - HW) * S; Yr++)
+        for (let X = 6 * S; X < xEnd * S; X++) {
+          const row = Yr >> 3;
+          const XX = X + (row % 2) * 6;
+          const e = Math.min(Yr - Y(U0 + HW) * S, Y(U0 - HW) * S - 1 - Yr);
+          img.px(X, Yr, e < 2 ? 0x6e6a60 : Yr % 8 === 0 || XX % 12 === 0 ? 0x7e7a70 : rampColor(C.stone, 0.5 + hashPx(XX >> 3, row, 217) * 0.35, X, Yr));
+        }
+      reserveRect(6, Y(U0 + HW), xEnd - 6, HW * 2);
+      flags([[100, 3919], [100, U0 - 5]], 3);
+      flags([[122, U0 + 5], [122, 4006], [94, 4008]], 2.6);
+      const sr = rng(6731);
+      const stall = (x, y, north) => {
+        const aw = sr.pick([0xc83a2a, 0x2b3c78, 0x3a7a4a, 0xe8c040, 0xd86a2a]);
+        const X = x * S;
+        const Yy = y * S;
+        const goods = sr.pick([[0xf8f4ea, 0xe8e0d0], [0xd8a040, 0xb88a30], [0x6a9a5a, 0x4a7a3a], [0xe89aa0, 0xd87a84]]);
+        objects.push({
+          y: y + 8,
+          shadow: () => shadowRect(x + 1, y + 1, 14, 8, 0.66),
+          draw: () => {
+            for (let j = 0; j < 15; j++) for (let i = 0; i < 42; i++) img.px(X + i, Yy + j, j === 7 ? scaleColor((i >> 3) % 2 ? aw : 0xf4f0e6, 1.12) : (i >> 3) % 2 ? aw : 0xf4f0e6);
+            for (let i = 0; i < 42; i++) if (i % 8 < 4) img.px(X + i, Yy + 15, (i >> 3) % 2 ? scaleColor(aw, 0.7) : 0xc8c4b8);
+            for (let j = 16; j < 24; j++)
+              for (let i = 0; i < 42; i++) {
+                const shelf = j === 16 || i === 0 || i === 41;
+                img.px(X + i, Yy + j, shelf ? 0x5e4430 : (i + (j >> 1) * 3) % 5 < 3 ? ((i >> 1) + j) % 3 ? goods[0] : goods[1] : 0x76583e);
+              }
+          },
+        });
+        reserveRect(x, y, 14, 8);
+        void north;
+      };
+      let k = 0;
+      for (let x = 10; x < xEnd - 16; x += 16 + Math.floor(sr() * 4), k++) {
+        if (!anyRes(x, Y(U0 + HW + 9), 14, 8) && x + 14 < 92) stall(x, Y(U0 + HW + 9), true);
+        if (!anyRes(x, Y(U0 - HW) + 1, 14, 8)) stall(x, Y(U0 - HW) + 1, false);
+        if (k % 3 === 1) kit.emit(x + 6, U0 + HW + 4, [2, 3, 4].map(puffFrames), { rate: 1.3, life: [1.4, 2.2], vy: 6, sx: 2, wf: 0.6, a: 0.55, d: 1.1, tint: 1 });
+      }
+      for (let i = 0; i < 44; i++) folk(10 + sr() * (xEnd - 14), Y(U0 + (sr() - 0.5) * (HW * 1.6)), { yukata: sr() < 0.25 });
+      for (const [c, s0, yk] of [[0xd04040, 0.1, false], [0x3a6ad0, 0.4, false], [0x2b3c78, 0.6, true], [0xe8e8f0, 0.85, false]])
+        kit.path([[10, U0 + (s0 > 0.5 ? 3 : -2)], [xEnd, U0 + (s0 > 0.5 ? 3 : -2)]], [stepper(c, 0, U0, yk), stepper(c, 1, U0, yk)], { sp: 3.2, mode: 'pp', hold: 2, turn: 'none', fps: 3, s0 });
+      signPost(3, Y(U0 + HW) + 1);
+    }
+
+    // ============================================================ KAMADO JIGOKU: the cooking-pot hell
+    // A loop round six "districts" (chōme), each a different hell: 1 a steaming pool, 2 the red oni cook on his pot,
+    // 3 a clear sky-blue pool, 4 a pond of boiling clay, 5 the big milky blue pond, 6 the orange one; in the middle the
+    // foot bath, the spring to drink, the steam for the throat, the gift shop, the Happy Bell. Numbers at each stop.
+    yard(8, 4040, 146, 4300, 173, 'paving');
+    {
+      const D = [
+        [1, 34, 4078, 14, 8, [0x7a9a8a, 0x9ab4a4, 0xbcd0c4, 0xdce8e0]],
+        [3, 78, 4268, 14, 8, [0x2a8ae0, 0x4aa8f0, 0x7ac8f8, 0xb0e4fc]],
+        [4, 120, 4266, 14, 8, [0x7a6448, 0x927a5a, 0xaa926e, 0xc2aa86]],
+        [5, 114, 4150, 15, 11, [0x3a9ac8, 0x5ab4d8, 0x8acce4, 0xbce4f0]],
+        [6, 114, 4080, 14, 8, [0xb84a1a, 0xd0622a, 0xe0803a, 0xf0a058]],
+      ];
+      for (const [num, x, u, rx, ry, ramp] of D) {
+        hotPool(x, u, rx, ry, ramp, x + u, C.rock);
+        plume(x, Y(u), num === 1 ? 2.2 : 1.1);
+        if (num === 1) plume(x + 6, Y(u) - 3, 1.8);
+        if (num === 4) mudDomes(x, u, rx, ry, 14, ramp, 0xe8dcc4);
+        poolRail(x, u, rx, ry, 5);
+        stopSign(x - rx - 3, Y(u) + ry + 6, num);
+      }
+      stopSign(10, Y(4232), 2);
+    {
+      const x = 16;
+      const y = Y(4262);
       const X = x * S;
       const Yy = y * S;
       objects.push({
@@ -3953,126 +4200,99 @@ export function buildMid() {
       pool(x + 13, y + 20, 11, 0xff7a2a, 0.26);
       crowd(x - 4, y + 25, 34, 3, 8, true);
     }
-    // Kamado's gate in the middle of its south wall, a walk to it from the main path (between the turret stands)
-    gate(74, 4040, 30, 0x8a2a2a);
-    walk(86, 93, 4012, 4023);
-    walk(86, Math.round(eastX(4008)), 4006, 4011);
-    // Shiraike: the milky white pond in a Japanese garden, a little red bridge, stone lanterns, a stone pagoda; its gate
-    // on the north wall by the main path
-    hotPool(96, 4440, 30, 16, C.milk, 95, C.rock);
-    gate(114, 4506, 30, 0x2b3c78);
-    walk(128, Math.round(eastX(4509)), 4507, 4512);
-    {
-      const X0 = 62 * S;
-      const X1 = 130 * S;
-      const YC = Y(4441) * S;
-      for (let X = X0; X < X1; X++) {
-        const t = (X - X0) / (X1 - X0);
-        const arch = Math.round(Math.sin(t * Math.PI) * 9);
-        for (let j = 0; j < 12; j++) {
-          const yr = YC - 6 + j - arch;
-          const e = Math.min(j, 11 - j);
-          img.px(X, yr, e < 2 ? (j < 6 ? 0xf0604a : 0x9a2a1e) : X % 5 === 0 ? 0x8a6a4a : 0xa0805a);
+      // the loop the visitors walk, 1 → 6, and its people
+      const main = flags([[83, 4044], [60, 4060], [56, 4100], [30, 4110], [24, 4160], [28, 4228], [50, 4236], [78, 4246], [100, 4246], [139, 4244], [139, 4190], [138, 4120], [120, 4100], [92, 4100], [88, 4060], [83, 4044]], 2.8);
+      const wr = rng(6674);
+      for (const [c, s0, yk] of [[0xd04040, 0.1, false], [0x3a6ad0, 0.3, false], [0xe8e8f0, 0.55, false], [0x2b3c78, 0.75, true], [0xe8c040, 0.9, false]]) kit.path(main, [stepper(c, 0, 4170, yk), stepper(c, 1, 4170, yk)], { sp: 3.5, n: 1, turn: 'none', fps: 3, s0 });
+      for (let k = 0; k + 1 < main.length; k++) {
+        const n = Math.floor(Math.hypot(main[k + 1][0] - main[k][0], main[k + 1][1] - main[k][1]) / 12);
+        for (let i = 0; i < n; i++) {
+          if (wr() < 0.5) continue;
+          const t = i / n;
+          folk(main[k][0] + (main[k + 1][0] - main[k][0]) * t + (wr() - 0.5) * 3, Y(main[k][1] + (main[k + 1][1] - main[k][1]) * t));
         }
-        for (let j = 0; j < 3; j++) img.tintPx(X + 3, YC + 7 + j - Math.floor(arch / 3), 0.72);
-        // the rails, a post at every step
-        if (X % 12 === 0) for (const yr of [YC - 6 - arch, YC + 4 - arch]) for (let j = -3; j < 0; j++) img.px(X, yr + j, 0x9a2a1e);
       }
-      folk(84, Y(4441) - 3.6, { yukata: true });
-      folk(104, Y(4441) - 4, {});
-      kit.path([[64, 4441], [128, 4441]], [stepper(0xe8e0d0, 0, 4440, true), stepper(0xe8e0d0, 1, 4440, true)], { sp: 3, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0: 0.3 });
-    }
-    plume(110, Y(4446), 1.4);
-    for (const [x, u] of [[62, 4420], [134, 4420], [130, 4462]]) stoneLantern(x, Y(u));
-    {
-      // the many-roofed stone pagoda
-      const x = 92;
-      const y = Y(4478);
-      const X = x * S;
-      const Yy = y * S;
-      objects.push({
-        y: y + 1,
-        shadow: () => {
-          for (let k = 0; k < 26; k++) for (let t = -3; t <= 3; t++) img.tintPx(X + 3 + k, Yy + Math.floor(k * 0.55) + t, 0.74);
-        },
-        draw: () => {
-          for (let j = 0; j < 4; j++) for (let i = -9; i <= 9; i++) img.px(X + i, Yy - j, j === 3 ? C.stone[3] : C.stone[1]);
-          let yy = Yy - 4;
-          for (const hw of [8, 7, 6, 5, 4]) {
-            for (let j = 0; j < 5; j++) for (let i = -hw + 3; i <= hw - 3; i++) img.px(X + i, yy - j, i < 0 ? C.stone[2] : C.stone[1]);
-            yy -= 5;
-            for (let j = 0; j < 3; j++) for (let i = -hw - j; i <= hw + j; i++) img.px(X + i, yy - 2 + j, j === 2 ? C.stone[0] : i < 0 ? C.stone[3] : C.stone[2]);
-            yy -= 3;
-          }
-          for (let j = 0; j < 7; j++) img.px(X, yy - j, C.stone[3]);
-        },
-      });
-    }
-    {
-      const pts = flags([[129, 4490], [129, 4470], [112, 4466], [70, 4470], [62, 4446], [64, 4426], [88, 4418], [130, 4420], [132, 4440], [129, 4470]], 2.4);
-      kit.path(pts, [stepper(0x2b3c78, 0, 4450, true), stepper(0x2b3c78, 1, 4450, true)], { sp: 3.5, n: 2, gap: 70, turn: 'none', fps: 3 });
-      kit.path(pts, [stepper(0xd04040, 0, 4450), stepper(0xd04040, 1, 4450)], { sp: 3.2, n: 2, gap: 90, turn: 'none', fps: 3, s0: 0.4 });
-      for (const [x, u] of [[129, 4480], [100, 4467], [70, 4460], [64, 4436], [110, 4419], [131, 4430]]) crowd(x - 3, Y(u), 6, 2, 2, true);
-    }
-    runoffs(30, 3330, 146, 3500, 6601);
-    runoffs(8, 3560, 146, 3830, 6602);
-    runoffs(8, 4040, 146, 4400, 6603);
-    fumaroles(36, 3340, 140, 3495, 5, 6604);
-    fumaroles(14, 3566, 140, 3825, 10, 6605);
-    fumaroles(14, 4046, 140, 4395, 12, 6606);
-    dress(30, 3330, 146, 3500);
-    dress(8, 3560, 146, 3830);
-    dress(8, 4040, 146, 4400);
-    dress(52, 4404, 146, 4490);
-    // the souvenir row off the coach park: stalls of eggs and steamed buns, combs and hot-spring powder under their awnings, a
-    // paved street from the main path to the west, steam off the steamers; flags on from it to Kamado's gate
-    {
-      const U0 = 3944;
-      const HW = 6;
-      const xEnd = Math.round(eastX(U0)) - 4;
-      for (let Yr = Y(U0 + HW) * S; Yr < Y(U0 - HW) * S; Yr++)
-        for (let X = 6 * S; X < xEnd * S; X++) {
-          const row = Yr >> 3;
-          const XX = X + (row % 2) * 6;
-          const e = Math.min(Yr - Y(U0 + HW) * S, Y(U0 - HW) * S - 1 - Yr);
-          img.px(X, Yr, e < 2 ? 0x6e6a60 : Yr % 8 === 0 || XX % 12 === 0 ? 0x7e7a70 : rampColor(C.stone, 0.5 + hashPx(XX >> 3, row, 217) * 0.35, X, Yr));
-        }
-      reserveRect(6, Y(U0 + HW), xEnd - 6, HW * 2);
-      flags([[100, 3919], [100, U0 - 5]], 3);
-      flags([[122, U0 + 5], [122, 4006], [94, 4008]], 2.6);
-      const sr = rng(6731);
-      const stall = (x, y, north) => {
-        const aw = sr.pick([0xc83a2a, 0x2b3c78, 0x3a7a4a, 0xe8c040, 0xd86a2a]);
-        const X = x * S;
-        const Yy = y * S;
-        const goods = sr.pick([[0xf8f4ea, 0xe8e0d0], [0xd8a040, 0xb88a30], [0x6a9a5a, 0x4a7a3a], [0xe89aa0, 0xd87a84]]);
+      // the middle: the foot bath, the gift shop, the spring to drink from, the steam for the throat, the Happy Bell
+      footbath(60, Y(4142), 28, [0x6a9aa8, 0x8ab4c0, 0xa8ccd4, 0xc8e0e4]);
+      house(58, Y(4198), 32, 11, 6, { ramp: ROOF.brown, hip: true, wood: true, noren: 0x8a2a2a });
+      crowd(58, Y(4198) + 18, 32, 3, 6, true);
+      {
+        // the drinking spring: a stone basin, a bamboo pipe pouring, ladles
+        const X = 64 * S;
+        const Yy = Y(4118) * S;
         objects.push({
-          y: y + 8,
-          shadow: () => shadowRect(x + 1, y + 1, 14, 8, 0.66),
+          y: Y(4118) + 4,
           draw: () => {
-            for (let j = 0; j < 15; j++) for (let i = 0; i < 42; i++) img.px(X + i, Yy + j, j === 7 ? scaleColor((i >> 3) % 2 ? aw : 0xf4f0e6, 1.12) : (i >> 3) % 2 ? aw : 0xf4f0e6);
-            for (let i = 0; i < 42; i++) if (i % 8 < 4) img.px(X + i, Yy + 15, (i >> 3) % 2 ? scaleColor(aw, 0.7) : 0xc8c4b8);
-            for (let j = 16; j < 24; j++)
-              for (let i = 0; i < 42; i++) {
-                const shelf = j === 16 || i === 0 || i === 41;
-                img.px(X + i, Yy + j, shelf ? 0x5e4430 : (i + (j >> 1) * 3) % 5 < 3 ? ((i >> 1) + j) % 3 ? goods[0] : goods[1] : 0x76583e);
-              }
+            for (let j = 0; j < 9; j++) for (let i = 0; i < 15; i++) img.px(X + i, Yy + j, Math.min(i, 14 - i, j, 8 - j) < 2 ? C.stone[2] : 0x7ab8c8);
+            for (let i = -6; i < 6; i++) img.px(X + i, Yy + 3, 0x8a9a3a);
+            img.px(X + 6, Yy + 4, 0xd8f0f8);
+            for (const i of [3, 8, 11]) img.px(X + i, Yy - 1, 0x8a6a3a);
           },
         });
-        reserveRect(x, y, 14, 8);
-        void north;
-      };
-      let k = 0;
-      for (let x = 10; x < xEnd - 16; x += 16 + Math.floor(sr() * 4), k++) {
-        if (!anyRes(x, Y(U0 + HW + 9), 14, 8) && x + 14 < 92) stall(x, Y(U0 + HW + 9), true);
-        if (!anyRes(x, Y(U0 - HW) + 1, 14, 8)) stall(x, Y(U0 - HW) + 1, false);
-        if (k % 3 === 1) kit.emit(x + 6, U0 + HW + 4, [2, 3, 4].map(puffFrames), { rate: 1.3, life: [1.4, 2.2], vy: 6, sx: 2, wf: 0.6, a: 0.55, d: 1.1, tint: 1 });
+        reserveRect(62, Y(4118) - 1, 8, 5);
+        // steam for the throat: a little booth with spouts, people bending to it
+        house(96, Y(4192), 14, 7, 4, { ramp: ROOF.kawara, hip: false, wood: true });
+        kit.emit(103, 4180, [2, 3].map(puffFrames), { rate: 1.6, life: [1, 1.6], vy: 6, sx: 3, wf: 0.4, a: 0.6, d: 1.1, tint: 1 });
+        folk(100, Y(4180));
+        folk(106, Y(4181));
+        // the Happy Bell: a pink heart-shaped arch with a bell in it, couples ringing it
+        const hx = 92;
+        const hy = Y(4214);
+        objects.push({
+          y: hy + 1,
+          shadow: () => { for (let k = 0; k < 14; k++) img.tintPx(hx * S + 4 + k, hy * S + 1 + (k >> 1), 0.7); },
+          draw: () => {
+            const HX = hx * S;
+            const HY = hy * S;
+            for (let a = 0; a < 6.3; a += 0.02) {
+              const t = a;
+              const px = 16 * Math.sin(t) ** 3;
+              const py = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+              for (const w of [0, 1]) img.px(Math.round(HX + px * 0.55 + w), Math.round(HY - 14 + py * 0.55), w ? 0xd85a8a : 0xf8a0c0);
+            }
+            img.discPx(HX, HY - 15, 2.6, 0xe8c040);
+            img.px(HX - 1, HY - 16, 0xfff0a0);
+            for (let j = 0; j < 4; j++) img.px(HX, HY - 20 + j, 0x8a6a3a);
+          },
+        });
+        reserveRect(hx - 6, hy - 13, 12, 14);
+        folk(88, hy + 2.5);
+        folk(95, hy + 2.5, { yukata: true });
       }
-      for (let i = 0; i < 44; i++) folk(10 + sr() * (xEnd - 14), Y(U0 + (sr() - 0.5) * (HW * 1.6)), { yukata: sr() < 0.25 });
-      for (const [c, s0, yk] of [[0xd04040, 0.1, false], [0x3a6ad0, 0.4, false], [0x2b3c78, 0.6, true], [0xe8e8f0, 0.85, false]])
-        kit.path([[10, U0 + (s0 > 0.5 ? 3 : -2)], [xEnd, U0 + (s0 > 0.5 ? 3 : -2)]], [stepper(c, 0, U0, yk), stepper(c, 1, U0, yk)], { sp: 3.2, mode: 'pp', hold: 2, turn: 'none', fps: 3, s0 });
-      signPost(3, Y(U0 + HW) + 1);
+      // little oni statues round the loop, red and blue, each with his club; benches with people resting
+      for (const [x, u, c] of [[66, 4100, 0xd8302a], [104, 4236, 0x3a6ad0], [134, 4206, 0xd8302a], [48, 4150, 0x3a6ad0]]) {
+        const X = Math.round(x * S);
+        const Yy = Math.round(Y(u) * S);
+        objects.push({
+          y: Y(u) + 1,
+          draw: () => {
+            img.rectPx(X - 4, Yy - 2, 9, 3, C.stone[2]);
+            img.rectPx(X - 2, Yy - 11, 5, 9, c);
+            img.rectPx(X - 2, Yy - 5, 5, 2, 0xf0c030);
+            img.discPx(X, Yy - 13, 2.4, c);
+            img.px(X - 2, Yy - 16, 0xf0e0a0);
+            img.px(X + 2, Yy - 16, 0xf0e0a0);
+            for (let j = 0; j < 8; j++) img.px(X + 4, Yy - 14 + j, 0x5a4a3a);
+          },
+        });
+        reserveRect(x - 2, Y(u) - 5, 4, 6);
+      }
+      for (const [x, u] of [[70, 4170], [100, 4162], [40, 4200], [60, 4228]]) if (!anyRes(x - 1, Y(u) - 1, 7, 4)) {
+        bench(x, Y(u));
+        reserveRect(x - 1, Y(u) - 1, 7, 4);
+        folk(x + 2, Y(u) - 0.5);
+      }
+      runoffs(8, 4040, 146, 4300, 6603);
+      fumaroles(14, 4046, 140, 4295, 6, 6606);
     }
+    // Kamado's gate in the middle of its south wall, a walk to it from the main path (between the turret stands)
+    gate(68, 4040, 30, 0x8a2a2a);
+    walk(80, 87, 4012, 4023);
+    walk(80, Math.round(eastX(4008)), 4006, 4011);
+
+    // ============================================================ YAMA JIGOKU: the mountain hell
+    // A hill of hot rocks steaming from every crack, and round it the little zoo the heat keeps warm all year: the
+    // elephant in her yard, the hippos in their warm pool, flamingos in theirs, capybaras in the hot water.
     /** A hill of hot rock: boulders piled up to a crest, salts and sulphur on them, steam from its cracks (Yama Jigoku). */
     const rockHill = (cx, cu, rx, ry, seed) => {
       const hr = rng(seed);
@@ -4126,26 +4346,227 @@ export function buildMid() {
         plume(x, y, 0.9 + hr() * 0.6, { front: true });
       }
     };
-    rockHill(28, 4446, 22, 30, 7111);
-    rockHill(134, 4600, 17, 20, 7112);
+    yard(8, 4306, 146, 4500, 174, 'zoo');
+    rockHill(84, 4420, 26, 30, 7111);
+    poolRail(84, 4420, 23, 27, 8);
     {
-      // the rail and the view from its foot
-      poolRail(28, 4446, 19, 27, 8);
-      flags([[28, 4408], [52, 4402], [100, 4402], [100, 4394]], 2.4);
-      poolRail(134, 4600, 14, 17, 5);
-      flags([[134, 4576], [Math.round(eastX(4572)), 4572]], 2.4);
-      signPost(46, Y(4410));
-    }
-    // gift shops and trees between the hells
-    for (let k = 0; k < 6; k++) {
-      const x = 4 + rand() * 140;
-      const u = HELLS[0] + 260 + rand() * 1200;
-      const w = 22 + rand() * 12;
-      if (!anyRes(x, Y(u), w, 22)) {
-        house(Math.round(x), Y(u), Math.round(w), 11, 5, { ramp: rand.pick([ROOF.kawara, ROOF.brown, ROOF.red]), noren: rand.pick([0x2b3c78, 0x8a2a2a]) });
-        crowd(x + 2, Y(u) + 17, w - 4, 3, 4, true);
+      /** A low wall of logs round a pen, its corner posts. */
+      const pen = (x0, u0, x1, u1) => {
+        const X0 = x0 * S;
+        const X1 = x1 * S;
+        const Y0 = Y(u1) * S;
+        const Y1 = Y(u0) * S;
+        for (let X = X0; X <= X1; X++)
+          for (const Yr of [Y0, Y1]) {
+            img.px(X, Yr, 0x8a6a44);
+            img.px(X, Yr + 1, 0x5a4428);
+          }
+        for (let Yr = Y0; Yr <= Y1; Yr++)
+          for (const X of [X0, X1]) {
+            img.px(X, Yr, 0x8a6a44);
+            img.px(X + 1, Yr, 0x5a4428);
+          }
+        for (let X = X0; X <= X1; X += 15) for (const Yr of [Y0, Y1]) img.rectPx(X - 1, Yr - 2, 3, 3, 0x4a3420);
+      };
+      // the elephant, in her sandy yard with a pool and a heap of hay
+      pen(12, 4430, 52, 4492);
+      img.fine(13, Y(4491), 38, 60, (X, Yr) => rampColor([0xa08a62, 0xb09a70, 0xc0aa80, 0xd0ba90], 0.3 + hashPx(X >> 2, Yr >> 2, 830) * 0.5, X, Yr));
+      hotPool(40, 4478, 8, 5, [0x5a7a6a, 0x6a8a78, 0x7a9a88, 0x9ab4a4], 831, C.stone);
+      img.fine(16, Y(4446) - 3, 10, 6, (X, Yr) => ((X + Yr) % 3 ? 0xd8c070 : 0xb8a050));
+      {
+        const ex = 30;
+        const ey = Y(4458);
+        const EX = ex * S;
+        const EY = ey * S;
+        objects.push({
+          y: ey + 6,
+          shadow: () => { for (let j = -6; j < 10; j++) for (let i = -20; i < 26; i++) if ((i / 22) ** 2 + (j / 8) ** 2 < 1) img.tintPx(EX + 6 + i, EY + 10 + j, 0.6); },
+          draw: () => {
+            // the grey body seen from above, the big ears spread, the trunk curling down, the tail
+            img.fine(ex - 8, ey - 6, 16, 12, (X, Yr, x, y) => {
+              const d = ((x - ex) / 7.5) ** 2 + ((y - ey) / 5) ** 2;
+              if (d > 1) return null;
+              return scaleColor(0x8a8484, 1.25 - (x - ex + y - ey) * 0.05 - d * 0.2);
+            });
+            for (const sy of [-1, 1])
+              img.fine(ex + 3, ey + sy * 4 - 3, 8, 6, (X, Yr, x, y) => (((x - ex - 6) / 3.6) ** 2 + ((y - ey - sy * 4) / 3) ** 2 < 1 ? (sy < 0 ? 0x9a9494 : 0x6e6868) : null));
+            img.fine(ex + 7, ey - 3, 6, 6, (X, Yr, x, y) => (((x - ex - 9) / 2.8) ** 2 + ((y - ey) / 2.6) ** 2 < 1 ? 0x868080 : null));
+            for (let k = 0; k < 12; k++) img.discPx(EX + 34 + k * 0.6, EY + Math.sin(k / 3) * 3 + k * 0.4, 1.6, 0x6e6868);
+            for (const sy of [-1, 1]) img.px(EX + 30, EY + sy * 4, 0x1a1414);
+            for (let k = 0; k < 6; k++) img.px(EX - 22 - k, EY + (k >> 1), 0x5a5454);
+          },
+        });
+        reserveRect(ex - 9, ey - 7, 22, 15);
       }
+      // the hippos in their warm green pool, backs and heads above the water
+      pen(96, 4318, 142, 4370);
+      hotPool(119, 4344, 19, 10, [0x3a5a48, 0x4a6a56, 0x5a7a64, 0x7a9a80], 832, C.stone);
+      for (const [hx, hu, a] of [[112, 4346, 0], [126, 4340, 1]]) {
+        const X = hx * S;
+        const Yy = Y(hu) * S;
+        objects.push({
+          y: Y(hu) + 3,
+          draw: () => {
+            for (let a2 = 0; a2 < 6.3; a2 += 0.05) img.px(Math.round(X + Math.cos(a2) * 26), Math.round(Yy + Math.sin(a2) * 13), 0xb8c8b0, 0.7);
+            img.fine(hx - 8, Y(hu) - 5, 16, 10, (Xx, Yr, x, y) => {
+              const d = ((x - hx) / 7.5) ** 2 + ((y - Y(hu)) / 4.2) ** 2;
+              if (d > 1) return null;
+              return scaleColor(0x6e6064, 1.25 - (x - hx + y - Y(hu)) * 0.06);
+            });
+            const HX = X + (a ? -22 : 22);
+            img.discPx(HX, Yy, 7, 0x7a6a6e);
+            img.discPx(HX + (a ? -5 : 5), Yy, 5, 0xb08088);
+            for (const sy of [-1, 1]) {
+              img.px(HX + (a ? -9 : 9), Yy + sy * 2, 0x2a1c1e);
+              img.px(HX + (a ? 2 : -2), Yy + sy * 5, 0x1a1418);
+              img.rectPx(HX + (a ? 4 : -6), Yy + sy * 7 - 1, 3, 2, 0x8a7074);
+            }
+          },
+        });
+      }
+      // the flamingos: pink, in their shallow pool, standing on one leg
+      pen(12, 4318, 56, 4372);
+      hotPool(34, 4346, 17, 10, [0x6a9aa0, 0x7aaab0, 0x8abac0, 0xaad0d4], 833, C.stone);
+      {
+        const fr = rng(6690);
+        for (let k = 0; k < 11; k++) {
+          const x = 34 + (fr() - 0.5) * 28;
+          const y = Y(4346) + (fr() - 0.5) * 14;
+          const X = Math.round(x * S);
+          const Yy = Math.round(y * S);
+          const dir = fr() < 0.5 ? -1 : 1;
+          objects.push({
+            y: y + 1,
+            draw: () => {
+              for (let j = 0; j < 3; j++) img.px(X + 1, Yy + 3 + j, 0xd88a7a); // the leg, into the water
+              img.discPx(X, Yy, 2.6, 0xf49aa4);
+              img.discPx(X - dir, Yy - 1, 1.4, 0xfcc4c8);
+              for (let k2 = 0; k2 < 5; k2++) img.px(X + dir * (2 + k2), Yy - 3 - Math.round(Math.sin(k2 / 2) * 2), 0xf08a98); // the neck
+              img.px(X + dir * 7, Yy - 4, 0xf4aab4);
+              img.px(X + dir * 8, Yy - 3, 0x2a2024); // the black-tipped beak
+              for (let i = -3; i < 4; i++) img.px(X + i, Yy + 7, 0xf8f8f8, 0.35);
+            },
+          });
+        }
+      }
+      // capybaras soaking in a tub of hot water, eyes shut
+      hotPool(124, 4462, 10, 6, C.milk, 834, C.stone);
+      for (const [x, u] of [[120, 4463], [127, 4460], [125, 4465]]) {
+        img.discPx(x * S, Y(u) * S, 3.6, 0x8a5a34);
+        img.discPx(x * S + 3, Y(u) * S - 1, 2.2, 0x9a6a40);
+        img.px(x * S + 5, Y(u) * S - 2, 0x2a1a10);
+      }
+      plume(124, Y(4462), 1);
+      pen(108, 4448, 140, 4478);
+      gate(100, 4306, 30, 0x5a3a2a);
+      flags([[115, 4306], [80, 4320], [78, 4380], [60, 4384], [56, 4402]], 2.4);
+      flags([[78, 4380], [100, 4384], [124, 4400], [124, 4446]], 2.4);
+      flags([[60, 4384], [34, 4378]], 2.4);
+      crowd(62, Y(4384), 36, 3, 10, true);
+      crowd(14, Y(4378), 40, 3, 7, true);
+      signPost(46, Y(4398));
     }
+
+    // ============================================================ SHIRAIKE JIGOKU: the white pond
+    // A Japanese garden round the milky white pond: pruned pines, stone lanterns, a stone pagoda, a red bridge; the
+    // halls of tropical fish warmed by the springs, the giant arapaima in its tank.
+    yard(8, 4505, 146, 4695, 175, 'garden');
+    hotPool(92, 4600, 32, 17, C.milk, 95, C.rock);
+    plume(102, Y(4604), 1.5);
+    plume(80, Y(4596), 1.1);
+    redBridge(58, 126, 4600, 12);
+    folk(84, Y(4600) - 3.6, { yukata: true });
+    folk(104, Y(4600) - 4, {});
+    kit.path([[60, 4600], [124, 4600]], [stepper(0xe8e0d0, 0, 4600, true), stepper(0xe8e0d0, 1, 4600, true)], { sp: 3, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0: 0.3 });
+    for (const [x, u] of [[60, 4578], [128, 4580], [126, 4626], [62, 4624]]) stoneLantern(x, Y(u));
+    {
+      // the many-roofed stone pagoda
+      const x = 136;
+      const y = Y(4650);
+      const X = x * S;
+      const Yy = y * S;
+      objects.push({
+        y: y + 1,
+        shadow: () => {
+          for (let k = 0; k < 26; k++) for (let t = -3; t <= 3; t++) img.tintPx(X + 3 + k, Yy + Math.floor(k * 0.55) + t, 0.74);
+        },
+        draw: () => {
+          for (let j = 0; j < 4; j++) for (let i = -9; i <= 9; i++) img.px(X + i, Yy - j, j === 3 ? C.stone[3] : C.stone[1]);
+          let yy = Yy - 4;
+          for (const hw of [8, 7, 6, 5, 4]) {
+            for (let j = 0; j < 5; j++) for (let i = -hw + 3; i <= hw - 3; i++) img.px(X + i, yy - j, i < 0 ? C.stone[2] : C.stone[1]);
+            yy -= 5;
+            for (let j = 0; j < 3; j++) for (let i = -hw - j; i <= hw + j; i++) img.px(X + i, yy - 2 + j, j === 2 ? C.stone[0] : i < 0 ? C.stone[3] : C.stone[2]);
+            yy -= 3;
+          }
+          for (let j = 0; j < 7; j++) img.px(X, yy - j, C.stone[3]);
+        },
+      });
+    }
+    {
+      // the aquarium: a long glass-roofed hall, and before it the open tank of the arapaima, huge and red-tailed
+      house(14, Y(4692), 46, 12, 6, { ramp: ROOF.kawara, hip: true, wall: 0xeee6d6, noren: 0x2b3c78 });
+      const tx = 16;
+      const tu = 4652;
+      const tw = 42;
+      img.fine(tx, Y(tu + 8), tw, 16, (X, Yr, x, y) => {
+        const e = Math.min(x - tx, tx + tw - x, y - Y(tu + 8), Y(tu - 8) - y);
+        if (e < 1.2) return e < 0.5 ? C.stone[3] : C.stone[1];
+        return rampColor([0x1a4a5a, 0x245a6a, 0x2e6a78, 0x3a7a88], 0.4 + Math.sin((x + y) * 0.8) * 0.1 + hashPx(X >> 2, Yr >> 2, 840) * 0.2, X, Yr);
+      });
+      reserveRect(tx, Y(tu + 8), tw, 16);
+      const fish = (cx, cy, len, dir, body, tail) =>
+        img.fine(cx - len, cy - 3, len * 2, 6, (X, Yr, x, y) => {
+          const t = (x - cx) * dir / len; // -1 tail .. 1 head
+          const w = t > 0.7 ? (1 - t) * 6 : t < -0.75 ? (t + 1) * 6 + 0.6 : 1.8 - Math.abs(t) * 0.4;
+          if (Math.abs(y - cy) > w) return null;
+          if (t < -0.55) return tail;
+          return Math.abs(y - cy) < w * 0.4 ? scaleColor(body, 1.15) : body;
+        });
+      fish(32, Y(tu) - 2, 9, 1, 0x5a6a5a, 0xc8302a); // the arapaima
+      fish(46, Y(tu) + 3, 7, -1, 0x4e5e50, 0xb83a2a);
+      for (const [x, d] of [[22, 1], [26, -1], [52, 1], [50, -1], [40, 1]]) fish(x, Y(tu) + (x % 5) - 2, 2, d, 0x8a9a9a, 0xd84a2a); // piranhas
+      crowd(16, Y(tu - 9), 42, 3, 9, true);
+      crowd(16, Y(tu + 12), 42, 3, 6, true);
+    }
+    gate(114, 4695, 30, 0x2b3c78);
+    walk(128, Math.round(eastX(4698)), 4696, 4701);
+    {
+      const pts = flags([[128, 4690], [120, 4660], [132, 4610], [128, 4566], [100, 4566], [62, 4570], [52, 4604], [62, 4636], [100, 4640], [120, 4660]], 2.4);
+      kit.path(pts, [stepper(0x2b3c78, 0, 4600, true), stepper(0x2b3c78, 1, 4600, true)], { sp: 3.5, n: 2, gap: 70, turn: 'none', fps: 3 });
+      kit.path(pts, [stepper(0xd04040, 0, 4600), stepper(0xd04040, 1, 4600)], { sp: 3.2, n: 2, gap: 90, turn: 'none', fps: 3, s0: 0.4 });
+      for (const [x, u] of [[122, 4670], [100, 4566], [62, 4580], [60, 4630], [110, 4640]]) crowd(x - 3, Y(u), 6, 2, 2, true);
+    }
+    // the pines of the garden, pruned into clouds
+    for (const [x, u] of [[24, 4520], [140, 4520], [70, 4560], [118, 4560], [140, 4670], [74, 4670], [24, 4610], [36, 4560]]) if (!anyRes(x - 3, Y(u) - 3, 6, 6)) tree('pine', x, Y(u), 4.5);
+
+    /** Plant a hell's grounds thickly where nothing stands: trees, shrubs, ferns, azaleas, boulders. */
+    const plant = (x0, u0, x1, u1, n, kinds, seed, shrubs = 0.35) => {
+      const pr = rng(seed);
+      for (let k = 0, made = 0; k < n * 8 && made < n; k++) {
+        const x = x0 + 5 + pr() * (x1 - x0 - 10);
+        const y = Y(u0 + 5 + pr() * (u1 - u0 - 10));
+        const r = 2.4 + pr() * 3.4;
+        if (anyRes(x - r * 0.7, y - r * 0.7, r * 1.4, r * 1.4) || !padFree(x, y)) continue;
+        made++;
+        const v = pr();
+        if (v < shrubs) azalea(x, y, 1.6 + pr() * 1.8, pr.pick([0x3e7a3a, 0x2e6a34, 0x4a8a3e, 0xe86a9a, 0xf0a0c0, 0xe8e8e8]));
+        else tree(pr.pick(kinds), x, y, r);
+        reserveRect(x - r * 0.5, y - r * 0.5, r, r);
+      }
+    };
+    plant(8, 3305, 146, 3505, 150, ['broadleaf', 'broadleaf', 'palm', 'pine', 'tiny', 'sakura'], 7301);
+    plant(8, 3540, 146, 3835, 90, ['pine', 'tiny', 'broadleaf', 'broadleaf'], 7302, 0.45);
+    plant(8, 4040, 146, 4300, 60, ['broadleaf', 'tiny', 'palm', 'pine'], 7303, 0.5);
+    plant(8, 4306, 146, 4500, 70, ['broadleaf', 'palm', 'tiny', 'broadleaf'], 7304);
+    plant(8, 4505, 146, 4695, 90, ['pine', 'pine', 'tiny', 'broadleaf', 'sakura'], 7305, 0.45);
+    runoffs(8, 3305, 146, 3505, 6601);
+    runoffs(8, 3540, 146, 3835, 6602);
+    fumaroles(14, 3546, 140, 3830, 10, 6605);
+    dress(8, 3305, 146, 3505);
+    dress(8, 3540, 146, 3835);
+    dress(8, 4306, 146, 4500);
+    dress(8, 4505, 146, 4695);
     // between the hells: rest houses, a coach park, an inn
     parking(4, Y(3900), 60, 14);
     parking(4, Y(3920), 60, 14);
@@ -4176,13 +4597,7 @@ export function buildMid() {
     }
     house(14, Y(3990), 46, 14, 6, { ramp: ROOF.kawara, hip: true, noren: 0x2b3c78 });
     house(76, Y(3984), 40, 13, 6, { ramp: ROOF.brown, hip: true, wood: true, noren: 0x8a2a2a });
-    block(8, Y(4600), 52, 18, 14, { roof: 0xb8b0a4, wall: 0xeee6d6, balcony: true, bigMark: true, items: ['ac', 'bath', 'garden'] });
-    house(70, Y(4590), 44, 15, 6, { ramp: ROOF.dark, hip: true, wall: 0xeee6d6, noren: 0x2b3c78 });
-    rotenburo(74, Y(4590) + 23, 34, 12, C.milk, 402);
-    parking(12, Y(4650), 70, 14);
-    fill(82, Y(4648), Math.round(eastX(4644)) - 82, 10, C.asphalt, 76, 4); // its drive out to the main path
-    reserveRect(82, Y(4648), Math.round(eastX(4644)) - 82, 10);
-    for (const [y0, y1] of [[3330, 3500], [3560, 3830], [4040, 4400], [4404, 4490]]) reserveRect(0, Y(y1), 146, y1 - y0);
+    for (const [y0, y1] of [[3305, 3505], [3540, 3835], [4040, 4300], [4306, 4500], [4505, 4695]]) reserveRect(0, Y(y1), 146, y1 - y0);
     for (let k = 0; k < 700; k++) {
       const x = rand() * W;
       const u = HELLS[0] + rand() * 1400;
@@ -5151,135 +5566,191 @@ export function buildMid() {
     }
   }
 
-  // ------------------------------------------------------------ G. Tatsumaki: the geyser pit behind stone walls
+  // ------------------------------------------------------------ G. Tatsumaki: the geyser in its grotto
+  // A ravine in a garden of ferns and palms: at its head a cliff of dark rock wrapped round the geyser, a slab of
+  // stone laid over its mouth to keep the spout down (it would reach fifty metres), and before it the stands, tiers of
+  // benches in a half circle, everyone waiting for the next eruption; up the garden two more vents in rock basins.
   {
     const [t0, t1] = TATSUMAKI;
-    img.fine(10, Y(t1 - 20), 160, t1 - t0 - 40, (X, Yr, x, y) => {
-      if (isRes(x, y) && padFree(x, y)) return null;
+    const GX = 90;
+    const GU = 6352; // the grotto's middle, just behind the main vent
+    const ROCKD = [0x2e2a28, 0x3e3834, 0x504842, 0x645a52, 0x7a6e64];
+    // the cliff: a horseshoe of rock open to the south, its top overgrown, its inner face dark and wet, banded
+    const cliff = (x, u) => {
+      const dx = (x - GX) / 56;
+      const du = (u - GU) / 44;
+      const d = Math.hypot(dx, du) + (fbm(x, u, { seed: 901, scale: 6 }) - 0.5) * 0.18;
+      if (du < -0.15 && d < 1.05) return null; // (open where the stands look in)
+      return d;
+    };
+    img.fine(GX - 64, Y(GU + 52), 128, 92, (X, Yr, x, y) => {
       const u = L - y;
-      const n = fbm(x, u, { seed: 121, scale: 4, octaves: 2 });
-      let c = rampColor(C.rock.map((v) => scaleColor(v, 0.85)), 0.2 + n * 0.6, X, Yr);
-      const g = hashPx(X, Yr, 122);
-      // veins of hot water running from the vents, crusted with salts
-      const st = fbm(x, u, { seed: 123, scale: 20, octaves: 2 });
-      if (st > 0.56) {
-        const a = Math.min(0.42, (st - 0.56) * 2.4) * (0.8 + hashPx(X, Yr, 128) * 0.4);
-        const [cr, cg, cb] = rgb(c);
-        c = (Math.round(cr + (0xb0 - cr) * a) << 16) | (Math.round(cg + (0xa6 - cg) * a) << 8) | Math.round(cb + (0x90 - cb) * a);
+      const d = cliff(x, u);
+      if (d === null || d < 0.5 || d > 1.06) return null;
+      const n = fbm(x, u, { seed: 902, scale: 3, octaves: 2 });
+      if (d > 0.82) {
+        // its top: moss and ferns over the rock, the odd boulder showing
+        const c = rampColor([0x1e3a20, 0x2a4a28, 0x365c30, 0x4a7038], 0.3 + n * 0.5 - (d - 0.82) * 0.6, X, Yr);
+        return hashPx(X >> 1, Yr >> 1, 903) < 0.08 ? rampColor(ROCKD, 0.6, X, Yr) : c;
       }
-      if (g < 0.06) c = scaleColor(c, 0.82);
-      else if (g > 0.975) c = 0xb8b09a;
+      // the inner face: dark, wet, in bands, a tint of the salts where the spray falls
+      const t = (d - 0.5) / 0.32;
+      let c = rampColor(ROCKD, 0.15 + t * 0.55 + (n - 0.5) * 0.4, X, Yr);
+      if (((u * 1.3 + n * 6) % 3) < 0.4) c = scaleColor(c, 0.75);
+      if (t < 0.35 && hashPx(X, Yr, 904) < 0.18) c = 0xb8b2a0;
+      if (fbm(x, u, { seed: 905, scale: 2 }) > 0.68) c = mix(c, 0x3a6a34, 0.6); // ferns in the cracks
       return c;
     });
-    // the walls: dressed stones in courses, a capping lit on top, their shadow on the pit
-    const hWall = (u) => {
-      const YT = Y(u + 3) * S;
-      for (let Yr = YT; Yr < YT + 3 * S; Yr++)
-        for (let X = 8 * S; X < 172 * S; X++) {
-          const j = Yr - YT;
-          const XX = X + ((j >> 2) % 2) * 6;
-          img.px(X, Yr, j < 2 ? C.stone[3] : j % 4 === 0 || XX % 12 === 0 ? 0x4a4640 : rampColor(C.stone, 0.4 + hashPx(XX >> 3, j >> 2, 124) * 0.4, X, Yr));
-        }
-      for (let X = 8 * S; X < 172 * S; X++) for (let j = 0; j < 4; j++) img.tintPx(X, YT + 3 * S + j, 0.6 + j * 0.08);
-    };
-    hWall(t0 + 19);
-    hWall(t1 - 21);
-    for (let Yr = Y(t1 - 18) * S; Yr < Y(t0 + 22) * S; Yr++) {
-      for (let i = 0; i < 9; i++) {
-        img.px(8 * S + i, Yr, i < 2 ? C.stone[3] : (Yr >> 3) % 2 === 0 && i === 5 ? 0x4a4640 : Yr % 8 === 0 ? 0x4a4640 : C.stone[2]);
-        img.px(169 * S + i, Yr, i > 6 ? C.stone[0] : Yr % 8 === 0 ? 0x4a4640 : i < 2 ? C.stone[3] : C.stone[1]);
+    for (let y = Y(GU + 52); y < Y(GU - 40); y++)
+      for (let x = GX - 64; x < GX + 64; x++) {
+        const d = cliff(x + 0.5, L - y - 0.5);
+        if (d !== null && d >= 0.5 && d <= 1.06 && x >= 0 && x < W) reserved[y * W + x] = 1;
       }
-      for (let j = 0; j < 4; j++) img.tintPx(11 * S + j, Yr, 0.6 + j * 0.08);
-    }
-    // steaming pools around the vents, the stone hood over the main geyser
-    for (const [x, u, rx, ry] of [[90, 6380, 24, 9], [36, 6500, 16, 9], [146, 6480, 14, 8], [90, 6600, 30, 8]]) {
-      hotPool(x, u, rx, ry, C.jade, 180 + u, C.rock);
-      plume(x, Y(u), 1);
-    }
+    // the floor of the grotto: steaming wet rock, a pool of hot water, salts
+    img.fine(GX - 30, Y(GU + 24), 60, 46, (X, Yr, x, y) => {
+      const u = L - y;
+      const d = cliff(x, u);
+      if (d !== null && d >= 0.5) return null;
+      if (!padFree(x, y)) return null;
+      const e = Math.hypot((x - GX) / 28, (u - GU) / 22);
+      if (e > 1) return null;
+      const n = fbm(x, u, { seed: 906, scale: 3 });
+      let c = rampColor(ROCKD, 0.35 + n * 0.4, X, Yr);
+      if (n > 0.6) c = mix(c, 0xd8d0b8, 0.4);
+      return c;
+    });
+    hotPool(GX + 18, GU + 6, 9, 5, C.jade, 910, ROCKD);
+    hotPool(GX - 20, GU + 2, 7, 4, C.jade, 911, ROCKD);
+    // the slab over the geyser's mouth: a corbelled vault of big stones, stained by a hundred years of spray
     objects.push({
       y: Y(6340) - 8,
       shadow: () => {
         const X = 90 * S + 8;
-        const Yy = Y(6340) * S - 58;
-        for (let j = 0; j < 36; j++) for (let i = -46 + j * 0.5; i < 46 - j * 0.5; i++) img.tintPx(X + Math.round(i), Yy + j, 0.68);
+        const Yy = Y(6340) * S - 70;
+        for (let j = 0; j < 44; j++) for (let i = -66 + j * 0.6; i < 66 - j * 0.6; i++) img.tintPx(X + Math.round(i), Yy + j, 0.62);
       },
       draw: () => {
         const X = 90 * S;
         const Yy = Y(6340) * S;
-        // a corbelled vault of big stones, stained by a hundred years of spray, over the mouth of the geyser
-        const VY = Yy - 66;
-        for (let j = 0; j < 30; j++) {
-          const hw = 46 - j * 0.85;
+        const VY = Yy - 84;
+        for (let j = 0; j < 40; j++) {
+          const hw = 64 - j * 0.8;
           for (let i = -Math.round(hw); i < hw; i++) {
-            const row = Math.floor(j / 6);
-            const XX = i + 60 + (row % 2) * 7;
-            const joint = j % 6 === 0 || XX % 14 === 0;
-            const tone = hashPx(XX >> 3 >> 1, row, 125);
-            let c = joint ? 0x4a4640 : rampColor(C.stone, 0.25 + tone * 0.4 + (1 - j / 30) * 0.25 - i * 0.003, X + i, VY + j);
+            const row = Math.floor(j / 8);
+            const XX = i + 80 + (row % 2) * 9;
+            const joint = j % 8 === 0 || XX % 18 === 0;
+            const tone = hashPx(XX >> 4, row, 125);
+            let c = joint ? 0x3a3630 : rampColor(C.stone, 0.2 + tone * 0.4 + (1 - j / 40) * 0.25 - i * 0.003, X + i, VY + j);
             const st = hashPx((X + i) >> 1, (VY + j) >> 1, 126);
-            if (!joint && st < 0.1) c = 0xd8ccb0;
-            else if (!joint && st > 0.93) c = scaleColor(c, 0.8);
-            if (Math.abs(i) >= hw - 1.5) c = i < 0 ? C.stone[3] : 0x4a4640;
+            if (!joint && st < 0.12) c = 0xd8ccb0;
+            else if (!joint && st > 0.9) c = scaleColor(c, 0.78);
+            if (!joint && fbm(i * 0.1, j * 0.1, { seed: 127, scale: 2 }) > 0.66) c = mix(c, 0x3a6a34, 0.55); // moss on it
+            if (Math.abs(i) >= hw - 1.5) c = i < 0 ? C.stone[3] : 0x3a3630;
             img.px(X + i, VY + j, c);
           }
         }
-        // its two stone piers, down to the rim of the vent
-        for (const [ox, sh] of [[-34, 1], [27, 0]])
-          for (let j = 0; j < 24; j++)
-            for (let i = 0; i < 8; i++) {
-              const joint = j % 6 === 0 || i === 0 || i === 7;
-              img.px(X + ox + i, VY + 30 + j, joint ? 0x3a3630 : rampColor(C.stone, sh ? 0.55 : 0.3, X + ox + i, VY + 30 + j));
+        for (const [ox, sh] of [[-48, 1], [40, 0]])
+          for (let j = 0; j < 30; j++)
+            for (let i = 0; i < 9; i++) {
+              const joint = j % 7 === 0 || i === 0 || i === 8;
+              img.px(X + ox + i, VY + 40 + j, joint ? 0x2e2a26 : rampColor(C.stone, sh ? 0.5 : 0.25, X + ox + i, VY + 40 + j));
             }
       },
     });
-    // spectator benches below the pit, everyone waiting for the next eruption, the board with its time
-    for (let r = 0; r < 3; r++) {
-      const YT = Y(t0 + 6 - r * 5) * S;
-      for (let j = 0; j < 8; j++)
-        for (let X = 14 * S; X < 166 * S; X++) {
-          const c = j < 2 ? 0xa0805a : j === 7 ? 0x2a2018 : (X >> 3) % 3 === 0 ? C.wood[1] : C.wood[2];
-          img.px(X, YT + j, X % 60 === 0 ? 0x2a2a30 : c);
+    // the spray of the geyser, live: water flying out sideways from under the slab, steam pouring up
+    kit.emit(GX, 6346, [3, 4, 5].map(puffFrames), { rate: 3.2, life: [2, 3.2], vy: 9, sx: 10, wf: 0.6, a: 0.75, d: 1.1, tint: 1 });
+    {
+      const drop = kit.frame(puff(2, 77, [0xb8d8e8, 0xd8ecf4, 0xf0f8fc, 0xffffff]));
+      for (const side of [-1, 1]) kit.path([[GX + side * 14, 6342], [GX + side * 30, 6348], [GX + side * 40, 6340]], [[drop]], { sp: 40, n: 5, gap: 6, mode: 'wrap', turn: 'none', fps: 1, a: 0.8 });
+    }
+    // the stands: tiers of benches in a half circle facing the grotto, people on every one, the rope along the front
+    {
+      const SC = 6346;
+      img.fine(10, Y(SC - 8), 160, SC - 8 - t0 - 2, (X, Yr, x, y) => {
+        const u = L - y;
+        const r = Math.hypot((x - GX) / 1.25, u - SC);
+        if (u > SC - 8 || r < 30 || r > 52) return null;
+        const tier = Math.floor((r - 30) / 5.5);
+        const f = (r - 30) / 5.5 - tier;
+        if (f < 0.18) return 0x3a3430; // the riser
+        if (f < 0.55) return (X >> 2) % 3 === 0 ? C.wood[0] : C.wood[2]; // the bench
+        return rampColor(C.walk, 0.3 + tier * 0.08, X, Yr); // the step
+      });
+      for (let y = Y(SC - 8); y < Y(t0 + 2); y++)
+        for (let x = 10; x < 170; x++) {
+          const r = Math.hypot((x + 0.5 - GX) / 1.25, L - y - 0.5 - SC);
+          if (r >= 30 && r <= 52) reserved[y * W + x] = 1;
         }
-    }
-    crowd(14, Y(t0 + 12), 152, 12, 130, true);
-    {
-      // the rope along the wall, a tea stall at the end of the benches
-      for (let X = 14 * S; X < 166 * S; X++) {
-        const k = X % 27;
-        img.px(X, Y(t0 + 15) * S + Math.round(Math.sin((k / 27) * Math.PI) * 2), 0xc8b878);
-        if (k === 0) for (let j = -4; j < 3; j++) img.px(X, Y(t0 + 15) * S + j, 0x3a2a1c);
+      const sr = rng(6702);
+      for (let k = 0; k < 150; k++) {
+        const a = Math.PI + 0.3 + sr() * (Math.PI - 0.6);
+        const tier = Math.floor(sr() * 4);
+        const r = 30 + tier * 5.5 + 2.6;
+        const x = GX + Math.cos(a) * r * 1.25;
+        const u = SC + Math.sin(a) * r;
+        if (u > SC - 9) continue;
+        folk(x, Y(u) - 1.5, { yukata: sr() < 0.2 });
       }
-      house(148, Y(t0 + 2), 22, 8, 4, { ramp: ROOF.brown, hip: false, wood: true, noren: 0x8a1a1a });
-      crowd(146, Y(t0 + 2) + 13, 24, 2, 7, true);
+      // the rope along the front of the stands
+      for (let a = Math.PI + 0.25; a < 2 * Math.PI - 0.25; a += 0.01) {
+        const X = Math.round((GX + Math.cos(a) * 28.5 * 1.25) * S);
+        const Yr = Math.round(Y(SC + Math.sin(a) * 28.5) * S);
+        img.px(X, Yr, 0xc8b878);
+        if (Math.round(a * 100) % 18 === 0) for (let j = -4; j < 2; j++) img.px(X, Yr + j, 0x3a2a1c);
+      }
     }
+    // the board with the time of the next eruption, the tea stall, the gate
     {
-      const X = 80 * S;
-      const Yy = (Y(t0 + 22) + 6) * S;
+      const X = 130 * S;
+      const Yy = Y(6378) * S;
       const sr = rng(6701);
       objects.push({
-        y: Y(t0 + 22) + 14,
+        y: Y(6378) + 6,
         draw: () => {
-          for (let j = 0; j < 15; j++) for (let i = 0; i < 60; i++) img.px(X + i, Yy + j, i === 0 || j === 0 || i === 59 || j === 14 ? 0x2a1e18 : 0xf0e8d8);
-          for (let k = 0; k < 8; k++) glyph(X + 3 + k * 7, Yy + 4, 6, k > 5 ? 0xc8302a : 0x2a1a14, sr);
-          for (const i of [8, 50]) for (let j = 15; j < 22; j++) img.px(X + i, Yy + j, 0x3a2a1c);
+          for (let j = 0; j < 15; j++) for (let i = 0; i < 48; i++) img.px(X + i, Yy + j, i === 0 || j === 0 || i === 47 || j === 14 ? 0x2a1e18 : 0xf0e8d8);
+          for (let k = 0; k < 6; k++) glyph(X + 3 + k * 7, Yy + 4, 6, k > 3 ? 0xc8302a : 0x2a1a14, sr);
+          for (const i of [8, 40]) for (let j = 15; j < 22; j++) img.px(X + i, Yy + j, 0x3a2a1c);
         },
       });
+      reserveRect(129, Y(6378) - 1, 18, 8);
     }
-    runoffs(12, t0 + 24, 168, t1 - 22, 6607);
-    fumaroles(16, t0 + 28, 164, t1 - 28, 14, 6608);
-    for (let k = 0; k < 40; k++) {
-      const x = 16 + rand() * 148;
-      const y = Y(t0 + 28 + rand() * (t1 - t0 - 56));
-      if (!anyRes(x - 3, y - 3, 6, 6)) rockPx(x * S, y * S, 2 + rand() * 5, C.rock, k);
-    }
-    // the walk round the pit's east wall, from the benches to the path up to Chinoike
+    house(144, Y(t0 + 24), 26, 9, 5, { ramp: ROOF.brown, hip: false, wood: true, noren: 0x8a1a1a });
+    crowd(144, Y(t0 + 24) + 15, 24, 2, 6, true);
+    house(10, Y(t0 + 22), 30, 10, 5, { ramp: ROOF.kawara, hip: true, wood: true, noren: 0x2b3c78 });
     walk(160, W, t0 - 4, t0 + 1);
     walk(173, W, t0 - 4, t1);
     walk(100, W, t1 - 6, t1);
-    for (let k = 0; k < 6; k++) {
-      const x = 20 + rand() * 140;
-      const u = t0 + 60 + rand() * 230;
-      if (padFree(x, Y(u))) plume(x, Y(u), 0.8 + rand() * 0.6);
+    // up the garden: the two lesser vents in their rock basins, a little pond, ferns and palms thick round the paths
+    for (const [x, u] of [[50, 6550], [130, 6565]]) {
+      const br = rng(x * 31 + u);
+      for (let k = 0; k < 26; k++) {
+        const a = (k / 26) * Math.PI * 2;
+        const rr = 13.5 + br() * 2.5;
+        rockPx((x + Math.cos(a) * rr) * S, (Y(u) + Math.sin(a) * rr * 0.8) * S, 2.2 + br() * 2.4, ROCKD, 920 + k);
+      }
+      plume(x + 10, Y(u) - 6, 0.9);
+    }
+    hotPool(92, 6470, 18, 9, C.jade, 912, C.rock);
+    plume(92, Y(6470), 1.2);
+    poolRail(92, 6470, 18, 9, 5);
+    flags([[150, 6390], [150, 6440], [118, 6470], [100, 6492], [92, 6520], [90, 6600], [100, t1 - 4]], 2.4);
+    flags([[150, 6440], [174, 6440]], 2.4);
+    {
+      const pr = rng(6709);
+      for (let k = 0; k < 260; k++) {
+        const x = 4 + pr() * (W - 8);
+        const u = t0 + 80 + pr() * (t1 - t0 - 90);
+        if (anyRes(x - 3, Y(u) - 3, 6, 6)) continue;
+        const v = pr();
+        if (v < 0.3) tree('palm', x, Y(u), 3 + pr() * 2);
+        else if (v < 0.75) tree(pr.pick(['broadleaf', 'broadleaf', 'tiny', 'pine']), x, Y(u), 3 + pr() * 3);
+        else azalea(x, Y(u), 1.6 + pr() * 1.6, pr.pick([0x3e7a3a, 0x4a8a3e, 0xe86a9a]));
+      }
+      for (let k = 0; k < 40; k++) {
+        const x = 6 + pr() * (W - 12);
+        const u = t0 + 60 + pr() * (t1 - t0 - 70);
+        if (!anyRes(x - 1, Y(u) - 1, 3, 3)) folk(x, Y(u));
+      }
     }
   }
 
