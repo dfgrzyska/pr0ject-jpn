@@ -376,7 +376,7 @@ export class Player {
       this.turretTimer -= dt;
       while (this.turretTimer <= 0) {
         this.turretTimer += TURRETS.interval;
-        for (const t of this.turretSpots()) this.shot('ps_turret', t.x, t.y - 5, 0, -TURRETS.speed, TURRETS.damage, TURRETS.radius);
+        for (const t of this.turretSpots()) this.shot('ps_turret', t.x, t.y - 4, 0, -TURRETS.speed, TURRETS.damage, TURRETS.radius);
       }
     }
     if (this.weapon === 'homing') {
@@ -704,7 +704,7 @@ export class Player {
 
   /** Where the turrets sit: at the very tips of the wings (the first on the left), a little behind the nose. */
   turretSpots() {
-    const half = Math.round(this.wingSpan() / 2);
+    const half = Math.round(this.wingSpan() / 2) - 1; // (the pod sits on the tip, not beyond it)
     const y = this.y + 2;
     if (this.turrets >= 2) return [{ x: this.x - half, y }, { x: this.x + half, y }];
     return this.turrets === 1 ? [{ x: this.x + (this.lastSide ?? -1) * half, y }] : [];
@@ -749,7 +749,7 @@ export class Player {
     if (!on && !(this.alive && this.shieldT > 0)) return;
     const gold = this.turrets >= 2;
     const t = this.scene.t;
-    const r = this.wingSpan() / 2 + 5 + Math.sin(t * 5) * 0.6;
+    const r = this.wingSpan() / 2 + 4 + Math.sin(t * 5) * 0.6;
     const flash = this.shieldT > 0 ? this.shieldT / TURRETS.grace : 0;
     const col = gold ? 0xffd860 : 0x6ab8ff;
     g.fillStyle(col, (gold ? 0.16 : 0.12) + flash * 0.25);

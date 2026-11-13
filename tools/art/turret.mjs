@@ -31,20 +31,20 @@ function paint(W, H, s, at) {
   return out;
 }
 
-/** The turret, 7 x 9 (times s): a rounded pod on the wing tip, gold rim, a violet dome, a barrel pointing up. */
+/** The turret, 5 x 7 (times s): a rounded pod on the wing tip, gold rim, a violet dome, a barrel pointing up. */
 export function wingTurret(s = 1) {
-  return paint(7, 9, s, (x, y) => {
+  return paint(5, 7, s, (x, y) => {
     // the barrel, gold, a darker bore down its middle and a ring at the muzzle
-    if (Math.abs(x) < 1.25 && y > -3.6 && y < -0.2) {
-      if (y < -2.9) return [rgb(0xf4cc58), 1];
-      return [rgb(Math.abs(x) < 0.35 ? 0x5a3008 : x < 0 ? 0xf4cc58 : 0xa8701a), 1];
+    if (Math.abs(x) < 0.9 && y > -3.4 && y < -0.4) {
+      if (y < -2.8) return [rgb(0xf4cc58), 1];
+      return [rgb(Math.abs(x) < 0.3 ? 0x5a3008 : x < 0 ? 0xf4cc58 : 0xa8701a), 1];
     }
     // the pod: wide and low, a gold rim, violet lacquer lit from the upper left
-    const d = Math.hypot(x / 3.5, (y - 1.4) / 2.9);
+    const d = Math.hypot(x / 2.45, (y - 1.2) / 2.1);
     if (d > 1) return null;
-    if (d > 0.78) return [mix(0x6a4008, 0xf4cc58, Math.max(0, Math.min(1, 0.55 - x * 0.14 - (y - 1.6) * 0.2))), 1];
-    if (Math.hypot(x + 1.2, y - 0.9) < 0.6) return [rgb(0xffffff), 1]; // a glint
-    return [mix(0x3a0c78, 0xc488ff, Math.max(0, Math.min(1, 0.7 - x * 0.16 - (y - 1.6) * 0.24))), 1];
+    if (d > 0.78) return [mix(0x6a4008, 0xf4cc58, Math.max(0, Math.min(1, 0.55 - x * 0.2 - (y - 1.2) * 0.28))), 1];
+    if (Math.hypot(x + 0.8, y - 0.6) < 0.45) return [rgb(0xffffff), 1]; // a glint
+    return [mix(0x3a0c78, 0xc488ff, Math.max(0, Math.min(1, 0.7 - x * 0.22 - (y - 1.2) * 0.32))), 1];
   });
 }
 
