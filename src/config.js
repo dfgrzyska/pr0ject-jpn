@@ -257,4 +257,5 @@ export const EASY = {
   bossHp: 0.8, // bosses, heavies and their parts
   heatJam: 1.0, // s (HEAT.jam)
   enemyHp: { popcorn: 3, shooter: 22, turret: 26, diver: 5, carrier: 12 }, // small fry as tough as they used to be
+  carrierShare: 1, // every power-up carrier comes (normal: a quarter fewer)
 };

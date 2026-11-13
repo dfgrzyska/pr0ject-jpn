@@ -21,6 +21,7 @@ const NORMAL = {
   bossHp: 1,
   heatJam: HEAT.jam,
   enemyHp: null, // (ENEMIES)
+  carrierShare: 0.75, // of the power-up carriers past the first two of a city that come at all
 };
 const EASY_RULES = { ...NORMAL, ...EASY };
 

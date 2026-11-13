@@ -18,6 +18,7 @@ import { hiroshima } from './enemies/hiroshima.js';
 const HEAVY_P2 = { tanuki: 'TANUKI PIJE SAKE', manta: 'KORALOWA SPIRALA', raiju: 'PRZEŁADOWANIE PIORUNA', wani: 'FAŁSZYWE CIENIE', heikegani: 'PĘKNIĘTY PANCERZ' };
 // the two halves of a burst volcanic bomb
 // the manta's escorts (its second phase): two small rays on its wingtips
+const CARRIER_COLORS = ['red', 'blue', 'green'];
 const ESCORT = { hp: 45, weight: 0, score: 400, radius: 7, explosion: 's' };
 const FRAG = { hp: 1, weight: 0, score: 50, radius: 3, explosion: 's' };
 
@@ -144,11 +145,19 @@ export class Enemies {
         e.thief = !!look.thief;
         e.scoop = !!look.scoop;
         break;
-      case 'carrier':
-        e = this.pool.spawn(look.frame.replace('{c}', w.color ?? 'red'), w.x, -10, { ...base, color: w.color ?? 'red', path: w.path ?? (look.melt ? 'drift' : 'zigzag'), melt: look.melt ?? 0 });
+      case 'carrier': {
+        // the power-up it carries is drawn at random (not the same twice running, most of the time), and on normal
+        // a share of them never come (the first two of a city always do)
+        this.carriers = (this.carriers ?? 0) + 1;
+        if (this.carriers > 2 && Math.random() > rules().carrierShare) return;
+        let color = CARRIER_COLORS[Math.floor(Math.random() * 3)];
+        if (color === this.lastCarrier) color = CARRIER_COLORS[Math.floor(Math.random() * 3)];
+        this.lastCarrier = color;
+        e = this.pool.spawn(look.frame.replace('{c}', color), w.x, -10, { ...base, color, path: w.path ?? (look.melt ? 'drift' : 'zigzag'), melt: look.melt ?? 0 });
         if (look.anim) e.play(look.anim.replace('{c}', e.color));
         e.zig = Math.random() < 0.5 ? -1 : 1;
         break;
+      }
       case 'heavy':
         e = this.pool.spawn(look.frame, w.x, -30, { ...base, kind: look.kind ?? null, song: w.music ?? null, p2: false });
         if (w.hp == null && HEAVY.hp[look.kind ?? 'manta']) e.hp = e.maxHp = HEAVY.hp[look.kind ?? 'manta'];

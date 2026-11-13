@@ -165,6 +165,7 @@ z łagodniejszymi liczbami (`EASY` w `src/config.js`, `src/difficulty.js`):
 | Wrogowie nie strzelają w dolnej części ekranu | od 62% wysokości | od 55% (bossowie jak na normalnym) |
 | Cisza po wejściu wroga | 0,4 s | 0,65 s |
 | Strzelający drobni wrogowie | 25% | 12% |
+| Nośniki ulepszeń (po dwóch pierwszych w mieście) | ok. 75% przylatuje | wszystkie |
 | Wytrzymałość drobnych wrogów (popcorn / nurek / nośnik / strzelec / wieżyczka) | 5 / 9 / 18 / 32 / 38 | 3 / 5 / 12 / 22 / 26 |
 | Ostrzeżenia (pioruny, gejzery, szczelina oni) | ×1 | ×1,3 |
 | Wytrzymałość bossów i minibossów | 100% | 80% |
@@ -257,7 +258,7 @@ Wrogowie (roboty w stylu Fushimi Inari):
 | Wieżyczka | kamienna latarnia tōrō z działem | na warstwie terenu, wachlarz (`fan`) lub pierścień (`ring`) |
 | Nurek | chōchin-obake — czerwony papierowy lampion-yōkai z parady stu demonów (jedno oko, zęby, wywalony język) | zawisa, celuje i pikuje w gracza |
 | Ciężki | tanuki — figurka z Shigaraki (kapelusz, butelka sake, zeszyt rachunków) | miniboss (ok. 150 s, nad Ryōan-ji): bębni w brzuch (pierścień na każde „pon”), rzuca butelkami sake z celownikiem na ziemi, zmienia się listkiem w trzy tanuki — kopie mają listek na kapeluszu i wytrzymują kilka trafień (35); w drugiej fazie (po wypiciu sake) bębni szybciej i robi trzy kopie |
-| Nośnik | dron z klejnotem hōju (czerwony/niebieski/zielony) | zygzak, po ~4,6 s ucieka, zawsze zostawia znajdźkę |
+| Nośnik | dron z klejnotem hōju (czerwony/niebieski/zielony) | zygzak, po ~4,6 s ucieka, zawsze zostawia znajdźkę; kolor losowany przy każdym (rzadko dwa razy ten sam z rzędu) |
 
 Znajdźki to błyszczące złote żetony z ikoną broni na kolorowej tarczy (`tools/art/token.mjs`), obracające się w locie, z przesuwającym się odblaskiem i poświatą: czerwony z wachlarzem pocisków — rozrzut, niebieski z wiązką — laser, zielony z kulą i smugą — naprowadzane „lisie ognie”.
 
@@ -616,7 +617,7 @@ edytowalne bez zmian w kodzie. Gdy miniboss zniknie (zestrzelony albo odleciał)
 
 ```json
 { "t": 4.0, "type": "popcorn", "x": 40, "path": "sine", "count": 6 }
-{ "t": 9.5, "type": "carrier", "x": 120, "path": "zigzag", "color": "red" }
+{ "t": 9.5, "type": "carrier", "x": 120, "path": "zigzag" }
 { "t": 25.2, "type": "turret", "x": 64, "pattern": "fan" }
 ```
 
