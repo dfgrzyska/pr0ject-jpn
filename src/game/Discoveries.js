@@ -77,7 +77,7 @@ export class FoodTrail {
       if (stop.state !== 'falling') continue;
       sprite.setVisible(true); // an easy-mode continue can return from the game-over screen
       stop.age += dt;
-      sprite.y += 27 * dt;
+      sprite.y += 34 * dt; // (a quarter faster than the old 27 px/s: gone sooner)
       // A gentle inward drift gives a food stand at the bank a reachable pickup.
       sprite.x = entry.x + Math.sin(stop.age * 2) * 3 + (90 - entry.x) * Math.min(1, stop.age / 8) * 0.45;
       g.lineStyle(1, 0xffdf80, 0.65 + Math.sin(stop.age * 5) * 0.25).strokeCircle(sprite.x, sprite.y, 11);

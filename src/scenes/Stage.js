@@ -798,10 +798,10 @@ export class Stage extends Phaser.Scene {
   updatePickups(dt) {
     for (const p of this.pickups.live) {
       p.age += dt;
-      p.vy = Math.min(p.vy + 90 * dt, 24);
+      p.vy = Math.min(p.vy + 90 * dt, 30); // (falls at 30 px/s: gone a quarter sooner than at the old 24)
       p.y += p.vy * dt;
       p.x = Phaser.Math.Clamp(p.x0 + Math.sin(p.age * 2) * 6, 8, VIEW.width - 8);
-      p.setAlpha(p.age > 7 && Math.floor(p.age * 8) % 2 ? 0.4 : 1);
+      p.setAlpha(p.age > 5.6 && Math.floor(p.age * 8) % 2 ? 0.4 : 1);
       if (p.y > this.H + 12) this.pickups.kill(p);
     }
     this.pickups.sweep();
