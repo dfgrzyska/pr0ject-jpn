@@ -78,7 +78,7 @@ export function osakaSprites(add) {
     }
     return render(m, { glow: 'c' });
   };
-  for (const [col, mat] of [['red', 'R'], ['blue', 'B'], ['green', 'G']]) {
+  for (const [col, mat] of [['red', 'R'], ['blue', 'B'], ['green', 'G'], ['purple', 'V']]) {
     add(`ame_${col}_0`, ame(mat, 0));
     add(`ame_${col}_1`, ame(mat, 1));
   }

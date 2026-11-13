@@ -149,7 +149,7 @@ export function kagoshimaSprites(add) {
     m.set(8, 11 + (melt ? 0 : 1), 'N');
     return render(m);
   };
-  for (const [col, mat] of [['red', 'R'], ['blue', 'B'], ['green', 'G']]) for (let k = 0; k < 3; k++) add(`shirokuma_${col}_${k}`, shirokuma(mat, k));
+  for (const [col, mat] of [['red', 'R'], ['blue', 'B'], ['green', 'G'], ['purple', 'V']]) for (let k = 0; k < 3; k++) add(`shirokuma_${col}_${k}`, shirokuma(mat, k));
 
   // ------------------------------------------------------------ miniboss: Raijū, the thunder beast
   const RAIJU_FRAMES = 4;

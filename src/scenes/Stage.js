@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { NagasakiView } from '../game/NagasakiView.js';
 import { getMusic } from '../audio/Music.js';
-import { DEPTH, GRAZE, PLAYER, RENDER_SCALE, SCORE, SHIPS, VIEW, WEAPONS } from '../config.js';
+import { DEPTH, GRAZE, PLAYER, RENDER_SCALE, SCORE, SHIPS, TURRETS, VIEW, WEAPONS } from '../config.js';
 import { STAGES } from '../data/stages.js';
 import { Bullets } from '../game/Bullets.js';
 import { Enemies } from '../game/Enemies.js';
@@ -173,6 +173,7 @@ export class Stage extends Phaser.Scene {
     // magenta: enemy bullets, yellow: the player's shots, white: the ship)
     this.hitboxes = q.has('hitbox') ? this.add.graphics().setDepth(DEPTH.overlay + 3) : null;
     if (WEAPONS[q.get('weapon')]) this.player.weapon = q.get('weapon');
+    if (q.get('turrets')) this.player.turrets = Phaser.Math.Clamp(Number(q.get('turrets')), 0, TURRETS.max);
     if (q.get('power')) this.player.level = Phaser.Math.Clamp(Number(q.get('power')), 1, PLAYER.maxPower);
 
     this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,K,L,I,G,Y,F,ESC,P,ENTER,SPACE');
@@ -295,7 +296,7 @@ export class Stage extends Phaser.Scene {
     if (this.carry) {
       const c = this.carry;
       Object.assign(this.score, { score: c.score, mult: c.mult, progress: c.progress });
-      Object.assign(this.player, { lives: c.lives, weapon: c.weapon, level: c.level });
+      Object.assign(this.player, { lives: c.lives, weapon: c.weapon, level: c.level, turrets: c.turrets ?? 0 });
     }
     this.state = 'play';
     this.stampEligible = !this.player.god && !(this.debugStart && !this.carry);
@@ -354,7 +355,7 @@ export class Stage extends Phaser.Scene {
     this.scene.restart({
       order: this.order,
       pos,
-      carry: { ship: this.shipIndex, lives: p.lives, weapon: p.weapon, level: p.level, score: s.score, mult: s.mult, progress: s.progress, continues: this.continues, run: this.run },
+      carry: { ship: this.shipIndex, lives: p.lives, weapon: p.weapon, level: p.level, turrets: p.turrets, score: s.score, mult: s.mult, progress: s.progress, continues: this.continues, run: this.run },
     });
   }
 

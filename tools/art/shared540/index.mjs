@@ -5,6 +5,7 @@ import { bullets540 } from './bullets540.mjs';
 import { ships540 } from './ships540.mjs';
 import { ui540 } from './ui540.mjs';
 import { pickupToken, TOKEN_FRAMES } from '../token.mjs';
+import { turretShot, wingTurret } from '../turret.mjs';
 
 export function shared540(add) {
   fx540(add); // A: explosions and effects
@@ -12,8 +13,10 @@ export function shared540(add) {
   ships540(add); // C: the three ships, level and banking
   ui540(add); // C and D: the hit dot, the beans, the talismans; the HUD's buttons and icons
   // the weapon tokens, drawn at 540 px directly
-  for (const col of ['red', 'blue', 'green']) {
+  for (const col of ['red', 'blue', 'green', 'purple']) {
     add(`pickup_${col}`, pickupToken(col, 0, 3));
     for (let f = 0; f < TOKEN_FRAMES; f++) add(`pickup_${col}_${f}`, pickupToken(col, f, 3));
   }
+  add('turret_wing', wingTurret(3)); // the purple power-up's wing turret, and its shot
+  add('ps_turret', turretShot(3));
 }

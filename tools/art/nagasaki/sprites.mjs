@@ -195,7 +195,7 @@ export function nagasakiSprites() {
   for (const y of [5, 9, 13]) for (let x = 4; x < 13; x += 4) { r.line(x, y, x + 2, y + 1, 0x9db568); r.line(x + 2, y + 1, x + 4, y, 0x285349); }
   r.line(5, 3, 11, 2, 0xffe399); add('n_segment', r);
   r = new Raster(11, 11); r.disc(5, 5, 5, 0x886330); r.disc(5, 5, 4, gold); r.disc(4, 4, 2, 0xfff0c4); add('n_pearl', r);
-  for (const [c, tint] of [['red', red], ['blue', 0x4c9bd4], ['green', 0x63b679]]) for (let f = 0; f < 2; f++) {
+  for (const [c, tint] of [['red', red], ['blue', 0x4c9bd4], ['green', 0x63b679], ['purple', 0x9c6ad8]]) for (let f = 0; f < 2; f++) {
     r = new Raster(23, 17); r.rect(1, 3, 21, 13, ink); r.rect(2, 4, 19, 11, 0xe6c875); r.rect(2, 4, 19, 3, 0x86513c);
     r.rect(9, 2, 5, 14, tint); r.rect(8, 0, 7, 3, f ? 0xfbe5ad : tint); add(`n_castella_${c}_${f}`, r);
   }

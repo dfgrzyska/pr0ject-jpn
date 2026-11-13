@@ -194,7 +194,7 @@ export function ripple(i) {
 }
 
 // ---------------------------------------------------------------- carrier: shirokuma, the shaved ice (19 -> 57), three stages of melting
-const NOSE = { red: 0xd8203a, blue: 0x3a72f0, green: 0x37b35a };
+const NOSE = { red: 0xd8203a, blue: 0x3a72f0, green: 0x37b35a, purple: 0x9c50f0 };
 export function shirokuma(color, melt) {
   const s = new HiSprite(57, 57, RAMPS);
   const c = 28.5;
@@ -381,7 +381,7 @@ export function kagoshimaEnemies(add) {
   add('tsubo_wreck', tsuboBase(true));
   add('tsubo_lid_0', tsuboLid(false));
   add('tsubo_lid_1', tsuboLid(true));
-  for (const c of ['red', 'blue', 'green']) for (let k = 0; k < 3; k++) add(`shirokuma_${c}_${k}`, shirokuma(c, k));
+  for (const c of ['red', 'blue', 'green', 'purple']) for (let k = 0; k < 3; k++) add(`shirokuma_${c}_${k}`, shirokuma(c, k));
   add('vent_0', V.vent(0, false));
   add('vent_1', V.vent(1, false));
   add('vent_dead', V.vent(0, true));

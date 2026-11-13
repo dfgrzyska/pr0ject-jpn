@@ -140,6 +140,12 @@ export const WEAPONS = {
   homing: { interval: 1 / 6, damage: 1.4, speed: 210, turn: 3.8, life: 1.15, orbs: [2, 2, 3, 3, 4], arm: 0.18, range: 170, lockY: 18, lockSeen: 0.25 },
 };
 
+// Purple power-up: turrets at the wing tips (up to `max`), each firing a single slow bullet straight up every
+// `interval` s. Together they make a shield: a hit takes a turret instead of the ship, then `grace` s in which the
+// bubble swallows anything else that touches it (bullets within `clear` px are wiped), so one spray cannot take both.
+// `share`: the chance a power-up carrier brings the purple token rather than a weapon colour.
+export const TURRETS = { max: 2, interval: 0.3, speed: 230, damage: 1.1, radius: 2.5, grace: 1.0, clear: 20, share: 0.16 };
+
 // Grazing: a bullet passing within `radius` px of the hit dot (without hitting) scores and, while the bomb
 // is spent, charges a new one
 export const GRAZE = {

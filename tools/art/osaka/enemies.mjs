@@ -112,7 +112,7 @@ export function ame(color, f) {
     s.line(cx + sx * 13, cy - 3.5, cx + sx * 13, cy + 3.5, 0x6a90b0, 1);
   }
   // the boiled sweet itself, clear and bright, seen through the cellophane
-  s.ellipse(cx, cy, 15, 12.5, { red: 'R', blue: 'B', green: 'G' }[color], { bias: 0.04, pat: mottle({ amt: 0.1, scale: 5 }) });
+  s.ellipse(cx, cy, 15, 12.5, { red: 'R', blue: 'B', green: 'G', purple: 'V' }[color], { bias: 0.04, pat: mottle({ amt: 0.1, scale: 5 }) });
   s.shade([cx - 16, cy - 13, cx + 16, cy + 13], (x, y) => Math.hypot((x - cx) / 15, (y - cy) / 12.5) > 0.78, -0.12);
   // a spiral of white in the candy, the cellophane's crinkles over it
   for (let a = 0; a < Math.PI * 3; a += 0.05) s.px(cx + Math.cos(a + f) * (1 + a * 1.1), cy + Math.sin(a + f) * (1 + a * 0.9), 0xffffff, 0.45);
@@ -374,7 +374,7 @@ export function osakaEnemies(add) {
     add(`takoyaki_${f}`, takoyaki(f));
     add(`fugu_${f}`, fugu(f));
     add(`kushi_${f}`, kushi(f));
-    for (const c of ['red', 'blue', 'green']) add(`ame_${c}_${f}`, ame(c, f));
+    for (const c of ['red', 'blue', 'green', 'purple']) add(`ame_${c}_${f}`, ame(c, f));
   }
   add('neko_base', nekoBase(false));
   add('neko_wreck', nekoBase(true));

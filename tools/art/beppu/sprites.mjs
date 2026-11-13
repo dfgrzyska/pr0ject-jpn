@@ -176,7 +176,7 @@ export function beppuSprites(add) {
     m.rect(4, 6, 7, 1, f ? 'b' : 'c');
     return render(m);
   };
-  for (const [col, mat] of [['red', 'R'], ['blue', 'B'], ['green', 'G']]) {
+  for (const [col, mat] of [['red', 'R'], ['blue', 'B'], ['green', 'G'], ['purple', 'V']]) {
     add(`oke_${col}_0`, oke(mat, 0));
     add(`oke_${col}_1`, oke(mat, 1));
   }

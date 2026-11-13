@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BEANS, CAMPAIGN, DEPTH, ENEMIES, FAIR, HEAVY, PHASE, VIEW, WEAPONS } from '../config.js';
+import { BEANS, CAMPAIGN, DEPTH, ENEMIES, FAIR, HEAVY, PHASE, TURRETS, VIEW, WEAPONS } from '../config.js';
 import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
 import { enemyTexture } from './enemyArt.js';
@@ -153,6 +153,8 @@ export class Enemies {
         if (this.carriers > 2 && Math.random() > rules().carrierShare) return;
         let color = CARRIER_COLORS[Math.floor(Math.random() * 3)];
         if (color === this.lastCarrier) color = CARRIER_COLORS[Math.floor(Math.random() * 3)];
+        // now and then the purple token instead: the wing turrets and their shield (TURRETS)
+        if (this.carriers > 1 && this.lastCarrier !== 'purple' && Math.random() < TURRETS.share) color = 'purple';
         this.lastCarrier = color;
         e = this.pool.spawn(look.frame.replace('{c}', color), w.x, -10, { ...base, color, path: w.path ?? (look.melt ? 'drift' : 'zigzag'), melt: look.melt ?? 0 });
         if (look.anim) e.play(look.anim.replace('{c}', e.color));

@@ -189,7 +189,7 @@ export function momonga(f) {
 }
 
 // ---------------------------------------------------------------- carrier: a bowl of Sapporo miso ramen (17 x 18 -> 51 x 54)
-const BOWL = { red: 'R', blue: 'B', green: 'G' };
+const BOWL = { red: 'R', blue: 'B', green: 'G', purple: 'V' };
 export function ramen(color, f) {
   const s = new HiSprite(51, 54, RAMPS);
   const cx = 25.5;
@@ -566,7 +566,7 @@ export function sapporoEnemies(add) {
   for (let f = 0; f < 4; f++) {
     add(`enaga_${f}`, enaga(f));
     add(`wisp_${f}`, wisp(f));
-    for (const c of ['red', 'blue', 'green']) add(`ramen_${c}_${f}`, ramen(c, f));
+    for (const c of ['red', 'blue', 'green', 'purple']) add(`ramen_${c}_${f}`, ramen(c, f));
     add(`plow_d_${f}`, plow(f));
     add(`plow_r_${f}`, plow(f, { right: true }));
   }

@@ -1,11 +1,12 @@
 // The weapon power-ups as gold tokens: a coin with a bevelled rim and a coloured face carrying the weapon's icon (the
-// fan of the spread shot in red, the beam of the laser in blue, the homing orb and its curling trail in green), turning
+// fan of the spread shot in red, the beam of the laser in blue, the homing orb and its curling trail in green, the wing
+// turret in purple), turning
 // as it falls, a shine sweeping across it, a warm glow round it and a twinkle now and then. Drawn at any scale s
 // (1 for sprites.png, 3 for sprites540.png), 21 x 21 times s, supersampled.
 import { Raster } from '../lib/raster.mjs';
 
 export const TOKEN_FRAMES = 8;
-const FACE = { red: [0xc8241e, 0xf05a3a], blue: [0x1a5ad8, 0x4aa0ff], green: [0x1a9a32, 0x5ad85a] };
+const FACE = { red: [0xc8241e, 0xf05a3a], blue: [0x1a5ad8, 0x4aa0ff], green: [0x1a9a32, 0x5ad85a], purple: [0x5a18a8, 0xb066f0] };
 const GOLD = [0x6a4008, 0xa8701a, 0xd8a030, 0xf4cc58, 0xffec9a, 0xfffae0];
 
 const lerp = (a, b, t) => [(a >> 16) & 255, (a >> 8) & 255, a & 255].map((v, i) => v + ([(b >> 16) & 255, (b >> 8) & 255, b & 255][i] - v) * t);
@@ -28,6 +29,8 @@ const ICON = {
   red: (u, v) => Math.min(...[-0.6, 0, 0.6].map((a) => Math.min(seg(u, v, 0, 0.66, Math.sin(a) * 0.95, 0.66 - Math.cos(a) * 0.95) - 0.09, Math.hypot(u - Math.sin(a) * 1.05, v - 0.66 + Math.cos(a) * 1.05) - 0.2))),
   blue: (u, v) => Math.max(Math.abs(u) - 0.17, Math.abs(v) - 0.66),
   green: (u, v) => Math.min(Math.hypot(u - 0.12, v + 0.3) - 0.3, seg(u, v, -0.42, 0.62, -0.1, 0.12) - 0.1, seg(u, v, -0.1, 0.12, 0.05, -0.05) - 0.1),
+  // the shield: a bubble round a small ship, a turret on each wing tip (a cross of hull and wings, two pods)
+  purple: (u, v) => Math.min(Math.abs(Math.hypot(u, v * 1.08) - 0.86) - 0.13, seg(u, v, 0, -0.42, 0, 0.3) - 0.2, seg(u, v, -0.34, 0.2, 0.34, 0.2) - 0.16, Math.hypot(u - 0.42, v + 0.02) - 0.17, Math.hypot(u + 0.42, v + 0.02) - 0.17),
 };
 
 export function pickupToken(name, f, s = 1) {

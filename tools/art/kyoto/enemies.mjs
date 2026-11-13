@@ -297,8 +297,8 @@ export function diver(f) {
 }
 
 // ---------------------------------------------------------------- carrier: a winged hōju jewel (15 x 13 -> 45 x 39)
-const JEWEL = { red: 'R', blue: 'B', green: 'G' };
-const JEWEL_CORE = { red: 0xffd0b0, blue: 0xd8f0ff, green: 0xe0ffd0 };
+const JEWEL = { red: 'R', blue: 'B', green: 'G', purple: 'V' };
+const JEWEL_CORE = { red: 0xffd0b0, blue: 0xd8f0ff, green: 0xe0ffd0, purple: 0xf0d8ff };
 export function carrier(color, f) {
   const s = new HiSprite(45, 39, RAMPS);
   const cx = 22.5;
@@ -391,7 +391,7 @@ export function kyotoEnemies(add) {
     add(`popcorn_${f}`, popcorn(f));
     add(`shooter_${f}`, shooter(f));
     add(`diver_${f}`, diver(f));
-    for (const c of ['red', 'blue', 'green']) add(`carrier_${c}_${f}`, carrier(c, f));
+    for (const c of ['red', 'blue', 'green', 'purple']) add(`carrier_${c}_${f}`, carrier(c, f));
     add(`kyubi_spirit_${f}`, spirit(f));
   }
   add('turret_base', turretBase(false));

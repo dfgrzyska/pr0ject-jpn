@@ -141,7 +141,7 @@ export function saru(f) {
 }
 
 // ---------------------------------------------------------------- carrier: a cypress bath bucket, a tenugui folded on it (15 -> 51)
-const HOOP = { red: 0xd8302a, blue: 0x3a72f0, green: 0x37b35a };
+const HOOP = { red: 0xd8302a, blue: 0x3a72f0, green: 0x37b35a, purple: 0x9c50f0 };
 export function oke(color, f) {
   const s = new HiSprite(51, 51, RAMPS);
   const c = 25.5;
@@ -332,7 +332,7 @@ export function beppuEnemies(add) {
     add(`imp_${f}`, imp(f));
     add(`kamado_${f}`, kamado(f));
     add(`saru_${f}`, saru(f));
-    for (const c of ['red', 'blue', 'green']) add(`oke_${c}_${f}`, oke(c, f));
+    for (const c of ['red', 'blue', 'green', 'purple']) add(`oke_${c}_${f}`, oke(c, f));
   }
   for (let f = 0; f < 2; f++) {
     add(`boil_${f}`, boil(false, f));

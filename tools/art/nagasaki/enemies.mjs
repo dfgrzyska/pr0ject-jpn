@@ -111,7 +111,7 @@ export function hata(f) {
 }
 
 // ---------------------------------------------------------------- carrier: castella in its paper (23 x 17 -> 69 x 51)
-const RIBBON = { red: 0xc8302a, blue: 0x3a72f0, green: 0x37b35a };
+const RIBBON = { red: 0xc8302a, blue: 0x3a72f0, green: 0x37b35a, purple: 0x9c50f0 };
 export function castella(color, f) {
   const s = new HiSprite(69, 51, RAMPS);
   // the block seen from above, cut to show its side: the dark crust on top, the golden sponge, the brown
@@ -430,7 +430,7 @@ export function nagasakiEnemies(add) {
     add(`n_lantern_${f}`, lantern(f));
     add(`n_biidoro_${f}`, biidoro(f));
     add(`n_hata_${f}`, hata(f));
-    for (const c of ['red', 'blue', 'green']) add(`n_castella_${c}_${f}`, castella(c, f));
+    for (const c of ['red', 'blue', 'green', 'purple']) add(`n_castella_${c}_${f}`, castella(c, f));
     add(`n_ja_${f}`, DRAGON.jaHead(f));
   }
   for (let f = 0; f < 2; f++) {

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BEANS, BOMB, DEPTH, FROST, GRAZE, HEAT, MOMENTUM, OFUDA, PLAYER, SHIPS, SURGE, VIEW, WEAPONS } from '../config.js';
+import { BEANS, BOMB, DEPTH, FROST, GRAZE, HEAT, MOMENTUM, OFUDA, PLAYER, SHIPS, SURGE, TURRETS, VIEW, WEAPONS } from '../config.js';
 import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
 import { baseScale, sharedArt, spriteTexture } from './enemyArt.js';
@@ -31,6 +31,12 @@ export class Player {
     this.rage = 0; // Oni: extra damage, higher up the screen
     this.surge = 0; // s left of a spirit surge (SURGE)
     this.surgeCharge = 0; // grazes towards it, while the bomb is ready
+    // the purple power-up: turrets at the wing tips, and the bubble they keep around the ship (TURRETS)
+    this.turrets = 0;
+    this.turretTimer = 0;
+    this.shieldT = 0; // s left in which the bubble swallows what touches it, after it took a hit
+    this.turretArt = [0, 1].map(() => sharedArt(scene.add.image(0, 0, 'sprites', 'turret_wing')).setDepth(DEPTH.player + 0.01).setVisible(false));
+    this.bubble = scene.add.graphics().setDepth(DEPTH.player - 0.2);
 
     this.setShip(SHIPS[1]);
     this.bombs = 1;
@@ -78,6 +84,8 @@ export class Player {
     if (!v) this.beanOrbit?.forEach((b) => b.setVisible(false));
     if (!v) this.iceBlock?.setVisible(false);
     if (!v) this.ofuda?.forEach((o) => o.s.setVisible(false));
+    if (!v) this.turretArt?.forEach((t) => t.setVisible(false));
+    if (!v) this.bubble?.clear();
   }
 
   /** Fly in from the bottom edge. */
@@ -220,6 +228,7 @@ export class Player {
       const bankRate = 13 * (this.ship.speed / 100);
       this.bank += (bank - this.bank) * Math.min(1, bankRate * dt);
       if (this.invulnerable > 0) this.invulnerable -= dt;
+      if (this.shieldT > 0) this.shieldT -= dt;
       if (this.beanT > 0) this.beanT -= dt;
       if (firing && this.entering <= 0 && this.jam <= 0) this.fire(dt);
     }
@@ -278,6 +287,7 @@ export class Player {
       p.a0 = 0.9;
       p.setTint(0xe8f6ff);
     }
+    this.drawTurrets(blink);
     this.pull = null;
     this.updateShots(dt);
   }
@@ -360,6 +370,13 @@ export class Player {
         this.beanTimer += 1 / BEANS.rate;
         const { damage, speed, spread } = BEANS;
         for (const side of [-1, 1]) this.shot('ps_bean_0', this.x + side * 4, this.y - 6, -side * spread, -speed, damage, 3, { bean: true });
+      }
+    }
+    if (this.turrets > 0) {
+      this.turretTimer -= dt;
+      while (this.turretTimer <= 0) {
+        this.turretTimer += TURRETS.interval;
+        for (const t of this.turretSpots()) this.shot('ps_turret', t.x, t.y - 5, 0, -TURRETS.speed, TURRETS.damage, TURRETS.radius);
       }
     }
     if (this.weapon === 'homing') {
@@ -580,6 +597,18 @@ export class Player {
       fx.text(this.x, this.y - 18, 'FASOLKI!', 1.2, 0xffe080);
       return;
     }
+    if (color === 'purple') {
+      if (this.turrets < TURRETS.max) {
+        this.turrets++;
+        this.turretTimer = 0;
+        this.scene.sfx.powerUp();
+        fx.text(this.x, this.y - 18, this.turrets === TURRETS.max ? 'ZŁOTA TARCZA' : 'WIEŻYCZKA', 1, this.turrets === TURRETS.max ? 0xffe080 : 0x8ac8ff);
+      } else {
+        this.scene.score.add(this.scene.score.maxPowerBonus());
+        fx.text(this.x, this.y - 18, 'BONUS', 1, 0xffe080);
+      }
+      return;
+    }
     const type = WEAPONS.colorToType[color];
     if (this.weapon === type) {
       if (this.level < PLAYER.maxPower) {
@@ -628,6 +657,12 @@ export class Player {
   hit() {
     if (!this.alive || this.invulnerable > 0 || this.entering > 0 || this.god) return;
     const s = this.scene;
+    // the turrets' bubble takes the hit first: one turret goes, and for a moment the bubble swallows the rest
+    if (this.shieldT > 0) return;
+    if (this.turrets > 0) {
+      this.loseTurret();
+      return;
+    }
     // easy: with the bomb ready, it goes off by itself instead
     if (rules().autoBomb && this.bomb()) {
       s.fx.text(this.x, this.y - 18, 'AUTOBOMBA!', 1.2, 0xffe080);
@@ -665,6 +700,66 @@ export class Player {
     }
     this.respawnTimer = PLAYER.respawnDelay;
     if (this.lives <= 0) s.gameOver();
+  }
+
+  /** Where the turrets sit: at the very tips of the wings (the first on the left), a little behind the nose. */
+  turretSpots() {
+    const half = Math.round(this.wingSpan() / 2);
+    const y = this.y + 2;
+    if (this.turrets >= 2) return [{ x: this.x - half, y }, { x: this.x + half, y }];
+    return this.turrets === 1 ? [{ x: this.x + (this.lastSide ?? -1) * half, y }] : [];
+  }
+
+  /** The ship's width, wing tip to wing tip (from its level frame, so banking does not move the turrets). */
+  wingSpan() {
+    return this.ship.wing ?? Math.max(16, (this.scene.textures.getFrame(spriteTexture(this.ship.frame), this.ship.frame)?.width ?? 48) * baseScale(spriteTexture(this.ship.frame)));
+  }
+
+  /** A hit on the bubble: the turret goes up in sparks, bullets close by are wiped, and a short grace follows. */
+  loseTurret() {
+    const s = this.scene;
+    const lost = this.turretSpots()[this.turrets - 1] ?? { x: this.x, y: this.y };
+    this.turrets--;
+    if (this.turrets === 1) this.lastSide = lost.x < this.x ? 1 : -1; // the one left keeps its wing
+    this.shieldT = TURRETS.grace;
+    s.sfx.explode('s');
+    s.fx.explode(lost.x, lost.y, 's');
+    s.fx.debris(lost.x, lost.y, 6, 0xc890ff, 1.1);
+    s.fx.rings.push({ x: this.x, y: this.y, r: 9, life: 0.35 });
+    for (const b of s.bullets.pool.live) {
+      if (!b.dead && (b.x - this.x) ** 2 + (b.y - this.y) ** 2 < TURRETS.clear ** 2) {
+        s.bullets.pool.kill(b);
+        s.fx.spark(b.x, b.y);
+      }
+    }
+    s.fx.text(this.x, this.y - 18, 'TARCZA!', 1, this.turrets ? 0x8ac8ff : 0xc890ff);
+  }
+
+  /** The turrets on the wings, and the bubble: blue and see-through with one, gold and shining with two. */
+  drawTurrets(blink) {
+    const on = this.alive && this.turrets > 0;
+    const spots = on ? this.turretSpots() : [];
+    this.turretArt.forEach((t, i) => {
+      const p = spots[i];
+      t.setVisible(!!p);
+      if (p) t.setPosition(Math.round(p.x), Math.round(p.y)).setAlpha(blink ? 0.35 : 1);
+    });
+    const g = this.bubble;
+    g.clear();
+    if (!on && !(this.alive && this.shieldT > 0)) return;
+    const gold = this.turrets >= 2;
+    const t = this.scene.t;
+    const r = this.wingSpan() / 2 + 5 + Math.sin(t * 5) * 0.6;
+    const flash = this.shieldT > 0 ? this.shieldT / TURRETS.grace : 0;
+    const col = gold ? 0xffd860 : 0x6ab8ff;
+    g.fillStyle(col, (gold ? 0.16 : 0.12) + flash * 0.25);
+    g.fillEllipse(this.x, this.y + 1, r * 2, r * 1.8);
+    g.lineStyle(1, gold ? 0xfff0b0 : 0xa8dcff, (gold ? 0.75 : 0.55) + flash * 0.25);
+    g.strokeEllipse(this.x, this.y + 1, r * 2, r * 1.8);
+    // a highlight sliding round the bubble (a bright glint on the gold one)
+    const a = t * (gold ? 2.6 : 1.4);
+    g.fillStyle(0xffffff, gold ? 0.8 : 0.45);
+    g.fillCircle(this.x + Math.cos(a) * r * 0.72, this.y + 1 + Math.sin(a) * r * 0.64, gold ? 1.3 : 1);
   }
 
   weaponName() {

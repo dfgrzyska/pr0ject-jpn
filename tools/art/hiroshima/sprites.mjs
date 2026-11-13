@@ -264,6 +264,7 @@ export function hiroshimaSprites(add) {
     ['red', 'R', 'r'],
     ['blue', 'B', 'c'],
     ['green', 'G', 'g'],
+    ['purple', 'V', 'v'],
   ]) {
     for (let f = 0; f < 2; f++) {
       const m = new Mask(17, 17);

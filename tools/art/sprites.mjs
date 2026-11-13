@@ -15,6 +15,7 @@ import { fxSprites } from './fx.mjs';
 import { logoSprites } from './logo.mjs';
 import { foodSprites } from './foods.mjs';
 import { pickupToken, TOKEN_FRAMES } from './token.mjs';
+import { turretShot, wingTurret } from './turret.mjs';
 
 const out = [];
 const add = (name, raster) => out.push({ name, raster });
@@ -216,7 +217,7 @@ const CARRIER_A = [
   '......D',
 ];
 const CARRIER_B = CARRIER_A.map((r, i) => (i === 4 ? '.S.YXXw' : i === 6 ? '.S.YXXX' : r));
-for (const [col, mat] of [['red', 'R'], ['blue', 'B'], ['green', 'G']]) {
+for (const [col, mat] of [['red', 'R'], ['blue', 'B'], ['green', 'G'], ['purple', 'V']]) {
   add(`carrier_${col}_0`, renderMask(fromRows(CARRIER_A, true, { X: mat })));
   add(`carrier_${col}_1`, renderMask(fromRows(CARRIER_B, true, { X: mat })));
 }
@@ -288,11 +289,14 @@ const PICKUP = [
   '..YYYYY..',
 ];
 // the weapon power-ups: gold tokens with the weapon's icon, turning (token.mjs); pickup_<colour> is the first frame
-for (const col of ['red', 'blue', 'green']) {
+for (const col of ['red', 'blue', 'green', 'purple']) {
   add(`pickup_${col}`, pickupToken(col, 0, 1));
   for (let f = 0; f < TOKEN_FRAMES; f++) add(`pickup_${col}_${f}`, pickupToken(col, f, 1));
 }
 void PICKUP;
+// the purple power-up's wing turret, and its shot (turret.mjs)
+add('turret_wing', wingTurret(1));
+add('ps_turret', turretShot(1));
 
 // ---------------------------------------------------------------- bullets
 const raw = (rows) => renderMask(fromRows(rows), { outline: false });

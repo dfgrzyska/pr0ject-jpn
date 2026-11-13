@@ -131,7 +131,7 @@ export function shamoji(f) {
 }
 
 // ---------------------------------------------------------------- carrier: momiji manjū (17 -> 57), its filling the colour of its weapon
-const FILL = { red: 0xd8203a, blue: 0x3a72f0, green: 0x37b35a };
+const FILL = { red: 0xd8203a, blue: 0x3a72f0, green: 0x37b35a, purple: 0x9c50f0 };
 export function manju(color, f) {
   const s = new HiSprite(57, 57, RAMPS);
   const cx = 28.5;
@@ -410,7 +410,7 @@ export function hiroshimaEnemies(add) {
   for (let f = 0; f < 4; f++) {
     add(`tsuru_${f}`, tsuru(f));
     add(`shamoji_${f}`, shamoji(f));
-    for (const c of ['red', 'blue', 'green']) add(`manju_${c}_${f}`, manju(c, f));
+    for (const c of ['red', 'blue', 'green', 'purple']) add(`manju_${c}_${f}`, manju(c, f));
     add(`heike_${f}`, crab(f)); // the taka-ashi-gani, crab540.mjs
     add(`brazier_${f}`, brazier(f));
   }

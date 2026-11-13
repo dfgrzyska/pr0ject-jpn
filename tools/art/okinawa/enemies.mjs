@@ -162,7 +162,7 @@ export function habu(f) {
 }
 
 // ---------------------------------------------------------------- carrier: a Ryukyu-glass float in a rope net (15 x 16 -> 45 x 48)
-const GLASS = { red: 'R', blue: 'B', green: 'G' };
+const GLASS = { red: 'R', blue: 'B', green: 'G', purple: 'V' };
 export function glass(color, f) {
   const s = new HiSprite(45, 48, RAMPS);
   const cx = 22.5;
@@ -341,7 +341,7 @@ export function okinawaEnemies(add) {
     add(`tobiuo_${f}`, tobiuo(f));
     add(`hari_${f}`, hari(f));
     add(`habu_${f}`, habu(f));
-    for (const c of ['red', 'blue', 'green']) add(`glass_${c}_${f}`, glass(c, f));
+    for (const c of ['red', 'blue', 'green', 'purple']) add(`glass_${c}_${f}`, glass(c, f));
     add(`shisa_a_${f}`, shisa(true, f));
     add(`shisa_un_${f}`, shisa(false, f));
   }

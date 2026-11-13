@@ -195,7 +195,7 @@ export function sapporoSprites(add) {
     for (const [x, y] of steam) m.set(x, y, 'c');
     return render(m, { glow: 'c' });
   };
-  for (const [col, mat] of [['red', 'R'], ['blue', 'B'], ['green', 'G']]) {
+  for (const [col, mat] of [['red', 'R'], ['blue', 'B'], ['green', 'G'], ['purple', 'V']]) {
     add(`ramen_${col}_0`, ramenFrame(mat, 0));
     add(`ramen_${col}_1`, ramenFrame(mat, 1));
   }

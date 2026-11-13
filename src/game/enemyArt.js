@@ -90,18 +90,18 @@ export const CITY_ANIMS = {
   tanuki: [four('tanuki'), 4],
   tanuki_leaf: [four('tanuki_leaf'), 4],
   tanuki_poof: [['tanuki_poof_0', 'tanuki_poof_1', 'tanuki_poof_2'], 12, 0], // (once: a copy going back to leaves)
-  ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`carrier_${c}`, [four(`carrier_${c}`), 10]])),
+  ...Object.fromEntries(['red', 'blue', 'green', 'purple'].map((c) => [`carrier_${c}`, [four(`carrier_${c}`), 10]])),
   // Okinawa
   tobiuo: [four('tobiuo'), 10], hari: [four('hari'), 6], habu: [four('habu'), 7],
   manta: [[0, 1, 2, 3, 4, 5].map((i) => `manta_${i}`), 7],
   shisa_a: [four('shisa_a'), 4], shisa_un: [four('shisa_un'), 4],
   shisa_soul: [four('shisa_soul'), 12],
-  ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`glass_${c}`, [four(`glass_${c}`), 10]])),
+  ...Object.fromEntries(['red', 'blue', 'green', 'purple'].map((c) => [`glass_${c}`, [four(`glass_${c}`), 10]])),
   // Sapporo
   enaga: [four('enaga'), 11], momonga: [['momonga_0', 'momonga_1'], 5], wisp: [four('wisp'), 10],
   yukionna: [four('yukionna'), 6], kuma_heart: [['kuma_heart_0', 'kuma_heart_1'], 3],
   plow_d: [four('plow_d'), 8], plow_r: [four('plow_r'), 8],
-  ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`ramen_${c}`, [four(`ramen_${c}`), 5]])),
+  ...Object.fromEntries(['red', 'blue', 'green', 'purple'].map((c) => [`ramen_${c}`, [four(`ramen_${c}`), 5]])),
   // Kagoshima
   kazan: [four('kazan'), 8], kazan_s: [four('kazan_s'), 10], teppo: [four('teppo'), 10], kappa: [four('kappa'), 7],
   ripple: [['ripple_0', 'ripple_1', 'ripple_2'], 6], raiju: [four('raiju'), 10],
@@ -110,21 +110,21 @@ export const CITY_ANIMS = {
   // Osaka
   takoyaki: [four('takoyaki'), 8], fugu: [four('fugu'), 5], kushi: [four('kushi'), 12],
   kuroko: [['kuroko_0', 'kuroko_1'], 3], tako: [['tako_0', 'tako_1'], 2],
-  ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`ame_${c}`, [four(`ame_${c}`), 8]])),
+  ...Object.fromEntries(['red', 'blue', 'green', 'purple'].map((c) => [`ame_${c}`, [four(`ame_${c}`), 8]])),
   // Beppu
   imp: [four('imp'), 8], kamado: [four('kamado'), 6], saru: [four('saru'), 10],
   boil: [['boil_0', 'boil_1'], 10], mudboil: [['mudboil_0', 'mudboil_1'], 5],
-  ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`oke_${c}`, [four(`oke_${c}`), 4]])),
+  ...Object.fromEntries(['red', 'blue', 'green', 'purple'].map((c) => [`oke_${c}`, [four(`oke_${c}`), 4]])),
   // Hiroshima
   tsuru: [four('tsuru'), 9], shamoji: [four('shamoji'), 7], heike: [four('heike'), 6],
   heike_c: [[0, 1, 2, 3].map((i) => `heike_${i}_c`), 6], // (its cracked shell in phase 2)
   sankibo: [four('sankibo'), 5], brazier: [four('brazier'), 9],
-  ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`manju_${c}`, [four(`manju_${c}`), 6]])),
+  ...Object.fromEntries(['red', 'blue', 'green', 'purple'].map((c) => [`manju_${c}`, [four(`manju_${c}`), 6]])),
   // Nagasaki
   n_lantern: [four('n_lantern'), 5], n_biidoro: [four('n_biidoro'), 5], n_hata: [four('n_hata'), 7],
   n_ja: [four('n_ja'), 6], n_oranda: [['n_oranda_0', 'n_oranda_1'], 5],
   n_cannon_smoke: [four('n_cannon_smoke'), 10, 0], // (once: gun smoke out of a port)
-  ...Object.fromEntries(['red', 'blue', 'green'].map((c) => [`n_castella_${c}`, [four(`n_castella_${c}`), 5]])),
+  ...Object.fromEntries(['red', 'blue', 'green', 'purple'].map((c) => [`n_castella_${c}`, [four(`n_castella_${c}`), 5]])),
 };
 
 /** Kyūbi's tails: how many swaying frames each one has in the atlas it comes from. */

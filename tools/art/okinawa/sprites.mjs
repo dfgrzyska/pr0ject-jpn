@@ -91,7 +91,7 @@ export function okinawaSprites(add) {
     else m.line(4, 0, 8, 0, 'S');
     return renderMask(m);
   };
-  for (const [col, mat] of [['red', 'R'], ['blue', 'B'], ['green', 'G']]) {
+  for (const [col, mat] of [['red', 'R'], ['blue', 'B'], ['green', 'G'], ['purple', 'V']]) {
     add(`glass_${col}_0`, floatFrame(mat, 0));
     add(`glass_${col}_1`, floatFrame(mat, 1));
   }

@@ -104,13 +104,13 @@ export class Boot extends Phaser.Scene {
       if (key.startsWith('enemies_')) this.cityArtIn(key);
     });
     anim('flame', ['flame_0', 'flame_1', 'flame_2', 'flame_1'], 20);
-    for (const c of ['red', 'blue', 'green']) anim(`pickup_${c}`, [0, 1, 2, 3, 4, 5, 6, 7].map((f) => `pickup_${c}_${f}`), 10); // the weapon tokens turning
+    for (const c of ['red', 'blue', 'green', 'purple']) anim(`pickup_${c}`, [0, 1, 2, 3, 4, 5, 6, 7].map((f) => `pickup_${c}_${f}`), 10); // the weapon tokens turning
     anim('popcorn', ['popcorn_0', 'popcorn_1'], 3);
     anim('shooter', ['shooter_0', 'shooter_1'], 4);
     anim('diver', ['diver_0', 'diver_1'], 3);
     anim('tanuki', ['tanuki_0', 'tanuki_1'], 3);
     anim('tanuki_leaf', ['tanuki_leaf_0', 'tanuki_leaf_1'], 3);
-    for (const c of ['red', 'blue', 'green']) anim(`carrier_${c}`, [`carrier_${c}_0`, `carrier_${c}_1`], 10);
+    for (const c of ['red', 'blue', 'green', 'purple']) anim(`carrier_${c}`, [`carrier_${c}_0`, `carrier_${c}_1`], 10);
     // stage 2 (Okinawa)
     anim('tobiuo', ['tobiuo_0', 'tobiuo_1'], 8);
     anim('hari', ['hari_0', 'hari_1'], 4);
@@ -119,7 +119,7 @@ export class Boot extends Phaser.Scene {
     anim('shisa_a', ['shisa_a_0', 'shisa_a_1'], 3);
     anim('shisa_un', ['shisa_un_0', 'shisa_un_1'], 3);
     anim('gull', ['gull_0', 'gull_1'], 6);
-    for (const c of ['red', 'blue', 'green']) anim(`glass_${c}`, [`glass_${c}_0`, `glass_${c}_1`], 10);
+    for (const c of ['red', 'blue', 'green', 'purple']) anim(`glass_${c}`, [`glass_${c}_0`, `glass_${c}_1`], 10);
     // stage 3 (Sapporo)
     anim('enaga', ['enaga_0', 'enaga_1'], 9);
     anim('momonga', ['momonga_0', 'momonga_1'], 5);
@@ -144,24 +144,24 @@ export class Boot extends Phaser.Scene {
     anim('kushi', ['kushi_0', 'kushi_1'], 10);
     anim('kuroko', ['kuroko_0', 'kuroko_1'], 3);
     anim('tako', ['tako_0', 'tako_1'], 2);
-    for (const c of ['red', 'blue', 'green']) anim('ame_' + c, ['ame_' + c + '_0', 'ame_' + c + '_1'], 6);
+    for (const c of ['red', 'blue', 'green', 'purple']) anim('ame_' + c, ['ame_' + c + '_0', 'ame_' + c + '_1'], 6);
     // stage 6 (Beppu)
     anim('imp', ['imp_0', 'imp_1'], 8);
     anim('kamado', ['kamado_0', 'kamado_1'], 4);
     anim('saru', ['saru_0', 'saru_1'], 8);
     anim('boil', ['boil_0', 'boil_1'], 10);
     anim('mudboil', ['mudboil_0', 'mudboil_1'], 5);
-    for (const c of ['red', 'blue', 'green']) anim(`oke_${c}`, [`oke_${c}_0`, `oke_${c}_1`], 3);
-    for (const c of ['red', 'blue', 'green']) anim(`ramen_${c}`, [`ramen_${c}_0`, `ramen_${c}_1`], 4);
+    for (const c of ['red', 'blue', 'green', 'purple']) anim(`oke_${c}`, [`oke_${c}_0`, `oke_${c}_1`], 3);
+    for (const c of ['red', 'blue', 'green', 'purple']) anim(`ramen_${c}`, [`ramen_${c}_0`, `ramen_${c}_1`], 4);
     for (const name of ['n_lantern', 'n_biidoro', 'n_hata', 'n_oranda', 'n_ja']) anim(name, [name + '_0', name + '_1'], 5);
-    for (const c of ['red', 'blue', 'green']) anim('n_castella_' + c, ['n_castella_' + c + '_0', 'n_castella_' + c + '_1'], 5);
+    for (const c of ['red', 'blue', 'green', 'purple']) anim('n_castella_' + c, ['n_castella_' + c + '_0', 'n_castella_' + c + '_1'], 5);
     // stage 7 (Hiroshima & Miyajima)
     anim('tsuru', ['tsuru_0', 'tsuru_1'], 7);
     anim('shamoji', ['shamoji_0', 'shamoji_1'], 6);
     anim('heike', ['heike_0', 'heike_1'], 5);
     anim('sankibo', ['sankibo_0', 'sankibo_1'], 4);
     anim('brazier', ['brazier_0', 'brazier_1'], 7);
-    for (const c of ['red', 'blue', 'green']) anim(`manju_${c}`, [`manju_${c}_0`, `manju_${c}_1`], 5);
+    for (const c of ['red', 'blue', 'green', 'purple']) anim(`manju_${c}`, [`manju_${c}_0`, `manju_${c}_1`], 5);
     anim('homing', ['ps_homing_0', 'ps_homing_1'], 10);
     anim('expl_s', [0, 1, 2, 3, 4].map((i) => `expl_s_${i}`), 16, 0);
     anim('expl_m', [0, 1, 2, 3, 4, 5].map((i) => `expl_m_${i}`), 14, 0);

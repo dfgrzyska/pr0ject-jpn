@@ -260,7 +260,7 @@ Wrogowie (roboty w stylu Fushimi Inari):
 | Ciężki | tanuki — figurka z Shigaraki (kapelusz, butelka sake, zeszyt rachunków) | miniboss (ok. 150 s, nad Ryōan-ji): bębni w brzuch (pierścień na każde „pon”), rzuca butelkami sake z celownikiem na ziemi, zmienia się listkiem w trzy tanuki — kopie mają listek na kapeluszu i wytrzymują kilka trafień (35); w drugiej fazie (po wypiciu sake) bębni szybciej i robi trzy kopie |
 | Nośnik | dron z klejnotem hōju (czerwony/niebieski/zielony) | zygzak, po ~4,6 s ucieka, zawsze zostawia znajdźkę; kolor losowany przy każdym (rzadko dwa razy ten sam z rzędu) |
 
-Znajdźki to błyszczące złote żetony z ikoną broni na kolorowej tarczy (`tools/art/token.mjs`), obracające się w locie, z przesuwającym się odblaskiem i poświatą: czerwony z wachlarzem pocisków — rozrzut, niebieski z wiązką — laser, zielony z kulą i smugą — naprowadzane „lisie ognie”.
+Znajdźki to błyszczące złote żetony z ikoną broni na kolorowej tarczy (`tools/art/token.mjs`), obracające się w locie, z przesuwającym się odblaskiem i poświatą: czerwony z wachlarzem pocisków — rozrzut, niebieski z wiązką — laser, zielony z kulą i smugą — naprowadzane „lisie ognie”, fioletowy ze statkiem w bańce — wieżyczki z tarczą (każde miasto ma też fioletową wersję swojego nośnika).
 
 Boss: Kyūbi, lis o dziewięciu ogonach — dziki lis z chramu Inari (słomiana lina shimenawa na szyi, klejnot hōju na
 piersi). Gdy tło stanie, lisi ogień zlatuje się nad głowę znaku 大, z płomieni wyłania się ciało, a ogony
@@ -558,6 +558,16 @@ Znajdźki zmieniają broń (ten sam kolor podnosi moc, do 5), parametry są w `W
   w promieniu 170 px, skręca do 3,8 rad/s i żyje 1,15 s (na wyższym ekranie dłużej, tak żeby dolatywała do bossów
   tak samo przy 9:16 i 9:21). Nie namierza wroga, który dopiero wszedł na ekran
   (jest wyżej niż 18 px albo widać go krócej niż 0,25 s), więc fale zdążą wlecieć.
+
+**Wieżyczki** (fioletowa znajdźka, `TURRETS` w `src/config.js`, `tools/art/turret.mjs`) nie zmieniają broni, tylko
+dokładają się do niej: każda znajdźka to jedna wieżyczka na samym końcu skrzydła (najwyżej dwie, potem znajdźka daje
+premię punktową). Wieżyczka strzela ciągle pojedynczym, wolniejszym pociskiem prosto w górę (co 0,3 s, 230 px/s,
+1,1 obrażeń). Razem tworzą tarczę wokół statku: przy jednej niebieską, prześwitującą bańkę, przy dwóch złotą,
+lśniącą. Trafienie (pociskiem, wrogiem, czymkolwiek) najpierw niszczy wieżyczkę zamiast statku: znika ona w iskrach,
+pociski w promieniu 20 px przepadają, a przez 1 s bańka połyka wszystko, co jej dotknie, więc jedna seria nie zabierze
+obu naraz. Statek ginie dopiero przy trafieniu bez wieżyczek (na łatwym przed tym jeszcze autobomba). Wieżyczki
+przechodzą do następnego miasta. Fioletowy jest około 1 na 6 nośników (od drugiego w mieście, nigdy dwa z rzędu),
+kosztem kolorów broni. Debug: `?turrets=2`.
 
 ## Hiroszima i Nagasaki — bossowie
 
