@@ -32,6 +32,7 @@ import { hiroshimaEnemies, HIROSHIMA_PORTRAITS } from './art/hiroshima/enemies.m
 import { nagasakiEnemies, NAGASAKI_PORTRAITS } from './art/nagasaki/enemies.mjs';
 import { addCracks } from './art/cracks540.mjs';
 import { shared540 } from './art/shared540/index.mjs';
+import { buildIcon, downsample } from './art/icon.mjs';
 
 // cities whose enemies are drawn at 540 px (docs/enemies-540-plan.md): their atlas, and what of it the album
 // and the bosses' parade show (src/game/enemyArt.js; the stage file says "enemyArt": true)
@@ -80,21 +81,10 @@ if (preview) writeFileSync(join(previewDir, 'sprites_x4.png'), atlas.scaled(4, 0
 
 console.log('icons');
 {
-  const icon = new Raster(32, 32);
-  for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) icon.set(x, y, y < 16 ? 0x2a1830 : 0x1b1424);
-  for (let x = 3; x < 29; x++) {
-    icon.set(x, 6, 0x1c1418);
-    icon.set(x, 7, 0xe2421f);
-    icon.set(x, 10, 0xb83018);
-  }
-  for (let y = 8; y < 29; y++) {
-    icon.set(7, y, 0xe2421f);
-    icon.set(24, y, 0xb83018);
-  }
-  const ship = json.frames.ship.frame;
-  icon.blit(atlas.crop(ship.x, ship.y, ship.w, ship.h), 16 - Math.floor(ship.w / 2), 12);
-  writeFileSync(join(root, 'public', 'icon-192.png'), icon.scaled(6).toPNG());
-  writeFileSync(join(root, 'public', 'icon-512.png'), icon.scaled(16).toPNG());
+  // the app's icon (tools/art/icon.mjs): drawn at 256 px, each pixel 2 x 2 at 512; 192 px from the same picture, smoothed
+  const icon = buildIcon();
+  writeFileSync(join(root, 'public', 'icon-512.png'), icon.scaled(2).toPNG());
+  writeFileSync(join(root, 'public', 'icon-192.png'), downsample(icon, 192).toPNG());
 }
 
 console.log('font');
