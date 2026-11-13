@@ -12,6 +12,7 @@ import { kagoshima } from './enemies/kagoshima.js';
 import { osaka } from './enemies/osaka.js';
 import { beppu } from './enemies/beppu.js';
 import { nagasaki } from './enemies/nagasaki.js';
+import { encounters } from './enemies/encounters.js';
 import { hiroshima } from './enemies/hiroshima.js';
 // the second phases of the minibosses (Yuki-onna and the Oranda-bune have theirs; the bunraku puppet's go by
 // its puppeteers): its name on the banner
@@ -268,6 +269,20 @@ export class Enemies {
       if (gt?.gate > 0) amount *= PHASE.take;
       if (e.group?.take && e.role in e.group.take) amount *= e.group.take[e.role]; // guarded parts (the octopus's head)
     }
+    // The furnace must melt all three layers; neither bombs nor high DPS skip it.
+    if (e.group?.kind === 'kuma' && e.group.stage === 1) {
+      e.hp = Math.max(e.maxHp * 0.75, e.hp - amount);
+      return;
+    }
+    if (e.group?.kind === 'tako' && e.role === 'tentacle') {
+      const pinned = e.group.slams.some(sl => sl.arm === e && sl.pinned);
+      amount *= pinned ? 2.5 : 0.06;
+    }
+    // A strong ship can empty an exposed head before the arms have changed rows.
+    // Keep the final sliver for the bare-head phase, otherwise the last arm has no boss left to finish.
+    if (e.group?.kind === 'tako' && e.role === 'head' && e.group.stage < 3) {
+      amount = Math.min(amount, Math.max(0, e.hp - e.maxHp * 0.32));
+    }
     if (crabBlock) {
       // Heike-gani's iron pincers deflect frontal shots unless flanked from the sides
       if (Math.random() < 0.45) this.scene.fx.spark(e.x, e.y + 14);
@@ -340,20 +355,12 @@ export class Enemies {
       this.crystalDown(e, byBomb);
       return;
     }
-    if (e.group?.kind === 'kuma' && e.role !== 'body') {
-      this.kumaPartDown(e);
-      return;
-    }
     if (e.group?.kind === 'volcano' && e.role === 'vent') {
       this.ventDown(e);
       return;
     }
     if (e.group?.kind === 'tako' && e.role === 'tentacle') {
       this.tentacleDown(e);
-      return;
-    }
-    if (e.group?.kind === 'sankibo' && e.role === 'brazier') {
-      this.brazierDown(e);
       return;
     }
     if (e.group?.kind === 'sankibo' && e.role === 'body') {
@@ -422,6 +429,7 @@ export class Enemies {
     const g = this.bossGroup;
     if (e.type === 'boss' && g && !g.defeated && g.parts.every((p) => p.dead || p.hp <= 0 || p.group !== g)) {
       g.defeated = true;
+      if (g.duelGhost) this.segPool.kill(g.duelGhost);
       s.onBossDefeated();
     }
   }
@@ -1223,4 +1231,4 @@ export class Enemies {
 }
 
 // each city's enemies and bosses live in its own module (src/game/enemies/): their methods join the class here
-Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki);
+Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters);

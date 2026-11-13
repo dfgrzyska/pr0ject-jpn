@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
 import { SKINS } from '../../src/game/skins.js';
 import { SONGS8 } from '../../src/audio/score8.js';
+import { encounters } from '../../src/game/enemies/encounters.js';
 import { nagasaki } from '../../src/game/enemies/nagasaki.js';
 import { NagasakiView } from '../../src/game/NagasakiView.js';
 import { Parallax } from '../../src/game/Parallax.js';
@@ -291,11 +292,11 @@ function dragon(H = 320) {
   const shots = [], warnings = [];
   const pool = { spawn: (frame, x, y, props) => sprite(x, y, props) };
   const ctx = {
-    ...nagasaki, pool, segPool: pool,
-    scene: { H, stage: { panorama: true }, player: { x: 90, y: H - 30 } },
+    ...nagasaki, ...encounters, pool, segPool: pool,
+    scene: { H, stage: { panorama: true }, player: { x: 90, y: H - 30 }, hud: { show() {} } },
     canFire() { return !this.scene.ceasefire; },
     aimAt(e, dx, dy) { return Math.atan2(this.scene.player.y - e.y - dy, this.scene.player.x - e.x - dx); },
-    tele: { lineStyle() {}, strokeCircle() {}, lineBetween(...line) { warnings.push(line); } },
+    tele: { lineStyle() { return this; }, strokeCircle() { return this; }, fillStyle() { return this; }, fillRoundedRect() { return this; }, strokeRect() { return this; }, fillRect() { return this; }, lineBetween(...line) { warnings.push(line); return this; } },
   };
   const head = ctx.spawnJaodori({}, { hp: 1000, maxHp: 1000 });
   const g = ctx.bossGroup;

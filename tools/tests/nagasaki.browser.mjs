@@ -27,7 +27,7 @@ try {
         }
         const v = s.scenicView;
         return { t: s.t, u: s.parallax.uTop, state: s.state, enemies: s.enemies.count(), bullets: s.bullets.pool.live.length, quiet: s.ceasefire,
-          heavy: s.enemies.heavy?.kind ?? null, mode: s.enemies.heavy?.mode ?? null, view: v.layers[0].visible, cityY: v.layers[1].y, boss: s.enemies.bossGroup?.parts[0]?.state ?? null };
+          heavy: s.enemies.heavy?.kind ?? null, mode: s.enemies.heavy?.mode ?? null, view: v.layers[0].visible, cityY: v.layers[1].y - v.tops[1], boss: s.enemies.bossGroup?.parts[0]?.state ?? null };
       }, target);
       assert.equal(sample.state, 'play'); assert(sample.t >= target);
       if (target === 90) assert.equal(sample.heavy, 'oranda');
@@ -47,7 +47,8 @@ try {
       const s = game.scene.getScene('Stage');
       const phases = new Set();
       let frames = 0;
-      while (s.enemies.bossGroup.phase < 3 && frames++ < 1800) {
+      // Firework countdowns and exposed-head windows deliberately pause ordinary volleys.
+      while (s.enemies.bossGroup.phase < 3 && frames++ < 5400) {
         s.enemies.bossGroup.parts[0].hp = 1e6;
         s.update(0, 1000 / 60);
         phases.add(s.enemies.bossGroup.phase % 3);
@@ -67,7 +68,8 @@ try {
       const s = game.scene.getScene('Stage');
       let frames = 0;
       while (s.enemies.bossGroup.parts[0].state !== 'fight' && frames++ < 600) s.update(0, 1000 / 60);
-      s.enemies.damage(s.enemies.bossGroup.parts[0], 2e6);
+      // This route test forces victory through armor; interactive victories have their own harness.
+      s.enemies.damage(s.enemies.bossGroup.parts[0], 2e8);
       return { won: s.bossDown, body: s.enemies.segPool.live.filter(e => !e.dead).length, quiet: s.ceasefire };
     });
     assert.deepEqual(defeated, { won: true, body: 0, quiet: true });
@@ -76,7 +78,8 @@ try {
       while (s.scenicView.t < 3 && frames++ < 10000) s.update(0, 1000 / 60);
       return { t: s.scenicView.t, done: s.scenicView.done, shade: s.scenicView.shade.alpha, objects: s.scenicView.layers.length + s.scenicView.points.length };
     });
-    assert(vista.t >= 3); assert(!vista.done); assert(vista.shade < 0.2); assert.equal(vista.objects, 31);
+    // The 540 px panorama has seven cropped layers and 36 moving light points.
+    assert(vista.t >= 3); assert(!vista.done); assert(vista.shade < 0.2); assert.equal(vista.objects, 43);
     await page.evaluate(() => game.loop.start(game.step.bind(game)));
     await page.waitForTimeout(1500);
     await page.screenshot({ path: `tools/preview/nagasaki-inasa-${H}.png` });
@@ -110,7 +113,7 @@ try {
       s.book.layout(s.H);
       return { width: s.book.art.displayWidth, height: s.book.art.displayHeight, visible: s.book.art.visible };
     });
-    assert(illustration.visible && illustration.width <= 70 && illustration.height <= 55);
+    assert(illustration.visible && illustration.width <= 70 + 1e-6 && illustration.height <= 55 + 1e-6, JSON.stringify(illustration));
     await page.waitForTimeout(200);
     await page.screenshot({ path: `tools/preview/oranda-album-${H}.png` });
     assert.deepEqual(errors, []);

@@ -3,18 +3,14 @@
 //   pearls (2x critical damage while open!).
 // - Heike-gani (miniboss): samurai-faced crab of Dan-no-ura; scuttles sideways, raises an iron pincer shield
 //   wall (reflecting frontal fire unless flanked), snaps intersecting X-scissor blades, and breathes froth bubbles.
-// - Itsukushima Sankibō (stage boss): Great Tengu of Mount Misen flanked by two orbiting Eternal Flame braziers
-//   (Kiezu-no-hi); swings his feathered hauchiwa fan to summon lateral gales that blow both falling momiji leaves
-//   and crimson feather-blades sideways, cracks hyōshigi wind-slash corridors, and conjures sacred Misen fire zones.
+// - Sankibo: aim a brazier's ember into the fan's wind band to break the protective seal (encounters.js).
 import Phaser from 'phaser';
 import { DEPTH, VIEW } from '../../config.js';
 import { volley } from '../../difficulty.js';
-import { slow, normal, fast, DOWN, TAU } from './shared.js';
+import { slow, normal, DOWN, TAU } from './shared.js';
 import { hasEnemyFrame } from '../enemyArt.js';
 
-// Sankibō: the Tengu's HP and each brazier's; `barrier`: what gets through its barrier of fire while both
-// braziers burn; below `wrath` of its life, phase 3; `gale`: px/s its fan's wind pushes the ship
-const SANKIBO = { body: 1390, brazier: 280, barrier: 0.35, wrath: 0.35, gale: 20 };
+const SANKIBO = { body: 1390 };
 
 export const hiroshima = {
   // ---------------------------------------------------------------- Armored Seto Oyster (shooter)
@@ -210,12 +206,7 @@ export const hiroshima = {
   },
 
   // ---------------------------------------------------------------- Stage Boss: Itsukushima Sankibō (Great Tengu)
-  /**
-   * Three phases: the guardian of the eternal flame (while both Kiezu-no-hi braziers burn, a barrier of fire
-   * round the Tengu lets only SANKIBO.barrier of a hit through); with the braziers out, the Hauchiwa fan, its
-   * gale blowing the ship sideways; below SANKIBO.wrath of its life the wrath of Misen: phantom braziers,
-   * untouchable, circle it faster and fire, and its feather storm turns both ways.
-   */
+  // Permanent braziers provide the aimed embers; their destruction cannot remove the counter mechanic.
   spawnSankibo(w, base) {
     const g = {
       kind: 'sankibo',
@@ -235,7 +226,7 @@ export const hiroshima = {
       galeDir: 1,
       slashes: null,
       stage: 1,
-      take: { body: SANKIBO.barrier },
+      take: { body: 0.08 },
       sats: [],
     };
     const body = this.pool.spawn('sankibo_0', w.x, -46, {
@@ -257,8 +248,10 @@ export const hiroshima = {
         role: 'brazier',
         group: g,
         orbitPhase: ph,
-        hp: SANKIBO.brazier,
-        maxHp: SANKIBO.brazier,
+        hp: 1,
+        maxHp: 1,
+        invuln: true,
+        harmless: true,
         radius: 7.5,
         pts: 4000,
       });
@@ -272,182 +265,4 @@ export const hiroshima = {
     return body;
   },
 
-  brazierDown(e) {
-    const s = this.scene;
-    const g = e.group;
-    const pts = (e.pts ?? 4000) * s.score.mult;
-    s.score.add(pts);
-    s.fx.explode(e.x, e.y, 'm');
-    s.fx.text(e.x, e.y - 12, `+${pts}`, 1.2, 0xffb868);
-    this.remove(e);
-    const liveBr = g.braziers.filter((br) => !br.dead && br.hp > 0 && br.group === g);
-    if (!liveBr.length && g.stage === 1 && g.body && !g.body.dead) {
-      // the eternal flame is out: the barrier falls, the fan comes out
-      g.take = null;
-      this.phaseBreak(g, g.body.x, g.body.y, 2, 'WACHLARZ HAUCHIWA');
-    }
-  },
-
-  enrageSankibo(g) {
-    if (g.enraged) return;
-    g.enraged = true;
-    g.take = null;
-    const s = this.scene;
-    s.sfx.shout?.();
-    this.phaseBreak(g, g.body.x, g.body.y, 3, 'GNIEW GÓRY MISEN');
-    // the braziers burn again, phantoms out of reach
-    for (const ph of [0, Math.PI]) g.sats.push(this.segPool.spawn('brazier_0', g.body.x, g.body.y, { orbitPhase: ph }).setDepth(DEPTH.air - 0.08).setAlpha(0.7).setTint(0x9ad0ff));
-    for (const sp of g.sats) sp.play('brazier');
-  },
-
-  updateSankibo(g, dt) {
-    const s = this.scene;
-    const b = s.bullets;
-    const body = g.body;
-    if (!body || body.dead) return;
-    g.t += dt;
-
-    if (g.state === 'enter') {
-      body.y += Math.max(10, (g.homeY - body.y) * 1.3) * dt;
-      if (body.y >= g.homeY - 1) {
-        Object.assign(g, { state: 'fight', awake: true, timer: 0.75 });
-      }
-    } else {
-      const swaySpd = g.enraged ? 1.35 : 0.85;
-      body.x = g.home + 30 * Math.sin(g.t * swaySpd);
-      body.y = g.homeY + 6 * Math.sin(g.t * 1.9);
-      if (!g.enraged && body.hp / body.maxHp < SANKIBO.wrath) this.enrageSankibo(g);
-    }
-    // phase 1: the barrier of fire round it while the braziers burn
-    if (g.take && g.state === 'fight') {
-      this.tele.lineStyle(1, 0xff9a48, 0.35 + 0.2 * Math.sin(g.t * 9));
-      this.tele.strokeCircle(body.x, body.y, 21 + Math.sin(g.t * 5));
-    }
-    // phase 3: the phantom braziers circle faster and fire now and then
-    g.sats.forEach((sp, i) => {
-      const ang = g.t * 2.9 + sp.orbitPhase;
-      sp.setPosition(body.x + Math.cos(ang) * 40, body.y + Math.sin(ang) * 20 + 4);
-      if (g.state === 'fight' && !g.slashes && g.patternIndex % 3 !== 0 && this.canFire(body) && Math.floor((g.t - dt) * 0.6 + i * 0.5) < Math.floor(g.t * 0.6 + i * 0.5)) {
-        b.fan(sp.x, sp.y + 4, Math.atan2(s.player.y - sp.y, s.player.x - sp.x), 2, 0.4, normal * 0.9);
-      }
-    });
-    // phase 2 on: the Hauchiwa gale blows the ship sideways while the fan is out
-    if (g.stage >= 2 && s.parallax.windTarget !== 0 && s.player.alive) s.player.pull = { x: g.galeDir > 0 ? VIEW.width + 400 : -400, y: s.player.y, k: SANKIBO.gale };
-
-    // Update orbiting Sacred Eternal Flame Braziers + golden spiritual tether lines
-    const liveBr = g.braziers.filter((br) => !br.dead && br.hp > 0 && br.group === g);
-    for (const br of liveBr) {
-      const ang = g.t * (g.enraged ? 2.4 : 1.55) + br.orbitPhase;
-      br.x = body.x + Math.cos(ang) * 34;
-      br.y = body.y + Math.sin(ang) * 16 + 4;
-      this.tele.lineStyle(1, 0xffae48, 0.35);
-      this.tele.lineBetween(body.x, body.y + 2, br.x, br.y);
-    }
-
-    // Draw & resolve active Hyōshigi phantom wind-slash corridors!
-    if (g.slashes) {
-      let allDone = true;
-      for (const sl of g.slashes) {
-        sl.t += dt;
-        if (sl.t < sl.warn) {
-          allDone = false;
-          if (Math.floor(sl.t * 18) % 2 === 0) {
-            this.tele.lineStyle(1.5, 0xff7058, 0.8);
-            this.tele.lineBetween(sl.x0, sl.y0, sl.x1, sl.y1);
-          }
-        } else if (!sl.fired) {
-          sl.fired = true;
-          const ang = Math.atan2(sl.y1 - sl.y0, sl.x1 - sl.x0);
-          const count = volley(g.enraged ? 7 : 5);
-          for (let k = 0; k < count; k++) {
-            b.shot('eb_feather_0', sl.x0, sl.y0, ang, fast * (0.72 + k * 0.08), 2.0, { spin: true });
-          }
-        }
-      }
-      if (allDone) g.slashes = null;
-    }
-
-    if (g.fanUp > 0 && (g.fanUp -= dt) <= 0 && body.frame.name.startsWith('sankibo_fan_up')) body.setFrame(g.galeDir > 0 ? 'sankibo_fan_r' : 'sankibo_fan_l');
-    if (g.state !== 'fight' || !this.canFire(body)) return;
-
-    g.timer -= dt;
-    if (g.timer > 0) return;
-
-    const pat = g.patternIndex % 3;
-    if (pat === 0) {
-      // Pattern 0: Hauchiwa Gale Fan! Blows falling momiji leaves AND curved Tengu feather-blades sideways!
-      if (g.step === 0) {
-        g.galeDir = -g.galeDir;
-        body.anims.stop();
-        body.setFrame(g.galeDir > 0 ? 'sankibo_fan_r' : 'sankibo_fan_l');
-        // (the wind-up, the fan raised overhead for a moment before the sweep: only to look at, the gale is on)
-        if (hasEnemyFrame('sankibo_fan_up_r')) {
-          body.setFrame(g.galeDir > 0 ? 'sankibo_fan_up_r' : 'sankibo_fan_up_l');
-          g.fanUp = 0.12;
-        }
-        s.parallax.windTarget = g.galeDir * (g.enraged ? 78 : 58);
-        s.fx.text(body.x, body.y - 22, 'KAZE YO!', 0.8, 0xffd898);
-      }
-      const cols = volley(g.enraged ? 6 : 4);
-      for (let i = 0; i < cols; i++) {
-        const sx = 20 + ((i + (g.step % 2) * 0.5) / cols) * (VIEW.width - 40);
-        const fFrame = (i + g.step) % 2 ? 'eb_feather_1' : 'eb_feather_0';
-        b.shot(fFrame, sx, body.y + 10, DOWN - g.galeDir * 0.28, slow * 0.95, 2.0, {
-          ax: g.galeDir * (g.enraged ? 58 : 44),
-          maxV: g.enraged ? 115 : 96,
-          spin: true,
-        });
-      }
-      g.timer = g.enraged ? 0.42 : 0.55;
-      if (++g.step >= (g.enraged ? 6 : 5)) {
-        body.play('sankibo');
-        s.parallax.windTarget = 0;
-        g.patternIndex++;
-        g.step = 0;
-        g.timer = 0.85;
-      }
-    } else if (pat === 1) {
-      // Pattern 1: Seven Wonders of Misen — Hyōshigi Clappers & Crosswind Corridors!
-      s.music.synth?.hyoshigi?.(s.music.ctx.currentTime + 0.01, 0.8);
-      const pl = s.player;
-      const px = Phaser.Math.Clamp(pl.x, 24, VIEW.width - 24);
-      const py = Phaser.Math.Clamp(pl.y, 120, s.H - 24);
-      g.slashes = [
-        { x0: 6, y0: body.y + 18, x1: VIEW.width - 6, y1: py + 12, t: 0, warn: 0.68, fired: false },
-        { x0: VIEW.width - 6, y0: body.y + 18, x1: 6, y1: py + 12, t: 0, warn: 0.68, fired: false },
-        { x0: body.x, y0: body.y + 14, x1: px, y1: s.H + 10, t: 0, warn: 0.68, fired: false },
-      ];
-      b.ring(body.x, body.y + 12, g.enraged ? 14 : 10, g.step * 0.25, slow);
-      g.timer = g.enraged ? 0.95 : 1.15;
-      if (++g.step >= 3) {
-        g.patternIndex++;
-        g.step = 0;
-        g.timer = 0.8;
-      }
-    } else {
-      // Pattern 2: Kiezu-no-hi Sacred Eternal Flame Zones + Braziers Pearl/Fire Spirals!
-      const pl = s.player;
-      const tx = Phaser.Math.Clamp(pl.x + (g.step % 2 ? 22 : -22), 22, VIEW.width - 22);
-      const ty = Phaser.Math.Clamp(pl.y, 130, s.H - 26);
-      b.zone(tx, ty, 15, { warn: 0.95, live: 0.5, kind: 'fire' });
-      if (liveBr.length) {
-        for (const br of liveBr) {
-          b.fan(br.x, br.y + 4, Math.atan2(pl.y - br.y, pl.x - br.x), g.enraged ? 4 : 3, 0.55, normal * 0.92);
-        }
-      } else {
-        // without braziers: the Tengu storm ring (in its wrath it turns back and forth, the phantoms fire with it)
-        const n = volley(12);
-        const turn = g.enraged && g.step % 2 ? -0.3 : 0.3;
-        for (let i = 0; i < n; i++) {
-          b.shot('eb_feather_0', body.x, body.y + 10, (i / n) * TAU + g.step * turn, normal * 0.95, 2.0, { spin: true });
-        }
-      }
-      g.timer = g.enraged ? 0.68 : 0.85;
-      if (++g.step >= 4) {
-        g.patternIndex++;
-        g.step = 0;
-        g.timer = 0.9;
-      }
-    }
-  },
 };

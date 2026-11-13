@@ -10,10 +10,8 @@ import { hasEnemyFrame } from '../enemyArt.js';
 export const YUKI = { hp: 860, time: 52, crystals: 5, crystalLife: 6.5, mist: 4.6, pull: 26, whiteout: 4.4 };
 const MIRROR = { hp: 45, weight: 0, score: 1500, radius: 11, explosion: 'm' };
 const CRYSTAL = { hp: 12, weight: 0, score: 100, radius: 6, explosion: 's' };
-// The Snow Festival bear: HP of the ice heart, each paw and the bear inside; `guard`: what the heart takes of a
-// hit while both paws stand; the blizzard below `storm` of the bear's life: `wind` px/s pushing the ship,
-// `drift` px/s pushing the bullets
-const KUMA = { heart: 400, paw: 220, bear: 1060, guard: 0.3, storm: 0.45, wind: 22, drift: 16 };
+// Three furnace charges melt the shell (encounters.js); the exposed bear brings a blizzard below `storm` HP.
+const KUMA = { bear: 1060, storm: 0.45, wind: 22, drift: 16 };
 
 export const sapporo = {
   /** The ice lantern's shell breaks: the bare flame flares up and fires faster. */
@@ -553,13 +551,7 @@ export const sapporo = {
   },
 
   // ---------------------------------------------------------------- boss: the Snow Festival bear
-  /**
-   * Phase 1: an ice sculpture of a rearing bear rides in on its pedestal and wakes when the scroll stops.
-   * Both paws and the ice heart are separate targets; the sculpture's body is solid ice. Breaking the
-   * heart shatters the sculpture: phase 2 is the brown higuma that was inside.
-   */
-  // Phases: the ice sculpture (its heart guarded while both paws stand), the higuma, the Hokkaido blizzard
-  // below KUMA.storm of its life (a crosswind pushing the ship and the bullets, icicles from the eaves)
+  // One damageable body: three permanent melts, the exposed higuma, then its Hokkaido blizzard.
   spawnKuma(w, base) {
     const s = this.scene;
     const y = -36;
@@ -572,15 +564,11 @@ export const sapporo = {
       g.parts.push(e);
       return e;
     };
-    // parts before the body, so shots reach them first
-    part('kuma_heart_0', 'heart', 0, 4, KUMA.heart, 6, 6000).play('kuma_heart');
-    part('kuma_paw', 'paw', -22, -13, KUMA.paw, 7, 3000).setFlipX(true);
-    part('kuma_paw', 'paw', 22, -13, KUMA.paw, 7, 3000);
     g.body = part('kuma_ice', 'body', 0, 0, KUMA.bear, 20, 0);
-    g.take = { heart: KUMA.guard }; // the heart, guarded while both paws stand
+    g.melts = 0;
+    g.take = { body: 0.02 };
     Object.assign(g, { windDir: 1, windT: 0, icT: 1 });
-    g.body.pass = true; // shots go through the ice to reach the paws and the heart
-    g.maxTotal = g.parts.reduce((sum, p) => sum + p.maxHp, 0);
+    g.maxTotal = g.body.maxHp;
     this.bossGroup = g;
     return g.body;
   },
@@ -624,7 +612,7 @@ export const sapporo = {
         g.awake = true;
         g.t = 0;
         g.timer = 0.6;
-        for (const p of alive) if (p.role !== 'body') p.invuln = false;
+        for (const p of alive) p.invuln = false;
       }
       return;
     }
@@ -639,9 +627,11 @@ export const sapporo = {
         g.timer = 0.5;
         body.invuln = false;
         body.pass = false;
+        body.harmless = false;
       }
       return;
     }
+    if (g.stage === 1) return this.kumaFurnace(g, dt);
     const sp = g.enraged ? 1.5 : 1;
     place(g.home + (g.stage === 1 ? 12 : 26) * Math.sin(g.t * 0.5 * sp), g.homeY + 4 * Math.sin(g.t * 0.9 * sp));
     if (g.stage === 2 && body.hp < body.maxHp * KUMA.storm) {
@@ -652,8 +642,7 @@ export const sapporo = {
     if (g.stage >= 3) this.kumaBlizzard(g, dt);
     g.timer -= dt * (g.enraged ? 1.4 : 1);
     if (g.timer > 0) return;
-    if (g.stage === 1) this.kumaIce(g, alive);
-    else this.kumaBear(g, body);
+    this.kumaBear(g, body);
   },
 
   /** The roar's breath: a cloud of steam rolling out of the jaws while it roars (only to look at). */
@@ -674,43 +663,6 @@ export const sapporo = {
       .setPosition(body.x, body.y + 4.5)
       .setVisible(body.visible)
       .setAlpha(body.alpha * Math.min(1, g.roar * 3));
-  },
-
-  /** Phase 1: paw swipes, heart pulses, a frozen snowflake from the heart while the paws lob snowballs. */
-  kumaIce(g, alive) {
-    const b = this.scene.bullets;
-    const pl = this.scene.player;
-    const heart = alive.find((e) => e.role === 'heart');
-    const paws = alive.filter((e) => e.role === 'paw');
-    const can = (e) => e && this.canFire(e);
-    const next = () => {
-      g.phase++;
-      g.step = 0;
-      g.timer = 1;
-    };
-    switch (g.phase % 3) {
-      case 0: {
-        const paw = paws[g.step % Math.max(1, paws.length)];
-        if (can(paw)) b.fan(paw.x, paw.y + 5, this.aimAt(paw, 0, 5), 7, 1.0, normal);
-        else if (can(heart)) b.fan(heart.x, heart.y, this.aimAt(heart), 5, 0.7, normal);
-        g.timer = 0.6;
-        if (++g.step >= 6) next();
-        break;
-      }
-      case 1:
-        if (can(heart)) b.ring(heart.x, heart.y, 14, g.step * 0.22, slow, g.step % 2 === 1);
-        g.timer = 0.85;
-        if (++g.step >= 4) next();
-        break;
-      default:
-        if (can(heart))
-          for (let arm = 0; arm < 6; arm++)
-            for (let k = 0; k < 3; k++)
-              b.shot('eb_s', heart.x, heart.y, g.step * 0.5 + (arm / 6) * TAU, 34 + k * 22, 1.8, { frz: { at: 0.55, hold: 0.6, turn: 0.4, speed: slow } });
-        for (const paw of paws) if (can(paw)) b.lob(paw.x, paw.y, Phaser.Math.Clamp(pl.x + (Math.random() - 0.5) * 40, 10, VIEW.width - 10), pl.y, 1.1);
-        g.timer = 1.3;
-        if (++g.step >= 3) next();
-    }
   },
 
   /** Phase 2: roaring rings, alternating paw swipes, thrown salmon with icicles falling from above. */
@@ -773,33 +725,4 @@ export const sapporo = {
     }
   },
 
-  /** A paw or the heart of the sculpture breaks off. The heart takes the whole sculpture with it. */
-  kumaPartDown(e) {
-    const s = this.scene;
-    const g = e.group;
-    const pts = e.pts * s.score.mult;
-    s.score.add(pts);
-    s.fx.explode(e.x, e.y, 'm');
-    s.fx.shards(e.x, e.y, 16);
-    s.fx.text(e.x, e.y - 12, `${pts}`, 1.2, 0xffe080);
-    this.remove(e);
-    if (e.role === 'paw') g.take = null; // a paw gone: the heart is open
-    if (e.role !== 'heart') return;
-    for (const p of g.parts)
-      if (!p.dead && p.group === g && p.role === 'paw') {
-        s.fx.explode(p.x, p.y, 's');
-        s.fx.shards(p.x, p.y, 10);
-        p.hp = 0;
-        this.remove(p);
-      }
-    Object.assign(g, { state: 'break', t: 0, phase: 0, step: 0, roar: 1.6 });
-    g.take = null;
-    g.body.radius = 20;
-    s.bullets.cancelAll(s.fx);
-    s.fx.flash(0.7, 0.5);
-    s.fx.shards(g.body.x, g.body.y, 40);
-    s.cameras.main.shake(700, 0.006);
-    this.phaseBreak(g, g.body.x, g.body.y, 2, 'PRZEBUDZENIE HIGUMY');
-    s.fx.text(g.body.x, g.body.y + 30, 'LÓD PĘKA!', 1.6, 0xd8f0ff);
-  },
 };

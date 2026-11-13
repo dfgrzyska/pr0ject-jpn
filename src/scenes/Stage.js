@@ -813,6 +813,7 @@ export class Stage extends Phaser.Scene {
     // player shots -> enemies (air and ground)
     for (const s of p.shots.live) {
       if (s.dead) continue;
+      if (this.enemies.bossDeviceHit(s)) { p.shots.kill(s); continue; }
       for (const e of enemies) {
         if (e.dead || e.hp <= 0 || e.ghost || e.pass || e.y < -e.radius + 2 || e === s.hitE) continue;
         const r = e.radius + s.radius;
