@@ -163,6 +163,7 @@ export class Enemies {
         e = this.pool.spawn(look.frame, w.x, -30, { ...base, kind: look.kind ?? null, song: w.music ?? null, p2: false });
         if (w.hp == null && HEAVY.hp[look.kind ?? 'manta']) e.hp = e.maxHp = HEAVY.hp[look.kind ?? 'manta'];
         if (look.anim) e.play(look.anim);
+        if (look.kind === 'heikegani') e.radius = Math.round(e.radius * 1.25);
         this.heavy = e;
         e.patternIndex = 0;
         if (look.kind === 'bunraku') this.spawnKuroko(e, base);
@@ -259,7 +260,7 @@ export class Enemies {
   damage(e, amount, byBomb = false, bean = false) {
     // a bomb blows the lid off a vinegar jar; otherwise invulnerable things shrug it off
     if (e.dead || e.hp <= 0 || e.ghost || (e.invuln && !(byBomb && e.lidded))) return;
-    const crabBlock = e.kind === 'heikegani' && e.guarding && !byBomb && Math.abs(this.scene.player.x - e.x) < 22;
+    const crabBlock = e.kind === 'heikegani' && e.guarding && !byBomb && Math.abs(this.scene.player.x - e.x) < 27;
     const boss = e.type === 'heavy' || e.type === 'boss' || e.type === 'kuroko';
     if (boss) {
       this.scene.sfx.bossHit((e.oni && !bean) || crabBlock);

@@ -77,7 +77,7 @@ export const SKINS = {
     shooter: { frame: 'kaki_0', oyster: true, hp: 9 },
     diver: { frame: 'shamoji_0', anim: 'shamoji', scoop: true },
     carrier: { frame: 'manju_{c}_0', anim: 'manju_{c}' },
-    heavy: { frame: 'heike_0', anim: 'heike', kind: 'heikegani' },
+    heavy: { frame: 'heike_0', anim: 'heike', kind: 'heikegani', scale: 1.25 },
     turret: { base: 'hidoro_base', head: 'hidoro_head_', wreck: 'hidoro_wreck', pattern: 'tide' },
   },
 };

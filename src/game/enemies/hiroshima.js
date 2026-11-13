@@ -132,15 +132,15 @@ export const hiroshima = {
       e.scuttleT = 1.0 + Math.random() * 0.9;
     }
     const spd = e.guarding ? 18 : 54;
-    e.x = Phaser.Math.Clamp(e.x + e.scuttleDir * spd * dt, 32, VIEW.width - 32);
-    if (e.x <= 33 || e.x >= VIEW.width - 33) e.scuttleDir = -e.scuttleDir;
+    e.x = Phaser.Math.Clamp(e.x + e.scuttleDir * spd * dt, 36, VIEW.width - 36);
+    if (e.x <= 37 || e.x >= VIEW.width - 37) e.scuttleDir = -e.scuttleDir;
     e.y = 68 + Math.sin(e.fight * 2.6) * 3;
     e.setRotation(Math.sin(e.fight * 7) * (e.guarding ? 0.02 : 0.06));
 
     // Sea spray droplets kicked up by its scuttling legs
     if (!e.guarding && Math.floor((e.fight - dt) * 9) < Math.floor(e.fight * 9)) {
-      const side = Math.floor(e.fight * 9) % 2 ? 16 : -16;
-      const p = s.fx.part(s.fx.parts, 'drop_0', e.x + side, e.y + 8);
+      const side = Math.floor(e.fight * 9) % 2 ? 20 : -20;
+      const p = s.fx.part(s.fx.parts, 'drop_0', e.x + side, e.y + 10);
       p.vx = side * 2.1;
       p.vy = 26;
       p.life = p.max = 0.28;
@@ -155,13 +155,13 @@ export const hiroshima = {
       e.guarding = false;
       if (!e.anims.isPlaying) e.play('heike');
       const pl = s.player;
-      const aL = Math.atan2(pl.y - (e.y + 14), pl.x - (e.x - 14));
-      const aR = Math.atan2(pl.y - (e.y + 14), pl.x - (e.x + 14));
+      const aL = Math.atan2(pl.y - (e.y + 17), pl.x - (e.x - 17));
+      const aR = Math.atan2(pl.y - (e.y + 17), pl.x - (e.x + 17));
       const n = volley(4);
       for (let i = 0; i < n; i++) {
         const sp = normal * (0.82 + i * 0.11);
-        b.shot('eb_pearl', e.x - 14, e.y + 14, aL + 0.14 - i * 0.05, sp, 2.2);
-        b.shot('eb_pearl', e.x + 14, e.y + 14, aR - 0.14 + i * 0.05, sp, 2.2);
+        b.shot('eb_pearl', e.x - 17, e.y + 17, aL + 0.14 - i * 0.05, sp, 2.2);
+        b.shot('eb_pearl', e.x + 17, e.y + 17, aR - 0.14 + i * 0.05, sp, 2.2);
       }
       s.music.synth?.hyoshigi?.(s.music.ctx.currentTime + 0.01, 0.55);
       e.timer = e.p2 ? 0.46 : 0.62; // (its samurai fury: the scissors snap faster)
@@ -172,7 +172,7 @@ export const hiroshima = {
         e.guarding = true;
         e.anims.stop();
         e.setFrame('heike_guard');
-        s.fx.text(e.x, e.y - 18, 'GARDA!', 0.75, 0xd8f0ff);
+        s.fx.text(e.x, e.y - 23, 'GARDA!', 0.75, 0xd8f0ff);
         e.step = 1;
         e.timer = 1.35;
       } else {
@@ -180,10 +180,10 @@ export const hiroshima = {
         e.play('heike');
         const m = volley(12);
         for (let i = 0; i < m; i++) {
-          b.shot('eb_pearl', e.x, e.y + 12, (i / m) * TAU + e.fight, slow * 1.05, 2.2);
+          b.shot('eb_pearl', e.x, e.y + 19, (i / m) * TAU + e.fight, slow * 1.05, 2.2);
         }
-        b.fan(e.x - 13, e.y + 15, DOWN + 0.18, 3, 0.45, normal);
-        b.fan(e.x + 13, e.y + 15, DOWN - 0.18, 3, 0.45, normal);
+        b.fan(e.x - 16, e.y + 19, DOWN + 0.18, 3, 0.45, normal);
+        b.fan(e.x + 16, e.y + 19, DOWN - 0.18, 3, 0.45, normal);
         this.nextPattern(e);
       }
     } else {
@@ -192,14 +192,14 @@ export const hiroshima = {
       if (!e.anims.isPlaying) e.play('heike');
       for (const side of [-1, 1]) {
         const ang = DOWN + side * (0.25 + Math.random() * 0.45);
-        b.shot('eb_bubble_0', e.x + side * 8, e.y + 12, ang, 64, 2.2, {
+        b.shot('eb_bubble_0', e.x + side * 10, e.y + 19, ang, 64, 2.2, {
           grow: { r0: 2.0, r1: 4.4, t: 1.2, drag: 0.45, frames: ['eb_bubble_0', 'eb_bubble_1'] },
           wig: 5,
           wf: 3.5,
           life: 4.2,
         });
       }
-      if (e.step % 2 === 1) b.fan(e.x, e.y + 14, this.aimAt(e, 0, 14), 3, 0.44, normal);
+      if (e.step % 2 === 1) b.fan(e.x, e.y + 17, this.aimAt(e, 0, 17), 3, 0.44, normal);
       e.timer = 0.52;
       if (++e.step >= 5) this.nextPattern(e);
     }
