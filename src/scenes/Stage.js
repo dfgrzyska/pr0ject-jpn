@@ -615,6 +615,11 @@ export class Stage extends Phaser.Scene {
       if (down(k.UP) || down(k.W) || down(k.LEFT) || down(k.A)) this.journey.step(-1);
       if (down(k.DOWN) || down(k.S) || down(k.RIGHT) || down(k.D)) this.journey.step(1);
       if (confirm || bomb) this.confirmCity();
+    } else if (this.state === 'book' && this.book.key) {
+      // the yōkai album and the food journal: a grid, then an entry's page
+      const act = down(k.LEFT) || down(k.A) ? 'left' : down(k.RIGHT) || down(k.D) ? 'right' : down(k.UP) || down(k.W) ? 'up'
+        : down(k.DOWN) || down(k.S) ? 'down' : confirm || bomb ? 'confirm' : escape || down(k.Y) || down(k.F) ? 'back' : null;
+      if (act && this.book.key(act) === 'close') this.closeBook();
     } else if (this.state === 'book') {
       if (down(k.LEFT) || down(k.A)) this.book.turn(-1);
       else if (down(k.RIGHT) || down(k.D)) this.book.turn(1);

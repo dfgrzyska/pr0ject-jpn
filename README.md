@@ -90,8 +90,10 @@ Tło i karty generuje `tools/art/menu.mjs`. `node tools/art/menu-preview.mjs` tw
 podglądy PL/EN dla ekranów 180×320 i 180×420 w `tools/preview/`.
 
 Na ekranie tytułowym są dwie dodatkowe książeczki: **ALBUM YOKAI** (klawisz Y) i **SMAKI JAPONII** (F).
-Menu obsługuje strzałki góra/dół i Enter oraz dotyk. W książeczkach lewo/prawo zmienia stronę,
-Esc lub przycisk WRÓĆ zamyka widok. Opisy i wskazówki działają po polsku i angielsku.
+Menu obsługuje strzałki góra/dół i Enter oraz dotyk. Książeczka otwiera się siatką 4×4 kafelków (znak zapytania
+przy tym, czego jeszcze nie odkryto; przy więcej niż 16 wpisach kolejne strony siatki): strzałki przesuwają wybór,
+Enter lub dotknięcie wybranego kafelka otwiera stronę wpisu, na niej lewo/prawo zmienia wpis, a Esc lub przycisk na dole
+wraca do siatki i stamtąd zamyka widok. Opisy i wskazówki działają po polsku i angielsku.
 
 Album ma 12 wpisów o folklorystycznych inspiracjach przeciwników: kitsune, chōchin-obake, tanuki,
 Kyūbi, shisa, Yuki-onna, kappa, Raijū, maneki-neko, oni, Heike-gani i Sankibō/tengu. Pierwsze pokonanie

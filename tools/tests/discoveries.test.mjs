@@ -136,11 +136,27 @@ test('a Kyoto sweet unlocks only the dish, never Kitsune', () => {
   assert.deepEqual(s.discoveryNotice.messages.map(e => e.id), ['yatsuhashi']);
 });
 
-test('journal locking, page wrap, touch navigation, destruction and PL/EN layout at both sizes', () => {
+test('journal grid and pages: locking, keys, wrap, touch navigation, destruction and PL/EN layout at both sizes', () => {
   const lockedScene = scene(); const locked = new DiscoveryBook(lockedScene, 'yokai');
+  // the grid: a question mark on every tile not found yet, nothing on the tiles past the last entry
+  assert.equal(locked.mode, 'grid'); assert.equal(locked.gridName.text, '???');
+  locked.tiles.forEach((t, i) => { assert.equal(t.mark.visible, i < YOKAI.length); assert(!t.art.visible); });
+  assert(!locked.page.visible, 'one page of the grid holds them all');
+  locked.key('right'); assert.equal(locked.index, 1); locked.key('left'); assert.equal(locked.index, 0);
+  locked.key('left'); assert.equal(locked.index, 3, 'left wraps round the row');
+  locked.key('down'); assert.equal(locked.index, 7); locked.key('down'); locked.key('down'); assert.equal(locked.index, 3, 'down wraps to the top');
+  locked.key('up'); assert.equal(locked.index, 11, 'up wraps to the lowest tile of the column');
+  locked.key('up'); locked.key('up'); locked.key('up'); assert.equal(locked.index, 11);
+  // an entry's page, locked: no art, no story; left and right turn through all of them
+  locked.index = 0; locked.key('confirm'); assert.equal(locked.mode, 'page');
   assert.equal(locked.name.text, '???'); assert(!locked.art.visible); assert(!locked.story.text.includes('LISY'));
-  locked.turn(-1); assert.equal(locked.index, YOKAI.length - 1); locked.turn(1); assert.equal(locked.index, 0);
-  locked.pointer({ x: 150, y: 276 }); assert.equal(locked.index, 1);
+  locked.key('left'); assert.equal(locked.index, YOKAI.length - 1); locked.key('right'); assert.equal(locked.index, 0);
+  locked.key('back'); assert.equal(locked.mode, 'grid'); assert.equal(locked.key('back'), 'close');
+  // touch: a tile focuses, the focused one opens, the bottom goes back to the grid and then closes
+  const { x, y } = locked.tileXY(5); locked.pointer({ x, y }); assert.equal(locked.index, 5); assert.equal(locked.mode, 'grid');
+  locked.pointer({ x, y }); assert.equal(locked.mode, 'page');
+  locked.pointer({ x: 150, y: 276 }); assert.equal(locked.index, 6);
+  locked.pointer({ x: 90, y: 307 }); assert.equal(locked.mode, 'grid'); assert(!lockedScene.closed);
   locked.pointer({ x: 90, y: 307 }); assert(lockedScene.closed);
   locked.destroy(); assert(locked.items.every((o) => o.destroyed));
   for (const e of [...YOKAI, ...FOODS]) discoveries.discover(e.id);
@@ -149,6 +165,15 @@ test('journal locking, page wrap, touch navigation, destruction and PL/EN layout
     language = lang;
     for (const H of [320, 420]) for (const kind of ['food', 'yokai']) {
       const book = new DiscoveryBook(scene('stage1', H), kind);
+      book.layout(H);
+      book.tiles.forEach((t, i) => {
+        if (i >= book.entries.length) return;
+        assert(t.art.visible && !t.mark.visible, `${kind}/${i} tile shows its art once found`);
+        assert(t.art.width * t.art.scaleX <= 30 && t.art.height * t.art.scaleY <= 30, `${kind}/${i} tile art too big`);
+      });
+      for (const o of [book.gridName, book.gridCity, book.title, book.open]) assert(o.width <= 160);
+      assert(book.gridCity.y + 7 < book.open.y - 4, `${kind}/${lang}/${H} grid caption overlaps the controls`);
+      book.show('page');
       for (let i = 0; i < book.entries.length; i++) {
         book.index = i; book.layout(H);
         assert(book.art.visible);
@@ -158,7 +183,7 @@ test('journal locking, page wrap, touch navigation, destruction and PL/EN layout
         assert(book.story.y + book.story.height <= book.hint.y - 4, `${kind}/${i}/${lang} story overlaps controls`);
         for (const line of book.story.text.split('\n')) assert(line.length <= 25);
         for (const ch of book.story.text) assert(ch === '\n' || chars.includes(ch), `missing glyph ${ch}`);
-        for (const o of [book.name, book.city, book.title]) assert(o.width <= 160);
+        for (const o of [book.name, book.city, book.title, book.back]) assert(o.width <= 160);
         assert.equal(book.story.scaleX, 1);
       }
       book.destroy();
@@ -197,6 +222,8 @@ test('write deterministic album and food layout previews', () => {
   mkdirSync('tools/preview', { recursive: true });
   for (const [kind, index] of [['yokai', 5], ['food', 9]]) {
     const s = scene(); const book = new DiscoveryBook(s, kind); book.index = index; book.layout(320);
+    writeFileSync(`tools/preview/${kind}-grid.png`, render(s, 320).scaled(3).toPNG());
+    book.show('page');
     writeFileSync(`tools/preview/${kind}-journal.png`, render(s, 320).scaled(3).toPNG());
   }
   const sheet = new Raster(140, 40);
