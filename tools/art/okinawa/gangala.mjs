@@ -73,7 +73,11 @@ export function paintGangala(k) {
       const boss = fbm(x * 1.6, y * 1.6, { seed: 309, scale: 1.8, octaves: 2 });
       let c = rampColor(ROCK, 0.85 - t * 0.55 + (boss - 0.5) * 0.7 + (hashPx(X >> 1, Yy >> 3, 304) - 0.5) * 0.2, X, Yy);
       if (Math.abs(boss - 0.5) < 0.025) c = scaleColor(c, 0.62); // the pits between the bosses
-      if ((Yy + Math.floor(hashPx(X >> 3, 0, 305) * 6)) % 11 < 1) c = scaleColor(c, 0.78);
+      const ledge = (Yy + Math.floor(hashPx(X >> 3, 0, 305) * 6)) % 11;
+      if (ledge < 1) c = scaleColor(c, 0.78);
+      // little stalactites hanging under the ledges, pale, and the dark pockets of the karst
+      else if (ledge < 1 + hashPx(X >> 1, Math.floor((Yy + Math.floor(hashPx(X >> 3, 0, 305) * 6)) / 11), 314) * 7 && hashPx(X >> 1, Math.floor(Yy / 11), 315) < 0.22) c = scaleColor(0xd8d0bc, 0.75 + (X & 1) * 0.2);
+      if (fbm(x * 2.4, y * 2.4, { seed: 316, scale: 1.2 }) > 0.7) c = scaleColor(c, 0.4);
       if (hashPx(X, Yy >> 2, 306) < 0.06) c = scaleColor(c, 0.82);
       if (t > 0.06 && t < 0.2) c = scaleColor(c, 0.72);
       const moss = fbm(x, y, { seed: 307, scale: 3, octaves: 2 });
@@ -106,16 +110,28 @@ export function paintGangala(k) {
   });
   k.reserve(0, Y(G1), W, 2); // (the head is the cave's)
 
-  // ------------------------------------------------------------ the boardwalk, steps where it climbs
-  const plank = (X, Yy, across, along) => {
-    const q = Math.floor(along * S) % 4;
-    let c = q === 0 ? WOOD[0] : rampColor(WOOD, 0.4 + hashPx(Math.floor(along * S / 4), 0, 309) * 0.5, X, Yy);
-    if (Math.abs(across) > 1.1) c = scaleColor(c, 0.82);
+  // ------------------------------------------------------------ the path: worn concrete, damp and mossy at its edges, an iron
+  // railing along its west side; steps where it climbs
+  const concrete = (X, Yy, across) => {
+    let c = rampColor([0x8a8676, 0x9e9a88, 0xb2ad9a, 0xc4bfac], 0.35 + hashPx(X >> 1, Yy >> 1, 309) * 0.4, X, Yy);
+    if (hashPx(X, Yy, 312) < 0.04) c = scaleColor(c, 0.8);
+    if (Math.abs(across) > 1.4 && hashPx(X >> 1, Yy >> 2, 313) < 0.5) c = mix(c, 0x4a6a3a, 0.5);
     return c;
   };
   const route = [[90, 1756]];
   for (let u = 1768; u <= 2092; u += 6) route.push([pathX(u), u]);
-  for (let q = 0; q < route.length - 1; q += 10) k.road(route.slice(q, q + 12), 1.5, { side: 0, kerb: WOOD[0], paint: plank, piece: true });
+  for (let q = 0; q < route.length - 1; q += 10) k.road(route.slice(q, q + 12), 1.9, { side: 0, kerb: 0x5a5a4e, paint: concrete, piece: true });
+  objects.push({
+    y: Y(1768),
+    draw: () => {
+      for (let u = 1772; u < 2076; u += 0.34) {
+        const X = Math.round((pathX(u) - 2.4) * S);
+        const Yy = Math.round(Y(u) * S);
+        img.px(X, Yy - 4, 0x2a2a2a); // the rail
+        if (Math.round(u * 3) % 9 === 0) for (let j = 0; j < 4; j++) img.px(X, Yy - j, 0x3a3a38); // a post
+      }
+    },
+  });
   for (const [u0, u1] of [[1912, 1922], [2062, 2072]]) {
     // stone steps where the path climbs a rock step
     const x = pathX((u0 + u1) / 2);
@@ -186,90 +202,106 @@ export function paintGangala(k) {
     k.reserve(cx - 5, Y(u + 6), 10, 12);
   }
 
-  // ------------------------------------------------------------ Ufushu Gajumaru: the great banyan, the valley's heart. Twenty metres
-  // of tree on a limestone boulder its roots have swallowed, its crown spread over the east side of the gorge, and from every
-  // branch the aerial roots hanging straight down in curtains to the ground, the oldest grown into trunks of their own.
+  // ------------------------------------------------------------ Ufushu Gajumaru, as it stands: before a dark cave in the east wall
+  // (stalactites hanging from its overhang), its trunk a column of a hundred pale roots grown together, fluted and twisted, and
+  // from its branches more pale roots hanging straight down, most of them to the ground; high above, an airy crown of pale grey
+  // limbs and small light leaves with the sky showing through; ferns on the rock round it, elephant ears at its feet.
   const BX = 124;
   const BU = 1980;
   {
-    const by = Y(BU); // the ground at the curtain's foot
-    const top = Y(BU + 34); // where the roots leave the branches, under the crown
+    const by = Y(BU); // the ground at the trunk's foot
+    const top = Y(BU + 36); // the crown's underside
     const gr = rng(3002);
-    const BARK = [0x2a221c, 0x4a3c2e, 0x665644, 0x86765e, 0xa89878];
-    // the boulder the tree sits on, swallowed by its roots
-    k.boulder(BX + 4, BU + 4, 11, 7, 3010, 0.85);
+    const BARK = [0x5e5a4e, 0x7e786a, 0xa09886, 0xbeb6a0, 0xd8d0b8];
+    // the cave behind it: a dark mouth cut into the wall and the floor, stalactites hanging from its lip
+    const mx = valleyR(BU + 14);
+    img.fine(mx - FACE - 14, Y(BU + 34), FACE + 18, 30, (X, Yy, x, y) => {
+      const u = L - y;
+      const e = ((x - (mx - 4)) / 13) ** 2 + ((u - (BU + 18)) / 14) ** 2 + (fbm(x, y, { seed: 3017, scale: 3 }) - 0.5) * 0.5;
+      if (e > 1) return null;
+      if (e > 0.82) return rampColor([0x3a3830, 0x5a5648, 0x7a7462], (1 - e) * 4, X, Yy); // its lip
+      return mix(0x08090a, 0x16160f, hashPx(X >> 2, Yy >> 2, 3018) * (1 - e));
+    });
     objects.push({
-      y: by + 0.5,
-      shadow: () => k.shadowEllipse(BX + 2, by + 1, 26, 6, 0.55),
+      y: Y(BU + 22),
       draw: () => {
-        // the dark of the space inside the curtain
-        img.fine(BX - 26, top, 50, by - top, (X, Yy, x, y) => {
-          // (narrowing towards the ground, ragged: the curtain hangs from the whole crown, the trunk stands in the middle)
-          const t = (y - top) / (by - top);
-          const half = 24 - t * 10 + (fbm(x, 0, { seed: 3015, scale: 3 }) - 0.5) * 8;
-          if (Math.abs(x - BX) > half || t > 0.93 - fbm(x, 1, { seed: 3016, scale: 2 }) * 0.25) return null;
-          return mix(0x0a140c, 0x16241a, hashPx(X >> 2, Yy >> 2, 3011)) ;
-        });
-        // the curtain: hundreds of roots, thin and thick, grey-brown, lit on their left; the thickest grown into trunks
-        const strand = (x0, y0, y1, w, wob) => {
-          for (let Yy = Math.round(y0 * S); Yy <= Math.round(y1 * S); Yy++) {
-            const t = (Yy / S - y0) / Math.max(1, y1 - y0);
-            const xc = x0 + Math.sin(Yy / 11 + x0 * 3) * wob * (0.3 + t);
-            const ww = w * (t > 0.85 && w > 1.2 ? 1 + (t - 0.85) * 6 : 1); // the foot spreading into the ground
-            for (let i = -ww; i <= ww; i += 1 / S) {
-              const a2 = (i + ww) / (2 * ww);
-              const c = rampColor(BARK, 0.15 + (1 - a2) * 0.7 + (hashPx(Math.round(xc * S + i * S), Yy >> 2, 3012) - 0.5) * 0.25, Yy, Yy);
-              img.px(Math.round((xc + i) * S), Yy, t < 0.06 ? scaleColor(c, 0.6) : c);
-            }
-          }
-        };
-        for (let q = 0; q < 150; q++) {
-          const x0 = BX + (gr() + gr() + gr() - 1.5) * 20;
-          const thick = gr() < 0.12;
-          const y0 = top + gr() * 4;
-          // the thin ones hang free, swaying, most of them stopping short; the thick ones reach the ground as pillars
-          const y1 = thick ? by - gr() * 2 : top + 4 + (by - top - 4) * (gr() < 0.35 ? 1 : 0.25 + gr() * 0.55);
-          strand(x0, y0, y1, thick ? 0.9 + gr() * 1.1 : 0.16 + gr() * 0.16, thick ? 0.3 : 1.4);
-        }
-        // the trunk: buttresses gripping the rock, its bark twisted
-        img.fine(BX - 4, by - 18, 12, 18, (X, Yy, x, y) => {
-          const t = (by - y) / 18;
-          const half = 3.4 + (1 - t) ** 3 * 3;
-          const dx = x - (BX + 2 + Math.sin(t * 4) * 0.8);
-          if (Math.abs(dx) > half) return null;
-          const twist = (X + Yy * 0.6) % 9 < 2;
-          return twist ? BARK[0] : rampColor(BARK, 0.25 + (1 - (dx + half) / (2 * half)) * 0.6, X, Yy);
-        });
-        // roots creeping out over the floor from the foot
-        for (let q = 0; q < 14; q++) {
-          let x = BX + (gr() - 0.5) * 30;
-          let y = by - gr() * 2;
-          const dir = (gr() - 0.5) * 2;
-          for (let n = 0; n < 40; n++) {
-            x += dir * 0.25 + (gr() - 0.5) * 0.3;
-            y += 0.12 + gr() * 0.1;
-            img.px(Math.round(x * S), Math.round(y * S), BARK[1 + (n % 2)]);
-            img.px(Math.round(x * S) + 1, Math.round(y * S), BARK[0]);
-          }
+        for (let q = 0; q < 46; q++) {
+          const x = mx - 16 + gr() * 22;
+          const u0 = BU + 31 - Math.abs(x - (mx - 4)) * 0.5 - gr() * 2;
+          const len = (2 + gr() * gr() * 9) * S;
+          const w = 0.5 + gr() * 1.4;
+          for (let j = 0; j < len; j++) for (let i = -w * S * (1 - j / len); i <= w * S * (1 - j / len); i++) img.px(Math.round(x * S + i), Math.round(Y(u0) * S) + j, i < 0 ? 0xc8c0aa : 0x8a8270);
         }
       },
     });
-    // the crown, spread wide over the gorge: clumps of small glossy leaves, sunlit on top, dark inside, roots trailing below
-    const CROWN = [0x0c2a12, 0x14401a, 0x1e5a22, 0x2e7a2c, 0x4e9a3a, 0x7cbc52];
-    const cx = BX - 4;
-    const cy = Y(BU + 47);
+    // the trunk: many roots grown into one, fluted, twisting a little, wider at the foot, climbing into the crown
+    objects.push({
+      y: by + 0.6,
+      shadow: () => k.shadowEllipse(BX + 3, by + 1, 14, 4, 0.6),
+      draw: () => {
+        const Y0 = Math.round(top * S);
+        const Y1 = Math.round(by * S);
+        for (let Yy = Y0; Yy <= Y1; Yy++) {
+          const t = (Yy - Y0) / (Y1 - Y0); // 0 under the crown .. 1 at the foot
+          const half = (4.2 + t ** 3 * 4.5) * S;
+          const cx = BX * S + Math.sin(t * 3.2) * 4;
+          for (let i = -half; i <= half; i++) {
+            const a2 = (i + half) / (2 * half);
+            const flute = Math.sin((i + t * 14) * 0.9 + Math.sin(Yy / 13) * 1.5);
+            let c = rampColor(BARK, 0.15 + (1 - a2) * 0.65 + flute * 0.15, Yy, Yy);
+            if (flute < -0.8) c = BARK[0];
+            img.px(Math.round(cx + i), Yy, c);
+          }
+        }
+        // the hanging roots, pale and straight, thin and thick; nearly all reach the ground; some still in mid-air
+        for (let q = 0; q < 85; q++) {
+          // (they come down from the limbs, so from all over under the crown, in bunches)
+          const bunch = Math.floor(gr() * 7);
+          const x0 = BX + (bunch - 3) * 7.5 + (gr() - 0.5) * 6;
+          if (Math.abs(x0 - BX) < 4) continue;
+          const reach = gr() < 0.6;
+          const y0 = top - 16 + gr() * 12 + Math.abs(x0 - BX) * 0.35;
+          const y1 = reach ? by - gr() * 1.5 + Math.abs(x0 - BX) * 0.04 : y0 + (by - y0) * (0.3 + gr() * 0.5);
+          const w = gr() < 0.15 ? 0.6 + gr() * 0.5 : 0.17 + gr() * 0.12;
+          for (let Yy = Math.round(y0 * S); Yy <= Math.round(y1 * S); Yy++) {
+            const xc = x0 + Math.sin(Yy / 23 + q) * 0.25;
+            for (let i = -w; i <= w; i += 1 / S) img.px(Math.round((xc + i) * S), Yy, i < -w * 0.3 ? BARK[4] : i > w * 0.4 ? BARK[1] : BARK[3]);
+          }
+          if (reach && w > 0.5) for (let i = -2; i <= 2; i++) img.px(Math.round(x0 * S + i * 2), Math.round(y1 * S), BARK[1]); // its foot taking hold
+        }
+      },
+    });
+    // the crown: pale grey limbs spreading from the top of the trunk, small light leaves in loose clumps, gaps between
+    const CROWN = [0x1a3e1a, 0x2a5e26, 0x427e34, 0x62a044, 0x88bc5a, 0xb0d47e];
+    const cx = BX - 2;
+    const cy = Y(BU + 48);
     objects.push({
       y: by + 1,
-      shadow: () => k.shadowEllipse(cx + 4, cy + 30, 30, 10, 0.6),
+      shadow: () => k.shadowEllipse(cx + 4, cy + 26, 30, 9, 0.5),
       draw: () => {
         const cr = rng(3013);
+        // the limbs
+        for (let q = 0; q < 11; q++) {
+          const a2 = -Math.PI / 2 + (q / 10 - 0.5) * 3.2 + (cr() - 0.5) * 0.3;
+          let x = cx;
+          let y = top + 2;
+          let w = 1.6;
+          for (let n = 0; n < 36; n++) {
+            x += Math.cos(a2 + Math.sin(n / 5 + q) * 0.3) * 0.9;
+            y += Math.sin(a2 + Math.sin(n / 5 + q) * 0.3) * 0.5;
+            w = Math.max(0.35, w - 0.035);
+            for (let i = -w; i <= w; i += 1 / S) for (let j = -w; j <= w; j += 1 / S) img.px(Math.round((x + i) * S), Math.round((y + j) * S), j < 0 ? BARK[4] : BARK[2]);
+          }
+        }
+        // the leaves
         const clumps = [];
-        for (let q = 0; q < 520; q++) {
+        for (let q = 0; q < 420; q++) {
           const a2 = cr() * 6.283;
           const d = Math.sqrt(cr());
-          const x = cx + Math.cos(a2) * d * 31 * (0.85 + 0.15 * Math.sin(a2 * 3));
-          const y = cy + Math.sin(a2) * d * 14;
-          clumps.push([x, y, 1.1 + cr() * 1.9, cr()]);
+          const x = cx + Math.cos(a2) * d * 33 * (0.85 + 0.15 * Math.sin(a2 * 3));
+          const y = cy + Math.sin(a2) * d * 15;
+          if (fbm(x, y, { seed: 3019, scale: 5 }) < 0.4) continue; // the gaps, the sky showing through
+          clumps.push([x, y, 0.8 + cr() * 1.5, cr()]);
         }
         clumps.sort((p1, p2) => p1[1] - p2[1]);
         for (const [x, y, r2, v] of clumps) {
@@ -279,26 +311,16 @@ export function paintGangala(k) {
           for (let j = -R2; j <= R2; j++)
             for (let i = -R2; i <= R2; i++) {
               const dd = Math.hypot(i, j) / R2;
-              if (dd > 1) continue;
-              // lit from the upper left; the clumps towards the crown's top and edge in the sun, the inside in shade
-              const lit = 0.25 + (1 - dd) * 0.25 - (i + j) / (R2 * 6) + (cy - y) / 40 + v * 0.25;
-              let c = rampColor(CROWN, Math.max(0.02, Math.min(0.98, lit + 0.2)), X0 + i, Y0 + j);
-              if (hashPx(X0 + i, Y0 + j, 3014) > 0.97) c = 0x9ad064;
-              img.px(X0 + i, Y0 + j, c);
+              if (dd > 1 || hashPx(X0 + i, Y0 + j, 3021) < 0.12) continue; // (loose: single leaves at the edge)
+              const lit = 0.3 + (1 - dd) * 0.25 - (i + j) / (R2 * 6) + (cy - y) / 40 + v * 0.25;
+              img.px(X0 + i, Y0 + j, rampColor(CROWN, Math.max(0.02, Math.min(0.98, lit + 0.15)), X0 + i, Y0 + j));
             }
-        }
-        // the first roots, trailing from under the crown's edge
-        for (let q = 0; q < 60; q++) {
-          const x = cx + (cr() - 0.5) * 54;
-          const y0 = cy + 12 + cr() * 4;
-          const len = 3 + cr() * 9;
-          for (let j = 0; j < len * S; j++) img.px(Math.round(x * S + Math.sin(j / 7 + q) * 1.5), Math.round(y0 * S) + j, q % 3 ? 0x6a5a44 : 0x8a7a62);
         }
       },
     });
-    k.reserve(BX - 34, Y(BU + 62), 64, 66);
-    // a deck at its foot, a group looking up into the roots
-    img.fine(BX - 30, Y(BU - 2), 14, 6, (X, Yy) => (Yy % 6 < 1 ? 0x5a4026 : (X >> 2) % 2 ? 0x9a7a4a : 0xb89a68));
+    k.reserve(BX - 34, Y(BU + 66), 66, 70);
+    // a concrete landing off the path at its foot, a group looking up into the roots
+    img.fine(BX - 31, Y(BU - 1), 16, 7, (X, Yy) => rampColor([0x8a8676, 0x9e9a88, 0xb2ad9a, 0xc4bfac], 0.35 + hashPx(X >> 1, Yy >> 1, 3022) * 0.4, X, Yy));
     k.standing(BX - 29, Y(BU - 2) + 1, 11, 4, 5, 3005);
     // light falling through its crown in specks, drifting as the leaves move
     const fleck = k.sprite(4, 3, BU, (r2) => {
@@ -369,6 +391,54 @@ export function paintGangala(k) {
     suns.push([0, valleyL(u) + 4 + g() * (valleyR(u) - valleyL(u) - 16), u, g() * 6.28]);
   }
   kit.wave([sun], suns, { w: 0.5, a0: 0, a1: 0.75, pw: 2 });
+  // elephant ears (big heart-shaped leaves, bright, veined) in clumps by the path and round the banyan's foot
+  const ear = (cx, cy, n, size, seed) => {
+    const er = rng(seed);
+    objects.push({
+      y: cy + 1.5,
+      draw: () => {
+        for (let q = 0; q < n; q++) {
+          const a2 = -Math.PI / 2 + (er() - 0.5) * 2.6;
+          const len = size * (0.7 + er() * 0.5);
+          const lx = cx + Math.cos(a2) * len * 0.45;
+          const ly = cy + Math.sin(a2) * len * 0.35;
+          img.fine(lx - len, ly - len, len * 2, len * 2, (X, Yy, x, y) => {
+            const dx = x - lx;
+            const dy = y - ly;
+            const qa = dx * Math.cos(a2) + dy * Math.sin(a2);
+            const qb = -dx * Math.sin(a2) + dy * Math.cos(a2);
+            const half = len * 0.55 * Math.sqrt(Math.max(0, 1 - ((qa / len) * 1.15) ** 2)) * (qa < -len * 0.6 ? 0.6 : 1);
+            if (Math.abs(qb) > half) return null;
+            if (Math.abs(qb) < 0.18) return 0xb8d890; // the midrib
+            if (Math.abs((qa * 1.6 + Math.abs(qb)) % 1.4) < 0.14) return 0x5a9a3a; // the veins
+            return qb < 0 ? 0x62aa42 : 0x4a8a34;
+          });
+        }
+      },
+    });
+  };
+  for (let q = 0; q < 34; q++) {
+    const u = 1790 + g() * 275;
+    const x = pathX(u) + (g() < 0.5 ? -1 : 1) * (5 + g() * 6);
+    if (!clear(x, u) || k.anyRes(x - 2, Y(u) - 2, 4, 3) || x < valleyL(u) + 2 || x > valleyR(u) - 2) continue;
+    ear(x, Y(u), 3 + Math.floor(g() * 3), 3 + g() * 2.5, 3200 + q);
+  }
+  for (const dx of [-26, -18, 14, 22]) ear(BX + dx, Y(BU - 3), 4, 4.2, 3260 + dx);
+  // bird's-nest ferns and pothos growing out of the walls
+  for (let q = 0; q < 40; q++) {
+    const u = 1790 + g() * 280;
+    const side = g() < 0.5 ? -1 : 1;
+    const fw = faceW(u);
+    const x = side < 0 ? valleyL(u) - fw * (0.2 + g() * 0.6) : valleyR(u) + fw * (0.2 + g() * 0.6);
+    const X = Math.round(x * S);
+    const Yy = Math.round(Y(u) * S);
+    const n = 9 + Math.floor(g() * 5);
+    for (let f = 0; f < n; f++) {
+      const a2 = (f / n) * 6.283;
+      const len = 5 + g() * 6;
+      for (let q2 = 0; q2 < len; q2++) for (const w of [0, 1]) img.px(Math.round(X + Math.cos(a2) * q2 + w * Math.sin(a2)), Math.round(Yy + Math.sin(a2) * q2 * 0.7), q2 < 2 ? 0x2a5a24 : w ? 0x5aa83a : 0x7cc44c);
+    }
+  }
   // the tour, walking up the boardwalk with its guide
   const tour = route.slice(1, -3);
   k.walkers(tour, 5, 1900, { sp: 2.2, gap: 9, hold: 6 });
