@@ -96,7 +96,7 @@ export class Enemies {
     switch (w.type) {
       case 'popcorn':
         e = this.pool.spawn(look.frame, w.x, -8, base);
-        e.play({ key: look.anim, startFrame: Math.floor(Math.random() * 2) });
+        if (look.anim) e.play({ key: look.anim, startFrame: Math.floor(Math.random() * 2) });
         e.fireAt = Math.random() < rules().popcornFireChance ? 0.9 + Math.random() * 1.4 : Infinity;
         if (look.flock && w.flock) e.flock = w.flock;
         e.split = !!look.split;

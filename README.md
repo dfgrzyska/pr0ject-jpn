@@ -3,6 +3,27 @@
 Pionowy shmup w przeglądarce (Phaser 4.2.1, WebGL), rozdzielczość wewnętrzna 180×320–420,
 skalowanie całkowitą wielokrotnością pikseli urządzenia.
 
+## Testy przed wdrożeniem
+
+Workflow `.github/workflows/pages.yml` uruchamia `npm test` i testy przeglądarkowe
+przed buildem i publikacją. Działa także dla pull requestów do `main`, bez publikowania.
+Błąd dowolnego testu blokuje wdrożenie GitHub Pages.
+
+Testy przeglądarkowe obejmują każdą klatkę zmiany animacji kraba, przejścia faz
+8 minibossów i 7 bossów oraz pełną walkę z niedźwiedziem przy dwóch wysokościach ekranu.
+Audyt faz steruje HP i niszczeniem części, więc nie zastępuje testu balansu ani testów Safari.
+Playwright jest przypiętą zależnością projektu; pierwsze uruchomienie wymaga
+`npx playwright install chromium` (na Linuxie: `npx playwright install --with-deps chromium`).
+Odpowiednik kroku CI lokalnie w PowerShell:
+
+```powershell
+$env:BOSS_CITY = '3'
+npm run test:browser
+```
+
+Opcjonalne `CHROME_PATH` wskazuje własną instalację Chrome. Bez niego testy używają
+Chromium dostarczonego przez Playwright. Po błędzie CI zachowuje wygenerowane podglądy PNG.
+
 ## Uruchomienie
 
 ```bash

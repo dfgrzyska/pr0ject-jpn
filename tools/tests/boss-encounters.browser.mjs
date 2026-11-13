@@ -2,15 +2,12 @@
 // God mode isolates boss progression from the bot's bullet dodging; it does not bypass boss armor.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { spawn } from 'node:child_process';
-import { chromium } from '../preview/browser-runtime/node_modules/playwright/index.mjs';
+import { startServer, launchBrowser } from './browser-support.mjs';
 
-const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5177'], { windowsHide: true, stdio: 'ignore' });
+const server = await startServer(5177);
 let browser;
 try {
-  await new Promise(r => setTimeout(r, 1200));
-  browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true,
-    args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  browser = await launchBrowser();
   for (const H of (process.env.BOSS_HEIGHT ? [Number(process.env.BOSS_HEIGHT)] : [320, 420])) for (const city of (process.env.BOSS_CITY ? [Number(process.env.BOSS_CITY)] : [3, 5, 8])) {
     const stage = JSON.parse(readFileSync(`src/data/stage${city}.json`, 'utf8'));
     const at = stage.waves.find(w => w.type === 'boss').t;
