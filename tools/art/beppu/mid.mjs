@@ -5422,7 +5422,7 @@ export function buildMid() {
         kit.path(pts, [stepper(c, 0, 5900), stepper(c, 1, 5900)], { sp: 3, mode: 'pp', hold: 3, turn: 'none', fps: 3, s0 });
       }
     }
-    // the stream down through the woods, stones in it, a little bridge where the stairs cross
+    // the stream down through the woods, stones in it, a little stone bridge where the stairs cross
     {
       const SU = (x) => 5960 + 22 * Math.sin(x / 30) + (x - 90) * 0.18;
       for (let X = 0; X < W * S; X++) {
@@ -5438,6 +5438,26 @@ export function buildMid() {
         }
       }
       for (let x = 0; x < W; x++) reserveRect(x, Y(SU(x) + 4), 1, 8);
+      // the little stone bridge that carries the stairs over it: low parapets with a post at each end, their shadow
+      // on the water each side (drawn from hashes alone, so nothing else in the woods moves)
+      {
+        let bu = 5960;
+        for (let i = 0; i < 8; i++) bu = SU(stairX(bu));
+        const bx = stairX(bu);
+        for (let Yr = Math.floor((L - bu - 6.5) * S); Yr < (L - bu + 6.5) * S; Yr++) {
+          const u = L - (Yr + 0.5) / S;
+          const c = stairX(u);
+          const end = Math.abs(u - bu) > 5.2; // the posts at the ends stand a little taller and wider
+          for (let X = Math.floor((bx - 8) * S); X < Math.ceil((bx + 8) * S); X++) {
+            const a = Math.abs((X + 0.5) / S - c);
+            if (a > 4.2 && a < (end ? 6.2 : 5.6)) {
+              // the parapet: a lit top, a darker face, its outline
+              const edge = a < 4.45 || a > (end ? 5.95 : 5.35);
+              img.px(X, Yr, edge ? 0x2e2c28 : rampColor(C.stone, (end ? 0.82 : 0.68) + hashPx(X >> 1, Yr >> 1, 146) * 0.18, X, Yr));
+            } else if (!end && a >= 5.6 && a < 7) img.px(X, Yr, 0x22343a); // its shadow on the stream
+          }
+        }
+      }
       for (let k = 0; k < 18; k++) {
         const x = 4 + rand() * 172;
         rockPx(x * S, (L - SU(x) + (rand() - 0.5) * 3) * S, 1.6 + rand() * 1.6, C.rock, k);
