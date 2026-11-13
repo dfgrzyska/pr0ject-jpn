@@ -2569,13 +2569,32 @@ export function buildMid() {
     // Ekimae-dōri up from the station, cross streets; the turret's stand on an island the traffic goes round
     {
       const ISLES = [...pads, ...vents].filter((p) => p.x === 90 && p.u > 1120 && p.u < TOWN[1]).sort((a, b) => a.u - b.u);
-      vRoad(90, 6, 1112, TOWN[1]);
+      // it ends at the last cross street, a T-junction under the slope of Kannawa: from there stone steps climb on up
+      // into the hot-spring town between two planted beds (drawn without the random generator, and the strip kept
+      // reserved as the road had it, so the rest of the city is laid out as before)
+      vRoad(90, 6, 1112, 2064);
+      for (let u = 2064; u < TOWN[1]; u++) reserveRect(81, Y(u), 18, 1);
+      img.fine(81, Y(TOWN[1]), 18, Y(2070) - Y(TOWN[1]), (X, Yr, x, y) => {
+        const u = L - y;
+        if (x < 84 || x > 96) {
+          // the beds: low hedges, azaleas in flower, a kerb of stone
+          if (x < 81.6 || x > 98.4) return 0x9a968c;
+          const t = hashPx(X >> 1, Yr >> 1, 91);
+          return t < 0.12 ? 0xe86a9a : t < 0.2 ? 0xf4e8f0 : t < 0.62 ? 0x3e7a3a : 0x2e5e2e;
+        }
+        if (x < 85 || x > 95) return x < 84.4 || x > 95.6 ? 0x5a564e : 0xb4ae9e; // the cheek walls, their coping
+        // the steps: a light tread, its worn nosing, the shadow under it
+        const k = (u - 2070) % 3.4;
+        if (k > 3.0) return 0x5e5a52;
+        if (k > 2.6) return 0xd8d2c2;
+        return rampColor(C.walk, 0.35 + hashPx(X >> 2, Yr >> 2, 34) * 0.5, X, Yr);
+      });
       for (const u of [1300, 1560, 1820, 2064]) hRoad(u, 4);
       // (the road crossings: the kerbs give way, zebras on all sides)
       for (const u of [1300, 1560, 1820, 2064]) {
         img.fine(84, Y(u + 5), 12, 10, (X, Yr) => rampColor(C.asphalt, 0.3 + hashPx(X >> 3, Yr >> 3, 36) * 0.4, X, Yr));
         zebra(84 * S, Y(u - 5) * S, 96 * S, Y(u - 8) * S, true);
-        zebra(84 * S, Y(u + 8) * S, 96 * S, Y(u + 5) * S, true);
+        if (u < 2064) zebra(84 * S, Y(u + 8) * S, 96 * S, Y(u + 5) * S, true);
         zebra(76 * S, Y(u + 4) * S, 83 * S, Y(u - 4) * S, false);
         zebra(97 * S, Y(u + 4) * S, 104 * S, Y(u - 4) * S, false);
       }
@@ -2604,7 +2623,8 @@ export function buildMid() {
         for (let a = -Math.PI / 2 + 0.35; a <= Math.PI / 2 - 0.35; a += 0.25) up.push([90 - Math.cos(a) * 18.5, P.u + Math.sin(a) * 18.5]);
         up.push([87, P.u + 26]);
       }
-      up.push([87, TOWN[1] + 10]);
+      // at the T-junction the cars turn off along the cross street (up: left, to the west; down: in from the east)
+      up.push([87, 2058], [82, 2062], [-14, 2062]);
       const dn = up.map(([x, u]) => [180 - x, u]).reverse();
       for (const [c, s0] of [[0xe8e8ec, 0.04], [0xc03a30, 0.22], [0x3a5a9a, 0.41], [0x2a2a30, 0.63], [0xe8d8a0, 0.82]]) kit.path(up, [carF(c, 1500)], { sp: 22, turn: 'rot', fps: 1, s0 });
       for (const [c, s0] of [[0x9aa0a8, 0.11], [0xf0e8d0, 0.33], [0x4a7a5a, 0.55], [0xe8e8ec, 0.77], [0x2a2a30, 0.93]]) kit.path(dn, [carF(c, 1500)], { sp: 22, turn: 'rot', fps: 1, s0 });
