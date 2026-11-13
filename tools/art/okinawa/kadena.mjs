@@ -357,15 +357,228 @@ export function paintBase(k) {
       k.reserve(138, Y(3914), 42, 36);
     }
   }
-  // ------------------------------------------------------------ what moves: a fighter taxiing, another taking off, trucks on the ramp
-  const jf = k.sprite(12, 10, 4000, (r) => shape(18, 15, 1, fighterPts(), 0, (X, Yy, c) => r.px(X, Yy, c)));
-  kit.path([[taxiX(TAXI[0] + 10), TAXI[0] + 10], ...[3940, 4000, 4030, 4050, 4070, 4110].map((u) => [taxiX(u), u])], [jf], { sp: 7, mode: 'pp', hold: 5, turn: 'rot', fps: 1, d: 0.45 });
-  kit.path([[RWY[0].x, RWY[0].u0 + 4], [RWY[0].x, RWY[0].u1 - 6]], [jf], { sp: 46, mode: 'wrap', turn: 'rot', fps: 1, d: 0.45 });
   const truck = (c) => k.sprite(7, 4, 3980, (r) => {
     for (let i = 0; i < 21; i++) for (let j = 0; j < 9; j++) r.px(i, j + 1, i > 15 ? (j > 1 && j < 7 ? 0x2a3440 : c) : i === 15 ? 0x2a2a30 : j === 0 || j === 8 ? scaleColor(c, 0.7) : c);
     for (let i = 0; i < 22; i++) r.px(i + 1, 10, 0x000000, 0.35);
   });
-  kit.wander(124, 3976, 6, 18, [truck(0xe8e8e2), truck(0xd8b830)], { n: 2, sp: 5, turn: 'rot', fps: 1, idle: 0.5, d: 0.45 });
+  // ------------------------------------------------------------ the airfield's furniture: lights, hold lines, signs, arresting gear
+  const lamp = (x, y, c) => {
+    const X = Math.round(x * S);
+    const Yy = Math.round(y * S);
+    img.px(X, Yy, 0x2a2a2e);
+    img.px(X + 1, Yy, c);
+    img.px(X, Yy + 1, 0x000000, 0.35);
+  };
+  for (const r of RWY) {
+    for (let u = r.u0; u <= r.u1; u += 7) for (const s2 of [-1, 1]) lamp(r.x + s2 * (r.hw + 0.4) - 0.3, Y(u), 0xf8f4d8); // edge lights
+    for (const [u, c] of [[r.u0 - 0.5, 0x40e060], [r.u1 + 0.5, 0xe04040]]) for (let x = r.x - r.hw + 0.5; x < r.x + r.hw; x += 1.2) lamp(x, Y(u), c); // threshold bars
+    // the arresting gear: a cable across the runway a quarter of the way in from each end, its housings yellow
+    for (const u of [r.u0 + (r.u1 - r.u0) * 0.22, r.u1 - (r.u1 - r.u0) * 0.22]) {
+      for (let X = Math.round((r.x - r.hw) * S); X <= Math.round((r.x + r.hw) * S); X++) img.px(X, Math.round(Y(u) * S), 0x1a1a1e);
+      for (const s2 of [-1, 1]) img.fine(r.x + s2 * (r.hw + 1.4) - 0.8, Y(u) - 0.8, 1.6, 1.6, () => 0xe0c030);
+    }
+    // distance-remaining boards along its west side: black with a white bar
+    for (let u = r.u0 + 40; u < r.u1 - 20; u += 46) {
+      const X = Math.round((r.x - r.hw - 2.6) * S);
+      const Yy = Math.round(Y(u) * S);
+      img.rectPx(X - 2, Yy - 2, 5, 4, 0x141414);
+      img.rectPx(X - 1, Yy - 1, 3, 1, 0xf0f0f0);
+      img.rectPx(X - 1, Yy + 2, 4, 1, 0x000000, 0.3);
+    }
+  }
+  // the approach lights beyond the northern ends: bars of lamps in a line out from each runway
+  for (const r of RWY)
+    for (let u = r.u1 + 8; u < B1 - 6; u += 3) for (let x = r.x - 2; x <= r.x + 2; x += 1) lamp(x, Y(u), 0xfff4c8);
+  // the taxiway's blue edge lamps; the hold lines where the links meet runway B; the yellow and black signs
+  for (let u = TAXI[0]; u <= TAXI[1]; u += 6) for (const s2 of [-1, 1]) lamp(taxiX(u) + s2 * 3.2 - 0.3, Y(u), 0x4a7aff);
+  for (const st of STUBS) {
+    for (const [dx, dash] of [[RWY[1].x + RWY[1].hw + 2.2, false], [RWY[1].x + RWY[1].hw + 2.9, true]])
+      for (let Yy = Math.round(Y(st + 2.5) * S); Yy <= Math.round(Y(st - 2.5) * S); Yy++) if (!dash || Yy % 3) img.px(Math.round(dx * S), Yy, 0xe8c838);
+    const X = Math.round((taxiX(st) - 5) * S);
+    const Yy = Math.round(Y(st + 4.6) * S);
+    img.rectPx(X, Yy, 9, 4, 0x141414);
+    img.rectPx(X + 1, Yy + 1, 3, 2, 0xf0c818);
+    img.rectPx(X + 5, Yy + 1, 3, 2, 0xf0c818);
+    img.rectPx(X + 1, Yy + 4, 9, 1, 0x000000, 0.35);
+  }
+  // the glide slope antenna beside runway A's touchdown zone, its shadow long on the grass
+  {
+    const X = Math.round((RWY[0].x + RWY[0].hw + 4) * S);
+    const Yb = Math.round(Y(3912) * S);
+    objects.push({ y: Y(3912) + 1, shadow: () => { for (let q = 0; q < 24; q++) img.tintPx(X + 2 + q, Yb + 1 + (q >> 2), 0.6); }, draw: () => {
+      for (let j = 0; j < 22; j++) img.px(X, Yb - j, j % 5 === 0 ? 0xd83a2a : 0xe8e8e2);
+      img.rectPx(X - 2, Yb - 22, 5, 3, 0xc8c8c4);
+    } });
+  }
+
+  // ------------------------------------------------------------ sunshades on the south ramp: open canopies, a fighter under each
+  img.fine(70, Y(3940), 22, 54, (X, Yy, x, y) => {
+    const u = L - y;
+    if (x < taxiX(u) + 2.5) return null;
+    if (X % 15 === 0 || Yy % 15 === 0) return 0x8a8a84;
+    return rampColor(GREY, 0.3 + hashPx(Math.floor(X / 15), Math.floor(Yy / 15), 530) * 0.5, X, Yy);
+  });
+  k.reserve(70, Y(3940), 22, 54);
+  for (const u of [3893, 3906, 3919, 3932]) {
+    const y = Y(u);
+    objects.push({ y: y + 1, draw: () => fighter(80, y, -1) });
+    objects.push({
+      y: y + 5,
+      shadow: () => k.shadowRect(79, y - 3, 12, 9, 0.55),
+      draw: () => img.fine(79, y - 5, 12, 8.4, (X, Yy, x, yy) => {
+        const t = (yy - (y - 5)) / 8.4;
+        if (x - 79 < 0.5 || 91 - x < 0.5) return 0x6a6e72;
+        return (X % 6 === 0) ? 0x9aa0a4 : t < 0.5 ? 0xd4d8dc : 0xb8bcc0;
+      }),
+    });
+  }
+
+  // ------------------------------------------------------------ a C-130 on the ramp: straight wing, four propellers, high tail
+  {
+    const cx = 122;
+    const cy = Y(3992);
+    const pts = [];
+    const P = (i, j, c) => pts.push([i, j, c]);
+    for (let s2 = -1; s2 <= 1; s2 += 2) {
+      for (let w = 0; w < 20; w++) for (let i = 1; i <= 7; i++) P(i, s2 * (3 + w), w > 18 ? 0x5e6a58 : 0x7a8672);
+      for (const e of [7, 14]) {
+        for (let i = 6; i <= 11; i++) for (let j = -1; j <= 1; j++) P(i, s2 * (3 + e) + j, 0x5a6454);
+        for (let j = -3; j <= 3; j++) P(12, s2 * (3 + e) + j, 0x2a2a2e); // the propeller
+      }
+      for (let w = 0; w < 8; w++) for (let i = -17; i <= -13; i++) P(i, s2 * (2 + w), 0x7a8672);
+    }
+    for (let i = -18; i <= 17; i++) for (let j = -3; j <= 3; j++) if (Math.abs(j) < 3 || (i > -14 && i < 14)) P(i, j, Math.abs(j) < 2 ? 0x8a9682 : 0x6e7a66);
+    for (let i = 13; i <= 16; i++) P(i, 0, 0x2a3440);
+    shape(Math.round(cx * S), Math.round(cy * S), -1, pts, 6);
+    k.reserve(cx - 8, cy - 8, 16, 16);
+  }
+  // ground equipment by the tankers: tugs, a baggage train, stairs, chocks of cones
+  for (const [x, u, c, w2, h2] of [[86, 3972, 0xf0c020, 6, 3], [114, 3958, 0xe8e8e2, 9, 2], [86, 3998, 0x3a6a3a, 5, 3], [114, 4004, 0xd8d8d0, 4, 4]]) {
+    const X = Math.round(x * S);
+    const Yy = Math.round(Y(u) * S);
+    img.rectPx(X + 1, Yy + 1, w2 * 2, h2 * 2, 0x000000, 0.35);
+    img.rectPx(X, Yy, w2 * 2, h2 * 2, c);
+    img.rectPx(X, Yy, w2 * 2, 1, scaleColor(c, 1.2));
+  }
+  for (const [x, u] of [[92, 3962], [92, 3992], [108, 3970], [108, 4000]]) img.px(Math.round(x * S), Math.round(Y(u) * S), 0xff7a1a);
+
+  // ------------------------------------------------------------ the helipad with a Black Hawk, the radome, the water tower
+  {
+    const hx = 150;
+    const hu = 3944;
+    img.fine(hx - 7, Y(hu) - 7, 14, 14, (X, Yy, x, y) => {
+      const d = Math.hypot(x - hx, y - Y(hu));
+      if (d > 6.6) return null;
+      if (d > 6) return 0xe8e8e2;
+      const ax = Math.abs(x - hx);
+      const ay = y - Y(hu);
+      if ((ax > 2 && ax < 3 && Math.abs(ay) < 3.2) || (ax < 2.6 && Math.abs(ay) < 0.5)) return 0xf0f0e8; // the H
+      return rampColor(GREY, 0.2 + hashPx(X >> 2, Yy >> 2, 531) * 0.3, X, Yy);
+    });
+    k.reserve(hx - 7, Y(hu) - 7, 14, 14);
+    const heli = (r2) => {
+      for (let i = -12; i <= 10; i++) for (let j = -2; j <= 2; j++) if (Math.abs(j) < 2 || (i > -5 && i < 8)) r2.px(24 + i, 24 + j, Math.abs(j) < 1 ? 0x4a523e : 0x3a4232);
+      for (let i = -20; i <= -12; i++) r2.px(24 + i, 24, 0x3a4232);
+      for (let j = -3; j <= 3; j++) r2.px(5, 24 + j, 0x2a2e26);
+      for (let i = 5; i <= 8; i++) r2.px(24 + i, 24, 0x1e2a34);
+    };
+    const rot = [0, 1, 2].map((f) => k.sprite(16, 16, hu, (r2) => {
+      heli(r2);
+      for (let a = 0; a < 4; a++) {
+        const ang = a * (Math.PI / 2) + f * 0.52;
+        for (let q = 3; q < 22; q++) r2.px(24 + Math.cos(ang) * q, 24 + Math.sin(ang) * q, 0x1a1a1e, 0.55);
+      }
+    }, true));
+    kit.loop(hx - 8, hu + 8, rot, { fps: 14, d: 0.45 });
+    // the radome: a white sphere on its tower
+    const rx = 128;
+    const ry = Y(3944);
+    objects.push({ y: ry + 5, shadow: () => k.shadowEllipse(rx + 2, ry + 2, 5, 5, 0.55), draw: () => img.fine(rx - 5, ry - 5, 10, 10, (X, Yy, x, y) => {
+      const d = Math.hypot(x - rx, y - ry);
+      if (d > 4.6) return null;
+      const lit = 0.65 + 0.35 * Math.max(0, -((x - rx) + (y - ry)) / 6.5);
+      return hashPx(X >> 1, Yy >> 1, 532) < 0.1 ? scaleColor(0xf4f4f0, lit * 0.92) : scaleColor(0xf4f4f0, lit);
+    }) });
+    k.reserve(rx - 5, ry - 5, 10, 10);
+    // the water tower: a tank on legs, its long shadow
+    const wx = 172;
+    const wy = Y(3946);
+    objects.push({ y: wy + 4, shadow: () => k.shadowEllipse(wx + 6, wy + 5, 4, 3, 0.55), draw: () => {
+      for (const [dx, dy] of [[-2, 2], [2, 2], [-2, -2], [2, -2]]) for (let j = 0; j < 9; j++) img.px(Math.round((wx + dx) * S), Math.round((wy + dy) * S) - j, 0x8a8e92);
+      img.fine(wx - 4, wy - 7, 8, 8, (X, Yy, x, y) => {
+        const d = Math.hypot(x - wx, y - (wy - 3));
+        if (d > 3.8) return null;
+        return d > 3.2 ? 0xa8acb0 : (x - wx) < 0 ? 0xe8ecf0 : 0xc8ccd0;
+      });
+    } });
+    k.reserve(wx - 5, wy - 8, 10, 12);
+  }
+
+  // ------------------------------------------------------------ the fire station by the runways: red doors, the crash trucks out front
+  {
+    const fx = 124;
+    const fy = Y(4100);
+    shed(fx, fy, 20, 9, 0xb0aca4);
+    objects.push({ y: fy + 12, draw: () => {
+      for (let q = 0; q < 4; q++) img.rectPx(Math.round((fx + 1 + q * 4.8) * S), Math.round((fy + 9) * S) + 1, 11, 4, 0xc8281e);
+    } });
+    for (const [tx, tu] of [[127, 4088], [134, 4088]]) {
+      const X = Math.round(tx * S);
+      const Yy = Math.round(Y(tu) * S);
+      img.rectPx(X + 1, Yy + 1, 12, 24, 0x000000, 0.35);
+      img.rectPx(X, Yy, 12, 24, 0xd0281e);
+      img.rectPx(X + 2, Yy + 2, 8, 5, 0x2a3440);
+      img.rectPx(X + 3, Yy + 12, 6, 6, 0xe8e8e2);
+    }
+  }
+  // the radar: its antenna turning on a lattice mast
+  {
+    const rx = 140;
+    const ru = 4112;
+    if (land(rx + 3, ru)) {
+      const frames = [0, 1, 2, 3, 4, 5].map((f) => k.sprite(10, 10, ru, (r2) => {
+        const ang = (f / 6) * Math.PI;
+        for (let q = -12; q <= 12; q++) for (let w = -1; w <= 1; w++) r2.px(15 + Math.cos(ang) * q - Math.sin(ang) * w, 15 + Math.sin(ang) * q + Math.cos(ang) * w, w ? 0x8a9096 : 0xd8dce0);
+        r2.discPx(15, 15, 2, 0x4a4e52);
+      }));
+      kit.loop(rx - 5, ru + 5, frames, { fps: 4, d: 0.5 });
+      img.discPx(rx * S + 3, Y(ru) * S + 3, 5, 0x000000, 0.35);
+      k.reserve(rx - 5, Y(ru) - 5, 10, 10);
+    }
+  }
+  // the windsock on its mast between the runways, flapping
+  {
+    const sx = 38;
+    const su = 4060;
+    const sock = [0, 1, 2].map((f) => k.sprite(8, 4, su, (r2) => {
+      for (let i = 0; i < 18; i++) {
+        const w = 3 - i * 0.12;
+        const dy = Math.sin(i / 3 + f * 2) * (i / 9);
+        for (let j = -w; j <= w; j++) r2.px(3 + i, 6 + j + dy, Math.floor(i / 4) % 2 ? 0xf0f0e8 : 0xf06a1a);
+      }
+      for (let j = 0; j < 6; j++) r2.px(2, 6 + j, 0x6a6e72);
+    }, true));
+    kit.loop(sx, su + 2, sock, { fps: 5, d: 0.5 });
+  }
+  // traffic on the ramp: a fuel truck from the fuel farm to the tankers and back, a follow-me car along the taxiway
+  const car = (c) => k.sprite(6, 4, 4000, (r2) => {
+    for (let i = 0; i < 16; i++) for (let j = 0; j < 8; j++) r2.px(i + 1, j + 2, i > 10 ? (j > 0 && j < 7 ? 0x2a3440 : c) : j === 0 || j === 7 ? scaleColor(c, 0.75) : c);
+    for (let i = 0; i < 17; i++) r2.px(i + 2, 10, 0x000000, 0.35);
+    r2.px(8, 2, 0xffd040);
+    r2.px(8, 9, 0xffd040);
+  });
+  kit.path([[132, 4044], [132, 4014], [128, 4012], [116, 4012], [100, 4012]], [truck(0xd8d8d0)], { sp: 4, mode: 'pp', hold: 8, turn: 'rot', fps: 1, d: 0.45 });
+  kit.path([[taxiX(3890) + 0.5, 3890], ...[3960, 4030, 4050, 4070, 4130, 4200].map((u) => [taxiX(u) + 0.5, u])], [car(0xf0c818)], { sp: 9, mode: 'pp', hold: 3, turn: 'rot', fps: 1, d: 0.45, s0: 0.6 });
+
+  // palms along the housing's streets
+  for (let x = 116; x < 178; x += 9) if (!k.anyRes(x - 2, Y(3868) - 2, 4, 4)) k.palm(x, Y(3867.5), 3.4, 5100 + x);
+  for (let u = 3878; u < 3932; u += 9) if (!k.anyRes(105.5, Y(u) - 2, 3, 4)) k.palm(106.5, Y(u), 3.2, 5200 + u);
+
+  // ------------------------------------------------------------ what moves: a fighter taxiing, another taking off, trucks on the ramp
+  const jf = k.sprite(12, 10, 4000, (r) => shape(18, 15, 1, fighterPts(), 0, (X, Yy, c) => r.px(X, Yy, c)));
+  kit.path([[taxiX(TAXI[0] + 10), TAXI[0] + 10], ...[3940, 4000, 4030, 4050, 4070, 4110].map((u) => [taxiX(u), u])], [jf], { sp: 7, mode: 'pp', hold: 5, turn: 'rot', fps: 1, d: 0.45 });
+  kit.path([[RWY[0].x, RWY[0].u0 + 4], [RWY[0].x, RWY[0].u1 - 6]], [jf], { sp: 46, mode: 'wrap', turn: 'rot', fps: 1, d: 0.45 });
+  kit.wander(121, 3958, 6, 9, [truck(0xe8e8e2), truck(0xd8b830)], { n: 2, sp: 5, turn: 'rot', fps: 1, idle: 0.5, d: 0.45 });
   void mix;
   void smooth;
 }
