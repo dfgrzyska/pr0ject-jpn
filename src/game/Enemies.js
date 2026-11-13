@@ -433,6 +433,8 @@ export class Enemies {
     if (e.type === 'boss' && g && !g.defeated && g.parts.every((p) => p.dead || p.hp <= 0 || p.group !== g)) {
       g.defeated = true;
       if (g.duelGhost) this.segPool.kill(g.duelGhost);
+      g.padArt?.forEach((a) => a.destroy());
+      g.padArt = null;
       s.onBossDefeated();
     }
   }

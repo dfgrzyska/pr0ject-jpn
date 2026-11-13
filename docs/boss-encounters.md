@@ -9,7 +9,7 @@ Tako 3A, Sankibō 4A, Ja-odori 5C. Kyūbi, Sakurajima i Oni pozostają bez zmian
 | Higuma | Sprowokować trzy przejścia przez stałe palenisko | Trwałe pęknięcia i licznik 0–3; skorupa przepuszcza 2% obrażeń, HP nie spada poniżej 75%, także od bomb; trzecie przejście odsłania Higumę |
 | Tako | Zwabić koniec macki na jeden ze złotych pali i ostrzelać zaklinowany koniec | Mocno zwiększone obrażenia macki, odcięcie odsłania głowę na 4,5 s; głowa nie ginie przed ostatnią fazą |
 | Sankibō | Naprowadzić żar na oznaczone miejsce w pasie wiatru, który zawróci go do pieczęci | 4,5 s odsłonięcia; pochodnie są trwałe, więc źródło żaru nie znika; od drugiej fazy zmienia się kierunek |
-| Ja-odori | Ostrzałem ładować odpowiednią wyrzutnię, przewidując trasę smoka | 1 s ładowania, 1,2 s odliczania, 0,75 s lotu; trafienie zadaje obrażenia i odsłania głowę; czas ładowania nie zależy od obrażeń broni |
+| Ja-odori | Ostrzałem ładować odpowiednią wyrzutnię, przewidując trasę smoka | 1 s ładowania, 1,2 s odliczania, 0,75 s lotu; trafienie zabiera 18% życia i odsłania głowę na 3 s (strzały 70%, poza tym 6%); wyrzutnia po strzale odpoczywa 6 s, a wszystkie 2 s (`JAODORI` w `src/config.js`); czas ładowania nie zależy od obrażeń broni |
 
 Zapowiedzi: czerwony — nadchodzący atak, złoty — obiekt mechaniki, miętowy — cel kontry
 lub odsłonięty słaby punkt. Komunikaty mają wersję PL i EN. Mechaniki pracują w logicznych

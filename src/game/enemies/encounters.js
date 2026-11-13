@@ -1,5 +1,7 @@
 import { clamp, mix, segmentDistance, emberPoint } from './encounterGeometry.js';
 import { DOWN } from './shared.js';
+import { baseScale, enemyTexture, hasEnemyFrame } from '../enemyArt.js';
+import { DEPTH, JAODORI } from '../../config.js';
 
 const GOLD = 0xffd06a, SAFE = 0x81f3cc, WARN = 0xff735e;
 const living = p => !p.dead && p.hp > 0;
@@ -303,7 +305,7 @@ export const encounters = {
     const g = this.bossGroup;
     if (!g || g.defeated || g.kind !== 'jaodori' || !g.launchers || g.parts[0].state !== 'fight') return false;
     for (const pad of g.launchers) {
-      if (pad.cool > 0 || pad.rocket) continue;
+      if (pad.cool > 0 || pad.rocket || g.lock > 0) continue;
       if (Math.abs(shot.x - pad.x) <= 12 + shot.radius && Math.abs(shot.y - pad.y) <= 9 + shot.radius) {
         pad.litUntil = g.t + 0.22;
         return true;
@@ -315,8 +317,16 @@ export const encounters = {
   dragonFestival(g, e, dt) {
     const s = this.scene, ink = this.tele;
     g.open = Math.max(0, (g.open ?? 0) - dt);
-    g.take = { body: g.open ? 1.5 : 0.12 };
+    g.take = { body: g.open ? JAODORI.openTake : JAODORI.shut };
     g.launchers ??= [38, 90, 142].map(x => ({ x, y: s.H - 83, charge: 0, cool: 0, litUntil: 0, rocket: null }));
+    g.lock = Math.max(0, (g.lock ?? 0) - dt); // after a launch every launcher rests a moment
+    // the launchers' art: a festival mortar in its crate, loaded or spent (the plain boxes where it is missing)
+    if (!g.padArt && hasEnemyFrame('n_pad')) {
+      g.padArt = g.launchers.map(() => {
+        const key = enemyTexture('n_pad');
+        return s.add.image(0, 0, key, 'n_pad').setScale(baseScale(key)).setDepth(DEPTH.ground + 0.6);
+      });
+    }
     this.encounterHint(g, 'FAJERWERKI', 'ŁADUJ WYRZUTNIĘ POD SMOKIEM');
     const route = ft => ({ x: 90 + Math.sin(ft * 0.65) * 52, y: 88 + Math.sin(ft * 1.3) * 10 });
     const speed = g.stage >= 3 ? 1.4 : 1;
@@ -332,14 +342,33 @@ export const encounters = {
     for (const pad of g.launchers) {
       pad.y = s.H - 83;
       pad.cool = Math.max(0, pad.cool - dt);
-      if (!pad.rocket && pad.cool <= 0 && pad.litUntil > g.t && s.player.alive && !s.player.entering) pad.charge = Math.min(1, pad.charge + dt);
-      ink.fillStyle(0x28384e, 1).fillRoundedRect(pad.x - 12, pad.y - 9, 24, 18, 3);
-      ink.lineStyle(1.5, pad.cool ? 0x777888 : GOLD, 1).strokeRect(pad.x - 12, pad.y - 9, 24, 18);
-      ink.fillStyle(SAFE, 1).fillRect(pad.x - 10, pad.y + 5, 20 * pad.charge, 3);
-      ink.lineStyle(2, GOLD, 1).lineBetween(pad.x, pad.y - 7, pad.x, pad.y - 17);
+      const ready = !pad.rocket && pad.cool <= 0 && !(g.lock > 0);
+      const lit = ready && pad.litUntil > g.t && s.player.alive && !s.player.entering;
+      if (lit) pad.charge = Math.min(1, pad.charge + dt / JAODORI.charge);
+      const art = g.padArt?.[g.launchers.indexOf(pad)];
+      if (art) {
+        // loaded while it can be charged or is about to fly; spent (dark and dimmed) while it rests
+        art.setPosition(pad.x, pad.y).setFrame(ready || (pad.rocket && pad.rocket.t < 1.2) ? 'n_pad' : 'n_pad_empty');
+        art.setAlpha(ready || pad.rocket ? 1 : 0.7).setTint(lit ? 0xfff0c0 : 0xffffff);
+      } else {
+        ink.fillStyle(0x28384e, 1).fillRoundedRect(pad.x - 12, pad.y - 9, 24, 18, 3);
+        ink.lineStyle(2, GOLD, 1).lineBetween(pad.x, pad.y - 7, pad.x, pad.y - 17);
+      }
+      // round the tube's mouth: the charge filling in mint; while it rests, a grey arc running down
+      const A0 = -Math.PI / 2;
+      if (pad.cool > 0 || (g.lock > 0 && !pad.rocket)) {
+        const k = pad.cool > 0 ? pad.cool / JAODORI.cool : g.lock / JAODORI.lock;
+        ink.lineStyle(2, 0x8a8ca0, 0.9).beginPath().arc(pad.x, pad.y, 7.5, A0, A0 + Math.PI * 2 * k).strokePath();
+      } else if (!pad.rocket) {
+        ink.lineStyle(1, GOLD, 0.5 + 0.3 * Math.sin(g.t * 6)).strokeCircle(pad.x, pad.y, 7.5);
+        if (pad.charge > 0) ink.lineStyle(2.5, SAFE, 1).beginPath().arc(pad.x, pad.y, 7.5, A0, A0 + Math.PI * 2 * pad.charge).strokePath();
+      }
+      if (!art) ink.lineStyle(1.5, ready ? GOLD : 0x777888, ready ? 0.9 : 0.5).strokeRect(pad.x - 12, pad.y - 9, 24, 18);
       if (pad.charge >= 1 && !pad.rocket && !(g.gate > 0)) {
         pad.charge = 0;
         pad.rocket = { t: 0 };
+        g.lock = JAODORI.lock;
+        for (const q of g.launchers) if (q !== pad) q.charge = Math.min(q.charge, 0.5);
         s.fx.text(pad.x, pad.y - 24, 'GOTOWE!', 1, SAFE);
       }
       if (!pad.rocket) continue;
@@ -360,12 +389,13 @@ export const encounters = {
         if (k === 1) {
           s.fx.shockwave(pad.x, 88); s.fx.light(pad.x, 88, 1.5, false, GOLD);
           if (Math.hypot(e.x - pad.x, e.y - 88) < 26) {
-            this.encounterOpen(g, e, 4.5, 'FAJERWERK TRAFIŁ!');
-            g.take.body = 1.5;
-            this.damage(e, e.maxHp * 0.12);
+            this.encounterOpen(g, e, JAODORI.open, 'FAJERWERK TRAFIŁ!');
+            g.take.body = 1;
+            this.damage(e, e.maxHp * JAODORI.firework);
+            g.take.body = JAODORI.openTake;
             g.fireworkHits = (g.fireworkHits ?? 0) + 1;
           }
-          pad.rocket = null; pad.cool = 2.5; pad.litUntil = 0;
+          pad.rocket = null; pad.cool = JAODORI.cool; pad.litUntil = 0;
         }
       }
     }

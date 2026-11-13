@@ -140,6 +140,12 @@ export const WEAPONS = {
   homing: { interval: 1 / 6, damage: 1.4, speed: 210, turn: 3.8, life: 1.15, orbs: [2, 2, 3, 3, 4], arm: 0.18, range: 170, lockY: 18, lockSeen: 0.25 },
 };
 
+// Nagasaki boss Ja-odori: fought mostly with the festival's fireworks. Holding fire on a launcher charges it for
+// `charge` s; a rocket that meets the dragon on its announced path takes `firework` of its life (whatever is open) and
+// bares its head for `open` s, taking `openTake` of shot damage (`shut` the rest of the time). A launcher that fired
+// rests `cool` s; after any launch every launcher rests `lock` s.
+export const JAODORI = { charge: 1, firework: 0.18, open: 3, openTake: 0.7, shut: 0.06, cool: 6, lock: 2 };
+
 // Purple power-up: turrets at the wing tips (up to `max`), each firing a single slow bullet straight up every
 // `interval` s. Together they make a shield: a hit takes a turret instead of the ship, then `grace` s in which the
 // bubble swallows anything else that touches it (bullets within `clear` px are wiped), so one spray cannot take both.

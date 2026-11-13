@@ -577,7 +577,10 @@ pochodnie Kiezu-no-hi, ognista bariera przepuszcza 35% obrażeń; po ich zgaszen
 spycha statek w bok; poniżej 35% (**gniew góry Misen**) wracają dwie widmowe, nietykalne pochodnie, krążą szybciej
 i strzelają, a pierścień piór kręci się raz w jedną, raz w drugą stronę.
 
-Smok Ja-odori z Nagasaki (2100 życia): taniec nad dokami; od 65% (**spiralny korytarz**) krąży po środku ekranu,
+Smok Ja-odori z Nagasaki (3000 życia), pokonywany głównie fajerwerkami: trzy festiwalowe moździerze w skrzyniach
+na dole ekranu ładuje się ostrzałem, rakieta trafiająca smoka na zapowiedzianym torze zabiera mu 18% życia i na 3 s
+odsłania głowę, a zwykłe strzały poza tym ledwo go drapią (6%); wyrzutnia po strzale stoi pusta 6 s, a po każdym
+wystrzale wszystkie odpoczywają 2 s (szary łuk wokół wylotu, ładowanie — miętowy). Taniec nad dokami; od 65% (**spiralny korytarz**) krąży po środku ekranu,
 a z segmentów strzelają fajerwerki; od 30% (**złoty deszcz nad Inasą**) tańczy o 40% szybciej, perła dzieli się
 na dwie strzelające kule, a przez niebo przelatują krzyżowe salwy fajerwerków.
 

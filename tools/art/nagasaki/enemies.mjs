@@ -135,6 +135,63 @@ export function castella(color, f) {
   return s.render();
 }
 
+// ---------------------------------------------------------------- the boss's firework launchers (26 x 22 -> 78 x 66)
+// A festival mortar seen from above: a cypress crate bound in straw rope, the vermilion-lacquered tube in it with
+// gold bands, and (loaded) the rocket's paper nose twisted red and white, a paper tag with the shop's red stamp.
+// Spent, the tube is an empty black mouth, its rim scorched, a last ember in it.
+export function fireworkPad(loaded) {
+  const s = new HiSprite(78, 66, RAMPS);
+  const cx = 39;
+  const cy = 31;
+  // the crate: planks with their seams and nail heads, a darker lid frame
+  s.poly([[3, 6], [75, 6], [75, 62], [3, 62]], 'w', { flat: 0.5, pat: mix2(fur(0, { amt: 0.16, len: 14, w: 1.2, gap: 0.05, seed: 3 }), speckle({ amt: 0.12, dark: 0.08 })) });
+  for (const y of [20, 34, 48]) s.line(4, y, 74, y, 0x4a2e18, 1, 0.8);
+  s.poly([[3, 6], [75, 6], [75, 10], [3, 10]], 'h', { flat: 0.45 });
+  s.poly([[3, 58], [75, 58], [75, 62], [3, 62]], 'h', { flat: 0.7 });
+  s.poly([[3, 6], [7, 6], [7, 62], [3, 62]], 'h', { flat: 0.5 });
+  s.poly([[71, 6], [75, 6], [75, 62], [71, 62]], 'h', { flat: 0.65 });
+  for (const [x, y] of [[5, 8], [73, 8], [5, 60], [73, 60], [5, 34], [73, 34]]) s.dot(x, y, 0.9, 0x2a1a10);
+  // straw rope (shimenawa-like) bound across it, under the tube
+  for (let x = 4; x < 75; x += 3) s.line(x, 47, x + 2.4, 52, 0xd8c070, 1.4);
+  s.line(3, 47, 75, 47, 0x8a6a30, 1, 0.8);
+  s.line(3, 52.5, 75, 52.5, 0x8a6a30, 1, 0.8);
+  // the tube: a vermilion ring with gold bands round its mouth
+  s.ellipse(cx, cy, 19, 19, 'r', { bias: 0.1, pat: mottle({ amt: 0.08, scale: 4 }) });
+  s.ellipse(cx, cy, 15.5, 15.5, 'y', { flat: 0.55 });
+  s.ellipse(cx, cy, 13.5, 13.5, 'r', { flat: 0.35 });
+  for (let k = 0; k < 16; k++) s.dot(cx + Math.cos((k / 16) * TAU) * 17.3, cy + Math.sin((k / 16) * TAU) * 17.3, 0.7, 0xfff0a0, 0.9);
+  if (loaded) {
+    // the rocket's nose: a paper cone twisted in red and white, its fuse curling out of the tip
+    s.ellipse(cx, cy, 12, 12, 'p', { flat: 0.6 });
+    s.paint([cx - 12, cy - 12, cx + 12, cy + 12], (x, y) => {
+      const d = Math.hypot(x - cx, y - cy);
+      return d < 12 && ((Math.atan2(y - cy, x - cx) + d * 0.32 + TAU) % (TAU / 4)) < TAU / 8;
+    }, 'l', () => 0.55);
+    s.paint([cx - 12, cy - 12, cx + 12, cy + 12], (x, y) => Math.hypot(x - cx + 3, y - cy + 3) < 5, 'p', () => 0.95);
+    s.dot(cx, cy, 2.2, 0xfff8e8);
+    for (let k = 0; k < 10; k++) s.dot(cx + 1 + k * 0.9, cy - 2 - Math.sin(k * 0.8) * 2.2 - k * 0.5, 0.65, 0x3a2a18);
+    s.dot(cx + 10, cy - 9.5, 1.2, 0xffd060);
+  } else {
+    // spent: the empty black mouth, the scorched rim, an ember still glowing at the bottom
+    s.ellipse(cx, cy, 13.5, 13.5, 'r', { flat: 0.12 });
+    s.ellipse(cx, cy, 12, 12, 'h', { flat: 0.05 });
+    s.paint([cx - 13, cy - 13, cx + 13, cy + 13], (x, y) => Math.hypot(x - cx, y - cy) < 11, 'h', () => 0.02);
+    s.dot(cx + 2, cy + 3, 2.6, 0xff7a20, 0.55);
+    s.dot(cx + 2, cy + 3, 1.2, 0xffd080, 0.9);
+    for (let k = 0; k < 18; k++) {
+      const a = (k / 18) * TAU;
+      s.dot(cx + Math.cos(a) * 16, cy + Math.sin(a) * 16, 1.4, 0x2a1a10, 0.45);
+    }
+  }
+  // a paper tag hung on the crate, the maker's red stamp on it
+  s.poly([[59, 12], [70, 12], [70, 28], [59, 28]], 'p', { flat: 0.7 });
+  s.poly([[61.5, 15], [67.5, 15], [67.5, 21], [61.5, 21]], 'l', { flat: 0.5 });
+  s.line(62.5, 18, 66.5, 18, 0xffffff, 1);
+  s.line(64.5, 16, 64.5, 20, 0xffffff, 1);
+  s.line(64.5, 10, 64.5, 12, 0xd8c070, 1);
+  return s.render();
+}
+
 // ---------------------------------------------------------------- turret: a harbour cantilever crane (base and heads 19 -> 57)
 export function winchBase(wreck) {
   const s = new HiSprite(57, 57, RAMPS);
@@ -443,6 +500,8 @@ export function nagasakiEnemies(add) {
   add('n_segment_leg', DRAGON.jaSegment('leg'));
   add('n_segment_tail', DRAGON.jaSegment('tail'));
   add('n_pearl', DRAGON.jaPearl());
+  add('n_pad', fireworkPad(true)); // the boss's firework launchers, loaded and spent
+  add('n_pad_empty', fireworkPad(false));
   add('n_winch_base', winchBase(false));
   add('n_winch_wreck', winchBase(true));
   for (let i = 0; i < 16; i++) add(`n_winch_${i}`, winchHead(i));
