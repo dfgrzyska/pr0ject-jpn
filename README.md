@@ -515,10 +515,13 @@ ale przy pełnym pasku działa się zacinają na ~2 s — trzeba wlatywać i wyl
 | Nośnik | drewniane wiaderko kąpielowe z ręcznikiem | — |
 
 Miniboss: krokodyl z Oniyamy (piekło krokodyli działa od 1923 roku). Zanurza się (widać tylko oczy i kręgi
-na wodzie, strzały przelatują) i płynie pod gracza, wynurza się z pierścieniem; kłapie szczękami — dwa rzędy
-„zębów” zamykają się na pozycji gracza; robi „obrót śmierci” — spirala i wybuchy wrzątku wokół gracza. Druga faza
-(**fałszywe cienie**): pod wodą płyną obok niego dwa fałszywe cienie, które przy wynurzeniu wybuchają wrzątkiem,
-a obrót śmierci budzi też gejzery na obu brzegach.
+na wodzie, strzały przelatują) i podpływa pod gracza, zatrzymuje się tuż przed statkiem, miga, po czym wyskakuje
+z wody z otwartą paszczą prosto w miejsce, gdzie był gracz (ciało rani; plusk zaznacza cel), rozpryskuje pierścień
+wrzątku i odpływa po powierzchni na górę ekranu — wtedy można go trafić. Kłapie szczękami — dwa rzędy „zębów”
+zamykają się na pozycji gracza; robi „obrót śmierci” — spirala i wybuchy wrzątku wokół gracza. Druga faza
+(**fałszywe cienie**): nurkują trzy identyczne cienie, rozpływają się w trzy tory wokół gracza i w połowie drogi
+zamieniają się torami; prawdziwy przy każdym nurkowaniu zajmuje inny tor. Gdy prawdziwy wyskakuje, fałszywe
+wybuchają słupami wrzątku. Obrót śmierci budzi też gejzery na obu brzegach.
 
 Boss: czerwony oni z kolczastą maczugą kanabō, jak figury z Oniyamy. Śpi w stawie Chinoike i wynurza się
 z krwi, gdy przewijanie stanie. Zwykłe strzały ledwie go drapią — działają **fasolki Setsubun** („Oni wa soto,

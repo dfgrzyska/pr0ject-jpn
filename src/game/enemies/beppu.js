@@ -129,7 +129,9 @@ export const beppu = {
     switch (e.patternIndex % 3) {
       case 0:
         // sink and swim under the player
-        e.sub = { phase: 'swim', t: 0, ripple: 0 };
+        // which lane the real one takes, first and last (the false ones take the others): a different one each dive
+        e.dives = (e.dives ?? 0) + 1;
+        e.sub = { phase: 'swim', t: 0, ripple: 0, lanes: [[[1, 0, 2], [0, 2, 1], [2, 1, 0]][e.dives % 3], [[0, 1, 2], [2, 0, 1], [1, 2, 0], [2, 1, 0], [0, 2, 1], [1, 0, 2]][e.dives % 6]] };
         e.anims.stop();
         e.setFrame('wani_sub');
         e.ghost = true;
@@ -169,39 +171,87 @@ export const beppu = {
   },
 
   /** Under the surface: ripples heading for the player, then it bursts out with a spray. */
+  /**
+   * The dive: it sinks and comes for the player under the water (only eyes and ripples show, shots pass), stops
+   * just ahead, flashes, then leaps at where the player was, jaws open (its body hurts), and swims off back up the
+   * screen on the surface, where it can be shot. In the second phase two false shadows come too: the three of them
+   * spread into three lanes round the player, cross over on the way, and the real one takes a different lane each
+   * dive; when it leaps, the false ones burst up as spouts of scalding water.
+   */
   waniDive(e, dt, b) {
     const s = this.scene;
+    const pl = s.player;
     const d = e.sub;
     d.t += dt;
+    const SPREAD = 44;
+    // the three lanes round the player (kept on the screen as a group), the ambush a little ahead of the ship
+    const gx = Phaser.Math.Clamp(pl.x, 16 + SPREAD, VIEW.width - 16 - SPREAD);
+    const ambushY = Phaser.Math.Clamp(pl.y - 46, 96, s.H - 90);
+    const laneX = (lane) => (e.p2 ? gx + (lane - 1) * SPREAD : Phaser.Math.Clamp(pl.x, 24, VIEW.width - 24));
     if (d.phase === 'swim') {
-      const tx = Phaser.Math.Clamp(s.player.x, 24, VIEW.width - 24);
-      e.x += Phaser.Math.Clamp(tx - e.x, -60 * dt, 60 * dt);
-      e.y += (96 - e.y) * Math.min(1, dt * 1.5);
+      // halfway it crosses to its final lane (the false ones cross the other way): hard to keep an eye on
+      const lane = d.t < 0.75 ? d.lanes[0][0] : d.lanes[1][0];
+      const tx = laneX(lane);
+      e.x += Phaser.Math.Clamp(tx - e.x, -95 * dt, 95 * dt);
+      e.y += Phaser.Math.Clamp(ambushY - e.y, -110 * dt, 110 * dt);
+      e.setRotation(Math.atan2(ambushY - e.y, tx - e.x || 0.01) * 0.25 * Math.min(1, Math.hypot(ambushY - e.y, tx - e.x) / 30));
       if ((d.ripple -= dt) <= 0) {
         d.ripple = 0.18;
         s.fx.puff('splash', e.x + (Math.random() - 0.5) * 8, e.y - 6, 0.3);
-        // second phase: two false shadows ripple along beside it
-        if (e.p2) for (const sh of this.waniShades(e)) s.fx.puff('splash', sh.x + (Math.random() - 0.5) * 8, sh.y - 6, 0.3);
+        // second phase: two false shadows ripple along with it
+        if (e.p2) for (const sh of this.waniShades(e, dt, laneX, ambushY)) s.fx.puff('splash', sh.x + (Math.random() - 0.5) * 8, sh.y - 6, 0.3);
       }
-      if (e.p2) this.waniShades(e);
-      if (d.t > 1.4) Object.assign(d, { phase: 'rise', t: 0 });
+      if (e.p2) this.waniShades(e, dt, laneX, ambushY);
+      if (d.t > 1.7) {
+        // it stops, the eyes fixed on the ship: where it will leap (a splash marks it)
+        Object.assign(d, { phase: 'rise', t: 0, tx: pl.x, ty: pl.y });
+        b.zone(pl.x, pl.y, 10, { warn: 0.5, live: 0.12 });
+        if (e.p2) for (const sh of e.shades ?? []) if (sh) b.zone(sh.x, sh.y + 6, 13, { warn: 0.5, live: 0.5 });
+      }
     } else if (d.phase === 'rise') {
       e.flash = Math.floor(d.t * 20) % 2 ? 0.02 : 0;
-      if (d.t > 0.35) {
+      if (e.p2) this.waniShades(e, 0, laneX, ambushY);
+      if (d.t > 0.5) {
+        // the leap, out of the water at the ship, jaws wide
         e.ghost = false;
+        e.flash = 0;
         e.setFrame(e.texture.has('wani_half') ? 'wani_half' : 'wani_1');
-        e.snapT = e.snapDur = 0.5;
-        s.fx.puff('splash', e.x, e.y + 20, 0.4);
-        s.fx.puff('splash', e.x, e.y - 10, 0.4);
-        // the false shadows burst up too, as scalding spouts
-        if (e.p2) for (const sh of this.waniShades(e)) b.zone(Phaser.Math.Clamp(sh.x, 12, VIEW.width - 12), sh.y + 6, 11, { warn: 0.3, live: 0.45 });
-        this.waniShadesOut(e);
-        if (this.canFire(e)) {
-          b.ring(e.x, e.y + 10, 14, Math.random() * TAU, slow);
-          b.fan(e.x, e.y + 30, this.aimAt(e, 0, 30), 5, 0.7, normal);
-        }
+        e.snapT = e.snapDur = 0.45;
+        s.fx.puff('splash', e.x, e.y + 20, 0.5);
+        s.fx.puff('splash', e.x, e.y - 10, 0.5);
+        s.sfx.explode('s');
+        this.waniShadesOut(e); // (the false ones are spouts now)
+        Object.assign(d, { phase: 'leap', t: 0, x0: e.x, y0: e.y });
+        e.setRotation(Math.atan2(d.ty - e.y, d.tx - e.x) - DOWN);
+      }
+    } else if (d.phase === 'leap') {
+      const k = Math.min(1, d.t / 0.32);
+      const ease = 1 - (1 - k) ** 2;
+      e.x = d.x0 + (d.tx - d.x0) * ease;
+      e.y = d.y0 + (d.ty - 8 - d.y0) * ease;
+      if (k >= 1) {
+        s.fx.puff('splash', e.x, e.y, 0.6);
+        // where it lands, the water flies: a ring of scalding drops (in the second phase, a denser one)
+        if (this.canFire(e)) b.ring(e.x, e.y, e.p2 ? 16 : 10, (e.dives ?? 0) * 0.37, slow);
+        Object.assign(d, { phase: 'back', t: 0 });
+      }
+    } else if (d.phase === 'back') {
+      // back up the screen on the surface, swimming hard, turning to face down again at the top
+      const hx = 90;
+      const hy = 78;
+      e.x += Phaser.Math.Clamp(hx - e.x, -85 * dt, 85 * dt);
+      e.y += Phaser.Math.Clamp(hy - e.y, -120 * dt, 120 * dt);
+      const away = Math.hypot(hx - e.x, hy - e.y);
+      const want = away > 8 ? Math.atan2(hy - e.y, hx - e.x) - DOWN : 0;
+      e.setRotation(Phaser.Math.Angle.RotateTo(e.rotation, want, dt * 6));
+      if ((d.ripple -= dt) <= 0) {
+        d.ripple = 0.22;
+        s.fx.puff('splash', e.x, e.y + 22, 0.3); // its wake
+      }
+      if (away < 4 || d.t > 3) {
+        e.setRotation(0);
         e.sub = null;
-        e.timer = 0.8;
+        e.timer = 0.7;
         this.nextPattern(e);
       }
     }
@@ -209,21 +259,31 @@ export const beppu = {
   },
 
   /**
-   * Phase two: the two false shadows swimming beside it under the water, drawn just like the real one
-   * (its submerged frame) so the player can't tell which is which until they surface. Returns them.
+   * Phase two: the two false shadows, drawn just like the real one (its submerged frame), each in its own lane,
+   * swimming in its own way. Returns them.
    */
-  waniShades(e) {
+  waniShades(e, dt, laneX, ambushY) {
+    const d = e.sub;
     e.shades ??= [];
-    [-1, 1].forEach((side, i) => {
+    for (let i = 0; i < 2; i++) {
       const sh = (e.shades[i] ??= this.segPool.spawn('wani_sub', e.x, e.y).setDepth(e.depth - 0.01));
-      const x = Phaser.Math.Clamp(e.x + side * (46 + 5 * Math.sin(e.age * 2.3 + side)), 14, VIEW.width - 14);
-      sh.setPosition(x, e.y + 4 * Math.sin(e.age * 1.7 + i * 2)).setRotation(e.rotation + 0.12 * Math.sin(e.age * 2 + i)).setScale(e.scaleX).setAlpha(e.alpha);
-    });
+      if (!sh.lane) Object.assign(sh, { lane: true, sp: i ? 1.15 : 0.85, ph: i * 2.1 });
+      const lane = d.t < 0.75 && d.phase === 'swim' ? d.lanes[0][i + 1] : d.lanes[1][i + 1];
+      const tx = laneX(lane) + 5 * Math.sin(e.age * 2.1 + sh.ph);
+      const ty = ambushY + 4 * Math.sin(e.age * 1.6 + sh.ph);
+      sh.x += Phaser.Math.Clamp(tx - sh.x, -95 * sh.sp * dt, 95 * sh.sp * dt);
+      sh.y += Phaser.Math.Clamp(ty - sh.y, -110 * sh.sp * dt, 110 * sh.sp * dt);
+      sh.setRotation(Math.atan2(ty - sh.y, tx - sh.x || 0.01) * 0.25 * Math.min(1, Math.hypot(ty - sh.y, tx - sh.x) / 30) + 0.08 * Math.sin(e.age * 2 + sh.ph));
+      sh.setScale(e.scaleX).setAlpha(e.alpha);
+    }
     return e.shades;
   },
 
   waniShadesOut(e) {
-    for (const sh of e.shades ?? []) if (sh) this.segPool.kill(sh);
+    for (const sh of e.shades ?? []) if (sh) {
+      sh.lane = false;
+      this.segPool.kill(sh);
+    }
     e.shades = null;
   },
 
