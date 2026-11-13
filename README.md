@@ -285,7 +285,7 @@ paprocie drzewiaste, Cave Café we wnęce skały u wejścia ze stolikami pod gir
 wielki banian Ufushu Gajumaru spuszczający korzenie po klifie, smugi światła przez korony) → jaskinia Gyokusendō: na końcu
 doliny ścieżka schodzi pod skalny nawis i lot wchodzi pod ziemię (nawis ze stalaktytami przelatuje nad ekranem szybciej niż
 ziemia, chmury i mewy znikają, po bokach przesuwają się skalne okapy, a nad dnem kiście nacieków — warstwa stropu w paralaksie;
-oczy na chwilę przyzwyczajają się do ciemności): sale stalagmitów, polewy naciekowe w pierścieniach, draperie u stóp ścian, bloki
+oczy na chwilę przyzwyczajają się do ciemności): sucha sala stalagmitów przy wejściu → Błękitne Źródło (pół dna to woda świecąca od spodu, mleczny turkus na płyciznach i głębszy błękit w środku, widoczne dno, refleksy światła falujące po wodzie, pomarańczowe półki naciekowe wokół, kolumny wyrastające z wody, cień pomostu na wodzie, niebieska poświata na skałach) → wodospad → las włóczni → kaskada świecących basenów martwicowych z pomarańczowymi progami przy wyjściu; sale stalagmitów, polewy naciekowe w pierścieniach, draperie u stóp ścian, bloki
 obrywu, kałuże odbijające światła w złotym, zielonym, niebieskim i fioletowym świetle,
 podziemna rzeka świecąca na niebiesko nad łachami piasku, wodospad, las „włóczni”, tarasy wapienne z jeziorkami, stalowe
 pomosty z lampkami, kolumny, po których przesuwa się kolor, krople na wodzie; schody w górę i wyjście do Nahy pod oślepiającym

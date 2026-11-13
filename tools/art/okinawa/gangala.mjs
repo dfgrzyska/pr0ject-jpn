@@ -24,7 +24,7 @@ const pathX = (u) => {
 // in the cave: the steel walkway, and the river (from its spring to where it sinks away)
 const caveTh = (u) => (u - C0) / 75 + 0.486;
 export const walkX = (u) => 90 + 30 * Math.sin(caveTh(u));
-const RIVER = [2135, 2508];
+const RIVER = [2200, 2470];
 const riverX = (u) => 90 - 30 * Math.sin(caveTh(u)) + 7 * Math.sin(caveTh(u) * 2.3 + 1);
 const BLUE_POOL = [2192, 2242];
 const FALLS = 2302;
@@ -282,14 +282,28 @@ export function paintCave(k) {
   const uOf = (Yy) => L - (Yy + 0.5) / S;
 
   // ------------------------------------------------------------ where things are
-  const TERRACES = [2462, 2506];
+  // the halls in turn: a dry hall of stalagmites at the mouth; the Blue Spring, half its floor glowing water between shelves
+  // of flowstone; the falls; the forest of spears, dry; the cascade of rimstone pools down to the way out
+  const SPRING = [2172, 2296];
+  const CASCADE = [2452, 2540];
+  const springW = (u) => smooth(SPRING[0], SPRING[0] + 22, u) * (1 - smooth(SPRING[1] - 20, SPRING[1], u));
+  const padClear = (x, u, m) => pads.every((p) => Math.hypot(p.x - x, p.u - u) > m);
+  const inside = (x, u, m) => x > caveL(u) + m && x < caveR(u) - m;
   const terraceAt = (x, u) => {
     const n = (fbm(x, u, { seed: 342, scale: 8 }) - 0.5) * 10;
-    return u > TERRACES[0] + n && u < TERRACES[1] - n && x > caveL(u) + 2 && x < walkX(u) - 7 + n * 0.4;
+    return u > CASCADE[0] + n && u < CASCADE[1] - n * 0.5 && inside(x, u, 2.5) && padClear(x, u, 13);
+  };
+  /** Water: the river, and the pools of the Blue Spring (a few small ones in the other halls). */
+  const wetAt = (x, u) => {
+    if (!inside(x, u, 2.5) || !padClear(x, u, 13)) return false;
+    if (riverW(u) > 0 && Math.abs(x - riverX(u)) < riverW(u)) return true;
+    if (u < SPRING[0] + 2 || terraceAt(x, u)) return false;
+    const thr = u > 2336 && u < CASCADE[0] ? 0.72 : 0.7 - 0.27 * springW(u);
+    return fbm(x, u, { seed: 360, scale: 13, octaves: 3 }) > thr;
   };
   const nearWalk = (x, u, m) => Math.abs(x - walkX(u)) < m;
-  const nearRiver = (x, u, m) => riverW(u) > 0 && Math.abs(x - riverX(u)) < riverW(u) + m;
-  const free = (x, u, r) => x > caveL(u) + r + 1 && x < caveR(u) - r - 1 && !nearWalk(x, u, r + 4) && !nearRiver(x, u, r + 2) && !terraceAt(x, u) && pads.every((p) => Math.hypot(p.x - x, p.u - u) > r + 13) && u > C0 + 14 + r && u < C1 - 22;
+  const nearWater = (x, u, m) => wetAt(x, u) || wetAt(x + m, u) || wetAt(x - m, u) || wetAt(x, u + m) || wetAt(x, u - m);
+  const free = (x, u, r) => inside(x, u, r + 1) && !nearWalk(x, u, r + 4) && !nearWater(x, u, r + 1.5) && !terraceAt(x, u) && padClear(x, u, r + 13) && u > C0 + 14 + r && u < C1 - 22;
 
   // the formations: stalagmites, columns in the halls, the forest of spears; each cone of limestone a height
   const forms = [];
@@ -303,8 +317,10 @@ export function paintCave(k) {
     forms.push({ x, u, r, h, kind, fk: FK[kind], el, ca: Math.cos(ang), sa: Math.sin(ang) });
     return true;
   };
-  const COLUMNS = [[132, 2168], [44, 2252], [140, 2390], [96, 2440], [120, 2520]];
+  const COLUMNS = [[132, 2168], [140, 2390], [96, 2440]];
   for (const [x, u] of COLUMNS) tryForm(x, u, 6.5, 16, 'column') || tryForm(x + 10, u + 6, 6.5, 16, 'column');
+  // and in the Blue Spring, pillars rising straight out of the water
+  for (const [x, u] of [[54, 2228], [140, 2258], [70, 2282]]) if (!nearWalk(x, u, 10)) forms.push({ x, u, r: 5.2, h: 16, kind: 'column', fk: 3, el: 1, ca: 1, sa: 0, wet: true });
   // flowstone domes first, low and wide, the stalagmites growing on and round them
   for (let q = 0; q < 220; q++) {
     const u = C0 + 20 + g() * (C1 - C0 - 50);
@@ -351,7 +367,7 @@ export function paintCave(k) {
 
   // the lights: lamps along the walkway, floods on the great columns and over the halls, lamps under the river
   const HALL = (u) =>
-    u < 2190 ? [0xffb048, 0xffd878] : u < 2290 ? [0x3ad0c0, 0x4aa8ff] : u < 2335 ? [0xa8dcff, 0xe0f4ff] : u < 2455 ? [0xffc050, 0x6a7aff, 0x58ff9a] : [0xff9a48, 0xffc860];
+    u < 2190 ? [0xffb048, 0xffd878] : u < 2290 ? [0xffb060, 0x4aa8ff, 0xffd090] : u < 2335 ? [0xa8dcff, 0xe0f4ff] : u < 2455 ? [0xffc050, 0x6a7aff, 0x58ff9a] : [0xff9a48, 0xffc860];
   const lights = [];
   const light = (x, u, c, r, amt, z = 9, water = 0) => lights.push({ x, y: Y(u), u, c: [((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255], r, k: amt, z, water });
   for (let u = C0 + 10, i = 0; u < C1 - 8; u += 15, i++) light(walkX(u) + (i % 2 ? 2.4 : -2.4), u, 0xffcc88, 14, 0.9, 4);
@@ -390,35 +406,79 @@ export function paintCave(k) {
   const RIM = new Float32Array(FW * rows); // where on it (0 at its foot .. 1 at its top), for the growth rings
   const TIP = new Uint8Array(FW * rows); // the wet tips of the formations, catching every light
   const AO = new Float32Array(FW * rows); // the floor darkening where it meets a formation
+  // where the water is (river, pools, the cascade's basins), and how far every point is from it (fine pixels)
+  const WET = new Uint8Array(FW * rows); // 1 river or pool, 2 a basin of the cascade, 3 the lip of a basin
+  const LEVEL = new Float32Array(FW * rows);
+  for (let j = 0; j < rows; j++) {
+    const u = uOf(yTop * S + j);
+    for (let X = 0; X < FW; X++) {
+      const x = (X + 0.5) / S;
+      const i = j * FW + X;
+      if (terraceAt(x, u)) {
+        // rimstone: little dams of calcite holding pools, stepping down towards the way out
+        const v = fbm(x, u * 1.2, { seed: 333, scale: 16, octaves: 2 }) + (u - CASCADE[0]) * 0.008;
+        const ring = (v * 4.5) % 1;
+        LEVEL[i] = Math.floor(v * 4.5);
+        WET[i] = ring > 0.88 ? 3 : 2;
+      } else if (wetAt(x, u)) WET[i] = 1;
+    }
+  }
+  /** Chamfer distance (fine pixels) from every pixel to the nearest one where `seed` is true. */
+  const distance = (seed) => {
+    const D = new Float32Array(FW * rows);
+    for (let i = 0; i < D.length; i++) D[i] = seed(i) ? 0 : 1e6;
+    const step = (i, j, di, dj, c) => {
+      const jj = j + dj;
+      const ii = (i % FW) + di;
+      if (jj < 0 || jj >= rows || ii < 0 || ii >= FW) return;
+      const q = jj * FW + ii;
+      if (D[q] + c < D[i]) D[i] = D[q] + c;
+    };
+    for (let j = 0; j < rows; j++)
+      for (let X = 0; X < FW; X++) {
+        const i = j * FW + X;
+        step(i, j, -1, 0, 1); step(i, j, 0, -1, 1); step(i, j, -1, -1, 1.414); step(i, j, 1, -1, 1.414);
+      }
+    for (let j = rows - 1; j >= 0; j--)
+      for (let X = FW - 1; X >= 0; X--) {
+        const i = j * FW + X;
+        step(i, j, 1, 0, 1); step(i, j, 0, 1, 1); step(i, j, 1, 1, 1.414); step(i, j, -1, 1, 1.414);
+      }
+    return D;
+  };
+  const DW = distance((i) => WET[i] === 1 || WET[i] === 2); // how far from the water (on dry rock)
+  const DI = distance((i) => WET[i] !== 1 && WET[i] !== 2); // how deep in (in the water)
   for (let j = 0; j < rows; j++) {
     const Yy = yTop * S + j;
     const u = uOf(Yy);
     const cl = caveL(u);
     const cr = caveR(u);
-    const rw = riverW(u);
-    const rx = riverX(u);
     for (let X = 0; X < FW; X++) {
       const x = (X + 0.5) / S;
       const i = j * FW + X;
       let h = fbm(x, u, { seed: 331, scale: 2.2, octaves: 2 }) * 0.6;
       let kind = 0;
       const wd = Math.max(cl - x, x - cr);
+      const dw = DW[i] / S;
       if (wd > 0) {
         h += 2 + wd * 1.4 + fbm(x, u, { seed: 332, scale: 1.6, octaves: 2 }) * 3;
         kind = 1;
-      } else if (rw > 0 && Math.abs(x - rx) < rw) {
+      } else if (WET[i] === 1) {
         h = -0.8;
         kind = 3;
-      } else if (terraceAt(x, u)) {
-        // rimstone: little dams of calcite holding pools, stepped
-        const v = fbm(x, u * 1.3, { seed: 333, scale: 9, octaves: 3 }) + (u - TERRACES[0]) * 0.012;
-        const ring = (v * 8) % 1;
-        h = 0.2 + Math.floor(v * 8) * 0.35;
-        kind = ring > 0.84 ? 5 : 4;
+      } else if (WET[i] >= 2) {
+        h = 0.2 + LEVEL[i] * 0.3 + (WET[i] === 3 ? 0.5 : 0);
+        kind = WET[i] === 3 ? 5 : 4;
+      } else if (dw < 5.5) {
+        // the shelves of flowstone round the water: a raised lip at its edge, smooth lobes rising behind
+        const lip = dw < 1.2 ? 1.1 * (1 - Math.abs(dw - 0.6) / 0.6) : 0;
+        h = 0.3 + lip + smooth(1, 5, dw) * (1.3 + (fbm(x, u, { seed: 362, scale: 4 }) - 0.5) * 1.2);
+        kind = 7;
       }
       const cell = grid.get(Math.floor(u / CELL) * gw + Math.floor(x / CELL));
-      if (cell && kind !== 3)
+      if (cell && (kind !== 3 || cell.some((f) => f.wet)))
         for (const f of cell) {
+          if (kind === 3 && !f.wet) continue;
           const ex = x - f.x;
           const eu = u - f.u;
           const qa = (ex * f.ca + eu * f.sa) / f.el;
@@ -438,10 +498,6 @@ export function paintCave(k) {
             RIM[i] = t;
           }
         }
-      if (kind === 0 && fbm(x, u, { seed: 344, scale: 7, octaves: 2 }) > 0.67) {
-        kind = 6; // a pool of still water on the floor, mirroring the lights
-        h = -0.2;
-      }
       H[i] = h;
       KIND[i] = kind;
     }
@@ -468,10 +524,13 @@ export function paintCave(k) {
       // its colour by day: pale limestone, cream on the formations, banded flowstone on the walls, wet and dark low down
       let alb;
       const v = hashPx(X >> 1, Yy >> 1, 334);
-      if (kind === 3) alb = 0x0a2a44;
-      else if (kind === 4) alb = 0x6ab0b8;
-      else if (kind === 5) alb = 0xe8dcc0;
-      else if (kind === 6) alb = 0x141c22;
+      if (kind === 3 || kind === 4) alb = 0x0a2a44;
+      else if (kind === 5) alb = 0xf4c880;
+      else if (kind === 7) {
+        // flowstone shelves, amber and cream in rings, wet and smooth
+        const band = (h * 1.6 + fbm(x, u, { seed: 363, scale: 3 }) * 0.9) % 1;
+        alb = band < 0.22 ? 0xb87436 : band < 0.6 ? 0xeab46a : band < 0.78 ? 0xd08c48 : 0xf8d8a0;
+      }
       else if (kind === 2) {
         const fk = FKP[i];
         const t = RIM[i];
@@ -524,6 +583,13 @@ export function paintCave(k) {
           lg += l.c[1] * f;
           lb += l.c[2] * f;
         }
+      if (kind !== 3 && kind !== 4 && kind !== 5) {
+        // the glow of the water thrown up on the rock beside it
+        const bnc = 0.7 * Math.exp(-DW[i] / (S * 2.4));
+        lr += 0.25 * bnc;
+        lg += 0.78 * bnc;
+        lb += 0.95 * bnc;
+      }
       if (kind === 2 && TIP[i]) {
         lr = lr * 1.5 + 0.12;
         lg = lg * 1.5 + 0.12;
@@ -537,32 +603,28 @@ export function paintCave(k) {
       let r = ((alb >> 16) & 255) * lr;
       let gg = ((alb >> 8) & 255) * lg;
       let b = (alb & 255) * lb;
-      if (kind === 3) {
-        // the river: lit from under the water, ripples catching it
-        const rip = fbm(x * 2, u * 0.7, { seed: 336, scale: 2, octaves: 2 });
-        const glow = Math.min(1, (lb - 0.08) * 0.9);
-        r = 6 + glow * 40 + (rip > 0.62 ? glow * 60 : 0);
-        gg = 26 + glow * 150 + (rip > 0.62 ? glow * 80 : 0);
-        b = 52 + glow * 200 + (rip > 0.62 ? glow * 50 : 0);
-        r = r * (1 - dl) + 40 * dl;
-      } else if (kind === 6) {
-        // still water: dark, the lights mirrored in it, a bright rim where it laps the rock
-        r = 14 + (lr - 0.1) * 210;
-        gg = 18 + (lg - 0.1) * 210;
-        b = 26 + (lb - 0.1) * 220;
-        if (KIND[Math.max(0, i - 1)] !== 6 || KIND[Math.min(KIND.length - 1, i + 1)] !== 6 || KIND[Math.max(0, i - FW)] !== 6) {
-          r += 30;
-          gg += 30;
-          b += 34;
-        }
-      } else if (kind === 4) {
-        // the rimstone pools: still water over pale calcite, the light deep in them
-        r *= 0.8;
-        gg *= 1.1;
-        b *= 1.3;
+      if (kind === 3 || kind === 4) {
+        // the water lights itself from below: milky turquoise in the shallows over the white calcite, deeper blue
+        // in the middle; the bottom showing through, a net of light rippling over it, the walkway's shadow across it
+        const depth = DI[i] / S + (kind === 4 ? 0.4 + (LEVEL[i] % 3) * 0.3 : 0);
+        let c = depth < 1.6 ? mix(0xe4fcff, 0x5ad8f2, depth / 1.6) : mix(0x5ad8f2, 0x1878c0, smooth(1.6, 7, depth));
+        const pebble = fbm(x * 3, u * 3, { seed: 364, scale: 1.4, octaves: 2 });
+        c = scaleColor(c, 0.88 + pebble * 0.24);
+        if (Math.abs(fbm(x * 1.4, u * 1.4, { seed: 365, scale: 2, octaves: 2 }) - 0.5) < 0.03) c = mix(c, 0xffffff, 0.35);
+        const glow = Math.min(1.25, 0.72 + 0.25 * (lr + lg + lb - 0.4));
+        const shadow = Math.abs(x - walkX(u) - 2.6) < 1.6 ? 0.55 : 1;
+        r = ((c >> 16) & 255) * glow * shadow;
+        gg = ((c >> 8) & 255) * glow * shadow;
+        b = (c & 255) * glow * shadow;
+      } else if (kind === 5) {
+        // the lip of a basin: a crisp dam of calcite, lit warm and blue from the pools either side
+        const w2 = 0.75 + 0.3 * smooth(0.2, 1.4, lr + lg);
+        r = Math.min(255, 238 * w2);
+        gg = Math.min(255, 186 * w2);
+        b = Math.min(255, 118 * w2);
       }
       // a wet sparkle where the light is strong
-      if (kind !== 3 && kind !== 6 && (lr + lg + lb) > (kind === 2 ? 0.9 : 1.2) && hashPx(X, Yy, 337) > (kind === 2 ? 0.984 : 0.992)) {
+      if (kind !== 3 && kind !== 4 && (lr + lg + lb) > (kind === 2 ? 0.9 : 1.2) && hashPx(X, Yy, 337) > (kind === 2 ? 0.984 : 0.992)) {
         r += 70;
         gg += 70;
         b += 70;
@@ -728,6 +790,23 @@ export function paintCave(k) {
   const glints = [];
   for (let u = RIVER[0] + 8; u < RIVER[1] - 6; u += 11) glints.push([0, riverX(u) - 2.5, u, (u * 0.37) % 6.28]);
   kit.wave([glint], glints, { w: 1.6, a0: 0, a1: 0.9, pw: 3 });
+  // light rippling over the pools: nets of brightness swelling and fading, out of step with one another
+  const caustic = [0, 1, 2].map((v) => k.sprite(18, 14, 2240, (r) => {
+    for (let j = 0; j < 42; j++)
+      for (let i = 0; i < 54; i++) {
+        const n = Math.abs(fbm(i / 3 + v * 40, j / 3, { seed: 366, scale: 2.2, octaves: 2 }) - 0.5);
+        const edge = Math.min(1, Math.min(i, 53 - i, j, 41 - j) / 10);
+        if (n < 0.05) r.px(i, j, 0xf0ffff, (1 - n / 0.05) * 0.75 * edge);
+      }
+  }, false));
+  const ripples = [];
+  for (let q = 0; q < 400 && ripples.length < 46; q++) {
+    const x = 8 + g() * (W - 16);
+    const u = C0 + 60 + g() * (C1 - C0 - 80);
+    const i = Math.floor((Y(u) - yTop) * S) * FW + Math.floor(x * S);
+    if ((WET[i] === 1 || WET[i] === 2) && DI[i] / S > 2.5) ripples.push([ripples.length % 3, x - 9, u + 7, g() * 6.28]);
+  }
+  kit.wave(caustic, ripples, { w: 0.9, a0: 0.05, a1: 0.7, pw: 2 });
   const ring = [5, 8, 11].map((r) => k.sprite(r / 1.5 + 2, r / 3 + 2, 2300, (q) => {
     for (let a = 0; a < 6.3; a += 0.06) q.px(r + 3 + Math.cos(a) * r, r / 2 + 3 + Math.sin(a) * r * 0.5, 0xd8f4ff, 0.7);
   }, false));
