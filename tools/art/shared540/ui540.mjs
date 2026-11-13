@@ -47,7 +47,7 @@ export function smooth3(src) {
   return out;
 }
 
-const NAMES = /^(btn_|icon_|wpn_|pip_|stamp_icon$|pickup_|hitbox$|orizuru_[0-9]|ice_block$|ps_bean)/; // (not orizuru_glow: a soft glow)
+const NAMES = /^(btn_|icon_|wpn_|pip_|stamp_icon$|pickup_mame$|hitbox$|orizuru_[0-9]|ice_block$|ps_bean)/; // (not orizuru_glow: a soft glow)
 // the small effects of group A done the same way: sparks, the muzzle flash, the engine flame, splashes, blood, debris
 const FX = /^(spark_|muzzle_|flame_|splash$|splat$|bloodball_|debris_|debris_hot)/;
 

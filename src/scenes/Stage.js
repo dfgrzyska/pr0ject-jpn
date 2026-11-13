@@ -790,7 +790,8 @@ export class Stage extends Phaser.Scene {
   }
 
   spawnPickup(color, x, y, vy) {
-    this.pickups.spawn(`pickup_${color}`, Phaser.Math.Clamp(x, 10, VIEW.width - 10), y, { color, vy, age: 0, x0: x });
+    const p = this.pickups.spawn(`pickup_${color}`, Phaser.Math.Clamp(x, 10, VIEW.width - 10), y, { color, vy, age: 0, x0: x });
+    if (this.anims.exists(`pickup_${color}`)) p.play(`pickup_${color}`); // (a weapon's gold token, turning)
   }
 
   updatePickups(dt) {

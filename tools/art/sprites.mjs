@@ -14,6 +14,7 @@ import { stampSprites } from './stamps.mjs';
 import { fxSprites } from './fx.mjs';
 import { logoSprites } from './logo.mjs';
 import { foodSprites } from './foods.mjs';
+import { pickupToken, TOKEN_FRAMES } from './token.mjs';
 
 const out = [];
 const add = (name, raster) => out.push({ name, raster });
@@ -286,7 +287,12 @@ const PICKUP = [
   '...YYY...',
   '..YYYYY..',
 ];
-for (const [col, mat] of [['red', 'R'], ['blue', 'B'], ['green', 'G']]) add(`pickup_${col}`, renderMask(fromRows(PICKUP, false, { X: mat })));
+// the weapon power-ups: gold tokens with the weapon's icon, turning (token.mjs); pickup_<colour> is the first frame
+for (const col of ['red', 'blue', 'green']) {
+  add(`pickup_${col}`, pickupToken(col, 0, 1));
+  for (let f = 0; f < TOKEN_FRAMES; f++) add(`pickup_${col}_${f}`, pickupToken(col, f, 1));
+}
+void PICKUP;
 
 // ---------------------------------------------------------------- bullets
 const raw = (rows) => renderMask(fromRows(rows), { outline: false });

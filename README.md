@@ -259,7 +259,7 @@ Wrogowie (roboty w stylu Fushimi Inari):
 | Ciężki | tanuki — figurka z Shigaraki (kapelusz, butelka sake, zeszyt rachunków) | miniboss (ok. 150 s, nad Ryōan-ji): bębni w brzuch (pierścień na każde „pon”), rzuca butelkami sake z celownikiem na ziemi, zmienia się listkiem w trzy tanuki — kopie mają listek na kapeluszu i wytrzymują kilka trafień (35); w drugiej fazie (po wypiciu sake) bębni szybciej i robi trzy kopie |
 | Nośnik | dron z klejnotem hōju (czerwony/niebieski/zielony) | zygzak, po ~4,6 s ucieka, zawsze zostawia znajdźkę |
 
-Znajdźki: czerwona — rozrzut, niebieska — laser, zielona — naprowadzane „lisie ognie”.
+Znajdźki to błyszczące złote żetony z ikoną broni na kolorowej tarczy (`tools/art/token.mjs`), obracające się w locie, z przesuwającym się odblaskiem i poświatą: czerwony z wachlarzem pocisków — rozrzut, niebieski z wiązką — laser, zielony z kulą i smugą — naprowadzane „lisie ognie”.
 
 Boss: Kyūbi, lis o dziewięciu ogonach — dziki lis z chramu Inari (słomiana lina shimenawa na szyi, klejnot hōju na
 piersi). Gdy tło stanie, lisi ogień zlatuje się nad głowę znaku 大, z płomieni wyłania się ciało, a ogony
