@@ -740,3 +740,12 @@ src/i18n.js            język (PL / EN)
 src/pwa.js             instalacja na telefonie, gra offline (z public/sw.js)
 tools/                 generator grafiki
 ```
+
+## Zasoby i licencje
+
+Cała grafika, font, muzyka i dźwięki powstają z kodu w tym repozytorium (`tools/art`, `src/audio`); nie ma w nim
+cudzych plików graficznych ani audio. Jedyną biblioteką w grze jest Phaser 4 (licencja MIT) — jego nota licencyjna
+jest w `public/THIRD_PARTY_NOTICES.txt` i trafia do buildu. Prawdziwe miejsca są pokazane z nazwy, ale szyldy i
+figury na ulicach Osaki są własne, nie cudze znaki towarowe: przy Ebisu-bashi wielki podświetlany maneki-neko, przed
+restauracją tanuki bębniący w brzuch, na ścianie czerwono-złoty smok, pod Tsūtenkaku złoty Ebisu i szyld z
+szaszłykami kushikatsu.

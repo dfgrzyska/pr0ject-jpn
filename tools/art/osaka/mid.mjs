@@ -3286,7 +3286,7 @@ export function buildMid() {
     }
     // Dōtonbori's walks and bridges, redrawn: boards and paving, a rail along the water with its lamps, the shop fronts
     // burning behind them; the three bridges in stone, thick with people; landings with moored boats; the paper
-    // lanterns set adrift on the canal (tōrō nagashi); Kuidaore Tarō drumming; the Kinryū dragon coiled on its wall
+    // lanterns set adrift on the canal (tōrō nagashi); a tanuki drumming on its belly; a red and gold dragon coiled on its wall
     {
       const [d0, d1] = DOTONBORI;
       const wood = (X, Yr) => {
@@ -3365,7 +3365,8 @@ export function buildMid() {
         chochin((X0 + 44) / S, Yy / S, 0xfff0d0);
         warm((X0 + 24) / S, (Yy + 18) / S, 12, 0.45);
       }
-      // Kuidaore Tarō, drumming away in his red and white stripes and round glasses, outside his restaurant (live)
+      // a tanuki statue drumming on its belly outside the restaurant (the pon-poko of the tanuki-bayashi song),
+      // in its straw hat, a sake flask at its side (live: the paws beat)
       {
         const x = 131;
         const y = Y(d0 + 668);
@@ -3373,25 +3374,39 @@ export function buildMid() {
           capture(x - 7, y - 4, 16, 18, () => {
             const CX = x * S;
             const Yy = y * S;
-            for (let j = 0; j < 7; j++) for (let i = -6; i <= 6; i++) if ((i / 6.3) ** 2 + ((j - 3) / 3.5) ** 2 <= 1) glowPx(CX + i, Yy + j, j < 2 ? 0xd83a2a : i < -2 ? 0xffe0c0 : 0xf0c8a0, 0.99);
+            const ell = (cx, cy, rx, ry, f) => {
+              for (let j = -ry; j <= ry; j++) for (let i = -rx; i <= rx; i++) if ((i / rx) ** 2 + (j / ry) ** 2 <= 1) glowPx(CX + cx + i, Yy + cy + j, f(i, j), 0.99);
+            };
+            // the stone it sits on
+            for (let j = 26; j < 33; j++) for (let i = -10; i <= 10; i++) glowPx(CX + i, Yy + j, j === 26 ? 0xc8c0b0 : 0x8a8478, 0.97);
+            // the body, and the great pale belly
+            ell(0, 17, 9, 10, (i, j) => (i < -4 ? 0x9a6a3a : i > 5 ? 0x5a3a1e : 0x7a5230));
+            ell(0, 19, 6, 6, (i, j) => (i < -2 && j < -1 ? 0xfff0d8 : 0xf0dcb8));
+            // the head: brown, a white muzzle, the dark mask round the eyes, round ears
+            ell(0, 5, 7, 6, (i) => (i < -3 ? 0x9a6a3a : 0x7a5230));
             for (const sd of [-1, 1]) {
-              for (let j = 3; j < 6; j++) for (let i = 1; i < 5; i++) glowPx(CX + sd * i, Yy + j, 0x141418, 0.99);
+              ell(sd * 3, 4, 2, 1, () => 0x2a1a10);
               glowPx(CX + sd * 3, Yy + 4, 0xffffff, 0.99);
+              ell(sd * 6, -1, 1, 1, () => 0x5a3a1e);
             }
-            for (let j = 7; j < 25; j++) for (let i = -7; i <= 7; i++) glowPx(CX + i, Yy + j, j > 20 ? 0x1a1a22 : Math.floor((j + 3) / 3) % 2 ? 0xf4f0e6 : 0xd83a2a, 0.99);
-            for (let j = 10; j < 19; j++) for (let i = -9; i <= 9; i++) if ((i / 9.5) ** 2 + ((j - 14) / 5.5) ** 2 <= 1) glowPx(CX + i, Yy + j, (i / 9.5) ** 2 + ((j - 14) / 5.5) ** 2 > 0.6 ? 0xe8c040 : 0xf8f0d8, 0.99);
+            ell(0, 8, 3, 2, () => 0xf4ead8);
+            glowPx(CX, Yy + 7, 0x1a1a1a, 0.99);
+            // the straw hat, and the sake flask by its foot
+            for (let j = -4; j < -1; j++) for (let i = -9; i <= 9; i++) if (Math.abs(i) < 9 - (j + 4) * 2 || j === -2) glowPx(CX + i, Yy + j, j === -2 ? 0xa88a40 : 0xd8b860, 0.99);
+            ell(9, 22, 2, 3, () => 0xf4f0e6);
+            glowPx(CX + 9, Yy + 21, 0x2a2a2a, 0.99);
+            // the paws, one up and one on the belly, in turn
             for (const sd of [-1, 1]) {
-              const up = (beat ? sd > 0 : sd < 0) ? -6 : 0;
-              for (let k = 0; k < 9; k++) glowPx(CX + sd * (12 - k), Yy + 11 + up + (up ? k * 0.6 : 0), 0xd8b070, 0.99);
+              const up = (beat ? sd > 0 : sd < 0) ? -4 : 0;
+              ell(sd * 5, 16 + up, 2, 2, () => 0x5a3a1e);
             }
-            for (let j = 25; j < 33; j++) for (let i = -9; i <= 9; i++) glowPx(CX + i, Yy + j, j === 25 ? 0xfff0c8 : 0x7a5835, 0.97);
           }, { u: d0 + 668 }),
         );
         kit.loop(x - 7, U(y - 4), taro, { fps: 3, d: 0.3 });
         warm(x, y + 11, 14, 0.5);
         knot(x - 9, y + 12, 2.5, 4, 7);
       }
-      // the great green dragon of the Kinryū ramen shop, coiling across the shop's wall (live: it breathes)
+      // a red and gold dragon coiling across a Chinese restaurant's wall (live: it breathes)
       {
         const x = 128;
         const y = Y(d0 + 852);
@@ -3406,21 +3421,21 @@ export function buildMid() {
               for (let j = -hw; j <= hw; j++) {
                 const scale = ((i >> 2) + (Math.round(j) >> 1)) % 2;
                 const J = Math.round(j);
-                glowPx(OX + 14 + i, OY + Math.round(cy) + J, J > hw * 0.5 ? 0xe8d860 : J < -hw * 0.6 ? 0xa8e870 : scale ? 0x3aa848 : 0x2a8a3a, 0.98);
+                glowPx(OX + 14 + i, OY + Math.round(cy) + J, J > hw * 0.5 ? 0xf6d050 : J < -hw * 0.6 ? 0xff9a6a : scale ? 0xd8341e : 0xa82014, 0.98);
               }
-              if (i % 8 === 0) for (let q = 1; q < 6; q++) glowPx(OX + 14 + i, OY + Math.round(cy) - hw - q, 0xd83a2a, 0.98); // (the crest)
+              if (i % 8 === 0) for (let q = 1; q < 6; q++) glowPx(OX + 14 + i, OY + Math.round(cy) - hw - q, 0xf6d050, 0.98); // (the crest)
             }
             // the head, roaring back at the crowd, gold whiskers, red tongue, a pearl
             const HY = OY + Math.round(Math.sin(k * 0.5) * 24);
-            for (let j = -14; j <= 14; j++) for (let i = -2; i <= 22; i++) if (((i - 10) / 12) ** 2 + (j / 14) ** 2 <= 1) glowPx(OX + i, HY + j, j > 3 ? 0xe8d860 : i < 7 ? 0x4ac858 : 0x2a8a3a, 0.99);
+            for (let j = -14; j <= 14; j++) for (let i = -2; i <= 22; i++) if (((i - 10) / 12) ** 2 + (j / 14) ** 2 <= 1) glowPx(OX + i, HY + j, j > 3 ? 0xf6d050 : i < 7 ? 0xf05a3a : 0xb82418, 0.99);
             for (let i = 0; i < 12; i++) for (let j = 4; j < 9; j++) glowPx(OX + i - 1, HY + j, j > 6 ? 0xffe0d0 : 0xd8201a, 0.99);
-            for (const [i, j] of [[8, -6], [9, -6], [8, -5], [9, -5]]) glowPx(OX + i, HY + j, 0xff3a2a, 1);
+            for (const [i, j] of [[8, -6], [9, -6], [8, -5], [9, -5]]) glowPx(OX + i, HY + j, 0x1a1a1a, 1);
             for (const sd of [-1, 1]) for (let q = 0; q < 14; q++) glowPx(OX + 16 + q, HY + sd * (11 + q), 0xe8c040, 0.98); // (horns)
             for (let q = 0; q < 16; q++) glowPx(OX - q, HY + 9 + Math.round(Math.sin(q * 0.4 + k) * 3), 0xfff0a0, 0.98); // (a whisker)
           }, { u: d0 + 852 }),
         );
         kit.loop(x, U(y - 6), dragon, { fps: 2, seq: [0, 1, 2, 1], d: 0.3 });
-        warm(x + 22, y + 12, 28, 0.42, 0x9affa0);
+        warm(x + 22, y + 12, 28, 0.42, 0xffb080);
       }
       // the paper lanterns adrift on the water, a few at a time between each pair of bridges, flickering
       {
@@ -3446,8 +3461,8 @@ export function buildMid() {
         }
       for (let k = 0; k < 26; k++) folk(14 + fr() * 40, Y(4832 + fr() * 56));
     }
-    // under Tsūtenkaku: the square between its legs, the golden Billiken in his shrine, the angry chef of the
-    // kushikatsu shops with his forks, stalls, the crowd; the district's name on arches across the avenue
+    // under Tsūtenkaku: the square between its legs, a golden Ebisu (Osaka's god of luck and trade) in his little
+    // shrine, a giant sign of kushikatsu skewers, stalls, the crowd; the district's name on arches across the avenue
     {
       const cx = 62;
       const top = Y(3290);
@@ -3467,25 +3482,26 @@ export function buildMid() {
         draw: () => {
           const CX = cx * S + 1;
           const Yy = BY * S;
-          // the little red-and-white shrine, the gold seated figure with his pointed head, smiling, his soles out
+          // the little red-and-white shrine, and in it Ebisu in gold: his tall black cap, a broad smile, a sea bream
+          // under his arm and his fishing rod over his shoulder
           for (let j = -16; j < 24; j++) for (let i = -16; i <= 16; i++) if (Math.abs(i) > 13 || j < -13) glowPx(CX + i, Yy + j, j < -13 ? 0xe83a2a : i % 2 ? 0xf4f0e6 : 0xd83a2a, 0.97);
           for (let j = 24; j < 30; j++) for (let i = -18; i <= 18; i++) glowPx(CX + i, Yy + j, j === 24 ? 0xe8e4dc : 0xa8a49c, 0.96);
-          for (let j = -12; j < 24; j++) {
-            const hw = j < -2 ? Math.max(0, (j + 12) * 0.9) : j < 10 ? 9 : 11;
-            for (let i = -hw; i <= hw; i++) {
-              const I = Math.round(i);
-              glowPx(CX + I, Yy + j, I < -3 ? 0xfff0a0 : I > 4 ? 0xb88a20 : 0xe8c040, 0.98);
-            }
+          const gold = (i) => (i < -3 ? 0xfff0a0 : i > 4 ? 0xb88a20 : 0xe8c040);
+          for (let j = 4; j < 24; j++) {
+            const hw = j < 8 ? 6 + (j - 4) : 10 + (j > 16 ? 1 : 0); // the robed body, seated, wide at the knees
+            for (let i = -hw; i <= hw; i++) glowPx(CX + i, Yy + j, gold(i), 0.98);
           }
-          for (const sd of [-1, 1]) {
-            glowPx(CX + sd * 3, Yy - 2, 0x2a1a0a, 0.98);
-            for (let i = -3; i <= 3; i++) glowPx(CX + i, Yy + 4 + Math.round(-(i * i) / 5 + 1), 0x8a5a14, 0.98);
-            for (let j = 16; j < 24; j++) for (let i = 2; i < 11; i++) glowPx(CX + sd * i, Yy + j, 0xf8d860, 0.98);
-          }
+          for (let j = -6; j < 5; j++) for (let i = -6; i <= 6; i++) if ((i / 6.5) ** 2 + ((j + 1) / 5.5) ** 2 <= 1) glowPx(CX + i, Yy + j, gold(i), 0.98); // the round head
+          for (let j = -12; j < -5; j++) for (let i = -3; i <= 4; i++) if (i - 1 < (j + 12) * 0.6) glowPx(CX + i, Yy + j, 0x1e1a18, 0.98); // the eboshi cap
+          for (const sd of [-1, 1]) for (let i = 1; i < 4; i++) glowPx(CX + sd * (1 + i), Yy - 2 + (i === 2 ? -1 : 0), 0x6a4a10, 0.98); // laughing eyes
+          for (let i = -3; i <= 3; i++) glowPx(CX + i, Yy + 2 + Math.round((i * i) / 5), 0x8a5a14, 0.98); // the grin
+          for (let j = 10; j < 17; j++) for (let i = 2; i < 14; i++) if (((i - 8) / 6) ** 2 + ((j - 13) / 3.2) ** 2 <= 1) glowPx(CX + i, Yy + j, i > 11 ? 0xa81a14 : 0xe8402a, 0.99); // the sea bream
+          glowPx(CX + 4, Yy + 12, 0x1a1a1a, 0.99);
+          for (let k = 0; k < 22; k++) glowPx(CX - 6 - Math.round(k * 0.4), Yy + 8 - k, 0x8a5a24, 0.98); // the rod
         },
       });
       for (let k = 0; k < 12; k++) folk(cx - 10 + k * 1.6, BY + 13 + (k % 3));
-      // the chef, huge and furious, a skewer in each hand
+      // a giant sign of kushikatsu: five skewers fanned out, golden in their breadcrumbs, over a pot of sauce
       {
         const x = cx + 20;
         const y = top + 76;
@@ -3495,18 +3511,23 @@ export function buildMid() {
           draw: () => {
             const CX = x * S;
             const Yy = y * S;
-            for (let j = -18; j < 27; j++)
-              for (let i = -12; i <= 12; i++) {
-                const head = (i / 10) ** 2 + ((j + 7) / 11) ** 2 < 1;
-                const body = j >= 2 && Math.abs(i) < 12;
-                if (!head && !body) continue;
-                let c = head ? (j < -11 ? 0x1a1a22 : i < -4 ? 0xf0d0a8 : 0xd8a878) : (j % 4 === 0 ? 0xc8d0e8 : 0xf4f4f8);
-                if (head && Math.abs(i) > 2 && Math.abs(i) < 8 && j > -10 && j < -7) c = 0x1a1a22;
-                if (head && j > -2 && j < 2 && Math.abs(i) < 6) c = 0x7a1a14;
-                if (body && j > 14) c = 0x1e3a6a;
-                glowPx(CX + i, Yy + j, c, 0.98);
+            // the pot of sauce they stand in
+            for (let j = 14; j < 27; j++) for (let i = -11; i <= 11; i++) glowPx(CX + i, Yy + j, j < 17 ? 0x3a1a0a : j === 26 ? 0x1a1a22 : i < -6 ? 0x8a8c98 : 0x5a5c68, 0.98);
+            for (let k = 0; k < 5; k++) {
+              const a = -Math.PI / 2 + (k - 2) * 0.32;
+              const dx = Math.cos(a);
+              const dy = Math.sin(a);
+              for (let t = 0; t < 34; t++) {
+                const px = CX + Math.round(dx * t);
+                const py = Yy + 16 + Math.round(dy * t);
+                if (t < 12) glowPx(px, py, 0xd8b880, 0.98); // the bamboo stick
+                else
+                  for (let w = -3; w <= 3; w++) {
+                    const crumb = ((px * 7 + py * 13 + w * 5) & 7) < 2;
+                    glowPx(px + Math.round(-dy * w), py + Math.round(dx * w), Math.abs(w) === 3 ? 0x7a420e : crumb ? 0xf6cc7a : w < 0 ? 0xe8a848 : 0xc8842e, 0.99);
+                  }
               }
-            for (const sd of [-1, 1]) for (let k = 0; k < 20; k++) glowPx(CX + sd * (13 + Math.round(k * 0.3)), Yy + 6 - k, k > 10 ? 0xc8884a : 0xc8c8d0, 0.98);
+            }
           },
         });
         warm(x, y + 8, 14, 0.5);
@@ -6107,31 +6128,32 @@ export function buildMid() {
   for (const pl of pools) applyPool(img, pl);
   for (const [x, y, c, a] of lights) img.light(x, y, c, a);
   for (const [X, Yy, c, a] of lightsFine) img.px(X, Yy, c, a);
-  // Glico's illuminated running man beside Ebisu-bashi: blue board, red sun,
-  // white running kit and the unmistakable raised arms. Draw after the night grade.
+  // the great lit board beside Ebisu-bashi: a maneki-neko beckoning luck in, on a deep red ground with a gold frame,
+  // a koban coin in its other paw, a bell on its red collar, a row of lucky coins along the bottom. Drawn after the
+  // night grade, so it shines.
   {
     const x = 23;
     const y = Y(DOTONBORI[0] + 668);
     img.rect(x - 2, y - 2, 32, 57, 0x111526);
-    img.rect(x, y, 28, 53, 0xe8f6ff);
-    img.rect(x + 2, y + 2, 24, 40, 0x1259b5);
-    img.disc(x + 14, y + 19, 10, 0xe63238);
-    for (let i = 0; i < 3; i++) img.line(x + 3, y + 33 + i * 3, x + 24, y + 33 + i * 3, 0x80caff);
-    img.disc(x + 14, y + 11, 3, 0xffd9b4);
-    img.rect(x + 11, y + 15, 7, 12, 0xffffff);
-    for (let k = 0; k < 3; k++) {
-      img.line(x + 11, y + 17 + k, x + 5, y + 7 + k, 0xffffff);
-      img.line(x + 17, y + 17 + k, x + 23, y + 7 + k, 0xffffff);
-      img.line(x + 12 + k, y + 26, x + 9 + k, y + 37, 0xffffff);
-      img.line(x + 16, y + 26 + k, x + 22, y + 29 + k, 0xffffff);
-      img.line(x + 22, y + 29 + k, x + 23, y + 23 + k, 0xffffff);
+    img.rect(x, y, 28, 53, 0xf0c040);
+    img.rect(x + 2, y + 2, 24, 49, 0x8a1420);
+    for (let i = 0; i < 6; i++) img.rect(x + 3 + i * 4, y + 44, 3, 3, 0xf6d460); // the coins
+    // the cat: a round white head and body, ears with pink, black eyes shut in a smile, the raised paw
+    img.disc(x + 14, y + 26, 8, 0xfaf6f0);
+    img.disc(x + 14, y + 14, 7, 0xfaf6f0);
+    for (const sd of [-1, 1]) {
+      img.line(x + 14 + sd * 6, y + 9, x + 14 + sd * 4, y + 5, 0xfaf6f0);
+      img.line(x + 14 + sd * 5, y + 9, x + 14 + sd * 4, y + 7, 0xf090a0);
+      img.line(x + 14 + sd * 3, y + 13, x + 14 + sd * 1, y + 13, 0x1a1a1a);
     }
-    img.rect(x + 12, y + 18, 5, 2, 0xe63238);
-    // Compact 3x5 GLICO lettering on the white footer.
-    const letters = ['111100101101111', '100100100100111', '111010010010111', '111100100100111', '111101101101111'];
-    letters.forEach((glyph, i) => {
-      for (let p = 0; p < 15; p++) if (glyph[p] === '1') img.set(x + 4 + i * 4 + p % 3, y + 45 + Math.floor(p / 3), 0xdb2638);
-    });
+    img.set(x + 14, y + 16, 0xe86a7a);
+    img.rect(x + 8, y + 20, 13, 2, 0xd8201a); // the collar
+    img.disc(x + 14, y + 22, 1.5, 0xf6d460); // its bell
+    img.rect(x + 20, y + 6, 4, 9, 0xfaf6f0); // the raised paw, beckoning
+    img.disc(x + 22, y + 6, 2.5, 0xfaf6f0);
+    img.rect(x + 3, y + 25, 6, 8, 0xf6d460); // the koban held in the other paw
+    img.rect(x + 4, y + 26, 4, 6, 0xffe890);
+    for (const [i, j] of [[16, 24], [11, 30], [17, 31]]) img.set(x + i, y + j, 0xf0a030); // calico patches
     // Put the opaque board above animated facade lights, not only in the static strip.
     kit.loop(x - 2, U(y - 2), [kit.frame(img.crop(x - 2, y - 2, 32, 57))], { fps: 1, d: 2, fx: 0 });
   }
