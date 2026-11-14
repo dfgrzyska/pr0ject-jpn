@@ -14,6 +14,7 @@ import { Debug } from '../game/Debug.js';
 import { Interlude } from '../game/Interlude.js';
 import { Ending } from '../game/Ending.js';
 import { PauseMenu } from '../game/PauseMenu.js';
+import { DevBossMenu } from '../game/DevBossMenu.js';
 import { Shadows } from '../game/Shadows.js';
 import { Quake } from '../game/Quake.js';
 import { Parallax } from '../game/Parallax.js';
@@ -175,8 +176,8 @@ export class Stage extends Phaser.Scene {
     this.stampOwned = hasStamp(this.stage.id, isEasy());
     this.stampEligible = false;
     this.stampChance = false;
-    this.debugStart = Number(q.get('t')) || 0;
-    this.player.god = q.has('god');
+    this.debugStart = data.devStart ?? (Number(q.get('t')) || 0); // (the developer boss menu jumps in too)
+    this.player.god = q.has('god') || Boolean(data.god);
     // debug: ?hitbox outlines what can be hit (green: shots, red: ramming, blue: the extra circles of tentacles and coils,
     // magenta: enemy bullets, yellow: the player's shots, white: the ship)
     this.hitboxes = q.has('hitbox') ? this.add.graphics().setDepth(DEPTH.overlay + 3) : null;
@@ -184,8 +185,9 @@ export class Stage extends Phaser.Scene {
     if (q.get('turrets')) this.player.turrets = Phaser.Math.Clamp(Number(q.get('turrets')), 0, TURRETS.max);
     if (q.get('power')) this.player.level = Phaser.Math.Clamp(Number(q.get('power')), 1, PLAYER.maxPower);
 
-    this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,K,L,I,G,Y,F,ESC,P,ENTER,SPACE');
+    this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,K,L,I,G,Y,F,B,ESC,P,ENTER,SPACE');
     this.input.on('pointerdown', (p) => this.onPointerDown(this.logicalPointer(p)));
+    this.input.on('wheel', (p, over, dx, dy) => this.state === 'dev' && this.devMenu?.wheel(dy));
     this.input.on('pointermove', (p) => {
       p = this.logicalPointer(p);
       if (this.state === 'city' || this.state === 'title') this.journey.pointerMove(p);
@@ -207,8 +209,8 @@ export class Stage extends Phaser.Scene {
       this.openEnding();
       return;
     }
-    if (this.carry) {
-      this.startGame(); // straight on from the previous stage
+    if (this.carry || data.dev) {
+      this.startGame(); // straight on from the previous stage (or into a fight picked on the developer screen)
       return;
     }
     this.music.play('title'); // audible once the browser allows audio (first tap / key)
@@ -276,6 +278,27 @@ export class Stage extends Phaser.Scene {
     if (this.state !== 'play') return;
     const entry = yokaiForEnemy(this.stage.id, enemy, bossDefeated);
     if (entry && discoveries.discover(entry.id)) this.discoveryNotice.add(entry);
+  }
+
+  /** The developer screen: every boss, to fight straight away (from the title: the BOSSY corner, or B). */
+  openDevBosses() {
+    this.hud.closePanel();
+    this.journey.setMode('backdrop');
+    this.state = 'dev';
+    this.devMenu = new DevBossMenu(this);
+  }
+
+  closeDevBosses() {
+    this.devMenu?.destroy();
+    this.devMenu = null;
+    this.showTitle();
+  }
+
+  /** A city's miniboss or boss (the stage from a few seconds before it), or a random encounter. */
+  devStartBoss(go, god) {
+    this.music.unlock();
+    if (go.encounter) this.scene.restart({ order: randomOrder(lastCity()), pos: 0, encounter: go.encounter, dev: true, devStart: 0, god });
+    else this.scene.restart({ order: randomOrder(go.index), pos: 0, dev: true, devStart: go.t, god });
   }
 
   openSelect() {
@@ -591,6 +614,7 @@ export class Stage extends Phaser.Scene {
     }
     if (this.hud.hitDebug(p)) return this.debug.toggle();
     if (this.state === 'city') return this.journey.pointerDown(p);
+    if (this.state === 'dev') return this.devMenu.pointer(p);
     if (this.state === 'title') {
       if (this.hud.hitLang(p)) return this.toggleLang();
       if (this.hud.hitInstall(p)) return install().then(() => this.state === 'title' && this.showTitle());
@@ -634,6 +658,15 @@ export class Stage extends Phaser.Scene {
     }
     if (escape && this.state === 'city') return this.showTitle();
     if (escape && this.state === 'select') return this.openCities();
+    if (this.state === 'dev') {
+      if (escape || down(k.B)) return this.closeDevBosses();
+      if (down(k.UP) || down(k.W)) this.devMenu.move(-1);
+      else if (down(k.DOWN) || down(k.S)) this.devMenu.move(1);
+      else if (down(k.LEFT) || down(k.A)) this.devMenu.move(-8);
+      else if (down(k.RIGHT) || down(k.D)) this.devMenu.move(8);
+      else if (confirm || bomb) this.devMenu.activate();
+      return;
+    }
     if (escape || down(k.P)) { this.togglePause(); if (this.paused) return; }
     if (down(k.M)) this.music.toggle();
     if (down(k.G)) this.debug.toggle();
@@ -642,6 +675,7 @@ export class Stage extends Phaser.Scene {
       else if (down(k.Y)) this.openCollection('yokai');
       else if (down(k.F)) this.openCollection('food');
       else if (down(k.L)) this.toggleLang();
+      else if (down(k.B)) this.openDevBosses();
       else if (down(k.I) && canInstall()) install().then(() => this.state === 'title' && this.showTitle());
       else if (down(k.UP) || down(k.W)) this.journey.focus = (this.journey.focus + 3) % 4;
       else if (down(k.DOWN) || down(k.S)) this.journey.focus = (this.journey.focus + 1) % 4;
@@ -687,6 +721,7 @@ export class Stage extends Phaser.Scene {
     this.map?.layout(this.H);
     this.ending?.layout(this.H);
     this.book?.layout(this.H);
+    this.devMenu?.layout(this.H);
     this.player.clamp();
   }
 

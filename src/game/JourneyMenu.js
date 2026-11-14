@@ -48,6 +48,7 @@ export class JourneyMenu {
     this.yokai = add(pixelText(scene, 90, 0, 'ALBUM YOKAI', 0.5, INK_FONT), DEPTH.overlay + 2);
     this.food = add(pixelText(scene, 90, 0, 'SMAKI JAPONII', 0.5, INK_FONT), DEPTH.overlay + 2);
     this.menuButtons = [this.newGame, this.stamps, this.yokai, this.food];
+    this.dev = add(pixelText(scene, 177, 46, 'BOSSY', 1).setTint(0x8a9ab0), DEPTH.overlay + 2); // the developer boss screen
     this.cards = this.menuButtons.map((_, i) => add(scene.add.image(90, 0, 'menu', `${i ? 'paper' : 'start'}_off`).setScale(FINE)));
     this.icons = ['icon_stamp', 'icon_yokai', 'icon_food'].map((frame) => add(scene.add.image(29, 0, 'menu', frame).setScale(FINE), DEPTH.overlay + 2));
     // Sakura petals, turning as they fall.
@@ -120,7 +121,7 @@ export class JourneyMenu {
     this.drag = null;
     const title = mode === 'title';
     const cities = mode === 'city';
-    for (const o of [this.logo, this.tagline, this.caption, ...this.menuButtons]) o.setVisible(title);
+    for (const o of [this.logo, this.tagline, this.caption, this.dev, ...this.menuButtons]) o.setVisible(title);
     for (const o of this.titleDecor) o.setVisible(title);
     this.map.setVisible(cities || mode === 'backdrop');
     this.clouds.forEach((o) => o.setVisible(cities));
@@ -162,6 +163,7 @@ export class JourneyMenu {
 
   pointerDown(p) {
     if (this.mode === 'title') {
+      if (p.x > 140 && Math.abs(p.y - this.dev.y) < 9) return this.scene.openDevBosses();
       if (p.x < 14 || p.x > 166) return;
       const i = this.menuButtons.findIndex((b) => Math.abs(p.y - b.y) <= 15);
       if (i >= 0) { this.focus = i; this.activate(); }
