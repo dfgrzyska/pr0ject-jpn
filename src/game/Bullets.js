@@ -1,6 +1,7 @@
 import { DEPTH, FAIR, RENDER_SCALE } from '../config.js';
 import { rules, volley } from '../difficulty.js';
 import { Pool } from './Pool.js';
+import { enemyTexture } from './enemyArt.js';
 
 const TAU = Math.PI * 2;
 
@@ -51,7 +52,7 @@ const PLAIN = { pulse: null, ax: 0, ay: 0, maxV: Infinity, life: Infinity, safe:
 export class Bullets {
   constructor(scene) {
     this.scene = scene;
-    this.pool = new Pool(scene, DEPTH.enemyBullet);
+    this.pool = new Pool(scene, DEPTH.enemyBullet, enemyTexture); // (a boss may bring bullets of its own in its atlas)
     this.lobs = new Pool(scene, DEPTH.enemyBullet + 0.5);
     this.marks = new Pool(scene, DEPTH.ground + 0.4);
     this.beams = [];

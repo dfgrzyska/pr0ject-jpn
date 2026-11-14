@@ -10,7 +10,8 @@ import { slow, normal, DOWN, TAU } from './shared.js';
  */
 export const JIHANKI = {
   hp: 2600,
-  home: 82,
+  home: 86,
+  scale: 1.3, // shown bigger than drawn (its art is 56 x 82)
   phase: [0.66, 0.33],
   puddle: { r: 15, life: 5.5 },
   shake: 2.4,
@@ -19,8 +20,12 @@ export const JIHANKI = {
   stunTake: 1.6,
   gift: 3000, // points for a free (golden) can caught
 };
-// the lottery display's four digits, relative to the machine's centre (logical px)
-const DIGITS = [-8.5, -4.5, -0.5, 3.5].map((dx) => [dx, 14.3]);
+// places on the machine, from its art (fine px of the 168 x 246 frame) to logical px off its centre, as shown
+const at = (fx, fy) => [((fx - 84) / 3) * JIHANKI.scale, ((fy - 123) / 3) * JIHANKI.scale];
+const DIGITS = [48, 62, 76, 90].map((fx) => at(fx, 185)); // the lottery display's four digits
+const MOUTH = at(69, 206); // the flap the cans come out of
+const COINS = at(134, 140); // the change cup
+const FEET = at(84, 244)[1]; // where it stands
 
 export const jihanki = {
   /**
@@ -38,14 +43,20 @@ export const jihanki = {
   spawnJihanki(w, base) {
     const g = {
       kind: 'jihanki', state: 'enter', t: 0, stage: 1, phase: 0, step: 0, timer: 1.4, parts: [], awake: false, defeated: false,
-      x: w.x, cans: [], puddles: [], digits: [], lottery: null, shakeT: 0, jet: null, stun: 0, rage: 0, hop: null, hopT: 1.6, openT: 0, take: { body: 1 },
+      x: w.x, cans: [], puddles: [], digits: [], bits: [], lottery: null, shakeT: 0, jet: null, stun: 0, rage: 0, hop: null, hopT: 1.6, openT: 0, take: { body: 1 },
     };
-    const body = this.pool.spawn('jihanki_0', w.x, -80, { ...base, role: 'body', group: g, hp: JIHANKI.hp, maxHp: JIHANKI.hp, radius: 20, segs: [{ x: 0, y: 0, r: 19 }, { x: 0, y: 0, r: 19 }] });
-    body.setDepth(DEPTH.air - 0.1);
+    const body = this.pool.spawn('jihanki_0', w.x, -80, { ...base, role: 'body', group: g, hp: JIHANKI.hp, maxHp: JIHANKI.hp, radius: 26, flashTint: 0x1c1c1c, segs: [{ x: 0, y: 0, r: 25 }, { x: 0, y: 0, r: 25 }] });
+    body.setDepth(DEPTH.air - 0.1).setScale(body.base * JIHANKI.scale);
     g.body = body;
     g.parts.push(body);
     g.maxTotal = JIHANKI.hp;
-    if (body.texture.has('led_off')) for (let i = 0; i < 4; i++) g.digits.push(this.segPool.spawn('led_off', body.x, body.y).setDepth(DEPTH.air - 0.09));
+    if (body.texture.has('led_off'))
+      for (let i = 0; i < 4; i++) {
+        const d = this.segPool.spawn('led_off', body.x, body.y).setDepth(DEPTH.air - 0.09);
+        g.digits.push(d.setScale(d.base * JIHANKI.scale));
+      }
+    // its shadow on the ground: it stays down while the machine hops
+    if (body.texture.has('jihanki_shadow')) g.shadow = this.segPool.spawn('jihanki_shadow', w.x, -80).setDepth(DEPTH.ground + 0.4).setAlpha(0);
     this.bossGroup = g;
     return body;
   },
@@ -56,6 +67,7 @@ export const jihanki = {
     g.t += dt;
     this.jihankiCans(g, dt);
     this.jihankiPuddles(g, dt);
+    this.jihankiBits(g, dt);
     if (g.state === 'enter') {
       e.y += Math.max(10, (JIHANKI.home - e.y) * 1.4) * dt;
       if (e.y >= JIHANKI.home - 1) {
@@ -97,8 +109,6 @@ export const jihanki = {
 
   /** Phase 1: cans, coins, the curtain of its buttons. */
   jihankiOne(g) {
-    const e = g.body;
-    const b = this.scene.bullets;
     switch (g.phase % 3) {
       case 0:
         this.jihankiDispense(g, g.step % 2 ? 'cold' : 'hot', 'ring');
@@ -107,7 +117,7 @@ export const jihanki = {
         break;
       case 1:
         // the change: a fan of coins at the player
-        for (let i = 0; i < 7; i++) b.shot('eb_pearl', e.x + 15, e.y - 4, this.aimAt(e, 15, -4) + (i / 6 - 0.5) * 1.1, normal, 2);
+        this.jihankiCoins(g, 7, 1.1);
         g.timer = 0.55;
         if (++g.step >= 2) this.jihankiNext(g);
         break;
@@ -121,11 +131,10 @@ export const jihanki = {
   /** Phase 2: shaking itself up, then the foam; shaken cans; heavier change. */
   jihankiTwo(g) {
     const e = g.body;
-    const b = this.scene.bullets;
     switch (g.phase % 3) {
       case 0:
         g.shakeT = JIHANKI.shake;
-        this.scene.fx.text(e.x, e.y - 44, 'SZURU SZURU!', 1, 0x9ad8ff);
+        this.scene.fx.text(e.x, e.y - 60, 'SZURU SZURU!', 1, 0x9ad8ff);
         this.jihankiNext(g);
         break;
       case 1:
@@ -134,7 +143,7 @@ export const jihanki = {
         if (++g.step >= 4) this.jihankiNext(g);
         break;
       default:
-        for (let i = 0; i < 9; i++) b.shot('eb_pearl', e.x + 15, e.y - 4, this.aimAt(e, 15, -4) + (i / 8 - 0.5) * 1.4, normal, 2);
+        this.jihankiCoins(g, 9, 1.4);
         g.timer = 0.6;
         if (++g.step >= 3) this.jihankiNext(g);
     }
@@ -160,6 +169,15 @@ export const jihanki = {
     }
   },
 
+  /** The change: a fan of 5-yen coins out of the change cup, at the player. */
+  jihankiCoins(g, n, arc) {
+    const e = g.body;
+    const [ox, oy] = COINS;
+    const aim = this.aimAt(e, ox, oy);
+    for (let i = 0; i < n; i++) this.scene.bullets.shot('jb_coin', e.x + ox, e.y + oy, aim + (i / (n - 1) - 0.5) * arc, normal, 2);
+    this.scene.fx.text(e.x + ox + 4, e.y + oy - 10, 'CHARIN!', 0.5, 0xffe080);
+  },
+
   /** Out of the flap and in an arc at the player: a can, which spills where it lands. */
   jihankiDispense(g, kind, burst) {
     const s = this.scene;
@@ -167,7 +185,7 @@ export const jihanki = {
     const pl = s.player;
     const tx = Phaser.Math.Clamp(pl.x + (Math.random() - 0.5) * 50, 14, VIEW.width - 14);
     const ty = Phaser.Math.Clamp(pl.y + (Math.random() - 0.5) * 30, s.H * 0.45, s.H - 16);
-    this.jihankiCan(g, kind, e.x, e.y + 26, tx, ty, 1.05, 'lob', burst);
+    this.jihankiCan(g, kind, e.x + MOUTH[0], e.y + MOUTH[1], tx, ty, 1.05, 'lob', burst);
     g.openT = 0.25;
     s.sfx.explode('s');
   },
@@ -176,6 +194,7 @@ export const jihanki = {
     const frame = `can_${kind}`;
     if (!g.body.texture.has(frame)) return;
     const spr = this.segPool.spawn(frame, x, y).setDepth(DEPTH.air + 0.05);
+    spr.setScale(spr.base * 1.25);
     g.cans.push({ spr, kind, x0: x, y0: y, tx, ty, t: 0, dur, mode, burst, spin: (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 4) });
   },
 
@@ -188,7 +207,7 @@ export const jihanki = {
       if (i >= gap && i < gap + 3) continue;
       const x = 8 + (i / (n - 1)) * (VIEW.width - 16);
       this.scene.time.delayedCall(i * 45, () => {
-        if (!g.defeated && this.canFire(g.body)) b.fire(x, g.body.y + 30, DOWN, slow);
+        if (!g.defeated && this.canFire(g.body)) b.fire(x, g.body.y + 40, DOWN, slow);
       });
     }
   },
@@ -197,12 +216,28 @@ export const jihanki = {
   jihankiShake(g, dt) {
     const s = this.scene;
     g.shakeT -= dt;
+    const e = g.body;
     s.cameras.main.shake(60, 0.004 + (g.stage >= 3 ? 0.002 : 0));
-    if (Math.random() < dt * 8) s.fx.puff('wisp_s_1', g.body.x + (Math.random() - 0.5) * 40, g.body.y + 30, 0.3);
+    // the pressure building: caps popping off the top, foam squeezing out of its seams
+    if (Math.random() < dt * 4) {
+      const side = Math.random() < 0.5 ? -1 : 1;
+      this.jihankiBit(g, 'cap', e.x + side * 20, e.y - 46, side * (30 + Math.random() * 40), -110 - Math.random() * 60, { ay: 320, life: 1.2, frames: ['cap_0', 'cap_1'], rate: 14 });
+      s.fx.text(e.x + side * 26, e.y - 52, 'PON!', 0.4, 0xffffff);
+    }
+    if (Math.random() < dt * 14) {
+      const side = Math.random() < 0.5 ? -1 : 1;
+      this.jihankiBit(g, 'foam', e.x + side * 36, e.y + (Math.random() - 0.3) * 60, side * (8 + Math.random() * 14), 10 + Math.random() * 20, { size: Math.random() < 0.7 ? 0 : 1, life: 0.9, grow: 0.8 });
+    }
     if (g.shakeT <= 0) {
-      g.jet = { t: 0, dur: g.stage >= 3 ? 1.1 : 1.6, fire: 0 };
-      s.fx.text(g.body.x, g.body.y + 40, 'PSSSHHH!', 1, 0xd8f0ff);
+      g.jet = { t: 0, dur: g.stage >= 3 ? 1.1 : 1.6, fire: 0, cloud: 0 };
+      s.fx.text(e.x, e.y + 56, 'PSSSHHH!', 1, 0xd8f0ff);
       s.sfx.explode('m');
+      // the burst: a cloud of foam out of the mouth
+      for (let i = 0; i < 10; i++) {
+        const a = DOWN + (Math.random() - 0.5) * 2.4;
+        const v = 40 + Math.random() * 70;
+        this.jihankiBit(g, 'foam', e.x + MOUTH[0], e.y + MOUTH[1], Math.cos(a) * v, Math.sin(a) * v, { size: 2 + (i % 2), life: 0.9, grow: 0.6, drag: 2 });
+      }
     }
   },
 
@@ -214,7 +249,17 @@ export const jihanki = {
     if ((j.fire -= dt) <= 0 && this.canFire(e)) {
       j.fire = 0.055;
       const sweep = Math.sin(j.t * 3.2) * 1.05;
-      for (const sx of [-1, 1]) this.scene.bullets.shot('eb_ice', e.x + sx * 8, e.y + 28, DOWN + sx * sweep, normal * 0.9, 1.8);
+      for (const sx of [-1, 1]) this.scene.bullets.shot('jb_bubble', e.x + MOUTH[0] + sx * 10, e.y + MOUTH[1], DOWN + sx * sweep, normal * 0.9, 2);
+    }
+    // the jets themselves: billows of foam streaming out along them, swelling and thinning away
+    if ((j.cloud -= dt) <= 0) {
+      j.cloud = 0.03;
+      const sweep = Math.sin(j.t * 3.2) * 1.05;
+      for (const sx of [-1, 1]) {
+        const a = DOWN + sx * sweep + (Math.random() - 0.5) * 0.25;
+        const v = 120 + Math.random() * 60;
+        this.jihankiBit(g, 'foam', e.x + MOUTH[0] + sx * 10, e.y + MOUTH[1] + 4, Math.cos(a) * v, Math.sin(a) * v, { size: 1 + Math.floor(Math.random() * 3), life: 0.45 + Math.random() * 0.2, grow: 1.2, drag: 1.6 });
+      }
     }
     if (j.t > j.dur) {
       g.jet = null;
@@ -244,16 +289,16 @@ export const jihanki = {
       L.done = true;
       const e = g.body;
       if (win) {
-        s.fx.text(e.x, e.y - 46, 'ATARI!', 1.6, 0xffe080);
-        s.fx.text(e.x, e.y - 34, 'DARMOWY NAPÓJ!', 1.4, 0xffe080);
+        s.fx.text(e.x, e.y - 64, 'ATARI!', 1.6, 0xffe080);
+        s.fx.text(e.x, e.y - 52, 'DARMOWY NAPÓJ!', 1.4, 0xffe080);
         g.stun = JIHANKI.stun;
         // free golden cans tumble out towards the player
         for (let i = 0; i < 3; i++) {
           const tx = Phaser.Math.Clamp(s.player.x + (i - 1) * 34, 14, VIEW.width - 14);
-          this.jihankiCan(g, 'gold', e.x, e.y + 26, tx, Phaser.Math.Clamp(s.player.y - 10, s.H * 0.5, s.H - 20), 1.0 + i * 0.12, 'lob', 'gift');
+          this.jihankiCan(g, 'gold', e.x + MOUTH[0], e.y + MOUTH[1], tx, Phaser.Math.Clamp(s.player.y - 10, s.H * 0.5, s.H - 20), 1.0 + i * 0.12, 'lob', 'gift');
         }
       } else {
-        s.fx.text(e.x, e.y - 46, 'HAZURE...', 1.4, 0xb0aec0);
+        s.fx.text(e.x, e.y - 64, 'HAZURE...', 1.4, 0xb0aec0);
         g.rage = 2.6;
       }
     }
@@ -304,7 +349,7 @@ export const jihanki = {
     }
   },
 
-  /** Where and how it stands: hopping, shaking, reeling; its frame; the lottery's digits on it; its hit circles. */
+  /** Where and how it stands: hopping, shaking, reeling; its face; the lottery's digits on it; its shadow. */
   jihankiPose(g, dt) {
     const e = g.body;
     const shake = g.shakeT > 0 ? 2.5 : g.rage > 0 ? 1.2 : g.stun > 0 ? 0.8 : 0;
@@ -313,19 +358,27 @@ export const jihanki = {
     // (it rattles and hops upright: turned even a little, the big cabinet drew broken into triangles in testing)
     if (e.rotation) e.setRotation(0);
     if (g.openT > 0) g.openT -= dt;
-    const frame = g.openT > 0 && g.stage === 1 ? 'jihanki_open' : g.stage >= 3 ? 'jihanki_3' : g.stage === 2 ? 'jihanki_2' : Math.floor(g.t * 2) % 2 ? 'jihanki_1' : 'jihanki_0';
+    const open = g.openT > 0;
+    let frame;
+    if (g.stage === 1) frame = open ? 'jihanki_open' : g.t % 3.4 < 0.13 ? 'jihanki_blink' : Math.floor(g.t * 2) % 2 ? 'jihanki_1' : 'jihanki_0';
+    else if (g.stage === 2) frame = g.shakeT > 0 ? `jihanki_fizz_${Math.floor(g.t * 9) % 2}` : open ? 'jihanki_2_open' : 'jihanki_2';
+    else frame = g.stun > 0 ? 'jihanki_dizzy' : g.shakeT > 0 ? `jihanki_fizz_${Math.floor(g.t * 9) % 2}` : open ? 'jihanki_3_open' : 'jihanki_3';
     if (e.texture.has(frame) && e.frame.name !== frame) e.setFrame(frame);
     e.flash = g.stun > 0 && Math.floor(g.t * 10) % 2 ? 0.02 : e.flash;
-    const sn = Math.sin(e.rotation);
-    const cs = Math.cos(e.rotation);
     g.digits.forEach((d, i) => {
       const [dx, dy] = DIGITS[i];
       const v = g.lottery ? g.lottery.vals[i] : null;
-      d.setFrame(v === null ? 'led_off' : `led_${v}`).setPosition(e.x + dx * cs - dy * sn, e.y + dx * sn + dy * cs).setRotation(e.rotation).setAlpha(e.alpha).setVisible(e.visible);
+      d.setFrame(v === null ? 'led_off' : `led_${v}`).setPosition(e.x + dx, e.y + dy).setAlpha(e.alpha).setVisible(e.visible);
     });
+    // the shadow stays on the ground, smaller and fainter the higher it hops
+    if (g.shadow) {
+      const lift = g.state === 'fight' ? JIHANKI.home - e.y : 0;
+      const k = Math.max(0.5, 1 - lift / 40);
+      g.shadow.setPosition(e.x, (g.state === 'fight' ? JIHANKI.home : e.y) + FEET - 2).setScale(g.shadow.base * JIHANKI.scale * k).setAlpha(g.state === 'fight' ? k : 0);
+    }
     const [top, bot] = e.segs;
-    Object.assign(top, { x: e.x + 18 * sn, y: e.y - 18 * cs });
-    Object.assign(bot, { x: e.x - 18 * sn, y: e.y + 18 * cs });
+    Object.assign(top, { x: e.x, y: e.y - 24 });
+    Object.assign(bot, { x: e.x, y: e.y + 24 });
   },
 
   /** The cans in flight: lobbed in an arc, or dropped from the top; where they land, a puddle and a burst. */
@@ -368,6 +421,12 @@ export const jihanki = {
         c.spr.y = c.y0 + (c.ty - c.y0) * k - Math.sin(k * Math.PI) * 30;
       }
       c.spr.rotation += c.spin * dt;
+      // a hot can trails steam, a cold one glints with frost
+      if ((c.trail = (c.trail ?? 0) - dt) <= 0 && c.kind !== 'gold') {
+        c.trail = 0.07;
+        if (c.kind === 'hot') this.jihankiBit(g, 'steam', c.spr.x, c.spr.y - 4, (Math.random() - 0.5) * 10, -18, { life: 0.5 });
+        else this.jihankiBit(g, 'frost', c.spr.x + (Math.random() - 0.5) * 6, c.spr.y + (Math.random() - 0.5) * 6, 0, 8, { life: 0.35 });
+      }
       // where it will land: a blinking ring, red for hot, blue for cold, gold for a gift
       const col = c.kind === 'hot' ? 0xff7050 : c.kind === 'cold' ? 0x8ad0ff : 0xffe080;
       if (Math.floor(c.t * 12) % 2) {
@@ -385,16 +444,18 @@ export const jihanki = {
         g.cans[n++] = c;
         continue;
       }
-      // the splash: the splat hurts right there, the can's drink spills into a puddle, drops fly out
+      // the splash: the splat hurts right there, a crown of drink, a puddle, drops (or ice) flying out
       this.segPool.kill(c.spr);
       b.shot('splat', c.tx, c.ty, 0, 0, 6, { life: 0.12 });
-      s.fx.shards(c.tx, c.ty, 6, true);
-      this.jihankiPuddle(g, c.kind === 'hot', c.tx, c.ty);
+      const hot = c.kind === 'hot';
+      this.jihankiBit(g, 'splash', c.tx, c.ty - 6, 0, 0, { life: 0.24, frames: [0, 1, 2].map((f) => `splash_${hot ? 'hot' : 'cold'}_${f}`), rate: 12.5, scale: 1.3 });
+      s.fx.text(c.tx, c.ty - 20, hot ? 'ACHI!' : 'HIYA!', 0.5, hot ? 0xffb080 : 0xc0ecff);
+      this.jihankiPuddle(g, hot, c.tx, c.ty);
       if (this.canFire(g.body) || c.mode === 'drop') {
-        const frame = c.kind === 'hot' ? 'eb_lava' : 'eb_ice';
+        const frame = hot ? 'jb_coffee' : 'jb_ice';
         const off = Math.random() * TAU;
-        if (c.burst === 'spiral') for (let i = 0; i < 10; i++) b.shot(frame, c.tx, c.ty, off + (i / 10) * TAU, slow * (0.7 + (i % 2) * 0.35), 1.8);
-        else for (let i = 0; i < 6; i++) b.shot(frame, c.tx, c.ty, off + (i / 6) * TAU, slow * 0.85, 1.8);
+        if (c.burst === 'spiral') for (let i = 0; i < 10; i++) b.shot(frame, c.tx, c.ty, off + (i / 10) * TAU, slow * (0.7 + (i % 2) * 0.35), 2, { spin: true });
+        else for (let i = 0; i < 6; i++) b.shot(frame, c.tx, c.ty, off + (i / 6) * TAU, slow * 0.85, 2, { spin: true });
       }
     }
     g.cans.length = n;
@@ -404,6 +465,7 @@ export const jihanki = {
     const frame = `puddle_${hot ? 'hot' : 'cold'}_0`;
     if (!g.body.texture.has(frame)) return;
     const spr = this.segPool.spawn(frame, x, y).setDepth(DEPTH.ground + 0.5).setAlpha(0);
+    spr.setScale(spr.base * 1.1);
     g.puddles.push({ spr, hot, x, y, t: 0, life: JIHANKI.puddle.life, r: JIHANKI.puddle.r });
   },
 
@@ -422,6 +484,13 @@ export const jihanki = {
         if (p.hot) hot = true;
         else cold = true;
       }
+      // coffee steams, slush glints
+      if (a > 0.5 && Math.random() < dt * (p.hot ? 5 : 3)) {
+        const x = p.x + (Math.random() - 0.5) * p.r * 1.6;
+        const y = p.y + (Math.random() - 0.5) * p.r * 0.6;
+        if (p.hot) this.jihankiBit(g, 'steam', x, y - 4, (Math.random() - 0.5) * 6, -16, { life: 0.8 });
+        else this.jihankiBit(g, 'frost', x, y, 0, 0, { life: 0.5 });
+      }
       if (p.t >= p.life) {
         this.segPool.kill(p.spr);
         continue;
@@ -433,13 +502,74 @@ export const jihanki = {
     if (cold) pl.frostUpdate(dt, true);
   },
 
-  /** It's over: its cans, puddles and digits go with it. */
+  /**
+   * Its little bits of show: popping caps, foam billowing and thinning, splashes, steam off hot coffee, frost glints.
+   * kind: 'foam' (o.size 0-3; grows by o.grow over its life, slows by o.drag) | 'cap' | 'splash' (o.frames, o.rate) |
+   * 'steam' | 'frost'.
+   */
+  jihankiBit(g, kind, x, y, vx, vy, o = {}) {
+    const e = g.body;
+    let spr = null;
+    if (kind === 'foam' || kind === 'cap' || kind === 'splash') {
+      const frame = kind === 'foam' ? `foam_${o.size ?? 1}` : o.frames?.[0];
+      if (!frame || !e.texture.has(frame)) return;
+      spr = this.segPool.spawn(frame, x, y).setDepth(kind === 'splash' ? DEPTH.air + 0.04 : DEPTH.air + 0.02);
+      spr.setScale(spr.base * (o.scale ?? 1));
+    } else if (kind === 'steam') {
+      if (!e.texture.has('steam_0')) return;
+      spr = this.segPool.spawn('steam_0', x, y).setDepth(DEPTH.air + 0.01);
+      o = { ...o, frames: ['steam_0', 'steam_1', 'steam_2'], rate: 3 / (o.life ?? 0.6), grow: 0.5 };
+    }
+    g.bits.push({ kind, spr, x, y, vx, vy, t: 0, life: o.life ?? 0.6, ay: o.ay ?? 0, drag: o.drag ?? 0, grow: o.grow ?? 0, frames: o.frames, rate: o.rate ?? 10, s0: spr?.scaleX ?? 1 });
+  },
+
+  jihankiBits(g, dt) {
+    let n = 0;
+    for (const b of g.bits) {
+      b.t += dt;
+      const k = b.t / b.life;
+      if (k >= 1) {
+        if (b.spr) this.segPool.kill(b.spr);
+        continue;
+      }
+      b.vy += b.ay * dt;
+      if (b.drag) {
+        b.vx *= Math.max(0, 1 - b.drag * dt);
+        b.vy *= Math.max(0, 1 - b.drag * dt);
+      }
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      if (b.spr) {
+        b.spr.setPosition(b.x, b.y);
+        if (b.frames) b.spr.setFrame(b.frames[Math.min(b.frames.length - 1, Math.floor(b.t * b.rate)) % b.frames.length]);
+        if (b.kind === 'cap') b.spr.setFrame(b.frames[Math.floor(b.t * b.rate) % 2]);
+        if (b.grow) b.spr.setScale(b.s0 * (1 + b.grow * k));
+        if (b.kind === 'foam') b.spr.setAlpha(1 - k * k);
+        if (b.kind === 'steam') b.spr.setAlpha(Math.sin(k * Math.PI) * 0.8);
+        if (b.kind === 'splash') b.spr.setAlpha(k > 0.7 ? (1 - k) / 0.3 : 1);
+      } else if (b.kind === 'frost') {
+        // a glint: a little white cross, twinkling
+        const a = Math.sin(k * Math.PI);
+        this.tele.lineStyle(1, 0xffffff, a);
+        this.tele.lineBetween(b.x - 2, b.y, b.x + 2, b.y);
+        this.tele.lineBetween(b.x, b.y - 2, b.x, b.y + 2);
+      }
+      g.bits[n++] = b;
+    }
+    g.bits.length = n;
+  },
+
+  /** It's over: its cans, puddles, digits, shadow and bits go with it. */
   jihankiCleanup(g) {
     for (const c of g.cans) this.segPool.kill(c.spr);
     for (const p of g.puddles) this.segPool.kill(p.spr);
     for (const d of g.digits) this.segPool.kill(d);
+    for (const b of g.bits) if (b.spr) this.segPool.kill(b.spr);
+    if (g.shadow) this.segPool.kill(g.shadow);
     g.cans = [];
     g.puddles = [];
     g.digits = [];
+    g.bits = [];
+    g.shadow = null;
   },
 };

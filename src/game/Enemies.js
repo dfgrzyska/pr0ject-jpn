@@ -886,7 +886,7 @@ export class Enemies {
       e.flashCool -= dt;
       if (e.flash > 0) {
         e.flash -= dt;
-        e.setTint(0x808080).setTintMode(Phaser.TintModes.ADD);
+        e.setTint(e.flashTint ?? 0x808080).setTintMode(Phaser.TintModes.ADD); // (a big pale boss flashes softer)
         e.head?.setTint(0x808080).setTintMode(Phaser.TintModes.ADD);
         if (e.segs) for (const sg of e.segs) sg.setTint?.(0x808080).setTintMode(Phaser.TintModes.ADD);
       } else if ((e.type === 'boss' && e.group.enraged && e.group.kind !== 'kyubi') || e.rage) {

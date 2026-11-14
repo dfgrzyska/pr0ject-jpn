@@ -32,6 +32,16 @@ Bez prawdziwych marek na puszkach, autach, kubkach i okładkach.
 
 Stałe: `JIHANKI` w `src/game/enemies/jihanki.js` (2600 HP, progi faz 66% / 33%).
 
+Wygląd (druga wersja): automat w lekkim rzucie z boku, pokazany 1,3× większy niż narysowany — kremowa obudowa
+z daszkiem, czerwony podświetlany nagłówek to twarz (dwoje dużych oczu LED, brwi; mruga, złości się, przy
+wstrząsaniu zaciska oczy „> <”, po wygranej na loterii ma spirale), jasno podświetlona witryna z butelkami,
+puszkami i brązowymi buteleczkami na chromowanych półkach, cenówki, świecące przyciski, klapka-paszcza z zębami
+przy wyrzucaniu puszki, krótkie nóżki i cień na ziemi (zostaje, gdy automat podskakuje). Wstrząśnięty puchnie,
+witryna wypełnia się bąbelkami, z góry strzelają kapsle, a ze szczelin wycieka piana; strumienie to kłęby piany
+z bąbelkami-pociskami. Monety to pięciojenówki z dziurką, rozbite puszki dają koronę rozprysku, krople kawy albo
+kostki lodu; nad kałużą kawy unosi się para, kałuża brei ma kostki lodu i szron. Trafienia błyskają słabiej niż
+u innych bossów (`flashTint`), żeby jasny automat nie bielał.
+
 - **Faza 1 — automat ma dość:** puszki gorące (czerwone) i zimne (niebieskie) lecą łukiem w gracza (miga
   pierścień w miejscu lądowania). Gorąca rozlewa kałużę kawy: stanie w niej grzeje działa jak para w Beppu (gorące
   strzały, potem przegrzanie). Zimna — kałużę lodowej brei: szron spowalnia statek, a po chwili zamraża go w
