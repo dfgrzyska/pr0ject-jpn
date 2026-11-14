@@ -22,7 +22,8 @@ const RAMPS = {
   u: [0x082a66, 0x1250a8, 0x2a7ad0, 0x6ab8f0, 0xd8f4ff], // Umi Jigoku's cobalt
   a: [0x2a7aa0, 0x5ab8d8, 0x9ae0f0, 0xd0f4ff, 0xffffff], // Umi Jigoku's blue water
   g: tones([0x5a5650, 0x8e8a82, 0xc8c4bc]), // Oniishibozu mud
-  z: tones([0x1e2a16, 0x3e5a2a, 0x6e8a44]), // crocodile
+  z: tones([0x092a31, 0x206963, 0x69b6a2]), // crocodile yokai, jade-turquoise scales
+  j: tones([0x555544, 0xb3b58b, 0xf0e4b2]), // horn and pale flanks
   i: tones([0x2a2628, 0x4a4648, 0x7a7678]), // cast iron
   b: tones([0x4a2410, 0x8a5426, 0xc8904a]), // roasted beans
   E: tones([0x4a4644, 0x8a8682, 0xc4c0ba]), // stone
@@ -245,44 +246,70 @@ export function boil(mud, f) {
 export function wani(open) {
   const s = new HiSprite(87, 204, RAMPS);
   const cx = 43.5;
-  const hide = { pat: mix2(crackle({ amt: 0.22, scale: 5, width: 0.05, seed: 7 }), speckle({ amt: 0.14, dark: 0.06 })) };
-  // the tail, thick at the root, a double crest of scutes down it
-  s.paint([0, 0, 87, 80], (x, y) => y < 76 && Math.abs(x - cx) < 3 + (y / 76) * 15, 'z', (x) => 0.55 - (x - cx) / 60, hide);
-  for (let y = 6; y < 74; y += 6) for (const sx of [-1, 1]) s.poly([[cx + sx * (1 + y / 30), y], [cx + sx * (3 + y / 22), y + 3], [cx + sx * (1 + y / 30), y + 5]], 'z', { flat: 0.3 });
+  const hide = { pat: mix2(crackle({ amt: 0.12, scale: 5, width: 0.05, seed: 7 }), speckle({ amt: 0.06, dark: 0.03 })) };
+  // A curved, heavy tail; alternating raised scutes catch the wet turquoise light.
+  const tail = [[72,4,1.8],[62,8,4],[50,19,7],[40,34,10],[36,52,13],[43.5,79,18]];
+  for (let i=1;i<tail.length;i++) {
+    const [x0,y0,r0]=tail[i-1], [x,y,r]=tail[i];
+    s.tube(x0,y0,x,y,r0,'z',{rb:r,...hide});
+    for (let k=0;k<3;k++) {
+      const t=k/3, xx=x0+(x-x0)*t, yy=y0+(y-y0)*t;
+      s.poly([[xx-3,yy],[xx,yy-3],[xx+3,yy],[xx+1,yy+4]],'z',{flat:0.78});
+      s.line(xx-2,yy,xx,yy-2,0x9bddc8,1);
+    }
+  }
   // the legs splayed, claws out
   for (const [lx, ly, ex, ey] of [[6, 27, 1, 23], [21, 27, 26, 23], [6, 41, 1, 46], [21, 41, 26, 46]]) {
-    s.tube(M(lx), M(ly), M(ex), M(ey), 6, 'z', { rb: 4.5, ...hide });
+    s.ellipse(M(lx), M(ly), 10, 12, 'z', hide);
+    s.tube(M(lx), M(ly), M(ex), M(ey), 7, 'z', { rb: 5.5, ...hide });
+    s.ellipse(M(ex), M(ey), 6, 5, 'z', hide);
     for (let k = -1; k <= 1; k++) {
       const a = Math.atan2(M(ey) - M(ly), M(ex) - M(lx)) + k * 0.5;
       s.line(M(ex), M(ey), M(ex) + Math.cos(a) * 7, M(ey) + Math.sin(a) * 7, 0xe8e0c8, 1);
     }
   }
   // the body: rows of armoured scutes, the paler flanks
+  s.ellipse(cx, M(34), 27, 40, 'j', { bias: -0.1 });
   s.ellipse(cx, M(34), 25, 40, 'z', { bias: 0.02, ...hide });
-  for (let y = M(24); y < M(46); y += 7) for (const dx of [-12, -6, 0, 6, 12]) {
-    s.ellipse(cx + dx, y, 2.6, 2.8, 'z', { bias: 0.14 });
-    s.px(cx + dx - 1, y - 1, 0x9ab060);
+  for (let row=0;row<10;row++) for (let col=-2;col<=2;col++) {
+    const y=77+row*7, x=cx+col*8+(row%2?1:-1);
+    s.poly([[x-3,y-2],[x+2,y-3],[x+4,y+1],[x+2,y+4],[x-3,y+3]],'z',{flat:0.4+(col+2)*0.065});
+    s.line(x-3,y-2,x+2,y-3,0x91d4bb,1);
+    s.line(x+3,y+1,x+2,y+3,0x123c40,1);
   }
   // the long snout; the jaws open on a pink mouth and rows of teeth
   const o = open === true ? 1 : open || 0; // how far the jaws are open, 0..1 (half way: the snap's in-between)
   const jaw = 15 + 6 * o;
   s.paint([0, M(45), 87, 204], (x, y) => {
     const t = (y - M(45)) / (204 - M(45));
-    return t < 0.96 && Math.abs(x - cx) < (t < 0.28 ? 18 - t * 8 : jaw * 0.7 - (t - 0.28) * jaw * 0.55);
+    const width = t < 0.3 ? 23 - t * 14 : t < 0.75 ? 18 : 18 * Math.sqrt(Math.max(0, 1 - ((t - 0.75) / 0.24) ** 2));
+    return t < 0.99 && Math.abs(x - cx) < width;
   }, 'z', (x, y) => 0.6 - (x - cx) / 60 - (y - 150) / 400, hide);
   if (o) {
-    const mw = (y) => (12 - (y - 158) * 0.25) * (0.35 + 0.65 * o); // the gape, narrower half open
+    const mw = (y) => (14 - (y - 158) * 0.13) * (0.35 + 0.65 * o); // the gape, narrower half open
     s.paint([0, 155, 87, 202], (x, y) => y > 158 && y < 196 && Math.abs(x - cx) < mw(y), 'P', () => 0.45);
     for (let y = 160; y < 196; y += 4) for (const sx of [-1, 1]) s.poly([[cx + sx * (mw(y) + 0.5), y], [cx + sx * (mw(y) + 0.5), y + 3], [cx + sx * (mw(y) - 2), y + 1.5]], 'W', { flat: 0.85 });
   } else {
-    for (let y = 160; y < 196; y += 5) for (const sx of [-1, 1]) s.poly([[cx + sx * (10.5 - (y - 158) * 0.15), y], [cx + sx * (12 - (y - 158) * 0.15), y + 1.5], [cx + sx * (10.5 - (y - 158) * 0.15), y + 3]], 'W', { flat: 0.8 });
+    for (let y = 160; y < 196; y += 5) for (const sx of [-1, 1]) s.poly([[cx + sx * (17 - Math.max(0, y - 182) * 0.17), y], [cx + sx * (18.5 - Math.max(0, y - 182) * 0.17), y + 1.5], [cx + sx * (17 - Math.max(0, y - 182) * 0.17), y + 3]], 'W', { flat: 0.8 });
+  }
+  // Two swept ivory horns root beside the eyes; no change to the collision body.
+  for (const side of [-1,1]) {
+    s.tube(cx+side*15,146,cx+side*24,130,4.5,'j',{rb:2.8});
+    s.tube(cx+side*24,130,cx+side*19,115,2.8,'j',{rb:0.5});
+    for (let k=0;k<4;k++) s.line(cx+side*(17+k*1.5),143-k*3,cx+side*(21+k),141-k*3,0x737d65,1);
+    // restrained gold spiral markings on the shoulders
+    for (let k=0;k<22;k++) {
+      const a=k*0.35, r=4-k*0.13;
+      s.px(cx+side*20+Math.cos(a)*r,124+Math.sin(a)*r,0xc5bd73);
+    }
   }
   // the raised eyes, gold, slit pupils; the nostrils at the tip
   for (const sx of [-1, 1]) {
     s.ellipse(cx + sx * 9, M(48), 5.4, 5, 'z', { bias: 0.1 });
     s.ellipse(cx + sx * 9, M(48.5), 3.4, 3, 'Y', { flat: 0.75 });
     s.line(cx + sx * 9, M(48.5) - 2.5, cx + sx * 9, M(48.5) + 2.5, INK, 1);
-    s.dot(cx + sx * 3, 197, 1.3, INK);
+    s.ellipse(cx + sx * 7, 189, 3, 2, 'z', { bias: 0.2 });
+    s.dot(cx + sx * 7, 190, 1.4, INK);
   }
   return s.render();
 }

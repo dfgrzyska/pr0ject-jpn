@@ -27,6 +27,7 @@ try {
         p.drag = true;
         for (let i = 0; i < frames && !s.bossDown; i++) {
           const g = s.enemies.bossGroup;
+          if (city === 3 && g?.stage === 3 && (s.player.pull || s.parallax.windTarget)) throw new Error('Bear wind must not move the ship');
           p.tx = 90; p.ty = s.H - 44;
           if (g) {
             const alive = g.parts.filter(e => !e.dead && e.hp > 0 && e.group === g);
@@ -40,11 +41,8 @@ try {
               } else { p.tx = g.body.x; }
               audit.maxMelts = Math.max(audit.maxMelts, g.melts ?? 0);
             } else if (city === 5) {
-              const pin = g.slams.find(q => q.pinned);
-              const pile = g.piles?.[Math.floor(audit.frames / 600) % 3];
-              if (pin) { p.tx = pin.to.x; p.ty = pin.to.y + 40; }
-              else if (g.open > 0 || !pile) { p.tx = g.head.x; }
-              else { p.tx = pile.x + 8; p.ty = pile.y + 14; }
+              const arm = alive.find(e => e.role === 'tentacle' && !e.invuln);
+              p.tx = arm?.x ?? g.head.x;
             } else if (city === 8 && g.launchers) {
               if (g.open) p.tx = alive[0]?.x ?? 90;
               else {
@@ -137,7 +135,7 @@ try {
     assert.deepEqual(state.phases.filter(Boolean).sort(), [1, 2, 3]);
     if (city === 3) assert.equal(state.melts, 3);
     else if (city === 8) assert(state.fireworks > 0);
-    else assert(state.opens > 0);
+    else assert.equal(state.opens, 0, 'Tako has no pin/open mechanic');
     const cleared = await page.evaluate(() => {
       const s = game.scene.getScene('Stage');
       for (let i = 0; i < 2400 && s.state === 'play'; i++) s.update(0, 1000 / 60);
@@ -150,7 +148,6 @@ try {
         const s = game.scene.getScene('Stage'), bad = [];
         const labels = [
           ['STOP LODOWĄ SKORUPĘ', 'ZWAB 3 SZARŻE PRZEZ OGIEŃ'],
-          ['PALE W ZATOCE', 'STAŃ PRZY PALU, MACKA UTKNIE'],
           ['FAJERWERKI', 'ŁADUJ WYRZUTNIĘ POD SMOKIEM'],
         ];
         for (const lang of ['pl', 'en']) {

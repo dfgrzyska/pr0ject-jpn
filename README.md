@@ -22,7 +22,7 @@ npm run test:browser
 ```
 
 Opcjonalne `CHROME_PATH` wskazuje własną instalację Chrome. Bez niego testy używają
-Chromium dostarczonego przez Playwright. Po błędzie CI zachowuje wygenerowane podglądy PNG.
+Chromium dostarczonego przez Playwright. Zestaw obejmuje też rozejm nad Dome i podglądy Otagi oraz krokodyla. Po błędzie CI zachowuje wygenerowane podglądy PNG.
 
 ## Uruchomienie
 
@@ -250,8 +250,8 @@ Pas tła (warstwa środkowa) ~7 tys. px, ok. 3,5 min — przelot nad Kioto:
   honden, scena kagura, ściany beczek sake, czerwone flagi nobori, święte drzewa z shimenawa, tłumy);
 - **Senbon Torii** (47–76 s): tunele torii na grzbiecie (z rozwidleniem na dwa) z pielgrzymami migającymi
   między bramami, kopce otsuka, lis przemykający między nimi, smugi słońca na zboczach;
-- **Arashiyama** (76–103 s): gaj bambusowy z płotkami z chrustu i rikszami, czarna torii chramu Nonomiya
-  (dróżka od ścieżki przez lukę w płotku),
+- **Arashiyama** (76–103 s): gaj bambusowy z płotkami z chrustu i rikszami, Otagi Nenbutsu-ji z omszałymi figurkami rakanów
+  i zadaszoną bramą przy bocznej dróżce,
   smugi słońca w gaju i spacerowicze w wypożyczonych kimonach, staw Sōgenchi z ogrodu Tenryū-ji (wysepka z sosną,
   skalny wodospad, żwir przed werandą pawilonu) na końcu gaju, hanami na niebieskich plandekach pod wiśniami nad rzeką,
   rzeka Katsura z mostem Togetsukyō i łodziami;
@@ -397,8 +397,7 @@ płonie festiwalowe ognisko; niedźwiedź szarżuje w gracza (szeroki czerwony p
 w celu), więc trzeba go sprowokować tak, żeby przebiegł przez ogień. Każde przejście zostawia na rzeźbie żarzące się
 pęknięcia, niedźwiedź płonie i paruje, a pod ogniskiem kolejny z trzech kryształków lodu zmienia się w płomyk; po
 trzecim skorupa pęka. Faza 2: brunatny niedźwiedź higuma — ryk z pierścieniami, zamachy łapami, łososie wijące się
-w locie i spadające sople. Faza 3 (poniżej 45%, **zamieć Hokkaido**): boczny wiatr (zmienia kierunek co 5 s,
-z napisem „WIATR >>”) spycha statek i pociski, z góry spadają sople.
+w locie i spadające sople. Faza 3 (poniżej 45%, **zamieć Hokkaido**): z góry spadają sople; bez wiatru przesuwającego statek i pociski.
 
 ## Etap 4
 
@@ -499,9 +498,7 @@ trafienie w dowolny segment rani mackę. Faza 1: walczą cztery przednie macki, 
 krzyż, salwy trzech takoyaki; łeb przyjmuje 75%. Faza 3 (**zasłona z atramentu**, bez macek albo gdy łeb ma
 poniżej 40%): chmury tuszu nad wodą, szarże odrzutowe w stronę gracza, spirala tuszu, kule tuszu z pierścieniem
 i grad takoyaki. Ataki są dobrane tak, żeby na ekranie było naraz najwyżej ok. 40 pocisków.
-W fazach 1 i 2 w zatoce stoją trzy drewniane pale cumownicze: uderzenie macki celuje w gracza, a kto stoi przy palu,
-ten ściąga je na pal — macka się w nim klinuje („ZAKLINOWANA!”) na 4 s i bierze 2,5× obrażeń; odcięta w tym stanie
-odsłania głowę na 4,5 s i zmiata pociski z ekranu. To bonus, walkę da się wygrać i bez pali.
+Macki uderzają w zapowiedzianym kierunku i wracają. Nie ma pali ani zakleszczania ramion.
 
 ## Beppu
 
@@ -770,3 +767,9 @@ jest w `public/THIRD_PARTY_NOTICES.txt` i trafia do buildu. Prawdziwe miejsca s�
 figury na ulicach Osaki są własne, nie cudze znaki towarowe: przy Ebisu-bashi wielki podświetlany maneki-neko, przed
 restauracją tanuki bębniący w brzuch, na ścianie czerwono-złoty smok, pod Tsūtenkaku złoty Ebisu i szyld z
 szaszłykami kushikatsu.
+
+Hiroszima: chwila ciszy zaczyna się przy wejściu na odcinek Genbaku Dome i trwa 11,5 s.
+Na ten czas przelot przyspiesza; późniejsze fale są przesunięte, żeby nadal pasowały do scenerii.
+Zwykli przeciwnicy to czerwone duszki liści klonu; papierowe żurawie rozejmu są wyłącznie dekoracją.
+Krokodyl Beppu ma wariant yōkai: turkusowe łuski, złote oczy i jasne rogi, przy niezmienionym hitboksie.
+Otagi jest stylizowaną interpretacją świątyni i jej rakanów: https://www.otagiji.com/story-en.

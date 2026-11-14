@@ -46,7 +46,7 @@ export class Interlude {
     this.active = true;
     this.t0 = t;
     s.ceasefire = true;
-    if (this.cfg.water) s.player.shots.clear();
+    s.player.shots.clear();
     s.bullets.cancelAll(s.fx);
     if (this.cfg.title) s.hud.show(this.cfg.title, this.cfg.sub ?? '', 3.6);
     s.sfx.bell?.();
@@ -55,9 +55,10 @@ export class Interlude {
     const origins = [];
     for (const e of s.enemies.pool.live) {
       if (e.dead || e.type === 'boss' || e.type === 'heavy' || e.group?.kind) continue;
-      if (e.y < -10 || e.y > s.H + 10) continue;
-      origins.push([e.x, e.y]);
-      s.fx.puff('wisp_s_0', e.x, e.y, 0.35);
+      if (e.y >= -10 && e.y <= s.H + 10) {
+        origins.push([e.x, e.y]);
+        s.fx.puff('wisp_s_0', e.x, e.y, 0.35);
+      }
       s.enemies.remove(e);
     }
     s.enemies.pool.sweep();

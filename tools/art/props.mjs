@@ -277,7 +277,8 @@ export class PropKit {
   /**
    * Movers along a route of centre points [[x, u], ...]: n of them, gap px apart, sp px/s.
    * mode 'wrap' (start over) or 'pp' (there and back, waiting `hold` s at the ends).
-   * turn 'rot' (frames face right, turned to the heading), 'flip' (mirrored when going left), 'none'.
+   * turn 'rot' (frames face right, turned to the heading), 'flip' (mirrored when going left),
+   * 'vertical' (north-facing boats flip vertically on their return leg), 'none'.
    * fu / fd: frames for going up / down the screen (3/4 view vehicles). wake: { f, every, life }.
    * cars: 1 = mover i always shows frame i (the coaches of a train) instead of cycling the frames; a
    * list in place of frame i is cycled for that mover alone (the dancers of a parade).

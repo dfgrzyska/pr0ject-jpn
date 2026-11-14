@@ -26,6 +26,7 @@ export class Parallax {
     // the scroll stops at the end of the strip, or where the stage says (Kyoto: with the 大 on the screen)
     this.maxTime = ((stage.scroll.stop ?? meta.length) - this.anchor) / this.speed.mid;
     this.time = 0;
+    this.scrollClock = 0;
     this.farTime = 0;
     this.uTop = this.anchor;
     this.nearKind = stage.near ?? 'sakura';
@@ -108,8 +109,11 @@ export class Parallax {
 
   /** Jump to a point in the stage (debug / restart). */
   setTime(t) {
-    this.time = Math.min(t, this.maxTime);
-    this.farTime = t;
+    this.scrollClock = t;
+    const fast = this.speed.fast;
+    const extra = fast ? Math.max(0, Math.min(t - fast.from, fast.to - fast.from)) * (fast.rate - 1) : 0;
+    this.time = Math.min(t + extra, this.maxTime);
+    this.farTime = t + extra;
   }
 
   /** Screen y of a strip position u (distance from the start of the strip). */
@@ -133,9 +137,12 @@ export class Parallax {
 
   update(dt, scrolling, H) {
     if (scrolling) {
-      // (Nagasaki: the climb eases off over the last stretch, cresting the summit of Inasa)
-      this.time = Math.min(this.time + dt * this.rate(), this.maxTime);
-      this.farTime += dt;
+      if (this.speed.fast) this.setTime(this.scrollClock + dt);
+      else {
+        // (Nagasaki: the climb eases off over the last stretch, cresting the summit of Inasa)
+        this.time = Math.min(this.time + dt * this.rate(), this.maxTime);
+        this.farTime += dt;
+      }
     }
     this.uTop = Math.round((this.anchor + this.time * this.speed.mid) * this.artScale) / this.artScale;
 

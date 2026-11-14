@@ -278,7 +278,6 @@ export class Enemies {
       return;
     }
     // the octopus: an arm stuck in a mooring pile takes much more of a hit (osaka.js, TAKO)
-    if (e.group?.kind === 'tako' && e.role === 'tentacle' && e.group.slams.some((sl) => sl.arm === e && sl.pinned)) amount *= 2.5;
     if (crabBlock) {
       // Heike-gani's iron pincers deflect frontal shots unless flanked from the sides
       if (Math.random() < 0.45) this.scene.fx.spark(e.x, e.y + 14);

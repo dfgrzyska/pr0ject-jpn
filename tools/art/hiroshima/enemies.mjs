@@ -1,5 +1,4 @@
-// Hiroshima's enemies at 540 px (docs/enemies-540-plan.md): orizuru, paper cranes folded from red chiyogami
-// printed with white seigaiha waves; the rough, flaking oysters of the Seto Inland Sea with a pearl in the
+// Hiroshima's enemies at 540 px (docs/enemies-540-plan.md): mischievous red maple-leaf spirits; the rough, flaking oysters of the Seto Inland Sea with a pearl in the
 // mantle; Miyajima's shamoji paddles come alive as tsukumogami; momiji manjū, the maple-leaf cakes, branded
 // and baked golden; the stone lanterns of the shore at Itsukushima; the Heike crab with the scowling face of
 // a drowned Heike samurai in its shell (now the taka-ashi-gani, the long-legged spider crab: crab540.mjs); and Sankibō, the great tengu of Mount Misen, in yamabushi dress with
@@ -29,37 +28,24 @@ const RAMPS = {
   q: [0x7a90a8, 0xb8c8d8, 0xe8f0f8, 0xffffff, 0xffffff], // pearl
 };
 
-// ---------------------------------------------------------------- popcorn: an orizuru (15 x 13 -> 45 x 39), head up, wings beating
+// ---------------------------------------------------------------- popcorn: a mischievous maple-leaf spirit.
+// Legacy atlas keys stay tsuru_* for save/asset compatibility; this is no longer a bird.
 export function tsuru(f) {
   const s = new HiSprite(45, 39, RAMPS);
-  const cx = 22.5;
-  const lift = [0, 4, 8, 4][f]; // the wing tips: spread, rising, raised, falling
-  const span = [21, 19, 15, 19][f];
-  const wave = (x, y) => {
-    // seigaiha: rows of overlapping white arcs printed on the red
-    const row = Math.floor(y / 4);
-    const xx = x + (row % 2) * 3;
-    const cxx = Math.floor(xx / 6) * 6 + 3;
-    const d = Math.hypot(xx - cxx, (y % 4) - 4);
-    return Math.abs(d - 2.6) < 0.5 || Math.abs(d - 1.2) < 0.4;
-  };
-  // the two wings, each folded down its middle: one face lit, one in shadow
-  for (const sx of [-1, 1]) {
-    const tip = [cx + sx * span, 3 + lift];
-    s.poly([[cx, 12], tip, [cx + sx * span * 0.55, 19 + lift * 0.4], [cx, 24]], 'r', { flat: sx < 0 ? 0.68 : 0.46 });
-    s.poly([[cx, 12], tip, [cx + sx * span * 0.5, 13 + lift * 0.6]], 'r', { flat: sx < 0 ? 0.82 : 0.58 });
-    s.line(cx, 13, tip[0], tip[1], sx < 0 ? 0xffb0b0 : 0x8a1420, 1);
+  const sway = [0, 2, 0, -2][f];
+  const leaf = [[22+sway,2],[26,13],[35,6],[32,18],[43,15],[35,25],
+    [39,29],[27,30],[24,35],[18,30],[5,31],[10,25],[2,17],[14,18],[10,7],[19,13]];
+  s.poly(leaf, 'r', { flat: 0.62 });
+  s.poly([[22+sway,2],[22,28],[14,18],[10,7],[19,13]], 's', { flat: 0.78 });
+  for (const [x,y] of [[22+sway,4],[12,10],[4,18],[39,17],[33,9]]) s.line(22,28,x,y,0xffb04c,1);
+  s.line(22,28,24+sway,37,0x733c20,2);
+  // A broad impish face, without a beak, neck, tail or wings.
+  for (const x of [16,27]) {
+    s.ellipse(x,21,3.4,4,'k');
+    s.ellipse(x-0.5,20,1.5,2,'p');
   }
-  for (let y = 0; y < 39; y++) for (let x = 0; x < 45; x++) {
-    const i = y * 45 + x;
-    if (s.mat[i] === 'r' && wave(x + 0.5, y + 0.5) && Math.abs(x - cx) > 2) s.px(x, y, 0xfff0f0, 0.75);
-  }
-  // the body: a diamond folded down the middle, the neck up to the head with its beak folded down, the tail
-  s.poly([[cx, 9], [cx + 3.5, 18], [cx, 28], [cx - 3.5, 18]], 'p', { flat: 0.72 });
-  s.line(cx, 9, cx, 28, 0xb0a8b8, 1);
-  s.poly([[cx - 1.4, 10], [cx + 1.4, 10], [cx + 0.6, 1], [cx - 0.6, 1]], 'r', { flat: 0.7 });
-  s.poly([[cx - 0.6, 1], [cx + 0.6, 1], [cx + 2.6, 3.5]], 's', { flat: 0.7 });
-  s.poly([[cx - 1.4, 27], [cx + 1.4, 27], [cx + 0.5, 37], [cx - 0.5, 37]], 'p', { flat: 0.6 });
+  s.line(18,27,22,29,0x35121e,1.5);
+  s.line(22,29,26,26,0x35121e,1.5);
   return s.render();
 }
 

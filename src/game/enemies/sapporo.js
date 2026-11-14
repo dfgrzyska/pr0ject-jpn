@@ -11,7 +11,7 @@ export const YUKI = { hp: 860, time: 52, crystals: 5, crystalLife: 6.5, mist: 4.
 const MIRROR = { hp: 45, weight: 0, score: 1500, radius: 11, explosion: 'm' };
 const CRYSTAL = { hp: 12, weight: 0, score: 100, radius: 6, explosion: 's' };
 // Three furnace charges melt the shell (encounters.js); the exposed bear brings a blizzard below `storm` HP.
-const KUMA = { bear: 1060, storm: 0.45, wind: 22, drift: 16 };
+const KUMA = { bear: 1060, storm: 0.45 };
 
 export const sapporo = {
   /** The ice lantern's shell breaks: the bare flame flares up and fires faster. */
@@ -567,7 +567,7 @@ export const sapporo = {
     g.body = part('kuma_ice', 'body', 0, 0, KUMA.bear, 20, 0);
     g.melts = 0;
     g.take = { body: 0.02 };
-    Object.assign(g, { windDir: 1, windT: 0, icT: 1 });
+    Object.assign(g, { icT: 1 });
     g.maxTotal = g.body.maxHp;
     this.bossGroup = g;
     return g.body;
@@ -636,7 +636,7 @@ export const sapporo = {
     place(g.home + (g.stage === 1 ? 12 : 26) * Math.sin(g.t * 0.5 * sp), g.homeY + 4 * Math.sin(g.t * 0.9 * sp));
     if (g.stage === 2 && body.hp < body.maxHp * KUMA.storm) {
       // the roar brings the blizzard
-      Object.assign(g, { enraged: true, roar: 1.2, phase: 0, step: 0, windT: 0 });
+      Object.assign(g, { enraged: true, roar: 1.2, phase: 0, step: 0 });
       this.phaseBreak(g, body.x, body.y, 3, 'ZAMIEĆ HOKKAIDO');
     }
     if (g.stage >= 3) this.kumaBlizzard(g, dt);
@@ -706,19 +706,9 @@ export const sapporo = {
     }
   },
 
-  /** Phase 3: a crosswind (turning every few seconds, with a warning) pushes the ship and the bullets; icicles fall. */
+  /** Phase 3: falling icicles, without wind moving the ship or its shots. */
   kumaBlizzard(g, dt) {
     const s = this.scene;
-    if ((g.windT -= dt) <= 0) {
-      g.windDir = -g.windDir;
-      g.windT = 5;
-      s.fx.text(Phaser.Math.Clamp(s.player.x, 40, VIEW.width - 40), s.player.y - 26, g.windDir > 0 ? 'WIATR >>' : '<< WIATR', 1.2, 0xd8f0ff);
-    }
-    const ramp = Math.min(1, (5 - g.windT) / 0.8); // it builds up after turning
-    s.parallax.windTarget = g.windDir * 70 * ramp;
-    const pl = s.player;
-    if (pl.alive) pl.pull = { x: g.windDir > 0 ? VIEW.width + 400 : -400, y: pl.y, k: KUMA.wind * ramp };
-    for (const b of s.bullets.pool.live) if (!b.dead) b.x += g.windDir * KUMA.drift * ramp * dt;
     if ((g.icT -= dt) <= 0 && s.bombClear <= 0) {
       g.icT = 1.7;
       for (let k = 0; k < 2; k++) s.bullets.shot('icicle', 12 + Math.random() * (VIEW.width - 24), 8, DOWN, 0, 1.8, { ay: 150, maxV: 150, safe: 0.7 });

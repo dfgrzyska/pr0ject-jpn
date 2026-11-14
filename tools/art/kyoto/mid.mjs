@@ -2,7 +2,7 @@
 // Gion (Hanamikōji's machiya, maiko and rickshaws, the Yasaka pagoda, Yasaka shrine's west gate) →
 // the Kamo river (turtle stepping stones, Pontochō's summer terraces, couples along the bank) →
 // the approach to Fushimi Inari and the shrine (Rōmon, honden, foxes) → the Senbon torii tunnels on the
-// ridge → Arashiyama (the bamboo grove, Nonomiya's black torii, Togetsukyō bridge over the Katsura) →
+// ridge → Arashiyama (the bamboo grove, Otagi's mossy rakan, Togetsukyō bridge over the Katsura) →
 // Kinkaku-ji, the Golden Pavilion mirrored in its pond → Ryōan-ji's rock garden → Kiyomizu-dera
 // (Sannenzaka, the Niōmon, the three-storey pagoda, the great wooden stage on its lattice of pillars,
 // Otowa falls) → the Daimonji mountain at dusk with the 大 burning on its slope.
@@ -2442,13 +2442,42 @@ export function buildMid() {
         kit.emit(Math.round(bx(u) + side * (6 + wr() * 34)), u + 18, dry, { rate: 0.14, life: [3.5, 5], vy: -5, sx: 7, wf: 1.4, a: 0.9, rise: 0, tint: 1 });
       }
     }
-    // Nonomiya shrine: the black torii of unbarked wood, a little hall, a moss garden
-    fillGround(126, Y(2990), 50, 70, C.moss, 32, 4);
-    reserveRect(124, Y(2992), 54, 74);
-    gateSmall(150, Y(2934), 9, true, { span: 11, h: 14 });
-    hall(132, Y(2984), 34, 16, 5, 'hondo');
-    walk(bx(2916) + 5, 154, 2913, 2918); // its approach, through a gap in the fence and the torii to the hall
-    path(2913, 2964, () => 150, 3);
+    // Otagi Nenbutsu-ji: a compact interpretation of the mossy hillside temple
+    // and its individually carved rakan, in the existing Arashiyama clearing.
+    fillGround(120, Y(3000), 58, 88, C.moss, 32, 4);
+    reserveRect(118, Y(3002), 62, 92);
+    hall(128, Y(2992), 44, 19, 8, 'hondo');
+    walk(bx(2916) + 5, 150, 2913, 2918);
+    path(2913, 2963, () => 150, 3);
+    // A roofed Buddhist entrance rather than the former Shinto torii.
+    hall(142, Y(2930), 17, 7, 5, 'gate');
+    for (let row = 0; row < 5; row++) for (let col = 0; col < 6; col++) {
+      const x = 123 + col * 9 + (row % 2 ? 1 : 0);
+      if (x > 143 && x < 155) continue; // keep the approach open
+      const y = Y(2959 - row * 8);
+      const seed = row * 6 + col;
+      objects.push({ y: y + 5, draw: () => {
+        img.ellipse(x + 1, y + 5, 3.1, 1.1, 0x14251b, 0.65);
+        img.rect(x - 2.6, y + 3.5, 5.4, 1.6, 0x59604e);
+        img.ellipse(x, y + 1.8, 2.2, 2.8, 0x858b74);
+        img.ellipse(x - 0.3, y - 1.1, 2, 2.1, 0xa5aa91);
+        img.ellipse(x - 0.7, y - 1.8, 1.6, 0.9, 0x667c46);
+        img.line(x - 1.2, y - 1, x - 0.6, y - 0.8, 0x353d32, 1, 1);
+        img.line(x + 0.5, y - 0.8, x + 1.1, y - 1, 0x353d32, 1, 1);
+        img.line(x - 0.6, y + 0.1, x + 0.4, y + 0.4, 0x454d3c, 1, 1);
+        // Clasped hands, a cheek on a hand, or a little round object: distinct poses.
+        if (seed % 3 === 0) {
+          img.line(x - 1.8, y + 1.5, x, y + 2.2, 0xb0b39b, 1, 2);
+          img.line(x + 1.8, y + 1.5, x, y + 2.2, 0xb0b39b, 1, 2);
+        } else if (seed % 3 === 1) img.line(x + 1.6, y + 2.7, x + 1.1, y - 0.1, 0xb0b39b, 1, 2);
+        else img.ellipse(x, y + 2.4, 1, 0.9, 0x575e4c);
+        for (let k = 0; k < 7; k++) {
+          const dx = hashPx(k, seed, 77) * 3.4 - 1.7;
+          const dy = hashPx(seed, k, 79) * 4.8 - 2.2;
+          img.px(Math.round((x + dx) * S), Math.round((y + dy) * S), k % 2 ? 0x526c3b : 0xbfc0a5);
+        }
+      } });
+    }
     // the south bank promenade and the Katsura river with Togetsukyō bridge: the water wide and green, the
     // current in long streaks, the stone edge of the bank
     fillGround(0, Y(3330), W, 70, C.gravel, 33, 6);

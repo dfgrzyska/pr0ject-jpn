@@ -35,6 +35,8 @@ try {
         if (ready) elapsed += 1 / 60;
         const phase = type === 'heavy' ? (target.kind === 'yukionna' || target.kind === 'oranda' ? target.phase : target.stage ?? (target.p2 ? 2 : 1)) : target.stage ?? 1;
         if (ready && phase) phases.add(phase);
+        if (type === 'boss' && city === 5 && (target.piles || target.pileArt || target.slams.some(sl => sl.pinned))) throw new Error('Removed Tako pin mechanic returned');
+
         if (elapsed > 9 && changed === 0 || elapsed > 19 && changed === 1) {
           changed++;
           const fraction = changed === 1 ? 0.45 : 0.2;

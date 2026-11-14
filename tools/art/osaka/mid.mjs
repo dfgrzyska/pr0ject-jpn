@@ -2376,7 +2376,7 @@ export function buildMid() {
         w.set(0, 14 + k * 4, 0xeaf0f0);
         return kit.frame(tod.frame(w, u0));
       });
-      kit.path([[x + 6, u0], [x + 6, u1]], [boatF], { sp: 7, mode: 'pp', hold: 3, turn: 'none', wake: { f: wakeF, every: 3, life: 2 }, s0 });
+      kit.path([[x + 6, u0], [x + 6, u1]], [boatF], { sp: 7, mode: 'pp', hold: 3, turn: 'vertical', wake: { f: wakeF, every: 3, life: 2 }, s0 });
     }
     // buildings on both banks, lit up, with neon and billboards
     district(0, 55, d0 + 30, d1 - 56, 'canal');

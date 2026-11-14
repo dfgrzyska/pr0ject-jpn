@@ -247,6 +247,7 @@ export class Props {
       if (p.turn === 'rot') o.setRotation(Math.atan2(-du, dx));
       else if (Math.abs(du) > Math.abs(dx) && (p.fu || p.fd)) frames = du > 0 ? p.fu ?? p.f : p.fd ?? p.f;
       else if (p.turn === 'flip') o.setFlipX(dx < 0);
+      else if (p.turn === 'vertical') o.setFlipY(du < 0);
       const step = moving ? Math.floor(this.time * p.fps + i) : 0;
       if (p.cars) {
         // mover i has its own frame, or its own frames to cycle through (a dancer in a parade)
