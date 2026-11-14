@@ -18,7 +18,7 @@ Debug: `?ex=ex1` — to spotkanie zaraz po wyborze statku; `?ex=always` — spot
 
 | # | Boss | Tło | Stan |
 | --- | --- | --- | --- |
-| 1 | Automat z napojami (`ex1`, `src/game/enemies/jihanki.js`) | *Wielka fala w Kanagawie* Hokusaia (ok. 1831), fala z gazowanego napoju, puszki zamiast łodzi | zrobiony |
+| 1 | Automat z napojami (`ex1`, `src/game/enemies/jihanki.js`) | *Wielka fala w Kanagawie* Hokusaia (ok. 1831), narysowana od nowa w pełnych 540 px: ściana fali w drobnych liniach wzdłuż nurtu, grzbiet łamiący się w rozgałęzione szpony piany, mała fala-Fuji z przodu, trzy łodzie oshiokuri-bune z wioślarzami; woda to napój gazowany (bąbelki w środku, rozprysk z bąbelków), słońce to kapsel | zrobiony |
 | 2 | Kei car (`ex2`, `src/game/enemies/keicar.js`) | *53 stacje Tōkaidō* Hiroshigego (1833–34): droga z sosnami, polami ryżowymi i mostkami pędzi w pętli, na starcie most Nihonbashi z orszakiem daimyō | zrobiony |
 | 3 | Kot z budowy (`ex3`, `src/game/enemies/genba.js`; własny rudy kot w żółtym kasku z latarką, bez pozy i hasła znanego mema) | namazu-e (1855): budowa w ulicy Edo dokopała się do olbrzymiego suma; kamień kaname-ishi na jego głowie, mieszczanie ciągną za wąsy | zrobiony |
 | 4 | Kot bez końca (`ex4`, `src/game/enemies/nagai.js`) | *Smok dymu uciekający z Fuji* Hokusaia (1849): z krateru Fuji wije się słup dymu zakończony kocią głową z dymu; dym rozjaśniony, żeby kot i pociski były czytelne | zrobiony |

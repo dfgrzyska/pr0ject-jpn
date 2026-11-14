@@ -1,10 +1,13 @@
 // The arena of encounter 1 (ex1): Hokusai's Great Wave off Kanagawa (c. 1831, long in the public domain), redrawn
-// in pixels and gone fizzy: the wave is soda, carbonation rising through its Prussian blue, its claws of foam
-// throwing bubbles instead of spray; the three fishing boats it bears down on are floating cans and a bottle;
-// Fuji sits small in the trough as it does in the print; the cartouche in the sky is a drink's label, its
-// writing only brush marks. The strip pans up slowly through the fight: the sea and Fuji first, the crest last.
-import { Raster, fbm, rng, mix, scaleColor } from '../../lib/raster.mjs';
-import { rampColor, grade } from '../nature.mjs';
+// at the full 540 px and gone fizzy. Hokusai's composition, turned upright for a vertical screen: the great wave
+// rises from the bottom left, its wall striped with fine lines along the flow, and arches over the top right where
+// its crest breaks into claws of foam that branch into smaller claws; its spray falls as bubbles; Fuji sits small and
+// snow-capped in the trough; a smaller wave in front echoes Fuji's shape; three long fishing boats (oshiokuri-bune),
+// their rowers bent low, ride the troughs. The twist is in the water: it is soda, bubbles rising through its
+// Prussian blue, the sun a crimped red bottle cap, the cartouche a drink's label with only brush marks for writing.
+// The strip pans up slowly through the fight: the sea, the boats and Fuji first, the crest last.
+import { Raster, fbm, rng, mix } from '../../lib/raster.mjs';
+import { grade } from '../nature.mjs';
 import { PropKit, tintTable } from '../props.mjs';
 
 export const S = 3;
@@ -13,207 +16,319 @@ const L = 896; // one chunk of 896 logical rows
 const FW = W * S;
 const FH = L * S;
 
-const PAPER = [0xb8a888, 0xcfc0a0, 0xe0d4b8, 0xece4cc];
-const PRUSSIAN = [0x0e1e3e, 0x183462, 0x24508a, 0x4a7ab0, 0x8ab4d8];
-const FOAM = [0xb8c8d0, 0xdce6ea, 0xf6f8f4];
+const PAPER = [0xa89878, 0xc4b494, 0xd8cab0, 0xe8dec8, 0xf2ead8];
+const BLUE = [0x0a1630, 0x10264c, 0x1a3c70, 0x2a5a98, 0x4a7eb8, 0x7aa8d4, 0xb4d0e8];
+const FOAM = 0xf4f2e8;
+const FOAM_SH = 0xc8d4dc;
+const LINE = 0x10264c; // the dark blue outline of foam and claws
 const INK = 0x1a1420;
 
-/** The big wave's spine: from its foot, bottom left, up the wall, over the crest and down into the claw. */
-const SPINE = [[-10, 2690], [20, 2300], [60, 1900], [120, 1560], [190, 1290], [270, 1140], [350, 1110], [420, 1170], [462, 1270], [470, 1390]];
-function spineAt(t) {
-  const n = SPINE.length - 1;
-  const f = Math.min(n - 1e-6, Math.max(0, t * n));
-  const i = Math.floor(f);
-  const k = f - i;
-  // Catmull-Rom through the points
-  const p0 = SPINE[Math.max(0, i - 1)];
-  const p1 = SPINE[i];
-  const p2 = SPINE[i + 1];
-  const p3 = SPINE[Math.min(n, i + 2)];
-  const cr = (a, b, c, d) => 0.5 * (2 * b + (c - a) * k + (2 * a - 5 * b + 4 * c - d) * k * k + (3 * b - a - 3 * c + d) * k * k * k);
-  return [cr(p0[0], p1[0], p2[0], p3[0]), cr(p0[1], p1[1], p2[1], p3[1])];
+/** A smooth colour along a ramp (no dither: at 540 px the gradients can be soft). */
+function ramp(r, v) {
+  const s = Math.max(0, Math.min(r.length - 1.0001, v * (r.length - 1)));
+  const i = Math.floor(s);
+  return mix(r[i], r[i + 1], s - i);
 }
-const width = (t) => 185 * (1 - t) ** 1.3 + 16; // thick at the foot, thin at the claw's tip
+
+/** A Catmull-Rom curve through points: f(t) for t in 0..1. */
+function curve(pts) {
+  const n = pts.length - 1;
+  return (t) => {
+    const f = Math.min(n - 1e-6, Math.max(0, t * n));
+    const i = Math.floor(f);
+    const k = f - i;
+    const p0 = pts[Math.max(0, i - 1)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(n, i + 2)];
+    const cr = (a, b, c, d) => 0.5 * (2 * b + (c - a) * k + (2 * a - 5 * b + 4 * c - d) * k * k + (3 * b - a - 3 * c + d) * k * k * k);
+    return [cr(p0[0], p1[0], p2[0], p3[0]), cr(p0[1], p1[1], p2[1], p3[1])];
+  };
+}
+
+// the great wave's spine: from its foot, bottom left, up the wall, over the crest and down into the claw
+const SPINE = curve([[-30, 2700], [10, 2330], [50, 1960], [110, 1620], [180, 1350], [260, 1170], [350, 1110], [430, 1160], [480, 1260], [500, 1380]]);
+const width = (t) => 200 * (1 - t) ** 1.25 + 18; // thick at the foot, thin at the claw's tip
 
 export function buildFar() {
-  // far below the paper sky, never really seen: the same paper, with a few bubbles (a seamless loop)
   const r = new Raster(FW, 1152);
-  for (let y = 0; y < r.h; y++) for (let x = 0; x < FW; x++) r.set(x, y, rampColor(PAPER, 0.55 + (fbm(x, y, { seed: 3, scale: 40, periodX: FW, periodY: 1152 }) - 0.5) * 0.3, x, y));
+  for (let y = 0; y < r.h; y++) for (let x = 0; x < FW; x++) r.set(x, y, ramp(PAPER, 0.6 + (fbm(x, y, { seed: 3, scale: 40, periodX: FW, periodY: 1152 }) - 0.5) * 0.2));
   return r;
+}
+
+/** A disc with an outline (foam blobs, claw joints). */
+function blob(img, cx, cy, r, fill, edge, shade = true) {
+  for (let y = Math.floor(cy - r - 2); y <= cy + r + 2; y++)
+    for (let x = Math.floor(cx - r - 2); x <= cx + r + 2; x++) {
+      const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
+      if (d > r + 1.6) continue;
+      if (d > r) img.set(x, y, edge);
+      else img.set(x, y, shade ? mix(fill, FOAM_SH, Math.max(0, (x - cx + (y - cy)) / (r * 3))) : fill);
+    }
+}
+
+/** A claw of foam: a finger curling forward, branching into smaller fingers near its tip; each claw is painted on
+ * its own (white, shaded on its far side, outlined), so the claws overlap like the print's talons. */
+function claw(img, x, y, ang, len, r, curl, depth, rand) {
+  const discs = [];
+  const grow = (x, y, ang, len, r, curl, depth) => {
+    const steps = Math.max(3, Math.round(len / Math.max(1.2, r * 0.4)));
+    for (let i = 0; i < steps; i++) {
+      discs.push([x, y, r * (1 - (i / steps) * 0.55)]);
+      x += Math.cos(ang) * (len / steps);
+      y += Math.sin(ang) * (len / steps);
+      ang += curl / steps;
+    }
+    if (depth > 0) {
+      const n = 2 + Math.floor(rand() * 2);
+      for (let j = 0; j < n; j++) grow(x, y, ang + (j - (n - 1) / 2) * 0.75 + (rand() - 0.5) * 0.3, len * 0.55, r * 0.5, curl * 1.2, depth - 1);
+    } else discs.push([x, y, r * 0.35]);
+  };
+  grow(x, y, ang, len, r, curl, depth);
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const [dx, dy, dr] of discs) {
+    x0 = Math.min(x0, dx - dr - 3); y0 = Math.min(y0, dy - dr - 3);
+    x1 = Math.max(x1, dx + dr + 3); y1 = Math.max(y1, dy + dr + 3);
+  }
+  x0 = Math.floor(x0); y0 = Math.floor(y0);
+  const w = Math.ceil(x1) - x0 + 1;
+  const h = Math.ceil(y1) - y0 + 1;
+  const m = new Uint8Array(w * h);
+  for (const [dx, dy, dr] of discs)
+    for (let yy = Math.floor(dy - dr); yy <= dy + dr; yy++)
+      for (let xx = Math.floor(dx - dr); xx <= dx + dr; xx++) if ((xx + 0.5 - dx) ** 2 + (yy + 0.5 - dy) ** 2 <= dr * dr) m[(yy - y0) * w + (xx - x0)] = 1;
+  const at = (xx, yy) => xx >= 0 && yy >= 0 && xx < w && yy < h && m[yy * w + xx];
+  for (let yy = 0; yy < h; yy++)
+    for (let xx = 0; xx < w; xx++) {
+      if (at(xx, yy)) img.set(x0 + xx, y0 + yy, !at(xx + 3, yy + 3) ? FOAM_SH : FOAM);
+      else if (at(xx - 1, yy) || at(xx + 1, yy) || at(xx, yy - 1) || at(xx, yy + 1) || at(xx - 1, yy - 1) || at(xx + 1, yy + 1)) img.set(x0 + xx, y0 + yy, LINE);
+    }
 }
 
 export function buildMid() {
   const img = new Raster(FW, FH);
   const rand = rng(1831);
-  const horizon = 1720;
-  // ---- the sky: aged paper, darker towards the top as in the print, its fibres
+  const horizon = 1760;
+  // ---- the sky: aged paper, a grey band darkening to the top as in the print, soft fibres
   for (let y = 0; y < horizon; y++)
     for (let x = 0; x < FW; x++) {
-      const n = fbm(x * 0.6, y * 0.08, { seed: 11, scale: 6 }) - 0.5;
-      const v = 0.72 - Math.max(0, 900 - y) / 2400 + n * 0.12;
-      img.set(x, y, rampColor(PAPER, v, x, y));
+      const n = fbm(x * 0.5, y * 0.07, { seed: 11, scale: 7 }) - 0.5;
+      const v = 0.78 - Math.max(0, 1000 - y) / 1900 + n * 0.08;
+      img.set(x, y, ramp(PAPER, v));
     }
-  // a pale bottle-cap sun with its crimped rim, high up
+  // a bottle-cap sun, crimped, high up behind the crest
   {
-    const [cx, cy, R] = [410, 430, 46];
+    const [cx, cy, R] = [400, 520, 42];
     for (let y = cy - R - 8; y <= cy + R + 8; y++)
       for (let x = cx - R - 8; x <= cx + R + 8; x++) {
         const a = Math.atan2(y - cy, x - cx);
-        const rr = R + 5 * (Math.cos(a * 21) > 0 ? 1 : 0.4);
-        const d = Math.hypot(x - cx, y - cy);
-        if (d > rr) continue;
-        img.set(x, y, d > R - 2 ? mix(0xc8302a, 0x8a1a18, (x - cx + R) / (2 * R)) : mix(0xe85a3a, 0xffb090, Math.max(0, (cx - x + cy - y) / (2 * R))));
+        const rr = R + 4 + 3 * Math.cos(a * 21);
+        const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
+        if (d > rr + 1) continue;
+        if (d > rr) img.set(x, y, 0x5a1010, 0.6);
+        else if (d > R - 3) img.set(x, y, mix(0xd8402e, 0x8a1a18, (x - cx + R) / (2 * R)));
+        else img.set(x, y, mix(0xff9878, 0xd8402e, Math.min(1, Math.hypot(x - cx + 12, y - cy + 12) / (R * 1.4))));
       }
   }
-  // the cartouche, top left, a drink's label: a red border, the paper, brush marks for writing
+  // the cartouche, top left: a drink's label, a red border, brush marks for writing, a red seal
   {
-    const [x0, y0, w, h] = [40, 210, 92, 168];
+    const [x0, y0, w, h] = [36, 230, 96, 176];
     for (let y = y0; y < y0 + h; y++)
       for (let x = x0; x < x0 + w; x++) {
         const edge = Math.min(x - x0, x0 + w - 1 - x, y - y0, y0 + h - 1 - y);
-        img.set(x, y, edge < 4 ? 0xb82a24 : edge < 6 ? 0xe8d8b0 : rampColor(PAPER, 0.85, x, y));
+        img.set(x, y, edge < 4 ? 0xb82a24 : edge < 6 ? 0xf0e4c4 : ramp(PAPER, 0.92 + (fbm(x, y, { seed: 4, scale: 5 }) - 0.5) * 0.1));
       }
     const br = rng(77);
     for (let col = 0; col < 2; col++)
       for (let k = 0; k < 7; k++) {
-        const cx = x0 + 28 + col * 34;
-        const cy = y0 + 18 + k * 20;
-        const len = 6 + br() * 8;
+        const cx = x0 + 30 + col * 34;
+        const cy = y0 + 20 + k * 21;
         for (let s = 0; s < 3; s++) {
           const ang = br() * Math.PI;
-          for (let q = -len; q <= len; q++) for (let th = 0; th < 3; th++) img.set(cx + Math.cos(ang) * q, cy + Math.sin(ang) * q * 0.6 + th - 1, INK, 0.85);
+          const len = 5 + br() * 8;
+          for (let q = -len; q <= len; q += 0.5) {
+            const th = 1.6 * (1 - Math.abs(q) / (len + 2)) + 0.6;
+            for (let o = -th; o <= th; o += 0.5) img.set(cx + Math.cos(ang) * q - Math.sin(ang) * o, cy + Math.sin(ang) * q * 0.6 + Math.cos(ang) * o, INK, 0.85);
+          }
         }
       }
+    for (let y = y0 + h - 30; y < y0 + h - 12; y++) for (let x = x0 + 60; x < x0 + 78; x++) img.set(x, y, 0xc02a24, 0.9);
   }
-  // ---- Fuji, small in the trough: its blue flanks, the snow cap with its ragged edge
+  // ---- Fuji, small in the trough: blue flanks with Hokusai's streaks, the snow cap's ragged hem
   {
-    const [px, py, half] = [410, 1590, 84];
-    for (let y = py; y < horizon + 8; y++) {
-      const t = (y - py) / (horizon + 8 - py);
-      const w = 6 + t * half;
+    const [px, py, half] = [400, 1610, 92];
+    for (let y = py; y < horizon + 10; y++) {
+      const t = (y - py) / (horizon + 10 - py);
+      const w = 8 + half * Math.pow(t, 0.85);
       for (let x = Math.floor(px - w); x <= px + w; x++) {
-        const snow = y < py + 52 + Math.sin(x * 0.35) * 9 + Math.sin(x * 0.11) * 6;
-        const lit = (x - px) < 0;
-        img.set(x, y, snow ? (lit ? 0xf4f2e8 : 0xc8ccd0) : rampColor(PRUSSIAN, lit ? 0.4 : 0.22, x, y));
+        const hem = py + 50 + Math.sin(x * 0.3) * 8 + Math.sin(x * 0.09) * 6;
+        const u = (x - px) / w; // -1 .. 1 across
+        if (y < hem) {
+          img.set(x, y, u < 0.1 ? mix(0xffffff, 0xe0e4e8, (u + 1) / 2) : mix(0xc8d0d8, 0xa8b4c0, u));
+          if (Math.abs(Math.sin(u * 9 + y * 0.02)) < 0.08) img.set(x, y, 0xa8b4c4);
+        } else {
+          img.set(x, y, ramp(BLUE, 0.42 - u * 0.2 - t * 0.08 + (Math.abs(Math.sin(u * 7 + y * 0.015)) < 0.06 ? 0.15 : 0)));
+        }
       }
     }
   }
-  // ---- the sea, from the horizon down: swell after swell in Prussian blue, white lines on their crests
+  // ---- the sea from the horizon down: rolling troughs in Prussian blue, each crest edged with a white lace line
   for (let y = horizon; y < FH; y++)
     for (let x = 0; x < FW; x++) {
-      const swell = Math.sin(x * 0.018 + y * 0.012) * 30 + Math.sin(x * 0.05 - y * 0.02) * 10;
-      const band = ((y + swell) % 70 + 70) % 70;
-      const n = fbm(x, y, { seed: 21, scale: 18 }) - 0.5;
-      let c = rampColor(PRUSSIAN, 0.18 + band / 140 + n * 0.25, x, y);
-      if (band > 62) c = rampColor(FOAM, 0.4 + n, x, y);
+      const swell = Math.sin(x * 0.012 + y * 0.008) * 34 + Math.sin(x * 0.035 - y * 0.013) * 12;
+      const band = (((y + swell) % 90) + 90) % 90; // 0 at a crest, rising into the trough
+      const n = fbm(x, y, { seed: 21, scale: 16 }) - 0.5;
+      let c = ramp(BLUE, 0.18 + (band / 90) * 0.42 + n * 0.08 + (y - horizon) / 6000);
+      if (band < 3) c = FOAM;
+      else if (band < 5) c = BLUE[1];
+      else if (band > 30 && band < 32 && Math.sin(x * 0.2 + y * 0.05) > 0.3) c = ramp(BLUE, 0.7); // the fine lines in the troughs
       img.set(x, y, c);
     }
-  // ---- the great wave: every pixel near the spine, banded along its flow, foam on its outer edge
-  const samples = [];
-  for (let i = 0; i <= 260; i++) {
-    const t = i / 260;
-    const [x, y] = spineAt(t);
-    const [x2, y2] = spineAt(Math.min(1, t + 0.004));
-    const len = Math.hypot(x2 - x, y2 - y) || 1;
-    // the outer side (towards the sky and forward) is the normal turned to the left of the direction of travel
-    samples.push({ t, x, y, nx: (y2 - y) / len, ny: -(x2 - x) / len, w: width(t) });
-  }
-  for (let y = 1000; y < FH; y++)
-    for (let x = 0; x < FW; x++) {
-      let best = null;
-      let bd = 1e9;
-      for (const s of samples) {
-        const d = (x - s.x) ** 2 + (y - s.y) ** 2;
-        if (d < bd) {
-          bd = d;
-          best = s;
-        }
-      }
-      const d = Math.sqrt(bd);
-      if (d > best.w) continue;
-      const side = (x - best.x) * best.nx + (y - best.y) * best.ny; // >0 outer, <0 inner (the hollow)
-      const k = side / best.w; // -1 .. 1
-      const n = fbm(x, y, { seed: 31, scale: 7 }) - 0.5;
-      // Hokusai's lines: streaks running along the wave
-      const streak = Math.sin(k * 26 + best.t * 40 + n * 2) > 0.82;
-      let v = 0.22 + (k + 1) * 0.18 + n * 0.12;
-      let c = rampColor(PRUSSIAN, v, x, y);
-      if (streak) c = PRUSSIAN[3];
-      if (k > 0.78) c = rampColor(FOAM, 0.3 + (k - 0.78) * 3 + n, x, y);
-      else if (k > 0.66) c = mix(c, FOAM[1], 0.5);
-      // the soda: bubbles rising inside the water
-      const h = (Math.floor(x / 9) * 7349 + Math.floor((y + x * 0.3) / 9) * 911) % 97;
-      if (h < 4 && k < 0.6) {
-        const bx = Math.floor(x / 9) * 9 + 4;
-        const byy = Math.floor((y + x * 0.3) / 9) * 9 + 4 - x * 0.3;
-        const dd = Math.hypot(x - bx, y - byy);
-        if (dd < 3.2 && dd > 1.8) c = PRUSSIAN[4];
-        else if (dd < 1.2) c = 0xffffff;
-      }
-      img.set(x, y, c);
-    }
-  // its claws: along the outer edge of the crest, fingers of foam curling forward and down
-  for (let t = 0.5; t < 0.99; t += 0.026) {
-    const s = samples[Math.round(t * 260)];
-    let fx = s.x + s.nx * s.w * 0.9;
-    let fy = s.y + s.ny * s.w * 0.9;
-    let ang = Math.atan2(s.ny, s.nx) + 0.5;
-    let r = 9 + rand() * 6;
-    for (let q = 0; q < 7; q++) {
-      for (let yy = -r - 2; yy <= r + 2; yy++)
-        for (let xx = -r - 2; xx <= r + 2; xx++) {
-          const dd = Math.hypot(xx, yy);
-          if (dd > r + 1.5) continue;
-          img.set(fx + xx, fy + yy, dd > r - 0.5 ? PRUSSIAN[1] : rampColor(FOAM, 0.75 - (xx + yy) / (r * 5), fx + xx, fy + yy));
-        }
-      fx += Math.cos(ang) * r * 1.1;
-      fy += Math.sin(ang) * r * 1.1;
-      ang += 0.55; // curling round
-      r *= 0.78;
-    }
-  }
-  // the spray off the crest: bubbles, outlined, a glint each
-  const sr = rng(5);
-  for (let k = 0; k < 140; k++) {
-    const t = 0.45 + sr() * 0.55;
-    const s = samples[Math.round(t * 260)];
-    const out = s.w * (1 + sr() * 1.4);
-    const bx = s.x + s.nx * out + (sr() - 0.5) * 30;
-    const by = s.y + s.ny * out + (sr() - 0.5) * 30;
-    const r = 2 + sr() * 5;
-    for (let a = 0; a < Math.PI * 2; a += 0.08) img.set(bx + Math.cos(a) * r, by + Math.sin(a) * r, PRUSSIAN[3]);
-    img.set(bx - r * 0.4, by - r * 0.4, 0xffffff);
-  }
-  // ---- the "boats": a can and a bottle afloat in the troughs, and a can riding up the face of the wave
-  const floater = (cx, cy, ang, bottle, col) => {
-    const len = bottle ? 70 : 50;
-    const rad = bottle ? 13 : 16;
-    for (let q = -len / 2; q <= len / 2; q += 0.5)
-      for (let w = -rad; w <= rad; w += 0.5) {
-        const neck = bottle && q > len / 2 - 22 ? Math.max(5, rad - (q - (len / 2 - 22)) * 0.9) : rad;
-        if (Math.abs(w) > neck) continue;
-        const x = cx + Math.cos(ang) * q - Math.sin(ang) * w;
-        const y = cy + Math.sin(ang) * q + Math.cos(ang) * w;
-        const lit = 0.75 - w / (rad * 2.2);
-        let c = bottle ? mix(0x9ad8c8, 0xffffff, lit * 0.4) : scaleColor(col, 0.6 + lit * 0.6);
-        if (!bottle && Math.abs(q) > len / 2 - 3) c = 0xb8bac4;
-        if (bottle && q > -10 && q < 12) c = scaleColor(col, 0.6 + lit * 0.6);
-        if (Math.abs(Math.abs(w) - neck) < 0.8) c = INK;
+  // ---- the smaller wave in front, bottom right: a little Fuji of water, foam-capped
+  {
+    const [cx, base, half, top] = [430, FH - 40, 120, FH - 230];
+    for (let y = top; y < base; y++) {
+      const t = (y - top) / (base - top);
+      const w = half * Math.pow(t, 0.7);
+      for (let x = Math.floor(cx - w); x <= cx + w; x++) {
+        const u = (x - cx) / Math.max(1, w);
+        const cap = y < top + 40 + Math.sin(x * 0.4) * 6;
+        let c = cap ? FOAM : ramp(BLUE, 0.3 + u * 0.15 + (Math.sin(u * 14 + t * 6) > 0.85 ? 0.25 : 0));
+        if (Math.abs(Math.abs(x - cx) - w) < 1.2) c = LINE;
         img.set(x, y, c);
       }
+    }
+    for (let k = 0; k < 7; k++) claw(img, cx - 40 + k * 13, top + 20 + Math.abs(k - 3) * 6, -Math.PI / 2 - 0.4 + k * 0.13, 22, 6, 1.2, 1, rand);
+  }
+  // ---- the great wave: every pixel near the spine, its wall striped with lines along the flow
+  const samples = [];
+  for (let i = 0; i <= 300; i++) {
+    const t = i / 300;
+    const [x, y] = SPINE(t);
+    const [x2, y2] = SPINE(Math.min(1, t + 0.003));
+    const len = Math.hypot(x2 - x, y2 - y) || 1;
+    samples.push({ t, x, y, nx: (y2 - y) / len, ny: -(x2 - x) / len, w: width(t) });
+  }
+  const near = (x, y) => {
+    let best = null;
+    let bd = 1e18;
+    for (const s of samples) {
+      const d = (x - s.x) ** 2 + (y - s.y) ** 2;
+      if (d < bd) {
+        bd = d;
+        best = s;
+      }
+    }
+    return [best, Math.sqrt(bd)];
   };
-  floater(120, 2470, -0.2, false, 0xd02a26);
-  floater(250, 2560, 0.15, true, 0x2a7ad8);
-  floater(420, 2440, -0.35, false, 0xe8b830);
-  floater(160, 1880, -1.1, false, 0x3aa84a);
-  // the paper's grain over everything, and the print's border line
+  for (let y = 1000; y < FH; y++)
+    for (let x = 0; x < FW; x++) {
+      const [s, d] = near(x, y);
+      if (d > s.w) continue;
+      const side = (x - s.x) * s.nx + (y - s.y) * s.ny; // >0 outer (towards the sky), <0 the hollow
+      const k = side / s.w; // -1 .. 1
+      const n = fbm(x, y, { seed: 31, scale: 9 }) - 0.5;
+      // the body: dark in the hollow, lighter up the face
+      let c = ramp(BLUE, 0.16 + (k + 1) * 0.22 + n * 0.05);
+      // Hokusai's lines: fine pale lines running along the wave, closer together towards the crest
+      const f = (k + 1) * (9 + s.t * 9);
+      if (f - Math.floor(f) < 0.09 && k < 0.6) c = mix(c, BLUE[4], 0.75);
+      // near the top of the face, a net of white foam lines
+      if (k > 0.45 && k < 0.72 && s.t > 0.42) {
+        const m1 = Math.abs(Math.sin(s.t * 160 + k * 18));
+        const m2 = Math.abs(Math.sin(s.t * 160 - k * 18));
+        if (Math.min(m1, m2) < 0.12) c = mix(c, FOAM, 0.85);
+      }
+      // the foam lip along the outer edge, outlined
+      const lip = s.t > 0.45 ? 0.72 + Math.max(0, 0.55 - s.t) * 2.5 : 2; // (the back of the wave, low down, has no foam on it)
+      if (k > lip) c = k > 0.97 ? LINE : mix(FOAM, FOAM_SH, Math.max(0, (k - lip) * 2 - 0.2));
+      else if (k > 0.97) c = BLUE[1];
+      // the soda: bubbles rising inside the water
+      const cell = 11;
+      const gx = Math.floor(x / cell);
+      const gy = Math.floor((y + x * 0.25) / cell);
+      const h = (gx * 7349 + gy * 911) % 97;
+      if (h < 5 && k < 0.6) {
+        const bx = gx * cell + 5.5;
+        const by = gy * cell + 5.5 - x * 0.25;
+        const r = 1.6 + (h % 3);
+        const dd = Math.hypot(x + 0.5 - bx, y + 0.5 - by);
+        if (dd < r + 0.7 && dd > r - 0.7) c = BLUE[6];
+        else if (Math.hypot(x + 0.5 - bx + r * 0.4, y + 0.5 - by + r * 0.4) < 0.8) c = 0xffffff;
+      }
+      img.set(x, y, c);
+    }
+  // its claws: along the crest's outer edge, branching fingers of foam curling forward and down
+  const cr = rng(9);
+  for (let t = 0.48; t < 1; t += 0.03) {
+    const s = samples[Math.round(t * 300)];
+    const tx = -s.ny; // the way the crest is travelling
+    const ty = s.nx;
+    const front = t > 0.7; // past the top: the claws hang off the curling lip into the hollow
+    const side = front ? -0.75 : 0.8;
+    const bx = s.x + s.nx * s.w * side;
+    const by = s.y + s.ny * s.w * side;
+    const ang = front ? Math.atan2(-s.ny + ty * 0.6, -s.nx + tx * 0.6) : Math.atan2(s.ny + ty, s.nx + tx);
+    const big = 1 + Math.max(0, t - 0.6) * 2.2; // the claws grow towards the front of the crest
+    claw(img, bx, by, ang, (24 + cr() * 16) * big, (7 + cr() * 3) * big, front ? -1.4 : 1.4, 2, cr);
+  }
+  // the great claw at the very front, reaching down and back towards the boats
+  {
+    const s = samples[300];
+    for (let j = 0; j < 4; j++) claw(img, s.x - j * 8, s.y + j * 4, Math.PI * (0.62 + j * 0.06), 58 + j * 10, 15 - j * 2, -1.5, 2, cr);
+  }
+  // the spray falling off the crest: Hokusai's flecks of foam, here soda bubbles, outlined
+  const sr = rng(5);
+  for (let k = 0; k < 260; k++) {
+    const t = 0.55 + sr() * 0.45;
+    const s = samples[Math.round(t * 300)];
+    const out = s.w * (1.1 + sr() * 1.8);
+    const bx = s.x + s.nx * out + (sr() - 0.5) * 50;
+    const by = s.y + s.ny * out + sr() * 80;
+    if (by > 1700) continue;
+    const r = 1.4 + sr() * 3.6;
+    if (sr() < 0.5) blob(img, bx, by, r, FOAM, LINE, false);
+    else {
+      for (let a = 0; a < Math.PI * 2; a += 0.06) img.set(bx + Math.cos(a) * r, by + Math.sin(a) * r, BLUE[2]);
+      img.set(bx - r * 0.4, by - r * 0.4, 0xffffff);
+    }
+  }
+  // ---- the boats: long oshiokuri-bune, pale wood, the rowers in blue bent low over their oars
+  const boat = (cx, cy, ang, len) => {
+    const ca = Math.cos(ang);
+    const sa = Math.sin(ang);
+    for (let q = -len / 2; q <= len / 2; q += 0.5)
+      for (let w = -10; w <= 6; w += 0.5) {
+        const taper = 1 - Math.pow(Math.abs(q) / (len / 2), 3);
+        const top = -2 * taper;
+        const bot = 6 * taper;
+        if (w < top - 1 || w > bot) continue;
+        const x = cx + ca * q - sa * w;
+        const y = cy + sa * q + ca * w;
+        let c = w < top + 1 ? 0x8a6a3a : mix(0xe8d098, 0xb8945a, (w - top) / Math.max(1, bot - top));
+        if (w > bot - 1) c = INK;
+        img.set(x, y, c);
+      }
+    // the rowers: a row of hunched figures, blue backs, pale heads, oars slanting into the water
+    for (let i = 0; i < 8; i++) {
+      const q = -len / 2 + len * (0.15 + i * 0.09);
+      const x = cx + ca * q + sa * 6;
+      const y = cy + sa * q - ca * 6;
+      blob(img, x, y, 4, 0x2a4a80, INK, false);
+      blob(img, x + ca * 2 + sa * 3, y + sa * 2 - ca * 3, 2, 0xe8d8b8, INK, false);
+      for (let o = 0; o < 16; o++) img.set(x - sa * -o * 0.3 + ca * o * 0.6, y + ca * o * 0.9 + sa * o * 0.2, 0x5a4020);
+    }
+  };
+  boat(150, 2420, -0.18, 150);
+  boat(330, 2580, 0.12, 130);
+  boat(170, 1960, -0.95, 120);
+  // the paper's grain over everything, then muted a little (every stage's middle layer is, so bullets stand out)
   for (let y = 0; y < FH; y++)
     for (let x = 0; x < FW; x++) {
       const g = fbm(x * 1.7, y * 0.4, { seed: 91, scale: 3 }) - 0.5;
-      if (Math.abs(g) > 0.42) img.tint?.(x, y, g > 0 ? 1.05 : 0.95);
+      if (Math.abs(g) > 0.4) img.tint?.(x, y, g > 0 ? 1.04 : 0.96);
     }
-  // muted a little, like every stage's middle layer, so the bullets stand out
-  grade(img, { sat: 0.8, bright: 0.84, tint: 0x182030, tintAmt: 0.05 });
+  grade(img, { sat: 0.82, bright: 0.82, tint: 0x182030, tintAmt: 0.05 });
   // ---- the moving parts: bubbles rising off the wave and the sea, glints on the foam
   const kit = new PropKit(1832, { artScale: S });
   const bubble = (r) => {
@@ -224,7 +339,7 @@ export function buildMid() {
   };
   const b = [bubble(3), bubble(5), bubble(7)];
   const rise = [[b[0], b[1], b[2]]];
-  for (const [x, y] of [[60, 2100], [140, 1700], [230, 1300], [330, 1180], [420, 1260], [470, 1500], [250, 2300], [400, 2200], [80, 2550]]) kit.emit(Math.round(x / S), Math.round(L - y / S), rise, { rate: 1.2, life: [2.5, 4], vy: 14, sx: 10, wf: 0.6, a: 0.85, tint: 1 });
+  for (const [x, y] of [[60, 2100], [140, 1700], [230, 1350], [330, 1220], [420, 1300], [470, 1500], [250, 2300], [400, 2200], [80, 2550]]) kit.emit(Math.round(x / S), Math.round(L - y / S), rise, { rate: 1.2, life: [2.5, 4], vy: 14, sx: 10, wf: 0.6, a: 0.85, tint: 1 });
   const glint = (() => {
     const out = new Raster(9, 9);
     for (let i = -4; i <= 4; i++) {
@@ -235,7 +350,7 @@ export function buildMid() {
   })();
   const parts = [];
   for (let k = 0; k < 40; k++) {
-    const s = samples[Math.round((0.5 + (k / 40) * 0.48) * 260)];
+    const s = samples[Math.round((0.5 + (k / 40) * 0.48) * 300)];
     parts.push([0, Math.round((s.x + s.nx * s.w * 0.9) / S), Math.round(L - (s.y + s.ny * s.w * 0.9) / S), k * 0.4]);
   }
   kit.wave([glint], parts, { w: 2.2, a0: 0, a1: 1, pw: 6 });
