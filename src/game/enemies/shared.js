@@ -29,6 +29,11 @@ export const EXTRAS = {
   segs: null, // tentacle segments (extra hit circles)
   shotSegs: null, // circles only shots hit, each taking its `take` of the damage (Ja-odori's body)
   kuroko: null, // the puppet's puppeteers (and the Dutch-ship float's batteries)
+  puppets: null, // the bunraku: the two puppets sent out with the samurai
+  puppet: null, // a kuroko's own puppet
+  act: null, // what a bunraku puppet is doing to the player
+  limp: false, // a bunraku puppet whose kuroko is down
+  home: null, // a bunraku puppet's place on the stage
   burnt: null, // the float's burnt-out sides
   master: null,
   hatch: 0, // hot-spring egg: seconds on screen before it hatches

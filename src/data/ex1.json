@@ -1,0 +1,17 @@
+{
+  "id": "ex1",
+  "encounter": true,
+  "name": "JIDŌHANBAIKI",
+  "subtitle": "NIESPODZIEWANE SPOTKANIE",
+  "skin": "kyoto",
+  "enemyArt": true,
+  "near": "none",
+  "scroll": { "far": 3, "mid": 1.6, "near": 20, "anchor": 420 },
+  "boss": true,
+  "end": 400,
+  "music": { "schedule": [[0, "s5_boss"]], "boss": "s5_boss" },
+  "warnings": { "boss": "AUTOMAT MA DOŚĆ", "bossDown": "AUTOMAT POKONANY!", "bossDownSub": "RESZTA DLA CIEBIE" },
+  "waves": [
+    { "t": 2.5, "type": "boss", "boss": "jihanki", "x": 90, "card": ["JIDŌHANBAIKI", "AUTOMAT, KTÓRY MA DOŚĆ"] }
+  ]
+}

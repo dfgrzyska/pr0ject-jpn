@@ -19,6 +19,21 @@ test('Hiroshima silence starts at the Dome, lasts 11.5 seconds and preserves lat
   }
 });
 
+test('Hiroshima silence: the fight winds down into it and out of it, and the scroll glides rather than jumps', () => {
+  const { interlude: q, scroll } = stage;
+  assert(q.lead >= 2 && q.after >= 1);
+  assert(!stage.waves.some(w => w.t >= q.from - q.lead && w.t < q.to), 'no spawns in the wind-down (the first ones back come in holding their fire)');
+  const p = { speed: scroll, maxTime: 300 };
+  const u = t => { Parallax.prototype.setTime.call(p, t); return p.time; };
+  const dt = 0.05;
+  let last = 1;
+  for (let t = q.from - 2; t < q.to + 2; t += dt) {
+    const v = (u(t + dt) - u(t)) / dt;
+    assert(Math.abs(v - last) < 0.12, `scroll speed jumps at t=${t.toFixed(2)}`);
+    last = v;
+  }
+});
+
 test('Osaka canal boats face their direction of travel on both legs of the route', () => {
   const meta = JSON.parse(readFileSync(new URL('../../public/assets/bg/stage5/meta.json', import.meta.url)));
   const boats = meta.props.filter(p => p.k === 'path' && p.turn === 'vertical');

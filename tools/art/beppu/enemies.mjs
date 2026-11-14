@@ -6,6 +6,7 @@
 // tiger-skinned, with his spiked iron kanabō, risen from the blood pond. Setsubun's masu of roasted beans.
 // Every frame is three times the old one's size (old mask coordinate m -> fine (m + 1) * 3).
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
+import { Raster, mix as mixc } from '../../lib/raster.mjs';
 import { oni as oni540 } from './oni540.mjs';
 
 const INK = 0x14101c;
@@ -26,6 +27,8 @@ const RAMPS = {
   j: tones([0x555544, 0xb3b58b, 0xf0e4b2]), // horn and pale flanks
   i: tones([0x2a2628, 0x4a4648, 0x7a7678]), // cast iron
   b: tones([0x4a2410, 0x8a5426, 0xc8904a]), // roasted beans
+  m: tones([0x4a0c18, 0xa0303e, 0xe07888]), // the crocodile's mouth
+  t: tones([0x8a3a4a, 0xd06a7a, 0xf4a8b0]), // its tongue
   E: tones([0x4a4644, 0x8a8682, 0xc4c0ba]), // stone
 };
 const skinPat = (seed = 3) => mix2(speckle({ amt: 0.12, dark: 0.04, light: 0.03, seed }), mottle({ amt: 0.1, scale: 7, seed: seed + 1 }));
@@ -243,91 +246,226 @@ export function boil(mud, f) {
 }
 
 // ---------------------------------------------------------------- heavy: the Oniyama crocodile (29 x 68 -> 87 x 204), surfaced, and submerged (27 x 26 -> 81 x 78)
-export function wani(open) {
+// The crocodile's frames: `swim` 0..3 is a step of its swim (the tail sweeps from side to side in a wave running
+// down it, the legs stroke in diagonal pairs), `open` 0..1 how far the jaws are open, `blink` the eyelids shut,
+// `belly` the same beast on its back (for the death roll: its pale banded belly, the legs up, the throat).
+export function wani(o = {}) {
+  if (typeof o !== 'object') o = { open: o };
+  const { swim = 0, blink = false, belly = false, legK = 1 } = o;
+  const op = o.open === true ? 1 : o.open || 0; // how far the jaws are open, 0..1 (half way: the snap's in-between)
   const s = new HiSprite(87, 204, RAMPS);
   const cx = 43.5;
+  const ph = (swim * TAU) / 4;
   const hide = { pat: mix2(crackle({ amt: 0.12, scale: 5, width: 0.05, seed: 7 }), speckle({ amt: 0.06, dark: 0.03 })) };
-  // A curved, heavy tail; alternating raised scutes catch the wet turquoise light.
-  const tail = [[72,4,1.8],[62,8,4],[50,19,7],[40,34,10],[36,52,13],[43.5,79,18]];
-  for (let i=1;i<tail.length;i++) {
-    const [x0,y0,r0]=tail[i-1], [x,y,r]=tail[i];
-    s.tube(x0,y0,x,y,r0,'z',{rb:r,...hide});
-    for (let k=0;k<3;k++) {
-      const t=k/3, xx=x0+(x-x0)*t, yy=y0+(y-y0)*t;
-      s.poly([[xx-3,yy],[xx,yy-3],[xx+3,yy],[xx+1,yy+4]],'z',{flat:0.78});
-      s.line(xx-2,yy,xx,yy-2,0x9bddc8,1);
+  const skin = belly ? 'j' : 'z';
+  // A curved, heavy tail, swaying in a wave that runs down to the tip; alternating raised scutes catch the wet
+  // turquoise light (on its back: the pale underside, banded).
+  const base = [[70, 5, 1.8], [62, 8, 4], [50, 19, 7], [40, 34, 10], [36, 52, 13], [43.5, 79, 18]];
+  const sway = [1, 0.85, 0.66, 0.45, 0.24, 0.06];
+  const tail = base.map(([x, y, r], i) => [x + 10 * Math.sin(ph - i * 0.85) * sway[i] * (belly ? -1 : 1), y + Math.abs(Math.sin(ph - i * 0.85)) * sway[i] * 2, r]);
+  for (let i = 1; i < tail.length; i++) {
+    const [x0, y0, r0] = tail[i - 1];
+    const [x, y, r] = tail[i];
+    s.tube(x0, y0, x, y, r0, skin, { rb: r, ...hide });
+    for (let k = 0; k < 3; k++) {
+      const t = k / 3;
+      const xx = x0 + (x - x0) * t;
+      const yy = y0 + (y - y0) * t;
+      if (belly) {
+        const rr = (r0 + (r - r0) * t) * 0.8;
+        s.line(xx - rr, yy, xx + rr, yy + 1, 0xa8aa80, 1);
+        continue;
+      }
+      s.poly([[xx - 3, yy], [xx, yy - 3], [xx + 3, yy], [xx + 1, yy + 4]], 'z', { flat: 0.78 });
+      s.line(xx - 2, yy, xx, yy - 2, 0x9bddc8, 1);
     }
   }
-  // the legs splayed, claws out
-  for (const [lx, ly, ex, ey] of [[6, 27, 1, 23], [21, 27, 26, 23], [6, 41, 1, 46], [21, 41, 26, 46]]) {
-    s.ellipse(M(lx), M(ly), 10, 12, 'z', hide);
-    s.tube(M(lx), M(ly), M(ex), M(ey), 7, 'z', { rb: 5.5, ...hide });
-    s.ellipse(M(ex), M(ey), 6, 5, 'z', hide);
+  // the legs splayed, claws out, stroking in diagonal pairs (the left front with the right hind)
+  for (const [lx, ly, ex, ey, pair] of [[6, 27, 1, 23, 1], [21, 27, 26, 23, -1], [6, 41, 1, 46, -1], [21, 41, 26, 46, 1]]) {
+    const sx = M(lx);
+    const sy = M(ly);
+    const a0 = Math.atan2(M(ey) - sy, M(ex) - sx);
+    const st = Math.sin(ph) * pair; // forward (towards the snout) and back
+    const side = lx < 10 ? -1 : 1;
+    const a = a0 - side * st * 0.55;
+    const len = Math.hypot(M(ex) - sx, M(ey) - sy) * (1 - 0.15 * Math.max(0, -st * (ly > 30 ? 1 : -1))) * legK;
+    const fx = Math.max(9, Math.min(78, sx + Math.cos(a) * len));
+    const fy = sy + Math.sin(a) * len;
+    s.ellipse(sx, sy, 10, 12, skin, hide);
+    s.tube(sx, sy, fx, fy, 7, skin, { rb: 5.5, ...hide });
+    s.ellipse(fx, fy, 6, 5, skin, hide);
     for (let k = -1; k <= 1; k++) {
-      const a = Math.atan2(M(ey) - M(ly), M(ex) - M(lx)) + k * 0.5;
-      s.line(M(ex), M(ey), M(ex) + Math.cos(a) * 7, M(ey) + Math.sin(a) * 7, 0xe8e0c8, 1);
+      const c = a + k * 0.5;
+      s.line(fx, fy, fx + Math.cos(c) * 7, fy + Math.sin(c) * 7, 0xe8e0c8, 1);
     }
+    if (belly) s.ellipse(fx, fy, 3, 2.5, 'j', { flat: 0.85 }); // (the pale soles)
   }
-  // the body: rows of armoured scutes, the paler flanks
-  s.ellipse(cx, M(34), 27, 40, 'j', { bias: -0.1 });
-  s.ellipse(cx, M(34), 25, 40, 'z', { bias: 0.02, ...hide });
-  for (let row=0;row<10;row++) for (let col=-2;col<=2;col++) {
-    const y=77+row*7, x=cx+col*8+(row%2?1:-1);
-    s.poly([[x-3,y-2],[x+2,y-3],[x+4,y+1],[x+2,y+4],[x-3,y+3]],'z',{flat:0.4+(col+2)*0.065});
-    s.line(x-3,y-2,x+2,y-3,0x91d4bb,1);
-    s.line(x+3,y+1,x+2,y+3,0x123c40,1);
+  // the body: rows of armoured scutes, the paler flanks; on its back the cream belly in bands
+  const bx = cx + 1.5 * Math.sin(ph + 1.2) * (belly ? -1 : 1); // (the body flexes a little with the stroke)
+  if (belly) {
+    s.ellipse(bx, M(34), 27, 40, 'z', { bias: -0.1, ...hide });
+    s.ellipse(bx, M(34), 23, 39, 'j', { bias: 0.05, pat: speckle({ amt: 0.05, dark: 0.03 }) });
+    for (let row = 0; row < 13; row++) {
+      const y = 70 + row * 6;
+      const w = 22 * Math.sqrt(Math.max(0, 1 - ((y - M(34)) / 40) ** 2));
+      s.line(bx - w, y, bx + w, y, 0xa09c78, 1);
+      for (let x = bx - w + 4; x < bx + w; x += 5) s.px(x, y + 3, 0xc8c49a);
+    }
+    s.line(bx, 66, bx, 140, 0xb0ac86, 1);
+  } else {
+    s.ellipse(bx, M(34), 27, 40, 'j', { bias: -0.1 });
+    s.ellipse(bx, M(34), 25, 40, 'z', { bias: 0.02, ...hide });
+    for (let row = 0; row < 10; row++)
+      for (let col = -2; col <= 2; col++) {
+        const y = 77 + row * 7;
+        const x = bx + col * 8 + (row % 2 ? 1 : -1);
+        s.poly([[x - 3, y - 2], [x + 2, y - 3], [x + 4, y + 1], [x + 2, y + 4], [x - 3, y + 3]], 'z', { flat: 0.4 + (col + 2) * 0.065 });
+        s.line(x - 3, y - 2, x + 2, y - 3, 0x91d4bb, 1);
+        s.line(x + 3, y + 1, x + 2, y + 3, 0x123c40, 1);
+      }
   }
-  // the long snout; the jaws open on a pink mouth and rows of teeth
-  const o = open === true ? 1 : open || 0; // how far the jaws are open, 0..1 (half way: the snap's in-between)
-  const jaw = 15 + 6 * o;
+  // the long snout. Open, seen from above: the upper jaw lifts (so it looks shorter) and below its tip the
+  // mouth gapes, the lower jaw reaching on beyond it, pink inside, the tongue on its floor, teeth up from its rim.
+  const tipY = 200 - 24 * op;
+  const lowW = (y) => {
+    const t = (y - 150) / 52;
+    return t < 0.75 ? 17.5 - t * 3 : 15.25 * Math.sqrt(Math.max(0, 1 - ((t - 0.75) / 0.26) ** 2));
+  };
+  if (op && !belly) {
+    s.paint([0, 150, 87, 204], (x, y) => y < 202 && Math.abs(x - cx) < lowW(y), 'z', (x, y) => 0.5 - (x - cx) / 70, hide);
+    const inner = (y) => lowW(y) - 3.2;
+    const top = tipY - 8;
+    s.paint([0, top, 87, 200], (x, y) => y > top && y < 197 && Math.abs(x - cx) < inner(y) * Math.min(1, (y - top) / 6 + 0.55), 'm', (x, y) => 0.1 + Math.min(0.75, (y - top) / 34));
+    s.ellipse(cx, (top + 196) / 2 + 3, 7 * (0.6 + 0.4 * op), (196 - top) / 2 - 3, 't', { bias: 0.15 }); // the tongue
+    for (let y = top + 4; y < 195; y += 4)
+      for (const sx of [-1, 1]) {
+        const e = cx + sx * inner(y);
+        s.poly([[e, y], [e, y + 3], [e - sx * 3, y + 1.5]], 'W', { flat: 0.88 });
+      }
+  }
   s.paint([0, M(45), 87, 204], (x, y) => {
-    const t = (y - M(45)) / (204 - M(45));
-    const width = t < 0.3 ? 23 - t * 14 : t < 0.75 ? 18 : 18 * Math.sqrt(Math.max(0, 1 - ((t - 0.75) / 0.24) ** 2));
-    return t < 0.99 && Math.abs(x - cx) < width;
-  }, 'z', (x, y) => 0.6 - (x - cx) / 60 - (y - 150) / 400, hide);
-  if (o) {
-    const mw = (y) => (14 - (y - 158) * 0.13) * (0.35 + 0.65 * o); // the gape, narrower half open
-    s.paint([0, 155, 87, 202], (x, y) => y > 158 && y < 196 && Math.abs(x - cx) < mw(y), 'P', () => 0.45);
-    for (let y = 160; y < 196; y += 4) for (const sx of [-1, 1]) s.poly([[cx + sx * (mw(y) + 0.5), y], [cx + sx * (mw(y) + 0.5), y + 3], [cx + sx * (mw(y) - 2), y + 1.5]], 'W', { flat: 0.85 });
+    const t = (y - M(45)) / (tipY - M(45));
+    const width = (t < 0.3 ? 23 - t * 14 : t < 0.75 ? 18 : 18 * Math.sqrt(Math.max(0, 1 - ((t - 0.75) / 0.25) ** 2))) * (1 + 0.08 * op);
+    return t < 0.995 && Math.abs(x - cx) < width;
+  }, skin, (x, y) => 0.6 - (x - cx) / 60 - (y - 150) / 400 + (belly ? 0.15 : 0), belly ? {} : hide);
+  if (belly) {
+    // the throat and the lower jaw from beneath: fine pale scales in rows
+    for (let y = 142; y < tipY - 4; y += 4) s.line(cx - 13, y, cx + 13, y, 0xa8a680, 1);
+  } else if (op) {
+    // the upper teeth hanging over the gape along the jaw's tip
+    for (let k = -4; k <= 4; k++) {
+      const x = cx + k * 3.6;
+      const y = tipY - 2 - 6 * (k / 4) ** 2;
+      s.poly([[x - 1.4, y], [x + 1.4, y], [x, y + 4]], 'W', { flat: 0.9 });
+    }
+    for (let y = 160; y < tipY - 6; y += 5) for (const sx of [-1, 1]) s.poly([[cx + sx * 19, y], [cx + sx * 20.5, y + 1.5], [cx + sx * 19, y + 3]], 'W', { flat: 0.8 });
   } else {
     for (let y = 160; y < 196; y += 5) for (const sx of [-1, 1]) s.poly([[cx + sx * (17 - Math.max(0, y - 182) * 0.17), y], [cx + sx * (18.5 - Math.max(0, y - 182) * 0.17), y + 1.5], [cx + sx * (17 - Math.max(0, y - 182) * 0.17), y + 3]], 'W', { flat: 0.8 });
   }
+  if (belly) return s.render();
   // Two swept ivory horns root beside the eyes; no change to the collision body.
-  for (const side of [-1,1]) {
-    s.tube(cx+side*15,146,cx+side*24,130,4.5,'j',{rb:2.8});
-    s.tube(cx+side*24,130,cx+side*19,115,2.8,'j',{rb:0.5});
-    for (let k=0;k<4;k++) s.line(cx+side*(17+k*1.5),143-k*3,cx+side*(21+k),141-k*3,0x737d65,1);
+  for (const side of [-1, 1]) {
+    s.tube(cx + side * 15, 146, cx + side * 24, 130, 4.5, 'j', { rb: 2.8 });
+    s.tube(cx + side * 24, 130, cx + side * 19, 115, 2.8, 'j', { rb: 0.5 });
+    for (let k = 0; k < 4; k++) s.line(cx + side * (17 + k * 1.5), 143 - k * 3, cx + side * (21 + k), 141 - k * 3, 0x737d65, 1);
     // restrained gold spiral markings on the shoulders
-    for (let k=0;k<22;k++) {
-      const a=k*0.35, r=4-k*0.13;
-      s.px(cx+side*20+Math.cos(a)*r,124+Math.sin(a)*r,0xc5bd73);
+    for (let k = 0; k < 22; k++) {
+      const a = k * 0.35;
+      const r = 4 - k * 0.13;
+      s.px(bx + side * 20 + Math.cos(a) * r, 124 + Math.sin(a) * r, 0xc5bd73);
     }
   }
-  // the raised eyes, gold, slit pupils; the nostrils at the tip
+  // the raised eyes, gold, slit pupils (or the lids down); the nostrils at the tip
   for (const sx of [-1, 1]) {
     s.ellipse(cx + sx * 9, M(48), 5.4, 5, 'z', { bias: 0.1 });
-    s.ellipse(cx + sx * 9, M(48.5), 3.4, 3, 'Y', { flat: 0.75 });
-    s.line(cx + sx * 9, M(48.5) - 2.5, cx + sx * 9, M(48.5) + 2.5, INK, 1);
-    s.ellipse(cx + sx * 7, 189, 3, 2, 'z', { bias: 0.2 });
-    s.dot(cx + sx * 7, 190, 1.4, INK);
+    if (blink) {
+      s.ellipse(cx + sx * 9, M(48.5), 3.6, 3.1, 'z', { bias: 0.3 });
+      s.line(cx + sx * 9 - 3, M(48.5) + 0.5, cx + sx * 9 + 3, M(48.5) + 0.5, INK, 1);
+    } else {
+      s.ellipse(cx + sx * 9, M(48.5), 3.4, 3, 'Y', { flat: 0.75 });
+      s.line(cx + sx * 9, M(48.5) - 2.5, cx + sx * 9, M(48.5) + 2.5, INK, 1);
+      s.px(cx + sx * 9 - 1.5, M(48.5) - 1.5, 0xfff8d0);
+    }
+    s.ellipse(cx + sx * 7, tipY - 11, 3, 2, 'z', { bias: 0.2 });
+    s.dot(cx + sx * 7, tipY - 10, 1.4, INK);
   }
   return s.render();
 }
 
-export function waniSub() {
+/** Rolled half over (the death roll): back on one side, belly on the other, the body seen edge-on, narrower. */
+export function waniSide(dir) {
+  const back = wani({ swim: 1, legK: 0.6 });
+  const bel = wani({ belly: true, swim: 3, legK: 0.6 });
+  const out = new Raster(87, 204);
+  const cx = 43.5;
+  for (let y = 0; y < 204; y++)
+    for (let x = 0; x < 87; x++) {
+      const sx = Math.round(cx + (x - cx) / 0.78);
+      const split = cx + dir * (4 + 3 * Math.sin(y * 0.09));
+      const src = (sx - split) * dir < 0 ? back : bel;
+      const i = src.idx(sx, y);
+      if (i < 0 || !src.data[i + 3]) continue;
+      out.setRGBA(x, y, src.data[i], src.data[i + 1], src.data[i + 2], src.data[i + 3]);
+      // the line where the scutes end and the belly begins
+      if (Math.abs(sx - split) < 0.8 && back.data[back.idx(sx, y) + 3] && bel.data[bel.idx(sx, y) + 3]) out.set(x, y, 0x1a3a34, 0.8);
+    }
+  return out;
+}
+
+/**
+ * Half under the surface (sinking or rising): only the ridge of the back, the head with its eyes and the
+ * nostrils stand out of the water; the rest is a shape under the green water, ripples along its sides.
+ */
+export function waniWade(f) {
+  const src = wani({ swim: f ? 2 : 0 });
+  const out = new Raster(87, 204);
+  const cx = 43.5;
+  const WATER = [0x1c6a68, 0x2a8a84];
+  for (let y = 0; y < 204; y++)
+    for (let x = 0; x < 87; x++) {
+      const i = src.idx(x, y);
+      if (!src.data[i + 3]) continue;
+      const head = ((x - cx) / 16) ** 2 + ((y - 147) / 12) ** 2 < 1;
+      const ridge = y > 70 && y < 136 && Math.abs(x - cx - Math.sin(y * 0.2) * 1.5) < 4.5 && (y >> 2) % 3 !== 0;
+      const nose = ((x - cx) / 11) ** 2 + ((y - 189) / 6) ** 2 < 1;
+      if (head || ridge || nose) {
+        out.setRGBA(x, y, src.data[i], src.data[i + 1], src.data[i + 2], 255);
+        continue;
+      }
+      const c = mixc((src.data[i] << 16) | (src.data[i + 1] << 8) | src.data[i + 2], WATER[(x + y + f) % 2], 0.6);
+      out.set(x, y, c, 0.5);
+    }
+  // ripples round what breaks the surface, and along the flanks
+  for (let a = 0; a < TAU; a += 0.02) {
+    const r = 1 + f * 0.12;
+    out.set(cx + Math.cos(a) * 19 * r, 146 + Math.sin(a) * 13 * r, 0xd8eee8, 0.6);
+    out.set(cx + Math.cos(a) * 12 * r, 189 + Math.sin(a) * 7 * r, 0xd8eee8, 0.5);
+    if (Math.sin(a * 6 + f * 2) > 0.3) out.set(cx + Math.cos(a) * 30 * r, 108 + Math.sin(a) * 50 * r, 0xd8eee8, 0.3);
+  }
+  return out;
+}
+
+export function waniSub(f = 0) {
   const s = new HiSprite(81, 78, RAMPS);
-  // only the eyes and nostrils above the water, ripples spreading round them
+  // only the eyes and nostrils above the water, ripples spreading round them (growing frame by frame)
+  const g = 1 + (f % 3) * 0.08;
   for (let a = 0; a < TAU; a += 0.012) {
-    s.px(40.5 + Math.cos(a) * 33, 39 + Math.sin(a) * 27, 0xd8e8e8, 0.55);
-    s.px(40.5 + Math.cos(a) * 22, 39 + Math.sin(a) * 16, 0xd8e8e8, 0.4);
+    s.px(40.5 + Math.cos(a) * 33 * g, 39 + Math.sin(a) * 27 * g, 0xd8e8e8, 0.55 - (f % 3) * 0.12);
+    s.px(40.5 + Math.cos(a) * 22 * g, 39 + Math.sin(a) * 16 * g, 0xd8e8e8, 0.4);
+    if (f % 3 === 2) s.px(40.5 + Math.cos(a) * 12, 39 + Math.sin(a) * 8, 0xd8e8e8, 0.35);
   }
   s.ellipse(40.5, 40, 16, 22, 'z', { flat: 0.3, pat: crackle({ amt: 0.2, scale: 5 }) });
   for (const sx of [-1, 1]) {
     s.ellipse(40.5 + sx * 9, 31, 5.4, 4.6, 'z', { bias: 0.08 });
-    s.ellipse(40.5 + sx * 9, 30, 3.4, 2.6, 'Y', { flat: 0.75 });
-    s.line(40.5 + sx * 9, 28, 40.5 + sx * 9, 32, INK, 1);
+    if (f === 3) s.line(40.5 + sx * 9 - 3, 30, 40.5 + sx * 9 + 3, 30, INK, 1);
+    else {
+      s.ellipse(40.5 + sx * 9, 30, 3.4, 2.6, 'Y', { flat: 0.75 });
+      s.line(40.5 + sx * 9, 28, 40.5 + sx * 9, 32, INK, 1);
+    }
     s.dot(40.5 + sx * 3, 54, 1.4, INK);
   }
+  // bubbles rising off its back
+  for (let k = 0; k < 3; k++) s.dot(40.5 + ((k * 13 + f * 7) % 20) - 10, 58 + ((k * 5 + f * 4) % 12), 1.2, 0xe8f8f8, 0.6);
   return s.render({ outline: 0 });
 }
 
@@ -368,10 +506,19 @@ export function beppuEnemies(add) {
   add('yuzutsu_base', yuzutsuBase(false));
   add('yuzutsu_wreck', yuzutsuBase(true));
   for (let i = 0; i < 16; i++) add(`nozzle_${i}`, nozzle(i));
-  add('wani_0', wani(false));
-  add('wani_1', wani(true));
-  add('wani_half', wani(0.5)); // step 2a: the jaws half way, in and out of a snap
-  add('wani_sub', waniSub());
+  // the crocodile: wani_0 (also the swim's first step) .. wani_swim_3, a blink, the jaws half and wide open,
+  // rolled on its side and on its back (the death roll), half under (sinking, rising), and under (with ripples)
+  add('wani_0', wani({ swim: 0 }));
+  for (let f = 1; f < 4; f++) add(`wani_swim_${f}`, wani({ swim: f }));
+  add('wani_blink', wani({ swim: 0, blink: true }));
+  add('wani_1', wani({ open: 1 }));
+  add('wani_half', wani({ open: 0.5 })); // step 2a: the jaws half way, in and out of a snap
+  add('wani_side_l', waniSide(-1));
+  add('wani_belly', wani({ belly: true }));
+  add('wani_side_r', waniSide(1));
+  for (let f = 0; f < 2; f++) add(`wani_wade_${f}`, waniWade(f));
+  add('wani_sub', waniSub(0));
+  for (let f = 1; f < 4; f++) add(`wani_sub_${f}`, waniSub(f));
   // the oni (oni540.mjs), and the same with his left horn snapped off, from phase 2 on
   for (const broken of [false, true]) {
     for (let p = 0; p < 3; p++) add(`oni_${p}${broken ? '_b' : ''}`, oni540(p, broken));

@@ -2,11 +2,12 @@ import Phaser from 'phaser';
 import { keepForOffline } from '../pwa.js';
 import { installLegacyPixelGrid } from '../rendering.js';
 import { STAGES } from '../data/stages.js';
+import { ENCOUNTERS } from '../data/encounters.js';
 import { setFontScale } from '../game/fontScale.js';
 import { CITY_ANIMS, registerEnemyAtlas, registerSharedHi, spriteAnimTexture, unregisterEnemyAtlas } from '../game/enemyArt.js';
 
 /** Whether a city's enemies are drawn at 540 px, in an atlas of their own (bg/<id>/enemies.png). */
-const enemyArt = (id) => STAGES.some((st) => st.id === id && st.enemyArt);
+const enemyArt = (id) => [...STAGES, ...ENCOUNTERS].some((st) => st.id === id && st.enemyArt);
 
 export const FONT = 'pixel';
 /** The same letters without their dark outline: print on light paper (the stamp book). */
@@ -189,7 +190,7 @@ export class Boot extends Phaser.Scene {
     if (!this.retainedStages) return;
     // Keep metadata and shared atlases/fonts; remove GPU textures, including late downloads.
     for (const key of this.textures.getTextureKeys()) {
-      const city = /^(?:far|mid|props|view|enemies)_(stage\d+)(?:_|$)/.exec(key)?.[1];
+      const city = /^(?:far|mid|props|view|enemies)_(stage\d+|ex\d+)(?:_|$)/.exec(key)?.[1];
       if (city && !this.retainedStages.has(city)) {
         if (key.startsWith('enemies_')) this.cityArtOut(key); // (its frames and animations go with it)
         this.textures.remove(key);

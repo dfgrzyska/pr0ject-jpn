@@ -7,6 +7,9 @@ import { Pool } from './Pool.js';
 // garlands at the Children's Peace Monument rise from it and dance over the park: a spiral, a ring, a figure of
 // eight, a double garland; then they fly away up the screen and the fight goes on. They are scenery: no collisions,
 // no score, and they swerve round the ship.
+// So that the fight doesn't just snap off, it winds down into the silence and back out of it: for `lead` seconds
+// before it the enemies hold their fire (the last ones drift on and fold into cranes when it starts) and the music
+// starts to fall, and for `after` seconds once it is over they still hold it while the fight picks up again.
 const COLORS = [0xff6a6a, 0xffa848, 0xffe068, 0x8ee878, 0x6ac0ff, 0xb898ff, 0xff94cc, 0xffffff, 0xffd878];
 const FLAP = [0, 1, 2, 1];
 const ease = (x) => {
@@ -36,6 +39,14 @@ export class Interlude {
   }
 
   update(dt, t) {
+    const lead = this.cfg.lead ?? 0;
+    const after = this.cfg.after ?? 0;
+    const before = !this.active && !this.done && t >= this.from - lead && t < this.from;
+    this.s.calm = before || (t >= this.to && t < this.to + after);
+    if (before && !this.leading) {
+      this.leading = true;
+      this.s.music.duck?.(0.7);
+    }
     if (!this.active && !this.done && t >= this.from && t < this.to - 1) this.begin(t);
     if (this.active && t >= this.to) this.end();
     if (this.cranes.length) this.move(dt, t);

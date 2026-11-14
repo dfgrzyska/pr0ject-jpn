@@ -14,9 +14,12 @@ const W = VIEW.width;
  * finale (the ending): the whole route drawn in from city to city, then the ship flies away off the map.
  */
 export class JapanMap {
-  constructor(scene, stages, order, pos, finale = false) {
+  constructor(scene, stages, order, pos, finale = false, { encounter = false, resume = false } = {}) {
     this.scene = scene;
     this.finale = finale;
+    // encounter: the flight stops halfway, an alarm: something is in the way; resume: on from halfway after it
+    this.encounter = encounter;
+    this.resume = resume;
     this.stages = stages;
     this.order = order;
     this.pos = pos; // the city just cleared
@@ -42,7 +45,11 @@ export class JapanMap {
     this.count = pixelText(scene, W / 2, 0, `MIASTA: ${pos + 1} / ${order.length}`).setDepth(d + 2).setTint(0xb0aec0);
     this.dest = pixelText(scene, W / 2, 0, finale ? 'ARIGATŌ!' : `DALEJ: ETAP ${pos + 2}`).setDepth(d + 2).setTint(0xffffff).setVisible(!finale);
     this.destSub = pixelText(scene, W / 2, 0, finale ? '' : next.subtitle).setDepth(d + 2).setTint(0xf08bb0);
-    this.hint = pixelText(scene, W / 2, 0, scene.sys.game.device.input.touch ? 'DOTKNIJ, ABY LECIEĆ' : 'ENTER - LECIMY').setDepth(d + 2).setTint(0xffe080).setVisible(false);
+    this.hint = pixelText(scene, W / 2, 0, encounter ? (scene.sys.game.device.input.touch ? 'DOTKNIJ - DO WALKI!' : 'ENTER - DO WALKI!') : scene.sys.game.device.input.touch ? 'DOTKNIJ, ABY LECIEĆ' : 'ENTER - LECIMY').setDepth(d + 2).setTint(0xffe080).setVisible(false);
+    // the alarm: a red "!" over the ship, a line of text
+    this.alarm = pixelText(scene, W / 2, 0, '!!').setDepth(d + 4).setTint(0xff4a3a).setScale(2).setVisible(false);
+    this.alarmText = pixelText(scene, W / 2, 0, 'NIESPODZIEWANY GOŚĆ!').setDepth(d + 4).setTint(0xff8a70).setVisible(false);
+    if (resume) this.t = FLIGHT * 0.5;
     this.layout(scene.H);
   }
 
@@ -89,13 +96,13 @@ export class JapanMap {
 
   /** Skip the rest of the flight (an impatient tap). */
   finish() {
-    this.t = FLIGHT;
+    this.t = this.encounter ? Math.max(this.t, FLIGHT * 0.5 + 1.4) : FLIGHT;
   }
 
   update(dt) {
     this.t += dt;
     if (this.finale) return this.finaleUpdate();
-    const k = Math.min(1, this.t / FLIGHT);
+    const k = Math.min(this.encounter ? 0.5 : 1, this.t / FLIGHT);
     const e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2; // ease in and out
     const g = this.gfx;
     g.clear();
@@ -129,7 +136,20 @@ export class JapanMap {
     this.ship.setPosition(Math.round(sx), Math.round(sy));
     if (k < 1) this.ship.setRotation(Math.atan2(ay - sy, ax - sx) + Math.PI / 2);
     else this.ship.setRotation(0);
-    if (k >= 1 && !this.ready) {
+    if (this.encounter && this.t >= FLIGHT * 0.5) {
+      // stopped short: the ship shudders, the alarm blinks
+      const a = this.t - FLIGHT * 0.5;
+      this.ship.x += Math.sin(a * 60) * 1.2;
+      const on = Math.floor(a * 6) % 2 === 0;
+      this.alarm.setPosition(Math.round(this.ship.x), Math.round(this.ship.y) - 16).setVisible(on);
+      this.alarmText.setPosition(W / 2, this.H - 58).setVisible(true).setTint(on ? 0xff4a3a : 0xffe080);
+      if (!this.alarmed) {
+        this.alarmed = true;
+        this.scene.sfx.warning?.();
+        this.scene.cameras.main.shake(300, 0.006);
+      }
+      if (a > 1.4 && !this.ready) this.ready = true;
+    } else if (k >= 1 && !this.ready) {
       this.ready = true;
       this.scene.sfx.pickup?.();
     }
@@ -171,7 +191,7 @@ export class JapanMap {
   }
 
   destroy() {
-    for (const o of [this.bg, this.img, this.gfx, this.ship, this.title, this.count, this.dest, this.destSub, this.hint]) o.destroy();
+    for (const o of [this.bg, this.img, this.gfx, this.ship, this.title, this.count, this.dest, this.destSub, this.hint, this.alarm, this.alarmText]) o.destroy();
     for (const l of this.labels) {
       l.text.destroy();
       l.shadow.destroy();

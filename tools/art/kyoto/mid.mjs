@@ -2442,41 +2442,323 @@ export function buildMid() {
         kit.emit(Math.round(bx(u) + side * (6 + wr() * 34)), u + 18, dry, { rate: 0.14, life: [3.5, 5], vy: -5, sx: 7, wf: 1.4, a: 0.9, rise: 0, tint: 1 });
       }
     }
-    // Otagi Nenbutsu-ji: a compact interpretation of the mossy hillside temple
-    // and its individually carved rakan, in the existing Arashiyama clearing.
-    fillGround(120, Y(3000), 58, 88, C.moss, 32, 4);
-    reserveRect(118, Y(3002), 62, 92);
-    hall(128, Y(2992), 44, 19, 8, 'hondo');
-    walk(bx(2916) + 5, 150, 2913, 2918);
-    path(2913, 2963, () => 150, 3);
-    // A roofed Buddhist entrance rather than the former Shinto torii.
-    hall(142, Y(2930), 17, 7, 5, 'gate');
-    for (let row = 0; row < 5; row++) for (let col = 0; col < 6; col++) {
-      const x = 123 + col * 9 + (row % 2 ? 1 : 0);
-      if (x > 143 && x < 155) continue; // keep the approach open
-      const y = Y(2959 - row * 8);
-      const seed = row * 6 + col;
-      objects.push({ y: y + 5, draw: () => {
-        img.ellipse(x + 1, y + 5, 3.1, 1.1, 0x14251b, 0.65);
-        img.rect(x - 2.6, y + 3.5, 5.4, 1.6, 0x59604e);
-        img.ellipse(x, y + 1.8, 2.2, 2.8, 0x858b74);
-        img.ellipse(x - 0.3, y - 1.1, 2, 2.1, 0xa5aa91);
-        img.ellipse(x - 0.7, y - 1.8, 1.6, 0.9, 0x667c46);
-        img.line(x - 1.2, y - 1, x - 0.6, y - 0.8, 0x353d32, 1, 1);
-        img.line(x + 0.5, y - 0.8, x + 1.1, y - 1, 0x353d32, 1, 1);
-        img.line(x - 0.6, y + 0.1, x + 0.4, y + 0.4, 0x454d3c, 1, 1);
-        // Clasped hands, a cheek on a hand, or a little round object: distinct poses.
-        if (seed % 3 === 0) {
-          img.line(x - 1.8, y + 1.5, x, y + 2.2, 0xb0b39b, 1, 2);
-          img.line(x + 1.8, y + 1.5, x, y + 2.2, 0xb0b39b, 1, 2);
-        } else if (seed % 3 === 1) img.line(x + 1.6, y + 2.7, x + 1.1, y - 0.1, 0xb0b39b, 1, 2);
-        else img.ellipse(x, y + 2.4, 1, 0.9, 0x575e4c);
-        for (let k = 0; k < 7; k++) {
-          const dx = hashPx(k, seed, 77) * 3.4 - 1.7;
-          const dy = hashPx(seed, k, 79) * 4.8 - 2.2;
-          img.px(Math.round((x + dx) * S), Math.round((y + dy) * S), k % 2 ? 0x526c3b : 0xbfc0a5);
+    // Otagi Nenbutsu-ji: the mossy hillside temple of the 1,200 rakan, each carved by a different hand. In the
+    // grove's clearing: the hill climbs in mossy terraces packed shoulder to shoulder with little stone rakan,
+    // moss caps on their heads, every face its own (smiling, laughing, asleep, a drinking cup, a cheek on a
+    // hand); stone steps lined with them climb from the bamboo past a stream with an arched stone bridge to a
+    // gravel court and the grey-tiled main hall; beside the steps a two-roofed pavilion on red posts with curled
+    // eaves and a gold finial; stone lanterns, maples hanging over it all, their leaves on the moss.
+    // (Everything here draws from its own seeds: the stage's shared random stream keeps exactly the calls it
+    // had, so the rest of the strip stays where it was.)
+    {
+      const OX0 = 118;
+      const OX1 = 180;
+      const RK = [0x41463e, 0x5d6256, 0x7c8072, 0x9fa292, 0xbdbfae]; // weathered stone
+      const MS = [0x2e4a1c, 0x4a6e24, 0x6e9230, 0x98b642, 0xc4d866]; // moss, bright where the light falls
+      const LEAF = [0x24461a, 0x3a6a22, 0x5a8c2c, 0x84b03c, 0xb0d058];
+      const AUT = [0xa8321a, 0xd0541e, 0xe8862c]; // the odd early-turning maple leaf
+      const fp = (X, Yy, c, a = 1) => img.px(Math.round(X), Math.round(Yy), c, a);
+      const ramp5 = (r, v) => r[Math.max(0, Math.min(r.length - 1, Math.floor(v * r.length)))];
+      // the ground: moss over the hill, darker at the foot of each terrace, leaves fallen on it, the edge of the
+      // clearing broken by ferns and low bushes so it doesn't end in a straight line against the bamboo
+      fillGround(120, Y(3000), 58, 88, C.moss, 32, 4);
+      img.fine(OX0, Y(3002), OX1 - OX0, 92, (FXr, FYr, x, y) => {
+        const edge = Math.min(x - OX0, OX1 - x, y - Y(3002), Y(2910) - y);
+        const n = fbm(FXr * 0.5, FYr * 0.5, { seed: 811, scale: 5, octaves: 2 });
+        if (edge < 3.5 + n * 3) {
+          // fern and bush along the rim
+          const h = hashPx(FXr, FYr, 812);
+          return n + h * 0.3 > 0.62 ? ramp5(LEAF, 0.35 + n * 0.5) : h < 0.5 ? scaleColor(C.moss[0], 0.75) : null;
         }
-      } });
+        const h = hashPx(FXr, FYr, 813);
+        if (h < 0.012) return AUT[Math.floor(h * 250) % 3];
+        if (h > 0.992) return 0x8a6a3a; // a dry leaf
+        if (fbm(FXr * 0.3, FYr * 0.3, { seed: 814, scale: 4 }) > 0.68) return [ramp5(MS, 0.55 + n * 0.3), 0.55];
+        return null;
+      });
+      reserveRect(118, Y(3002), 62, 92);
+      // the main hall at the top, grey tiles (rand: two calls, as the bark-roofed hall made before)
+      hall(128, Y(2992), 44, 19, 8, 'temple');
+      rand();
+      rand(); // (the entrance hall that stood here took two more)
+      // the way in off the grove path, gravel up to the stream, stone steps from the bridge to the court
+      walk(bx(2916) + 5, 150, 2913, 2918);
+      path(2913, 2937, () => 150, 3);
+      path(2943, 2963, () => 150, 3, 'stairs');
+      // the court before the hall: raked gravel, with an incense burner in the middle
+      img.fine(124, Y(2964), 52, 6, (FXr, FYr, x, y) => {
+        const e = Math.min(FYr - Y(2964) * S, Y(2958) * S - FYr, FXr - 124 * S, 176 * S - FXr);
+        const c = (FYr % 4 === 0) ? scaleColor(gravelPx(FXr, FYr), 0.9) : gravelPx(FXr, FYr);
+        return e < 2 ? scaleColor(c, e ? 0.8 : 0.6) : c;
+      });
+      // a stream running across the hill, rocks along it, the moss dark and wet beside it
+      const sy = (x) => Y(2939.6) + Math.sin(x * 0.21) * 0.9 + Math.sin(x * 0.07 + 1) * 0.6;
+      img.fine(OX0, Y(2943), OX1 - OX0, 7, (FXr, FYr, x, y) => {
+        const d = Math.abs(y - sy(x));
+        if (d > 2.6) return null;
+        if (d > 1.7) {
+          const s = fbm(FXr, FYr, { seed: 821, scale: 2.4 });
+          return s > 0.55 ? rampColor(C.stone, 0.2 + s * 0.7, FXr, FYr) : scaleColor(C.moss[0], 0.7);
+        }
+        const w = fbm(FXr * 0.4, FYr * 1.2 + x * 0.5, { seed: 822, scale: 3 });
+        return w > 0.7 ? C.pond[3] : rampColor(C.pond, 0.15 + w * 0.6 + (1.7 - d) * 0.1, FXr, FYr);
+      });
+      // ---- a little stone rakan, its base at logical (x, y); `seed` picks the face, the pose and the moss
+      const rakan = (x, y, seed, sc = 1) =>
+        objects.push({
+          y: y + 0.4,
+          draw: () => {
+            const X = x * S;
+            const B = y * S;
+            const hA = hashPx(seed, 3, 91);
+            const hB = hashPx(seed, 7, 93);
+            const hC = hashPx(seed, 11, 95);
+            const mossy = 0.25 + hA * 0.6; // how much of it the moss has taken
+            const bw = 4.2 * sc; // half the body's width, fine
+            const bh = 7 * sc;
+            const hr = 2.9 * sc;
+            const hy = B - bh - hr + 1.2;
+            // its shadow, down and to the right
+            for (let j = -2; j <= 2; j++) for (let i = -6; i <= 6; i++) if ((i / 6) ** 2 + (j / 2) ** 2 < 1) img.tintPx(Math.round(X + i + 2), Math.round(B + j), 0.62);
+            const stone = (px, py, v) => {
+              // moss on what faces up, lichen speckles, the stone itself lit from the top left
+              const up = 1 - (py - (hy - hr)) / (B - (hy - hr));
+              const m = fbm(px * 0.9 + seed, py * 0.9, { seed: 830, scale: 2.2 }) + up * 0.45 * mossy;
+              if (m > 1.02 - mossy * 0.55) return ramp5(MS, 0.25 + v * 0.75);
+              if (hashPx(Math.round(px), Math.round(py), 831 + seed) < 0.05) return 0xc0c0a0;
+              return ramp5(RK, v);
+            };
+            // the body: a rounded robe, wider at the knees
+            for (let py = B - bh; py <= B; py++) {
+              const t = (py - (B - bh)) / bh;
+              const w = bw * (0.72 + 0.28 * Math.sqrt(t)) + (t > 0.85 ? 0.6 : 0);
+              for (let px = X - w; px <= X + w; px++) {
+                const v = 0.62 - (px - X) / (w * 2.4) - t * 0.25;
+                fp(px, py, stone(px, py, v));
+              }
+            }
+            // a fold of the robe across the chest
+            for (let k = -2; k <= 2; k++) fp(X + k, B - bh + 2 + Math.abs(k) * 0.5, RK[1]);
+            // hands: clasped in prayer, a little cup, a cheek resting on one hand, a child held in the lap
+            const pose = Math.floor(hC * 5);
+            if (pose === 0) { fp(X, B - bh + 3, RK[3]); fp(X, B - bh + 4, RK[2]); fp(X - 1, B - bh + 4, RK[3]); }
+            else if (pose === 1) { fp(X - 1, B - 3, RK[3]); fp(X, B - 3, RK[4]); fp(X + 1, B - 3, RK[3]); fp(X, B - 2, RK[1]); }
+            else if (pose === 2) { fp(X + bw - 1, B - bh + 1, RK[3]); fp(X + bw - 1.5, B - bh, RK[3]); }
+            else if (pose === 3) for (let j = 0; j < 3; j++) for (let i = -1; i <= 1; i++) fp(X + i, B - 4 + j, ramp5(RK, 0.75 - j * 0.15));
+            // the head, round, a little tilted
+            const tilt = (hB - 0.5) * 1.6;
+            for (let j = -hr; j <= hr; j++)
+              for (let i = -hr; i <= hr; i++) {
+                if (i * i + j * j > hr * hr + 0.6) continue;
+                const v = 0.7 - (i + j) / (hr * 4);
+                fp(X + i + tilt * (j / hr) * 0.5, hy + j, stone(X + i, hy + j, v));
+              }
+            // a cap of moss on top: most of them
+            if (mossy > 0.35) for (let i = -hr + 0.5; i <= hr - 0.5; i++) fp(X + i, hy - hr + Math.abs(i) * 0.35, ramp5(MS, 0.5 + hA * 0.5 - Math.abs(i) * 0.08));
+            // the face: eyes closed in a smile, open and laughing, asleep; each its own
+            const fx = X + tilt * 0.3;
+            const fy = hy + 0.6;
+            const face = Math.floor(hB * 4);
+            const ink = 0x2a2c24;
+            if (face === 0) { fp(fx - 1.2, fy, ink); fp(fx + 1.2, fy, ink); fp(fx - 0.6, fy + 1.6, ink); fp(fx + 0.6, fy + 1.6, ink); }
+            else if (face === 1) { fp(fx - 1.2, fy - 0.3, ink); fp(fx + 1.2, fy - 0.3, ink); fp(fx, fy + 1.4, 0x1a1a14); fp(fx, fy + 2, 0x3a2a24); }
+            else if (face === 2) { fp(fx - 1.5, fy, RK[1]); fp(fx - 0.6, fy, RK[1]); fp(fx + 0.6, fy, RK[1]); fp(fx + 1.5, fy, RK[1]); fp(fx, fy + 1.6, ink); }
+            else { fp(fx - 1.2, fy, ink); fp(fx + 1.2, fy, ink); fp(fx - 1, fy + 1.4, ink); fp(fx, fy + 1.8, ink); fp(fx + 1, fy + 1.4, ink); }
+            // now and then a red bib (yodarekake) offered by a visitor
+            if (hA > 0.88) for (let i = -2; i <= 2; i++) for (let j = 0; j < 2; j++) fp(X + i, hy + hr + j, j ? C.R2 : C.R1);
+          },
+        });
+      // ---- a terrace: its mossy stone edge under a row of rakan, x0..x1 at u
+      let rs = 0;
+      const terrace = (x0, x1, u, gap = null, step = 3.2) => {
+        const y = Y(u);
+        const bend = (x) => 0.75 * Math.sin(x * 0.19 + u * 0.37); // (the terraces follow the hill, not a ruler)
+        img.fine(x0 - 1, y - 0.6, x1 - x0 + 2, 2.6, (FXr, FYr, x) => {
+          if (gap && x > gap[0] && x < gap[1]) return null;
+          const k = FYr - Math.floor((y + 0.3 + bend(x)) * S);
+          if (k < 0 || k > 3) return null;
+          if (k === 0) return rampColor(C.stone, 0.75, FXr, FYr);
+          const blk = Math.floor((FXr + (k > 1 ? 4 : 0)) / 7);
+          return hashPx(FXr, FYr, 840) < 0.25 ? ramp5(MS, 0.3) : k === 3 ? 0x1c2618 : rampColor(C.stone, 0.25 + hashPx(blk, k > 1, 841) * 0.4, FXr, FYr);
+        });
+        for (let x = x0 + 1.6; x <= x1 - 1.4; x += step) {
+          if (gap && x > gap[0] - 1 && x < gap[1] + 1) continue;
+          const j = hashPx(rs, 5, 850);
+          rakan(x + (j - 0.5) * 0.8, y + bend(x) - (hashPx(rs, 9, 851) - 0.5) * 0.6, 900 + rs++, 0.9 + j * 0.2);
+        }
+      };
+      // below the stream: the hill on both sides of the gravel way, terrace above terrace
+      for (const u of [2920, 2924, 2928, 2932, 2936]) {
+        terrace(120, 145, u);
+        terrace(155, 178, u);
+      }
+      // above it: the right of the steps a whole slope of them; on the left the steps lined with a single file
+      for (const u of [2945, 2949, 2953, 2957]) {
+        terrace(155, 178, u);
+        terrace(141.5, 146, u);
+      }
+      // round the sides of the hall, the hill climbing on behind it
+      for (const u of [2969, 2973, 2977, 2981, 2985, 2989, 2993, 2997]) {
+        terrace(119, 128, u);
+        terrace(172, 179, u);
+      }
+      for (const u of [2996, 2999.5]) terrace(128, 172, u, null, 3.4);
+      // ---- the arched stone bridge over the stream on the way up, posts with jewel caps along its rails
+      objects.push({
+        y: Y(2936.5),
+        draw: () => {
+          const X0 = 145.5 * S;
+          const X1 = 154.5 * S;
+          const YT = Y(2943.5) * S;
+          const YB = Y(2936.5) * S;
+          for (let Yy = YT; Yy < YB; Yy++) {
+            const t = (Yy - YT) / (YB - YT);
+            const hump = Math.sin(t * Math.PI); // lighter over the crown
+            for (let X = X0; X < X1; X++) {
+              const rail = X < X0 + 3 || X >= X1 - 3;
+              let c = rail ? rampColor(C.stone, 0.35 + hump * 0.3 + (X < X0 + 3 ? 0.2 : -0.1), X, Yy) : flag(C.stone, X, Yy, X - X0, Yy - YT, 6, 27);
+              if (!rail) c = scaleColor(c, 0.85 + hump * 0.25);
+              img.px(X, Yy, c);
+            }
+          }
+          // the jewel-capped posts (giboshi), at the ends and the crown
+          for (const t of [0, 0.5, 1])
+            for (const PX of [X0 + 1, X1 - 2]) {
+              const PY = Math.round(YT + t * (YB - YT - 4));
+              for (let j = 0; j < 4; j++) for (let i = -1; i <= 1; i++) img.px(PX + i, PY + j, j === 0 ? C.stone[3] : i < 0 ? C.stone[2] : C.stone[1]);
+              img.px(PX, PY - 1, C.stone[3]);
+            }
+          // the arch's shadow on the water either side
+          for (let X = X0 - 3; X < X0; X++) for (let Yy = YT + 4; Yy < YB - 4; Yy++) img.tintPx(X, Yy, 0.8);
+          for (let X = X1; X < X1 + 4; X++) for (let Yy = YT + 3; Yy < YB - 3; Yy++) img.tintPx(X, Yy, 0.6);
+        },
+      });
+      // ---- a stone lantern (no light by day), at fine scale, base at logical (x, y)
+      const tooro = (x, y) =>
+        objects.push({
+          y,
+          draw: () => {
+            const X = Math.round(x * S);
+            const B = Math.round(y * S);
+            for (let j = -2; j <= 2; j++) for (let i = -5; i <= 7; i++) if ((i / 6) ** 2 + (j / 2) ** 2 < 1) img.tintPx(X + i + 2, B + j, 0.6);
+            const row = (yy, w, v) => { for (let i = -w; i <= w; i++) img.px(X + i, yy, ramp5(RK, v - i * 0.04)); };
+            row(B, 4, 0.5); row(B - 1, 3, 0.6);
+            for (let k = 2; k < 7; k++) row(B - k, 1, 0.65);
+            row(B - 7, 4, 0.7);
+            for (let k = 8; k < 11; k++) { row(B - k, 3, 0.55); }
+            img.px(X - 1, B - 9, 0x1a1814); img.px(X, B - 9, 0x26221c); img.px(X + 1, B - 9, 0x1a1814);
+            for (let i = -6; i <= 6; i++) img.px(X + i, B - 11, ramp5(RK, 0.8 - Math.abs(i) * 0.03));
+            img.px(X - 7, B - 12, RK[3]); img.px(X + 7, B - 12, RK[2]); // (the curled corners)
+            row(B - 12, 4, 0.75); row(B - 13, 2, 0.85);
+            img.px(X, B - 14, RK[4]); img.px(X, B - 15, RK[3]);
+            // moss on its roof
+            for (let i = -4; i <= 3; i++) if (hashPx(i, X, 860) < 0.55) img.px(X + i, B - 12 - (hashPx(i, B, 861) < 0.3 ? 1 : 0), ramp5(MS, 0.45 + hashPx(i, 1, 862) * 0.4));
+          },
+        });
+      tooro(126, Y(2959));
+      tooro(173, Y(2959));
+      tooro(143.5, Y(2937.5));
+      tooro(157, Y(2943.5));
+      // ---- the two-roofed pavilion on red posts beside the steps: a stone base, the red posts and the dark
+      // inside (a figure of Kannon in the gloom), a wide lower roof of grey tiles with its corners curled up,
+      // a red railing round the upper storey, a smaller roof, and the gold finial with its rings on top
+      objects.push({
+        y: Y(2944),
+        shadow: () => {
+          // the roofs' shade thrown down and to the right of the pavilion
+          for (let j = -6 * S; j <= 6 * S; j++)
+            for (let i = -12 * S; i <= 12 * S; i++) if ((i / (12 * S)) ** 2 + (j / (6 * S)) ** 2 < 1) img.tintPx(Math.round((137 + 0) * S + i), Math.round(Y(2946) * S + j), 0.6);
+        },
+        draw: () => {
+          const CX = 133.5 * S;
+          const B = Y(2944.5) * S;
+          // the base: two courses of cut stone
+          for (let j = 0; j < 5; j++) for (let i = -21; i <= 21; i++) img.px(CX + i, B - j, j === 4 ? C.stone[3] : (i + (j > 1 ? 3 : 0)) % 9 === 0 ? C.stone[0] : i < -18 ? C.stone[2] : C.stone[1]);
+          // the posts and the inside
+          const PY0 = B - 17;
+          for (let Yy = PY0; Yy < B - 4; Yy++)
+            for (let i = -17; i <= 17; i++) {
+              const k = (i + 17) % 11;
+              let c = k < 3 ? roundShade(0xf06a40, C.R1, C.R3, k, 3) : Yy < PY0 + 2 ? C.R3 : 0x1a1412;
+              if (k >= 3 && Yy > B - 8) c = C.R2; // (the low red rail between the posts)
+              img.px(CX + i, Yy, c);
+            }
+          for (let j = 0; j < 5; j++) for (let i = -1; i <= 1; i++) img.px(CX + i, PY0 + 4 + j, j < 2 ? 0xc8a050 : 0x8a6a30); // (gilded, in the dark)
+          // a roof: rows narrowing to the ridge, tiles in lines down the slope, the eave dark under it,
+          // the four corners swept up into curls
+          const roof = (top, h, half) => {
+            for (let j = 0; j < h; j++) {
+              const t = j / (h - 1);
+              const w = Math.round(half * (0.42 + 0.58 * t));
+              for (let i = -w; i <= w; i++) {
+                let c = (i + w) % 3 === 0 ? C.roofTileDark[0] : t > 0.85 ? C.roofTileDark[1] : i < 0 ? C.roofTileDark[3] : C.roofTileDark[2];
+                if (Math.abs(i) > w - 2) c = Math.sign(i) < 0 ? C.roofTileDark[3] : C.roofTileDark[1];
+                if (fbm((CX + i) * 0.4, (top + j) * 0.4, { seed: 870, scale: 3 }) > 0.74) c = mix(c, 0x55643c, 0.5); // moss on the tiles
+                img.px(CX + i, top + j, c);
+              }
+            }
+            for (let i = -half - 1; i <= half + 1; i++) img.px(CX + i, top + h, 0x141012);
+            for (const sx of [-1, 1]) for (let k = 0; k < 3; k++) {
+              img.px(CX + sx * (half + 1 + k), top + h - 1 - k, k === 2 ? C.roofTileDark[3] : C.roofTileDark[1]);
+              img.px(CX + sx * (half + 1 + k), top + h - k, 0x141012);
+            }
+            for (let i = -Math.round(half * 0.42); i <= Math.round(half * 0.42); i++) img.px(CX + i, top, 0x8a8a92); // the ridge
+          };
+          roof(PY0 - 13, 13, 26);
+          // the upper storey: its red railing on a white wall
+          for (let Yy = PY0 - 20; Yy < PY0 - 13; Yy++)
+            for (let i = -11; i <= 11; i++) img.px(CX + i, Yy, Yy > PY0 - 16 ? ((i + 11) % 4 === 0 ? C.R3 : C.R1) : (i + 11) % 7 === 0 ? C.R2 : C.white);
+          roof(PY0 - 30, 10, 17);
+          // the finial: a gold pole with its rings, a flame-shaped jewel at the top, catching the light
+          for (let j = 0; j < 16; j++) {
+            const ringed = j > 3 && j % 3 === 0;
+            for (let i = ringed ? -2 : 0; i <= (ringed ? 2 : 1); i++) img.px(CX + i, PY0 - 30 - j, i < 1 ? C.goldHi : C.gold);
+          }
+          img.px(CX, PY0 - 47, C.goldHi);
+          img.px(CX + 1, PY0 - 46, C.gold);
+          img.px(CX - 1, PY0 - 46, C.goldHi);
+          // the chains from the finial down to the roof's corners
+          for (let k = 0; k < 10; k++) for (const sx of [-1, 1]) img.px(CX + sx * (2 + k * 1.4), PY0 - 40 + k * 1.1, 0x9a7a3a, 0.8);
+        },
+      });
+      // ---- maples leaning over the clearing: clumps of leaves, lit on top, deep inside, an early red one here
+      // and there; they throw a dappled shade on the moss and the statues
+      const maple = (cx, u, r, seed) => {
+        const cy = Y(u);
+        objects.push({
+          y: cy + r + 2,
+          shadow: () => {
+            for (let j = -r * S; j <= r * S; j++)
+              for (let i = -r * S; i <= r * S; i++)
+                if ((i / (r * S)) ** 2 + (j / (r * S * 0.8)) ** 2 < 1 && fbm(i * 0.25, j * 0.25, { seed: seed + 1, scale: 3 }) > 0.42) img.tintPx(Math.round(cx * S + i + 9), Math.round(cy * S + j + 14), 0.72);
+          },
+          draw: () => {
+            for (let k = 0; k < 9; k++) {
+              const a = (k / 9) * Math.PI * 2 + hashPx(k, seed, 880) * 0.6;
+              const d = k ? r * (0.45 + hashPx(k, seed, 881) * 0.4) : 0;
+              const ccx = cx * S + Math.cos(a) * d * S;
+              const ccy = cy * S + Math.sin(a) * d * S * 0.8;
+              const rr = (r * (0.45 + hashPx(k, seed, 882) * 0.2)) * S;
+              for (let j = -rr; j <= rr; j++)
+                for (let i = -rr; i <= rr; i++) {
+                  const q = (i * i + j * j) / (rr * rr);
+                  if (q > 1) continue;
+                  const X = Math.round(ccx + i);
+                  const Yy = Math.round(ccy + j);
+                  const leaf = fbm(X * 0.55, Yy * 0.55, { seed: seed + 2, scale: 2 });
+                  if (q > 0.6 && leaf < 0.5) continue; // (ragged edges)
+                  const v = 0.75 - (i + j) / (rr * 3.2) - q * 0.3 + (leaf - 0.5) * 0.5;
+                  const h = hashPx(X, Yy, seed + 3);
+                  img.px(X, Yy, h < 0.025 ? AUT[Math.floor(h * 120) % 3] : ramp5(LEAF, v));
+                }
+            }
+          },
+        });
+      };
+      maple(121, 3000, 7, 1890);
+      maple(178, 2961, 8, 1891);
+      maple(119, 2944, 6, 1892);
+      maple(176, 2914, 6, 1893);
     }
     // the south bank promenade and the Katsura river with Togetsukyō bridge: the water wide and green, the
     // current in long streaks, the stone edge of the bank

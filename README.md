@@ -484,11 +484,16 @@ samej fali albo fale z tym samym polem `duo` w `stage5.json`.
 | Nurek | kushikatsu — szaszłyk pikujący jak włócznia |
 | Nośnik | zawinięty cukierek ame (chindon-ya zaczęło się podobno od osakańskiego sprzedawcy cukierków) |
 
-Miniboss: lalka bunraku (Osaka to dom teatru bunraku) — samuraj prowadzony przez trzech lalkarzy w czerni.
-Lalki nie da się trafić (strzały przez nią przelatują); każdy lalkarz prowadzi jeden atak: omozukai — głowa
-i prawa ręka (miecz, szeroki wachlarz), hidarizukai — lewa ręka (strumień), ashizukai — nogi (tupnięcia
-i taniec). Zestrzelony lalkarz = bezwładna część; bez wszystkich trzech lalka upada. Pozostali pracują szybciej
-(o 35%, **szalone tempo**), a ostatni sam prowadzi całą lalkę: **taniec miecza**, wszystkie ataki naraz.
+Miniboss: teatr bunraku (Osaka to dom teatru bunraku) — trzy lalki, każda prowadzona przez własnego lalkarza
+w czerni (kuroko). Lalek nie da się trafić (strzały przez nie przelatują, ale ranią przy zderzeniu); celem są
+kuroko, a każdy idzie za swoją lalką po scenie, połączony z nią nitkami. Lalki po kolei ruszają na gracza:
+**samuraj** dobywa miecza, czerwona linia pokazuje tor, szarżuje i tnie wachlarzem stali, chwilę stoi (jego kuroko
+dogania — okno na trafienie) i wraca; **gejsza** tańczy łukiem nad graczem i sypie płatki, a jej żelazny wachlarz
+zatrzymuje strzały (co piąty wraca płatkiem), kuroko trzyma się za nią — trzeba strzelać z boku; **gabu** podpływa
+słodka i powolna, drży, nagle zmienia twarz w demona i strzela szerokim wachlarzem z bliska, rzucając się do przodu.
+Zestrzelony kuroko = jego lalka spada i się rozpada (samuraj, lalka sceny, tylko zwisa bezwładnie); bez wszystkich
+trzech lalki się rozsypują. Im mniej kuroko, tym szybciej pracują pozostali (**szalone tempo**, potem
+**ostatni akt**), a samuraj szarżuje dwa razy z rzędu. Stałe: `BUNRAKU` w `src/game/enemies/osaka.js`.
 
 Boss: olbrzymia ośmiornica w opasce sprzedawcy takoyaki, osiem macek z segmentów w dwóch rzędach — kołyszą się
 i podwijają, plują pierścieniami z końcówek, uderzają (najpierw migająca linia), głowa rzuca takoyaki z celownikiem;
@@ -498,7 +503,9 @@ trafienie w dowolny segment rani mackę. Faza 1: walczą cztery przednie macki, 
 krzyż, salwy trzech takoyaki; łeb przyjmuje 75%. Faza 3 (**zasłona z atramentu**, bez macek albo gdy łeb ma
 poniżej 40%): chmury tuszu nad wodą, szarże odrzutowe w stronę gracza, spirala tuszu, kule tuszu z pierścieniem
 i grad takoyaki. Ataki są dobrane tak, żeby na ekranie było naraz najwyżej ok. 40 pocisków.
-Macki uderzają w zapowiedzianym kierunku i wracają. Nie ma pali ani zakleszczania ramion.
+Macki uderzają w zapowiedzianym kierunku i wracają. Nie ma pali ani zakleszczania ramion. Macki to główna broń (w symulacji ok. 2× więcej uderzeń niż wcześniej):
+cykl to seria uderzeń, pierścienie, druga seria uderzeń i takoyaki, a między seriami wolna macka sama smaga
+w gracza (`TAKO.slams`, `TAKO.lash`).
 
 ## Beppu
 
@@ -768,8 +775,22 @@ figury na ulicach Osaki są własne, nie cudze znaki towarowe: przy Ebisu-bashi 
 restauracją tanuki bębniący w brzuch, na ścianie czerwono-złoty smok, pod Tsūtenkaku złoty Ebisu i szyld z
 szaszłykami kushikatsu.
 
+Losowi bossowie w podróży: po ukończeniu miasta 20% szans na niespodziewane spotkanie z bossem na specjalnym
+tle (na razie automat z napojami na tle „gazowanej” *Wielkiej fali*); za wygraną +1 życie i premia. Szczegóły
+i plan kolejnych w `docs/random-encounters.md`; do testów `?ex=ex1` albo `?ex=always`.
+
 Hiroszima: chwila ciszy zaczyna się przy wejściu na odcinek Genbaku Dome i trwa 11,5 s.
-Na ten czas przelot przyspiesza; późniejsze fale są przesunięte, żeby nadal pasowały do scenerii.
+Na ten czas przelot przyspiesza, płynnie (`scroll.fast.ease`: 2,5 s rozpędu i hamowania zamiast skoku);
+późniejsze fale są przesunięte, żeby nadal pasowały do scenerii. Walka nie urywa się nagle: ostatnie fale
+przychodzą ok. 24 s, przez 3 s przed ciszą (`interlude.lead`) wrogowie już nie strzelają, a muzyka cichnie, ci
+którzy zostali, składają się w żurawie; po ciszy pierwsi wracający przez 1,5 s (`interlude.after`) też jeszcze
+nie strzelają, a wieżyczki z pierścieniami pojawiają się dopiero po kilku spokojniejszych falach.
 Zwykli przeciwnicy to czerwone duszki liści klonu; papierowe żurawie rozejmu są wyłącznie dekoracją.
 Krokodyl Beppu ma wariant yōkai: turkusowe łuski, złote oczy i jasne rogi, przy niezmienionym hitboksie.
-Otagi jest stylizowaną interpretacją świątyni i jej rakanów: https://www.otagiji.com/story-en.
+Pływa (ogon faluje, łapy wiosłują po przekątnej, cztery klatki), mruga, otwiera paszczę z językiem i zębami
+w obu szczękach, w obrocie śmierci przewraca się na bok i brzuch, zanurza się i wynurza przez klatki „w pół
+wody”, a pod wodą kręgi się rozchodzą, a oczy mrugają.
+Otagi jest stylizowaną interpretacją świątyni i jej rakanów: https://www.otagiji.com/story-en. Omszałe tarasy
+pełne rakanów (każdy ma inną twarz, pozę i ilość mchu, niektóre czerwony śliniaczek), kamienne schody, strumień
+z kamiennym mostkiem, żwirowy dziedziniec przed głównym pawilonem z szarej dachówki, dwudachowy pawilon na
+czerwonych słupach ze złotym zwieńczeniem, kamienne latarnie i klony.

@@ -14,6 +14,22 @@ import { TreeSway } from './TreeSway.js';
 const CAMERA_ROW = 0.72; // how far down the screen the camera looks straight down (the strip's art looks north)
 const CAMERA_FOLLOW = 0.3; // how much of the ship's move from the middle the camera takes
 
+/**
+ * How far ahead of the clock a fast stretch (scroll.fast: { from, to, rate, ease }) has carried the strip by time t.
+ * Over `ease` seconds at each end the speed glides up and back down (smoothstep) instead of jumping, its peak a
+ * little higher so the stretch still covers exactly (to - from) * rate of strip.
+ */
+export function fastExtra(fast, t) {
+  if (!fast) return 0;
+  const D = fast.to - fast.from;
+  const x = Math.max(0, Math.min(1, (t - fast.from) / D));
+  const e = Math.min(0.45, Math.max(0, (fast.ease ?? 0) / D));
+  if (e <= 0) return x * D * (fast.rate - 1);
+  const g = (y) => y * y * y - (y * y * y * y) / 2; // the area under smoothstep from 0 to y
+  const area = x < e ? e * g(x / e) : x > 1 - e ? 1 - e - e * g((1 - x) / e) : e / 2 + x - e;
+  return ((fast.rate - 1) / (1 - e)) * D * area;
+}
+
 export class Parallax {
   constructor(scene, stage, meta) {
     this.scene = scene;
@@ -110,8 +126,7 @@ export class Parallax {
   /** Jump to a point in the stage (debug / restart). */
   setTime(t) {
     this.scrollClock = t;
-    const fast = this.speed.fast;
-    const extra = fast ? Math.max(0, Math.min(t - fast.from, fast.to - fast.from)) * (fast.rate - 1) : 0;
+    const extra = fastExtra(this.speed.fast, t);
     this.time = Math.min(t + extra, this.maxTime);
     this.farTime = t + extra;
   }
@@ -225,6 +240,7 @@ export class Parallax {
     else if (this.nearKind === 'ash') this.spawnAsh(dt, fall, H);
     else if (this.nearKind === 'steam') this.spawnSteam(dt, fall);
     else if (this.nearKind === 'momiji') this.spawnMomiji(dt, fall, scrolling);
+    else if (this.nearKind === 'none') { /* (an encounter's arena brings its own moving parts) */ }
     else if (this.nearKind === 'osaka' || this.nearKind === 'harbor') {
       if (this.time < this.nightFrom) this.spawnTropic(dt, fall, scrolling);
     }

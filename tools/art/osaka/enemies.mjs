@@ -23,6 +23,7 @@ const RAMPS = {
   F: tones([0x9a6a10, 0xe2a830, 0xffe890]), // fugu yellow
   k: tones([0x3a1a0e, 0x6a3418, 0xa05a2e]), // calico brown
   c: [0xa0c8e0, 0xc8e8f8, 0xe8f8ff, 0xf8ffff, 0xffffff], // cellophane
+  v: tones([0x3a1a4a, 0x7a3a8a, 0xb880c8]), // the geisha puppet's plum silk
 };
 
 // ---------------------------------------------------------------- popcorn: takoyaki (13 -> 39)
@@ -399,6 +400,143 @@ export function takoPile() {
   return s.render();
 }
 
+// ---------------------------------------------------------------- the two puppets sent out with the samurai
+// (the bunraku fight, variant A): a geisha with an open iron fan held before her (it turns the player's shots),
+// and the gabu: a maiden whose carved face splits into a horned demon's with gold eyes and a mouth to the ears.
+export function geisha(f) {
+  const s = new HiSprite(99, 135, RAMPS);
+  const cx = 49.5;
+  const silk = (seed, a = Math.PI / 2) => ({ pat: mix2(fur(a, { amt: 0.1, len: 14, w: 2.2, gap: 0.03, seed }), speckle({ amt: 0.05 })) });
+  // the kimono trailing on the floor of the stage, violet, sakura blossoms scattered over it, the hem lined red
+  s.paint([0, 52, 99, 135], (x, y) => Math.abs(x - cx) < 15 + (y - 52) * 0.34 - (y > 126 ? (y - 126) * 2 : 0), 'v', (x, y) => 0.55 - (x - cx) / 120 + Math.sin((x - cx) * 0.25) * 0.05, silk(3));
+  s.paint([0, 124, 99, 135], (x, y) => y > 124 && Math.abs(x - cx) < 15 + (y - 52) * 0.34 - (y > 126 ? (y - 126) * 2 : 0) && y < 131, 'R', () => 0.55);
+  for (let k = 0; k < 14; k++) {
+    const x = cx - 26 + ((k * 17.3) % 52);
+    const y = 64 + ((k * 23.7) % 58);
+    if (Math.abs(x - cx) > 13 + (y - 52) * 0.34) continue;
+    for (let p = 0; p < 5; p++) s.dot(x + Math.cos((p / 5) * TAU) * 1.8, y + Math.sin((p / 5) * TAU) * 1.8, 1.1, 0xf8c8dc);
+    s.px(x, y, 0xe2aa32);
+  }
+  // the body and the wide gold obi, its cord red
+  s.paint([0, 34, 99, 66], (x, y) => Math.abs(x - cx) < 13 + (y - 34) * 0.12, 'v', (x) => 0.6 - (x - cx) / 100, silk(5));
+  s.poly([[cx - 16, 52], [cx + 16, 52], [cx + 17, 64], [cx - 17, 64]], 'Y', { flat: 0.62, pat: fur(0, { amt: 0.12, len: 6, w: 1.5 }) });
+  s.line(cx - 17, 58, cx + 17, 58, 0xc02a2a, 1);
+  // the collar, white under red
+  s.poly([[cx - 6, 34], [cx - 2, 34], [cx + 5, 52], [cx + 1, 52]], 'R', { flat: 0.6 });
+  s.poly([[cx + 6, 34], [cx + 2, 34], [cx - 2, 46], [cx - 5, 44]], 'H', { flat: 0.8 });
+  // the sleeves hanging long; the arms bring the fan up before her (frame 1: up over her face, the guard)
+  const up = f === 1;
+  for (const sx of [-1, 1]) {
+    const hx = cx + sx * (up ? 8 : 14);
+    const hy = up ? 50 : 62;
+    s.tube(cx + sx * 11, 38, hx, hy, 6, 'v', { rb: 5, ...silk(7 + sx) });
+    s.poly([[cx + sx * 12, 44], [cx + sx * 24, 48], [cx + sx * 26, 84], [cx + sx * 16, 82]], 'v', { flat: 0.42 - sx * 0.05, ...silk(9 + sx) }); // furisode sleeve
+    s.ellipse(hx, hy, 2.6, 2.6, 'H', { flat: 0.78 });
+  }
+  // the fan, open in a half circle before her: gold leaf on red, a white sun, ribs of black lacquer
+  const fy = up ? 64 : 78;
+  const fr = 26;
+  s.paint([cx - fr, fy - fr, cx + fr, fy + 2], (x, y) => {
+    const d = Math.hypot(x - cx, y - fy);
+    return y <= fy && d < fr && d > 6;
+  }, 'Y', (x, y) => 0.55 + Math.sin(Math.atan2(y - fy, x - cx) * 9) * 0.18 - (Math.hypot(x - cx, y - fy) < 15 ? 0.35 : 0));
+  s.paint([cx - fr, fy - fr, cx + fr, fy + 2], (x, y) => {
+    const d = Math.hypot(x - cx, y - fy);
+    return y <= fy && d < 15 && d > 6;
+  }, 'R', () => 0.55);
+  s.ellipse(cx, fy - 17, 4.2, 3.6, 'W', { flat: 0.9 });
+  for (let k = 0; k <= 10; k++) {
+    const a = Math.PI + (k / 10) * Math.PI;
+    s.line(cx + Math.cos(a) * 6, fy + Math.sin(a) * 6, cx + Math.cos(a) * fr, fy + Math.sin(a) * fr, 0x2a1a14, 1, 0.8);
+  }
+  s.ellipse(cx, fy, 3, 2, 'K', { flat: 0.5 });
+  // the head, white gofun, the eyes narrow and lined red, the small red lips; the hair in a high shimada with
+  // tortoiseshell combs and kanzashi: a gold one, red silk flowers with strands hanging, a long pin
+  if (!up) {
+    s.tube(cx, 36, cx, 30, 4, 'H', { flat: 0.75 });
+  }
+  const hy = up ? 22 : 24;
+  s.ellipse(cx, hy + 2, 11, 13, 'H', { bias: 0.08, pat: speckle({ amt: 0.03 }) });
+  s.ellipse(cx, hy - 9, 15, 9, 'K', { bias: 0.04, pat: fur(0, { amt: 0.18, len: 6, w: 1 }) });
+  for (const sx of [-1, 1]) s.ellipse(cx + sx * 12, hy - 1, 5, 7, 'K', { bias: 0.02, pat: fur(Math.PI / 2, { amt: 0.18, len: 4, w: 1 }) });
+  s.ellipse(cx, hy - 19, 8, 5, 'K', { bias: 0.1 });
+  s.poly([[cx - 12, hy - 14], [cx + 12, hy - 14], [cx + 11, hy - 12], [cx - 11, hy - 12]], 'Y', { flat: 0.55 }); // the comb
+  for (const [dx, c] of [[-13, 0xd8203a], [13, 0xd8203a], [-9, 0xf8c8dc]]) {
+    for (let p = 0; p < 5; p++) s.dot(cx + dx + Math.cos((p / 5) * TAU) * 2, hy - 16 + Math.sin((p / 5) * TAU) * 2, 1.4, c);
+    for (let k = 0; k < 6; k++) s.px(cx + dx + (dx > 0 ? 1 : -1), hy - 13 + k, k % 2 ? 0xe2aa32 : 0xfff0a0);
+  }
+  s.line(cx + 6, hy - 22, cx + 18, hy - 26, 0xfff0a0, 1);
+  if (up) {
+    // behind the fan's edge, the eyes shut, serene
+    for (const sx of [-1, 1]) s.line(cx + sx * 2.5, hy + 1, cx + sx * 7, hy + 1.5, INK, 1);
+    s.ellipse(cx, hy + 8, 1.8, 1.1, 'R', { flat: 0.7 });
+  } else {
+    for (const sx of [-1, 1]) {
+      s.line(cx + sx * 2.5, hy + 1, cx + sx * 7, hy, INK, 1);
+      s.line(cx + sx * 7, hy, cx + sx * 8, hy - 1, 0xd8203a, 1);
+      s.line(cx + sx * 3, hy - 3, cx + sx * 8, hy - 4, 0x3a2a2a, 1, 0.8);
+    }
+    s.ellipse(cx, hy + 8, 1.8, 1.1, 'R', { flat: 0.7 });
+  }
+  return s.render();
+}
+
+export function gabu(demon) {
+  const s = new HiSprite(87, 123, RAMPS);
+  const cx = 43.5;
+  const silk = (seed, a = Math.PI / 2) => ({ pat: mix2(fur(a, { amt: 0.1, len: 14, w: 2.2, gap: 0.03, seed }), speckle({ amt: 0.05 })) });
+  // a red furisode, white plovers flying over it, trailing; the long hair loose down her back and shoulders
+  s.paint([0, 30, 87, 123], (x, y) => Math.abs(x - cx) < 12 + (y - 30) * 0.3 - (y > 115 ? (y - 115) * 2 : 0), 'R', (x) => 0.55 - (x - cx) / 110, silk(13));
+  for (let k = 0; k < 10; k++) {
+    const x = cx - 20 + ((k * 13.7) % 40);
+    const y = 54 + ((k * 19.3) % 56);
+    if (Math.abs(x - cx) > 10 + (y - 30) * 0.3) continue;
+    s.line(x - 2, y, x, y + 1, 0xf4f0e6, 1);
+    s.line(x, y + 1, x + 2, y, 0xf4f0e6, 1);
+  }
+  s.poly([[cx - 13, 52], [cx + 13, 52], [cx + 14, 60], [cx - 14, 60]], 'K', { flat: 0.4, pat: fur(0, { amt: 0.1, len: 6, w: 1.5 }) });
+  s.line(cx - 14, 56, cx + 14, 56, 0xe2aa32, 1);
+  for (const sx of [-1, 1]) {
+    // the long sleeves; the demon's hands come out clawed, reaching
+    const hx = cx + sx * (demon ? 22 : 9);
+    const hy = demon ? 46 : 60;
+    s.poly([[cx + sx * 9, 36], [cx + sx * 20, 40], [cx + sx * 22, 80], [cx + sx * 13, 78]], 'R', { flat: 0.45 - sx * 0.05, ...silk(15 + sx) });
+    s.tube(cx + sx * 9, 36, hx, hy, 5, 'R', { rb: 4, ...silk(17 + sx) });
+    s.ellipse(hx, hy, 2.6, 2.6, 'H', { flat: 0.78 });
+    if (demon) for (let k = -1; k <= 1; k++) s.line(hx, hy, hx + sx * 3 + k * 2, hy - 4, 0x5a1a14, 1);
+  }
+  // the hair
+  s.paint([cx - 18, 0, cx + 18, 70], (x, y) => ((x - cx) / 15) ** 2 + ((y - 16) / 15) ** 2 < 1 || (Math.abs(x - cx) > 8 && Math.abs(x - cx) < 15 + (demon ? Math.sin(y * 0.4) * 2 : 0) && y > 14 && y < 62), 'K', (x) => 0.45 - (x - cx) / 80, { pat: fur(Math.PI / 2, { amt: 0.2, len: 8, w: 1 }) });
+  if (!demon) {
+    // the maiden: a white oval face, soft brows, lowered eyes, a small red mouth, a red ribbon in the hair
+    s.ellipse(cx, 19, 9.5, 11.5, 'H', { bias: 0.08, pat: speckle({ amt: 0.03 }) });
+    s.paint([cx - 10, 4, cx + 10, 14], (x, y) => ((x - cx) / 10) ** 2 + ((y - 19) / 12) ** 2 < 1 && y < 11 + Math.abs(x - cx) * 0.35, 'K', () => 0.4);
+    for (const sx of [-1, 1]) {
+      s.line(cx + sx * 2.5, 17, cx + sx * 6.5, 17.5, INK, 1);
+      s.line(cx + sx * 3, 13.5, cx + sx * 6.5, 13, 0x4a3a3a, 1, 0.7);
+    }
+    s.ellipse(cx, 25, 1.6, 1, 'R', { flat: 0.7 });
+    s.poly([[cx + 9, 4], [cx + 15, 1], [cx + 14, 7]], 'R', { flat: 0.6 });
+  } else {
+    // the gabu: the face split open: gold eyes staring, a mouth to the ears full of fangs, horns through the hair,
+    // the skin gone a sickly green-white, red veins
+    s.ellipse(cx, 19, 10.5, 12.5, 'H', { bias: -0.05, pat: speckle({ amt: 0.06, dark: 0.08 }) });
+    for (const sx of [-1, 1]) {
+      s.tube(cx + sx * 7, 8, cx + sx * 14, -0.5, 2.4, 'Y', { rb: 0.6 });
+      s.ellipse(cx + sx * 4.5, 15.5, 3.4, 2.8, 'Y', { flat: 0.95 });
+      s.dot(cx + sx * 4.5, 15.5, 1.1, INK);
+      s.line(cx + sx * 1.5, 11, cx + sx * 8.5, 13.5, INK, 1);
+      s.line(cx + sx * 8, 18, cx + sx * 10, 23, 0xd8203a, 1, 0.8);
+    }
+    s.paint([cx - 10, 19, cx + 10, 31], (x, y) => y > 21 + Math.abs(x - cx) * 0.12 && y < 30 - Math.abs(x - cx) * 0.3 && Math.abs(x - cx) < 9.5, 'M', (x, y) => 0.25 + (y - 21) / 30);
+    for (let k = -4; k <= 4; k++) {
+      s.poly([[cx + k * 2 - 0.9, 21.5 + Math.abs(k) * 0.12], [cx + k * 2 + 0.9, 21.5 + Math.abs(k) * 0.12], [cx + k * 2, 24.5]], 'W', { flat: 0.95 });
+      if (Math.abs(k) < 4) s.poly([[cx + k * 2 - 0.9, 29 - Math.abs(k) * 0.3], [cx + k * 2 + 0.9, 29 - Math.abs(k) * 0.3], [cx + k * 2, 26.5]], 'W', { flat: 0.9 });
+    }
+  }
+  return s.render();
+}
+
 export function osakaEnemies(add) {
   for (let f = 0; f < 4; f++) {
     add(`takoyaki_${f}`, takoyaki(f));
@@ -414,6 +552,10 @@ export function osakaEnemies(add) {
   add('ningyo_1', ningyo(1));
   add('kuroko_0', kuroko(0));
   add('kuroko_1', kuroko(1));
+  add('geisha_0', geisha(0));
+  add('geisha_1', geisha(1)); // the fan raised: the guard
+  add('gabu_0', gabu(false));
+  add('gabu_1', gabu(true)); // the demon's face
   add('tako_0', tako(0));
   add('tako_1', tako(1));
   for (let k = 0; k < 4; k++) add(`tako_eyes_${k}`, takoEyes(k)); // step 2a: following the player, blinking

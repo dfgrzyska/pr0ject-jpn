@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { NagasakiView } from '../game/NagasakiView.js';
 import { getMusic } from '../audio/Music.js';
-import { DEPTH, GRAZE, PLAYER, RENDER_SCALE, SCORE, SHIPS, TURRETS, VIEW, WEAPONS } from '../config.js';
+import { DEPTH, ENCOUNTER, GRAZE, PLAYER, RENDER_SCALE, SCORE, SHIPS, TURRETS, VIEW, WEAPONS } from '../config.js';
 import { STAGES } from '../data/stages.js';
+import { encounterById, rollEncounter } from '../data/encounters.js';
 import { Bullets } from '../game/Bullets.js';
 import { Enemies } from '../game/Enemies.js';
 import { Fx } from '../game/Fx.js';
@@ -81,7 +82,13 @@ export class Stage extends Phaser.Scene {
     this.order = data.order ?? randomOrder(qStage >= 0 && qStage < STAGES.length ? qStage : lastCity());
     this.pos = data.pos ?? 0;
     this.stageIndex = this.order[this.pos];
-    this.stage = STAGES[this.stageIndex];
+    // a random encounter on the way to the next city (debug: ?ex=ex1 plays that one first, in place of the first
+    // city; ?ex=always brings one after every city)
+    const qEx = new URLSearchParams(window.location.search).get('ex');
+    const exId = data.encounter ?? (!data.carry && encounterById(qEx) ? qEx : null);
+    this.encounter = exId ? encounterById(exId) : null;
+    this.stage = this.encounter ?? STAGES[this.stageIndex];
+    this.pendingEncounter = null;
   }
 
   create(data = {}) {
@@ -90,7 +97,7 @@ export class Stage extends Phaser.Scene {
     this.scale.on('resize', this.onResize, this);
     this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
     // The previous scene's objects have been destroyed before create runs.
-    this.scene.get('Boot').retainStages(this.order.slice(this.pos, this.pos + 2).map(i => STAGES[i].id));
+    this.scene.get('Boot').retainStages([this.stage.id, ...this.order.slice(this.pos + (this.encounter ? 1 : 0), this.pos + 2).map(i => STAGES[i].id)]);
     if (!stageReady(this, this.stage.id)) {
       // this city's backgrounds are still on their way: wait for them (update), then begin again
       this.state = 'loading';
@@ -101,7 +108,7 @@ export class Stage extends Phaser.Scene {
     }
     // debug: ?t=120 starts at 120 s, ?god = invulnerable, ?weapon=laser&power=5, ?ship=oni
     const q = new URLSearchParams(window.location.search);
-    this.stageTitle = `ETAP ${this.pos + 1}`;
+    this.stageTitle = this.encounter ? 'SPOTKANIE' : `ETAP ${this.pos + 1}`;
     this.carry = data.carry ?? null;
     this.continues = this.carry?.continues ?? 0; // easy: continues used in this game
     // the whole journey so far, for the ending: ships lost, bombs used, time flown, stamps won, cities cleared
@@ -142,6 +149,7 @@ export class Stage extends Phaser.Scene {
     this.debug = new Debug(this);
     // Hiroshima: the moment of silence over the Peace Park (no shooting, the paper cranes dance)
     this.ceasefire = false;
+    this.calm = false; // (the enemies hold their fire: the moments just before and after the silence)
     this.scenicView = this.stage.panorama ? new NagasakiView(this) : null;
     this.interlude = this.stage.interlude ? new Interlude(this, this.stage.interlude) : null;
     this.music.duck?.(1);
@@ -299,7 +307,7 @@ export class Stage extends Phaser.Scene {
       Object.assign(this.player, { lives: c.lives, weapon: c.weapon, level: c.level, turrets: c.turrets ?? 0 });
     }
     this.state = 'play';
-    this.stampEligible = !this.player.god && !(this.debugStart && !this.carry);
+    this.stampEligible = !this.encounter && !this.player.god && !(this.debugStart && !this.carry); // (an encounter has no stamp)
     this.stampChance = this.stampEligible; // lost with a life or a bomb (Player)
     if (this.debugStart && !this.carry) {
       this.t = this.debugStart;
@@ -310,7 +318,8 @@ export class Stage extends Phaser.Scene {
     this.parallax.props.sync(this.t);
     this.player.spawn();
     this.music.play(this.stageSong(), true);
-    this.hud.cityCard(`seal_${this.stage.id}`, this.stampInk, this.stageTitle, this.stage.subtitle);
+    // (an encounter: its boss's card says it all, see the boss warning in update)
+    if (!this.encounter) this.hud.cityCard(`seal_${this.stage.id}`, this.stampInk, this.stageTitle, this.stage.subtitle);
   }
 
   /** After game over: return to the menu for a fresh journey. */
@@ -322,7 +331,22 @@ export class Stage extends Phaser.Scene {
   openMap() {
     this.hud.closePanel();
     this.state = 'map';
-    this.map = new JapanMap(this, STAGES, this.order, this.pos);
+    // after a city (not after an encounter), the odds of something waiting on the way (ENCOUNTER); rolled once,
+    // here, so skipping the flight doesn't lose it, and never the same one twice in a game
+    this.pendingEncounter = null;
+    if (!this.encounter && this.order[this.pos + 1] !== undefined) {
+      const met = (this.run.encounters ??= []);
+      const q = new URLSearchParams(window.location.search).get('ex');
+      const id = rollEncounter(met, ENCOUNTER.chance, q === 'always' ? 'any' : null);
+      if (id) {
+        this.pendingEncounter = id;
+        met.push(id);
+        const boot = this.scene.get('Boot');
+        boot.retainStages([this.stage.id, STAGES[this.order[this.pos + 1]].id, id]);
+        boot.fetch([id]);
+      }
+    }
+    this.map = new JapanMap(this, STAGES, this.order, this.pos, false, { encounter: Boolean(this.pendingEncounter), resume: Boolean(this.encounter) });
     this.music.play('title', true);
   }
 
@@ -348,13 +372,15 @@ export class Stage extends Phaser.Scene {
 
   /** After a cleared stage: carry everything into the next city of this game's order, or start a new game. */
   advance() {
-    const pos = this.pos + 1;
+    // (an encounter is fought at the same place in the journey; the flight to the next city goes on after it)
+    const pos = this.pendingEncounter ? this.pos : this.pos + 1;
     if (pos >= this.order.length) return this.scene.restart({});
     const p = this.player;
     const s = this.score;
     this.scene.restart({
       order: this.order,
       pos,
+      encounter: this.pendingEncounter ?? undefined,
       carry: { ship: this.shipIndex, lives: p.lives, weapon: p.weapon, level: p.level, turrets: p.turrets, score: s.score, mult: s.mult, progress: s.progress, continues: this.continues, run: this.run },
     });
   }
@@ -470,17 +496,25 @@ export class Stage extends Phaser.Scene {
     this.player.drag = null;
     const next = STAGES[this.order[this.pos + 1]];
     this.bullets.cancelAll(this.fx);
+    const enc = this.encounter;
+    // an encounter beaten: an extra life and a bonus (in the record too)
+    const bonus = enc ? ENCOUNTER.bonus * this.score.mult : 0;
+    if (enc) {
+      this.player.lives += ENCOUNTER.lives;
+      this.score.add(bonus);
+    }
     const hi = this.recordHi();
     this.lastHi = hi; // (the ending shows it again)
-    const won = this.stampChance && pressStamp(this.stage.id, isEasy());
-    if (this.stampChance) this.run.stamps.push(this.stage.id); // earned in this game (even if the book had it)
-    this.run.cities.push(this.stage.id);
+    const won = !enc && this.stampChance && pressStamp(this.stage.id, isEasy());
+    if (!enc && this.stampChance) this.run.stamps.push(this.stage.id); // earned in this game (even if the book had it)
+    if (!enc) this.run.cities.push(this.stage.id);
     const stamp = !this.stampEligible ? null : won ? [t(isEasy() ? 'stamp.newEasy' : 'stamp.new'), 0xffe080, 1, true] : [t(this.stampOwned ? 'stamp.have' : 'stamp.missed'), 0x8a8aa8];
     this.time.delayedCall(2000, () => {
       this.hud.panel([
-        [this.stageTitle, 0xffd6e5, 2],
-        ['UKOŃCZONY', 0xffd6e5, 2],
+        [enc ? this.stage.name : this.stageTitle, 0xffd6e5, 2],
+        [enc ? 'POKONANY!' : 'UKOŃCZONY', 0xffd6e5, 2],
         ...this.modeLines(),
+        ...(enc ? [['NIESPODZIEWANE SPOTKANIE', 0xffe080], [`+${ENCOUNTER.lives} ŻYCIE  +${bonus}`, 0x9cf09a]] : []),
         '',
         ['WYNIK', 0xb0aec0],
         [String(this.score.score).padStart(8, '0'), 0xffffff, 2],
@@ -664,6 +698,9 @@ export class Stage extends Phaser.Scene {
   update(time, delta) {
     if (this.state === 'loading') {
       if (stageReady(this, this.stage.id)) this.scene.restart(this.loadingData);
+      // an encounter whose arena won't come (offline, never fetched before): fly on to the next city instead
+      else if (this.encounter && this.loadingData?.carry && (this.loadingT = (this.loadingT ?? 0) + delta / 1000) > 8)
+        this.scene.restart({ ...this.loadingData, encounter: undefined, pos: this.pos + 1 });
       return;
     }
     this.debug.frame(this.game.loop.rawDelta); // (the real time between frames, not Phaser's ten-frame average)

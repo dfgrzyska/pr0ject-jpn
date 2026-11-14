@@ -88,19 +88,21 @@ export const beppu = {
     if (e.state === 'enter') {
       e.y += Math.max(8, (78 - e.y) * 0.9) * dt;
       if (e.y >= 77) Object.assign(e, { state: 'fight', fight: 0, timer: 0.8, patternIndex: 0, step: 0, sub: null, roll: 0, snapT: 0 });
+      this.waniAnim(e, dt, 1.4);
       return this.waniSegs(e);
     }
     if (e.state === 'leave') {
       e.vy = (e.vy ?? 0) - 40 * dt;
       e.y += e.vy * dt;
+      this.waniAnim(e, dt, 2);
       return this.waniSegs(e);
     }
     e.fight += dt;
     if (e.snapT > 0) {
       // the snap: half open, wide open, half shut again, shut (only to look at; the teeth fly at the snap itself)
       e.snapT -= dt;
-      if (!e.sub) {
-        const half = e.texture.has('wani_half') && (e.snapDur - e.snapT < 0.05 || e.snapT < 0.07);
+      if (!e.sub && !e.roll) {
+        const half = e.texture.has('wani_half') && (e.snapDur - e.snapT < 0.06 || e.snapT < 0.08);
         e.setFrame(e.snapT <= 0 ? 'wani_0' : half ? 'wani_half' : 'wani_1');
       }
     }
@@ -109,11 +111,16 @@ export const beppu = {
       // death roll: the whole body spins, a spiral of scalding water flies out of the jaws
       e.roll -= dt;
       e.setRotation(e.rotation + dt * TAU / 1.2);
+      // it turns over and over as it spins: back, side, belly, the other side (two turns to a spin)
+      if (e.texture.has('wani_belly')) {
+        const k = Math.floor(((1.2 - e.roll) / 0.6) * 4) % 4;
+        e.setFrame(['wani_0', 'wani_side_l', 'wani_belly', 'wani_side_r'][k]);
+      }
       if ((e.spin -= dt) <= 0 && this.canFire(e)) {
         e.spin = 0.07;
         for (let k = 0; k < 2; k++) b.fire(e.x, e.y, e.rotation + DOWN + k * Math.PI, slow);
       }
-      if (e.roll <= 0) e.setRotation(0);
+      if (e.roll <= 0) e.setRotation(0).setFrame('wani_0');
       return this.waniSegs(e);
     }
     if (e.fight > 38) {
@@ -122,6 +129,7 @@ export const beppu = {
     }
     e.x += (90 + 34 * Math.sin(e.fight * 0.6) - e.x) * Math.min(1, dt * 2);
     e.y += (78 + 5 * Math.sin(e.fight * 1.3) - e.y) * Math.min(1, dt * 3);
+    if (e.snapT <= 0) this.waniAnim(e, dt, 1);
     this.waniSegs(e);
     e.timer -= dt;
     if (e.timer > 0 || !this.canFire(e)) return;
@@ -131,9 +139,9 @@ export const beppu = {
         // sink and swim under the player
         // which lane the real one takes, first and last (the false ones take the others): a different one each dive
         e.dives = (e.dives ?? 0) + 1;
-        e.sub = { phase: 'swim', t: 0, ripple: 0, lanes: [[[1, 0, 2], [0, 2, 1], [2, 1, 0]][e.dives % 3], [[0, 1, 2], [2, 0, 1], [1, 2, 0], [2, 1, 0], [0, 2, 1], [1, 0, 2]][e.dives % 6]] };
+        e.sub = { phase: 'sink', t: 0, ripple: 0, lanes: [[[1, 0, 2], [0, 2, 1], [2, 1, 0]][e.dives % 3], [[0, 1, 2], [2, 0, 1], [1, 2, 0], [2, 1, 0], [0, 2, 1], [1, 0, 2]][e.dives % 6]] };
         e.anims.stop();
-        e.setFrame('wani_sub');
+        e.setFrame(e.texture.has('wani_wade_0') ? 'wani_wade_0' : 'wani_sub');
         e.ghost = true;
         s.fx.puff('splash', e.x, e.y + 10, 0.4);
         break;
@@ -188,7 +196,14 @@ export const beppu = {
     const gx = Phaser.Math.Clamp(pl.x, 16 + SPREAD, VIEW.width - 16 - SPREAD);
     const ambushY = Phaser.Math.Clamp(pl.y - 46, 96, s.H - 90);
     const laneX = (lane) => (e.p2 ? gx + (lane - 1) * SPREAD : Phaser.Math.Clamp(pl.x, 24, VIEW.width - 24));
+    if (d.phase === 'sink') {
+      // it slides under: the back goes first, then the head, the eyes last
+      if (e.texture.has('wani_wade_1')) e.setFrame(d.t < 0.18 ? 'wani_wade_0' : d.t < 0.36 ? 'wani_wade_1' : 'wani_sub');
+      if (d.t > 0.42) Object.assign(d, { phase: 'swim', t: 0 });
+      return this.waniSegs(e);
+    }
     if (d.phase === 'swim') {
+      this.waniSubAnim(e, d.t);
       // halfway it crosses to its final lane (the false ones cross the other way): hard to keep an eye on
       const lane = d.t < 0.75 ? d.lanes[0][0] : d.lanes[1][0];
       const tx = laneX(lane);
@@ -210,6 +225,9 @@ export const beppu = {
       }
     } else if (d.phase === 'rise') {
       e.flash = Math.floor(d.t * 20) % 2 ? 0.02 : 0;
+      // the eyes fixed, then the head breaking the surface
+      if (d.t > 0.3 && e.texture.has('wani_wade_1')) e.setFrame('wani_wade_1');
+      else this.waniSubAnim(e, d.t);
       if (e.p2) this.waniShades(e, 0, laneX, ambushY);
       if (d.t > 0.5) {
         // the leap, out of the water at the ship, jaws wide
@@ -226,6 +244,8 @@ export const beppu = {
       }
     } else if (d.phase === 'leap') {
       const k = Math.min(1, d.t / 0.32);
+      // the jaws: half open out of the water, wide open in the air, closing as it lands
+      if (e.texture.has('wani_half')) e.setFrame(k < 0.15 || k >= 0.9 ? 'wani_half' : 'wani_1');
       const ease = 1 - (1 - k) ** 2;
       e.x = d.x0 + (d.tx - d.x0) * ease;
       e.y = d.y0 + (d.ty - 8 - d.y0) * ease;
@@ -244,6 +264,7 @@ export const beppu = {
       const away = Math.hypot(hx - e.x, hy - e.y);
       const want = away > 8 ? Math.atan2(hy - e.y, hx - e.x) - DOWN : 0;
       e.setRotation(Phaser.Math.Angle.RotateTo(e.rotation, want, dt * 6));
+      if (e.snapT <= 0) this.waniAnim(e, dt, 2.4); // (swimming hard)
       if ((d.ripple -= dt) <= 0) {
         d.ripple = 0.22;
         s.fx.puff('splash', e.x, e.y + 22, 0.3); // its wake
@@ -275,6 +296,7 @@ export const beppu = {
       sh.y += Phaser.Math.Clamp(ty - sh.y, -110 * sh.sp * dt, 110 * sh.sp * dt);
       sh.setRotation(Math.atan2(ty - sh.y, tx - sh.x || 0.01) * 0.25 * Math.min(1, Math.hypot(ty - sh.y, tx - sh.x) / 30) + 0.08 * Math.sin(e.age * 2 + sh.ph));
       sh.setScale(e.scaleX).setAlpha(e.alpha);
+      if (e.texture.has('wani_sub_1')) sh.setFrame(['wani_sub', 'wani_sub_1', 'wani_sub_2'][Math.floor(e.age * 6 + sh.ph * 3) % 3]);
     }
     return e.shades;
   },
@@ -285,6 +307,29 @@ export const beppu = {
       this.segPool.kill(sh);
     }
     e.shades = null;
+  },
+
+  /**
+   * Its swim: the tail sweeping and the legs stroking (wani_0, wani_swim_1..3), `rate` times its idle pace; now and
+   * then it blinks (only with the tail at the middle of its sweep, where the blink frame is drawn).
+   */
+  waniAnim(e, dt, rate) {
+    if (!e.texture.has('wani_swim_1')) return;
+    e.swimT = (e.swimT ?? 0) + dt * 5 * rate;
+    const k = Math.floor(e.swimT) % 4;
+    e.blinkT = (e.blinkT ?? 2.5) - dt;
+    if (e.blinkT < 0 && k === 0) {
+      e.setFrame('wani_blink');
+      if (e.blinkT < -0.14) e.blinkT = 2.4 + Math.random() * 2.6;
+      return;
+    }
+    e.setFrame(k ? `wani_swim_${k}` : 'wani_0');
+  },
+
+  /** Under the water: the ripples spreading round its eyes, a blink now and then. */
+  waniSubAnim(e, t) {
+    if (!e.texture.has('wani_sub_1')) return;
+    e.setFrame(t % 2.2 > 2.05 ? 'wani_sub_3' : ['wani_sub', 'wani_sub_1', 'wani_sub_2'][Math.floor(t * 6) % 3]);
   },
 
   /** Hit circles for the long body: the snout and the tail, following the rotation. */

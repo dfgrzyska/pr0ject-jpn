@@ -162,6 +162,7 @@ export const encounters = {
 
   // Shot occupancy, rather than shot damage/count, charges every weapon at the same rate.
   bossDeviceHit(shot) {
+    if (this.heavy?.kind === 'bunraku' && this.fanGuard(shot)) return true; // the geisha puppet's fan (osaka.js)
     const g = this.bossGroup;
     if (!g || g.defeated || g.kind !== 'jaodori' || !g.launchers || g.parts[0].state !== 'fight') return false;
     for (const pad of g.launchers) {

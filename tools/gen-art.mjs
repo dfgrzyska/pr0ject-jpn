@@ -30,6 +30,8 @@ import { osakaEnemies, OSAKA_PORTRAITS } from './art/osaka/enemies.mjs';
 import { beppuEnemies, BEPPU_PORTRAITS } from './art/beppu/enemies.mjs';
 import { hiroshimaEnemies, HIROSHIMA_PORTRAITS } from './art/hiroshima/enemies.mjs';
 import { nagasakiEnemies, NAGASAKI_PORTRAITS } from './art/nagasaki/enemies.mjs';
+import { jihankiEnemies } from './art/encounters/jihanki.mjs';
+import * as greatwave from './art/encounters/greatwave.mjs';
 import { addCracks } from './art/cracks540.mjs';
 import { shared540 } from './art/shared540/index.mjs';
 import { buildIcon, downsample } from './art/icon.mjs';
@@ -45,6 +47,8 @@ const ENEMY_ART = [
   { id: 'stage6', build: beppuEnemies, portraits: BEPPU_PORTRAITS },
   { id: 'stage7', build: hiroshimaEnemies, portraits: HIROSHIMA_PORTRAITS },
   { id: 'stage8', build: nagasakiEnemies, portraits: NAGASAKI_PORTRAITS },
+  // the random encounters (src/data/encounters.js): an arena and a boss each, no album portraits (yet)
+  { id: 'ex1', build: jihankiEnemies, portraits: [] },
 ];
 
 // background generators per stage (id = folder under public/assets/bg/)
@@ -57,6 +61,7 @@ const STAGES = [
   { id: 'stage6', art: beppu },
   { id: 'stage7', art: hiroshima },
   { id: 'stage8', art: nagasaki },
+  { id: 'ex1', art: greatwave }, // the vending machine's arena: the Great Wave, fizzy
 ];
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');

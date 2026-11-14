@@ -208,6 +208,10 @@ export const FILL = { gap: 4, every: 2.6, lead: 1.5 };
 export const SURGE = { need: 25, time: 5, speed: 1.25, damage: 1.25 };
 
 // Beppu: flying through steam heats the guns (stronger shots); too long and they jam until they cool
+// Random encounters on the way between two cities (src/data/encounters.js): the odds after each city cleared (a
+// fixed one in five: a rare treat), and what beating one is worth: an extra life and points (times the multiplier)
+export const ENCOUNTER = { chance: 0.2, lives: 1, bonus: 30000 };
+
 export const HEAT = {
   rise: 0.34, // per second inside a steam cloud
   cool: 0.1, // per second outside
