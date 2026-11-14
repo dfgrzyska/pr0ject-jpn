@@ -1,0 +1,17 @@
+{
+  "id": "ex6",
+  "encounter": true,
+  "name": "BABCIA",
+  "subtitle": "NIESPODZIEWANE SPOTKANIE",
+  "skin": "kyoto",
+  "enemyArt": true,
+  "near": "none",
+  "scroll": { "far": 6, "mid": 1.5, "near": 20, "anchor": 420 },
+  "boss": true,
+  "end": 400,
+  "music": { "schedule": [[0, "s7_boss"]], "boss": "s7_boss" },
+  "warnings": { "boss": "BABCIA IDZIE NA ZAKUPY", "bossDown": "BABCIA POKONANA!", "bossDownSub": "WEŹ JESZCZE CUKIERKA" },
+  "waves": [
+    { "t": 2.5, "type": "boss", "boss": "obachan", "x": 90, "card": ["BABCIA", "MA DLA CIEBIE CUKIERKA"] }
+  ]
+}

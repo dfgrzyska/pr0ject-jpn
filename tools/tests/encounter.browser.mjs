@@ -25,19 +25,21 @@ try {
     return { page, errors };
   };
 
-  // 1. the fight itself, then on to the next city
-  {
-    const { page, errors } = await open('ex=ex1&god');
+  // 1. each fight itself, then on to the next city
+  for (const id of ['ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'ex7']) {
+    const { page, errors } = await open(`ex=${id}&god`);
     const r = await page.evaluate(async () => {
       let s = game.scene.getScene('Stage');
       s.startGame(); game.loop.stop(); s.player.fire = () => {};
       const out = { id: s.stage.id, pos: s.pos, lives0: s.player.lives, phases: [] };
       step(60 * 6);
       const g = s.enemies.bossGroup;
-      out.awake = g?.kind === 'jihanki' && g.awake;
+      out.awake = Boolean(g?.awake);
       for (const f of [0.6, 0.3]) {
         g.body.hp = g.body.maxHp * f;
-        step(60 * 14);
+        // (some bosses finish what they are doing before they break into the next phase)
+        for (let i = 0; i < 20 && g.stage === out.phases.length + 1; i++) step(60);
+        step(60 * 8);
         out.phases.push(g.stage);
       }
       s.enemies.destroy(g.body);
@@ -56,15 +58,15 @@ try {
       return out;
     });
     console.log(JSON.stringify(r));
-    assert.equal(r.id, 'ex1');
+    assert.equal(r.id, id);
     assert(r.awake, 'the machine is in and awake');
     assert.deepEqual(r.phases, [2, 3]);
     assert.equal(r.state, 'clear');
     assert.equal(r.lives1, r.lives0 + 1, 'an extra life');
     assert(r.map, 'the map resumes the flight');
     assert.deepEqual([r.next.pos, r.next.encounter], [r.pos + 1, false], 'on to the next city');
-    await page.screenshot({ path: 'tools/preview/encounter-next.png' });
-    assert.deepEqual(errors, [], 'ex1: console');
+    await page.screenshot({ path: `tools/preview/encounter-${id}-next.png` });
+    assert.deepEqual(errors, [], `${id}: console`);
     await page.close();
   }
 
@@ -87,9 +89,9 @@ try {
       return out;
     });
     console.log(JSON.stringify(r));
-    assert.equal(r.pending, 'ex1');
+    assert(['ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'ex7'].includes(r.pending));
     assert(r.alarm && r.ready);
-    assert.deepEqual(r.after, { pos: r.pos, id: 'ex1' });
+    assert.deepEqual(r.after, { pos: r.pos, id: r.pending });
     await page.screenshot({ path: 'tools/preview/encounter-arena.png' });
     assert.deepEqual(errors, [], 'forced roll: console');
     await page.close();

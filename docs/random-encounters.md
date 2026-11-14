@@ -19,12 +19,12 @@ Debug: `?ex=ex1` — to spotkanie zaraz po wyborze statku; `?ex=always` — spot
 | # | Boss | Tło | Stan |
 | --- | --- | --- | --- |
 | 1 | Automat z napojami (`ex1`, `src/game/enemies/jihanki.js`) | *Wielka fala w Kanagawie* Hokusaia (ok. 1831), fala z gazowanego napoju, puszki zamiast łodzi | zrobiony |
-| 2 | Kei car | *53 stacje Tōkaidō* Hiroshigego, droga jak taśma, orszak daimyō | plan |
-| 3 | Kot w żółtym kasku i walące się rusztowanie (własny kot, bez pozy/hasła znanego mema) | namazu-e (1855), sum pod ziemią | plan |
-| 4 | Nieskończenie długi kot | *Smok dymu uciekający z Fuji* Hokusaia | plan |
-| 5 | Pokój hikikomori / otaku (bossem jest pokój) | „plakaty” w stylu portretów aktorów Sharaku (1794) | plan |
-| 6 | Babcia z fioletowymi włosami i tygrysem na koszulce | *Tygrys w śniegu* Hokusaia (1849) | plan |
-| 7 | Boss od łez i ręki przy uchu (nawiązanie do zachowania, bez nazwiska, wyglądu i funkcji) | do ustalenia | plan |
+| 2 | Kei car (`ex2`, `src/game/enemies/keicar.js`) | *53 stacje Tōkaidō* Hiroshigego (1833–34): droga z sosnami, polami ryżowymi i mostkami pędzi w pętli, na starcie most Nihonbashi z orszakiem daimyō | zrobiony |
+| 3 | Kot z budowy (`ex3`, `src/game/enemies/genba.js`; własny rudy kot w żółtym kasku z latarką, bez pozy i hasła znanego mema) | namazu-e (1855): budowa w ulicy Edo dokopała się do olbrzymiego suma; kamień kaname-ishi na jego głowie, mieszczanie ciągną za wąsy | zrobiony |
+| 4 | Kot bez końca (`ex4`, `src/game/enemies/nagai.js`) | *Smok dymu uciekający z Fuji* Hokusaia (1849): z krateru Fuji wije się słup dymu zakończony kocią głową z dymu; dym rozjaśniony, żeby kot i pociski były czytelne | zrobiony |
+| 5 | Pokój otaku (`ex5`, `src/game/enemies/heya.js`; bossem jest pokój, trafia się monitor) | ściana oklejona „plakatami” w manierze portretów aktorów Sharaku (1794): wielkie głowy kabuki na ciemnym tle z miką; jeden w słuchawkach, jeden z padem, jeden z kocimi uszami; żaden nie kopiuje konkretnej odbitki | zrobiony |
+| 6 | Babcia (`ex6`, `src/game/enemies/obachan.js`; fioletowa trwała, tygrys na bluzce, torebka, wózek z zakupami, cukierki dla wszystkich) | *Tygrys w śniegu* Hokusaia (1849): tygrys przyczajony w zaśnieżonym bambusowym gaju ryczy w niebo — z fioletową trwałą; w śniegu cukierki i zasypany wózek | zrobiony |
+| 7 | Płacząca mównica (`ex7`, `src/game/enemies/mownica.js`; ożywiona mównica z mikrofonami, nawiązanie tylko do zachowania ze słynnej konferencji: ręka przy uchu, płacz, walenie w stół, bilety kolejowe; bez nazwiska, wyglądu i funkcji) | *Wodospad Kirifuri na górze Kurokami* Hokusaia (ok. 1832): wodospad leje się z dwóch zaciśniętych, płaczących oczu na szczycie urwiska | zrobiony (pierwsza wersja) |
 
 Bez prawdziwych marek na puszkach, autach, kubkach i okładkach.
 
@@ -43,3 +43,84 @@ Stałe: `JIHANKI` w `src/game/enemies/jihanki.js` (2600 HP, progi faz 66% / 33%)
   potem 35% na cztery takie same: „ATARI!”, automat oszołomiony na 3,5 s (bierze 1,6× obrażeń) i wypluwa trzy
   złote puszki — złapane dają punkty, a przy zużytej bombie — bombę. Przegrana („HAZURE...”): szał, puszki spadają
   z góry ekranu. Między losowaniami automat skacze za graczem.
+
+## 2. Kei car (KEI)
+
+Stałe: `KEI` w `src/game/enemies/keicar.js` (2400 HP, progi 66% / 33%). Tło pędzi jak w pościgu (warstwa dalsza
+w pętli, 70 px/s); pachołki i ślady opon leżą na drodze i przesuwają się razem z nią.
+
+- **Faza 1 — mały, ale wściekły:** warczy, dwie czerwone linie pokazują pas, trąbi („PAAAP!”, pierścień) i
+  taranuje w dół drogi, wyjeżdża dołem i wraca z góry; światła awaryjne migają i każde mignięcie strzela małym
+  wachlarzem; długie trąbienie — kilka pierścieni po kolei.
+- **Faza 2 — tuning:** spojler, pasy, namalowane płomienie. Drift w kółko wokół gracza („DORIFTO!”), pociski lecą
+  do środka koła; rzuca pachołki na drogę — leżą i jadą w dół razem z nią (dotknięcie = zderzenie, strzał je
+  zbija); taranuje dwa razy z rzędu.
+- **Faza 3 — kei-tora:** rozkłada się w mini ciężarówkę. Godzina szczytu: dwa z trzech pasów przecinają ekran
+  sznurki małych aut (najpierw miga strzałka w poprzek pasa, między autami są luki); arbuzy z paki lecą łukiem
+  w gracza i pękają pierścieniem pestek.
+
+## 3. Kot z budowy (GENBA)
+
+Stałe: `GENBA` w `src/game/enemies/genba.js` (2500 HP, progi 66% / 33%). Trafia się wieżę (w fazie 3 — kota).
+
+- **Faza 1 — budowa w toku:** kot na dachu wieży rzuca garście śrub i bumerangiem klucza; dźwig zrzuca dwuteowniki
+  (najpierw czerwony cień na ziemi), które rozbijają się na odłamki; hak dźwigu przelatuje wahadłem przez ekran
+  (najpierw miga łuk).
+- **Faza 2 — namazu się budzi:** trzęsienia („GOTO GOTO GOTO!”), szczeliny biegną w stronę gracza i plują błotem
+  (strefy jak gejzery w Beppu); wieża pęka i się przechyla, belki spadają gęściej.
+- **Faza 3 — zawalenie:** wieża się wali (zostaje gruz), kot bez kasku schodzi walczyć: skacze na gracza (linia
+  pokazuje kierunek, po wylądowaniu pierścień pazurów), rzuca kaskiem jak bumerangiem, omiata ekran strumieniem
+  pocisków z latarki.
+
+## 4. Kot bez końca (NAGAI)
+
+Stałe: `NAGAI` w `src/game/enemies/nagai.js` (2300 HP, progi 66% / 33%, 120 segmentów co 4,5 px). Trafia się
+tylko głowę; ciało (futrzane segmenty, co jakiś czas para białych łapek, daleko z tyłu rozwiewa się w dym)
+zatrzymuje strzały gracza i rani przy dotknięciu. Ciało idzie dokładnie śladem głowy.
+
+- **Faza 1 — kot bez końca:** wije się długimi esami przez ekran, wychodzi za krawędź i wraca z innej strony;
+  pluje kulkami sierści (wachlarz 3 w gracza), co czwarty raz miauczy pierścieniem („MIAU!”).
+- **Faza 2 — mruczenie:** fale wolnych pocisków wychodzą na boki z całego ciała (co dziesiąty segment na ekranie);
+  co jakiś czas rusza głową prosto na gracza na ~3 s.
+- **Faza 3 — kłębek:** owija się wokół gracza zwężającą się spiralą („NYAAA~”, promień 64 → 26 px w 5 s; trzeba
+  wyjść przez lukę między zwojami albo przeczekać w środku) i rzuca kłębkami włóczki, które odbijają się od
+  krawędzi ekranu.
+
+## 5. Pokój otaku (HEYA)
+
+Stałe: `HEYA` w `src/game/enemies/heya.js` (2500 HP, progi 66% / 33%). Twierdza na górze ekranu: wieże mang
+z lewej, piramida kubków po zupkach i pudła z dostaw z prawej, biurko z kineskopowym monitorem w środku (to w niego
+się strzela), za nim postać zawinięta w koc — widać tylko oczy. Żadnych marek: kubki z gładkim paskiem, grzbiety
+w jednolitych kolorach.
+
+- **Faza 1 — twierdza z mang:** tomy mangi lecą wirując i otwierają się w wachlarz kartek („BAM!”); kubki z zupką
+  lecą łukiem w gracza (miga okrąg) i rozlewają wrzący bulion („ZURU!”); całe stosy tomów spadają na gracza
+  (najpierw czerwony obrys) i rozsypują się pierścieniem („DOSA!”).
+- **Faza 2 — tryb nocny:** gaśnie światło („KLIK.”, tło ciemnieje, monitor i oczy świecą); z ekranu lecą „linijki
+  czatu” — rzędy pocisków przez cały ekran z luką, w luce „www”; między nimi kubki i mangi.
+- **Faza 3 — gacha:** twierdza się wali (rozsypane tomy, pęknięty ekran, czerwone oczy); kapsułki gacha wyskakują
+  w górę i spadają na gracza, pękając pierścieniem („PON!”), złota (1 na 5) gwiazdą („SSR!”); mangi szybsze.
+
+## 6. Babcia (OBACHAN)
+
+Stałe: `OBACHAN` w `src/game/enemies/obachan.js` (2400 HP, progi 66% / 33%). Babcia drepcze w lewo i w prawo.
+
+- **Faza 1 — ame-chan:** „AME, IRU?” — rzuca wachlarze cukierków w papierkach; zwalniają i rozwijają się
+  w małe pierścienie; taranuje ekran wózkiem z zakupami (najpierw czerwona linia i strzałka, z kosza wypadają
+  pociski, „DOITE DOITE!”); kręci torebką (pierścienie spiralą).
+- **Faza 2 — MAKETE!:** targuje się: okrzyki z wachlarzem dużych pocisków („MAKETE!”, „-50%”, „-80%!”), wózki
+  z obu stron naraz.
+- **Faza 3 — tygrys!:** tygrys zeskakuje z bluzki (na bluzce zostaje dziura) i poluje sam: przyczaja się (linia
+  celu), skacze, ląduje z rykiem (pierścień, „GAO!”), odpoczywa; babcia dalej rozdaje cukierki i się targuje.
+
+## 7. Płacząca mównica (MOWNICA)
+
+Stałe: `MOWNICA` w `src/game/enemies/mownica.js` (2400 HP, progi 66% / 33%). Pierwsza wersja do przerobienia.
+
+- **Faza 1 — „HA? NANI?”:** wachlarze „odpowiedzi” w gracza; co drugi ruch przykłada rękę do ucha i przez 2,2 s
+  nic nie słyszy: strzały nie zadają obrażeń, a część wraca do gracza jako echo.
+- **Faza 2 — „UAAA!”:** szloch — łuki łez z obu oczu w rytmie łapania oddechu; walenie pięściami w stół („DON!”,
+  podwójny pierścień, wstrząs ekranu); wymachiwanie ręką (strumień pocisków omiatający ekran).
+- **Faza 3 — „ZMIENIĘ ŚWIAT!”:** rzuca bilety kolejowe (numerowane w górę, do #195), które spadają, kołysząc się;
+  co piąty ma czerwony stempel „pociąg nie jechał” i pęka pierścieniem („UNKYŪ!”). Po wygranej: „PAN TEGO NIE
+  ZROZUMIE”.

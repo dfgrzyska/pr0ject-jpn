@@ -1,0 +1,17 @@
+{
+  "id": "ex3",
+  "encounter": true,
+  "name": "KOT Z BUDOWY",
+  "subtitle": "NIESPODZIEWANE SPOTKANIE",
+  "skin": "kyoto",
+  "enemyArt": true,
+  "near": "none",
+  "scroll": { "far": 2, "mid": 1.2, "near": 20, "anchor": 420 },
+  "boss": true,
+  "end": 400,
+  "music": { "schedule": [[0, "s4_boss"]], "boss": "s4_boss" },
+  "warnings": { "boss": "KOT Z BUDOWY ZACZYNA ZMIANĘ", "bossDown": "KOT Z BUDOWY POKONANY!", "bossDownSub": "KONIEC ZMIANY" },
+  "waves": [
+    { "t": 2.5, "type": "boss", "boss": "genba", "x": 90, "card": ["KOT Z BUDOWY", "BUDOWA W TOKU"] }
+  ]
+}

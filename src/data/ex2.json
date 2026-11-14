@@ -1,0 +1,17 @@
+{
+  "id": "ex2",
+  "encounter": true,
+  "name": "KEI CAR",
+  "subtitle": "NIESPODZIEWANE SPOTKANIE",
+  "skin": "kyoto",
+  "enemyArt": true,
+  "near": "none",
+  "scroll": { "far": 70, "mid": 70, "near": 90, "anchor": 420 },
+  "boss": true,
+  "end": 400,
+  "music": { "schedule": [[0, "s2_boss"]], "boss": "s2_boss" },
+  "warnings": { "boss": "KEI CAR NADJEŻDŻA", "bossDown": "KEI CAR POKONANY!", "bossDownSub": "DO WARSZTATU" },
+  "waves": [
+    { "t": 2.5, "type": "boss", "boss": "keicar", "x": 90, "card": ["KEI CAR", "MAŁY, ALE WŚCIEKŁY"] }
+  ]
+}

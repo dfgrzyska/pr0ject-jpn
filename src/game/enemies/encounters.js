@@ -164,6 +164,8 @@ export const encounters = {
   bossDeviceHit(shot) {
     if (this.heavy?.kind === 'bunraku' && this.fanGuard(shot)) return true; // the geisha puppet's fan (osaka.js)
     const g = this.bossGroup;
+    if (g?.kind === 'nagai' && this.nagaiBlock(shot)) return true; // the endless cat's body (nagai.js)
+    if (g?.kind === 'mownica' && this.mownicaDeaf(shot)) return true; // the lectern's hand at its ear (mownica.js)
     if (!g || g.defeated || g.kind !== 'jaodori' || !g.launchers || g.parts[0].state !== 'fight') return false;
     for (const pad of g.launchers) {
       if (pad.cool > 0 || pad.rocket || g.lock > 0) continue;

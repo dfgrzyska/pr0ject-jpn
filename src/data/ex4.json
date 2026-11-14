@@ -1,0 +1,17 @@
+{
+  "id": "ex4",
+  "encounter": true,
+  "name": "KOT BEZ KOŃCA",
+  "subtitle": "NIESPODZIEWANE SPOTKANIE",
+  "skin": "kyoto",
+  "enemyArt": true,
+  "near": "none",
+  "scroll": { "far": 4, "mid": 2, "near": 20, "anchor": 420 },
+  "boss": true,
+  "end": 400,
+  "music": { "schedule": [[0, "s3_boss"]], "boss": "s3_boss" },
+  "warnings": { "boss": "KOT BEZ KOŃCA NADCIĄGA", "bossDown": "KOT BEZ KOŃCA POKONANY!", "bossDownSub": "ROZWIAŁ SIĘ JAK DYM" },
+  "waves": [
+    { "t": 2.5, "type": "boss", "boss": "nagai", "x": 90, "card": ["KOT BEZ KOŃCA", "GDZIE ON SIĘ KOŃCZY?"] }
+  ]
+}

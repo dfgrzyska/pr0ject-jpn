@@ -776,8 +776,8 @@ restauracją tanuki bębniący w brzuch, na ścianie czerwono-złoty smok, pod T
 szaszłykami kushikatsu.
 
 Losowi bossowie w podróży: po ukończeniu miasta 20% szans na niespodziewane spotkanie z bossem na specjalnym
-tle (na razie automat z napojami na tle „gazowanej” *Wielkiej fali*); za wygraną +1 życie i premia. Szczegóły
-i plan kolejnych w `docs/random-encounters.md`; do testów `?ex=ex1` albo `?ex=always`.
+tle (automat z napojami na tle „gazowanej” *Wielkiej fali* kei car na pędzącym Tōkaidō Hiroshigego kot z budowy nad olbrzymim sumem z namazu-e i kot bez końca wijący się nad Fuji ze *Smoka dymu* Hokusaia pokój otaku na ścianie plakatów w manierze Sharaku babcia z tygrysem na bluzce na tle *Tygrysa w śniegu* Hokusaia i płacząca mównica pod wodospadem Kirifuri); za wygraną +1 życie i premia. Szczegóły
+i plan kolejnych w `docs/random-encounters.md`; do testów `?ex=ex1` … `?ex=ex7` albo `?ex=always`.
 
 Hiroszima: chwila ciszy zaczyna się przy wejściu na odcinek Genbaku Dome i trwa 11,5 s.
 Na ten czas przelot przyspiesza, płynnie (`scroll.fast.ease`: 2,5 s rozpędu i hamowania zamiast skoku);

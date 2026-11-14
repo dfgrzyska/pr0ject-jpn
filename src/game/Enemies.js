@@ -15,6 +15,12 @@ import { nagasaki } from './enemies/nagasaki.js';
 import { encounters } from './enemies/encounters.js';
 import { hiroshima } from './enemies/hiroshima.js';
 import { jihanki } from './enemies/jihanki.js';
+import { keicar } from './enemies/keicar.js';
+import { genba } from './enemies/genba.js';
+import { nagai } from './enemies/nagai.js';
+import { heya } from './enemies/heya.js';
+import { obachan } from './enemies/obachan.js';
+import { mownica } from './enemies/mownica.js';
 // the second phases of the minibosses (Yuki-onna and the Oranda-bune have theirs; the bunraku puppet's go by
 // its puppeteers): its name on the banner
 const HEAVY_P2 = { tanuki: 'TANUKI PIJE SAKE', manta: 'KORALOWA SPIRALA', raiju: 'PRZEŁADOWANIE PIORUNA', wani: 'FAŁSZYWE CIENIE', heikegani: 'PĘKNIĘTY PANCERZ' };
@@ -217,6 +223,12 @@ export class Enemies {
         if (w.boss === 'kyubi') return this.spawnKyubi(w, base);
         if (w.boss === 'sankibo') return this.spawnSankibo(w, base);
         if (w.boss === 'jihanki') return this.spawnJihanki(w, base);
+        if (w.boss === 'keicar') return this.spawnKei(w, base);
+        if (w.boss === 'genba') return this.spawnGenba(w, base);
+        if (w.boss === 'nagai') return this.spawnNagai(w, base);
+        if (w.boss === 'heya') return this.spawnHeya(w, base);
+        if (w.boss === 'obachan') return this.spawnObachan(w, base);
+        if (w.boss === 'mownica') return this.spawnMownica(w, base);
         return w.boss === 'kuma' ? this.spawnKuma(w, base) : this.spawnBoss(w, base);
       default:
         return;
@@ -442,7 +454,7 @@ export class Enemies {
   /** HP shown in the top bar: the mid-stage heavy or the whole boss pair. */
   bossBar() {
     const g = this.bossGroup;
-    if (g && !g.defeated && (g.kind === 'kuma' || g.kind === 'volcano' || g.kind === 'tako' || g.kind === 'oni' || g.kind === 'kyubi' || g.kind === 'sankibo' || g.kind === 'jihanki' ? g.awake : g.parts.some((p) => !p.dead && p.group === g && p.y > 0))) {
+    if (g && !g.defeated && (g.kind === 'kuma' || g.kind === 'volcano' || g.kind === 'tako' || g.kind === 'oni' || g.kind === 'kyubi' || g.kind === 'sankibo' || g.kind === 'jihanki' || g.kind === 'keicar' || g.kind === 'genba' || g.kind === 'nagai' || g.kind === 'heya' || g.kind === 'obachan' || g.kind === 'mownica' ? g.awake : g.parts.some((p) => !p.dead && p.group === g && p.y > 0))) {
       // parts are pooled sprites: once dead they may come back as other enemies, so check the group
       let hp = 0;
       for (const p of g.parts) if (!p.dead && p.group === g) hp += Math.max(0, p.hp);
@@ -495,6 +507,12 @@ export class Enemies {
     if (g.kind === 'kyubi') return this.updateKyubi(g, dt);
     if (g.kind === 'sankibo') return this.updateSankibo(g, dt);
     if (g.kind === 'jihanki') return this.updateJihanki(g, dt);
+    if (g.kind === 'keicar') return this.updateKei(g, dt);
+    if (g.kind === 'genba') return this.updateGenba(g, dt);
+    if (g.kind === 'nagai') return this.updateNagai(g, dt);
+    if (g.kind === 'heya') return this.updateHeya(g, dt);
+    if (g.kind === 'obachan') return this.updateObachan(g, dt);
+    if (g.kind === 'mownica') return this.updateMownica(g, dt);
     this.updateShisa(g, dt);
   }
 
@@ -720,6 +738,12 @@ export class Enemies {
     if (e.head) this.heads.kill(e.head);
     if (e.kuroko) for (const k of e.kuroko) if (!k.dead && k.master === e) this.pool.kill(k);
     if (e.group?.kind === 'jihanki' && e.role === 'body') this.jihankiCleanup(e.group); // its cans and puddles
+    if (e.group?.kind === 'keicar' && e.role === 'body') this.keiCleanup(e.group); // its cones, traffic, skid marks
+    if (e.group?.kind === 'genba' && e.role === 'body') this.genbaCleanup(e.group); // its beams, hook, spanners, the cat
+    if (e.group?.kind === 'nagai' && e.role === 'body') this.nagaiCleanup(e.group); // its endless body, the yarn
+    if (e.group?.kind === 'heya' && e.role === 'body') this.heyaCleanup(e.group); // what it threw, the dark
+    if (e.group?.kind === 'obachan' && e.role === 'body') this.obachanCleanup(e.group); // her sweets, trolleys, the tiger
+    if (e.group?.kind === 'mownica' && e.role === 'body') this.mownicaCleanup(e.group); // its tickets
     if (e.puppets) for (const p of e.puppets) if (!p.dead && p.master === e) this.pool.kill(p);
     if (e.burnt) for (const bt of e.burnt) if (bt) this.woundPool.kill(bt);
     e.burnt = null;
@@ -1239,4 +1263,4 @@ export class Enemies {
 }
 
 // each city's enemies and bosses live in its own module (src/game/enemies/): their methods join the class here
-Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki);
+Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, mownica);

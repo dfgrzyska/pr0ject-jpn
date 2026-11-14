@@ -1,0 +1,17 @@
+{
+  "id": "ex7",
+  "encounter": true,
+  "name": "PŁACZĄCA MÓWNICA",
+  "subtitle": "NIESPODZIEWANE SPOTKANIE",
+  "skin": "kyoto",
+  "enemyArt": true,
+  "near": "none",
+  "scroll": { "far": 2, "mid": 1.5, "near": 20, "anchor": 420 },
+  "boss": true,
+  "end": 400,
+  "music": { "schedule": [[0, "s8_boss"]], "boss": "s8_boss" },
+  "warnings": { "boss": "KONFERENCJA SIĘ ZACZYNA", "bossDown": "MÓWNICA POKONANA!", "bossDownSub": "PAN TEGO NIE ZROZUMIE" },
+  "waves": [
+    { "t": 2.5, "type": "boss", "boss": "mownica", "x": 90, "card": ["PŁACZĄCA MÓWNICA", "KONFERENCJA PRASOWA"] }
+  ]
+}

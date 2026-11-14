@@ -32,6 +32,18 @@ import { hiroshimaEnemies, HIROSHIMA_PORTRAITS } from './art/hiroshima/enemies.m
 import { nagasakiEnemies, NAGASAKI_PORTRAITS } from './art/nagasaki/enemies.mjs';
 import { jihankiEnemies } from './art/encounters/jihanki.mjs';
 import * as greatwave from './art/encounters/greatwave.mjs';
+import { keicarEnemies } from './art/encounters/keicar.mjs';
+import * as tokaido from './art/encounters/tokaido.mjs';
+import { genbaEnemies } from './art/encounters/genba.mjs';
+import * as namazu from './art/encounters/namazu.mjs';
+import * as fujismoke from './art/encounters/fujismoke.mjs';
+import { nagaiEnemies } from './art/encounters/nagai.mjs';
+import * as sharaku from './art/encounters/sharaku.mjs';
+import { heyaEnemies } from './art/encounters/heya.mjs';
+import * as torasnow from './art/encounters/torasnow.mjs';
+import { obachanEnemies } from './art/encounters/obachan.mjs';
+import * as kirifuri from './art/encounters/kirifuri.mjs';
+import { mownicaEnemies } from './art/encounters/mownica.mjs';
 import { addCracks } from './art/cracks540.mjs';
 import { shared540 } from './art/shared540/index.mjs';
 import { buildIcon, downsample } from './art/icon.mjs';
@@ -49,6 +61,12 @@ const ENEMY_ART = [
   { id: 'stage8', build: nagasakiEnemies, portraits: NAGASAKI_PORTRAITS },
   // the random encounters (src/data/encounters.js): an arena and a boss each, no album portraits (yet)
   { id: 'ex1', build: jihankiEnemies, portraits: [] },
+  { id: 'ex2', build: keicarEnemies, portraits: [] },
+  { id: 'ex3', build: genbaEnemies, portraits: [] },
+  { id: 'ex4', build: nagaiEnemies, portraits: [] },
+  { id: 'ex5', build: heyaEnemies, portraits: [] },
+  { id: 'ex6', build: obachanEnemies, portraits: [] },
+  { id: 'ex7', build: mownicaEnemies, portraits: [] },
 ];
 
 // background generators per stage (id = folder under public/assets/bg/)
@@ -62,6 +80,12 @@ const STAGES = [
   { id: 'stage7', art: hiroshima },
   { id: 'stage8', art: nagasaki },
   { id: 'ex1', art: greatwave }, // the vending machine's arena: the Great Wave, fizzy
+  { id: 'ex2', art: tokaido }, // the kei car's: the Tōkaidō of Hiroshige's Fifty-three Stations, racing by
+  { id: 'ex3', art: namazu }, // the site cat's: a namazu-e, the giant catfish under a building site in Edo
+  { id: 'ex4', art: fujismoke }, // the endless cat's: Hokusai's dragon of smoke escaping from Mount Fuji
+  { id: 'ex5', art: sharaku }, // the otaku room's: a wall of posters after Sharaku's actor portraits
+  { id: 'ex6', art: torasnow }, // the grandma's: Hokusai's tiger in the snow, with a purple perm
+  { id: 'ex7', art: kirifuri }, // the lectern's: Hokusai's Kirifuri waterfall, pouring from two weeping eyes
 ];
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');

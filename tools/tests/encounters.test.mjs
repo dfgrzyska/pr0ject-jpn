@@ -33,7 +33,15 @@ test('every encounter is a one-boss arena with its art generated', () => {
     const meta = JSON.parse(readFileSync(new URL(`../../public/assets/bg/${e.id}/meta.json`, import.meta.url)));
     assert(meta.length >= e.scroll.anchor);
   }
-  const frames = JSON.parse(readFileSync(new URL('../../public/assets/bg/ex1/enemies.json', import.meta.url))).frames;
-  const names = new Set(Array.isArray(frames) ? frames.map((f) => f.filename) : Object.keys(frames));
-  for (const f of ['jihanki_0', 'jihanki_1', 'jihanki_open', 'jihanki_2', 'jihanki_3', 'can_hot', 'can_cold', 'can_gold', 'puddle_hot_0', 'puddle_cold_1', 'led_7', 'led_off']) assert(names.has(f), f);
+  const names = (id) => {
+    const frames = JSON.parse(readFileSync(new URL(`../../public/assets/bg/${id}/enemies.json`, import.meta.url))).frames;
+    return new Set(Array.isArray(frames) ? frames.map((f) => f.filename) : Object.keys(frames));
+  };
+  for (const f of ['kei_0', 'kei_1', 'kei_angry', 'kei_tuned', 'keitora_0', 'keitora_1', 'mini_r', 'mini_b', 'mini_w', 'cone', 'suika_3', 'skid']) assert(names('ex2').has(f), f);
+  for (const f of ['neko_0', 'neko_1', 'neko_pounce', 'neko_hiss', 'neko_hiss_bare', 'neko_pounce_bare', 'tower_0', 'tower_1', 'tower_rubble', 'ibeam', 'crane_hook', 'spanner_3', 'hardhat_1']) assert(names('ex3').has(f), f);
+  for (const f of ['lect_0', 'lect_ear', 'lect_cry', 'lect_bang', 'lect_wave', 'ticket_0', 'ticket_1', 'ticket_x']) assert(names('ex7').has(f), f);
+  for (const f of ['baba_0', 'baba_1', 'baba_shout', 'baba_bare', 'baba_bare_1', 'baba_bare_shout', 'tora_crouch', 'tora_leap', 'tora_roar', 'ame_r_0', 'ame_p_1', 'cart_1']) assert(names('ex6').has(f), f);
+  for (const f of ['heya_0', 'heya_1', 'heya_angry', 'heya_night', 'heya_ruin', 'manga_3', 'noodle_1', 'manga_stack', 'gacha_r', 'gacha_gold']) assert(names('ex5').has(f), f);
+  for (const f of ['nagai_head_0', 'nagai_head_meow', 'nagai_head_purr', 'nagai_seg_a', 'nagai_seg_b', 'nagai_seg_paws', 'hairball_1', 'yarn_r', 'yarn_b']) assert(names('ex4').has(f), f);
+  for (const f of ['jihanki_0', 'jihanki_1', 'jihanki_open', 'jihanki_2', 'jihanki_3', 'can_hot', 'can_cold', 'can_gold', 'puddle_hot_0', 'puddle_cold_1', 'led_7', 'led_off']) assert(names('ex1').has(f), f);
 });

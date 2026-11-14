@@ -1,0 +1,17 @@
+{
+  "id": "ex5",
+  "encounter": true,
+  "name": "POKÓJ OTAKU",
+  "subtitle": "NIESPODZIEWANE SPOTKANIE",
+  "skin": "kyoto",
+  "enemyArt": true,
+  "near": "none",
+  "scroll": { "far": 1, "mid": 1.5, "near": 20, "anchor": 420 },
+  "boss": true,
+  "end": 400,
+  "music": { "schedule": [[0, "s6_boss"]], "boss": "s6_boss" },
+  "warnings": { "boss": "POKÓJ OTAKU SIĘ BRONI", "bossDown": "POKÓJ OTAKU POKONANY!", "bossDownSub": "CZAS WYJŚĆ NA ŚWIAT" },
+  "waves": [
+    { "t": 2.5, "type": "boss", "boss": "heya", "x": 90, "card": ["POKÓJ OTAKU", "NIE WYCHODZI OD LAT"] }
+  ]
+}
