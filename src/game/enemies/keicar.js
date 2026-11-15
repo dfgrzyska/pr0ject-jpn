@@ -169,7 +169,10 @@ export const keicar = {
         else Object.assign(a, { phase: 'back', t: 0 });
       }
     } else {
-      e.y += Math.max(30, (KEI.home - e.y) * 2) * dt * (e.y > KEI.home + 2 ? -1 : 1);
+      // back to its row, as briskly from below (reversing up after a drift) as from above (in from the top)
+      const d = KEI.home - e.y;
+      e.y += Math.sign(d) * Math.min(Math.abs(d), Math.max(90, Math.abs(d) * 2.6) * dt);
+      if (d < 0) this.keiExhaust(g, dt, 1.5);
       e.x = g.x;
       e.setRotation(Phaser.Math.Angle.RotateTo(e.rotation, 0, dt * 5));
       if (Math.abs(e.y - KEI.home) < 2) this.keiDone(g, 0.7);
@@ -346,7 +349,7 @@ export const keicar = {
         if ((L.next -= dt) <= 0) {
           L.left--;
           L.next = (KEI.gap + Math.random() * 18) / L.sp;
-          const frame = ['mini_r', 'mini_b', 'mini_w', 'mini_y'][Math.floor(Math.random() * 4)];
+          const frame = ['mini_r', 'mini_b', 'mini_w', 'mini_y', 'mini_p', 'mini_t'][Math.floor(Math.random() * 6)];
           if (g.body.texture.has(frame)) {
             const spr = this.segPool.spawn(frame, L.dir > 0 ? -24 : VIEW.width + 24, L.y).setDepth(DEPTH.air - 0.15).setRotation(L.dir > 0 ? -DOWN : DOWN);
             g.traffic.push({ spr, vx: L.dir * L.sp });

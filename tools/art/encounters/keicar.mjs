@@ -7,6 +7,7 @@
 // truck, white, its flatbed piled with watermelons and cabbages. The rush hour's other kei cars, a traffic cone, a
 // watermelon, its skid marks.
 import { HiSprite, tones, speckle } from '../../lib/hisprite.mjs';
+import { mix } from '../../lib/raster.mjs';
 
 const INK = 0x14101c;
 const RAMPS = {
@@ -23,7 +24,7 @@ const RAMPS = {
   p: tones([0x5a1a7a, 0xb04ae8, 0xf0b8ff]), // the purple of the tuned car's glow
   n: tones([0x2a5a14, 0x4a9a2a, 0xa8e070]), // watermelon rind, cabbage
   t: tones([0x3a2a20, 0x6a5040, 0x9a8070]), // the flatbed's boards
-  e: tones([0x6a2a2a, 0xe8604a, 0xffb8a0]), // watermelon flesh
+  e: tones([0x6a2a2a, 0xe8604a, 0xffb8a0]), // watermelon flesh (and a pink car)
 };
 
 /** A rounded box, lit from the top left: (x0, y0) to (x1, y1), corner radius r. */
@@ -138,58 +139,120 @@ export function keicar(look = {}) {
 }
 
 // ---------------------------------------------------------------- the kei truck (34 x 60 -> 102 x 180): a cab-over, its flatbed behind
+/** A watermelon from above: deep green, the dark stripes curving over it from stem to tip, a sheen. */
+function melon(s, cx, cy, r) {
+  s.ellipse(cx, cy, r, r * 0.92, 'n', { bias: 0.15 });
+  for (let k = -3; k <= 3; k++) for (let t = -1; t <= 1; t += 0.05) {
+    const x = cx + k * r * 0.26 * Math.sqrt(1 - t * t) + Math.sin(t * 3 + k) * 0.8;
+    const y = cy + t * r * 0.88;
+    if (((x - cx) / r) ** 2 + ((y - cy) / (r * 0.92)) ** 2 < 0.92) s.px(x, y, 0x123010, 0.9);
+  }
+  s.ellipse(cx - r * 0.35, cy - r * 0.35, r * 0.3, r * 0.18, 'n', { flat: 0.98 });
+  s.dot(cx, cy - r * 0.86, 1, 0x6a5020);
+}
+
+/** A cabbage from above: pale leaves folded round a tight heart, their veins. */
+function cabbage(s, cx, cy, r) {
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * Math.PI * 2;
+    s.ellipse(cx + Math.cos(a) * r * 0.45, cy + Math.sin(a) * r * 0.42, r * 0.6, r * 0.55, 'n', { bias: 0.2 });
+  }
+  s.ellipse(cx, cy, r * 0.55, r * 0.5, 'n', { flat: 0.95 });
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * Math.PI * 2 + 0.3;
+    s.line(cx + Math.cos(a) * r * 0.3, cy + Math.sin(a) * r * 0.3, cx + Math.cos(a) * r * 0.95, cy + Math.sin(a) * r * 0.9, 0xe8f8c0, 1, 0.6);
+  }
+}
+
 export function keitruck(f, wf = 0) {
   const s = new HiSprite(102, 180, RAMPS);
   const X0 = 17;
   const X1 = 85;
   const CX = 51;
-  for (const [x, y] of [[X0 - 1, 40], [X1 + 1, 40], [X0 - 1, 150], [X1 + 1, 150]]) wheel(s, x, y, wf);
-  // the flatbed: boards, the white drop sides with their hinges, the load (one melon gone while it throws)
-  s.paint([X0, 4, X1, 118], (x, y) => x > X0 && x < X1 && y > 5 && y < 117, 't', (x, y) => 0.42 + (Math.floor(y / 7) % 2 ? 0.08 : -0.04));
-  for (const x of [X0, X1 - 3]) for (let y = 5; y < 117; y++) for (let i = 0; i < 4; i++) s.px(x + i, y, i === 0 ? 0x8a8a94 : 0xe8e8f0);
-  for (let x = X0; x < X1; x++) for (let j = 0; j < 4; j++) s.px(x, 4 + j, j === 0 ? 0x8a8a94 : 0xe8e8f0);
-  for (let i = 0; i < 12; i++) {
-    if (f && (i === 4 || i === 7)) continue;
-    const cx = X0 + 15 + (i % 3) * 19;
-    const cy = 20 + Math.floor(i / 3) * 25;
-    if (i % 5 === 2) {
-      s.ellipse(cx, cy, 8, 8, 'n', { bias: 0.15 });
-      for (let k = 0; k < 4; k++) s.line(cx - 5 + k * 3, cy - 6, cx - 3 + k * 3, cy + 6, 0xd8f0a0, 1, 0.5);
-    } else {
-      s.ellipse(cx, cy, 9, 8.5, 'n', { bias: 0.1 });
-      for (let k = -2; k <= 2; k++) s.line(cx + k * 3, cy - 7.5, cx + k * 3 + Math.sin(k) * 1.5, cy + 7.5, 0x183a10, 1, 0.9);
-    }
+  for (const [x, y] of [[X0 - 1, 36], [X1 + 1, 36], [X0 - 1, 150], [X1 + 1, 150]]) wheel(s, x, y, wf);
+  // the flatbed: the boards, the white drop sides and tailgate with their hinges and stake pockets
+  s.paint([X0, 4, X1, 120], (x, y) => x > X0 && x < X1 && y > 5 && y < 119, 't', (x, y) => 0.4 + (Math.floor(y / 6) % 2 ? 0.08 : -0.04) - (x - X0) / 400);
+  for (const x of [X0, X1 - 4]) for (let y = 5; y < 119; y++) for (let i = 0; i < 5; i++) s.px(x + i, y, i === 0 || i === 4 ? 0x8a8a94 : mix(0xffffff, 0xc8c8d0, i / 4));
+  for (let x = X0; x < X1; x++) for (let j = 0; j < 5; j++) s.px(x, 3 + j, j === 0 || j === 4 ? 0x8a8a94 : 0xf0f0f4);
+  for (const yy of [30, 62, 94]) for (const x of [X0, X1 - 4]) for (let j = 0; j < 4; j++) for (let i = 0; i < 5; i++) s.px(x + i, yy + j, 0x6a6a74);
+  for (const xx of [X0 + 18, X1 - 22]) for (let j = 0; j < 3; j++) for (let i = 0; i < 6; i++) s.px(xx + i, 2 + j, 0x6a6a74); // the tailgate's hinges
+  // the load: watermelons, cabbages, a straw rope over it all (one melon gone while it throws)
+  const load = [[32, 24, 'm', 10], [52, 22, 'c', 8], [71, 26, 'm', 10], [36, 47, 'c', 8], [57, 46, 'm', 11], [74, 52, 'c', 7], [30, 72, 'm', 10], [52, 72, 'm', 11], [72, 78, 'c', 8], [38, 98, 'c', 8], [60, 98, 'm', 10]];
+  load.forEach(([x, y, k, r], i) => {
+    if (f && (i === 4 || i === 7)) return;
+    if (k === 'm') melon(s, x, y, r);
+    else cabbage(s, x, y, r);
+  });
+  for (const yy of [36, 86]) for (let x = X0 + 4; x < X1 - 4; x++) s.px(x, yy + Math.sin(x * 0.4) * 1.2, 0xd8b870, 0.9);
+  // the cab: white, a cab-over with no bonnet at all, its back window, the roof with a visor over the windscreen
+  box(s, X0, 118, X1, 176, 7, 'w', null);
+  s.paint([X0 + 8, 120, X1 - 8, 127], (x, y) => y > 120 && y < 127, 'g', (x) => 0.3 + (x % 14 < 3 ? 0.3 : 0));
+  box(s, X0 + 4, 126, X1 - 4, 146, 5, 'w', (x) => 0.88 - (x - X0) / 220);
+  for (let x = X0 + 6; x < X1 - 6; x++) for (let j = 0; j < 3; j++) s.px(x, 144 + j, j === 0 ? 0x8a8a94 : 0x3a3a44); // the visor's shadow
+  s.paint([X0 + 3, 146, X1 - 3, 161], (x, y) => y > 147 && y < 160 && x > X0 + 4 && x < X1 - 4, 'g', (x, y) => 0.34 + (Math.abs(x - y * 0.6) % 26 < 5 ? 0.45 : 0) + (y - 147) / 80);
+  for (const px of [X0 + 4, X1 - 6]) for (let y = 147; y < 160; y++) for (let i = 0; i < 2; i++) s.px(px + i, y, 0x18181e);
+  s.line(CX - 20, 158, CX - 4, 155, INK, 1);
+  s.line(CX + 2, 158, CX + 18, 155, INK, 1);
+  // the mirrors out on their stalks, the face: square-ish lamp eyes, the grille, the bumper, the plate
+  for (const sx of [-1, 1]) {
+    s.line(CX + sx * 34, 150, CX + sx * 42, 148, 0x26262c, 2);
+    s.paint([CX + sx * 44 - 4, 142, CX + sx * 44 + 4, 154], (x, y) => Math.abs(x - CX - sx * 44) < 3.5 && y > 143 && y < 153, 'k', () => 0.45);
   }
-  // the cab: white, a cab-over with no bonnet at all, its back window, the roof, the windscreen straight above the face
-  box(s, X0, 116, X1, 176, 7, 'w', null);
-  s.paint([X0 + 8, 118, X1 - 8, 125], () => true, 'g', () => 0.3);
-  box(s, X0 + 4, 124, X1 - 4, 146, 5, 'w', (x) => 0.86 - (x - X0) / 220);
-  s.paint([X0 + 3, 145, X1 - 3, 160], (x, y) => y > 146 && y < 159 && x > X0 + 4 && x < X1 - 4, 'g', (x, y) => 0.34 + (Math.abs(x - y * 0.6) % 26 < 5 ? 0.45 : 0));
-  for (const sx of [-1, 1]) s.paint([CX + sx * 40 - 6, 146, CX + sx * 40 + 6, 156], (x, y) => Math.abs(x - CX - sx * 40) < 5 && y > 147 && y < 155, 'k', () => 0.45);
-  for (const sx of [-1, 1]) eye(s, CX + sx * 22, 166, 6, sx, 'angry', 'w');
-  s.paint([CX - 8, 162, CX + 8, 170], (x, y) => Math.abs(x - CX) < 7 && y > 163 && y < 170, 'k', () => 0.3);
-  s.paint([X0, 172, X1, 178], (x, y) => y > 172 && y < 178 && x > X0 + 2 && x < X1 - 2, 'k', () => 0.35);
-  s.paint([CX - 10, 171, CX + 10, 180], (x, y) => Math.abs(x - CX) < 9 && y > 172 && y < 179, 'y', () => 0.82);
+  for (const sx of [-1, 1]) eye(s, CX + sx * 22, 166, 6.4, sx, 'angry', 'w');
+  s.paint([CX - 9, 162, CX + 9, 171], (x, y) => Math.abs(x - CX) < 8 && y > 163 && y < 171, 'k', () => 0.25);
+  for (let k = 0; k < 3; k++) for (let x = CX - 7; x <= CX + 7; x++) s.px(x, 164 + k * 2.5, 0xc8cad4);
+  s.paint([X0, 172, X1, 179], (x, y) => y > 172 && y < 179 && x > X0 + 2 + (y - 172) * 0.3 && x < X1 - 2 - (y - 172) * 0.3, 's', () => 0.6);
+  s.paint([CX - 10, 171, CX + 10, 180], (x, y) => Math.abs(x - CX) < 9 && y > 172 && y < 180, 'y', () => 0.82);
+  for (let x = CX - 9; x < CX + 9; x++) {
+    s.px(x, 172, 0x2a6a2a);
+    s.px(x, 179, 0x2a6a2a);
+  }
   return s.render();
 }
 
 // ---------------------------------------------------------------- the rush hour's other kei cars (18 x 30 -> 54 x 90), nose down
-export function minicar(col, kind = 0) {
+// kind: 'wagon' (the tall box, a two-tone roof), 'sedan' (a rounder little car, a longer bonnet), 'van' (a white
+// delivery van, windows down its sides), 'truck' (a little kei truck, crates on the back)
+export function minicar(col, kind = 'wagon') {
   const s = new HiSprite(54, 90, RAMPS);
-  for (const [x, y] of [[8, 20], [46, 20], [8, 70], [46, 70]]) wheel(s, x, y, 0, 9);
-  box(s, 9, 4, 45, 84, 6, col, null);
-  if (kind === 1) {
-    // a little delivery van: a tall white box on the back
-    box(s, 10, 4, 44, 56, 3, 'w', (x) => 0.85 - (x - 10) / 120);
-    for (let y = 8; y < 54; y += 8) for (let x = 12; x < 43; x++) s.px(x, y, 0xb8b8c0);
-  } else box(s, 12, 12, 42, 54, 4, 'c', (x) => 0.82 - (x - 12) / 140);
-  s.paint([11, 54, 43, 68], (x, y) => x > 12 && x < 42 && y > 55 && y < 67, 'g', (x, y) => 0.35 + ((x - y) % 14 < 3 ? 0.4 : 0));
-  for (const sx of [-1, 1]) {
-    s.ellipse(27 + sx * 11, 75, 4.4, 4, 's', { bias: 0.15 });
-    s.ellipse(27 + sx * 11, 75, 3, 2.8, 'y', { flat: 0.95, glow: true });
+  const X0 = 10;
+  const X1 = 44;
+  const CX = 27;
+  const paint = kind === 'van' ? 'w' : col;
+  for (const [x, y] of [[X0 - 1, 22], [X1 + 1, 22], [X0 - 1, 70], [X1 + 1, 70]]) wheel(s, x, y, 0, 8);
+  if (kind === 'truck') {
+    // the bed with its crates, then the cab
+    s.paint([X0, 4, X1, 52], (x, y) => x > X0 && x < X1 && y > 4 && y < 52, 't', (x, y) => 0.42 + (Math.floor(y / 5) % 2 ? 0.06 : -0.04));
+    for (const x of [X0, X1 - 2]) for (let y = 4; y < 52; y++) for (let i = 0; i < 3; i++) s.px(x + i, y, 0xe8e8f0);
+    for (const [cx, cy] of [[20, 14], [34, 14], [20, 32], [34, 34]]) {
+      s.paint([cx - 6, cy - 6, cx + 6, cy + 6], () => true, 'o', (x, y) => 0.6 - (x - cx) / 30 - (y - cy) / 40);
+      for (let k = -5; k <= 5; k += 5) for (let i = -6; i <= 6; i++) s.px(cx + i, cy + k, 0x6a3a10, 0.6);
+    }
+    box(s, X0, 50, X1, 86, 5, col, null);
+  } else box(s, X0, 4, X1, 86, kind === 'sedan' ? 9 : 5, paint, null);
+  // the roof: cream on a wagon, the paint on a sedan (rounder, shorter), white with side windows on a van
+  if (kind === 'wagon') box(s, X0 + 3, 12, X1 - 3, 56, 4, 'c', (x) => 0.82 - (x - X0) / 140);
+  if (kind === 'sedan') {
+    box(s, X0 + 4, 20, X1 - 4, 52, 7, col, (x) => 0.8 - (x - X0) / 120);
+    s.paint([X0 + 6, 12, X1 - 6, 20], (x, y) => y > 13 && y < 20, 'g', () => 0.3);
   }
-  s.paint([9, 80, 45, 86], (x, y) => y > 80 && y < 86 && x > 10 && x < 44, 'k', () => 0.35);
-  s.paint([21, 80, 33, 87], (x, y) => x > 21 && x < 33 && y > 81 && y < 87, 'y', () => 0.85);
+  if (kind === 'van') {
+    box(s, X0 + 2, 8, X1 - 2, 56, 3, 'w', (x) => 0.88 - (x - X0) / 120);
+    for (let y = 12; y < 54; y += 10) for (const x of [X0 + 1, X1 - 2]) for (let j = 0; j < 7; j++) s.px(x, y + j, 0x26405c);
+    for (let x = X0 + 4; x < X1 - 4; x++) for (let j = 0; j < 4; j++) s.px(x, 30 + j, mix(col === 'w' ? 0x3a5ad0 : 0xd02a26, 0xffffff, 0.1)); // a coloured band
+  }
+  // the windscreen, the pillars, the mirrors, the bonnet, the lamps, the bumper and the plate
+  const wy = kind === 'truck' ? 58 : kind === 'sedan' ? 52 : 56;
+  s.paint([X0 + 2, wy, X1 - 2, wy + 13], (x, y) => y > wy && y < wy + 12 && x > X0 + 3 && x < X1 - 3, 'g', (x, y) => 0.34 + ((x - y) % 16 < 4 ? 0.42 : 0) + (y - wy) / 60);
+  for (const px of [X0 + 3, X1 - 4]) for (let y = wy; y < wy + 12; y++) s.px(px, y, 0x18181e);
+  for (const sx of [-1, 1]) s.paint([CX + sx * 20 - 3, wy, CX + sx * 20 + 3, wy + 6], (x, y) => Math.abs(x - CX - sx * 20) < 2.6 && y > wy && y < wy + 6, 'k', () => 0.45);
+  for (const sx of [-1, 1]) {
+    s.ellipse(CX + sx * 10, 76, 4.6, 4.2, 's', { bias: 0.15 });
+    s.ellipse(CX + sx * 10, 76, 3.2, 3, 'y', { flat: 0.95, glow: true });
+  }
+  s.paint([CX - 4, 73, CX + 4, 79], (x, y) => Math.abs(x - CX) < 4 && y > 73 && y < 79, 'k', () => 0.25);
+  s.paint([X0, 81, X1, 87], (x, y) => y > 81 && y < 87 && x > X0 + 1 && x < X1 - 1, 'k', () => 0.35);
+  s.paint([CX - 6, 81, CX + 6, 88], (x, y) => Math.abs(x - CX) < 6 && y > 82 && y < 88, 'y', () => 0.85);
   return s.render();
 }
 
@@ -263,10 +326,12 @@ export function keicarEnemies(add) {
   add('keitora_0', keitruck(0, 0));
   add('keitora_1', keitruck(1, 1));
   add('keitora_2', keitruck(0, 1));
-  add('mini_r', minicar('r'));
-  add('mini_b', minicar('b'));
-  add('mini_w', minicar('w', 1));
-  add('mini_y', minicar('y'));
+  add('mini_r', minicar('r', 'sedan'));
+  add('mini_b', minicar('b', 'wagon'));
+  add('mini_w', minicar('w', 'van'));
+  add('mini_y', minicar('y', 'wagon'));
+  add('mini_p', minicar('e', 'sedan'));
+  add('mini_t', minicar('b', 'truck'));
   add('cone', cone());
   for (let f = 0; f < 4; f++) add(`suika_${f}`, watermelon(f));
   for (let f = 0; f < 3; f++) add(`suika_splat_${f}`, splat(f));
