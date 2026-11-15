@@ -7,6 +7,9 @@ const VOLUME = 0.9;
 const SHOT_GAP = { basic: 0.075, spread: 0.075, laser: 0.09, homing: 0.15 };
 const BOOM_GAP = { s: 0.035, m: 0.06, l: 0.25 };
 
+// each weapon's blip (from Hz, to Hz, s, level): what a voice out of the gachapon is played against
+const VOICED = { basic: [1250, 520, 0.045, 0.055], spread: [760, 300, 0.04, 0.06], laser: [2100, 1450, 0.035, 0.11], homing: [480, 1000, 0.09, 0.14] };
+
 export class Sfx {
   constructor(ctx, destination) {
     this.ctx = ctx;
@@ -72,10 +75,18 @@ export class Sfx {
     this.sweep(900, 200, 0.18, 0.05, t);
   }
 
-  shot(weapon) {
+  /** voice: a sound out of the gachapon ({ wave, pitch, len, level, up }) in place of the weapon's own. */
+  shot(weapon, voice = null) {
     if (!this.ready(`shot_${weapon}`, SHOT_GAP[weapon] ?? 0.08)) return;
     const t = this.now();
     const r = 0.97 + Math.random() * 0.06; // tiny pitch variation keeps rapid fire from droning
+    if (voice) {
+      const [f0, f1, len, level] = VOICED[weapon] ?? VOICED.basic;
+      const a = f0 * voice.pitch * r;
+      const b = f1 * voice.pitch;
+      this.blip(voice.wave, voice.up ? Math.min(a, b) : a, voice.up ? Math.max(a, b) : b, len * voice.len, level * voice.level, t);
+      return;
+    }
     switch (weapon) {
       case 'spread':
         this.s.noiseBurst(t, 0.03, 'bandpass', 2800 * r, 0.9, 0.13);

@@ -21,7 +21,7 @@ export const PITY = { every: 10, min: 'SR' };
 export const SLOTS = ['engine', 'gun', 'bomb', 'core', 'omamori'];
 
 /** What changes only the looks, one of each worn at a time on any hull. */
-export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape', 'blast', 'bomb_look'];
+export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape', 'blast', 'bomb_look', 'title', 'sound', 'graze', 'hud_color', 'life_icon'];
 
 /** The frames a skin for a weapon's shots replaces (kind -> frames; the skin's own are <frame>_<skin>). */
 export const SHOT_FRAMES = { shot_basic: ['ps_needle'], shot_spread: ['ps_spread'], shot_laser: ['ps_laser_1', 'ps_laser_2', 'ps_laser_3'], shot_homing: ['ps_homing_0'] };
@@ -351,6 +351,65 @@ export const ITEMS = [
   { id: 'bomb_look_foxfire', kind: 'bomb_look', rarity: 'SR', name: 'BOMBA: LISIE OGNIKI', info: 'WYGLĄD WYBUCHU BOMBY', bomb: { ring: 0x6aa8ff, flash: 0xc0d8ff, frames: ['kitsunebi_0', 'kitsunebi_1'], scale: 0.5 } },
   { id: 'bomb_look_cranes', kind: 'bomb_look', rarity: 'SR', name: 'BOMBA: TYSIĄC ŻURAWI', info: 'WYGLĄD WYBUCHU BOMBY', bomb: { ring: 0xffffff, frames: ['orizuru_0', 'orizuru_1', 'orizuru_2'], scale: 0.45 } },
   { id: 'bomb_look_rainbow', kind: 'bomb_look', rarity: 'SSR', name: 'BOMBA: TĘCZA', info: 'WYGLĄD WYBUCHU BOMBY', bomb: { ring: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], frames: ['dot_2'], tints: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], scale: 1.6 } },
+  // ---- the pilot's titles, shown with the score
+  { id: 'title_crane', kind: 'title', rarity: 'N', name: 'TYTUŁ: PILOT ŻURAWIA', info: 'WIDAĆ GO PRZY WYNIKU', title: 'PILOT ŻURAWIA' },
+  { id: 'title_ghosts', kind: 'title', rarity: 'N', name: 'TYTUŁ: ŁOWCA DUCHÓW', info: 'WIDAĆ GO PRZY WYNIKU', title: 'ŁOWCA DUCHÓW' },
+  { id: 'title_wanderer', kind: 'title', rarity: 'N', name: 'TYTUŁ: WĘDROWIEC', info: 'WIDAĆ GO PRZY WYNIKU', title: 'WĘDROWIEC' },
+  { id: 'title_courier', kind: 'title', rarity: 'N', name: 'TYTUŁ: KURIER SAKURY', info: 'WIDAĆ GO PRZY WYNIKU', title: 'KURIER SAKURY' },
+  { id: 'title_dojo', kind: 'title', rarity: 'N', name: 'TYTUŁ: UCZEŃ DOJO', info: 'WIDAĆ GO PRZY WYNIKU', title: 'UCZEŃ DOJO' },
+  { id: 'title_night', kind: 'title', rarity: 'N', name: 'TYTUŁ: NOCNY LOTNIK', info: 'WIDAĆ GO PRZY WYNIKU', title: 'NOCNY LOTNIK' },
+  { id: 'title_stamps', kind: 'title', rarity: 'N', name: 'TYTUŁ: ŁOWCA PIECZĄTEK', info: 'WIDAĆ GO PRZY WYNIKU', title: 'ŁOWCA PIECZĄTEK' },
+  { id: 'title_ramen', kind: 'title', rarity: 'N', name: 'TYTUŁ: SMAKOSZ RAMENU', info: 'WIDAĆ GO PRZY WYNIKU', title: 'SMAKOSZ RAMENU' },
+  { id: 'title_ronin', kind: 'title', rarity: 'R', name: 'TYTUŁ: RONIN PRZESTWORZY', info: 'WIDAĆ GO PRZY WYNIKU', title: 'RONIN PRZESTWORZY' },
+  { id: 'title_ninja', kind: 'title', rarity: 'R', name: 'TYTUŁ: CIEŃ NINJA', info: 'WIDAĆ GO PRZY WYNIKU', title: 'CIEŃ NINJA' },
+  { id: 'title_torii', kind: 'title', rarity: 'R', name: 'TYTUŁ: STRAŻNIK TORII', info: 'WIDAĆ GO PRZY WYNIKU', title: 'STRAŻNIK TORII' },
+  { id: 'title_graze', kind: 'title', rarity: 'R', name: 'TYTUŁ: MISTRZ GRAZINGU', info: 'WIDAĆ GO PRZY WYNIKU', title: 'MISTRZ GRAZINGU' },
+  { id: 'title_tanuki', kind: 'title', rarity: 'R', name: 'TYTUŁ: POGROMCA TANUKI', info: 'WIDAĆ GO PRZY WYNIKU', title: 'POGROMCA TANUKI' },
+  { id: 'title_wind', kind: 'title', rarity: 'R', name: 'TYTUŁ: SAMURAJ WIATRU', info: 'WIDAĆ GO PRZY WYNIKU', title: 'SAMURAJ WIATRU' },
+  { id: 'title_dancer', kind: 'title', rarity: 'R', name: 'TYTUŁ: TANCERZ KUL', info: 'WIDAĆ GO PRZY WYNIKU', title: 'TANCERZ KUL' },
+  { id: 'title_matsuri', kind: 'title', rarity: 'R', name: 'TYTUŁ: DZIECKO FESTIWALU', info: 'WIDAĆ GO PRZY WYNIKU', title: 'DZIECKO FESTIWALU' },
+  { id: 'title_speed', kind: 'title', rarity: 'SR', name: 'TYTUŁ: DEMON PRĘDKOŚCI', info: 'WIDAĆ GO PRZY WYNIKU', title: 'DEMON PRĘDKOŚCI' },
+  { id: 'title_dragon', kind: 'title', rarity: 'SR', name: 'TYTUŁ: SMOK WSCHODU', info: 'WIDAĆ GO PRZY WYNIKU', title: 'SMOK WSCHODU' },
+  { id: 'title_moon', kind: 'title', rarity: 'SR', name: 'TYTUŁ: OSTRZE KSIĘŻYCA', info: 'WIDAĆ GO PRZY WYNIKU', title: 'OSTRZE KSIĘŻYCA' },
+  { id: 'title_storm', kind: 'title', rarity: 'SR', name: 'TYTUŁ: PAN BURZY', info: 'WIDAĆ GO PRZY WYNIKU', title: 'PAN BURZY' },
+  { id: 'title_tails', kind: 'title', rarity: 'SR', name: 'TYTUŁ: DZIEWIĘĆ OGONÓW', info: 'WIDAĆ GO PRZY WYNIKU', title: 'DZIEWIĘĆ OGONÓW' },
+  { id: 'title_legend', kind: 'title', rarity: 'SSR', name: 'TYTUŁ: LEGENDA NIEBA', info: 'WIDAĆ GO PRZY WYNIKU', title: 'LEGENDA NIEBA' },
+  { id: 'title_shogun', kind: 'title', rarity: 'SSR', name: 'TYTUŁ: SZOGUN CHMUR', info: 'WIDAĆ GO PRZY WYNIKU', title: 'SZOGUN CHMUR' },
+  { id: 'title_sun', kind: 'title', rarity: 'UR', name: 'TYTUŁ: SŁOŃCE AMATERASU', info: 'WIDAĆ GO PRZY WYNIKU', title: 'SŁOŃCE AMATERASU' },
+
+  // ---- the voice of the shots: a wave, the pitch, length and level against the weapon's own blip (up: rising)
+  { id: 'sound_koto', kind: 'sound', rarity: 'N', name: 'DŹWIĘK: KOTO', info: 'DŹWIĘK STRZAŁU', sound: { wave: 'triangle', pitch: 1, len: 2.2, level: 1.2 } },
+  { id: 'sound_chip', kind: 'sound', rarity: 'N', name: 'DŹWIĘK: 8 BITÓW', info: 'DŹWIĘK STRZAŁU', sound: { wave: 'square', pitch: 1.5, len: 0.8, level: 0.8 } },
+  { id: 'sound_bubble', kind: 'sound', rarity: 'N', name: 'DŹWIĘK: BĄBELKI', info: 'DŹWIĘK STRZAŁU', sound: { wave: 'sine', pitch: 0.9, len: 1.3, level: 1.3, up: true } },
+  { id: 'sound_shamisen', kind: 'sound', rarity: 'R', name: 'DŹWIĘK: SHAMISEN', info: 'DŹWIĘK STRZAŁU', sound: { wave: 'sawtooth', pitch: 0.8, len: 1.5, level: 0.6 } },
+  { id: 'sound_flute', kind: 'sound', rarity: 'R', name: 'DŹWIĘK: FLET SHAKUHACHI', info: 'DŹWIĘK STRZAŁU', sound: { wave: 'sine', pitch: 1.3, len: 2, level: 1.2 } },
+  { id: 'sound_retro', kind: 'sound', rarity: 'R', name: 'DŹWIĘK: LASER RETRO', info: 'DŹWIĘK STRZAŁU', sound: { wave: 'sawtooth', pitch: 2, len: 1.2, level: 0.5 } },
+  { id: 'sound_taiko', kind: 'sound', rarity: 'SR', name: 'DŹWIĘK: BĘBEN TAIKO', info: 'DŹWIĘK STRZAŁU', sound: { wave: 'sine', pitch: 0.16, len: 2.6, level: 2.2 } },
+  { id: 'sound_furin', kind: 'sound', rarity: 'SR', name: 'DŹWIĘK: DZWONECZEK FŪRIN', info: 'DŹWIĘK STRZAŁU', sound: { wave: 'sine', pitch: 2.4, len: 3.2, level: 0.8 } },
+
+  // ---- the spark of a graze: its colours (one of them each time), bits it throws (as Fx.cityBits takes them)
+  { id: 'graze_cyan', kind: 'graze', rarity: 'N', name: 'ISKRA: CYJAN', info: 'ISKRA OTARCIA O POCISK', graze: { tints: [0x4fe8ff] } },
+  { id: 'graze_pink', kind: 'graze', rarity: 'N', name: 'ISKRA: RÓŻ', info: 'ISKRA OTARCIA O POCISK', graze: { tints: [0xff7ab8] } },
+  { id: 'graze_green', kind: 'graze', rarity: 'N', name: 'ISKRA: ZIELEŃ', info: 'ISKRA OTARCIA O POCISK', graze: { tints: [0x6ae486] } },
+  { id: 'graze_violet', kind: 'graze', rarity: 'R', name: 'ISKRA: FIOLET', info: 'ISKRA OTARCIA O POCISK', graze: { tints: [0xb070f0] } },
+  { id: 'graze_red', kind: 'graze', rarity: 'R', name: 'ISKRA: CZERWIEŃ', info: 'ISKRA OTARCIA O POCISK', graze: { tints: [0xff4a4a] } },
+  { id: 'graze_sakura', kind: 'graze', rarity: 'SR', name: 'ISKRA: PŁATEK SAKURY', info: 'ISKRA OTARCIA O POCISK', graze: { tints: [0xffb8d0], bits: { frames: ['petal_0', 'petal_1', 'petal_2', 'petal_3'], speed: 40, life: 0.7, drag: 1.8, g: 16 } } },
+  { id: 'graze_snow', kind: 'graze', rarity: 'SR', name: 'ISKRA: ODŁAMEK LODU', info: 'ISKRA OTARCIA O POCISK', graze: { tints: [0xb8ecff], bits: { frames: ['shard_0', 'shard_1', 'shard_2'], speed: 60, life: 0.45, drag: 2.4, g: 0 } } },
+  { id: 'graze_rainbow', kind: 'graze', rarity: 'SSR', name: 'ISKRA: TĘCZA', info: 'ISKRA OTARCIA O POCISK', graze: { tints: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0] } },
+
+  // ---- the HUD: the colour of the score, and the icon of a life (lifeicon_<id>, tools/art/looks.mjs)
+  { id: 'hud_color_gold', kind: 'hud_color', rarity: 'N', name: 'LICZNIK: ZŁOTO', info: 'KOLOR WYNIKU NA EKRANIE', hud: 0xffd040 },
+  { id: 'hud_color_sakura', kind: 'hud_color', rarity: 'N', name: 'LICZNIK: SAKURA', info: 'KOLOR WYNIKU NA EKRANIE', hud: 0xff9ac4 },
+  { id: 'hud_color_mint', kind: 'hud_color', rarity: 'N', name: 'LICZNIK: MIĘTA', info: 'KOLOR WYNIKU NA EKRANIE', hud: 0x7af0c0 },
+  { id: 'hud_color_sky', kind: 'hud_color', rarity: 'R', name: 'LICZNIK: BŁĘKIT', info: 'KOLOR WYNIKU NA EKRANIE', hud: 0x7ac8ff },
+  { id: 'hud_color_wisteria', kind: 'hud_color', rarity: 'R', name: 'LICZNIK: GLICYNIA', info: 'KOLOR WYNIKU NA EKRANIE', hud: 0xc8a0ff },
+  { id: 'hud_color_vermilion', kind: 'hud_color', rarity: 'R', name: 'LICZNIK: CYNOBER', info: 'KOLOR WYNIKU NA EKRANIE', hud: 0xff6a48 },
+  { id: 'life_icon_heart', kind: 'life_icon', rarity: 'N', name: 'ŻYCIE: SERCE', info: 'IKONA ŻYCIA NA EKRANIE', pic: 'lifeicon_heart' },
+  { id: 'life_icon_star', kind: 'life_icon', rarity: 'N', name: 'ŻYCIE: GWIAZDKA', info: 'IKONA ŻYCIA NA EKRANIE', pic: 'lifeicon_star' },
+  { id: 'life_icon_sakura', kind: 'life_icon', rarity: 'R', name: 'ŻYCIE: SAKURA', info: 'IKONA ŻYCIA NA EKRANIE', pic: 'lifeicon_sakura' },
+  { id: 'life_icon_onigiri', kind: 'life_icon', rarity: 'R', name: 'ŻYCIE: ONIGIRI', info: 'IKONA ŻYCIA NA EKRANIE', pic: 'lifeicon_onigiri' },
+  { id: 'life_icon_lantern', kind: 'life_icon', rarity: 'SR', name: 'ŻYCIE: LAMPION', info: 'IKONA ŻYCIA NA EKRANIE', pic: 'lifeicon_lantern' },
+  { id: 'life_icon_daruma', kind: 'life_icon', rarity: 'SR', name: 'ŻYCIE: DARUMA', info: 'IKONA ŻYCIA NA EKRANIE', pic: 'lifeicon_daruma' },
 ];
 
 export const ITEM = Object.fromEntries(ITEMS.map((it) => [it.id, it]));

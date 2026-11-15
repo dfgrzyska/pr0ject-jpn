@@ -153,7 +153,7 @@ test('looks are worn one of a kind, and only owned ones', () => {
   assert.ok(wear(s, 'flame', 'flame_lava'));
   assert.ok(wear(s, 'dye', 'dye_blue'));
   const ship = buildShip(s);
-  assert.deepEqual(ship.look, { paint: ITEM.paint_urushi.colors, flame: ITEM.flame_lava.flame, dye: ITEM.dye_blue.tint, wake: null, shots: {}, marker: null, ebColor: null, ebShape: null, blast: null, bombLook: null });
+  assert.deepEqual(ship.look, { paint: ITEM.paint_urushi.colors, flame: ITEM.flame_lava.flame, dye: ITEM.dye_blue.tint, wake: null, shots: {}, marker: null, ebColor: null, ebShape: null, blast: null, bombLook: null, title: null, sound: null, graze: null, hud: null });
   s.owned.push('shot_laser_dragon', 'shot_basic_kunai');
   assert.ok(wear(s, 'shot_laser', 'shot_laser_dragon'));
   assert.equal(wear(s, 'shot_laser', 'shot_basic_kunai'), false, 'a skin goes on its own weapon');

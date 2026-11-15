@@ -5,6 +5,7 @@
 // and the pictures of the kinds of part a capsule can hold.
 import { shotSkins } from './shots.mjs';
 import { enemyBulletSkins } from './ebullets.mjs';
+import { lookArt } from './looks.mjs';
 import { ITEMS } from '../../src/data/gacha.js';
 import { HiSprite, tones, speckle, inPoly } from '../lib/hisprite.mjs';
 import { Raster } from '../lib/raster.mjs';
@@ -495,6 +496,72 @@ function partMarker() {
   return s.render({ outline: 0 });
 }
 
+/** A title: a scroll with lines of writing and a red seal. */
+function partTitle() {
+  const s = new HiSprite(72, 72, RAMPS);
+  s.poly([[12, 14], [60, 14], [60, 58], [12, 58]], 'c');
+  s.poly([[8, 10], [64, 10], [64, 18], [8, 18]], 'n');
+  s.poly([[8, 54], [64, 54], [64, 62], [8, 62]], 'n');
+  for (const y of [26, 33, 40]) s.line(20, y, 44, y, INK, 2);
+  s.dot(50, 44, 6, 0xd02a26);
+  return s.render({ outline: 2 });
+}
+
+/** A sound: a note. */
+function partSound() {
+  const s = new HiSprite(72, 72, RAMPS);
+  s.line(30, 14, 30, 50, INK, 5);
+  s.line(30, 14, 54, 20, INK, 5);
+  s.line(54, 20, 54, 44, INK, 5);
+  s.dot(23, 52, 10, INK);
+  s.dot(47, 46, 10, INK);
+  s.dot(23, 52, 7, 0xffd040);
+  s.dot(47, 46, 7, 0xffd040);
+  s.line(30, 16, 30, 48, 0xffd040, 2);
+  s.line(54, 22, 54, 42, 0xffd040, 2);
+  s.line(30, 15, 54, 21, 0xffd040, 2);
+  return s.render({ outline: 0 });
+}
+
+/** A graze: a bullet and the spark struck off it. */
+function partGraze() {
+  const s = new HiSprite(72, 72, RAMPS);
+  bullet(s, 22, 48, 15, 0xe63cff, 0xee9cff);
+  for (const [x0, y0, x1, y1] of [[46, 26, 46, 8], [46, 26, 64, 26], [46, 26, 59, 13], [46, 26, 33, 13], [46, 26, 46, 40], [46, 26, 34, 26]]) {
+    s.line(x0, y0, x1, y1, INK, 6);
+    s.line(x0, y0, x1, y1, 0x4fe8ff, 2);
+  }
+  s.dot(46, 26, 6, INK);
+  s.dot(46, 26, 4, 0xffffff);
+  return s.render({ outline: 0 });
+}
+
+/** A colour for the score: digits' bars in a row. */
+function partHudColor() {
+  const s = new HiSprite(72, 72, RAMPS);
+  s.poly([[6, 20], [66, 20], [66, 52], [6, 52]], 'k');
+  for (const [x, c] of [[12, 0xffd040], [26, 0xff9ac4], [40, 0x7af0c0], [54, 0x7ac8ff]]) {
+    for (const [dx, dy, w, h] of [[0, 0, 8, 3], [0, 0, 3, 22], [5, 0, 3, 22], [0, 19, 8, 3]]) for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) s.px(x + dx + i, 25 + dy + j, c);
+  }
+  return s.render({ outline: 2 });
+}
+
+/** An icon for the lives: a heart. */
+function partLifeIcon() {
+  const s = new HiSprite(72, 72, RAMPS);
+  for (let y = 0; y < 72; y++)
+    for (let x = 0; x < 72; x++) {
+      const at = (k) => {
+        const u = ((x + 0.5 - 36) / k) * 1.2;
+        const v = -((y + 0.5 - 34) / k) * 1.2 + 0.15;
+        return (u * u + v * v - 1) ** 3 - u * u * v * v * v <= 0;
+      };
+      if (at(30)) s.px(x, y, at(26) ? (x + y < 56 ? 0xff8a8a : x + y < 80 ? 0xf0485a : 0xd0283a) : INK);
+    }
+  s.dot(24, 24, 4, 0xffffff);
+  return s.render({ outline: 0 });
+}
+
 /** A look for the explosions: a fireball in blue. */
 function partBlast() {
   const s = new HiSprite(72, 72, RAMPS);
@@ -584,7 +651,13 @@ export function gachaAtlas() {
   add('part_eb_color', partEbColor());
   add('part_eb_shape', partEbShape());
   add('part_marker', partMarker());
+  for (const s of lookArt()) out.push(s); // life icons and other small looks (looks.mjs)
   add('part_blast', partBlast());
+  add('part_title', partTitle());
+  add('part_sound', partSound());
+  add('part_graze', partGraze());
+  add('part_hud_color', partHudColor());
+  add('part_life_icon', partLifeIcon());
   add('part_bomb_look', partBombLook());
   return out;
 }

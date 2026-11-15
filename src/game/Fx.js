@@ -167,8 +167,9 @@ export class Fx {
     p.setScale(size * p.base).setTint(tint).setBlendMode(Phaser.BlendModes.ADD);
   }
 
-  spark(x, y) {
+  spark(x, y, tint = null) {
     const s = this.sparks.spawn('spark_0', x, y);
+    if (tint != null) s.setTint(tint);
     s.u = null;
     s.vx = 0;
     s.vy = 0;

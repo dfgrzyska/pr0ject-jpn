@@ -274,6 +274,13 @@ export class Hud {
       this.placeName.setAlpha(alpha);
     }
     const p = s.player;
+    // (the score's colour out of the gachapon)
+    const hc = p.ship.look?.hud ?? 0xffffff;
+    if (hc !== this.hudColor) {
+      this.hudColor = hc;
+      this.score.setTint(hc);
+      this.lastMult = null;
+    }
     const sc = Math.min(99999999, s.score.score);
     if (sc !== this.lastScore) {
       this.lastScore = sc;
@@ -283,7 +290,7 @@ export class Hud {
     const maxed = mult >= SCORE.multiplierMax;
     if (mult !== this.lastMult) {
       this.lastMult = mult;
-      this.mult.setText(`×${mult}`).setTint(maxed ? 0xffd060 : 0xffffff);
+      this.mult.setText(`×${mult}`).setTint(maxed ? 0xffd060 : this.hudColor ?? 0xffffff);
     }
     // the bars are drawn again only when something on them changes
     const heatC = p.heatOn ? (p.jam > 0 ? (Math.floor(p.jam * 8) % 2 ? 0xff4a3a : 0x6a1a14) : p.heat >= HEAT.boostAt ? 0xffa040 : 0x9ab4c4) : 0;

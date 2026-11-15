@@ -468,7 +468,7 @@ export class Player {
     this.volleys++;
     this.muzzleT = 0.04;
     this.muzzle.setFrame(this.volleys % 2 ? 'muzzle_0' : 'muzzle_1');
-    this.scene.sfx.shot(this.weapon === 'homing' ? 'basic' : this.weapon);
+    this.scene.sfx.shot(this.weapon === 'homing' ? 'basic' : this.weapon, this.ship.look?.sound);
     // a tail gun: a needle astern with every third volley
     if (this.ship.tail && this.volleys % 3 === 0) this.shot('ps_needle', x, y + 8, 0, WEAPONS.basic.speed, 1, 2).flipY = true;
     switch (this.weapon) {
@@ -552,7 +552,9 @@ export class Player {
   graze(b) {
     const s = this.scene;
     s.score.add(GRAZE.points * s.score.mult * (this.ship.grazePoints ?? 1));
-    s.fx.spark(b.x, b.y);
+    const gl = this.ship.look?.graze; // (the spark's look out of the gachapon)
+    s.fx.spark(b.x, b.y, gl ? gl.tints[Math.floor(Math.random() * gl.tints.length)] : null);
+    if (gl?.bits) s.fx.cityBits(b.x, b.y, 1, 1, false, gl.bits);
     s.sfx.graze();
     if (this.ship.momentum) this.momentum = Math.min(1, this.momentum + MOMENTUM.graze);
     if (this.ship.ofuda && ++this.ofudaCharge >= OFUDA.every) {
@@ -601,7 +603,7 @@ export class Player {
     // hover (~70): the same reach to them at 9:16 and 9:21)
     const life = WEAPONS.homing.life * Math.max(1, (this.scene.H - 114) / (VIEW.minHeight - 114));
     const n = orbs[this.level - 1];
-    this.scene.sfx.shot('homing');
+    this.scene.sfx.shot('homing', this.ship.look?.sound);
     for (let i = 0; i < n; i++) {
       const side = i % 2 ? 1 : -1;
       const ang = -Math.PI / 2 + side * (0.5 + Math.floor(i / 2) * 0.35);

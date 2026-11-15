@@ -579,8 +579,9 @@ export class Stage extends Phaser.Scene {
 
   /** Easy: a line saying so on the results, and the continues used. */
   modeLines() {
-    if (!isEasy()) return [];
-    return [['TRYB ŁATWY', 0x9cf09a], ...(this.continues ? [[`KONTYNUACJE: ${this.continues}`, 0xb0aec0]] : [])];
+    const title = this.ship?.look?.title ? [[this.ship.look.title, 0xffe080]] : []; // (the pilot's, out of the gachapon)
+    if (!isEasy()) return title;
+    return [...title, ['TRYB ŁATWY', 0x9cf09a], ...(this.continues ? [[`KONTYNUACJE: ${this.continues}`, 0xb0aec0]] : [])];
   }
 
   stageClear() {
