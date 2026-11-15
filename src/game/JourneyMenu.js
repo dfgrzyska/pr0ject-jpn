@@ -1,4 +1,4 @@
-import { DEPTH, RENDER_SCALE, SHIPS, VIEW } from '../config.js';
+import { DEPTH, RENDER_SCALE, VIEW } from '../config.js';
 import { STAGES } from '../data/stages.js';
 import { MAP, project } from '../data/japan.js';
 import { pixelText } from './Hud.js';
@@ -38,7 +38,7 @@ export class JourneyMenu {
     this.clouds = [0, 1].map((i) => add(scene.add.image(30 + i * 100, 0, 'sprites', `cloud_${i}`).setAlpha(0.09), DEPTH.overlay));
     this.gfx = add(scene.add.graphics(), DEPTH.overlay + 1.5);
     this.labels = STAGES.map((s) => add(pixelText(scene, 0, 0, s.name)));
-    this.ship = add(sharedArt(scene.add.image(0, 0, 'sprites', SHIPS[scene.shipIndex].frame)), DEPTH.overlay + 2);
+    this.ship = add(sharedArt(scene.add.image(0, 0, 'sprites', scene.ship.frame)), DEPTH.overlay + 2);
     this.logo = add(scene.add.image(90, 0, 'menu', 'logo').setScale(FINE));
     this.tagline = add(pixelText(scene, 90, 0, 'LEĆ PRZEZ JAPONIĘ').setTint(0xffdba8));
     this.caption = add(pixelText(scene, 90, 0, 'OSIEM MIAST. JEDNA PODRÓŻ.').setTint(0xc8ac85));

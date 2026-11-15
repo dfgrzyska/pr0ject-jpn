@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BEANS, BOMB, DEPTH, FROST, GRAZE, HEAT, MOMENTUM, OFUDA, PLAYER, SHIPS, SURGE, TURRETS, VIEW, WEAPONS } from '../config.js';
+import { BEANS, BOMB, DEPTH, FROST, GRAZE, HEAT, MOMENTUM, OFUDA, PLAYER, SURGE, TURRETS, VIEW, WEAPONS } from '../config.js';
 import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
 import { baseScale, sharedArt, spriteTexture } from './enemyArt.js';
@@ -38,7 +38,7 @@ export class Player {
     this.turretArt = [0, 1].map(() => sharedArt(scene.add.image(0, 0, 'sprites', 'turret_wing')).setDepth(DEPTH.player + 0.01).setVisible(false));
     this.bubble = scene.add.graphics().setDepth(DEPTH.player - 0.2);
 
-    this.setShip(SHIPS[1]);
+    this.setShip(scene.ship);
     this.bombs = 1;
     this.weapon = 'basic';
     this.level = 1;

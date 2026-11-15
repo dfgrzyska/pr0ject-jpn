@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { NagasakiView } from '../game/NagasakiView.js';
 import { getMusic } from '../audio/Music.js';
-import { DEPTH, ENCOUNTER, GRAZE, PLAYER, RENDER_SCALE, SCORE, SHIPS, TURRETS, VIEW, WEAPONS } from '../config.js';
+import { DEPTH, ENCOUNTER, GRAZE, PLAYER, RENDER_SCALE, SCORE, TURRETS, VIEW, WEAPONS } from '../config.js';
 import { STAGES } from '../data/stages.js';
 import { encounterById, rollEncounter } from '../data/encounters.js';
 import { Bullets } from '../game/Bullets.js';
@@ -21,7 +21,9 @@ import { Parallax } from '../game/Parallax.js';
 import { Player } from '../game/Player.js';
 import { Pool } from '../game/Pool.js';
 import { Score } from '../game/Score.js';
-import { ShipSelect } from '../game/ShipSelect.js';
+import { PreFlight } from '../game/PreFlight.js';
+import { buildShip, loadState, newState, saveState } from '../game/Loadout.js';
+import { KITS } from '../data/gacha.js';
 import { INK, PALE, StampBook, hasStamp, pressStamp, stampFrame } from '../game/Stamps.js';
 import { Waves } from '../game/Waves.js';
 import { DiscoveryBook, DiscoveryNotice, FoodTrail, discoveries } from '../game/Discoveries.js';
@@ -33,15 +35,21 @@ import { stageReady } from './Boot.js';
 import { configureCamera } from '../rendering.js';
 
 const HI_KEY = 'shmupjp.hiscore'; // (easy keeps its own record, .easy)
-const SHIP_KEY = 'shmupjp.ship';
+const SHIP_KEY = 'shmupjp.ship'; // (the ship last picked, back when there were three to pick from)
 
-function loadShipIndex() {
+/** The player's parts and tickets (Loadout); the first time, the old favourite ship comes along as parts. */
+function loadLoadout() {
+  let storage = null;
+  let legacy;
   try {
-    const i = SHIPS.findIndex((s) => s.id === localStorage.getItem(SHIP_KEY));
-    return i >= 0 ? i : 1;
+    storage = localStorage;
+    legacy = storage.getItem(SHIP_KEY) ?? undefined;
   } catch {
-    return 1;
+    /* private mode */
   }
+  const state = storage ? loadState(storage, legacy) : newState();
+  if (storage) saveState(storage, state);
+  return state;
 }
 
 /** All stage indices shuffled; `first` (debug ?stage=) goes to the front. */
@@ -111,6 +119,11 @@ export class Stage extends Phaser.Scene {
     const q = new URLSearchParams(window.location.search);
     this.stageTitle = this.encounter ? 'SPOTKANIE' : `ETAP ${this.pos + 1}`;
     this.carry = data.carry ?? null;
+    // the ship: put together from the player's parts; a journey flies the one it set out with (debug: ?ship=oni,
+    // ?ship=tsuru, ?ship=tsubame fly the three old ships)
+    const qShip = q.get('ship') === 'tsuru' ? 'kitsune' : q.get('ship');
+    this.loadout = loadLoadout();
+    this.ship = this.carry?.ship ?? buildShip(Object.hasOwn(KITS, qShip ?? '') ? newState(qShip) : this.loadout);
     this.continues = this.carry?.continues ?? 0; // easy: continues used in this game
     // the whole journey so far, for the ending: ships lost, bombs used, time flown, stamps won, cities cleared
     this.run = this.carry?.run ?? { deaths: 0, bombs: 0, time: 0, stamps: [], cities: [] };
@@ -162,8 +175,6 @@ export class Stage extends Phaser.Scene {
     for (const [pool, n] of [[b.pool, 90], [b.lobs, 8], [b.marks, 8], [this.player.shots, 50], [f.parts, 80], [f.petals, 60], [f.sparks, 30], [f.smokes, 30], [f.air, 12], [f.lights, 12], [f.scorch, 10], [f.ground, 6], [e.pool, 30], [e.heads, 8], [e.wrecks, 8], [e.woundPool, 8]])
       pool.warm(n);
 
-    const qShip = SHIPS.findIndex((sh) => sh.id === q.get('ship') || sh.name.toLowerCase() === q.get('ship')); // (?ship=tsuru too)
-    this.shipIndex = qShip >= 0 ? qShip : loadShipIndex();
     this.select = null;
     this.journey = null;
     this.map = null; // the map of Japan between stages
@@ -206,7 +217,7 @@ export class Stage extends Phaser.Scene {
     if (q.has('ending')) {
       this.run = { deaths: 2, bombs: 3, time: 1294, stamps: this.order.slice(0, 4).map((i) => STAGES[i].id), cities: this.order.map((i) => STAGES[i].id) };
       this.score.score = 1234560;
-      this.player.setShip(SHIPS[this.shipIndex]);
+      this.player.setShip(this.ship);
       this.openEnding();
       return;
     }
@@ -306,7 +317,7 @@ export class Stage extends Phaser.Scene {
     this.hud.closePanel();
     this.journey?.setMode('backdrop');
     this.state = 'select';
-    this.select = new ShipSelect(this, this.shipIndex);
+    this.select = new PreFlight(this, this.ship, this.loadout);
   }
 
   startGame() {
@@ -314,17 +325,9 @@ export class Stage extends Phaser.Scene {
     this.journey = null;
     this.music.unlock();
     this.hud.closePanel();
-    if (this.select) {
-      this.shipIndex = this.select.index;
-      try {
-        localStorage.setItem(SHIP_KEY, this.select.ship.id);
-      } catch {
-        /* ignore */
-      }
-      this.select.destroy();
-      this.select = null;
-    } else if (this.carry) this.shipIndex = this.carry.ship;
-    this.player.setShip(SHIPS[this.shipIndex]);
+    this.select?.destroy();
+    this.select = null;
+    this.player.setShip(this.ship);
     if (this.carry) {
       const c = this.carry;
       Object.assign(this.score, { score: c.score, mult: c.mult, progress: c.progress });
@@ -405,7 +408,7 @@ export class Stage extends Phaser.Scene {
       order: this.order,
       pos,
       encounter: this.pendingEncounter ?? undefined,
-      carry: { ship: this.shipIndex, lives: p.lives, weapon: p.weapon, level: p.level, turrets: p.turrets, score: s.score, mult: s.mult, progress: s.progress, continues: this.continues, run: this.run },
+      carry: { ship: this.ship, lives: p.lives, weapon: p.weapon, level: p.level, turrets: p.turrets, score: s.score, mult: s.mult, progress: s.progress, continues: this.continues, run: this.run },
     });
   }
 
@@ -627,10 +630,7 @@ export class Stage extends Phaser.Scene {
     }
     if (this.state === 'select') {
       if (this.select.hitMode(p)) return this.select.toggleMode();
-      const i = this.select.hit(p);
-      if (i === null || i === this.select.index) this.startGame();
-      else this.select.select(i);
-      return;
+      return this.startGame();
     }
     if (this.state === 'map') return this.leaveMap();
     if (this.state === 'ending') return this.ending.tap();
@@ -695,9 +695,7 @@ export class Stage extends Phaser.Scene {
       else if (down(k.RIGHT) || down(k.D)) this.book.turn(1);
       else if (confirm || bomb || down(k.K) || escape) this.closeBook();
     } else if (this.state === 'select') {
-      if (down(k.LEFT) || down(k.A)) this.select.select(this.select.index - 1);
-      if (down(k.RIGHT) || down(k.D)) this.select.select(this.select.index + 1);
-      if (down(k.UP) || down(k.W) || down(k.DOWN) || down(k.S)) this.select.toggleMode();
+      if (down(k.LEFT) || down(k.A) || down(k.RIGHT) || down(k.D) || down(k.UP) || down(k.W) || down(k.DOWN) || down(k.S)) this.select.toggleMode();
       if (confirm || bomb) this.startGame();
     } else if (this.state === 'map') {
       if (confirm) this.leaveMap();

@@ -1,7 +1,6 @@
 // Run: node --test tools/tests/gacha.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SHIPS } from '../../src/config.js';
 import { ITEM, ITEMS, PITY, RARITIES, RARITY, TICKETS } from '../../src/data/gacha.js';
 import { buildShip, equip, grant, layout, loadState, newState, pool, pull, saveState, setHull } from '../../src/game/Loadout.js';
 
@@ -23,11 +22,17 @@ test('the catalogue is sound', () => {
   assert.ok(ITEMS.length <= 500, 'the machine holds 500 at most');
 });
 
-test('the three old ships come out as they were', () => {
-  for (const old of SHIPS) {
-    const ship = buildShip(newState(old.id));
-    for (const k of ['id', 'name', 'color', 'frame', 'life', 'speed', 'touchGain', 'dragSpeed', 'damage', 'lives', 'hit', 'graze', 'pickup', 'perBomb', 'spread', 'rage', 'ram', 'ofuda', 'momentum', 'bomb', 'flameY', 'perk', 'stats'])
-      assert.deepEqual(ship[k], old[k], `${old.id}.${k}`);
+test('the three old ships come out of their parts as they were', () => {
+  // (the numbers the three selectable ships had in config.js before the gachapon)
+  const old = {
+    oni: { name: 'ONI', frame: 'ship_oni', speed: 78, touchGain: 1.0, dragSpeed: 240, damage: 1.25, lives: 3, hit: 1.7, graze: 7, pickup: 11, perBomb: 40, spread: 0.75, rage: 0.2, ram: true, bomb: { kind: 'shock', damage: 75, invulnerable: 2.2, clear: 0.5 }, perk: 'GNIEW SZTURMOWY', stats: [1, 3] },
+    kitsune: { name: 'TSURU', frame: 'ship', speed: 112, touchGain: 1.15, dragSpeed: 650, damage: 1.05, lives: 3, hit: 1.4, graze: 8, pickup: 11, perBomb: 32, ofuda: true, bomb: { kind: 'cranes', damage: 45, invulnerable: 2.2, clear: 1.0 }, perk: 'TALIZMANY OFUDA', stats: [2, 2] },
+    tsubame: { name: 'TSUBAME', frame: 'ship_tsubame', speed: 150, touchGain: 1.35, dragSpeed: 1400, damage: 0.95, lives: 3, hit: 1.1, graze: 11, pickup: 16, perBomb: 20, momentum: true, bomb: { kind: 'cut', damage: 25, invulnerable: 1.2, clear: 0.6 }, perk: 'PĘD JASKÓŁKI', stats: [3, 1] },
+  };
+  for (const [id, want] of Object.entries(old)) {
+    const ship = buildShip(newState(id));
+    assert.equal(ship.id, id);
+    for (const k of ['spread', 'rage', 'ram', 'ofuda', 'momentum', ...Object.keys(want)]) assert.deepEqual(ship[k], want[k], `${id}.${k}`);
   }
 });
 

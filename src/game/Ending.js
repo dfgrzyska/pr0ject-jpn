@@ -1,4 +1,4 @@
-import { DEPTH, RENDER_SCALE, SHIPS, VIEW } from '../config.js';
+import { DEPTH, RENDER_SCALE, VIEW } from '../config.js';
 import { STAGES } from '../data/stages.js';
 import { isEasy } from '../difficulty.js';
 import { INK_FONT } from '../scenes/Boot.js';
@@ -142,7 +142,7 @@ export class Ending {
       [String(s.score.score).padStart(8, '0'), 0xffffff, 2],
       hi.isNew ? ['NOWY REKORD!', 0xffe080, 1, true] : [`REKORD ${String(hi.value).padStart(8, '0')}`, 0xb0aec0],
       '',
-      [`STATEK: ${SHIPS[s.shipIndex].name}`, 0xffffff],
+      [`STATEK: ${s.ship.name}`, 0xffffff],
       [`STRACONE STATKI: ${r.deaths}`, 0xffffff],
       [`UŻYTE BOMBY: ${r.bombs}`, 0xffffff],
       [`CZAS GRY: ${min}:${String(sec).padStart(2, '0')}`, 0xffffff],
@@ -188,7 +188,7 @@ export class Ending {
     this.add(s.add.image(0, top, 'ending').setOrigin(0, 0).setScale(FINE).setDepth(D + 0.5));
     this.clouds = this.add(s.add.tileSprite(0, top + 236, W, 34, 'ending_clouds').setTileScale(FINE, FINE).setOrigin(0, 0).setDepth(D + 0.6).setAlpha(0.85));
     // the ship flying past the mountain towards the sun, its engine burning
-    const ship = SHIPS[s.shipIndex];
+    const ship = s.ship;
     this.ship = this.add(sharedArt(s.add.sprite(-20, H + 20, 'sprites', ship.frame)).setDepth(D + 1));
     this.flame = this.add(sharedArt(s.add.sprite(0, 0, 'sprites', 'flame_0')).setDepth(D + 0.9).play('flame'));
     this.flameY = ship.flameY;

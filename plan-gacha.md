@@ -187,8 +187,8 @@ Liczby są wyjściowe. Stroję je w fazie 8.
 
 Każda faza kończy się grywalnym stanem i osobnym commitem.
 
-0. **Dane i zapis.** Katalog przedmiotów (`src/data/gacha.js`), stan gracza i losowanie (`src/game/Loadout.js`), składanie statku z zestawu w tym samym kształcie co `SHIPS[i]`.
-1. **Jeden statek.** Usunięcie `ShipSelect`, ekran przed startem, przeniesienie zapisanego ulubionego statku. Podróż między miastami niesie zestaw zamiast numeru statku.
+0. **Dane i zapis (gotowe).** Katalog przedmiotów (`src/data/gacha.js`), stan gracza i losowanie (`src/game/Loadout.js`), składanie statku z zestawu w tym samym kształcie co `SHIPS[i]`.
+1. **Jeden statek (gotowe).** Usunięcie `ShipSelect`, ekran przed startem, przeniesienie zapisanego ulubionego statku. Podróż między miastami niesie zestaw zamiast numeru statku.
 2. **Kupony.** Przyznawanie po minibossie, bossie i spotkaniu, napis w grze, wiersz w wynikach.
 3. **Ekran GACHA.** Grafika automatu, animacja, dźwięk.
 4. **Ekran HANGAR i mody.** Wszystkie mody z sekcji 4.7 działające w grze, kadłub premium.
