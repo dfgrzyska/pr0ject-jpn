@@ -219,12 +219,17 @@ export function ibeam() {
   return s.render();
 }
 
-/** Its shadow on the ground as it falls: a soft dark slot (the game grows and darkens it). */
+/**
+ * Its shadow on the ground as it falls: a dark slot with a bright rim (warm yellow, then a dark edge) so it reads on
+ * any ground; the game grows, darkens and pulses it.
+ */
 export function beamShadow() {
-  const s = new HiSprite(36, 120, RAMPS);
-  for (let y = 0; y < 120; y++) for (let x = 0; x < 36; x++) {
-    const d = ((x - 18) / 17) ** 2 + ((y - 60) / 59) ** 2;
-    if (d < 1) s.px(x, y, 0x0a0806, 0.6 * Math.min(1, (1 - d) * 2.5));
+  const s = new HiSprite(42, 126, RAMPS);
+  for (let y = 0; y < 126; y++) for (let x = 0; x < 42; x++) {
+    const d = Math.sqrt(((x - 21) / 17) ** 2 + ((y - 63) / 59) ** 2);
+    if (d < 0.86) s.px(x, y, 0x0a0806, 0.78 * Math.min(1, (0.86 - d) * 6));
+    else if (d < 1) s.px(x, y, 0xffd860, 0.95);
+    else if (d < 1.09) s.px(x, y, 0x1a1006, 0.9);
   }
   return s.render({ outline: 0 });
 }

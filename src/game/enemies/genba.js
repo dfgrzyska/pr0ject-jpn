@@ -356,7 +356,8 @@ export const genba = {
       if (bm.t < warn) {
         // the shadow: faint and wide at first, darker and tighter as the beam comes down
         const k = bm.t / warn;
-        bm.shadow?.setAlpha(0.2 + k * 0.7).setScale(bm.shadow.base * (1.6 - k * 0.6), bm.shadow.base * (1.15 - k * 0.15));
+        const pulse = 0.85 + Math.sin(bm.t * (14 + k * 18)) * 0.15; // (beating faster as it comes)
+        bm.shadow?.setAlpha((0.45 + k * 0.55) * pulse).setScale(bm.shadow.base * (1.5 - k * 0.5), bm.shadow.base * (1.12 - k * 0.12));
       } else if (!bm.landed) {
         const k = Math.min(1, (bm.t - warn) / 0.22);
         bm.spr.setVisible(true).setPosition(bm.x, -60 + (bm.y + 60) * k * k);
