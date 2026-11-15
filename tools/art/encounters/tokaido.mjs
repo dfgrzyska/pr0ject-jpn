@@ -6,7 +6,7 @@
 // daimyō's procession setting out over it, as in the first print of the series.
 import { Raster, fbm, rng, mix } from '../../lib/raster.mjs';
 import { rampColor, grade } from '../nature.mjs';
-import { tintTable } from '../props.mjs';
+import { tintTable, PropKit } from '../props.mjs';
 
 export const S = 3;
 const W = 180;
@@ -319,11 +319,30 @@ export function buildMid() {
     }
   }
   for (let y = by - 12; y < by + 12; y++) for (let x = 250; x < 290; x++) img.set(x, y, Math.abs(y - by) > 9 || Math.abs(x - 270) > 17 ? INK : 0x1a1a24); // the palanquin
-  // (no moving parts here: the fight's own cars, cones and skid marks are what moves)
+  // The fields race by as one looping picture, so nothing can be animated on the ground; what moves besides the
+  // fight's own cars, cones and skid marks is in the air and keeps up with the chase: swallows in loose lines and
+  // white egrets, crossing over the road.
+  const kit = new PropKit(1833, { artScale: S });
+  const bird = (wing, c, tip, n) => {
+    // seen from above, heading right: a body, swept wings (out, or half folded), a forked tail
+    const r = new Raster(n * 2 + 1, n * 2 + 1);
+    const px = (x, y, col) => r.set(Math.round(n + x), Math.round(n + y), col);
+    for (let i = -n * 0.5; i <= n * 0.55; i++) for (let j = -n * 0.14; j <= n * 0.14; j++) px(i, j, c);
+    const span = wing ? n * 0.55 : n * 0.95;
+    for (const z of [-1, 1]) for (let q = 0; q <= span; q++) for (let w = 0; w < n * 0.32 * (1 - q / (span * 1.2)); w++) px(n * 0.15 - q * (wing ? 0.75 : 0.35) - w, z * q, q > span * 0.7 ? tip : c);
+    for (const z of [-1, 1]) for (let q = 0; q < n * 0.3; q++) px(-n * 0.5 - q, z * q * 0.45, tip);
+    return kit.frame(r);
+  };
+  const swallow = [bird(0, 0x1c2438, 0x101420, 9), bird(1, 0x1c2438, 0x101420, 9)];
+  const egret = [bird(0, 0xf2f2ea, 0xc8ccd0, 14), bird(1, 0xf2f2ea, 0xc8ccd0, 14)];
+  for (const [f, u0, u1, n, sp, dir] of [[swallow, 520, 610, 5, 34, 1], [swallow, 760, 690, 4, 30, -1], [egret, 640, 700, 3, 20, 1], [swallow, 850, 880, 6, 38, -1], [egret, 820, 770, 2, 18, -1], [swallow, 560, 500, 4, 32, -1]]) {
+    const xs = dir > 0 ? [-16, 60, 120, 196] : [196, 120, 60, -16];
+    kit.path(xs.map((x, i) => [x, u0 + ((u1 - u0) * i) / 3 + (i % 2 ? 9 : -5)]), f, { sp, n, gap: 13, mode: 'wrap', turn: 'rot', fps: 6, a: 0.95, d: 0.8 });
+  }
   grade(img, { sat: 0.82, bright: 0.86, tint: 0x182030, tintAmt: 0.05 });
   return {
     strip: img,
-    props: null,
+    props: kit.pack(),
     meta: { width: W, artScale: S, chunkHeight: L, chunks: 1, length: L, tint: tintTable(L, () => [255, 255, 255]) },
   };
 }

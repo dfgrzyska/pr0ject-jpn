@@ -1,13 +1,11 @@
 // Optional Chrome integration regression: same runtime setup as nagasaki.browser.mjs.
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { chromium } from '../preview/browser-runtime/node_modules/playwright/index.mjs';
+import { startServer, launchBrowser } from './browser-support.mjs';
 
-const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5176'], { windowsHide: true, stdio: 'ignore' });
+const server = await startServer(5176); // (waits until it answers)
 let browser;
 try {
-  browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true,
-    args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  browser = await launchBrowser(); // (Playwright's own Chromium, or CHROME_PATH)
   const page = await browser.newPage({ viewport: { width: 540, height: 960 } });
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));

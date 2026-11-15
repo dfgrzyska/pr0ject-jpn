@@ -40,7 +40,7 @@ export const keicar = {
    * Its skid marks stay on the road and go by with it.
    */
   spawnKei(w, base) {
-    const g = { kind: 'keicar', state: 'enter', t: 0, stage: 1, phase: 0, step: 0, timer: 1.2, parts: [], awake: false, defeated: false, x: w.x, act: null, cones: [], marks: [], traffic: [], melons: [], splats: [], skidT: 0, take: { body: 1 } };
+    const g = { kind: 'keicar', state: 'enter', t: 0, stage: 1, phase: 0, step: 0, timer: 1.2, parts: [], awake: false, defeated: false, x: w.x, act: null, cones: [], marks: [], traffic: [], melons: [], splats: [], signs: [], skidT: 0, take: { body: 1 } };
     const body = this.pool.spawn('kei_0', w.x, -60, { ...base, role: 'body', group: g, hp: KEI.hp, maxHp: KEI.hp, radius: 13, flashTint: 0x2a2a2a, segs: [{ x: 0, y: 0, r: 12 }, { x: 0, y: 0, r: 12 }] });
     body.setDepth(DEPTH.air - 0.1);
     g.body = body;
@@ -192,7 +192,7 @@ export const keicar = {
       if (Math.floor(a.t * (5 + (a.t / B.aim) * 16)) % 2 || a.t > B.aim * 0.85) g.beamT = g.t + 0.02;
       if (a.step === 0 && a.t > 0.05) {
         a.step = 1;
-        s.fx.text(e.x, e.y + 34, 'PIKA PIKA!', 0.8, 0xfff0a0);
+        s.fx.text(e.x, e.y + 34, 'BŁYSK!', 0.8, 0xfff0a0);
       }
       return;
     }
@@ -333,16 +333,24 @@ export const keicar = {
     let busy = false;
     for (const L of a.lanes) {
       if (a.t < 0.9) {
-        // the warning: an arrow across the lane, blinking
+        // the warning: arrows painted along the lane
         busy = true;
-        if (Math.floor(a.t * 10) % 2) {
-          this.tele.lineStyle(1, 0xffe080, 0.7);
-          this.tele.lineBetween(4, L.y, VIEW.width - 4, L.y);
-          const hx = L.dir > 0 ? VIEW.width - 6 : 6;
-          this.tele.lineBetween(hx, L.y, hx - L.dir * 6, L.y - 4);
-          this.tele.lineBetween(hx, L.y, hx - L.dir * 6, L.y + 4);
+        if (!L.signs && g.body.texture.has('lane_arrow')) {
+          L.signs = [];
+          for (let i = 0; i < 6; i++) {
+            const spr = this.segPool.spawn('lane_arrow', L.dir > 0 ? 16 + i * 30 : VIEW.width - 16 - i * 30, L.y).setDepth(DEPTH.ground + 0.45).setFlipX(L.dir < 0).setAlpha(0);
+            L.signs.push(spr);
+            g.signs.push({ spr });
+          }
         }
+        // (a wave of light running along them, faster as the cars come; the first of the cars' headlights at the edge)
+        for (const [i, sp] of (L.signs ?? []).entries()) sp.setAlpha(0.35 + 0.65 * Math.max(0, Math.sin(a.t * (8 + a.t * 8) - i * 0.9)) ** 2);
+        if (Math.floor(a.t * 12) % 2) s.fx.light(L.dir > 0 ? 2 : VIEW.width - 2, L.y, 0.9, true, 0xfff0a0);
         continue;
+      }
+      // the arrows stay on the road, dimmer, while the cars are crossing
+      if (L.signs) {
+        for (const sp of L.signs) sp.setAlpha(L.left > 0 ? 0.3 : Math.max(0, sp.alpha - dt * 1.5));
       }
       if (L.left > 0) {
         busy = true;
@@ -357,10 +365,18 @@ export const keicar = {
         }
       }
     }
-    if (!busy) this.keiDone(g, 1.2);
+    if (!busy) {
+      this.keiSignsOff(g);
+      this.keiDone(g, 1.2);
+    }
   },
 
-  /** Watermelons off the flatbed, lobbed at the player; they burst into seeds where they land. */
+  keiSignsOff(g) {
+    for (const o of g.signs) this.segPool.kill(o.spr);
+    g.signs = [];
+  },
+
+  /** Watermelons off the flatbed, lobbed at the player (each one's shadow on the road shows where); they burst into seeds where they land. */
   keiThrowMelons(g, a, dt) {
     const s = this.scene;
     const e = g.body;
@@ -371,7 +387,8 @@ export const keicar = {
         const spr = this.segPool.spawn('suika_0', e.x, e.y - 10).setDepth(DEPTH.air + 0.05);
         const tx = Phaser.Math.Clamp(pl.x + (Math.random() - 0.5) * 40, 14, VIEW.width - 14);
         const ty = Phaser.Math.Clamp(pl.y + (Math.random() - 0.5) * 30, s.H * 0.45, s.H - 14);
-        g.melons.push({ spr, x0: e.x, y0: e.y - 10, tx, ty, t: 0, dur: 1.0 });
+        const shadow = e.texture.has('suika_shadow') ? this.segPool.spawn('suika_shadow', tx, ty + 3).setDepth(DEPTH.ground + 0.45).setAlpha(0) : null;
+        g.melons.push({ spr, shadow, x0: e.x, y0: e.y - 10, tx, ty, t: 0, dur: 1.0 });
         g.throwUntil = g.t + 0.25;
       }
     }
@@ -447,15 +464,15 @@ export const keicar = {
       const k = Math.min(1, m.t / m.dur);
       m.spr.setPosition(m.x0 + (m.tx - m.x0) * k, m.y0 + (m.ty - m.y0) * k - Math.sin(k * Math.PI) * 34);
       m.spr.setFrame(`suika_${Math.floor(m.t * 12) % 4}`);
-      if (Math.floor(m.t * 12) % 2) {
-        this.tele.lineStyle(1, 0x8ae070, 0.8);
-        this.tele.strokeCircle(m.tx, m.ty, 9 * (1 - k * 0.5));
-      }
+      // its shadow on the road, where it will land: small and faint while it is high, growing and darkening as it drops
+      if (m.shadow) m.shadow.setAlpha(0.35 + 0.5 * k).setScale(m.shadow.base * (0.45 + 0.75 * k));
       if (k < 1) {
         g.melons[n++] = m;
         continue;
       }
       // splat: red flesh and rind flying, a ring of black seeds
+      if (m.shadow) this.segPool.kill(m.shadow);
+      m.shadow = null;
       b.shot('splat', m.tx, m.ty, 0, 0, 6, { life: 0.12 });
       if (m.spr.texture.has('suika_splat_0')) {
         m.spr.setFrame('suika_splat_0').setScale(m.spr.base * 1.3);
@@ -533,7 +550,9 @@ export const keicar = {
   },
 
   keiCleanup(g) {
-    for (const list of [g.cones, g.marks, g.traffic, g.melons, g.splats]) for (const o of list) this.segPool.kill(o.spr);
+    for (const m of g.melons) if (m.shadow) this.segPool.kill(m.shadow);
+    for (const list of [g.cones, g.marks, g.traffic, g.melons, g.splats, g.signs]) for (const o of list) this.segPool.kill(o.spr);
+    g.signs = [];
     g.cones = [];
     g.marks = [];
     g.traffic = [];

@@ -119,6 +119,22 @@ export function buildMid() {
       const v = 0.78 - Math.max(0, 1000 + OFF - y) / 1900 + n * 0.08;
       img.set(x, y, ramp(PAPER, v));
     }
+  // bands of cloud across the empty paper, as in the prints (suyari-gasumi): long pale bars with rounded ends, a fine
+  // line under each, stacked in steps
+  for (const [cx, cy, w, n] of [[150, 150, 190, 3], [420, 330, 150, 2], [110, 620, 130, 3], [330, 980, 210, 2], [470, 1180, 120, 3], [90, 1330, 150, 2]]) {
+    for (let k = 0; k < n; k++) {
+      const bw = w * (1 - k * 0.22);
+      const bx = cx + (k % 2 ? 46 : -30) * k;
+      const by = cy + k * 30;
+      for (let y = -11; y <= 11; y++)
+        for (let x = -bw; x <= bw; x++) {
+          const end = Math.max(0, Math.abs(x) - (bw - 11));
+          if (end * end + y * y > 121) continue;
+          const edge = end * end + y * y > 90 || y > 9;
+          img.set(Math.round(bx + x), Math.round(by + y), edge ? mix(0xa89878, 0x6a7a90, 0.5) : ramp(PAPER, 0.94 + y * 0.004), edge ? 0.55 : 0.8);
+        }
+    }
+  }
   // a bottle-cap sun, crimped, high up behind the crest
   {
     const [cx, cy, R] = [400, 520 + OFF, 42];
@@ -357,6 +373,33 @@ export function buildMid() {
     parts.push([0, Math.round((s.x + s.nx * s.w * 0.9) / S), Math.round(L - (s.y + s.ny * s.w * 0.9) / S), k * 0.4]);
   }
   kit.wave([glint], parts, { w: 2.2, a0: 0, a1: 1, pw: 6 });
+  // cranes crossing the sky in twos and threes: white, black at the neck and the wing tips, a red crown; their wings
+  // beat slowly (they fly: they may cross anything)
+  const crane = (wing) => {
+    const out = new Raster(96, 66);
+    const px = (x, y, c) => out.set(Math.round(x), Math.round(y), c);
+    // the legs trailing, the body, the long neck out ahead (heading right), the head and bill
+    for (let k = 0; k < 26; k++) px(8 + k, 36 + k * 0.05, 0x2a2a34);
+    for (let y = -6; y <= 6; y++) for (let x = -17; x <= 17; x++) if ((x / 17) ** 2 + (y / 6) ** 2 < 1) px(46 + x, 35 + y, y > 3 ? 0xc8d0dc : 0xf6f6f0);
+    for (let x = -10; x <= -4; x++) for (let y = -4; y <= 4; y++) if (((x + 12) / 9) ** 2 + (y / 5) ** 2 < 1) px(46 + x - 8, 35 + y, 0x1a1a24); // the black of the tail
+    for (let k = 0; k < 24; k++) for (let w = -1.6; w <= 1.6; w++) px(60 + k, 33 - k * 0.12 + w, 0x1a1a24);
+    for (let y = -3; y <= 3; y++) for (let x = -4; x <= 4; x++) if (x * x * 0.6 + y * y < 10) px(86 + x, 30 + y, y < -1 ? 0xd02a26 : 0xf6f6f0);
+    for (let k = 0; k < 8; k++) px(90 + k, 31, 0xa89040);
+    // the wings: up, level, down; black primaries at their ends
+    const tipY = [-30, -6, 24][wing];
+    for (const far of [1, 0]) for (let k = 0; k <= 60; k++) {
+      const q = k / 60;
+      const wx = 46 - q * 16 + (far ? 7 : 0);
+      const wy = 33 + tipY * q * (far ? 0.85 : 1) - Math.sin(q * Math.PI) * 4;
+      const chord = 12 * (1 - q * 0.5);
+      for (let j = -chord; j <= chord; j++) px(wx + j, wy + (j < 0 ? -j * 0.15 : 0), q > 0.66 || j < -chord * 0.45 ? 0x1a1a24 : far ? 0xc8d0dc : 0xf6f6f0);
+    }
+    return kit.frame(out);
+  };
+  const flap = [crane(0), crane(1), crane(2), crane(1)];
+  for (const [u0, u1, n, sp] of [[330, 392, 2, 15], [470, 520, 3, 13], [610, 560, 2, 16], [700, 770, 3, 12], [820, 800, 2, 14]]) {
+    kit.path([[-24, u0], [60, (u0 * 2 + u1) / 3 + 8], [130, (u0 + u1 * 2) / 3 - 6], [204, u1]], flap, { sp, n, gap: 30, mode: 'wrap', turn: 'none', fps: 5, a: 0.95, d: 0.8 });
+  }
   return {
     strip: img,
     props: kit.pack(),

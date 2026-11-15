@@ -1,13 +1,11 @@
 // Optional integration smoke test. See docs/nagasaki-research.md for setup.
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { chromium } from '../preview/browser-runtime/node_modules/playwright/index.mjs';
-const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5175'], { windowsHide: true, stdio: 'ignore' });
+import { startServer, launchBrowser } from './browser-support.mjs';
+const server = await startServer(5175); // (waits until it answers)
 let browser;
 try {
   await new Promise(r => setTimeout(r, 1500));
-  browser = await chromium.launch({ executablePath: process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true,
-    args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  browser = await launchBrowser(); // (Playwright's own Chromium, or CHROME_PATH)
   for (const H of [320, 420]) {
     const page = await browser.newPage({ viewport: { width: 540, height: H * 3 } });
     const errors = [];

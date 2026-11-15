@@ -3,10 +3,12 @@
 // by the kaname-ishi stone, townsfolk pulling on its whiskers (long in the public domain). Here a building site in
 // an Edo street of grey-tiled roofs has dug down onto it: its huge back in the mud of the pit, the stone on its
 // head with its sacred rope, its whiskers trailing out across the site with little figures hauling on them,
-// cracks running out into the town. Almost still: the strip creeps up through the fight.
+// cracks running out into the town. The strip creeps up through the fight. What moves: the mallets coming down on its head, a sheen running out along
+// its whiskers as it twitches them, its eyes blinking, bubbles in the pit's mud, dust off the cracks, hearth smoke over
+// the roofs.
 import { Raster, fbm, rng, mix, scaleColor } from '../../lib/raster.mjs';
 import { rampColor, grade } from '../nature.mjs';
-import { tintTable } from '../props.mjs';
+import { tintTable, PropKit } from '../props.mjs';
 
 export const S = 3;
 const W = 180;
@@ -218,8 +220,7 @@ export function buildMid() {
   // townsfolk at it with mallets, round its head
   for (const [x, y, sx] of [[cx - 190, cy + 60, 1], [cx + 190, cy + 40, -1], [cx - 170, cy + 150, 1], [cx + 175, cy + 160, -1]]) {
     person(x, y, ROBES[(x + y) % 5], 0);
-    for (let q = 0; q < 16; q++) set(x + sx * q, y - 10 - q * 0.6, 0x5a4020);
-    for (let j = -4; j <= 4; j++) for (let i = -6; i <= 6; i++) set(x + sx * 16 + i, y - 20 + j, sm(WOOD, 0.5));
+    void sx; // (their mallets are moving parts, below)
   }
   // ---- the kaname-ishi on its head: a rounded boulder, its shadow, the sacred rope with its zigzag paper streamers
   {
@@ -234,10 +235,71 @@ export function buildMid() {
     for (let i = -R + 4; i <= R - 4; i++) for (let w = 0; w < 8; w++) set(bx + i, by + 4 + w + Math.sin(i * 0.4) * 1.6, w === 0 || w === 7 ? 0x8a7a40 : (i + w) % 5 < 1 ? 0xb8a050 : 0xe0c878);
     for (const i of [-38, -14, 12, 36]) for (let k = 0; k < 22; k++) for (let w = 0; w < 4; w++) set(bx + i + ((Math.floor(k / 5) % 2) ? 5 : 0) + w, by + 13 + k, w === 3 ? 0xb8b4a8 : 0xfaf8f0);
   }
-  grade(img, { sat: 0.82, bright: 0.84, tint: 0x182030, tintAmt: 0.05 });
+  const GRADE = { sat: 0.82, bright: 0.84, tint: 0x182030, tintAmt: 0.05 };
+  grade(img, GRADE);
+  // ---------------------------------------------------------------- the moving parts
+  const kit = new PropKit(1855, { artScale: S });
+  const lx = (x) => Math.round((x / S) * 10) / 10;
+  const lu = (y) => Math.round(((FH - y) / S) * 10) / 10;
+  const graded = (r) => {
+    grade(r, GRADE);
+    return kit.frame(r);
+  };
+  // the mallets: raised, half way, down on the catfish (a puff where each lands)
+  const mallet = (sx, k) => {
+    const r = new Raster(66, 54);
+    const ox = sx > 0 ? 8 : 58;
+    const a = [-1.25, -0.6, 0.1][k]; // the handle's angle: up, across, down
+    const hx = ox + sx * Math.cos(a) * 26;
+    const hy = 40 + Math.sin(a) * 26;
+    for (let q = 0; q <= 26; q++) for (let w = 0; w < 3; w++) r.set(Math.round(ox + sx * Math.cos(a) * q), Math.round(40 + Math.sin(a) * q + w), 0x5a4020);
+    for (let j = -6; j <= 6; j++) for (let i = -8; i <= 8; i++) r.set(Math.round(hx + i), Math.round(hy + j), Math.abs(i) === 8 || Math.abs(j) === 6 ? 0x3a2814 : sm(WOOD, 0.62 - j / 30));
+    if (k === 2) for (let i = 0; i < 7; i++) r.disc(Math.round(hx + (i - 3) * 4), Math.round(hy + 9 + (i % 2) * 3), 2, 0xd8d0b8, 0.7);
+    return graded(r);
+  };
+  for (const [n, [x, y, sx]] of [[cx - 190, cy + 60, 1], [cx + 190, cy + 40, -1], [cx - 170, cy + 150, 1], [cx + 175, cy + 160, -1]].entries()) {
+    kit.loop(lx(sx > 0 ? x - 8 : x - 58), lu(y - 50), [0, 1, 2].map((k) => mallet(sx, k)), { fps: 5 + (n % 2), seq: [0, 0, 0, 1, 2, 2, 1], ph: n * 0.27 });
+  }
+  // the whiskers twitching: a sheen running out along each from the mouth
+  const sheen = (() => {
+    const r = new Raster(11, 11);
+    for (let j = -5; j <= 5; j++) for (let i = -5; i <= 5; i++) if (i * i + j * j < 26) r.set(i + 5, j + 5, 0xdce8b8, 0.75 * (1 - Math.hypot(i, j) / 5.2));
+    return kit.frame(r);
+  })();
+  const run = [];
+  for (const pts of [left, right]) for (let k = 4; k < pts.length; k += 8) run.push([0, lx(pts[k][0]) - 1.8, lu(pts[k][1]) + 1.8, -k * 0.09]);
+  kit.wave([sheen], run, { w: 5, a0: 0, a1: 1, pw: 5 });
+  // its eyes blinking: a lid of its own hide over each for a moment
+  for (const sx of [-1, 1]) {
+    const r = new Raster(22, 22);
+    for (let j = -10; j <= 10; j++) for (let i = -10; i <= 10; i++) if (i * i + j * j <= 100) r.set(i + 11, j + 11, Math.abs(j - 2) < 1.5 ? 0x1a1408 : sm(SLIME, 0.5 - (i + j) / 60));
+    kit.loop(lx(cx + sx * 98 - 11), lu(cy + 120 - 11), [graded(r)], { fps: 8, seq: [...Array(44).fill(-1), 0, 0], ph: 0 });
+  }
+  // bubbles coming up through the mud of the pit and bursting; dust shaken off the cracks; hearth smoke over the town
+  const pop = (k) => {
+    const r = new Raster(21, 21);
+    const rr = [3, 5, 7, 8][k];
+    for (let a = 0; a < Math.PI * 2; a += 0.08) if (k < 3 || Math.floor(a * 3) % 2) r.set(Math.round(10 + Math.cos(a) * rr), Math.round(10 + Math.sin(a) * rr), 0xc8d0b8, k < 3 ? 0.85 : 0.6);
+    if (k < 3) r.set(Math.round(10 - rr * 0.4), Math.round(10 - rr * 0.4), 0xffffff, 0.9);
+    return kit.frame(r);
+  };
+  kit.spot([[lx(cx - 200), lu(cy - 230), 45, 26], [lx(cx - 215), lu(cy - 100), 22, 90], [lx(cx + 150), lu(cy - 100), 22, 90], [lx(cx - 60), lu(cy + 215), 40, 12]], [0, 1, 2, 3].map(pop), { rate: 2.2, fps: 7, a: 0.9 });
+  const cloud = (r0, seed, c) => {
+    const r = new Raster(r0 * 2 + 1, r0 * 2 + 1);
+    for (let y = -r0; y <= r0; y++) for (let x = -r0; x <= r0; x++) {
+      const d = Math.hypot(x, y) / r0 + (fbm(x + seed * 31, y, { seed, scale: 5 }) - 0.5) * 0.5;
+      if (d < 1) r.set(x + r0, y + r0, c, Math.min(0.5, (1 - d) * 0.8));
+    }
+    return kit.frame(r);
+  };
+  const smoke = [[cloud(6, 1, 0xd8d4cc), cloud(6, 2, 0xd8d4cc)], [cloud(10, 3, 0xd8d4cc), cloud(10, 4, 0xd8d4cc)], [cloud(15, 5, 0xd8d4cc), cloud(15, 6, 0xd8d4cc)]];
+  // (over the houses outside the site: left and right of it, and the blocks above)
+  for (const [x, y] of [[14, 2300], [526, 2100], [12, 1700], [528, 1500], [120, 1100], [330, 1020], [470, 800], [200, 640], [60, 380], [400, 300]]) kit.emit(lx(x), lu(y), smoke, { rate: 0.7, life: [3, 4.5], vy: 7, sx: 2, wf: 1, a: 0.5, tint: 1 });
+  const dust = [[cloud(5, 7, 0xb8a888), cloud(5, 8, 0xb8a888)], [cloud(9, 9, 0xb8a888), cloud(9, 10, 0xb8a888)]];
+  for (const [x, y] of [[cx - 250, cy - 120], [cx + 250, cy + 60], [cx + 60, cy - 290], [cx - 120, cy + 280]]) kit.emit(lx(x), lu(y), dust, { rate: 0.5, life: [1.2, 2], vy: 5, sx: 8, wf: 0.4, a: 0.45, burst: 0.3, tint: 1 });
   return {
     strip: img,
-    props: null,
+    props: kit.pack(),
     meta: { width: W, artScale: S, chunkHeight: L, chunks: 1, length: L, tint: tintTable(L, () => [255, 255, 255]) },
   };
 }

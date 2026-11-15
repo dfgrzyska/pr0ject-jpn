@@ -7,7 +7,7 @@
 // truck, white, its flatbed piled with watermelons and cabbages. The rush hour's other kei cars, a traffic cone, a
 // watermelon, its skid marks.
 import { HiSprite, tones, speckle } from '../../lib/hisprite.mjs';
-import { mix } from '../../lib/raster.mjs';
+import { mix, Raster } from '../../lib/raster.mjs';
 
 const INK = 0x14101c;
 const RAMPS = {
@@ -314,7 +314,31 @@ export function seed() {
   return s.render({ outline: 1, outlineColor: 0x2a0a0a });
 }
 
+/** An arrow painted on the road (pointing right): worn white paint, as on a real lane. */
+export function laneArrow() {
+  const r = new Raster(66, 30);
+  const worn = (x, y) => ((x * 7 + y * 13) % 11 === 0 ? 0.55 : 0.95);
+  for (let y = 0; y < 30; y++) for (let x = 0; x < 66; x++) {
+    const shaft = x >= 3 && x < 40 && Math.abs(y - 14.5) < 4.5;
+    const head = x >= 36 && x < 63 && Math.abs(y - 14.5) < (63 - x) * 0.5;
+    if (shaft || head) r.set(x, y, 0xf4f0e0, worn(x, y));
+  }
+  return r;
+}
+
+/** A falling watermelon's shadow on the road. */
+export function melonShadow() {
+  const r = new Raster(54, 30);
+  for (let y = 0; y < 30; y++) for (let x = 0; x < 54; x++) {
+    const d = ((x - 26.5) / 26) ** 2 + ((y - 14.5) / 14) ** 2;
+    if (d < 1) r.set(x, y, 0x0c1410, Math.min(0.85, (1 - d) * 2.2));
+  }
+  return r;
+}
+
 export function keicarEnemies(add) {
+  add('lane_arrow', laneArrow());
+  add('suika_shadow', melonShadow());
   add('kei_0', keicar({ f: 0 }));
   add('kei_1', keicar({ f: 1, hazard: true }));
   add('kei_2', keicar({ f: 1 }));

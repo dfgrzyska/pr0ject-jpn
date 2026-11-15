@@ -12,8 +12,8 @@ miast nie byli oglądani.
 
 ## Spotkania
 
-Liczba animowanych elementów tła: automat 10, kei car 0, kot na budowie 0, kot bez końca 5, pokój otaku 11,
-babcia 219, konferencja 193 (obie po przeróbce 15.11; wcześniej 0).
+Liczba animowanych elementów tła (stan po 15.11): automat 61, kei car 24, kot na budowie 81, kot bez końca 5,
+pokój otaku 11, babcia 219, konferencja 193.
 
 ### 7. Płaczący człowiek przy stole (dziś: mównica) — najsłabsze
 
@@ -43,32 +43,41 @@ Zostało: obejrzeć walkę w ruchu i ocenić jej czas z prawdziwym graczem. Poni
 - Ataki: przejrzeć od zera (czytelność zapowiedzi, balans, czas walki).
 - Tygrys i wózek: zapowiedzi bez linii celowania, znakami w świecie gry (jak u kei cara i kota na budowie).
 
-### 3. Kot na budowie — dobre, ale tło martwe
+### 3. Kot na budowie — ruch w tle zrobiony 15.11
+
+Zrobione: młoty, połysk biegnący po wąsach suma, mruganie, bąble w błocie, kurz z pęknięć, dym nad dachami.
+Zostało: powtarzalne dachy Edo w górnej części.
 
 - Ruch w tle: wąsy suma, ludzie z młotami, dym z kominów.
 - Górna część z dachami Edo jest powtarzalna.
 
-### 2. Kei car — dobre, ale tło martwe
+### 2. Kei car — częściowo zrobione 15.11
+
+Zrobione: „BŁYSK!”, cienie arbuzów i strzałki malowane na jezdni zamiast okręgów i linii, jaskółki i czaple nad drogą.
+Nie da się bez zmian w silniku: ruch na ziemi (rolnicy, woda, flagi), bo pola to jeden zapętlony obraz pędzący 70 px/s.
+Zostało: słaby obraz startowy Nihonbashi.
 
 - Ruch w tle: rolnicy, ptaki nad polami, zmarszczki na wodzie w poletkach, flagi przy herbaciarni.
 - Arbuzy: zastąpić okręgi lądowania i strzałki godzin szczytu znakami w świecie gry.
 - Obraz startowy Nihonbashi w pasie środkowym jest słabej jakości.
 - Napis „PIKA PIKA” zmienić na „BŁYSK!”.
 
-### 1. Automat (Wielka Fala) — dobre
+### 1. Automat (Wielka Fala) — zrobione 15.11
+
+Zrobione: pasy chmur na pustym papierze i pięć kluczy lecących żurawi.
 
 - Górne 60% tła to pusty papier: żurawie w locie albo chmury w stylu Hokusaia.
 
 ### 4. Kot bez końca — dobre
 
 - Do sprawdzenia w grze: mruganie dymnego kota (głowa wchodzi w kadr dopiero pod koniec walki).
-- Do sprawdzenia: gra pokazuje „MEOW!” zamiast „MIAU!” (wygląda na tłumaczenie tekstów efektów).
+- Sprawdzone 15.11: w kodzie jest „MIAU!”; „MEOW!” to tłumaczenie pokazywane tylko przy języku angielskim.
 
 ### 5. Pokój otaku — dobre
 
 - Do sprawdzenia w grze: błysk lokatora przy trafieniu (zmiana wypchnięta bez testu), animacje tła (pranie, kurz,
   GAME OVER w telewizorze), szybkie efekty (konfetti, plamy po bulionie).
-- Drugi ekran zostaje na klatce pauzy, jeśli boss padnie w trakcie dzwonka.
+- Poprawione 15.11: drugi ekran nie zostaje już na klatce pauzy, gdy boss padnie w trakcie dzwonka.
 - Boss zajmuje więcej miejsca w pionie, odkąd lokator siedzi w fotelu przed biurkiem; ocenić, czy nie jest ciasno.
 
 ## Miasta
@@ -107,5 +116,6 @@ Hiroszima 336, Kagoshima 333, Okinawa 235).
 
 ## Sprawy techniczne
 
-- Dwa testy w przeglądarce (`nagasaki`, `rendering`) mają wpisaną na sztywno ścieżkę do Chrome z Windowsa
-  i nie uruchamiają się poza nim.
+- Poprawione 15.11: testy `nagasaki` i `rendering` uruchamiają przeglądarkę i serwer tak jak pozostałe (bez ścieżki
+  do Chrome z Windowsa). `rendering` przechodzi; `nagasaki` pada na asercji widoczności sprite'a 13×12 — padał tak
+  samo przed zmianą, do zbadania osobno.

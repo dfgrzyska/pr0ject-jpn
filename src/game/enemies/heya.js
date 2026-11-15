@@ -901,6 +901,7 @@ export const heya = {
       const d = g.deco;
       d.glow?.setVisible(false);
       d.hands?.setVisible(false);
+      if (d.second?.frame.name === 'heya_second_pause') d.second.setFrame('heya_second_0'); // (beaten while the doorbell rang: not left paused)
       d.scr?.setFrame('scr_off_0');
       s.time.delayedCall(250, () => d.scr?.setFrame('scr_off_1'));
       s.time.delayedCall(500, () => d.scr?.setFrame('scr_off_2'));
