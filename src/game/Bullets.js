@@ -43,7 +43,7 @@ const FLASH_TIME = 0.05; // s per flash frame
 const pulseFrames = (name) => [0, 1, 2].map((k) => `${name}_f${k}`).concat([0, 1, 2, 3, 4, 5, 6, 7].map((k) => `${name}_${k}`));
 const PULSES = { eb_s: pulseFrames('eb_s'), eb_m: pulseFrames('eb_m') };
 
-const PLAIN = { pulse: null, ax: 0, ay: 0, maxV: Infinity, life: Infinity, safe: 0, frz: null, wig: 0, wf: 0, spin: false, age: 0, orb: null, link: null, lead: false, bounce: 0, grow: null, home: 0, grazed: false, lag: null };
+const PLAIN = { pulse: null, ax: 0, ay: 0, maxV: Infinity, life: Infinity, safe: 0, frz: null, wig: 0, wf: 0, spin: false, age: 0, orb: null, link: null, lead: false, bounce: 0, grow: null, home: 0, grazed: false, lag: null, chat: false };
 
 // Enemy bullets: bright core, dark outline, slow. Angle: radians, 0 = right, PI/2 = down.
 // Lobbed snowballs fly above everything, harmless, with a ring marking where they land.

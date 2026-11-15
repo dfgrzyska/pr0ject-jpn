@@ -19,8 +19,8 @@ export const HEYA = {
   manga: { speed: 115, open: 0.72 },
   cup: 1.0,
   stackWarn: 0.85,
-  bubble: { slots: 12, gap: 2, h: 14, every: 1.0, rows: 2, step: 11 },
-  lag: { hold: 1.0, turn: 0.4 },
+  bubble: { slots: 12, gap: 2, h: 14, every: 1.3, rows: 2, step: 11, shift: 3 },
+  lag: { hold: 1.0, turn: 0.25 },
   gacha: { spin: 1.1, show: 0.45 },
   dark: 0.82,
 };
@@ -150,7 +150,12 @@ export const heya = {
     }
     if (g.act) this.heyaAct(g, dt);
     else if ((g.timer -= dt) <= 0 && this.canFire(e)) {
+      const plan0 = [['manga', 'cups', 'stacks', 'manga', 'cups'], ['bubbles', 'lag', 'manga', 'bubbles', 'cups'], ['gacha', 'manga', 'gacha', 'bubbles']][g.stage - 1];
+      const next = plan0[g.phase % plan0.length];
+      // nothing thrown into the chat: while its rows are still coming down, it waits
+      const chatOn = (next === 'manga' || next === 'cups' || next === 'stacks') && s.bullets.pool.live.some((bl) => bl.chat && !bl.dead && bl.y < s.H - 10);
       if (g.t > g.bellAt) g.act = { kind: 'bell', t: 0, step: 0 };
+      else if (chatOn) g.timer = 0.2;
       else {
         const plan = [['manga', 'cups', 'stacks', 'manga', 'cups'], ['bubbles', 'lag', 'manga', 'bubbles', 'cups'], ['gacha', 'manga', 'gacha', 'bubbles']][g.stage - 1];
         let kind = plan[g.phase++ % plan.length];
@@ -310,7 +315,7 @@ export const heya = {
           for (const bl of b.pool.live) {
             const L = bl.lag;
             if (!L || L.id !== g.lagId || bl.dead) continue;
-            const turn = Math.random() < HEYA.lag.turn ? (Math.random() - 0.5) * 1.3 : 0;
+            const turn = !bl.chat && Math.random() < HEYA.lag.turn ? (Math.random() - 0.5) * 1.3 : 0;
             const c = Math.cos(turn);
             const sn = Math.sin(turn);
             bl.vx = L.vx * c - L.vy * sn;
@@ -359,7 +364,11 @@ export const heya = {
     const b = s.bullets;
     const B = HEYA.bubble;
     const dx = VIEW.width / B.slots;
-    const gap = 1 + Math.floor(Math.random() * (B.slots - B.gap - 2));
+    // the next gap is never more than `shift` slots from the last one: every row can be got through by any ship
+    const hi = B.slots - B.gap - 1;
+    const last = g.lastGap ?? 1 + Math.floor(Math.random() * hi);
+    const gap = Phaser.Math.Clamp(last + Math.round((Math.random() * 2 - 1) * B.shift), 1, hi);
+    g.lastGap = gap;
     const y0 = g.ay + 12;
     const v = slow * 0.85;
     const spans = [[0, gap], [gap + B.gap, B.slots]];
@@ -369,14 +378,14 @@ export const heya = {
       const x0 = i0 * dx + 5;
       const x1 = i1 * dx - 5;
       const n = Math.max(2, Math.round((x1 - x0) / B.step));
+      const shots = [];
       for (let k = 0; k <= n; k++) {
         const x = x0 + ((x1 - x0) * k) / n;
-        b.fire(x, y0, DOWN, v);
-        b.fire(x, y0 - B.h, DOWN, v);
+        shots.push(b.fire(x, y0, DOWN, v), b.fire(x, y0 - B.h, DOWN, v));
       }
-      b.fire(x0 - 3, y0 - B.h / 2, DOWN, v);
-      b.fire(x1 + 3, y0 - B.h / 2, DOWN, v);
-      b.fire(x0 + 8, y0 + 6, DOWN, v); // its tail
+      shots.push(b.fire(x0 - 3, y0 - B.h / 2, DOWN, v), b.fire(x1 + 3, y0 - B.h / 2, DOWN, v));
+      shots.push(b.fire(x0 + 8, y0 - B.h - 6, DOWN, v)); // its tail (on top: the corridor below it stays clear)
+      for (const sh of shots) if (sh) sh.chat = true; // (a lag leaves these on course: the bubble keeps its gap)
     }
     s.fx.text((gap + B.gap / 2) * dx, y0 + 4, 'www', 0.6, 0x9affd0);
   },

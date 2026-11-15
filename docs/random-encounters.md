@@ -156,8 +156,10 @@ na ekranie kamera domofonu z kurierem; przez 1,7 s nie atakuje, a monitor przyjm
   (najpierw ciemniejący cień z obwódką) i rozsypują się pierścieniem („DOSA!”). Wieże chwieją się przy rzutach i
   trafieniach.
 - **Faza 2 — tryb nocny:** gaśnie światło („KLIK.”); pokój tonie w mroku, zostaje plama światła monitora (migocze)
-  i jego poświata na podłodze. Czat spływa jako dymki z pocisków (dwa rzędy na raz, luka między dymkami oznaczona
-  „www”); „LAG...”: wszystkie pociski na ekranie zawisają na 1 s, potem lecą dalej, ok. 40% w zmienionym kierunku.
+  i jego poświata na podłodze. Czat spływa jako dymki z pocisków (dwa rzędy co 1,3 s, luka między dymkami oznaczona
+  „www”; luka następnego rzędu jest najwyżej 3 pola od poprzedniej, więc każdy statek zdąży — korytarz między
+  rzędami ok. 34 px); póki rzędy czatu są na ekranie, boss nie rzuca mangami ani kubkami. „LAG...”: wszystkie
+  pociski zawisają na 1 s, potem lecą dalej; dymki czatu nie zmieniają kursu, luźne pociski w 25% skręcają.
 - **Faza 3 — gacha:** reszta twierdzy się wali, monitor pęka, ekran śnieży, oczy płoną. Na ekranie kręci się
   ruletka; wynik decyduje o ataku: N (1/2) — 5 kapsułek pękających pierścieniem, R (1/3) — 4 pękające spiralą,
   SSR (1/6) — 3 złote pękające gwiazdą. Kapsułkę można zestrzelić w locie, zanim pęknie (zwykła 1 trafienie, złota 3);
@@ -165,7 +167,7 @@ na ekranie kamera domofonu z kurierem; przez 1,7 s nie atakuje, a monitor przyjm
 
 Tło (`otakuroom.mjs`) animuje: grę w telewizorze, powiadomienia telefonu na futonie, wiatrak, diody routera,
 światło w szparze zasłon, parę nad kubkiem na kotatsu. Czas walki w symulacji (statek stale pod monitorem):
-ok. 96 s (32 / 31 / 33 s); zagrożenie ekranu średnio 5,6% / 8,9% / 3,9%.
+ok. 99 s (31 / 35 / 33 s); zagrożenie ekranu średnio 5,4% / 5,7% / 3,5%, w szczycie 11% / 12% / 11%.
 
 ## 6. Babcia (OBACHAN)
 
