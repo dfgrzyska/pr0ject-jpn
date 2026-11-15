@@ -30,7 +30,8 @@ const silk = (seed, a = Math.PI / 2) => ({ pat: mix2(fur(a, { amt: 0.14, len: 6,
 
 // ---------------------------------------------------------------- the cat (40 x 44 -> 120 x 132)
 // pose: 'stand' | 'blink' | 'throw0' | 'throw1' | 'hiss' | 'crouch0' | 'crouch1' | 'leap' | 'land' | 'scratch0' |
-// 'scratch1' | 'run0' | 'run1' | 'nap'; idle: 0 / 1 (breathing, the tail); bare: its hat thrown
+// 'scratch1' | 'run0' | 'run1' | 'nap' | 'walk0'-'walk3' | 'look' | 'hurt' | 'yawn'; idle: 0-3 (breathing, the tail
+// swaying); bare: its hat thrown
 export function cat(pose, { bare = false, idle = 0 } = {}) {
   const s = new HiSprite(120, 132, RAMPS);
   const cx = 60;
@@ -39,8 +40,11 @@ export function cat(pose, { bare = false, idle = 0 } = {}) {
   const land = pose === 'land';
   const run = pose === 'run0' || pose === 'run1';
   const nap = pose === 'nap';
+  const walk = pose.startsWith('walk') ? +pose[4] : -1; // the walk cycle: 0 left foot up, 2 right foot up
+  const sway = [0, 4, 8, 4][idle % 4]; // the tail's tip swaying
+  const breath = idle % 2;
   // where things are: lower when crouched or landing, stretched when leaping, the breath lifting it a little
-  const by = (crouch ? 14 : land ? 10 : nap ? 8 : leap ? -6 : 0) - (idle ? 1 : 0);
+  const by = (crouch ? 14 : land ? 10 : nap ? 8 : leap ? -6 : 0) - breath - (walk === 1 || walk === 3 ? 1.5 : 0);
   const hy = 40 + by + (crouch ? 6 : 0); // the head's centre
   const wig = pose === 'crouch1' ? 4 : pose === 'crouch0' ? -4 : 0; // the rump wiggling before a pounce
   // ---- the tail, ringed, behind it all (up and curling at ease, lashing when angry, low and swishing crouched)
@@ -48,7 +52,7 @@ export function cat(pose, { bare = false, idle = 0 } = {}) {
   const tail = crouch ? [[cx + 18 + wig, 104 + by], [cx + 36 + wig * 2, 108 + by], [cx + 50 + wig * 3, 98 + by]]
     : leap ? [[cx + 14, 100 + by], [cx + 30, 116 + by], [cx + 46, 124 + by]]
       : nap ? [[cx + 20, 112 + by], [cx + 36, 120 + by], [cx + 20, 126 + by]]
-        : [[cx + 18, 104 + by], [cx + 34 + (idle ? 2 : 0), 84 + by], [cx + 30 + (angry ? 8 : idle ? 4 : 0), 60 + by - (angry ? 6 : 0)]];
+        : [[cx + 18, 104 + by], [cx + 34 + sway * 0.4 + (walk >= 0 ? walk % 2 * 3 : 0), 84 + by], [cx + 28 + (angry ? 8 : sway) + (walk >= 0 ? (walk - 1.5) * 3 : 0), 60 + by - (angry ? 6 : 0) + (pose === 'hurt' ? 10 : 0)]];
   for (let k = 0; k < tail.length - 1; k++) {
     const [ax, ay] = tail[k];
     const [bx, bb] = tail[k + 1];
@@ -63,7 +67,8 @@ export function cat(pose, { bare = false, idle = 0 } = {}) {
       : land ? [[-14, 108, -24, 120], [14, 108, 24, 120]]
         : run ? (pose === 'run0' ? [[-10, 104, -20, 116], [10, 104, 14, 124]] : [[-10, 104, -14, 124], [10, 104, 20, 116]])
           : nap ? [[-12, 112, -16, 124], [12, 112, 16, 124]]
-            : [[-11, 104, -12, 124], [11, 104, 12, 124]];
+            : walk >= 0 ? [[-11, 104, -12, walk === 0 ? 117 : 124], [11, 104, 12, walk === 2 ? 117 : 124]]
+              : [[-11, 104, -12, 124], [11, 104, 12, 124]];
   for (const [x0, y0, x1, y1] of legs) {
     s.tube(cx + x0, y0 + by * 0.4, cx + x1, y1, 6.5, 'c', { rb: 5.5, ...silk(5) });
     s.ellipse(cx + x1, y1 + 2, 7, 4.6, 'w', { flat: 0.82 });
@@ -81,6 +86,15 @@ export function cat(pose, { bare = false, idle = 0 } = {}) {
   s.paint([bx - 6, bcy - bry, bx + 6, bcy + bry], (x, y) => Math.abs(x - bx) < 5 - (y - bcy) * 0.05 && y > bcy - bry + 4 && y < bcy + bry - 6, 'w', () => 0.85, silk(8));
   s.paint([bx - brx, bcy + 13, bx + brx, bcy + 19], (x, y) => ((x - bx) / brx) ** 2 + ((y - bcy) / bry) ** 2 < 1 && y > bcy + 13 && y < bcy + 19, 'b', () => 0.5);
   s.paint([bx - 3, bcy + 12, bx + 3, bcy + 20], (x, y) => Math.abs(x - bx) < 3 && y > bcy + 12 && y < bcy + 20, 's', () => 0.75); // the buckle
+  // on the belt: a hammer hanging at its left hip, a tape measure at its right; a pen in the vest's pocket
+  if (!crouch && !leap) {
+    s.tube(bx - brx + 6, bcy + 18, bx - brx + 3, bcy + 30, 1.6, 'b', { rb: 1.6 });
+    s.paint([bx - brx - 2, bcy + 28, bx - brx + 9, bcy + 33], (x, y) => y > bcy + 28 && y < bcy + 33 && x > bx - brx - 2 && x < bx - brx + 9, 's', (x) => 0.7 - (x - bx + brx) / 40);
+    s.paint([bx + brx - 10, bcy + 17, bx + brx - 1, bcy + 26], (x, y) => x > bx + brx - 10 && x < bx + brx - 1 && y > bcy + 17 && y < bcy + 26, 'y', () => 0.7);
+    s.dot(bx + brx - 5.5, bcy + 21.5, 1.8, 0x2a2a30);
+  }
+  s.paint([bx + 7, bcy - 12, bx + 15, bcy - 4], (x, y) => x > bx + 7 && x < bx + 15 && y > bcy - 12 && y < bcy - 4, 'v', () => 0.4);
+  s.line(bx + 10, bcy - 15, bx + 10, bcy - 9, 0x3a5ad0, 2);
   // ---- the arms
   const arm = (sx, hx, hy2, claws = false) => {
     s.tube(bx + sx * 15, bcy - 14, hx, hy2, 6, 'c', { rb: 5, ...silk(9 + sx) });
@@ -97,31 +111,39 @@ export function cat(pose, { bare = false, idle = 0 } = {}) {
   else if (land) { arm(-1, bx - 32, 116, true); arm(1, bx + 32, 116, true); }
   else if (run) { arm(-1, bx - 24, bcy + (pose === 'run0' ? -8 : 10)); arm(1, bx + 24, bcy + (pose === 'run0' ? 10 : -8)); }
   else if (nap) { arm(-1, bx - 18, bcy + 10); arm(1, bx + 4, hy + 18); } // a paw up to its mouth, washing
+  else if (walk >= 0) { arm(-1, bx - 20, bcy + 10 + (walk === 2 ? -5 : walk === 0 ? 4 : 0)); arm(1, bx + 20, bcy + 10 + (walk === 0 ? -5 : walk === 2 ? 4 : 0)); }
+  else if (pose === 'hurt') { arm(-1, bx - 26, bcy - 4); arm(1, bx + 26, bcy - 4); }
+  else if (pose === 'yawn') { arm(-1, bx - 26, bcy - 18); arm(1, bx + 26, bcy - 18); } // a stretch
   else { arm(-1, bx - 20, bcy + 10); arm(1, bx + 20, bcy + 10 - idle); }
   // ---- the head: round, stripes on the brow, the white muzzle, ears; its face by mood; whiskers
-  const hx = cx + (pose === 'scratch0' ? -2 : 0);
+  const hx = cx + (pose === 'scratch0' ? -2 : pose === 'look' ? 5 : pose === 'hurt' ? -4 : 0);
   s.ellipse(hx, hy, 23, 20, 'c', { bias: 0.06, ...silk(11) });
   for (const sx of [-1, 1]) {
-    const flat = pose === 'hiss' || crouch; // ears flattened back
+    const flat = pose === 'hiss' || crouch || pose === 'hurt'; // ears flattened back
     s.poly([[hx + sx * 8, hy - 14], [hx + sx * (flat ? 26 : 21), hy - (flat ? 22 : 32)], [hx + sx * 22, hy - 6]], 'c', { flat: 0.6 });
     s.poly([[hx + sx * 12, hy - 14], [hx + sx * (flat ? 23 : 19), hy - (flat ? 20 : 27)], [hx + sx * 19, hy - 11]], 'r', { flat: 0.55 });
   }
   for (let k = -1; k <= 1; k++) s.line(hx + k * 5, hy - 19, hx + k * 5.5, hy - 10, 0x8a4a14, 2);
   for (const sx of [-1, 1]) for (let k = 0; k < 2; k++) s.line(hx + sx * 22, hy - 2 + k * 6, hx + sx * 15, hy - 1 + k * 6, 0x8a4a14, 2);
   s.ellipse(hx, hy + 9, 13, 8.5, 'w', { flat: 0.84 });
-  const closed = pose === 'blink' || nap;
+  const closed = pose === 'blink' || nap || pose === 'yawn';
   for (const sx of [-1, 1]) {
     const ex = hx + sx * 9;
     const ey = hy - 1;
     if (closed) {
       s.line(ex - 4, ey + 1, ex, ey + 3, INK, 2);
       s.line(ex, ey + 3, ex + 4, ey + 1, INK, 2);
+    } else if (pose === 'hurt') {
+      // > <  squeezed shut
+      s.line(ex - sx * 4, ey - 3, ex + sx * 2, ey, INK, 2);
+      s.line(ex + sx * 2, ey, ex - sx * 4, ey + 3, INK, 2);
     } else {
       const narrow = pose === 'hiss' || crouch || pose.startsWith('scratch');
       s.ellipse(ex, ey, 5.2, narrow ? 3 : 5, 'e', { flat: 0.95, glow: true });
       // pupils: slits when angry, round and wide when about to pounce or running flat out
-      if (crouch || run || leap) s.ellipse(ex, ey, 2.6, narrow ? 2.4 : 3.6, 'k', { flat: 0.1, glow: true });
-      else s.line(ex, ey - (narrow ? 2 : 4), ex, ey + (narrow ? 2 : 4), INK, 2);
+      const lx = pose === 'look' ? 2.4 : 0; // looking off to one side
+      if (crouch || run || leap) s.ellipse(ex + lx, ey, 2.6, narrow ? 2.4 : 3.6, 'k', { flat: 0.1, glow: true });
+      else s.line(ex + lx, ey - (narrow ? 2 : 4), ex + lx, ey + (narrow ? 2 : 4), INK, 2);
       s.dot(ex - 1.8, ey - 1.8, 1.1, 0xffffff);
       if (narrow) s.line(ex - sx * 6, ey - 6, ex + sx * 4, ey - 3, INK, 2); // a cross brow
     }
@@ -133,7 +155,12 @@ export function cat(pose, { bare = false, idle = 0 } = {}) {
     s.paint([hx - 7, hy + 8, hx + 7, hy + 17], (x, y) => Math.abs(x - hx) < 7 - (y - hy - 8) * 0.5 && y > hy + 8.5, 'k', () => 0.2);
     s.paint([hx - 4, hy + 12, hx + 4, hy + 16], (x, y) => Math.abs(x - hx) < 3.5 - (y - hy - 12) * 0.5 && y > hy + 12, 'r', () => 0.6);
     for (const sx of [-1, 1]) s.poly([[hx + sx * 5, hy + 9], [hx + sx * 2.6, hy + 9], [hx + sx * 3.8, hy + 13.5]], 'w', { flat: 0.98 });
-  } else if (nap) s.ellipse(hx + 2, hy + 12, 2.4, 2, 'r', { flat: 0.7 }); // the tongue out, washing
+  } else if (pose === 'yawn') {
+    s.ellipse(hx, hy + 13, 6, 7, 'k', { flat: 0.15 });
+    s.ellipse(hx, hy + 16, 4, 3, 'r', { flat: 0.6 });
+    for (const sx of [-1, 1]) s.poly([[hx + sx * 5, hy + 8], [hx + sx * 2.6, hy + 8], [hx + sx * 3.8, hy + 12]], 'w', { flat: 0.98 });
+  } else if (pose === 'hurt') s.ellipse(hx, hy + 12, 2.6, 2.6, 'k', { flat: 0.2 });
+  else if (nap) s.ellipse(hx + 2, hy + 12, 2.4, 2, 'r', { flat: 0.7 }); // the tongue out, washing
   else {
     s.line(hx, hy + 7, hx - 4, hy + 10, INK, 1);
     s.line(hx, hy + 7, hx + 4, hy + 10, INK, 1);
@@ -149,6 +176,8 @@ export function cat(pose, { bare = false, idle = 0 } = {}) {
     }
     s.ellipse(hx, hy - 16.5, 4.6, 3, 'w', { flat: 1, glow: true });
     s.line(hx - 18, hy - 17, hx + 18, hy - 17, 0x4a4a52, 1, 0.8);
+    s.tube(hx + 16, hy - 6, hx + 26, hy - 13, 1.4, 'y', { rb: 1.2 }); // a pencil tucked behind its ear
+    s.dot(hx + 26.5, hy - 13.5, 1.2, 0x2a2a30);
   }
   if (run) for (let k = 0; k < 3; k++) s.dot(cx - 26 - k * 7, 124 - k * 2, 3 - k * 0.7, 0xc8b8a0, 0.7); // dust kicked up
   return s.render();
@@ -156,7 +185,7 @@ export function cat(pose, { bare = false, idle = 0 } = {}) {
 
 // ---------------------------------------------------------------- the tower (62 x 90 -> 186 x 270)
 // state 0 / 1: being built (the roof lamp off / on); 'lean': cracked, leaning, pieces gone (phase 2); 'rubble'
-export function tower(state) {
+export function tower(state, f = 0) {
   const s = new HiSprite(186, 270, RAMPS);
   if (state === 'rubble') {
     // a heap of concrete and broken boards, bent red beams sticking out, a scrap of the green mesh, a tilted crane
@@ -173,13 +202,13 @@ export function tower(state) {
   const X1 = 178;
   const TOP = 44;
   // the green mesh round the scaffolding, hung in panels, tied back here and there to show the frame
-  s.paint([0, TOP, 186, 266], (x, y) => x - sx(y) > X0 && x - sx(y) < X1 && y > TOP && y < 264 && !(lean && x - sx(y) > 128 && y < 120), 'n', (x, y) => 0.42 + (Math.floor((x - sx(y)) / 28) % 2 ? 0.08 : -0.03) + (y % 44 < 2 ? -0.22 : 0) + (Math.floor((x - sx(y)) * 0.5 + y * 0.5) % 6 === 0 ? 0.05 : 0), { pat: speckle({ amt: 0.06 }) });
+  s.paint([0, TOP, 186, 266], (x, y) => x - sx(y) > X0 && x - sx(y) < X1 && y > TOP && y < 264 && !(lean && x - sx(y) > 128 && y < 120), 'n', (x, y) => 0.42 + (Math.floor((x - sx(y)) / 28) % 2 ? 0.08 : -0.03) + (y % 44 < 2 ? -0.22 : 0) + Math.sin((y + f * 11) * 0.12 + Math.floor((x - sx(y)) / 28)) * 0.06 + (Math.floor((x - sx(y)) * 0.5 + y * 0.5) % 6 === 0 ? 0.05 : 0), { pat: speckle({ amt: 0.06 }) }); // (the mesh ripples in the wind, frame by frame)
   // the steel frame behind it where the mesh is tied back: columns and floors, red primer
   for (const fx of [28, 80, 132]) s.paint([0, TOP, 186, 262], (x, y) => Math.abs(x - sx(y) - fx - 14) < 12 && y > TOP + 8 && y < 258 && y % 44 > 8, 'k', () => 0.18);
   for (const fx of [28, 80, 132]) for (let y = TOP + 8; y < 258; y++) if (y % 44 > 8) for (const dx of [fx + 3, fx + 24]) for (let i = 0; i < 3; i++) s.px(dx + i + sx(y), y, i === 1 ? 0xd05030 : 0x7a2a18);
   for (let fy = TOP; fy < 266; fy += 44) for (let x = X0 + 2; x < X1 - 2; x++) for (let j = 0; j < 5; j++) s.px(x + sx(fy), fy + j, j === 0 ? 0xe07050 : j < 4 ? 0xa83a20 : 0x5a1a10);
   // a lit window or two inside (workers' lamps), a ladder up the side
-  for (const [wx, wy] of [[42, 110], [138, 198]]) for (let y = wy; y < wy + 14; y++) for (let x = wx; x < wx + 16; x++) s.px(x + sx(y), y, 0xfff0b0, 0.8);
+  for (const [wx, wy, on] of [[42, 110, 1], [138, 198, f !== 2], [90, 154, f % 2], [138, 66, f < 2]]) if (on) for (let y = wy; y < wy + 14; y++) for (let x = wx; x < wx + 16; x++) s.px(x + sx(y), y, 0xfff0b0, 0.8);
   for (let y = TOP + 6; y < 262; y++) {
     s.px(X0 + 14 + sx(y), y, 0xc8cad0);
     s.px(X0 + 24 + sx(y), y, 0xc8cad0);
@@ -193,8 +222,18 @@ export function tower(state) {
   s.paint([X0, TOP - 10, X1, TOP + 2], (x, y) => x - sx(y) > X0 && x - sx(y) < X1 && y > TOP - 9, 'g', (x) => 0.6 - (x - X0) / 400);
   s.paint([X0 + 100, TOP - 30, X1 - 16, TOP - 8], (x, y) => x - sx(y) > X0 + 100 && x - sx(y) < X1 - 16 && y > TOP - 29, 's', (x) => 0.75 - (x - X0) / 400);
   for (let x = X0 + 104; x < X1 - 20; x += 10) for (let y = TOP - 24; y < TOP - 16; y++) s.px(x + sx(y), y, 0x26405c);
-  s.dot(X1 - 24 + sx(TOP - 32), TOP - 33, 3, state === 1 ? 0xff6a30 : 0x8a2a10);
-  if (state === 1) s.dot(X1 - 24 + sx(TOP - 32), TOP - 33, 6, 0xffa060, 0.35);
+  const lamp = state === 1 || f % 2 === 1;
+  s.dot(X1 - 24 + sx(TOP - 32), TOP - 33, 3, lamp ? 0xff6a30 : 0x8a2a10);
+  if (lamp) s.dot(X1 - 24 + sx(TOP - 32), TOP - 33, 6, 0xffa060, 0.35);
+  // the green-cross safety flag on its pole at the roof's corner, flying
+  for (let y = 0; y < TOP - 6; y++) s.px(X1 - 6 + sx(y), y, 0xc8c8d0);
+  for (let y = 0; y < 18; y++)
+    for (let x = 0; x < 24; x++) {
+      const wave = Math.sin(x * 0.3 + f * 1.6) * 2 * (x / 24);
+      if (y + wave < 1 || y + wave > 17) continue;
+      const cross = (Math.abs(x - 12) < 2 && Math.abs(y - 9) < 7) || (Math.abs(y - 9) < 2 && Math.abs(x - 12) < 7);
+      s.px(X1 - 30 + x + sx(y), 2 + y + wave, cross ? 0x2a9a3a : x % 6 === 0 ? 0xd8d8d0 : 0xf4f4ee);
+    }
   for (let y = 4; y < TOP - 8; y++) for (const dx of [0, 8]) for (let i = 0; i < 2; i++) s.px(X0 + 34 + dx + i + sx(y), y, 0xf0c830);
   for (let y = 6; y < TOP - 8; y += 6) s.line(X0 + 34 + sx(y), y, X0 + 42 + sx(y + 6), y + 6, 0xc8a020, 1);
   for (let x = X0 + 10; x < X1 + 4; x++) for (let j = 0; j < 4; j++) s.px(x + sx(6), 4 + j, j === 0 ? 0xfff090 : j < 3 ? 0xf0c830 : 0x8a6a10);
@@ -289,11 +328,26 @@ export function claws() {
   return s.render({ outline: 0 });
 }
 
+/** A kitten on the site's crew, walking the scaffold boards (2 frames) in its own little hard hat. */
+export function koneko(f) {
+  const s = new HiSprite(30, 33, RAMPS);
+  for (const sx of [-1, 1]) s.tube(15 + sx * 4, 22, 15 + sx * 4 + (f ? sx : -sx), 30, 2.4, 'c', { rb: 2 });
+  s.ellipse(15, 21, 7, 7, 'v', { bias: 0.08 });
+  s.ellipse(15, 11, 8, 7, 'c', { bias: 0.1 });
+  for (const sx of [-1, 1]) s.poly([[15 + sx * 3, 6], [15 + sx * 8, 1], [15 + sx * 8, 8]], 'c', { flat: 0.6 });
+  s.paint([6, 2, 24, 9], (x, y) => ((x - 15) / 8) ** 2 + ((y - 9) / 7) ** 2 < 1 && y < 8, 'y', () => 0.75);
+  for (const sx of [-1, 1]) s.dot(15 + sx * 3, 12, 1, INK);
+  s.ellipse(15, 15, 3, 2, 'w', { flat: 0.85 });
+  s.tube(22, 18, 27, 12 + f * 3, 1.6, 'c', { rb: 1.4 });
+  return s.render();
+}
+
 export function genbaEnemies(add) {
   for (const bare of [false, true]) {
     const b = bare ? '_bare' : '';
     for (const p of ['stand', 'blink', 'throw0', 'throw1', 'hiss', 'crouch0', 'crouch1', 'leap', 'land', 'scratch0', 'scratch1', 'run0', 'run1', 'nap']) add(`neko_${p}${b}`, cat(p, { bare }));
-    add(`neko_stand1${b}`, cat('stand', { bare, idle: 1 }));
+    for (let i = 1; i < 4; i++) add(`neko_stand${i}${b}`, cat('stand', { bare, idle: i }));
+    for (const p of ['walk0', 'walk1', 'walk2', 'walk3', 'look', 'hurt', 'yawn']) add(`neko_${p}${b}`, cat(p, { bare }));
   }
   // (the old names, kept for what still asks for them)
   add('neko_0', cat('stand'));
@@ -301,9 +355,10 @@ export function genbaEnemies(add) {
   add('neko_pounce', cat('crouch0'));
   add('neko_hiss_bare', cat('hiss', { bare: true }));
   add('neko_pounce_bare', cat('crouch0', { bare: true }));
-  add('tower_0', tower(0));
-  add('tower_1', tower(1));
-  add('tower_lean', tower('lean'));
+  for (let f = 0; f < 4; f++) add(`tower_${f}`, tower(0, f));
+  add('tower_lean', tower('lean', 0));
+  add('tower_lean_1', tower('lean', 1));
+  for (let f = 0; f < 2; f++) add(`koneko_${f}`, koneko(f));
   add('tower_rubble', tower('rubble'));
   add('ibeam', ibeam());
   add('beam_shadow', beamShadow());

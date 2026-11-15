@@ -48,6 +48,12 @@ export const genba = {
     g.hatOut = false;
     if (body.texture.has('neko_stand')) g.cat = this.segPool.spawn('neko_stand', w.x, -200).setDepth(DEPTH.air - 0.11);
     g.catX = 0;
+    g.walk = { to: 0, wait: 1.2, mood: null, moodT: 0 }; // what it does up there between throws
+    // two kittens of its crew walking the scaffold boards
+    g.crew = [];
+    if (body.texture.has('koneko_0'))
+      for (const [lvl, dir] of [[0, 1], [2, -1]]) g.crew.push({ spr: this.segPool.spawn('koneko_0', w.x, -200).setDepth(DEPTH.air - 0.115), lvl, dir, u: Math.random(), pause: 0 });
+    g.lastHp = GENBA.hp;
     this.bossGroup = g;
     return body;
   },
@@ -59,6 +65,7 @@ export const genba = {
     this.genbaBeams(g, dt);
     this.genbaSpinners(g, dt);
     this.genbaMarks(g, dt);
+    this.genbaSite(g, dt);
     if (g.hook) this.genbaHook(g, dt);
     if (g.state === 'enter') {
       e.y += Math.max(12, (GENBA.home - e.y) * 1.3) * dt;
@@ -469,21 +476,106 @@ export const genba = {
     g.spinners.length = n;
   },
 
+  /**
+   * The site's life: the kittens of its crew walking the boards (they scatter when the tower comes down), welding
+   * sparks, bits falling off the leaning tower; the cat flinching when it takes a heavy hit.
+   */
+  genbaSite(g, dt) {
+    const s = this.scene;
+    const e = g.body;
+    // a flinch when it is taking a pounding (damage piling up faster than it fades), at most every second or so
+    const took = Math.max(0, g.lastHp - e.hp);
+    g.lastHp = e.hp;
+    g.dmg = (g.dmg ?? 0) * Math.max(0, 1 - dt * 2) + took;
+    if (g.dmg > 60 && g.t > (g.hurtT ?? 0) + 1.2) {
+      g.hurtT = g.t + 0.22;
+      g.dmg = 0;
+    }
+    if (g.stage < 3) {
+      // the crew: up and down their board, now and then stopping for a look round
+      const levels = [-17, 12, 27]; // the scaffold boards, off the tower's centre (from its art)
+      for (const k of g.crew) {
+        if (k.pause > 0) k.pause -= dt;
+        else {
+          k.u += k.dir * dt * 0.22;
+          if (k.u > 1 || k.u < 0) {
+            k.dir *= -1;
+            k.u = Phaser.Math.Clamp(k.u, 0, 1);
+            k.pause = 0.6 + Math.random();
+          }
+        }
+        k.spr.setPosition(e.x - 28 + k.u * 56 + (g.stage === 2 ? 3 : 0), e.y + levels[k.lvl] - 5).setFlipX(k.dir < 0);
+        k.spr.setFrame(k.pause > 0 ? 'koneko_0' : `koneko_${Math.floor(g.t * 6) % 2}`);
+      }
+      // welding: a shower of sparks from a joint now and then
+      if (g.state === 'fight' && Math.random() < dt * 2.5) s.fx.spark(e.x + (Math.random() < 0.5 ? -18 : 20), e.y + (Math.random() < 0.5 ? -18 : 12));
+      // leaning: lumps of concrete come off it and drop past its foot
+      if (g.stage === 2 && Math.random() < dt * 1.2 && e.texture.has('chunk_0')) {
+        const x = e.x + (Math.random() - 0.5) * 50;
+        const spr = this.segPool.spawn('chunk_0', x, e.y - 20 + Math.random() * 30).setDepth(DEPTH.air - 0.1);
+        g.bits = g.bits ?? [];
+        g.bits.push({ spr, vy: 20, t: 0, ground: e.y + 46 + Math.random() * 10 });
+      }
+    } else if (g.crew.length) {
+      // the tower's down: the kittens run off the screen
+      for (const k of g.crew) {
+        k.spr.x += (k.spr.x < 90 ? -1 : 1) * 120 * dt;
+        k.spr.y += 30 * dt;
+        k.spr.setFrame(`koneko_${Math.floor(g.t * 12) % 2}`).setFlipX(k.spr.x < 90);
+      }
+      if (g.crew.every((k) => k.spr.x < -20 || k.spr.x > VIEW.width + 20)) {
+        for (const k of g.crew) this.segPool.kill(k.spr);
+        g.crew = [];
+      }
+    }
+    if (g.bits) {
+      let n = 0;
+      for (const b of g.bits) {
+        b.t += dt;
+        b.vy += 300 * dt;
+        b.spr.y += b.vy * dt;
+        b.spr.setFrame(`chunk_${Math.floor(b.t * 10) % 2}`);
+        if (b.spr.y > b.ground) {
+          s.fx.puff('wisp_s_1', b.spr.x, b.ground, 0.3);
+          this.segPool.kill(b.spr);
+          continue;
+        }
+        g.bits[n++] = b;
+      }
+      g.bits.length = n;
+    }
+  },
+
   /** The tower (its lamp blinking; leaning in phase 2), the cat on its roof at work, or the cat itself in phase 3. */
   genbaPose(g, dt) {
     const e = g.body;
     if (g.throwT > 0) g.throwT -= dt;
     const blink = g.t % 3.1 < 0.12;
-    const idle = Math.floor(g.t * 1.6) % 2 ? '_stand1' : '_stand';
+    const idle = ['_stand', '_stand1', '_stand2', '_stand3'][Math.floor(g.t * 4) % 4]; // breathing, the tail swaying
     const throwing = g.throwT > 0 ? (g.throwT > 0.25 ? '_throw0' : '_throw1') : null;
+    const hurt = g.t < (g.hurtT ?? 0) ? '_hurt' : null;
     if (g.stage < 3) {
-      const frame = g.stage === 2 ? 'tower_lean' : Math.floor(g.t * 2) % 2 ? 'tower_1' : 'tower_0';
+      const frame = g.stage === 2 ? (Math.floor(g.t * 3) % 2 ? 'tower_lean_1' : 'tower_lean') : `tower_${Math.floor(g.t * 4) % 4}`;
       if (e.texture.has(frame) && e.frame.name !== frame) e.setFrame(frame);
-      if (g.state === 'fight') e.x = 90 + (g.stage === 2 ? Math.sin(g.t * 1.3) * 1.5 : 0);
+      if (g.state === 'fight') e.x = 90 + (g.stage === 2 ? Math.sin(g.t * 1.3) * 1.5 + (Math.random() - 0.5) * 0.8 : 0);
       if (g.cat) {
-        g.catX = -6 + Math.sin(g.t * 0.7) * 12;
-        g.cat.setPosition(e.x + g.catX + (g.stage === 2 ? 4 : 0), e.y + ROOF - (g.act ? 0 : Math.abs(Math.sin(g.t * 5)) * 1));
-        const cf = 'neko' + (throwing ?? (blink ? '_blink' : idle));
+        // up on the roof it walks to a spot, stops, has a look round or a yawn, walks on
+        const w = g.walk;
+        let mood = null;
+        if (!g.act && !throwing) {
+          const d = w.to - g.catX;
+          if (Math.abs(d) > 0.6) {
+            g.catX += Math.sign(d) * Math.min(Math.abs(d), 18 * dt);
+            mood = `_walk${Math.floor(g.t * 8) % 4}`;
+          } else if ((w.wait -= dt) <= 0) {
+            w.to = -16 + Math.random() * 22;
+            w.wait = 1 + Math.random() * 1.8;
+            w.mood = Math.random() < 0.35 ? (Math.random() < 0.5 ? '_look' : '_yawn') : null;
+            w.moodT = g.t + 0.8;
+          } else if (w.mood && g.t < w.moodT) mood = w.mood;
+        }
+        g.cat.setPosition(e.x + g.catX + (g.stage === 2 ? 4 : 0), e.y + ROOF);
+        const cf = 'neko' + (hurt ?? throwing ?? mood ?? (blink ? '_blink' : idle));
         if (g.cat.frame.name !== cf && g.cat.texture.has(cf)) g.cat.setFrame(cf);
       }
       const [a, b, c] = e.segs;
@@ -498,7 +590,8 @@ export const genba = {
       else if (a?.kind === 'scratch') p = a.step < 2 ? '_scratch0' : '_scratch1';
       else if (a?.kind === 'zoomies') p = a.t < 0.45 ? '_crouch0' : Math.floor(g.t * 12) % 2 ? '_run0' : '_run1';
       else if (a?.kind === 'nap') p = '_nap';
-      else p = blink ? '_blink' : '_hiss';
+      else p = hurt ?? (blink ? '_blink' : '_hiss');
+      if (hurt && !(a?.kind === 'pounce' && a.phase === 'go')) p = hurt;
       const frame = 'neko' + p + (g.hatOut ? '_bare' : '');
       if (e.frame.name !== frame && e.texture.has(frame)) e.setFrame(frame);
     }
@@ -511,6 +604,10 @@ export const genba = {
     }
     for (const sp of g.spinners) this.segPool.kill(sp.spr);
     for (const m of g.marks) this.segPool.kill(m.spr);
+    for (const k of g.crew ?? []) this.segPool.kill(k.spr);
+    for (const b of g.bits ?? []) this.segPool.kill(b.spr);
+    g.crew = [];
+    g.bits = [];
     for (const o of [g.hook?.spr, g.cat, g.rubble]) if (o) this.segPool.kill(o);
     g.beams = [];
     g.spinners = [];
