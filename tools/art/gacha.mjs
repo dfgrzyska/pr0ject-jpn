@@ -512,6 +512,18 @@ function partCompanion() {
   return s.render({ outline: 0 });
 }
 
+/** A colour for the turrets' bubble: the bubble, a glint on it. */
+function partShield() {
+  const s = new HiSprite(72, 72, RAMPS);
+  s.dot(36, 36, 29, INK);
+  s.dot(36, 36, 26, 0xa8dcff);
+  s.dot(36, 36, 23, 0x3a82f0);
+  s.dot(38, 38, 20, 0x1c3f9a);
+  s.dot(26, 24, 5, 0xffffff);
+  s.dot(33, 19, 2, 0xffffff);
+  return s.render({ outline: 0 });
+}
+
 /** A title: a scroll with lines of writing and a red seal. */
 function partTitle() {
   const s = new HiSprite(72, 72, RAMPS);
@@ -670,6 +682,7 @@ export function gachaAtlas() {
   for (const s of lookArt()) out.push(s); // life icons and other small looks (looks.mjs)
   add('part_blast', partBlast());
   add('part_title', partTitle());
+  add('part_shield', partShield());
   add('part_companion', partCompanion());
   add('part_sound', partSound());
   add('part_graze', partGraze());

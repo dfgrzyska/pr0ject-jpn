@@ -377,10 +377,103 @@ export const PALS = {
   }),
 };
 
+// ------------------------------------------------------------------ the wing turrets' shot: 15 x 27, flying up
+const TW = 15;
+const TH = 27;
+const shotArt = (fn) => {
+  const r = new Raster(TW, TH);
+  fn(r);
+  return rim(r);
+};
+export const TURRET_SHOTS = {
+  /** A paper talisman, its red writing and seal. */
+  ofuda: () => shotArt((r) => {
+    paint(r, (x, y) => (x > 3 && x < 12 && y > 1 && y < 26 ? (x < 6 ? 0xfffbe8 : x > 10 ? 0xd8c890 : 0xf4e8c0) : null));
+    for (const y of [5, 9, 13]) r.rect(6, y, 3, 2, 0xd02a26);
+    r.rect(5, 7, 5, 1, 0xd02a26);
+    r.rect(7, 4, 1, 12, 0xd02a26);
+    r.rect(5, 19, 5, 4, 0xd02a26);
+    r.rect(6, 20, 3, 2, 0xfffbe8);
+  }),
+  /** A stalk of green bamboo, cut at a slant. */
+  bamboo: () => shotArt((r) => {
+    paint(r, (x, y) => {
+      if (x < 4 || x > 11 || y > 26 || y < 2 + (x - 4) * 0.5) return null;
+      if (Math.floor(y) % 8 === 2) return 0x1f5a2a;
+      return x < 6 ? 0x9ae48a : x > 9 ? 0x37903f : 0x5cc05a;
+    });
+    r.rect(5, 3, 4, 1, 0xe0f8b8);
+  }),
+  /** A festival rocket: a red tube, a gold nose, sparks behind. */
+  rocket: () => shotArt((r) => {
+    poly(r, [[7.5, 1], [11, 7], [4, 7]], 0xf0b432);
+    r.rect(6, 4, 1, 2, 0xfff4a8);
+    paint(r, (x, y) => (x > 4 && x < 11 && y >= 7 && y < 19 ? (x < 6.5 ? 0xff7a80 : x > 9.5 ? 0x8a1420 : 0xd0283a) : null));
+    r.rect(5, 10, 6, 1, 0xfff4a8);
+    r.rect(5, 15, 6, 1, 0xfff4a8);
+    r.rect(7, 19, 1, 3, 0x7a5234);
+    for (const [x, y, c] of [[6, 21, 0xffe04f], [9, 22, 0xffa040], [7, 24, 0xffffff], [5, 25, 0xff7a1a], [9, 25, 0xffe04f]]) r.rect(x, y, 1, 1, c);
+  }),
+  /** A short blade: steel, a bronze guard, a wrapped hilt. */
+  tanto: () => shotArt((r) => {
+    paint(r, (x, y) => {
+      if (y >= 17) return null;
+      const half = y < 6 ? ((y - 1) / 5) * 2.6 : 2.6;
+      const dx = x - 7.5;
+      return y < 1 || Math.abs(dx) > half ? null : dx < -0.8 ? 0xffffff : dx > 1 ? 0x8a96b4 : 0xd0d8ec;
+    });
+    r.rect(3, 17, 9, 2, 0xc89a3a);
+    paint(r, (x, y) => (y >= 19 && y < 26 && Math.abs(x - 7.5) < 2 ? ((Math.floor(y) + Math.floor(x)) % 2 ? 0x2a2634 : 0x5a5668) : null));
+  }),
+  /** A kokeshi doll: a round head, a painted body. */
+  kokeshi: () => shotArt((r) => {
+    paint(r, (x, y) => (y >= 11 && y < 26 && Math.abs(x - 7.5) < 3.6 ? (Math.floor(y) % 5 === 3 ? 0xffd040 : x < 6 ? 0xff7a80 : x > 10 ? 0x8a1420 : 0xd0283a) : null));
+    ball(r, 7.5, 6.5, 5.2, 5, [0xc8a070, 0xf0d0a0, 0xffe8c8, 0xfff8ec]);
+    r.rect(3, 2, 9, 3, 0x1c1620);
+    r.rect(5, 7, 1, 1, INK);
+    r.rect(9, 7, 1, 1, INK);
+    r.rect(7, 9, 1, 1, 0xd0283a);
+  }),
+  /** A carp streamer flying up into the wind. */
+  koinobori: () => shotArt((r) => {
+    paint(r, (x, y) => {
+      const half = y < 5 ? 1.5 + y * 0.55 : y < 19 ? 4.2 : 4.2 - (y - 19) * 0.3;
+      if (y < 1 || y > 25.5 || Math.abs(x - 7.5) > half) return null;
+      if (y > 21) return Math.abs(x - 7.5) < 1 ? null : 0x3a82f0;
+      const scale = (Math.floor(y / 3) + Math.floor((x + (Math.floor(y / 3) % 2) * 1.5) / 3)) % 2;
+      return y < 6 ? 0xf4f4fa : scale ? 0x3a82f0 : 0x7ac0ff;
+    });
+    r.disc(6, 3.5, 1.3, INK);
+    r.rect(4, 6, 7, 1, 0xd02a26);
+  }),
+  /** A red paper lantern, lit. */
+  lantern: () => shotArt((r) => {
+    ball(r, 7.5, 13, 5.6, 9, RED);
+    paint(r, (x, y) => (Math.hypot((x - 7.5) / 5.6, (y - 13) / 9) <= 1 && Math.floor(y) % 4 === 1 ? 0x8a1420 : null));
+    r.disc(7.5, 13, 2.6, 0xffe080);
+    r.disc(7.5, 13, 1.2, 0xffffff);
+    r.rect(5, 2, 5, 2, INK);
+    r.rect(5, 22, 5, 2, INK);
+    r.rect(7, 24, 1, 2, 0xffd040);
+  }),
+  /** A spinning top: a painted disc on a wooden point. */
+  koma: () => shotArt((r) => {
+    r.rect(7, 1, 1, 6, 0xa0744c);
+    paint(r, (x, y) => {
+      const d = Math.hypot((x - 7.5) / 6.4, (y - 12) / 6.4);
+      if (d > 1) return null;
+      return d > 0.78 ? 0xd0283a : d > 0.55 ? 0xffd040 : d > 0.3 ? 0x3a82f0 : 0xffffff;
+    });
+    poly(r, [[4, 18], [11, 18], [7.5, 26]], 0xa0744c);
+    r.rect(5, 18, 2, 3, 0xc89868);
+  }),
+};
+
 /** Every frame for the gacha atlas. */
 export function lookArt() {
   const out = [];
   for (const [id, make] of Object.entries(LIFE_ICONS)) out.push({ name: `lifeicon_${id}`, raster: make() });
   for (const [id, make] of Object.entries(PALS)) out.push({ name: `pal_${id}`, raster: make() });
+  for (const [id, make] of Object.entries(TURRET_SHOTS)) out.push({ name: `ps_turret_${id}`, raster: make() });
   return out;
 }

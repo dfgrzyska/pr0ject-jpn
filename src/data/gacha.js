@@ -21,10 +21,10 @@ export const PITY = { every: 10, min: 'SR' };
 export const SLOTS = ['engine', 'gun', 'bomb', 'core', 'omamori'];
 
 /** What changes only the looks, one of each worn at a time on any hull. */
-export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape', 'blast', 'bomb_look', 'title', 'sound', 'graze', 'hud_color', 'life_icon', 'companion'];
+export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape', 'blast', 'bomb_look', 'title', 'sound', 'graze', 'hud_color', 'life_icon', 'companion', 'shot_turret', 'shield'];
 
 /** The frames a skin for a weapon's shots replaces (kind -> frames; the skin's own are <frame>_<skin>). */
-export const SHOT_FRAMES = { shot_basic: ['ps_needle'], shot_spread: ['ps_spread'], shot_laser: ['ps_laser_1', 'ps_laser_2', 'ps_laser_3'], shot_homing: ['ps_homing_0'] };
+export const SHOT_FRAMES = { shot_basic: ['ps_needle'], shot_spread: ['ps_spread'], shot_laser: ['ps_laser_1', 'ps_laser_2', 'ps_laser_3'], shot_homing: ['ps_homing_0'], shot_turret: ['ps_turret'] };
 
 // A part's `fx` is applied to the ship being put together: `set` (fields taken as they are), then `add`, then
 // `mul`; `bombMul` multiplies the bomb's damage. `line`: parts of one line (the same upgrade in five rarities)
@@ -431,6 +431,24 @@ export const ITEMS = [
   { id: 'companion_tengu', kind: 'companion', rarity: 'SR', name: 'TOWARZYSZ: TENGU', info: 'LECI ZA STATKIEM', pic: 'pal_tengu' },
   { id: 'companion_rabbit', kind: 'companion', rarity: 'SR', name: 'TOWARZYSZ: KRÓLIK', info: 'LECI ZA STATKIEM', pic: 'pal_rabbit' },
   { id: 'companion_dragon', kind: 'companion', rarity: 'SSR', name: 'TOWARZYSZ: SMOCZEK', info: 'LECI ZA STATKIEM', pic: 'pal_dragon' },
+  // ---- the wing turrets: a skin for their shot (as the weapons'), and the colours of their bubble (with one
+  // turret, with two: its fill and its rim; cycle: through the rainbow)
+  { id: 'shot_turret_ofuda', kind: 'shot_turret', rarity: 'R', name: 'WIEŻYCZKI: TALIZMANY', info: 'SKÓRKA POCISKÓW WIEŻYCZEK', skin: 'ofuda' },
+  { id: 'shot_turret_bamboo', kind: 'shot_turret', rarity: 'N', name: 'WIEŻYCZKI: BAMBUS', info: 'SKÓRKA POCISKÓW WIEŻYCZEK', skin: 'bamboo' },
+  { id: 'shot_turret_rocket', kind: 'shot_turret', rarity: 'SR', name: 'WIEŻYCZKI: RAKIETY', info: 'SKÓRKA POCISKÓW WIEŻYCZEK', skin: 'rocket' },
+  { id: 'shot_turret_tanto', kind: 'shot_turret', rarity: 'R', name: 'WIEŻYCZKI: OSTRZA TANTŌ', info: 'SKÓRKA POCISKÓW WIEŻYCZEK', skin: 'tanto' },
+  { id: 'shot_turret_kokeshi', kind: 'shot_turret', rarity: 'SR', name: 'WIEŻYCZKI: LALKI KOKESHI', info: 'SKÓRKA POCISKÓW WIEŻYCZEK', skin: 'kokeshi' },
+  { id: 'shot_turret_koinobori', kind: 'shot_turret', rarity: 'R', name: 'WIEŻYCZKI: KOINOBORI', info: 'SKÓRKA POCISKÓW WIEŻYCZEK', skin: 'koinobori' },
+  { id: 'shot_turret_lantern', kind: 'shot_turret', rarity: 'N', name: 'WIEŻYCZKI: LAMPIONY', info: 'SKÓRKA POCISKÓW WIEŻYCZEK', skin: 'lantern' },
+  { id: 'shot_turret_koma', kind: 'shot_turret', rarity: 'N', name: 'WIEŻYCZKI: BĄCZKI KOMA', info: 'SKÓRKA POCISKÓW WIEŻYCZEK', skin: 'koma' },
+  { id: 'shield_sakura', kind: 'shield', rarity: 'N', name: 'TARCZA: SAKURA', info: 'KOLOR BAŃKI WIEŻYCZEK', shield: { one: [0xff9ac4, 0xffd6e5], two: [0xff5a9a, 0xffe0ee] } },
+  { id: 'shield_jade', kind: 'shield', rarity: 'N', name: 'TARCZA: JADEIT', info: 'KOLOR BAŃKI WIEŻYCZEK', shield: { one: [0x5cc05a, 0xb8f0a8], two: [0x2fcf8a, 0xd8ffe8] } },
+  { id: 'shield_ice', kind: 'shield', rarity: 'N', name: 'TARCZA: LÓD', info: 'KOLOR BAŃKI WIEŻYCZEK', shield: { one: [0xb8ecff, 0xffffff], two: [0x7ac8ff, 0xf0fcff] } },
+  { id: 'shield_amber', kind: 'shield', rarity: 'R', name: 'TARCZA: BURSZTYN', info: 'KOLOR BAŃKI WIEŻYCZEK', shield: { one: [0xf0a030, 0xffd890], two: [0xff7a1a, 0xffe8b0] } },
+  { id: 'shield_amethyst', kind: 'shield', rarity: 'R', name: 'TARCZA: AMETYST', info: 'KOLOR BAŃKI WIEŻYCZEK', shield: { one: [0xa24bff, 0xd8b0ff], two: [0xd04aff, 0xf0d8ff] } },
+  { id: 'shield_ruby', kind: 'shield', rarity: 'R', name: 'TARCZA: RUBIN', info: 'KOLOR BAŃKI WIEŻYCZEK', shield: { one: [0xe0303a, 0xff9aa0], two: [0xff3a5a, 0xffd0d8] } },
+  { id: 'shield_ink', kind: 'shield', rarity: 'SR', name: 'TARCZA: TUSZ', info: 'KOLOR BAŃKI WIEŻYCZEK', shield: { one: [0x2a2438, 0x8a86a0], two: [0x14101c, 0xd8d4e4] } },
+  { id: 'shield_rainbow', kind: 'shield', rarity: 'SSR', name: 'TARCZA: TĘCZA', info: 'KOLOR BAŃKI WIEŻYCZEK', shield: { cycle: true } },
 ];
 
 export const ITEM = Object.fromEntries(ITEMS.map((it) => [it.id, it]));

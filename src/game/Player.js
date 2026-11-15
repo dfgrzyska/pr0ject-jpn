@@ -875,10 +875,13 @@ export class Player {
     const t = this.scene.t;
     const r = this.wingSpan() / 2 + 4 + Math.sin(t * 5) * 0.6;
     const flash = this.shieldT > 0 ? this.shieldT / TURRETS.grace : 0;
-    const col = gold ? 0xffd860 : 0x6ab8ff;
+    // (the bubble's colours out of the gachapon: its fill and its rim)
+    const sl = this.ship.look?.shield;
+    const hue = sl?.cycle ? Phaser.Display.Color.HSVToRGB((t * 0.35) % 1, gold ? 0.75 : 0.55, 1).color : null;
+    const [col, edge] = hue != null ? [hue, 0xffffff] : (sl ? (gold ? sl.two : sl.one) : gold ? [0xffd860, 0xfff0b0] : [0x6ab8ff, 0xa8dcff]);
     g.fillStyle(col, (gold ? 0.16 : 0.12) + flash * 0.25);
     g.fillEllipse(this.x, this.y + 1, r * 2, r * 1.8);
-    g.lineStyle(1, gold ? 0xfff0b0 : 0xa8dcff, (gold ? 0.75 : 0.55) + flash * 0.25);
+    g.lineStyle(1, edge, (gold ? 0.75 : 0.55) + flash * 0.25);
     g.strokeEllipse(this.x, this.y + 1, r * 2, r * 1.8);
     // a highlight sliding round the bubble (a bright glint on the gold one)
     const a = t * (gold ? 2.6 : 1.4);
