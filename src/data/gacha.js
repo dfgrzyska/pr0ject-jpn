@@ -21,7 +21,7 @@ export const PITY = { every: 10, min: 'SR' };
 export const SLOTS = ['engine', 'gun', 'bomb', 'core', 'omamori'];
 
 /** What changes only the looks, one of each worn at a time on any hull. */
-export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape', 'blast', 'bomb_look', 'title', 'sound', 'graze', 'hud_color', 'life_icon'];
+export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape', 'blast', 'bomb_look', 'title', 'sound', 'graze', 'hud_color', 'life_icon', 'companion'];
 
 /** The frames a skin for a weapon's shots replaces (kind -> frames; the skin's own are <frame>_<skin>). */
 export const SHOT_FRAMES = { shot_basic: ['ps_needle'], shot_spread: ['ps_spread'], shot_laser: ['ps_laser_1', 'ps_laser_2', 'ps_laser_3'], shot_homing: ['ps_homing_0'] };
@@ -410,6 +410,27 @@ export const ITEMS = [
   { id: 'life_icon_onigiri', kind: 'life_icon', rarity: 'R', name: 'ŻYCIE: ONIGIRI', info: 'IKONA ŻYCIA NA EKRANIE', pic: 'lifeicon_onigiri' },
   { id: 'life_icon_lantern', kind: 'life_icon', rarity: 'SR', name: 'ŻYCIE: LAMPION', info: 'IKONA ŻYCIA NA EKRANIE', pic: 'lifeicon_lantern' },
   { id: 'life_icon_daruma', kind: 'life_icon', rarity: 'SR', name: 'ŻYCIE: DARUMA', info: 'IKONA ŻYCIA NA EKRANIE', pic: 'lifeicon_daruma' },
+  // ---- companions: a little one flying behind the ship (pal_<id>, tools/art/looks.mjs)
+  { id: 'companion_tanuki', kind: 'companion', rarity: 'N', name: 'TOWARZYSZ: TANUKI', info: 'LECI ZA STATKIEM', pic: 'pal_tanuki' },
+  { id: 'companion_daruma', kind: 'companion', rarity: 'N', name: 'TOWARZYSZ: DARUMA', info: 'LECI ZA STATKIEM', pic: 'pal_daruma' },
+  { id: 'companion_teruteru', kind: 'companion', rarity: 'N', name: 'TOWARZYSZ: TERU-TERU', info: 'LECI ZA STATKIEM', pic: 'pal_teruteru' },
+  { id: 'companion_hitodama', kind: 'companion', rarity: 'N', name: 'TOWARZYSZ: HITODAMA', info: 'LECI ZA STATKIEM', pic: 'pal_hitodama' },
+  { id: 'companion_crane', kind: 'companion', rarity: 'N', name: 'TOWARZYSZ: ŻURAW ORIGAMI', info: 'LECI ZA STATKIEM', pic: 'pal_crane' },
+  { id: 'companion_onigiri', kind: 'companion', rarity: 'N', name: 'TOWARZYSZ: ONIGIRI', info: 'LECI ZA STATKIEM', pic: 'pal_onigiri' },
+  { id: 'companion_dango', kind: 'companion', rarity: 'N', name: 'TOWARZYSZ: DANGO', info: 'LECI ZA STATKIEM', pic: 'pal_dango' },
+  { id: 'companion_frog', kind: 'companion', rarity: 'N', name: 'TOWARZYSZ: ŻABKA', info: 'LECI ZA STATKIEM', pic: 'pal_frog' },
+  { id: 'companion_kitsune', kind: 'companion', rarity: 'R', name: 'TOWARZYSZ: KITSUNE', info: 'LECI ZA STATKIEM', pic: 'pal_kitsune' },
+  { id: 'companion_neko', kind: 'companion', rarity: 'R', name: 'TOWARZYSZ: MANEKI-NEKO', info: 'LECI ZA STATKIEM', pic: 'pal_neko' },
+  { id: 'companion_kodama', kind: 'companion', rarity: 'R', name: 'TOWARZYSZ: KODAMA', info: 'LECI ZA STATKIEM', pic: 'pal_kodama' },
+  { id: 'companion_koi', kind: 'companion', rarity: 'R', name: 'TOWARZYSZ: KARP KOI', info: 'LECI ZA STATKIEM', pic: 'pal_koi' },
+  { id: 'companion_shiba', kind: 'companion', rarity: 'R', name: 'TOWARZYSZ: SHIBA', info: 'LECI ZA STATKIEM', pic: 'pal_shiba' },
+  { id: 'companion_kappa', kind: 'companion', rarity: 'R', name: 'TOWARZYSZ: KAPPA', info: 'LECI ZA STATKIEM', pic: 'pal_kappa' },
+  { id: 'companion_owl', kind: 'companion', rarity: 'R', name: 'TOWARZYSZ: SOWA', info: 'LECI ZA STATKIEM', pic: 'pal_owl' },
+  { id: 'companion_chochin', kind: 'companion', rarity: 'SR', name: 'TOWARZYSZ: LAMPION-DUCH', info: 'LECI ZA STATKIEM', pic: 'pal_chochin' },
+  { id: 'companion_kasa', kind: 'companion', rarity: 'SR', name: 'TOWARZYSZ: KASA-OBAKE', info: 'LECI ZA STATKIEM', pic: 'pal_kasa' },
+  { id: 'companion_tengu', kind: 'companion', rarity: 'SR', name: 'TOWARZYSZ: TENGU', info: 'LECI ZA STATKIEM', pic: 'pal_tengu' },
+  { id: 'companion_rabbit', kind: 'companion', rarity: 'SR', name: 'TOWARZYSZ: KRÓLIK', info: 'LECI ZA STATKIEM', pic: 'pal_rabbit' },
+  { id: 'companion_dragon', kind: 'companion', rarity: 'SSR', name: 'TOWARZYSZ: SMOCZEK', info: 'LECI ZA STATKIEM', pic: 'pal_dragon' },
 ];
 
 export const ITEM = Object.fromEntries(ITEMS.map((it) => [it.id, it]));

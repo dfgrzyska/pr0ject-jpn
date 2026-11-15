@@ -14,6 +14,7 @@ export class Player {
     this.sprite = scene.add.sprite(0, 0, 'sprites', 'ship').setDepth(DEPTH.player);
     this.flame = sharedArt(scene.add.sprite(0, 0, 'sprites', 'flame_0')).setOrigin(0.5, 0).setDepth(DEPTH.player - 0.1).play('flame');
     this.dot = sharedArt(scene.add.image(0, 0, 'sprites', 'hitbox')).setDepth(DEPTH.player + 0.1);
+    this.pal = sharedArt(scene.add.image(0, 0, 'sprites', 'hitbox')).setDepth(DEPTH.player - 0.2).setVisible(false); // a companion out of the gachapon
     this.muzzle = sharedArt(scene.add.image(0, 0, 'sprites', 'muzzle_0')).setDepth(DEPTH.player + 0.05).setVisible(false); // flash at the nose
     this.noseGlow = scene.add.image(0, 0, 'sprites', 'glow').setDepth(DEPTH.player - 0.05).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.bank = 0;
@@ -68,6 +69,8 @@ export class Player {
   setShip(ship) {
     this.ship = ship;
     this.dot.setFrame(ship.look?.marker ?? 'hitbox'); // (a marker out of the gachapon)
+    this.pal.setFrame(ship.look?.pal ?? 'hitbox');
+    this.palAt = null;
     this.lives = this.fullLives();
     this.shipFrame(ship.frame);
   }
@@ -86,6 +89,7 @@ export class Player {
     this.sprite.setVisible(v);
     this.flame.setVisible(v);
     this.dot.setVisible(v);
+    if (!v) this.pal?.setVisible(false);
     if (!v) this.muzzle.setVisible(false);
     if (!v) this.noseGlow?.setVisible(false);
     if (!v) this.beanOrbit?.forEach((b) => b.setVisible(false));
@@ -257,6 +261,18 @@ export class Player {
     this.sprite.setPosition(this.x, this.y).setRotation(this.bank * 0.065);
     this.flame.setPosition(this.x, this.y + this.ship.flameY).setScale(1 - this.thrust * 0.12, (1 + this.thrust * 0.45) * flameLook(this.flame, this.ship));
     this.dot.setPosition(this.x, this.y);
+    // the companion: behind the left wing, catching up with the ship, bobbing as it flies
+    const palOn = Boolean(this.ship.look?.pal) && this.alive && this.sprite.visible;
+    this.pal.setVisible(palOn);
+    if (palOn) {
+      const tx = this.x - 12;
+      const ty = this.y + 10;
+      if (!this.palAt || Math.hypot(tx - this.palAt.x, ty - this.palAt.y) > 60) this.palAt = { x: tx, y: ty };
+      const k = Math.min(1, dt * 7);
+      this.palAt.x += (tx - this.palAt.x) * k;
+      this.palAt.y += (ty - this.palAt.y) * k;
+      this.pal.setPosition(this.palAt.x, this.palAt.y + Math.sin(this.scene.t * 5) * 1.2).setFlipX(tx - this.palAt.x > 1.5);
+    }
     const beans = this.alive && this.beanT > 0 && (this.beanT > 2 || Math.floor(this.beanT * 8) % 2 === 0);
     this.beanOrbit.forEach((b, i) => {
       const a = this.scene.t * 7 + i * Math.PI;

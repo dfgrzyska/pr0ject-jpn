@@ -496,6 +496,22 @@ function partMarker() {
   return s.render({ outline: 0 });
 }
 
+/** A companion: a little ghost with a heart. */
+function partCompanion() {
+  const s = new HiSprite(72, 72, RAMPS);
+  s.dot(32, 30, 22, INK);
+  s.poly([[10, 30], [54, 30], [54, 62], [47, 55], [40, 62], [32, 55], [24, 62], [17, 55], [10, 62]], 'k');
+  s.dot(32, 30, 19, 0xf4f4fa);
+  for (let y = 30; y < 58; y++) for (let x = 13; x < 52; x++) if (y < 52 || Math.floor((x - 13) / 6.5) % 2 === 0) s.px(x, y, 0xf4f4fa);
+  s.dot(25, 30, 3.5, INK);
+  s.dot(39, 30, 3.5, INK);
+  s.dot(32, 39, 2.5, INK);
+  s.dot(56, 14, 5, 0xf0485a);
+  s.dot(64, 14, 5, 0xf0485a);
+  s.poly([[51, 16], [69, 16], [60, 27]], 'r');
+  return s.render({ outline: 0 });
+}
+
 /** A title: a scroll with lines of writing and a red seal. */
 function partTitle() {
   const s = new HiSprite(72, 72, RAMPS);
@@ -654,6 +670,7 @@ export function gachaAtlas() {
   for (const s of lookArt()) out.push(s); // life icons and other small looks (looks.mjs)
   add('part_blast', partBlast());
   add('part_title', partTitle());
+  add('part_companion', partCompanion());
   add('part_sound', partSound());
   add('part_graze', partGraze());
   add('part_hud_color', partHudColor());

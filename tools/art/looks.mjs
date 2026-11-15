@@ -122,9 +122,265 @@ export const LIFE_ICONS = {
   },
 };
 
+// ------------------------------------------------------------------ companions: 27 x 27, flying behind the ship
+const PW = 27;
+const ORANGE = [0xa8501a, 0xe0782a, 0xf8a04a, 0xffc880];
+const BROWN = [0x4a3020, 0x7a5234, 0xa0744c, 0xc89868];
+const WHITE = [0xb8b8cc, 0xdcdcea, 0xf4f4fa, 0xffffff];
+const CREAM = [0xb89a5a, 0xe8d090, 0xfff0b8, 0xffffd8];
+const GREEN = [0x1f5a2a, 0x37903f, 0x5cc05a, 0x9ae48a];
+const BLUE = [0x1c3f9a, 0x3a82f0, 0x7ac0ff, 0xc8f0ff];
+const PINK = [0xc85a85, 0xf08bb0, 0xffb8d0, 0xffe0ec];
+const SHIBA = [0x9a6428, 0xd8964a, 0xf0b870, 0xffd8a0];
+const pal = (fn) => {
+  const r = new Raster(PW, PW);
+  fn(r);
+  return rim(r);
+};
+const eyes = (r, x1, x2, y, w = 2, h = 2, c = INK) => {
+  r.rect(x1, y, w, h, c);
+  r.rect(x2, y, w, h, c);
+};
+export const PALS = {
+  kitsune: () => pal((r) => {
+    poly(r, [[3, 2], [11, 8], [4, 13]], ORANGE[1]);
+    poly(r, [[24, 2], [16, 8], [23, 13]], ORANGE[1]);
+    poly(r, [[5, 5], [8, 8], [5, 10]], 0x3a1c10);
+    poly(r, [[22, 5], [19, 8], [22, 10]], 0x3a1c10);
+    ball(r, 13.5, 14.5, 10, 9, ORANGE);
+    ball(r, 8, 19, 4.6, 3.6, WHITE);
+    ball(r, 19, 19, 4.6, 3.6, WHITE);
+    ball(r, 13.5, 20, 4, 3.4, WHITE);
+    eyes(r, 7, 17, 13, 3, 1);
+    r.rect(13, 19, 2, 2, INK);
+    r.rect(13, 9, 1, 3, 0xd02a26); // (the mark on its brow)
+  }),
+  tanuki: () => pal((r) => {
+    r.disc(6, 6.5, 3.6, BROWN[1]);
+    r.disc(21, 6.5, 3.6, BROWN[1]);
+    ball(r, 13.5, 14.5, 10.5, 9.5, BROWN);
+    r.ellipse(8.5, 13.5, 3.8, 3, 0x2a1a12);
+    r.ellipse(18.5, 13.5, 3.8, 3, 0x2a1a12);
+    eyes(r, 8, 18, 12, 2, 2, 0xffffff);
+    ball(r, 13.5, 19, 5, 3.8, CREAM);
+    r.rect(13, 17, 2, 2, INK);
+    poly(r, [[11, 1], [17, 2], [13, 7]], GREEN[2]); // (the leaf it changes shape with)
+    r.line(12, 2, 14, 5, GREEN[0]);
+  }),
+  neko: () => pal((r) => {
+    poly(r, [[4, 2], [11, 7], [4, 12]], WHITE[2]);
+    poly(r, [[23, 2], [16, 7], [23, 12]], WHITE[2]);
+    poly(r, [[5, 5], [8, 7], [5, 9]], 0xf08bb0);
+    poly(r, [[22, 5], [19, 7], [22, 9]], 0xf08bb0);
+    ball(r, 13.5, 13.5, 10, 8.8, WHITE);
+    eyes(r, 7, 17, 12, 3, 1);
+    r.rect(8, 11, 1, 1, INK);
+    r.rect(18, 11, 1, 1, INK);
+    r.rect(13, 15, 2, 1, 0xf08bb0);
+    r.rect(12, 17, 4, 1, INK);
+    r.rect(6, 21, 15, 2, 0xd02a26);
+    r.disc(13.5, 23.5, 2, 0xffd040);
+    r.rect(13, 24, 1, 1, INK);
+  }),
+  daruma: () => pal((r) => {
+    ball(r, 13.5, 14, 10.5, 11, RED);
+    ball(r, 13.5, 11.5, 6.6, 5.6, CREAM);
+    r.disc(11, 11, 1.7, INK);
+    r.disc(16.5, 11, 1.7, INK);
+    r.rect(8, 8, 4, 1, INK);
+    r.rect(15, 8, 4, 1, INK);
+    r.rect(12, 14, 3, 1, 0x8a1420);
+    r.rect(10, 20, 7, 1, 0xffd040);
+    r.rect(11, 22, 5, 1, 0xffd040);
+  }),
+  teruteru: () => pal((r) => {
+    paint(r, (x, y) => {
+      if (y < 13 || y > 25) return null;
+      const half = 5 + ((y - 13) / 12) * 6.5;
+      return Math.abs(x - 13.5) > half ? null : x < 10 ? 0xffffff : x > 18 ? 0xc0c4d8 : 0xe8eaf4;
+    });
+    ball(r, 13.5, 8.5, 7.2, 7, WHITE);
+    r.rect(8, 14, 11, 1, 0xd02a26);
+    eyes(r, 10, 15, 7);
+    r.rect(12, 11, 3, 1, INK);
+  }),
+  kodama: () => pal((r) => {
+    ball(r, 13.5, 21, 4.6, 4.6, WHITE);
+    ball(r, 14, 10.5, 8.4, 8.8, WHITE);
+    r.disc(10.5, 9.5, 1.8, INK);
+    r.disc(17.5, 10.5, 1.8, INK);
+    r.disc(13.5, 15, 1.4, INK);
+  }),
+  chochin: () => pal((r) => {
+    ball(r, 13.5, 13.5, 9, 10.5, CREAM);
+    paint(r, (x, y) => (Math.hypot((x - 13.5) / 9, (y - 13.5) / 10.5) <= 1 && Math.floor(y) % 4 === 2 ? 0xc8a860 : null));
+    r.rect(8, 1, 11, 2, INK);
+    r.rect(8, 24, 11, 2, INK);
+    r.disc(13.5, 9.5, 3.6, 0xffffff);
+    r.disc(13.5, 10, 1.8, INK);
+    r.rect(8, 15, 11, 3, 0x5a1418);
+    r.rect(12, 16, 4, 6, 0xe0303a);
+    r.rect(13, 17, 1, 4, 0xff7a80);
+  }),
+  kasa: () => pal((r) => {
+    paint(r, (x, y) => {
+      if (y < 2 || y > 17) return null;
+      const half = ((y - 1) / 16) * 11.5;
+      if (Math.abs(x - 13.5) > half) return null;
+      const rib = Math.abs((((x - 13.5) / Math.max(1, half)) * 3) % 1) < 0.14;
+      return rib ? 0x5a1a40 : x < 13.5 ? 0xb04a8a : 0x8a2a68;
+    });
+    r.disc(13.5, 11, 3.2, 0xffffff);
+    r.disc(13.5, 11.5, 1.6, INK);
+    r.rect(12, 15, 3, 3, 0xe0303a);
+    r.rect(12, 18, 3, 5, 0xf0c8a0);
+    r.rect(9, 23, 9, 2, BROWN[1]);
+    r.rect(10, 25, 2, 1, BROWN[0]);
+    r.rect(15, 25, 2, 1, BROWN[0]);
+  }),
+  hitodama: () => pal((r) => {
+    for (let k = 1; k >= 0; k -= 0.05) {
+      const q = 7.6 * (1 - k) ** 1.1 + 0.6;
+      ball(r, 13.5 + 5 * k * k, 17 - 14 * k, q, q, BLUE);
+    }
+    r.disc(12.5, 18, 3.4, 0xe8faff);
+    eyes(r, 10, 15, 16, 1, 2);
+  }),
+  koi: () => pal((r) => {
+    poly(r, [[13.5, 18], [21, 26], [13.5, 23], [6, 26]], ORANGE[2]);
+    poly(r, [[8, 10], [3, 15], [8, 14]], ORANGE[3]);
+    poly(r, [[19, 10], [24, 15], [19, 14]], ORANGE[3]);
+    ball(r, 13.5, 11.5, 5.8, 9.5, WHITE);
+    r.disc(11.5, 7, 3, 0xf0682a);
+    r.disc(15.5, 13.5, 2.8, 0xf0682a);
+    r.disc(12, 18, 1.8, 0xf0682a);
+    eyes(r, 9, 17, 5, 1, 1);
+  }),
+  shiba: () => pal((r) => {
+    poly(r, [[4, 2], [11, 8], [4, 11]], SHIBA[1]);
+    poly(r, [[23, 2], [16, 8], [23, 11]], SHIBA[1]);
+    ball(r, 13.5, 14, 10, 9.5, SHIBA);
+    ball(r, 7.5, 18, 4, 3.6, WHITE);
+    ball(r, 19.5, 18, 4, 3.6, WHITE);
+    ball(r, 13.5, 19, 5.5, 4.4, WHITE);
+    r.rect(9, 9, 2, 1, 0xfff0d0);
+    r.rect(16, 9, 2, 1, 0xfff0d0);
+    eyes(r, 8, 17, 12);
+    r.rect(12, 16, 3, 2, INK);
+    r.rect(13, 20, 2, 3, 0xf08bb0);
+  }),
+  crane: () => pal((r) => {
+    poly(r, [[13.5, 12], [1, 5], [7, 17]], 0xffffff);
+    poly(r, [[13.5, 12], [26, 5], [20, 17]], 0xc8d0e4);
+    poly(r, [[13.5, 9], [20, 18], [13.5, 24], [7, 18]], 0xe8ecf6);
+    poly(r, [[13.5, 9], [13.5, 24], [7, 18]], 0xffffff);
+    poly(r, [[13.5, 11], [10.5, 2], [15, 6]], 0xf4f6fc);
+    r.rect(10, 1, 2, 2, 0xd02a26);
+    poly(r, [[13.5, 22], [16, 26], [13.5, 25]], 0xc8d0e4);
+  }),
+  kappa: () => pal((r) => {
+    ball(r, 13.5, 15, 10, 9, GREEN);
+    paint(r, (x, y) => (y > 4 && y < 9 && Math.abs(x - 13.5) < 8.5 && (Math.floor(x) + Math.floor(y)) % 3 !== 0 ? GREEN[0] : null)); // (its fringe)
+    r.ellipse(13.5, 5, 5.5, 2.6, 0xc8f0ff);
+    r.rect(11, 4, 3, 1, 0xffffff);
+    r.disc(9, 13.5, 1.8, INK);
+    r.disc(18, 13.5, 1.8, INK);
+    r.rect(9, 13, 1, 1, 0xffffff);
+    r.rect(18, 13, 1, 1, 0xffffff);
+    ball(r, 13.5, 19, 5, 2.8, [0xb88a20, 0xf0c040, 0xffe890]);
+    r.rect(10, 19, 7, 1, 0x8a6010);
+  }),
+  tengu: () => pal((r) => {
+    r.disc(13.5, 3, 2.6, INK);
+    ball(r, 13.5, 13.5, 10, 10, RED);
+    r.rect(5, 8, 7, 2, 0xffffff);
+    r.rect(15, 8, 7, 2, 0xffffff);
+    eyes(r, 8, 16, 11, 3, 2);
+    r.rect(6, 20, 5, 2, 0xffffff);
+    r.rect(16, 20, 5, 2, 0xffffff);
+    ball(r, 13.5, 17.5, 2.8, 6, [0xa01828, 0xe04050, 0xff8090]);
+  }),
+  onigiri: () => pal((r) => {
+    paint(r, (x, y) => {
+      const half = 3 + ((y - 2) / 22) * 9.5;
+      if (y < 2 || y > 24.5 || Math.abs(x - 13.5) > half) return null;
+      if (y > 22.5 && Math.abs(x - 13.5) > half - 1.5) return null;
+      return x - 13.5 < -half * 0.3 ? 0xffffff : x - 13.5 > half * 0.5 ? 0xc8c8dc : 0xeeeef6;
+    });
+    r.rect(8, 17, 11, 8, 0x1c2a24);
+    r.rect(9, 18, 2, 6, 0x34493c);
+    eyes(r, 10, 15, 11);
+    r.rect(12, 14, 3, 1, INK);
+    r.rect(7, 13, 2, 1, 0xff9ab0);
+    r.rect(18, 13, 2, 1, 0xff9ab0);
+  }),
+  dango: () => pal((r) => {
+    r.rect(13, 1, 1, 25, 0x8a6030);
+    ball(r, 13.5, 6, 5.2, 4.6, PINK);
+    ball(r, 13.5, 13.5, 5.2, 4.6, WHITE);
+    ball(r, 13.5, 21, 5.2, 4.6, [0x5a8a3a, 0x8ac060, 0xb8e088, 0xe0f8b8]);
+    eyes(r, 11, 15, 13, 1, 1);
+  }),
+  frog: () => pal((r) => {
+    ball(r, 13.5, 16.5, 10.5, 8, GREEN);
+    ball(r, 7.5, 8.5, 4.2, 4.2, GREEN);
+    ball(r, 19.5, 8.5, 4.2, 4.2, GREEN);
+    r.disc(7.5, 8.5, 2.4, 0xffffff);
+    r.disc(19.5, 8.5, 2.4, 0xffffff);
+    r.disc(7.5, 8.8, 1.2, INK);
+    r.disc(19.5, 8.8, 1.2, INK);
+    r.rect(7, 18, 13, 1, GREEN[0]);
+    ball(r, 13.5, 21.5, 5, 2.4, [0xb8d890, 0xe0f4b8, 0xf8ffe0]);
+    r.rect(5, 16, 2, 1, 0xff9ab0);
+    r.rect(20, 16, 2, 1, 0xff9ab0);
+  }),
+  owl: () => pal((r) => {
+    poly(r, [[5, 1], [10, 6], [5, 9]], BROWN[1]);
+    poly(r, [[22, 1], [17, 6], [22, 9]], BROWN[1]);
+    ball(r, 13.5, 14.5, 9.6, 10.6, BROWN);
+    paint(r, (x, y) => (y > 16 && y < 24 && Math.abs(x - 13.5) < 5 && (Math.floor(x) + Math.floor(y) * 2) % 4 === 0 ? CREAM[1] : null)); // (its breast)
+    r.disc(9, 11, 4.2, CREAM[2]);
+    r.disc(18, 11, 4.2, CREAM[2]);
+    r.disc(9, 11, 2.3, 0xffc030);
+    r.disc(18, 11, 2.3, 0xffc030);
+    r.disc(9, 11, 1.1, INK);
+    r.disc(18, 11, 1.1, INK);
+    poly(r, [[11.5, 13.5], [15.5, 13.5], [13.5, 17.5]], 0xf07a20);
+  }),
+  dragon: () => pal((r) => {
+    poly(r, [[6, 1], [10, 8], [5, 9]], 0xf0b432);
+    poly(r, [[21, 1], [17, 8], [22, 9]], 0xf0b432);
+    for (const x of [10, 13.5, 17]) poly(r, [[x - 2, 7], [x, 2], [x + 2, 7]], 0xe0303a); // (its mane)
+    ball(r, 13.5, 14.5, 9.6, 8.6, GREEN);
+    ball(r, 13.5, 20, 6.4, 4.4, [0x37903f, 0x6ac868, 0xa8eca0, 0xd8ffd0]);
+    r.disc(9, 13, 2.4, 0xffe04f);
+    r.disc(18, 13, 2.4, 0xffe04f);
+    r.rect(9, 11, 1, 4, INK);
+    r.rect(18, 11, 1, 4, INK);
+    eyes(r, 11, 15, 19, 1, 1);
+    r.line(8, 21, 2, 25, 0xe0303a);
+    r.line(19, 21, 25, 25, 0xe0303a);
+    r.rect(11, 22, 5, 1, GREEN[0]);
+  }),
+  rabbit: () => pal((r) => {
+    ball(r, 9, 6.5, 2.8, 6, WHITE);
+    ball(r, 18, 6.5, 2.8, 6, WHITE);
+    r.rect(9, 3, 1, 6, 0xffb8d0);
+    r.rect(18, 3, 1, 6, 0xffb8d0);
+    ball(r, 13.5, 17, 9.2, 8, WHITE);
+    r.disc(9.5, 16, 1.5, 0xd02a3a);
+    r.disc(17.5, 16, 1.5, 0xd02a3a);
+    r.rect(13, 19, 2, 1, 0xf08bb0);
+    r.rect(13, 20, 1, 2, INK);
+    r.rect(6, 19, 2, 1, 0xffb8d0);
+    r.rect(20, 19, 2, 1, 0xffb8d0);
+  }),
+};
+
 /** Every frame for the gacha atlas. */
 export function lookArt() {
   const out = [];
   for (const [id, make] of Object.entries(LIFE_ICONS)) out.push({ name: `lifeicon_${id}`, raster: make() });
+  for (const [id, make] of Object.entries(PALS)) out.push({ name: `pal_${id}`, raster: make() });
   return out;
 }

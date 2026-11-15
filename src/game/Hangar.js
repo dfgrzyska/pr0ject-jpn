@@ -14,13 +14,13 @@ const W = VIEW.width;
 const LINE = 12; // a row of the list
 const BOX = 26; // a slot
 const PER_ROW = 5;
-const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW', wake: 'ŚLAD ZA STATKIEM', shot_basic: 'POCISKI: PODSTAWOWA', shot_spread: 'POCISKI: ROZRZUT', shot_laser: 'POCISKI: LASER', shot_homing: 'POCISKI: NAPROWADZANE', marker: 'ZNACZNIK HITBOXA', eb_color: 'WROGIE POCISKI: KOLOR', eb_shape: 'WROGIE POCISKI: KSZTAŁT', blast: 'WYBUCHY', bomb_look: 'WYGLĄD BOMBY', title: 'TYTUŁ PILOTA', sound: 'DŹWIĘK STRZAŁU', graze: 'ISKRA GRAZINGU', hud_color: 'KOLOR LICZNIKA', life_icon: 'IKONA ŻYCIA' };
+const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW', wake: 'ŚLAD ZA STATKIEM', shot_basic: 'POCISKI: PODSTAWOWA', shot_spread: 'POCISKI: ROZRZUT', shot_laser: 'POCISKI: LASER', shot_homing: 'POCISKI: NAPROWADZANE', marker: 'ZNACZNIK HITBOXA', eb_color: 'WROGIE POCISKI: KOLOR', eb_shape: 'WROGIE POCISKI: KSZTAŁT', blast: 'WYBUCHY', bomb_look: 'WYGLĄD BOMBY', title: 'TYTUŁ PILOTA', sound: 'DŹWIĘK STRZAŁU', graze: 'ISKRA GRAZINGU', hud_color: 'KOLOR LICZNIKA', life_icon: 'IKONA ŻYCIA', companion: 'TOWARZYSZ' };
 // a slot's picture: the kind's (the four weapons' skins share one), or the fitted skin itself
 const slotFrame = (kind, it) => (it?.pic ? it.pic : it?.skin ? `${SHOT_FRAMES[kind][0]}_${it.skin}` : kind.startsWith('shot_') ? 'part_shot' : `part_${kind}`);
 // the tabs: the parts, then the looks (of the ship, of the shots: its own and the enemies', of the effects)
 const TABS = [
   { id: 'parts', name: 'CZĘŚCI', x: 21 },
-  { id: 'ship', name: 'STATEK', x: 65, kinds: ['paint', 'flame', 'wake', 'marker', 'title'] },
+  { id: 'ship', name: 'STATEK', x: 65, kinds: ['paint', 'flame', 'wake', 'marker', 'title', 'companion'] },
   { id: 'shots', name: 'POCISKI', x: 112, kinds: ['dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape', 'sound'] },
   { id: 'fx', name: 'EFEKTY', x: 159, kinds: ['blast', 'bomb_look', 'graze', 'hud_color', 'life_icon'] },
 ];
@@ -60,6 +60,7 @@ export class Hangar {
     // the ship, its engine burning
     this.art = add(sharedArt(scene.add.image(36, 0, 'sprites', 'ship')).setScale(2), d + 1);
     this.flame = add(sharedArt(scene.add.sprite(36, 0, 'sprites', 'flame_0')).setOrigin(0.5, 0).setScale(2).play('flame'), d + 0.9);
+    this.palArt = add(scene.add.image(54, 0, 'gacha', 'part_companion').setScale(FINE), d + 1.05).setVisible(false); // its companion
     this.hullName = add(pixelText(scene, 36, 0, ''), d + 1);
     // its numbers
     this.statLabels = STATS.map((s) => add(pixelText(scene, STAT_X, 0, s.label, 0).setOrigin(0, 0.5).setTint(0xb0aec0), d + 1));
@@ -168,6 +169,9 @@ export class Hangar {
     // the ship in its frame, in the paint and with the flame looked at
     applySkin(this.scene, next ?? ship);
     this.flameLong = flameLook(this.flame, next ?? ship);
+    const palPic = (next ?? ship).look?.pal;
+    this.palArt.setVisible(Boolean(palPic));
+    if (palPic) this.palArt.setFrame(palPic);
     this.art.setFrame(ship.frame);
     this.flameY = ship.flameY;
     this.hullName.setText(ship.name).setTint(ship.color);
@@ -343,6 +347,7 @@ export class Hangar {
     this.art.y = this.shipY + Math.round(Math.sin(this.t * 3) * 1.5) * 2;
     this.flame.y = this.art.y + (this.flameY ?? 8) * 2;
     this.flame.setScale(2, 2 * (this.flameLong ?? 1));
+    this.palArt.y = this.shipY + 22 + Math.round(Math.sin(this.t * 5) * 1.5);
   }
 
   destroy() {
