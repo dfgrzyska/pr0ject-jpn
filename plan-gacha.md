@@ -191,7 +191,7 @@ Każda faza kończy się grywalnym stanem i osobnym commitem.
 1. **Jeden statek (gotowe).** Usunięcie `ShipSelect`, ekran przed startem, przeniesienie zapisanego ulubionego statku. Podróż między miastami niesie zestaw zamiast numeru statku.
 2. **Kupony (gotowe).** Przyznawanie po minibossie, bossie i spotkaniu, napis w grze, wiersz w wynikach.
 3. **Ekran GACHA (gotowe, bez skrótu „załóż teraz”: dojdzie z hangarem).** Grafika automatu, animacja, dźwięk.
-4. **Ekran HANGAR i mody.** Wszystkie mody z sekcji 4.7 działające w grze, kadłub premium.
+4. **Ekran HANGAR i mody (gotowe; zostały: skrót „załóż teraz” po losowaniu, 3 zapisane zestawy, pas próbny).** Mody z sekcji 4.7 działające w grze, kadłub premium HOUOU (UR: silnik 1, działa 2, bomba 1, rdzenie 2, omamori 3), sloty trzymają swoje miejsce (pusty slot zostaje pusty).
 5. **Kosmetyka, fala 1.** Malowania, pociski gracza, barwniki, płomienie.
 6. **Kosmetyka, fala 2.** Naklejki, wrogie pociski, wybuchy, wygląd bomby, towarzysze, znaczniki, dźwięki, karty, tytuły.
 7. **Animacje premium.** Sekcja 4.5.

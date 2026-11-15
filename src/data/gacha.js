@@ -46,6 +46,12 @@ export const ITEMS = [
     slots: { engine: 1, gun: 1, bomb: 0, core: 1, omamori: 2 },
     fixed: { bomb: 'bomb_cut' },
   },
+  // the premium one: every slot there is, nothing built in
+  {
+    id: 'hull_houou', kind: 'hull', rarity: 'UR', name: 'HOUOU', info: 'FENIKS: WSZYSTKIE SLOTY',
+    ship: { id: 'houou', name: 'HOUOU', role: 'PREMIUM', color: 0xffd040, frame: 'ship_houou', life: 'icon_life_houou', lives: 3, damage: 1.1, hit: 1.3, graze: 9, pickup: 13, flameY: 8.5 },
+    slots: { engine: 1, gun: 2, bomb: 1, core: 2, omamori: 3 },
+  },
 
   // ---- engines: keyboard speed, px of travel per px of finger, how fast the ship chases the finger
   { id: 'engine_standard', kind: 'engine', starter: true, name: 'SILNIK STANDARDOWY', info: 'PEWNY I PRZEWIDYWALNY', fx: { set: { speed: 112, touchGain: 1.15, dragSpeed: 650 } } },

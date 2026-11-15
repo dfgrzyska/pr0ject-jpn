@@ -86,6 +86,26 @@ const SHIP_TSUBAME = [
   '......L.',
   '.....L..',
 ];
+// HOUOU (premium, out of the gachapon): a vermilion phoenix, gold wings and crest, orange feather tips and tail.
+const SHIP_HOUOU = [
+  '.........Y',
+  '........YY',
+  '........YR',
+  '........RC',
+  '.......RCc',
+  '.......RCC',
+  '.......RRC',
+  '......YRRR',
+  '.....YRRRY',
+  'Q...YRRRRY',
+  'YQ.YYRRRRY',
+  'YYQYRRRRRY',
+  '.YYYRRYYRR',
+  '..YYQRDDRY',
+  '.YQ.Q.DDRY',
+  'YQ..Q.DD.Y',
+  'Q..Q..DD..',
+];
 // Banked frames: lean the silhouette by shortening one wing.
 function shipFrame(bank, rows = SHIP) {
   const m = fromRows(rows, true);
@@ -106,7 +126,7 @@ function shipFrame(bank, rows = SHIP) {
   }
   return renderMask(m);
 }
-for (const [name, rows] of [['ship', SHIP], ['ship_oni', SHIP_ONI], ['ship_tsubame', SHIP_TSUBAME]]) {
+for (const [name, rows] of [['ship', SHIP], ['ship_oni', SHIP_ONI], ['ship_tsubame', SHIP_TSUBAME], ['ship_houou', SHIP_HOUOU]]) {
   add(name, shipFrame(0, rows));
   add(`${name}_l`, shipFrame(-1, rows));
   add(`${name}_r`, shipFrame(1, rows));
@@ -473,6 +493,7 @@ const LIFE = ['...W', '..WC', '..WW', '.RWW', 'RSSW', 'R..W'];
 add('icon_life', renderMask(fromRows(LIFE, true, { R: 'O', S: 'J' })));
 add('icon_life_oni', renderMask(fromRows(LIFE, true, { R: 'A', S: 'U' })));
 add('icon_life_tsubame', renderMask(fromRows(LIFE, true, { W: 'L', R: 'L', S: 'W' })));
+add('icon_life_houou', renderMask(fromRows(LIFE, true, { W: 'R', R: 'Y', S: 'Q' })));
 add('wpn_basic', renderMask(fromRows(['.W.W.', '.W.W.', '.W.W.', '.W.W.', '.W.W.'])));
 add('wpn_spread', renderMask(fromRows(['R.R.R', 'R.R.R', '.RRR.', '.RRR.', '..R..'])));
 add('wpn_laser', renderMask(fromRows(['.BBB.', '.BwB.', '.BwB.', '.BwB.', '.BBB.'])));

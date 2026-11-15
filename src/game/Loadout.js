@@ -26,27 +26,31 @@ export function layout(state) {
 }
 
 /** Make a state sound whatever was saved: only known parts, owned, of the right kind, as many as the hull has
- * slots for, one of a line; an engine and a bomb always fitted. */
+ * slots for, one of a line; an engine and a bomb always fitted. Each kind's slots are an array as long as the
+ * hull has slots of it, null where one is empty: a part stays in the slot it was put in. */
 function normalize(state) {
   state.owned = [...new Set(state.owned)].filter((id) => ITEM[id]);
   if (!state.owned.includes(state.hull) || ITEM[state.hull]?.kind !== 'hull') state.hull = 'hull_tsuru';
   const have = new Set(state.owned);
   const slots = emptySlots();
   const count = layout(state);
+  for (const k of SLOTS) slots[k] = Array(count[k]).fill(null);
   for (const k of SLOTS) {
-    for (const id of state.slots?.[k] ?? []) {
+    (state.slots?.[k] ?? []).forEach((id, i) => {
       const it = ITEM[id];
-      if (!it || it.kind !== k || !have.has(id) || slots[k].length >= count[k]) continue;
-      if (slots[k].includes(id) || (it.line && fittedLine(slots, it.line))) continue;
-      slots[k].push(id);
-    }
-    if (DEFAULTS[k] && count[k] > 0 && !slots[k].length) slots[k].push(DEFAULTS[k]);
+      if (!it || it.kind !== k || !have.has(id)) return;
+      if (slots[k].includes(id) || (it.line && fittedLine(slots, it.line))) return;
+      // (its own slot; on a hull with fewer, the first one free)
+      const at = i < count[k] && slots[k][i] == null ? i : slots[k].indexOf(null);
+      if (at >= 0) slots[k][at] = id;
+    });
+    if (DEFAULTS[k] && count[k] > 0 && !slots[k].some(Boolean)) slots[k][0] = DEFAULTS[k];
   }
   state.slots = slots;
   return state;
 }
 
-const fittedLine = (slots, line) => SLOTS.some((k) => slots[k].some((id) => ITEM[id].line === line));
+const fittedLine = (slots, line) => SLOTS.some((k) => slots[k].some((id) => id && ITEM[id].line === line));
 
 export function loadState(storage, legacyShip) {
   try {
@@ -118,17 +122,15 @@ export function equip(state, kind, index, id) {
   if (index < 0 || index >= count) return false;
   const slots = state.slots[kind];
   if (id == null) {
-    slots.splice(index, 1);
+    slots[index] = null;
     normalize(state);
     return true;
   }
   const it = ITEM[id];
   if (!it || it.kind !== kind || !state.owned.includes(id)) return false;
   // the part moves if it is fitted already; a part of the same line makes way for it
-  const rest = { ...state.slots, [kind]: slots.filter((q, i) => i !== index && q !== id) };
-  for (const k of SLOTS) if (it.line) rest[k] = rest[k].filter((q) => ITEM[q].line !== it.line);
-  rest[kind].splice(Math.min(index, rest[kind].length), 0, id);
-  state.slots = rest;
+  for (const k of SLOTS) state.slots[k] = state.slots[k].map((q) => (q === id || (q && it.line && ITEM[q].line === it.line) ? null : q));
+  state.slots[kind][index] = id;
   normalize(state);
   return true;
 }
@@ -136,7 +138,7 @@ export function equip(state, kind, index, id) {
 /** The parts at work: the hull's built-in ones, then the slots in order. */
 export function parts(state) {
   const hull = ITEM[state.hull];
-  return SLOTS.flatMap((k) => [...(hull.fixed?.[k] ? [hull.fixed[k]] : []), ...state.slots[k]]).map((id) => ITEM[id]);
+  return SLOTS.flatMap((k) => [...(hull.fixed?.[k] ? [hull.fixed[k]] : []), ...state.slots[k].filter(Boolean)]).map((id) => ITEM[id]);
 }
 
 /** The ship the game flies: the same shape the three old ships had in config.js (see Player). */

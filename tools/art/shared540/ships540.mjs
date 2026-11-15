@@ -4,7 +4,7 @@
 // surface lit from the upper left, the seams between liveries inked, a glint on the canopy.
 import { HiSprite } from '../../lib/hisprite.mjs';
 import { Mask } from '../../lib/spritekit.mjs';
-import { SHIP, SHIP_ONI, SHIP_TSUBAME } from './shipmasks.mjs';
+import { SHIP, SHIP_HOUOU, SHIP_ONI, SHIP_TSUBAME } from './shipmasks.mjs';
 
 function bankMask(rows, bank) {
   const m = Mask.fromRows(rows, true);
@@ -101,7 +101,7 @@ export function ship540(rows, bank = 0) {
 }
 
 export function ships540(add) {
-  for (const [name, rows] of [['ship', SHIP], ['ship_oni', SHIP_ONI], ['ship_tsubame', SHIP_TSUBAME]]) {
+  for (const [name, rows] of [['ship', SHIP], ['ship_oni', SHIP_ONI], ['ship_tsubame', SHIP_TSUBAME], ['ship_houou', SHIP_HOUOU]]) {
     add(name, ship540(rows, 0));
     add(`${name}_l`, ship540(rows, -1));
     add(`${name}_r`, ship540(rows, 1));

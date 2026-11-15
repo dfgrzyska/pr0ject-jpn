@@ -115,13 +115,18 @@ export class Hangar {
   }
 
   /**
-   * What picking a part from the list does: a part fitted already (in this slot or another of its kind) comes
-   * out; any other goes into the picked slot. The slots of a kind fill in order, with no gaps.
+   * What picking a part from the list does: the part in the picked slot comes out; any other goes into it (one
+   * fitted in another slot of the kind changes places with what was here).
    */
   apply(state, slot, it) {
     if (slot.kind === 'hull') return setHull(state, it.id);
-    const at = state.slots[slot.kind].indexOf(it.id);
-    return at >= 0 ? equip(state, slot.kind, at, null) : equip(state, slot.kind, slot.index, it.id);
+    const slots = state.slots[slot.kind];
+    const from = slots.indexOf(it.id);
+    if (from === slot.index) return equip(state, slot.kind, slot.index, null);
+    const here = slots[slot.index];
+    if (!equip(state, slot.kind, slot.index, it.id)) return false;
+    if (from >= 0 && here) equip(state, slot.kind, from, here);
+    return true;
   }
 
   draw() {
@@ -231,9 +236,6 @@ export class Hangar {
     if (slot.fixed || !row) return;
     if (!row.have) return this.scene.sfx.denied();
     this.apply(this.loadout, slot, row.it);
-    // the picked slot follows the part to where it went in (the first free slot of its kind)
-    const at = slot.kind === 'hull' ? -1 : this.loadout.slots[slot.kind].indexOf(row.it.id);
-    if (at >= 0) this.slot = this.slots().findIndex((s) => s.kind === slot.kind && s.index === at);
     this.save();
     this.scene.sfx.pickup();
     this.draw();

@@ -1,4 +1,4 @@
-// The three ships' masks (left halves, mirrored), the same as tools/art/sprites.mjs draws at 1x.
+// The ships' masks (left halves, mirrored), the same as tools/art/sprites.mjs draws at 1x.
 export const SHIP = [
   '.......W',
   '......WW',
@@ -53,4 +53,24 @@ export const SHIP_TSUBAME = [
   '....DD.L',
   '......L.',
   '.....L..',
+];
+// HOUOU (premium): a vermilion phoenix, gold wings and crest, orange feather tips and tail.
+export const SHIP_HOUOU = [
+  '.........Y',
+  '........YY',
+  '........YR',
+  '........RC',
+  '.......RCc',
+  '.......RCC',
+  '.......RRC',
+  '......YRRR',
+  '.....YRRRY',
+  'Q...YRRRRY',
+  'YQ.YYRRRRY',
+  'YYQYRRRRRY',
+  '.YYYRRYYRR',
+  '..YYQRDDRY',
+  '.YQ.Q.DDRY',
+  'YQ..Q.DD.Y',
+  'Q..Q..DD..',
 ];

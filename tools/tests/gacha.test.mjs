@@ -41,7 +41,7 @@ test('a new player has the starter kit and the first tickets', () => {
   const s = newState();
   assert.equal(s.tickets, TICKETS.first);
   assert.equal(s.hull, 'hull_tsuru');
-  assert.deepEqual(s.slots, { engine: ['engine_standard'], gun: [], bomb: ['bomb_cranes'], core: ['core_ofuda'], omamori: [] });
+  assert.deepEqual(s.slots, { engine: ['engine_standard'], gun: [null], bomb: ['bomb_cranes'], core: ['core_ofuda'], omamori: [null] });
   assert.equal(pool(s).length, ITEMS.filter((it) => !it.starter).length);
 });
 
@@ -105,7 +105,10 @@ test('parts go only where the hull has a slot', () => {
   assert.equal(buildShip(s).speed, 78);
   assert.ok(equip(s, 'gun', 1, 'gun_focus'));
   assert.ok(equip(s, 'gun', 1, 'gun_power_ur'), 'the same upgrade in a higher rarity...');
-  assert.deepEqual(s.slots.gun, ['gun_power_ur'], '...replaces the lower one, never joins it');
+  assert.deepEqual(s.slots.gun, [null, 'gun_power_ur'], '...replaces the lower one, never joins it; the first slot stays empty');
+  assert.ok(equip(s, 'gun', 0, 'gun_focus'));
+  assert.ok(equip(s, 'gun', 0, null));
+  assert.deepEqual(s.slots.gun, [null, 'gun_power_ur'], 'a part stays in its slot when another comes out');
   assert.ok(equip(s, 'bomb', 0, 'bomb_shock'));
 
   // Tsubame: two omamori, the light bomb built in
@@ -134,7 +137,7 @@ test('the save comes back as it was, and a broken one starts afresh', () => {
   const fixed = loadState(storage);
   assert.equal(fixed.hull, 'hull_tsuru');
   assert.equal(fixed.tickets, 4);
-  assert.deepEqual(fixed.slots.gun, []);
+  assert.deepEqual(fixed.slots.gun, [null]);
   storage.setItem('shmupjp.gacha', 'not json');
   assert.equal(loadState(storage).tickets, TICKETS.first);
 });
