@@ -165,9 +165,25 @@ na ekranie kamera domofonu z kurierem; przez 1,7 s nie atakuje, a monitor przyjm
   SSR (1/6) — 3 złote pękające gwiazdą. Kapsułkę można zestrzelić w locie, zanim pęknie (zwykła 1 trafienie, złota 3);
   pierwsza zestrzelona złota zostawia nagrodę (fioletowy power-up).
 
-Tło (`otakuroom.mjs`) animuje: grę w telewizorze, powiadomienia telefonu na futonie, wiatrak, diody routera,
-światło w szparze zasłon, parę nad kubkiem na kotatsu. Czas walki w symulacji (statek stale pod monitorem):
-ok. 99 s (31 / 35 / 33 s); zagrożenie ekranu średnio 5,4% / 5,7% / 3,5%, w szczycie 11% / 12% / 11%.
+Animacje walki: przed rzutem błyskają okulary i dłoń sięga do wieży, z której poleci atak (0,3 s); stos wyrasta
+nad wieżą mang, chwieje się i przewraca, a potem spada na cel; otwarta manga wyrzuca fruwające kartki; kubek
+po wylądowaniu toczy się, a bulion zostaje na podłodze jako parująca plama; na dymkach czatu migają „LOL”, „GG”,
+„???”, „:)”; przy „LAG” pociski drgają, wypełnia się pasek ładowania, odblokowanie błyska; bęben gachy zwalnia
+z tykaniem, SSR to złoty błysk, konfetti i lokator z rękami w górze (przy N westchnienie); kapsułki rozpadają się
+na połówki i zabawkę, która odbija się od podłogi. Lokator podskakuje po serii mocnych trafień (kropla potu,
+„KRZK!”), co ok. 13 s pije energetyk („PSST!”), a puste puszki zbierają się na biurku. Chomik w terrarium
+oddycha, biega w kołowrotku i chowa się do domku przy dzwonku i wstrząsach. Monitor słabnie: poniżej 50% dymi,
+poniżej 40% obraz drga i śnieży, poniżej 20% wyskakuje okienko „BATERIA?”. W fazie 2 komputer się przegrzewa
+(czerwone RGB, szybsze wentylatory, para). Przy dzwonku pod drzwiami (dół ekranu) pojawia się światło z cieniem
+stóp i wsuwa się ulotka, a pokój zamiera (wentylatory zwalniają, RGB gaśnie, gra na drugim ekranie pauzuje).
+„KLIK.” to dwa mrugnięcia świetlówki; w nocy świecą tylko słuchawki i okulary lokatora. W fazie 3 wieże walą się
+po kolei, tom po tomie, a rzeczy na podłodze podskakują przy wstrząsach. Finał: kineskop gaśnie do białej kropki,
+lokator zsuwa się pod koc, gdzieś w pokoju „PING!” telefonu.
+
+Tło (`otakuroom.mjs`) animuje: grę w telewizorze (co jakiś czas GAME OVER i od nowa), powiadomienia telefonu na
+futonie, wiatrak i kołyszące się w jego podmuchu pranie, diody routera, światło w szparze zasłon, kurz w smugach
+światła, parę nad kubkiem na kotatsu. Czas walki w symulacji (statek stale pod monitorem):
+ok. 96 s (31 / 33 / 31 s); zagrożenie ekranu średnio 4,5% / 4,9% / 3,5%, w szczycie 10% / 11% / 12%.
 
 ## 6. Babcia (OBACHAN)
 

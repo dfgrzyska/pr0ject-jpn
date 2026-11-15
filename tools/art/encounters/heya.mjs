@@ -40,7 +40,7 @@ const INK = 0x14121a;
 // ---------------------------------------------------------------- a tiny pixel font for the screens (3 x 5)
 const FONT = {
   A: '010101111101101', B: '110101110101110', C: '011100100100011', D: '110101101101110', E: '111100110100111',
-  G: '011100101101011', I: '111010010010111', L: '100100100100111', N: '101111111101101', H: '101101111101101', V: '101101101101010', O: '010101101101010',
+  G: '011100101101011', I: '111010010010111', L: '100100100100111', N: '101111111101101', H: '101101111101101', V: '101101101101010', T: '111010010010010', K: '101101110101101', M: '101111111101101', Y: '101101010010010', O: '010101101101010',
   P: '110101110100100', R: '110101110101101', S: '011100010001110', W: '101101111111101', '!': '010010010000010',
   '?': '110001010000010', '.': '000000000000010', ':': '000010000010000', '(': '001010010010001', ')': '100010010010100',
   0: '111101101101111', 1: '010110010010111', 2: '110001010100111', 3: '110001010001110',
@@ -230,11 +230,12 @@ export function monitor(cracked) {
 }
 
 // ---------------------------------------------------------------- the occupant (240 x 200)
-// mood: 'b0'/'b1' breathing, 'blink', 'angry', 'hide0'/'hide1' under the blanket (trembling)
-export function occupant(mood) {
+// mood: 'b0'/'b1' breathing, 'blink', 'angry', 'hide0'/'hide1' under the blanket (trembling), 'jump' (hit hard),
+// 'drink' (an energy drink), 'cheer' (an SSR pull), 'sigh' (a common one)
+function buildOccupant(mood) {
   const s = new HiSprite(240, 200, RAMPS);
   const hide = mood.startsWith('hide');
-  const up = mood === 'b1' ? -2 : 0;
+  const up = mood === 'b1' ? -2 : mood === 'jump' ? -9 : mood === 'cheer' ? -4 : 0;
   const shake = mood === 'hide1' ? 2 : 0;
   const cx = 120 + shake;
   // the blanket heaped round it: wide at the bottom, a hood at the top; a pattern of little stars
@@ -263,7 +264,7 @@ export function occupant(mood) {
     s.tube(cx + 8, top - 16, cx + 16, top - 12, 1.6, 'h', { rb: 0.8 });
     for (const sx of [-1, 1]) s.dot(cx + sx * 34, top + 26, 4, 0xff7ac8, 0.35);
     s.line(cx - 40, top + 50, cx + 40, top + 52, 0x1a1a3a, 1, 0.6);
-    return s.render({ outline: 2 });
+    return s;
   }
   // the opening of the hood: the lining, the dark inside, a face in the screen's light
   s.ellipse(cx, 72 + up, 44, 40, 'Q', { bias: 0.05 });
@@ -287,7 +288,16 @@ export function occupant(mood) {
     const ey = 86 + up;
     for (let a = 0; a < Math.PI * 2; a += 0.05) s.px(ex + Math.cos(a) * 9, ey + Math.sin(a) * 8, 0x2a2a32);
     s.paint([ex - 8, ey - 7, ex + 8, ey + 7], (x, y) => (x - ex) ** 2 / 64 + (y - ey) ** 2 / 49 < 1, 'c', () => 0.55, { glow: true });
-    if (mood === 'blink') s.line(ex - 5, ey + 1, ex + 5, ey + 1, INK, 1);
+    if (mood === 'blink' || mood === 'drink') s.line(ex - 5, ey + 1, ex + 5, ey + 1, INK, 1);
+    else if (mood === 'sigh') {
+      s.line(ex - 5, ey, ex + 5, ey, INK, 1);
+      s.dot(ex, ey + 2, 1.6, INK);
+    } else if (mood === 'cheer') {
+      for (let k = -4; k <= 4; k++) s.px(ex + k, ey + 2 - (4 - Math.abs(k)) * 0.8, INK);
+    } else if (mood === 'jump') {
+      s.dot(ex, ey + 1, 3, 0xffffff);
+      s.dot(ex, ey + 1, 1.2, INK);
+    }
     else if (mood === 'angry') {
       s.dot(ex, ey + 1, 2.4, 0xff4a3a);
       s.line(ex - 6, ey - 6 + sx * 0, ex + 6, ey - 3, INK, 2);
@@ -301,19 +311,54 @@ export function occupant(mood) {
   }
   s.line(cx - 3, 86 + up, cx + 3, 86 + up, 0x2a2a32, 1);
   if (mood === 'angry') s.line(cx - 5, 100 + up, cx + 5, 98 + up, INK, 1);
+  else if (mood === 'jump' || mood === 'cheer') s.ellipse(cx, 100 + up, 3, mood === 'cheer' ? 3 : 2.4, 'k', { flat: 0.2 });
   else s.line(cx - 3, 99 + up, cx + 3, 99 + up, 0x8a5040, 1);
-  return s.render({ outline: 2 });
+  if (mood === 'drink') {
+    // a sleeve up to the face, an energy drink tipped to the mouth
+    s.tube(cx + 70, 160, cx + 14, 104, 12, 'q', { rb: 9 });
+    s.tube(cx + 2, 104, cx + 18, 90, 6, 'g');
+    s.paint([cx + 4, 92, cx + 16, 100], (x, y) => Math.abs((x - cx - 10) + (y - 96)) < 4, 'w', () => 0.8);
+    s.ellipse(cx + 16, 106, 7, 6, 'f', { bias: 0.08 });
+  }
+  if (mood === 'cheer') for (const sx of [-1, 1]) {
+    s.tube(cx + sx * 60, 130, cx + sx * 74, 40 + up, 12, 'q', { rb: 9 });
+    s.ellipse(cx + sx * 76, 34 + up, 8, 7, 'f', { bias: 0.08 });
+  }
+  return s;
+}
+export function occupant(mood) {
+  return buildOccupant(mood).render({ outline: 2 });
+}
+/** Only what glows of it (headphones, glasses): over the dark of night, untinted. */
+export function occupantGlow(mood) {
+  const s = buildOccupant(mood);
+  const full = s.render({ outline: 0 });
+  const r = new Raster(s.w, s.h);
+  for (let y = 0; y < s.h; y++)
+    for (let x = 0; x < s.w; x++) {
+      if (!s.glow[y * s.w + x]) continue;
+      const i = full.idx(x, y);
+      r.set(x, y, (full.data[i] << 16) | (full.data[i + 1] << 8) | full.data[i + 2]);
+    }
+  return r;
 }
 
-// ---------------------------------------------------------------- its sleeves on the keyboard (120 x 54): 0/1 typing, 2 a hand up
+// ---------------------------------------------------------------- its sleeves on the keyboard (240 x 60)
+// 0/1 typing, 2 a hand up, 3/4 reaching out to the left / right tower
 export function hands(f) {
-  const s = new HiSprite(120, 54, RAMPS);
+  const s = new HiSprite(240, 60, RAMPS);
   for (const sx of [-1, 1]) {
-    const lift = f === 2 && sx > 0 ? -22 : (f === 0 && sx < 0) || (f === 1 && sx > 0) ? -4 : 0;
-    const hx = 60 + sx * 26;
-    s.tube(60 + sx * 58, 6, hx, 34 + lift, 11, 'q', { rb: 9 });
-    s.ellipse(hx, 40 + lift, 8, 6, 'f', { bias: 0.08 });
-    for (let k = -1; k <= 1; k++) s.ellipse(hx + k * 4.5, 45 + lift, 2.2, 3, 'f', { bias: 0.1 });
+    let hx = 120 + sx * 26;
+    let hy = 40;
+    if ((f === 0 && sx < 0) || (f === 1 && sx > 0)) hy -= 4;
+    if (f === 2 && sx > 0) hy -= 22;
+    if ((f === 3 && sx < 0) || (f === 4 && sx > 0)) {
+      hx = 120 + sx * 106;
+      hy = 22;
+    }
+    s.tube(120 + sx * 58, 6, hx, hy - 6, 11, 'q', { rb: 9 });
+    s.ellipse(hx, hy, 8, 6, 'f', { bias: 0.08 });
+    for (let k = -1; k <= 1; k++) s.ellipse(hx + k * 4.5, hy + 5, 2.2, 3, 'f', { bias: 0.1 });
   }
   return s.render({ outline: 2 });
 }
@@ -390,13 +435,13 @@ export function desk() {
 }
 
 // ---------------------------------------------------------------- the PC tower (72 x 150): glass side, fans, RGB going round
-export function pc(f) {
+export function pc(f, hot = false) {
   const s = new HiSprite(72, 150, RAMPS);
   s.paint([2, 2, 70, 148], () => true, 'k', (x) => 0.35 - x / 400);
   s.paint([8, 10, 62, 138], () => true, 'k', () => 0.08);
   const hue = (k) => {
     const h = ((k + f) % 6) / 6;
-    const c = [0xff3a6a, 0xffa83a, 0xf0f03a, 0x3aff8a, 0x3aa8ff, 0xb03aff];
+    const c = hot ? [0xff2a1a, 0xff5a2a, 0xff8a3a, 0xff3a2a, 0xd01a1a, 0xff6a4a] : [0xff3a6a, 0xffa83a, 0xf0f03a, 0x3aff8a, 0x3aa8ff, 0xb03aff];
     return c[Math.floor(h * 6) % 6];
   };
   // fans: rings of colour, blades (turning a step a frame)
@@ -416,7 +461,7 @@ export function pc(f) {
 }
 
 // ---------------------------------------------------------------- the second screen on its arm (96 x 96): a pixel game running
-export function second(f) {
+export function second(f, paused = false) {
   const s = new HiSprite(96, 96, RAMPS);
   s.tube(48, 70, 48, 94, 3, 's');
   s.paint([30, 88, 66, 95], () => true, 's', () => 0.4);
@@ -439,6 +484,10 @@ export function second(f) {
     const i = r.idx(x, y);
     s.px(6 + x, 8 + y, (r.data[i] << 16) | (r.data[i + 1] << 8) | r.data[i + 2]);
     s.glow[(8 + y) * 96 + 6 + x] = 1;
+  }
+  if (paused) {
+    for (let y = 8; y < 64; y++) for (let x = 6; x < 90; x++) s.px(x, y, 0x000000, 0.45);
+    for (const x0 of [38, 52]) for (let y = 24; y < 48; y++) for (let x = x0; x < x0 + 7; x++) s.px(x, y, 0xffffff);
   }
   return s.render({ outline: 2 });
 }
@@ -600,11 +649,162 @@ export function steam(k) {
   return r;
 }
 
+
+// ---------------------------------------------------------------- the little extras
+export function glint() {
+  const r = new Raster(21, 21);
+  for (let k = -10; k <= 10; k++) {
+    const a = 1 - Math.abs(k) / 11;
+    r.set(10 + k, 10, 0xffffff, a);
+    r.set(10, 10 + k, 0xffffff, a);
+    if (Math.abs(k) < 5) r.set(10 + k, 10 + k, 0xe8ffff, a * 0.6), r.set(10 + k, 10 - k, 0xe8ffff, a * 0.6);
+  }
+  return r;
+}
+export function sweat() {
+  const s = new HiSprite(14, 20, RAMPS);
+  s.paint([1, 1, 13, 19], (x, y) => (y > 8 ? (x - 7) ** 2 + (y - 12) ** 2 < 30 : Math.abs(x - 7) < (y - 1) * 0.7), 'c', (x, y) => 0.8 - x / 30, { glow: true });
+  s.dot(5, 11, 1.4, 0xffffff);
+  return s.render({ outline: 1 });
+}
+export function deskCan(c) {
+  const s = new HiSprite(20, 32, RAMPS);
+  s.tube(10, 4, 10, 28, 7, c);
+  s.paint([3, 12, 17, 18], () => true, 'w', () => 0.8);
+  s.paint([4, 1, 16, 4], () => true, 's', () => 0.6);
+  return s.render({ outline: 2 });
+}
+/** The hamster in its tank: idle (breathing), running its wheel, hidden in its house. */
+export function pet(f) {
+  const s = new HiSprite(66, 48, RAMPS);
+  s.paint([2, 6, 64, 46], () => true, 'c', () => 0.7, { glow: true });
+  s.paint([4, 34, 62, 44], () => true, 'b', () => 0.65, { pat: speckle({ amt: 0.2 }) }); // the bedding
+  s.paint([2, 2, 64, 8], () => true, 's', () => 0.5);
+  // its wheel, its house
+  for (let a = 0; a < Math.PI * 2; a += 0.05) s.px(46 + Math.cos(a) * 11, 26 + Math.sin(a) * 11, 0xd0d2da);
+  const spin = f === 'run0' ? 0 : 0.4;
+  for (let k = 0; k < 6; k++) s.line(46, 26, 46 + Math.cos(k + spin) * 11, 26 + Math.sin(k + spin) * 11, 0xa8aab4, 1, 0.8);
+  s.poly([[6, 36], [26, 36], [26, 22], [16, 14], [6, 22]], 'o', { flat: 0.6 });
+  s.ellipse(16, 30, 4, 5, 'k', { flat: 0.2 });
+  const ham = (x, y, run) => {
+    s.ellipse(x, y, 7, 6, 'n', { bias: 0.1 });
+    s.ellipse(x - 2, y + 2, 4, 3, 'w', { flat: 0.85 });
+    s.dot(x - 4, y - 2, 1, INK);
+    for (const ex of [-3, 3]) s.ellipse(x + ex, y - 6, 2, 2, 'p', { flat: 0.7 });
+    if (run) s.line(x - 6, y + 6, x + 6, y + 6, 0xffffff, 1, 0.6);
+  };
+  if (f === 'hide') s.ellipse(16, 34, 5, 3, 'n', { flat: 0.6 }); // only its rump sticking out
+  else if (f.startsWith('run')) ham(46, 30, true);
+  else ham(36, f === 'idle1' ? 31 : 32, false);
+  return s.render({ outline: 2 });
+}
+export function page(f) {
+  const s = new HiSprite(18, 16, RAMPS);
+  if (f) s.poly([[2, 6], [16, 2], [15, 10], [3, 14]], 'w', { flat: 0.85 });
+  else s.poly([[3, 2], [15, 3], [14, 14], [2, 13]], 'w', { flat: 0.75 });
+  for (let k = 0; k < 3; k++) s.line(5, 5 + k * 3, 12, 5 + k * 3, 0x5a5a66, 1, 0.7);
+  return s.render({ outline: 1 });
+}
+export function stain() {
+  const r = new Raster(60, 36);
+  for (let y = 0; y < 36; y++)
+    for (let x = 0; x < 60; x++) {
+      const n = fbm(x, y, { seed: 61, scale: 6 });
+      const d = ((x - 30) / 28) ** 2 + ((y - 18) / 16) ** 2 + (n - 0.5) * 0.5;
+      if (d < 1) r.set(x, y, mix(0xc87a2a, 0xe8b060, 1 - d), 0.65);
+    }
+  for (const [x, y] of [[20, 12], [26, 20], [38, 16]]) r.set(x, y, 0xf0e0a0); // bits of noodle
+  return r;
+}
+export function chatTag(str) {
+  const w = str.length * 4 * 2 + 4;
+  const r = new Raster(w, 14);
+  for (let y = 0; y < 14; y++) for (let x = 0; x < w; x++) r.set(x, y, 0x101828, 0.75);
+  text(r, 3, 2, str, 0xe8f4ff, 2);
+  return r;
+}
+export function capHalf(col, top) {
+  const s = new HiSprite(27, 15, RAMPS);
+  if (top) s.paint([2, 2, 25, 14], (x, y) => (x - 13.5) ** 2 + (y - 14) ** 2 < 121, 'w', (x) => 0.9 - x / 50);
+  else s.paint([2, 0, 25, 12], (x, y) => (x - 13.5) ** 2 + y ** 2 < 121, col, (x, y) => 0.7 - y / 40, col === 'y' ? { glow: true } : {});
+  return s.render({ outline: 1 });
+}
+export function capToy(k) {
+  const s = new HiSprite(14, 14, RAMPS);
+  const c = ['y', 'p', 'c', 'n'][k];
+  s.ellipse(7, 8, 5, 5, c, { bias: 0.1 });
+  for (const sx of [-1, 1]) s.ellipse(7 + sx * 3, 3, 2, 2, c, { flat: 0.6 });
+  s.dot(5.5, 8, 0.8, INK);
+  s.dot(8.5, 8, 0.8, INK);
+  return s.render({ outline: 1 });
+}
+export function confetti(k) {
+  const r = new Raster(6, 9);
+  const c = [0xffe060, 0xff6a9a, 0x6ad0ff, 0x8aff8a][k];
+  for (let y = 0; y < 9; y++) for (let x = 0; x < 6; x++) r.set(x, y, c);
+  return r;
+}
+export function volBit(k) {
+  const s = new HiSprite(30, 14, RAMPS);
+  s.paint([2, 2, 28, 12], () => true, SERIES[k * 2], () => 0.6);
+  s.paint([6, 4, 16, 10], () => true, 'w', () => 0.82);
+  return s.render({ outline: 1 });
+}
+/** Under the front door: a sliver of the hall's light, two feet's shadows in it. */
+export function doorFeet() {
+  const r = new Raster(180, 30);
+  for (let y = 0; y < 30; y++) for (let x = 0; x < 180; x++) r.set(x, y, 0xfff0c0, (0.25 + (y / 30) * 0.6) * (1 - (Math.abs(x - 90) / 95) ** 2));
+  for (const fx of [70, 104]) for (let y = 14; y < 30; y++) for (let x = fx - 9; x < fx + 9; x++) if (((x - fx) / 10) ** 2 + ((y - 22) / 10) ** 2 < 1) r.set(x, y, 0x14101a, 0.85);
+  return r;
+}
+export function flyer() {
+  const s = new HiSprite(30, 40, RAMPS);
+  s.paint([2, 2, 28, 38], () => true, 'w', () => 0.8);
+  s.paint([4, 4, 26, 16], () => true, 'r', () => 0.6);
+  for (let k = 0; k < 4; k++) s.line(5, 22 + k * 4, 24, 22 + k * 4, 0x6a6a74, 1);
+  return s.render({ outline: 1 });
+}
+function battScreen() {
+  return screen(0x041a3a, 0x0a3a6a, (r) => {
+    for (let y = 22; y < 72; y++) for (let x = 14; x < 110; x++) r.set(x, y, y < 32 ? 0x3a6ad0 : 0xd8dce8);
+    text(r, 18, 24, 'BLAD', 0xffffff, 1);
+    text(r, 22, 42, 'BATERIA?', 0x14121a, 2);
+    for (let y = 58; y < 68; y++) for (let x = 46; x < 78; x++) r.set(x, y, 0x8a8c96);
+    text(r, 54, 60, 'OK', 0xffffff, 1);
+  });
+}
+function offScreen(k) {
+  return screen(0x050506, 0x0a0a0c, (r) => {
+    const R = [6, 3, 1][k];
+    for (let y = -R * 2; y <= R * 2; y++) for (let x = -R * 3; x <= R * 3; x++) if ((x / (R * 3)) ** 2 + (y / (R * 2)) ** 2 < 1) r.set(62 + x, 47 + y, 0xffffff, 1 - Math.hypot(x / (R * 3), y / (R * 2)));
+  });
+}
+
 export function heyaEnemies(add) {
   add('heya_mon', monitor(false));
   add('heya_mon_crack', monitor(true));
-  for (const m of ['b0', 'b1', 'blink', 'angry', 'hide0', 'hide1']) add(`heya_who_${m}`, occupant(m));
-  for (let f = 0; f < 3; f++) add(`heya_hands_${f}`, hands(f));
+  for (const m of ['b0', 'b1', 'blink', 'angry', 'hide0', 'hide1', 'jump', 'drink', 'cheer', 'sigh']) add(`heya_who_${m}`, occupant(m));
+  for (const m of ['b0', 'b1', 'blink', 'angry', 'jump', 'drink', 'cheer', 'sigh']) add(`heya_wglow_${m}`, occupantGlow(m));
+  for (let f = 0; f < 5; f++) add(`heya_hands_${f}`, hands(f));
+  for (let f = 0; f < 6; f++) add(`heya_pc_hot_${f}`, pc(f, true));
+  add('heya_second_pause', second(0, true));
+  add('heya_glint', glint());
+  add('heya_sweat', sweat());
+  for (const c of ['g', 'p', 'c', 'y', 'r']) add(`heya_can_${c}`, deskCan(c));
+  for (const f of ['idle0', 'idle1', 'run0', 'run1', 'hide']) add(`heya_pet_${f}`, pet(f));
+  add('heya_page_0', page(0));
+  add('heya_page_1', page(1));
+  add('heya_stain', stain());
+  for (const [k, t] of [['lol', 'LOL'], ['gg', 'GG'], ['q', '???'], ['smile', ':)'], ['w', 'WWW']]) add(`heya_chat_${k}`, chatTag(t));
+  add('cap_top', capHalf('w', true));
+  for (const c of ['r', 'u', 'g', 'y']) add(`cap_bot_${c}`, capHalf(c, false));
+  for (let k = 0; k < 4; k++) add(`cap_toy_${k}`, capToy(k));
+  for (let k = 0; k < 4; k++) add(`heya_confetti_${k}`, confetti(k));
+  for (let k = 0; k < 4; k++) add(`heya_vol_${k}`, volBit(k));
+  add('heya_feet', doorFeet());
+  add('heya_flyer', flyer());
+  add('scr_batt', battScreen());
+  for (let k = 0; k < 3; k++) add(`scr_off_${k}`, offScreen(k));
   add('heya_desk', desk());
   for (let f = 0; f < 6; f++) add(`heya_pc_${f}`, pc(f));
   for (let f = 0; f < 3; f++) add(`heya_second_${f}`, second(f));

@@ -22,6 +22,14 @@ const WALL_Y = 380; // the back wall's foot
 const GENKAN_Y = 2360; // the step down to the entrance
 const SIDE = 26; // the side walls' thickness, seen from above
 const INK = 0x14121a;
+const FONT = { G: '011100101101011', A: '010101111101101', M: '101111111101101', E: '111100110100111', O: '010101101101010', V: '101101101101010', R: '110101110101101' };
+function text(r, x, y, str, c, px) {
+  for (const ch of str) {
+    const gl = FONT[ch];
+    if (gl) for (let i = 0; i < 15; i++) if (gl[i] === '1') for (let j = 0; j < px; j++) for (let k = 0; k < px; k++) r.set(x + (i % 3) * px + k, y + Math.floor(i / 3) * px + j, c);
+    x += 4 * px;
+  }
+}
 
 const RAMPS = {
   q: tones([0x2a2a5a, 0x40448a, 0x6a74c0]),
@@ -164,14 +172,15 @@ function bookcase(h) {
   }
   return s.render();
 }
-function laundry() {
+function laundry(f = 0) {
   const s = new HiSprite(70, 320, RAMPS);
   s.tube(8, 0, 8, 320, 2.5, 's');
   s.tube(60, 0, 60, 320, 2.5, 's');
   const rand = rng(5);
   for (let y = 12; y < 300; y += 26) {
     const c = SERIES[Math.floor(rand() * SERIES.length)];
-    s.paint([12, y, 56, y + 22], (x, yy) => Math.abs(x - 34) < 20 - Math.abs(yy - y - 6) * 0.3, c, (x) => 0.55 + Math.sin(x * 0.4) * 0.1);
+    const sw = Math.sin(f * 2.1 + y * 0.05) * 2.5; // (the fan's draught: each piece swings a little)
+    s.paint([10, y, 58, y + 22], (x, yy) => Math.abs(x - 34 - sw * (yy - y) / 22) < 20 - Math.abs(yy - y - 6) * 0.3, c, (x) => 0.55 + Math.sin(x * 0.4 + f) * 0.1);
   }
   return s.render();
 }
@@ -413,7 +422,6 @@ export function buildMid() {
   stamp(img, bookcase(260), SIDE + 2, 470);
   stamp(img, bookcase(260), SIDE + 2, 730);
   shadow(img, FW - SIDE - 74, 520, 70, 320, 0.3);
-  stamp(img, laundry(), FW - SIDE - 74, 520);
   shadow(img, FW - SIDE - 96, 900, 80, 110, 0.3);
   stamp(img, fanBase(), FW - SIDE - 96, 900);
   // ---- the middle of the room: TV, kotatsu and cushions, beanbag, the futon, a pizza box, things everywhere
@@ -482,7 +490,23 @@ export function buildMid() {
     for (let y = 0; y < 8; y++) for (let x = 0; x < 14; x++) r.set(90 - f * 10 + x, 40 + y, 0xff6a4a);
     return kit.frame(r);
   });
-  kit.loop(Math.round(210 / S), u(1078), tv, { fps: 4 });
+  const over = new Raster(120, 70);
+  for (let y = 0; y < 70; y++) for (let x = 0; x < 120; x++) over.set(x, y, y % 3 === 0 ? 0x050508 : 0x0a0a14);
+  text(over, 26, 22, 'GAME', 0xff5a4a, 3);
+  text(over, 26, 40, 'OVER', 0xff5a4a, 3);
+  tv.push(kit.frame(over));
+  kit.loop(Math.round(210 / S), u(1078), tv, { fps: 4, seq: [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 3, 3, 3, 3, 3, 3, 3] });
+  // the laundry swinging in the fan's draught
+  kit.loop(Math.round((FW - SIDE - 74) / S), u(520), [0, 1, 2, 3].map((f) => kit.frame(laundry(f))), { fps: 3 });
+  // dust drifting in the light (the curtains' slit, the lamp over the middle)
+  const mote = (a) => {
+    const r = new Raster(3, 3);
+    r.set(1, 1, 0xfff4d8, a);
+    for (const [dx, dy] of [[0, 1], [2, 1], [1, 0], [1, 2]]) r.set(dx, dy, 0xfff4d8, a * 0.4);
+    return kit.frame(r);
+  };
+  const motes = [mote(0.8), mote(0.5)];
+  for (const [x, y, rx, ry] of [[355, 250, 14, 50], [270, 1150, 60, 80], [270, 1600, 70, 90], [200, 2000, 60, 70]]) kit.wander(Math.round(x / S), u(y), Math.round(rx / S), Math.round(ry / S), motes, { n: 5, sp: 2, turn: 'none', fps: 1, idle: 0.1, a: 0.7 });
   // the phone on the futon: a notification now and then
   const ph = (() => {
     const r = new Raster(22, 38);
