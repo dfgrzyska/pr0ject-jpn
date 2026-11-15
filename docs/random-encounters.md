@@ -117,17 +117,24 @@ sznurem, wąsy wyciągnięte za płot, za które ciągną mieszczanie; inni okł
 
 ## 4. Kot bez końca (NAGAI)
 
-Stałe: `NAGAI` w `src/game/enemies/nagai.js` (2300 HP, progi 66% / 33%, 120 segmentów co 4,5 px). Trafia się
-tylko głowę; ciało (futrzane segmenty, co jakiś czas para białych łapek, daleko z tyłu rozwiewa się w dym)
-zatrzymuje strzały gracza i rani przy dotknięciu. Ciało idzie dokładnie śladem głowy.
+Stałe: `NAGAI` w `src/game/enemies/nagai.js` (1850 HP, progi 66% / 33%, 120 segmentów co 4,5 px). Słabym punktem
+jest głowa (pełne obrażenia, promień 13 px); trafienie w ciało (futrzane segmenty, co jakiś czas para białych
+łapek, daleko z tyłu rozwiewa się w dym) liczy się za 35% trafienia w głowę. Ciało rani przy dotknięciu i idzie
+dokładnie śladem głowy. Kot nigdy nie wypływa poza ekran.
 
-- **Faza 1 — kot bez końca:** wije się długimi esami przez ekran, wychodzi za krawędź i wraca z innej strony;
-  pluje kulkami sierści (wachlarz 3 w gracza), co czwarty raz miauczy pierścieniem („MIAU!”).
+**Okno ataku („MIAU!”):** co 5,5 s (w fazach 2–3 co 8 s), gdy głowa jest dobrze na ekranie, kot staje, miauczy
+pierścieniem pocisków, obraca głowę w dół i przez 1,6 s pulsuje; ciało blednie (więcej dymu niż kota) i przepuszcza
+strzały, a głowa przyjmuje podwójne obrażenia. W tym czasie nie strzela.
+
+- **Faza 1 — kot bez końca:** wije się długimi esami od boku do boku w górnej części ekranu; pluje kulkami
+  sierści (wachlarz 3 w gracza).
 - **Faza 2 — mruczenie:** fale wolnych pocisków wychodzą na boki z całego ciała (co dziesiąty segment na ekranie);
-  co jakiś czas rusza głową prosto na gracza na ~3 s.
+  co jakiś czas rusza głową prosto na gracza na ~3 s, potem wraca na górę ekranu.
 - **Faza 3 — kłębek:** owija się wokół gracza zwężającą się spiralą („NYAAA~”, promień 64 → 26 px w 5 s; trzeba
   wyjść przez lukę między zwojami albo przeczekać w środku) i rzuca kłębkami włóczki, które odbijają się od
   krawędzi ekranu.
+
+Czas walki w symulacji (statek stale pod głową): ok. 111 s (36 / 40 / 36 s), dla porównania automat ok. 98 s.
 
 ## 5. Pokój otaku (HEYA)
 

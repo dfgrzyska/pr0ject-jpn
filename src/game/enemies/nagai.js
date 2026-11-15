@@ -5,11 +5,11 @@ import { slow, normal, DOWN, TAU } from './shared.js';
 
 /**
  * The endless cat (NAGAI): life (its head takes the hits), the phases' thresholds, how many body segments trail
- * behind it and how far apart, how fast it swims and turns, the chase, the coil round the player (start and end
+ * behind it and how far apart, how much a hit on the body counts, how fast it swims and turns, the chase, the coil round the player (start and end
  * radius, seconds), the yarn balls.
  */
 export const NAGAI = {
-  hp: 2300,
+  hp: 1850,
   phase: [0.66, 0.33],
   segs: 120,
   gap: 4.5,
@@ -19,6 +19,8 @@ export const NAGAI = {
   chase: 3.2,
   coil: { r0: 64, r1: 26, dur: 5, w: 2.4 },
   yarn: 6,
+  rest: { every: [5.5, 8], dur: 1.6, take: 2 }, // after a meow it stops, stretches its head down: the head takes double
+  bodyTake: 0.35, // a hit on its body: this much of a hit on its head (the head is the weak point, not the only one)
 };
 
 export const nagai = {
@@ -34,9 +36,10 @@ export const nagai = {
    *    and bats balls of yarn about that bounce off the edges.
    */
   spawnNagai(w, base) {
-    const g = { kind: 'nagai', state: 'enter', t: 0, stage: 1, timer: 1, parts: [], awake: false, defeated: false, mode: 'swim', modeT: 0, wp: null, heading: DOWN, trail: [], segs: [], yarns: [], fire: 1.2, take: { body: 1 } };
-    const head = this.pool.spawn('nagai_head_0', w.x, -30, { ...base, role: 'body', group: g, hp: NAGAI.hp, maxHp: NAGAI.hp, radius: 11 });
+    const g = { kind: 'nagai', state: 'enter', t: 0, stage: 1, timer: 1, parts: [], awake: false, defeated: false, mode: 'swim', modeT: 0, restAt: 5, wp: null, heading: DOWN, trail: [], segs: [], yarns: [], fire: 1.2, take: { body: 1 } };
+    const head = this.pool.spawn('nagai_head_0', w.x, -30, { ...base, role: 'body', group: g, hp: NAGAI.hp, maxHp: NAGAI.hp, radius: 13 });
     head.setDepth(DEPTH.air - 0.05).setScale(head.scaleX * NAGAI.scale * 1.15); // (over the 540 px art's own scale)
+    head.base0 = head.scaleX;
     g.head = g.body = head;
     g.parts.push(head);
     g.maxTotal = NAGAI.hp;
@@ -64,10 +67,12 @@ export const nagai = {
     } else {
       if (g.stage === 1 && left < NAGAI.phase[0]) {
         this.phaseBreak(g, h.x, h.y, 2, 'MRUCZENIE');
-        Object.assign(g, { mode: 'swim', modeT: 0 });
+        Object.assign(g, { mode: 'swim', modeT: 0, restAt: g.t + 4 });
+        h.setScale(h.base0);
       } else if (g.stage === 2 && left < NAGAI.phase[1]) {
         this.phaseBreak(g, h.x, h.y, 3, 'KŁĘBEK');
-        Object.assign(g, { mode: 'swim', modeT: 0 });
+        Object.assign(g, { mode: 'swim', modeT: 0, restAt: g.t + 4 });
+        h.setScale(h.base0);
       }
       this.nagaiMove(g, dt);
       this.nagaiAttack(g, dt);
@@ -94,20 +99,39 @@ export const nagai = {
     const fast = g.stage > 1 ? 1 : 0;
     g.modeT += dt;
     if (g.mode === 'swim') {
-      // waypoints: a point on the screen, then one off it at a side, then back in elsewhere: long S-curves
+      // waypoints: long S-curves from side to side over the top of the screen, never leaving it (its head is what
+      // the player is after: out of sight it could not be hurt at all)
       if (!g.wp || Math.hypot(g.wp[0] - h.x, g.wp[1] - h.y) < 24) {
         g.wpn = (g.wpn ?? 0) + 1;
-        const off = g.wpn % 3 === 0;
-        const side = Math.random() < 0.5 ? -1 : 1;
-        g.wp = off ? [VIEW.width / 2 + side * (VIEW.width / 2 + 60), s.H * (0.15 + Math.random() * 0.4)] : [20 + Math.random() * (VIEW.width - 40), s.H * (0.12 + Math.random() * 0.5)];
+        const side = g.wpn % 2 ? -1 : 1;
+        g.wp = [VIEW.width / 2 + side * (30 + Math.random() * (VIEW.width / 2 - 50)), s.H * (0.12 + Math.random() * 0.42)];
       }
       this.nagaiSteer(g, dt, g.wp[0], g.wp[1], NAGAI.speed[fast], NAGAI.turn[fast]);
+      // every so often it stops for a meow (see 'rest'), as long as its head is well on the screen
+      if (g.t > g.restAt && h.x > 20 && h.x < VIEW.width - 20 && h.y > 20 && h.y < s.H * 0.55) {
+        Object.assign(g, { mode: 'rest', modeT: 0, rot0: h.rotation });
+        this.nagaiMeow(g);
+        return;
+      }
       // phase 2: now and then it comes for the player; phase 3: it coils round them
       if (g.stage === 2 && g.modeT > 6 && this.canFire(h)) Object.assign(g, { mode: 'chase', modeT: 0 });
       if (g.stage === 3 && g.modeT > 5 && h.y > 0 && h.y < s.H * 0.6 && h.x > 0 && h.x < VIEW.width) Object.assign(g, { mode: 'coil', modeT: 0, cx: Phaser.Math.Clamp(pl.x, 40, VIEW.width - 40), cy: Phaser.Math.Clamp(pl.y - 20, s.H * 0.45, s.H - 50), ang: null });
+    } else if (g.mode === 'rest') {
+      // the meow: it stops dead, its head swings round to look down at the player, its body (more smoke than cat
+      // for a moment) lets the shots through, and the head takes double; then it swims on
+      const R = NAGAI.rest;
+      const k = Math.min(1, g.modeT / 0.3);
+      h.setRotation(Phaser.Math.Angle.RotateTo(h.rotation, 0, 8 * dt));
+      h.setScale(h.base0 * (1 + 0.07 * Math.sin(g.modeT * 14) * k));
+      if (g.modeT > R.dur) {
+        h.setScale(h.base0);
+        Object.assign(g, { mode: 'swim', modeT: 0, restAt: g.t + R.every[g.stage > 1 ? 1 : 0] });
+        g.heading = Phaser.Math.Angle.Wrap(h.rotation + DOWN);
+        g.fire = Math.max(g.fire, 0.5);
+      }
     } else if (g.mode === 'chase') {
       this.nagaiSteer(g, dt, pl.x, pl.y, NAGAI.speed[1] * 0.85, NAGAI.turn[1] * 0.7);
-      if (g.modeT > NAGAI.chase || h.y > s.H * 0.8) Object.assign(g, { mode: 'swim', modeT: 0, wp: [h.x < 90 ? -80 : VIEW.width + 80, s.H * 0.2] });
+      if (g.modeT > NAGAI.chase || h.y > s.H * 0.8) Object.assign(g, { mode: 'swim', modeT: 0, wp: [h.x < 90 ? 24 : VIEW.width - 24, s.H * 0.18] });
     } else if (g.mode === 'coil') {
       const C = NAGAI.coil;
       if (g.ang === null) {
@@ -125,7 +149,7 @@ export const nagai = {
       h.y += (ty - h.y) * Math.min(1, dt * 6);
       g.heading = Math.atan2(h.y - py, h.x - px);
       h.setRotation(g.heading - DOWN);
-      if (k >= 1) Object.assign(g, { mode: 'swim', modeT: 0, wp: [g.cx, -60] });
+      if (k >= 1) Object.assign(g, { mode: 'swim', modeT: 0, wp: [g.cx, s.H * 0.12] });
     }
   },
 
@@ -134,14 +158,10 @@ export const nagai = {
     const s = this.scene;
     const b = s.bullets;
     const h = g.head;
-    if ((g.fire -= dt) > 0 || !this.canFire(h) || g.gate > 0) return;
+    g.take = { body: g.mode === 'rest' ? NAGAI.rest.take : 1 };
+    if ((g.fire -= dt) > 0 || !this.canFire(h) || g.gate > 0 || g.mode === 'rest') return;
     if (g.stage === 1) {
-      g.n = (g.n ?? 0) + 1;
-      if (g.n % 4 === 0) {
-        b.ring(h.x, h.y, 12, Math.random() * TAU, slow);
-        g.meowT = g.t + 0.4;
-        s.fx.text(h.x, h.y - 14, 'MIAU!', 0.7, 0xffe080);
-      } else for (let i = -1; i <= 1; i++) b.fire(h.x, h.y, this.aimAt(h) + i * 0.22, normal, true);
+      for (let i = -1; i <= 1; i++) b.fire(h.x, h.y, this.aimAt(h) + i * 0.22, normal, true);
       g.fire = 0.9;
     } else if (g.stage === 2) {
       // the purr: a wave of shots out of both sides of every tenth segment on the screen
@@ -163,6 +183,15 @@ export const nagai = {
       else if (g.mode !== 'coil') for (let i = -1; i <= 1; i++) b.fire(h.x, h.y, this.aimAt(h) + i * 0.25, normal, true);
       g.fire = g.mode === 'coil' ? 0.6 : 0.85;
     }
+  },
+
+  /** The meow that opens its rest: a ring of shots off its head (thinner once it is purring or coiling). */
+  nagaiMeow(g) {
+    const s = this.scene;
+    const h = g.head;
+    if (this.canFire(h)) s.bullets.ring(h.x, h.y, g.stage === 1 ? 12 : 9, Math.random() * TAU, slow);
+    g.meowT = g.t + NAGAI.rest.dur;
+    s.fx.text(h.x, h.y - 16, 'MIAU!', 0.9, 0xffe080);
   },
 
   nagaiYarn(g) {
@@ -219,6 +248,18 @@ export const nagai = {
       sg.setPosition(x, y).setRotation(Math.atan2(y - y2, x - x2) - DOWN);
       sg.setAlpha(i > n * 0.7 ? Math.max(0, 1 - (i - n * 0.7) / (n * 0.3)) : 1);
     });
+    // the solid part of the body (every other segment is enough) can be shot, for bodyTake of a hit on the head
+    const resting = g.mode === 'rest';
+    if (resting) for (const sg of g.segs) sg.setAlpha(sg.alpha * 0.55);
+    const segsN = resting ? 0 : Math.floor((n * 0.8) / 2);
+    if (h.shotSegs) h.shotSegs.length = Math.min(h.shotSegs.length, segsN);
+    h.shotSegs ??= [];
+    for (let j = 0; j < segsN; j++) {
+      const sg = g.segs[1 + j * 2];
+      const c = (h.shotSegs[j] ??= { x: 0, y: 0, r: 8, take: NAGAI.bodyTake });
+      c.x = sg.x;
+      c.y = sg.y;
+    }
     const mood = g.t < (g.meowT ?? 0) ? 'nagai_head_meow' : g.t < (g.purrT ?? 0) || g.mode === 'coil' ? 'nagai_head_purr' : 'nagai_head_0';
     if (h.texture.has(mood) && h.frame.name !== mood) h.setFrame(mood);
   },
@@ -237,18 +278,8 @@ export const nagai = {
     }
   },
 
-  /** Its body stops the player's shots (the head is what can be hurt). */
-  nagaiBlock(shot) {
-    const g = this.bossGroup;
-    if (!g || g.kind !== 'nagai' || g.defeated) return false;
-    const n = g.segs.length;
-    for (let i = 1; i < n * 0.8; i++) {
-      const sg = g.segs[i];
-      if (Math.abs(shot.x - sg.x) < 8 && Math.abs(shot.y - sg.y) < 8) {
-        if (Math.random() < 0.3) this.scene.fx.spark(shot.x, shot.y);
-        return true;
-      }
-    }
+  /** (Its body no longer just eats the player's shots: it takes a share of them, see nagaiBody.) */
+  nagaiBlock() {
     return false;
   },
 
