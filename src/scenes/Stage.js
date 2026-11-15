@@ -192,8 +192,9 @@ export class Stage extends Phaser.Scene {
       p = this.logicalPointer(p);
       if (this.state === 'city' || this.state === 'title') this.journey.pointerMove(p);
       else if (this.state === 'play' && !this.paused) this.player.dragMove(p);
+      else if (this.state === 'dev') this.devMenu?.pointerMove(p);
     });
-    this.input.on('pointerup', (p) => { this.player.endDrag(p); this.journey?.pointerUp(p); });
+    this.input.on('pointerup', (p) => { this.player.endDrag(p); this.journey?.pointerUp(p); if (this.state === 'dev') this.devMenu?.pointerUp(this.logicalPointer(p)); });
     this.input.on('pointerupoutside', (p) => { this.player.endDrag(p); this.journey?.pointerUp(p); });
     this.game.events.on('hidden', this.onHidden, this);
     this.events.once('shutdown', () => {

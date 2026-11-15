@@ -49,8 +49,11 @@ export class DevBossMenu {
   /** How many rows fit, and the first one shown (the focus kept in view). */
   view() {
     const fit = Math.floor((this.bottom - this.top) / LINE);
-    if (this.focus - this.scroll >= fit) this.scroll = this.focus - fit + 1;
-    if (this.focus < this.scroll + 1) this.scroll = Math.max(0, this.focus - 1);
+    if (!this.free) {
+      if (this.focus - this.scroll >= fit) this.scroll = this.focus - fit + 1;
+      if (this.focus < this.scroll + 1) this.scroll = Math.max(0, this.focus - 1);
+    }
+    this.scroll = Math.max(0, Math.min(this.scroll, this.rows.length - fit));
     return fit;
   }
 
@@ -87,6 +90,7 @@ export class DevBossMenu {
     do i = (i + delta + this.rows.length) % this.rows.length;
     while (this.rows[i].head);
     this.focus = i;
+    this.free = false; // the keys bring the focus back into view
     this.draw();
   }
 
@@ -99,18 +103,37 @@ export class DevBossMenu {
     this.scene.devStartBoss(r.go, this.god);
   }
 
-  /** A tap: the back arrow, a row (a second tap on the focused row starts it). */
+  /** A press: the back arrow at once; on the list it may become a drag (scroll) or, on release, a tap. */
   pointer(p) {
     if (p.y < 26 && p.x < 40) return this.scene.closeDevBosses();
     if (p.y < this.top || p.y > this.bottom) return;
-    const i = this.scroll + Math.floor((p.y - this.top) / LINE);
+    this.drag = { y: p.y, scroll: this.scroll, moved: false };
+  }
+
+  /** Dragging a finger (or the mouse) along the list scrolls it, the focus may go off screen meanwhile. */
+  pointerMove(p) {
+    if (!this.drag || !p.isDown) return;
+    const dy = p.y - this.drag.y;
+    if (!this.drag.moved && Math.abs(dy) < 4) return;
+    this.drag.moved = true;
+    this.free = true;
+    this.scroll = this.drag.scroll - Math.round(dy / LINE);
+    this.draw();
+  }
+
+  /** A release without a drag is a tap: a row (a second tap on the focused row starts it). */
+  pointerUp(p) {
+    const drag = this.drag;
+    this.drag = null;
+    if (!drag || drag.moved) return;
+    const i = this.scroll + Math.floor((drag.y - this.top) / LINE);
     if (!this.rows[i] || this.rows[i].head) return;
     if (i === this.focus) return this.activate();
     this.focus = i;
     this.draw();
   }
 
-  /** The wheel or a drag scrolls the list. */
+  /** The wheel moves the focus. */
   wheel(dy) {
     this.move(dy > 0 ? 1 : -1);
   }
