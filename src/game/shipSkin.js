@@ -126,18 +126,24 @@ function blastSkin(scene, ship) {
   tex.refresh();
 }
 
-/** Paint the ship (or show it in its own livery again), and dress the enemies' bullets and the explosions. Returns the ship. */
+// The stickers: each of the four places on the hull as a part of the frame's width and height (the nose under the
+// canopy, the wings, the tail), where a sticker is laid at this many pixels across, on the hull's pixels only.
+const DECAL_AT = [[0.5, 0.46], [0.26, 0.7], [0.74, 0.7], [0.5, 0.77]];
+const DECAL_SIZE = 7;
+
+/** Paint the ship and put its stickers on (or show it in its own livery again), and dress the enemies' bullets and the explosions. Returns the ship. */
 export function applySkin(scene, ship) {
   bulletSkin(scene, ship);
   blastSkin(scene, ship);
   const base = ship.frame;
   const atlas = scene.textures.exists('sprites540') ? scene.textures.get('sprites540') : null;
-  const colors = ship.look?.paint;
-  if (!colors || !atlas?.has(`${base}_g`)) {
+  const colors = atlas?.has(`${base}_g`) ? ship.look?.paint : null;
+  const decals = atlas?.has(base) && scene.textures.exists('gacha') ? ship.look?.decals : null;
+  if (!colors && !decals) {
     for (const b of BANKS) setCustomFrame(`${base}${b}`, null);
     return ship;
   }
-  const first = atlas.get(`${base}_g`);
+  const first = atlas.get(base);
   const w = first.cutWidth;
   const h = first.cutHeight;
   const key = `skin_${base}`;
@@ -149,15 +155,16 @@ export function applySkin(scene, ship) {
   const src = atlas.getSourceImage();
   const ctx = tex.context;
   ctx.imageSmoothingEnabled = false;
+  ctx.globalCompositeOperation = 'source-over';
   ctx.clearRect(0, 0, w * BANKS.length, h);
   const layer = document.createElement('canvas');
   layer.width = w;
   layer.height = h;
   const l = layer.getContext('2d');
   BANKS.forEach((b, i) => {
-    const g = atlas.get(`${base}${b}_g`);
+    const g = atlas.get(colors ? `${base}${b}_g` : `${base}${b}`);
     ctx.drawImage(src, g.cutX, g.cutY, w, h, i * w, 0, w, h);
-    for (let r = 0; atlas.has(`${base}${b}_p${r}`); r++) {
+    for (let r = 0; colors && atlas.has(`${base}${b}_p${r}`); r++) {
       const p = atlas.get(`${base}${b}_p${r}`);
       l.globalCompositeOperation = 'source-over';
       l.clearRect(0, 0, w, h);
@@ -170,6 +177,21 @@ export function applySkin(scene, ship) {
       ctx.drawImage(layer, i * w, 0);
     }
   });
+  if (decals) {
+    const gacha = scene.textures.get('gacha');
+    const pics = gacha.getSourceImage();
+    ctx.globalCompositeOperation = 'source-atop'; // (on the hull only)
+    BANKS.forEach((b, i) => {
+      decals.forEach((pic, n) => {
+        if (!pic || !gacha.has(pic)) return;
+        const f = gacha.get(pic);
+        // (a banked ship is narrower: its wings' stickers move in with them)
+        const fx = 0.5 + (DECAL_AT[n][0] - 0.5) * (b ? 0.84 : 1);
+        ctx.drawImage(pics, f.cutX, f.cutY, f.cutWidth, f.cutHeight, i * w + Math.round(fx * w - DECAL_SIZE / 2), Math.round(DECAL_AT[n][1] * h - DECAL_SIZE / 2), DECAL_SIZE, DECAL_SIZE);
+      });
+    });
+    ctx.globalCompositeOperation = 'source-over';
+  }
   tex.refresh();
   for (const b of BANKS) setCustomFrame(`${base}${b}`, key);
   return ship;

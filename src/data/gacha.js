@@ -21,7 +21,13 @@ export const PITY = { every: 10, min: 'SR' };
 export const SLOTS = ['engine', 'gun', 'bomb', 'core', 'omamori'];
 
 /** What changes only the looks, one of each worn at a time on any hull. */
-export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape', 'blast', 'bomb_look', 'title', 'sound', 'graze', 'hud_color', 'life_icon', 'companion', 'shot_turret', 'shield'];
+export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape', 'blast', 'bomb_look', 'title', 'sound', 'graze', 'hud_color', 'life_icon', 'companion', 'shot_turret', 'shield', 'decal_nose', 'decal_lwing', 'decal_rwing', 'decal_tail'];
+
+/** The places a sticker goes on the hull: a look's slot each, all taking the one kind of item. */
+export const DECAL_SLOTS = ['decal_nose', 'decal_lwing', 'decal_rwing', 'decal_tail'];
+
+/** The kind of item a look's slot takes. */
+export const lookKind = (slot) => (slot.startsWith('decal_') ? 'decal' : slot);
 
 /** The frames a skin for a weapon's shots replaces (kind -> frames; the skin's own are <frame>_<skin>). */
 export const SHOT_FRAMES = { shot_basic: ['ps_needle'], shot_spread: ['ps_spread'], shot_laser: ['ps_laser_1', 'ps_laser_2', 'ps_laser_3'], shot_homing: ['ps_homing_0'], shot_turret: ['ps_turret'] };
@@ -449,6 +455,62 @@ export const ITEMS = [
   { id: 'shield_ruby', kind: 'shield', rarity: 'R', name: 'TARCZA: RUBIN', info: 'KOLOR BAŃKI WIEŻYCZEK', shield: { one: [0xe0303a, 0xff9aa0], two: [0xff3a5a, 0xffd0d8] } },
   { id: 'shield_ink', kind: 'shield', rarity: 'SR', name: 'TARCZA: TUSZ', info: 'KOLOR BAŃKI WIEŻYCZEK', shield: { one: [0x2a2438, 0x8a86a0], two: [0x14101c, 0xd8d4e4] } },
   { id: 'shield_rainbow', kind: 'shield', rarity: 'SSR', name: 'TARCZA: TĘCZA', info: 'KOLOR BAŃKI WIEŻYCZEK', shield: { cycle: true } },
+  // ---- stickers: one for each of the four places on the hull (decal_<id>, tools/art/decals.mjs)
+  { id: 'decal_kanji_yama', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: ZNAK GÓRA', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kanji_yama' },
+  { id: 'decal_kanji_kawa', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: ZNAK RZEKA', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kanji_kawa' },
+  { id: 'decal_kanji_hi', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: ZNAK OGIEŃ', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kanji_hi' },
+  { id: 'decal_kanji_mizu', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: ZNAK WODA', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kanji_mizu' },
+  { id: 'decal_kanji_ki', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: ZNAK DRZEWO', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kanji_ki' },
+  { id: 'decal_kanji_nichi', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: ZNAK SŁOŃCE', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kanji_nichi' },
+  { id: 'decal_kanji_tsuki', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: ZNAK KSIĘŻYC', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kanji_tsuki' },
+  { id: 'decal_kanji_dai', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: ZNAK WIELKI', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kanji_dai' },
+  { id: 'decal_kanji_chikara', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: ZNAK SIŁA', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kanji_chikara' },
+  { id: 'decal_kanji_ten', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: ZNAK NIEBO', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kanji_ten' },
+  { id: 'decal_kanji_ou', kind: 'decal', rarity: 'SR', name: 'NAKLEJKA: ZNAK KRÓL', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kanji_ou' },
+  { id: 'decal_kanji_tsuchi', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: ZNAK ZIEMIA', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kanji_tsuchi' },
+  { id: 'decal_kamon_maru', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: HERB PIERŚCIEŃ', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kamon_maru' },
+  { id: 'decal_kamon_tomoe', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: HERB TOMOE', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kamon_tomoe' },
+  { id: 'decal_kamon_cross', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: HERB KRZYŻ', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kamon_cross' },
+  { id: 'decal_kamon_takeda', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: HERB TAKEDA', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kamon_takeda' },
+  { id: 'decal_kamon_kuyo', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: HERB GWIAZDY', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kamon_kuyo' },
+  { id: 'decal_kamon_kikko', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: HERB ŻÓŁW', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kamon_kikko' },
+  { id: 'decal_kamon_hikiryo', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: HERB DWA PASY', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kamon_hikiryo' },
+  { id: 'decal_kamon_mori', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: HERB MORI', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_kamon_mori' },
+  { id: 'decal_face_kitsune', kind: 'decal', rarity: 'SR', name: 'NAKLEJKA: MASKA KITSUNE', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_face_kitsune' },
+  { id: 'decal_face_tengu', kind: 'decal', rarity: 'SR', name: 'NAKLEJKA: MASKA TENGU', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_face_tengu' },
+  { id: 'decal_face_oni', kind: 'decal', rarity: 'SR', name: 'NAKLEJKA: MASKA ONI', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_face_oni' },
+  { id: 'decal_face_okame', kind: 'decal', rarity: 'SR', name: 'NAKLEJKA: MASKA OKAME', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_face_okame' },
+  { id: 'decal_face_hyottoko', kind: 'decal', rarity: 'SR', name: 'NAKLEJKA: MASKA HYOTTOKO', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_face_hyottoko' },
+  { id: 'decal_face_daruma', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: OCZY DARUMY', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_face_daruma' },
+  { id: 'decal_face_shark', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: PASZCZA REKINA', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_face_shark' },
+  { id: 'decal_face_skull', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: CZASZKA', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_face_skull' },
+  { id: 'decal_sym_hinomaru', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: HINOMARU', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_sym_hinomaru' },
+  { id: 'decal_sym_fuji', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: FUJI', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_sym_fuji' },
+  { id: 'decal_sym_wave', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: FALA', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_sym_wave' },
+  { id: 'decal_sym_lightning', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: BŁYSKAWICA', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_sym_lightning' },
+  { id: 'decal_sym_flames', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: PŁOMIENIE', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_sym_flames' },
+  { id: 'decal_sym_checker', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: SZACHOWNICA', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_sym_checker' },
+  { id: 'decal_sym_shuriken', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: SHURIKEN', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_sym_shuriken' },
+  { id: 'decal_sym_torii', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: TORII', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_sym_torii' },
+  { id: 'decal_sym_fan', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: WACHLARZ', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_sym_fan' },
+  { id: 'decal_sym_umbrella', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: PARASOL', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_sym_umbrella' },
+  { id: 'decal_sym_lantern', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: LAMPION', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_sym_lantern' },
+  { id: 'decal_sym_koinobori', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: KOINOBORI', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_sym_koinobori' },
+  { id: 'decal_sym_n88', kind: 'decal', rarity: 'SR', name: 'NAKLEJKA: NUMER 88', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_sym_n88' },
+  { id: 'decal_sym_star', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: GWIAZDA', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_sym_star' },
+  { id: 'decal_food_onigiri', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: ONIGIRI', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_food_onigiri' },
+  { id: 'decal_food_sushi', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: SUSHI', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_food_sushi' },
+  { id: 'decal_food_ramen', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: RAMEN', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_food_ramen' },
+  { id: 'decal_food_dango', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: DANGO', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_food_dango' },
+  { id: 'decal_food_taiyaki', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: TAIYAKI', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_food_taiyaki' },
+  { id: 'decal_food_takoyaki', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: TAKOYAKI', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_food_takoyaki' },
+  { id: 'decal_food_mochi', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: MOCHI', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_food_mochi' },
+  { id: 'decal_food_watermelon', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: ARBUZ', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_food_watermelon' },
+  { id: 'decal_pet_paw', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: ŁAPKA', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_pet_paw' },
+  { id: 'decal_pet_crane', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: ŻURAW', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_pet_crane' },
+  { id: 'decal_pet_koi', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: KARP', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_pet_koi' },
+  { id: 'decal_pet_fox', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: LIS', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_pet_fox' },
+  { id: 'decal_pet_frog', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: ŻABA', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_pet_frog' },
 ];
 
 export const ITEM = Object.fromEntries(ITEMS.map((it) => [it.id, it]));

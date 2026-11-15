@@ -6,6 +6,7 @@
 import { shotSkins } from './shots.mjs';
 import { enemyBulletSkins } from './ebullets.mjs';
 import { lookArt } from './looks.mjs';
+import { decalArt } from './decals.mjs';
 import { ITEMS } from '../../src/data/gacha.js';
 import { HiSprite, tones, speckle, inPoly } from '../lib/hisprite.mjs';
 import { Raster } from '../lib/raster.mjs';
@@ -524,6 +525,20 @@ function partShield() {
   return s.render({ outline: 0 });
 }
 
+/** A sticker: a red seal with a star, a corner peeling. */
+function partDecal() {
+  const s = new HiSprite(72, 72, RAMPS);
+  s.poly([[10, 10], [62, 10], [62, 48], [48, 62], [10, 62]], 'r');
+  s.poly([[62, 48], [48, 48], [48, 62]], 'c');
+  const star = Array.from({ length: 10 }, (_, i) => {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const q = i % 2 ? 8 : 18;
+    return [34 + Math.cos(a) * q, 34 + Math.sin(a) * q];
+  });
+  for (let y = 12; y < 56; y++) for (let x = 12; x < 56; x++) if (inPoly(star, x + 0.5, y + 0.5)) s.px(x, y, 0xffffff);
+  return s.render({ outline: 2 });
+}
+
 /** A title: a scroll with lines of writing and a red seal. */
 function partTitle() {
   const s = new HiSprite(72, 72, RAMPS);
@@ -681,7 +696,9 @@ export function gachaAtlas() {
   add('part_marker', partMarker());
   for (const s of lookArt()) out.push(s); // life icons and other small looks (looks.mjs)
   add('part_blast', partBlast());
+  for (const s of decalArt()) out.push(s); // the stickers (decals.mjs)
   add('part_title', partTitle());
+  add('part_decal', partDecal());
   add('part_shield', partShield());
   add('part_companion', partCompanion());
   add('part_sound', partSound());

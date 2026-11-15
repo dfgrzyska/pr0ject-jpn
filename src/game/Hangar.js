@@ -1,5 +1,5 @@
 import { DEPTH, RENDER_SCALE, VIEW } from '../config.js';
-import { ITEM, ITEMS, RARITIES, RARITY, SHOT_FRAMES, SLOTS } from '../data/gacha.js';
+import { ITEM, ITEMS, RARITIES, RARITY, SHOT_FRAMES, SLOTS, lookKind } from '../data/gacha.js';
 import { pixelText } from './Hud.js';
 import { buildShip, equip, layout, setHull, wear } from './Loadout.js';
 import { applySkin, flameLook } from './shipSkin.js';
@@ -14,13 +14,13 @@ const W = VIEW.width;
 const LINE = 12; // a row of the list
 const BOX = 26; // a slot
 const PER_ROW = 5;
-const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW', wake: 'ŚLAD ZA STATKIEM', shot_basic: 'POCISKI: PODSTAWOWA', shot_spread: 'POCISKI: ROZRZUT', shot_laser: 'POCISKI: LASER', shot_homing: 'POCISKI: NAPROWADZANE', marker: 'ZNACZNIK HITBOXA', eb_color: 'WROGIE POCISKI: KOLOR', eb_shape: 'WROGIE POCISKI: KSZTAŁT', blast: 'WYBUCHY', bomb_look: 'WYGLĄD BOMBY', title: 'TYTUŁ PILOTA', sound: 'DŹWIĘK STRZAŁU', graze: 'ISKRA GRAZINGU', hud_color: 'KOLOR LICZNIKA', life_icon: 'IKONA ŻYCIA', companion: 'TOWARZYSZ', shot_turret: 'POCISKI: WIEŻYCZKI', shield: 'BAŃKA TARCZY' };
+const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW', wake: 'ŚLAD ZA STATKIEM', shot_basic: 'POCISKI: PODSTAWOWA', shot_spread: 'POCISKI: ROZRZUT', shot_laser: 'POCISKI: LASER', shot_homing: 'POCISKI: NAPROWADZANE', marker: 'ZNACZNIK HITBOXA', eb_color: 'WROGIE POCISKI: KOLOR', eb_shape: 'WROGIE POCISKI: KSZTAŁT', blast: 'WYBUCHY', bomb_look: 'WYGLĄD BOMBY', title: 'TYTUŁ PILOTA', sound: 'DŹWIĘK STRZAŁU', graze: 'ISKRA GRAZINGU', hud_color: 'KOLOR LICZNIKA', life_icon: 'IKONA ŻYCIA', companion: 'TOWARZYSZ', shot_turret: 'POCISKI: WIEŻYCZKI', shield: 'BAŃKA TARCZY', decal_nose: 'NAKLEJKA: DZIÓB', decal_lwing: 'NAKLEJKA: LEWE SKRZYDŁO', decal_rwing: 'NAKLEJKA: PRAWE SKRZYDŁO', decal_tail: 'NAKLEJKA: OGON' };
 // a slot's picture: the kind's (the four weapons' skins share one), or the fitted skin itself
-const slotFrame = (kind, it) => (it?.pic ? it.pic : it?.skin ? `${SHOT_FRAMES[kind][0]}_${it.skin}` : kind.startsWith('shot_') ? 'part_shot' : `part_${kind}`);
+const slotFrame = (kind, it) => (it?.pic ? it.pic : it?.skin ? `${SHOT_FRAMES[kind][0]}_${it.skin}` : kind.startsWith('shot_') ? 'part_shot' : `part_${lookKind(kind)}`);
 // the tabs: the parts, then the looks (of the ship, of the shots: its own and the enemies', of the effects)
 const TABS = [
   { id: 'parts', name: 'CZĘŚCI', x: 21 },
-  { id: 'ship', name: 'STATEK', x: 65, kinds: ['paint', 'flame', 'wake', 'marker', 'title', 'companion'] },
+  { id: 'ship', name: 'STATEK', x: 65, kinds: ['paint', 'decal_nose', 'decal_lwing', 'decal_rwing', 'decal_tail', 'flame', 'wake', 'marker', 'companion', 'title'] },
   { id: 'shots', name: 'POCISKI', x: 112, kinds: ['dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'shot_turret', 'eb_color', 'eb_shape', 'sound'] },
   { id: 'fx', name: 'EFEKTY', x: 159, kinds: ['blast', 'bomb_look', 'graze', 'shield', 'hud_color', 'life_icon'] },
 ];
@@ -119,7 +119,7 @@ export class Hangar {
     const slot = this.slots()[this.slot];
     if (slot.fixed) return [];
     const have = new Set(this.loadout.owned);
-    const all = ITEMS.filter((it) => it.kind === slot.kind);
+    const all = ITEMS.filter((it) => it.kind === lookKind(slot.kind));
     const rank = (it) => (it.rarity ? RARITIES.indexOf(it.rarity) + 1 : 0);
     return [...all.filter((it) => have.has(it.id)).sort((a, b) => rank(b) - rank(a)), ...all.filter((it) => !have.has(it.id)).sort((a, b) => rank(a) - rank(b))].map((it) => ({ it, have: have.has(it.id) }));
   }

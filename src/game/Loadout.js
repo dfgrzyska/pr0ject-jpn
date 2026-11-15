@@ -1,4 +1,4 @@
-import { DEFAULTS, ITEM, ITEMS, KITS, LOOKS, PITY, RARITIES, RARITY, SHOT_FRAMES, SLOTS, TICKETS } from '../data/gacha.js';
+import { DEFAULTS, ITEM, ITEMS, KITS, LOOKS, PITY, RARITIES, RARITY, SHOT_FRAMES, SLOTS, TICKETS, DECAL_SLOTS, lookKind } from '../data/gacha.js';
 
 // The player's side of the gachapon: tickets, what came out of the machine so far, and the ship put together
 // from it (a hull and the parts in its slots). Kept in the browser. Every function here takes the state as
@@ -48,14 +48,14 @@ function normalize(state) {
   }
   state.slots = slots;
   // the looks: one of each kind at most, owned
-  state.look = Object.fromEntries(LOOKS.map((k) => [k, ITEM[state.look?.[k]]?.kind === k && have.has(state.look[k]) ? state.look[k] : null]));
+  state.look = Object.fromEntries(LOOKS.map((k) => [k, ITEM[state.look?.[k]]?.kind === lookKind(k) && have.has(state.look[k]) ? state.look[k] : null]));
   return state;
 }
 
 /** Wear a paint job, a flame colour or a dye (null: take it off). False if it is not the player's. */
 export function wear(state, kind, id) {
   if (!LOOKS.includes(kind)) return false;
-  if (id != null && (ITEM[id]?.kind !== kind || !state.owned.includes(id))) return false;
+  if (id != null && (ITEM[id]?.kind !== lookKind(kind) || !state.owned.includes(id))) return false;
   state.look[kind] = id;
   return true;
 }
@@ -163,7 +163,9 @@ export function buildShip(state) {
   }
   // the looks (see shipSkin.js): the paint's colours, the flame, the shots' tint
   const look = state.look ?? {};
-  ship.look = { paint: ITEM[look.paint]?.colors ?? null, flame: ITEM[look.flame]?.flame ?? null, dye: ITEM[look.dye]?.tint ?? null, wake: ITEM[look.wake]?.wake ?? null, shots: {}, marker: ITEM[look.marker]?.pic ?? null, ebColor: ITEM[look.eb_color]?.body ?? null, ebShape: ITEM[look.eb_shape]?.shape ?? null, blast: ITEM[look.blast]?.blast ?? null, bombLook: ITEM[look.bomb_look]?.bomb ?? null, title: ITEM[look.title]?.title ?? null, sound: ITEM[look.sound]?.sound ?? null, graze: ITEM[look.graze]?.graze ?? null, hud: ITEM[look.hud_color]?.hud ?? null, pal: ITEM[look.companion]?.pic ?? null, shield: ITEM[look.shield]?.shield ?? null };
+  ship.look = { paint: ITEM[look.paint]?.colors ?? null, flame: ITEM[look.flame]?.flame ?? null, dye: ITEM[look.dye]?.tint ?? null, wake: ITEM[look.wake]?.wake ?? null, shots: {}, marker: ITEM[look.marker]?.pic ?? null, ebColor: ITEM[look.eb_color]?.body ?? null, ebShape: ITEM[look.eb_shape]?.shape ?? null, blast: ITEM[look.blast]?.blast ?? null, bombLook: ITEM[look.bomb_look]?.bomb ?? null, title: ITEM[look.title]?.title ?? null, sound: ITEM[look.sound]?.sound ?? null, graze: ITEM[look.graze]?.graze ?? null, hud: ITEM[look.hud_color]?.hud ?? null, pal: ITEM[look.companion]?.pic ?? null, shield: ITEM[look.shield]?.shield ?? null, decals: null };
+  // (the stickers: a picture for each of the four places, where one is put)
+  if (DECAL_SLOTS.some((k) => ITEM[look[k]])) ship.look.decals = DECAL_SLOTS.map((k) => ITEM[look[k]]?.pic ?? null);
   if (ITEM[look.life_icon]) ship.life = ITEM[look.life_icon].pic; // (the HUD's icon of a life)
   // (the shots' skins: the frame a shot is fired with -> the frame it is shown with)
   for (const [kind, frames] of Object.entries(SHOT_FRAMES)) if (ITEM[look[kind]]) for (const f of frames) ship.look.shots[f] = `${f}_${ITEM[look[kind]].skin}`;
