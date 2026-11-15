@@ -5,7 +5,7 @@
 // eyes two slits of bare silk, its whiskers dry brush strokes. Low hills and puffs of trees in the foreground give the
 // mountain its size; a red seal in the corner. The strip creeps up through the fight, from the mountain to the head.
 import { Raster, fbm, rng, mix } from '../../lib/raster.mjs';
-import { tintTable } from '../props.mjs';
+import { tintTable, PropKit } from '../props.mjs';
 
 export const S = 3;
 const W = 180;
@@ -272,9 +272,61 @@ export function buildMid() {
       const worn = fbm(sx0 + x, sy0 + y, { seed: 200, scale: 3 }) > 0.74;
       if ((frame || !marks) && !worn) img.set(sx0 + x, sy0 + y, SEAL, 0.86);
     }
+  // ---- the moving parts: the smoke churns (billows swelling and fading in a wave that runs up the column), puffs
+  // keep rising out of the crater, and now and then the smoke-cat slowly blinks
+  const kit = new PropKit(1849, { artScale: S });
+  const u = (y) => Math.round(L - y / S);
+  const smoke = mix(SILK[0], INK, 0.66);
+  const billow = (R, seed, pale) => {
+    const n2 = Math.ceil(R * 2.6);
+    const out = new Raster(n2, n2);
+    const c = n2 / 2;
+    for (let y = 0; y < n2; y++)
+      for (let x = 0; x < n2; x++) {
+        const n = fbm(x, y, { seed, scale: 7 });
+        const e = Math.hypot(x - c, y - c) / R + (n - 0.5) * 0.45;
+        if (e >= 1) continue;
+        if (pale) out.set(x, y, SILK[0], 0.5 * (1 - e) ** 0.8);
+        else out.set(x, y, mix(SILK[0], INK, 0.62 + smooth(0.7, 0.97, e) * 0.22 + (n - 0.5) * 0.15), 0.85 * Math.min(1, (1 - e) * 4));
+      }
+    return kit.frame(out);
+  };
+  const bf = [billow(14, 301, false), billow(20, 302, false), billow(26, 303, false), billow(12, 304, true), billow(18, 305, true)];
+  const parts = [];
+  for (let k = 8; k < path.length - 10; k += 7) {
+    const [x, y, r] = path[k];
+    const pale = (k / 7) % 2 === 1;
+    const i = pale ? 3 + (k % 2) : Math.min(2, Math.floor(r / 34));
+    const [fw, fh] = kit.size(bf[i]);
+    // the dark ones on the column's edges, so its outline swells and settles; the pale curls inside it
+    const side = (k / 7) % 4 < 2 ? -1 : 1;
+    const ox = pale ? (rand() - 0.5) * r * 0.6 : side * r * (0.72 + rand() * 0.2);
+    parts.push([i, Math.round((x + ox) / S - fw / 2), u(y) + Math.round(fh / 2), Math.round(-k * 0.045 * 100) / 100]);
+  }
+  kit.wave(bf, parts, { w: 1.3, a0: 0, a1: 0.8, pw: 2 });
+  // puffs out of the crater: small, then bigger as they rise and thin away
+  const rising = [[billow(9, 311, false)], [billow(14, 312, false)], [billow(19, 313, false)]];
+  for (const ox of [-26, 26]) kit.emit(Math.round((px + ox) / S), u(py - 2), rising, { rate: 0.9, life: [3, 4.5], vy: 14, sx: 4, wf: 0.5, a: 0.8 });
+  // the blink: smoke drawn over the eyes, a curved line where they shut
+  const shut = new Raster(60, 30);
+  for (let y = 0; y < 30; y++)
+    for (let x = 0; x < 60; x++) {
+      const uu = (x - 30) / 28;
+      const vv = (y - 15) / 14;
+      if (uu * uu + vv * vv > 1) continue;
+      const g = fbm(x, y, { seed: 320, scale: 4, octaves: 2 });
+      shut.set(x, y, mix(smoke, INK, (g - 0.5) * 0.2), Math.min(1, (1 - uu * uu - vv * vv) * 5));
+    }
+  for (let x = 6; x < 54; x++) {
+    const t = (x - 30) / 24;
+    for (let w = 0; w < 3; w++) shut.set(x, 13 + t * t * 6 + w * 0.7, INK, 0.9);
+  }
+  const lid = kit.frame(shut);
+  const seq = [...Array(52).fill(-1), 0, 0, 0, -1, -1, 0, 0, ...Array(30).fill(-1)];
+  for (const sx of [-1, 1]) kit.loop(Math.round((headX + sx * 46 - 30) / S), u(headY - 12 - 15), [lid], { fps: 8, seq, ph: 0 });
   return {
     strip: img,
-    props: null,
+    props: kit.pack(),
     meta: { width: W, artScale: S, chunkHeight: L, chunks: 1, length: L, tint: tintTable(L, () => [255, 255, 255]) },
   };
 }
