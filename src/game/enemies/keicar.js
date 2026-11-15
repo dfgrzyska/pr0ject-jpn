@@ -41,7 +41,7 @@ export const keicar = {
    */
   spawnKei(w, base) {
     const g = { kind: 'keicar', state: 'enter', t: 0, stage: 1, phase: 0, step: 0, timer: 1.2, parts: [], awake: false, defeated: false, x: w.x, act: null, cones: [], marks: [], traffic: [], melons: [], splats: [], skidT: 0, take: { body: 1 } };
-    const body = this.pool.spawn('kei_0', w.x, -60, { ...base, role: 'body', group: g, hp: KEI.hp, maxHp: KEI.hp, radius: 13, segs: [{ x: 0, y: 0, r: 12 }, { x: 0, y: 0, r: 12 }] });
+    const body = this.pool.spawn('kei_0', w.x, -60, { ...base, role: 'body', group: g, hp: KEI.hp, maxHp: KEI.hp, radius: 13, flashTint: 0x2a2a2a, segs: [{ x: 0, y: 0, r: 12 }, { x: 0, y: 0, r: 12 }] });
     body.setDepth(DEPTH.air - 0.1);
     g.body = body;
     g.parts.push(body);
@@ -124,7 +124,10 @@ export const keicar = {
     this.keiDone(g);
   },
 
-  /** The ram: it revs (red lines show the lane), honks, charges down and out, comes back in from the top. */
+  /**
+   * The ram: it lines up with the player and revs, then a burnout — it backs off a little, the rear wheels spin and
+   * smoke, rubber left on the road, the headlamps flashing — honks, charges down and out, comes back in from the top.
+   */
   keiCharge(g, a, dt) {
     const s = this.scene;
     const e = g.body;
@@ -133,11 +136,19 @@ export const keicar = {
     if (a.phase === 'aim') {
       if (a.t < KEI.aim * 0.65) a.tx = Phaser.Math.Clamp(pl.x, 18, VIEW.width - 18);
       g.x += (a.tx - g.x) * Math.min(1, dt * 5);
-      e.x = g.x + (Math.random() - 0.5) * 2.2;
+      const burn = Math.max(0, (a.t - KEI.aim * 0.4) / (KEI.aim * 0.6)); // the burnout, building
+      e.x = g.x + (Math.random() - 0.5) * (1.5 + burn * 2.5);
+      e.y += (KEI.home - burn * 9 - e.y) * Math.min(1, dt * 8);
       this.keiExhaust(g, dt, 3);
-      if (Math.floor(a.t * 12) % 2) {
-        this.tele.lineStyle(2, 0xff5040, 0.6);
-        for (const dx of [-13, 13]) this.tele.lineBetween(a.tx + dx, e.y + 24, a.tx + dx, s.H);
+      if (a.step === 0) {
+        a.step = 1;
+        s.fx.text(e.x, e.y - 30, 'BURORORO!', 0.7, 0xffb050);
+      }
+      if (burn > 0) {
+        // smoke pouring off the spinning rear wheels, the rubber they leave, the lamps flashing faster and faster
+        if (Math.random() < dt * 30 * burn) for (const sx of [-1, 1]) s.fx.puff('wisp_s_1', e.x + sx * 12 + (Math.random() - 0.5) * 6, e.y - 16 + (Math.random() - 0.5) * 6, 0.5);
+        this.keiSkid(g, dt);
+        if (Math.floor(a.t * (6 + burn * 14)) % 2) g.beamT = g.t + 0.02;
       }
       if (a.t > KEI.aim) {
         Object.assign(a, { phase: 'go', t: 0 });
@@ -165,7 +176,7 @@ export const keicar = {
     }
   },
 
-  /** High beams: they flash, two cones of light swing onto the player, then two streams of shots pour down them. */
+  /** High beams: the lamps flicker, faster and faster, onto the player, then two streams of shots pour out of them. */
   keiBeams(g, a, dt) {
     const s = this.scene;
     const e = g.body;
@@ -174,13 +185,8 @@ export const keicar = {
     if (a.t < B.aim) {
       // the warning: the beams follow the player for most of it, then hold
       if (a.t < B.aim * 0.7) a.aim = lamps.map(([x, y], i) => Math.atan2(s.player.y - y, s.player.x + (i ? 10 : -10) - x));
-      g.beamT = g.t + 0.05;
-      if (Math.floor(a.t * 14) % 2) {
-        this.tele.lineStyle(1, 0xfff0a0, 0.7);
-        lamps.forEach(([x, y], i) => {
-          for (const da of [-0.06, 0.06]) this.tele.lineBetween(x, y, x + Math.cos(a.aim[i] + da) * 300, y + Math.sin(a.aim[i] + da) * 300);
-        });
-      }
+      // the warning: the lamps flicker, faster as it comes, and flare at the end
+      if (Math.floor(a.t * (5 + (a.t / B.aim) * 16)) % 2 || a.t > B.aim * 0.85) g.beamT = g.t + 0.02;
       if (a.step === 0 && a.t > 0.05) {
         a.step = 1;
         s.fx.text(e.x, e.y + 34, 'PIKA PIKA!', 0.8, 0xfff0a0);
@@ -195,7 +201,7 @@ export const keicar = {
     if (a.t > B.aim + B.fire) this.keiDone(g, 0.9);
   },
 
-  /** The slalom: a weaving line shown down the road, then it weaves down it, hazard lights firing to the sides. */
+  /** The slalom: it shimmies, hazard lamps blinking, then weaves down the road, firing out to the sides. */
   keiSlalom(g, a, dt) {
     const s = this.scene;
     const e = g.body;
@@ -207,13 +213,15 @@ export const keicar = {
     }
     const path = (y) => a.x0 + Math.sin((y - KEI.home) / L.wave + a.ph) * L.amp;
     if (a.phase === 'show') {
-      // it lines up at the top of the line, revving; the line blinks down the road
+      // it lines up and shimmies from side to side, the hazard lamps blinking: it's about to weave
       g.x += (path(e.y) - g.x) * Math.min(1, dt * 6);
-      e.x = g.x + (Math.random() - 0.5) * 1.6;
+      e.x = g.x + Math.sin(a.t * 40) * 3;
+      e.setRotation(Math.sin(a.t * 40) * 0.12);
+      g.hazardT = g.t + 0.05;
       this.keiExhaust(g, dt, 3);
-      if (Math.floor(a.t * 10) % 2) {
-        this.tele.lineStyle(1, 0xffb050, 0.7);
-        for (let y = e.y + 20; y < s.H; y += 14) this.tele.lineBetween(path(y), y, path(y + 7), y + 7);
+      if (a.step === 0) {
+        a.step = 1;
+        s.fx.text(e.x, e.y - 30, 'SURARŌMU!', 0.7, 0xffb050);
       }
       if (a.t > L.show) Object.assign(a, { phase: 'go', t: 0, fire: 0 });
       return;

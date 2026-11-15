@@ -75,10 +75,11 @@ ryżowe z odbiciem nieba i chmur, rzędami sadzonek i czaplami; złoty ryż z ro
 kura; czerwona brama torii z kamiennymi latarniami; przydrożna herbaciarnia z ławkami i podróżnymi; gaj
 bambusowy; kopce milowe ichirizuka; rzeka z drewnianym mostem i łódkami.
 
-- **Faza 1 — mały, ale wściekły:** warczy, dwie czerwone linie pokazują pas, trąbi („PAAAP!”, pierścień) i
-  taranuje w dół drogi, wyjeżdża dołem i wraca z góry. Długie światła („PIKA PIKA!”): dwa stożki światła
-  namierzają gracza (0,8 s), potem dwa strumienie szybkich pocisków lecą wzdłuż nich. Slalom: najpierw miga
-  falista linia w dół drogi, potem auto jedzie po niej, a światła awaryjne strzelają na boki. Długie trąbienie —
+- **Faza 1 — mały, ale wściekły:** ustawia się w linii gracza i warczy („BURORORO!”), potem palenie gumy — cofa się kawałek, tylne koła dymią i
+  zostawiają ślady, reflektory migają coraz szybciej — trąbi („PAAAP!”, pierścień) i
+  taranuje w dół drogi, wyjeżdża dołem i wraca z góry. Długie światła („PIKA PIKA!”): reflektory migają coraz
+  szybciej, celując w gracza (0,8 s), potem lecą z nich dwa strumienie szybkich pocisków. Slalom („SURARŌMU!”): auto
+  najpierw wierci się na boki z migającymi awaryjnymi, potem jedzie zygzakiem w dół drogi, a światła awaryjne strzelają na boki. Długie trąbienie —
   kilka pierścieni po kolei.
 - **Faza 2 — tuning:** drift w kółko wokół gracza („DORIFTO!”), pociski lecą do środka koła; koło ma promień
   52 px i całe mieści się na ekranie (auto nie wyjeżdża poza krawędź); rzuca pachołki na drogę — leżą i jadą
