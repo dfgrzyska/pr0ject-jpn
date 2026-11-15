@@ -22,8 +22,8 @@ import { Player } from '../game/Player.js';
 import { Pool } from '../game/Pool.js';
 import { Score } from '../game/Score.js';
 import { PreFlight } from '../game/PreFlight.js';
-import { buildShip, loadState, newState, saveState } from '../game/Loadout.js';
-import { KITS } from '../data/gacha.js';
+import { buildShip, grant, loadState, newState, saveState } from '../game/Loadout.js';
+import { KITS, TICKETS } from '../data/gacha.js';
 import { INK, PALE, StampBook, hasStamp, pressStamp, stampFrame } from '../game/Stamps.js';
 import { Waves } from '../game/Waves.js';
 import { DiscoveryBook, DiscoveryNotice, FoodTrail, discoveries } from '../game/Discoveries.js';
@@ -50,6 +50,14 @@ function loadLoadout() {
   const state = storage ? loadState(storage, legacy) : newState();
   if (storage) saveState(storage, state);
   return state;
+}
+
+function saveLoadout(state) {
+  try {
+    saveState(localStorage, state);
+  } catch {
+    /* private mode */
+  }
 }
 
 /** All stage indices shuffled; `first` (debug ?stage=) goes to the front. */
@@ -123,6 +131,8 @@ export class Stage extends Phaser.Scene {
     // ?ship=tsuru, ?ship=tsubame fly the three old ships)
     const qShip = q.get('ship') === 'tsuru' ? 'kitsune' : q.get('ship');
     this.loadout = loadLoadout();
+    this.ticketsWon = 0; // in this city (shown on its results)
+    this.dev = Boolean(data.dev); // a fight picked on the developer screen: no tickets for it
     this.ship = this.carry?.ship ?? buildShip(Object.hasOwn(KITS, qShip ?? '') ? newState(qShip) : this.loadout);
     this.continues = this.carry?.continues ?? 0; // easy: continues used in this game
     // the whole journey so far, for the ending: ships lost, bombs used, time flown, stamps won, cities cleared
@@ -428,8 +438,19 @@ export class Stage extends Phaser.Scene {
     this.fx.flash(0.55, sec + 0.15);
   }
 
+  /** Tickets for the gachapon: a miniboss or a boss shot down (not with invulnerability on, nor on the developer screen). */
+  winTickets(n, x = VIEW.width / 2, y = this.H * 0.3) {
+    if (this.player.god || this.dev || (this.debugStart && !this.carry)) return;
+    grant(this.loadout, n);
+    saveLoadout(this.loadout);
+    this.ticketsWon += n;
+    this.sfx.pickup();
+    this.fx.text(x, y, n === 1 ? '+1 KUPON' : `+${n} KUPONY`, 2.2, 0xffe080);
+  }
+
   /** Called by Enemies when every part of the stage boss is destroyed. */
   onBossDefeated() {
+    this.winTickets(this.encounter ? TICKETS.encounter : TICKETS.boss);
     this.discoverEnemy({ type: 'boss' }, true);
     this.freeze(0.45);
     this.bossDown = true;
@@ -548,6 +569,7 @@ export class Stage extends Phaser.Scene {
         [`MNOŻNIK ×${this.score.mult}`, 0xf08bb0],
         hi.isNew ? ['NOWY REKORD!', 0xffe080, 1, true] : [`REKORD ${String(hi.value).padStart(8, '0')}`, 0xb0aec0],
         ['BOMBA UZUPEŁNIONA', 0xb0aec0],
+        ...(this.ticketsWon ? [[`KUPONY: +${this.ticketsWon} (MASZ ${this.loadout.tickets})`, 0xffe080]] : []),
         ...(stamp ? [stamp] : []),
         '',
         next ? [`DALEJ: ETAP ${this.pos + 2} - ${next.name}`, 0xffffff] : ['PODRÓŻ UKOŃCZONA!', 0xffe080],

@@ -1,3 +1,4 @@
+import { TICKETS } from '../data/gacha.js';
 import Phaser from 'phaser';
 import { BEANS, CAMPAIGN, DEPTH, ENEMIES, FAIR, HEAVY, PHASE, TURRETS, VIEW, WEAPONS } from '../config.js';
 import { rules } from '../difficulty.js';
@@ -440,6 +441,7 @@ export class Enemies {
       s.bullets.cancelAll(s.fx);
       s.fx.text(x, y - 24, `${e.def.score * s.score.mult}`, 1.6, 0xffe080);
       if (e.type === 'heavy') {
+        if (this.heavy === e) s.winTickets(TICKETS.heavy, x, y - 36); // a miniboss shot down (one that flew off gives none)
         this.heavy = null;
         s.freeze(0.3);
       }
