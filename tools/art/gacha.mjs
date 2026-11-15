@@ -6,6 +6,7 @@
 import { HiSprite, tones, speckle, inPoly } from '../lib/hisprite.mjs';
 import { Raster } from '../lib/raster.mjs';
 import { MACHINE, CAPSULE, BALL, NEKO } from '../../src/data/gachaLayout.js';
+import { card } from './menu.mjs';
 
 const INK = 0x14101c;
 const RAMPS = {
@@ -405,6 +406,16 @@ function partOmamori() {
   return s.render({ outline: 2 });
 }
 
+/** The title screen's paper card at half its width (two side by side: the gachapon, the hangar): its two ends joined. */
+function halfCard(active) {
+  const full = card(false, active);
+  const half = full.w / 4;
+  const out = new Raster(half * 2, full.h);
+  out.blit(full.crop(0, 0, half, full.h), 0, 0);
+  out.blit(full.crop(full.w - half, 0, half, full.h), half, 0);
+  return out;
+}
+
 export function gachaAtlas() {
   const out = [];
   const add = (name, raster) => out.push({ name, raster });
@@ -419,6 +430,8 @@ export function gachaAtlas() {
     add(`ball_${r}`, capsule(r, 'whole', BALL)); // as it lies under the glass, smaller
   }
   add('icon_gacha', capsule('SSR', 'whole', 54)); // the title screen's button
+  add('half_off', halfCard(false));
+  add('half_on', halfCard(true));
   add('ticket', ticket());
   add('sparkle', sparkle());
   add('part_engine', partEngine());

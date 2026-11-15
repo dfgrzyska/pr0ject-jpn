@@ -589,7 +589,7 @@ const ORNAMENT = (card, x, y, sx, sy, c, c2) => {
   card.set(x + sx * 6, y + sy * 6, c2);
 };
 
-function card(primary, active) {
+export function card(primary, active) {
   const r = new Raster(152 * S, 30 * S);
   const W = r.w;
   const H = 27 * S;

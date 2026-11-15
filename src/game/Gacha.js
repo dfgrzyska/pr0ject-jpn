@@ -50,7 +50,7 @@ export class Gacha {
     this.back = add(pixelText(scene, 27, 12, '< WRÓĆ'), d + 5);
     this.title = add(pixelText(scene, W / 2, 12, 'GACHAPON').setTint(0xffd6e5), d + 5);
     this.ticketIcon = add(scene.add.image(150, 12, 'gacha', 'ticket').setScale(FINE * 0.67), d + 5);
-    this.count = add(pixelText(scene, 176, 12, '', 1).setTint(0xffe080), d + 5);
+    this.count = add(pixelText(scene, 176, 12, '', 1).setOrigin(1, 0.5).setTint(0xffe080), d + 5);
     // the two buttons, what is left in the machine, a hint
     this.btn = add(scene.add.graphics(), d + 5);
     this.btnText = ['LOSUJ', 'LOSUJ ×10'].map((s) => add(pixelText(scene, 0, 0, s), d + 5.1));

@@ -111,6 +111,9 @@ const EN = {
   // ships
   'TWÓJ STATEK': 'YOUR SHIP',
   LOSUJ: 'DRAW',
+  ZAŁOŻONE: 'FITTED',
+  'NA STAŁE W TYM KADŁUBIE': 'BUILT INTO THIS HULL',
+  'DOTKNIJ DWA RAZY = ZAŁÓŻ': 'TAP TWICE = FIT',
   'LOSUJ ×10': 'DRAW ×10',
   'AUTOMAT JEST PUSTY': 'THE MACHINE IS EMPTY',
   'MASZ JUŻ WSZYSTKO!': 'YOU HAVE IT ALL!',
@@ -374,6 +377,8 @@ const PATTERNS = [
   [/^FAZA (I+)$/, (n) => `PHASE ${n}`],
   [/^POZOSTAŁO KONTYNUACJI: (\d+)$/, (n) => `CONTINUES LEFT: ${n}`],
   [/^PIECZĄTKI: (.+)$/, (n) => `STAMPS: ${n}`],
+  [/^GACHA ×(\d+)$/, (n) => `GACHA ×${n}`],
+  [/^(.+): DO WYLOSOWANIA$/, (r) => `${tr(r)}: TO BE DRAWN`],
   [/^W AUTOMACIE: (\d+)$/, (n) => `IN THE MACHINE: ${n}`],
   [/^JESZCZE (\d+)$/, (n) => `${n} MORE`],
   [/^\+1 KUPON$/, () => '+1 TICKET'],

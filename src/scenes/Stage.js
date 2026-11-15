@@ -23,6 +23,7 @@ import { Pool } from '../game/Pool.js';
 import { Score } from '../game/Score.js';
 import { PreFlight } from '../game/PreFlight.js';
 import { Gacha } from '../game/Gacha.js';
+import { Hangar } from '../game/Hangar.js';
 import { buildShip, grant, loadState, newState, saveState } from '../game/Loadout.js';
 import { KITS, TICKETS } from '../data/gacha.js';
 import { INK, PALE, StampBook, hasStamp, pressStamp, stampFrame } from '../game/Stamps.js';
@@ -134,7 +135,8 @@ export class Stage extends Phaser.Scene {
     this.loadout = loadLoadout();
     this.ticketsWon = 0; // in this city (shown on its results)
     this.dev = Boolean(data.dev); // a fight picked on the developer screen: no tickets for it
-    this.ship = this.carry?.ship ?? buildShip(Object.hasOwn(KITS, qShip ?? '') ? newState(qShip) : this.loadout);
+    this.fixedShip = Object.hasOwn(KITS, qShip ?? ''); // (debug: the hangar does not change it)
+    this.ship = this.carry?.ship ?? buildShip(this.fixedShip ? newState(qShip) : this.loadout);
     this.continues = this.carry?.continues ?? 0; // easy: continues used in this game
     // the whole journey so far, for the ending: ships lost, bombs used, time flown, stamps won, cities cleared
     this.run = this.carry?.run ?? { deaths: 0, bombs: 0, time: 0, stamps: [], cities: [] };
@@ -215,8 +217,9 @@ export class Stage extends Phaser.Scene {
       if (this.state === 'city' || this.state === 'title') this.journey.pointerMove(p);
       else if (this.state === 'play' && !this.paused) this.player.dragMove(p);
       else if (this.state === 'dev') this.devMenu?.pointerMove(p);
+      else if (this.state === 'hangar') this.hangar?.pointerMove(p);
     });
-    this.input.on('pointerup', (p) => { this.player.endDrag(p); this.journey?.pointerUp(p); if (this.state === 'dev') this.devMenu?.pointerUp(this.logicalPointer(p)); });
+    this.input.on('pointerup', (p) => { this.player.endDrag(p); this.journey?.pointerUp(p); if (this.state === 'dev') this.devMenu?.pointerUp(this.logicalPointer(p)); if (this.state === 'hangar') this.hangar?.pointerUp(); });
     this.input.on('pointerupoutside', (p) => { this.player.endDrag(p); this.journey?.pointerUp(p); });
     this.game.events.on('hidden', this.onHidden, this);
     this.events.once('shutdown', () => {
@@ -337,6 +340,22 @@ export class Stage extends Phaser.Scene {
     this.gacha?.destroy();
     this.gacha = null;
     this.showTitle(); // (the title shows the tickets left)
+  }
+
+  /** The hangar, from the title screen: the ship is put together there. */
+  openHangar() {
+    this.music.unlock();
+    this.hud.closePanel();
+    this.journey.setMode('backdrop');
+    this.state = 'hangar';
+    this.hangar = new Hangar(this, this.loadout, () => saveLoadout(this.loadout));
+  }
+
+  closeHangar() {
+    this.hangar?.destroy();
+    this.hangar = null;
+    if (!this.fixedShip) this.ship = buildShip(this.loadout); // (the title flies it past the mountain)
+    this.showTitle();
   }
 
   openSelect() {
@@ -658,6 +677,7 @@ export class Stage extends Phaser.Scene {
     if (this.state === 'city') return this.journey.pointerDown(p);
     if (this.state === 'dev') return this.devMenu.pointer(p);
     if (this.state === 'gacha') return this.gacha.pointer(p) === 'close' && this.closeGacha();
+    if (this.state === 'hangar') return this.hangar.pointer(p) === 'close' && this.closeHangar();
     if (this.state === 'title') {
       if (this.hud.hitLang(p)) return this.toggleLang();
       if (this.hud.hitInstall(p)) return install().then(() => this.state === 'title' && this.showTitle());
@@ -707,6 +727,11 @@ export class Stage extends Phaser.Scene {
       else if (confirm || bomb) this.devMenu.activate();
       return;
     }
+    if (this.state === 'hangar') {
+      const act = escape ? 'back' : down(k.LEFT) || down(k.A) ? 'left' : down(k.RIGHT) || down(k.D) ? 'right' : down(k.UP) || down(k.W) ? 'up' : down(k.DOWN) || down(k.S) ? 'down' : confirm || bomb ? 'confirm' : null;
+      if (act && this.hangar.key(act) === 'close') this.closeHangar();
+      return;
+    }
     if (this.state === 'gacha') {
       const act = escape ? 'back' : down(k.LEFT) || down(k.A) ? 'left' : down(k.RIGHT) || down(k.D) ? 'right' : confirm || bomb ? 'confirm' : null;
       if (act && this.gacha.key(act) === 'close') this.closeGacha();
@@ -724,6 +749,7 @@ export class Stage extends Phaser.Scene {
       else if (down(k.I) && canInstall()) install().then(() => this.state === 'title' && this.showTitle());
       else if (down(k.UP) || down(k.W)) this.journey.focus = (this.journey.focus + this.journey.menuButtons.length - 1) % this.journey.menuButtons.length;
       else if (down(k.DOWN) || down(k.S)) this.journey.focus = (this.journey.focus + 1) % this.journey.menuButtons.length;
+      else if ((down(k.LEFT) || down(k.A) || down(k.RIGHT) || down(k.D)) && this.journey.focus >= 4) this.journey.focus = 9 - this.journey.focus; // (the last row holds two)
       else if (confirm || bomb) this.journey.activate();
     } else if (this.state === 'city') {
       if (down(k.UP) || down(k.W) || down(k.LEFT) || down(k.A)) this.journey.step(-1);
@@ -762,6 +788,7 @@ export class Stage extends Phaser.Scene {
     this.pauseMenu?.layout(this.H);
     this.select?.layout(this.H);
     this.gacha?.layout(this.H);
+    this.hangar?.layout(this.H);
     this.map?.layout(this.H);
     this.ending?.layout(this.H);
     this.book?.layout(this.H);
@@ -812,10 +839,11 @@ export class Stage extends Phaser.Scene {
     const playing = this.state === 'play';
     // the moving background steps back when the screen fills with bullets
     this.parallax.props.calmTarget = Math.max(0, Math.min(1, (this.bullets.pool.live.length - 10) / 30));
-    this.parallax.update(dt, !['title', 'city', 'book', 'select', 'gacha'].includes(this.state), this.H);
+    this.parallax.update(dt, !['title', 'city', 'book', 'select', 'gacha', 'hangar'].includes(this.state), this.H);
     this.journey?.update(dt);
     this.select?.update(dt);
     this.gacha?.update(dt);
+    this.hangar?.update(dt);
     if (playing) {
       this.t += dt;
       this.waves.update(this.t, (w) => this.enemies.spawn(w));

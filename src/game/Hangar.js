@@ -1,0 +1,299 @@
+import { DEPTH, RENDER_SCALE, VIEW } from '../config.js';
+import { ITEM, ITEMS, RARITIES, RARITY, SLOTS } from '../data/gacha.js';
+import { pixelText } from './Hud.js';
+import { buildShip, equip, layout, setHull } from './Loadout.js';
+import { sharedArt } from './enemyArt.js';
+
+// The hangar, off the title screen: the ship as it is fitted, its numbers, the hull's slots, and under them the
+// parts of the kind the picked slot takes. Tap a slot, then a part to fit it (the fitted one again to take it out).
+// A part looked at shows what it would do to the numbers before it goes in. Parts not won yet are listed as
+// question marks in their rarity's colour.
+const FINE = 1 / RENDER_SCALE;
+const W = VIEW.width;
+const LINE = 12; // a row of the list
+const BOX = 26; // a slot
+const PER_ROW = 5;
+const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI' };
+const STATS = [
+  { label: 'PRĘDKOŚĆ', get: (s) => s.speed, min: 60, max: 190, fmt: (v) => String(Math.round(v)) },
+  { label: 'SIŁA OGNIA', get: (s) => s.damage, min: 0.8, max: 1.7, fmt: (v) => `×${v.toFixed(2)}` },
+  { label: 'BOMBA', get: (s) => s.bomb.damage, min: 15, max: 125, fmt: (v) => String(Math.round(v)) },
+  { label: 'ŻYCIA', get: (s) => s.lives, min: 0, max: 5, fmt: (v) => String(v) },
+];
+const STAT_X = 70;
+const tint = (it) => (it.rarity ? RARITY[it.rarity].color : 0xd8d4e4);
+
+export class Hangar {
+  constructor(scene, loadout, save) {
+    this.scene = scene;
+    this.loadout = loadout;
+    this.save = save;
+    this.t = 0;
+    this.slot = 0; // the slot picked
+    this.focus = 0; // the row of the list looked at
+    this.scroll = 0;
+    this.items = [];
+    const d = DEPTH.overlay + 1;
+    const add = (o, depth = d) => {
+      this.items.push(o);
+      return o.setDepth(depth);
+    };
+    this.add = add;
+    this.bg = add(scene.add.rectangle(0, 0, W, VIEW.maxHeight, 0x0a1024).setOrigin(0), d - 0.5);
+    this.cloth = add(scene.add.tileSprite(0, 0, W, VIEW.maxHeight, 'menu_waves').setTileScale(FINE, FINE).setOrigin(0).setAlpha(0.18), d - 0.4);
+    this.gfx = add(scene.add.graphics(), d);
+    this.back = add(pixelText(scene, 27, 12, '< WRÓĆ'), d + 1);
+    this.title = add(pixelText(scene, W / 2, 12, 'HANGAR').setTint(0xffd6e5), d + 1);
+    this.owned = add(pixelText(scene, 176, 12, '', 1).setOrigin(1, 0.5).setTint(0x9aaec2), d + 1);
+    // the ship, its engine burning
+    this.art = add(sharedArt(scene.add.image(36, 0, 'sprites', 'ship')).setScale(2), d + 1);
+    this.flame = add(sharedArt(scene.add.sprite(36, 0, 'sprites', 'flame_0')).setOrigin(0.5, 0).setScale(2).play('flame'), d + 0.9);
+    this.hullName = add(pixelText(scene, 36, 0, ''), d + 1);
+    // its numbers
+    this.statLabels = STATS.map((s) => add(pixelText(scene, STAT_X, 0, s.label, 0).setOrigin(0, 0.5).setTint(0xb0aec0), d + 1));
+    this.statValues = STATS.map(() => add(pixelText(scene, 176, 0, '', 1).setOrigin(1, 0.5), d + 1));
+    // the slots: a picture each (the kind's, or the hull itself)
+    this.slotArt = Array.from({ length: PER_ROW * 2 }, () => add(scene.add.image(0, 0, 'gacha', 'part_gun').setScale(FINE), d + 1));
+    this.slotShip = add(sharedArt(scene.add.image(0, 0, 'sprites', 'ship')), d + 1.1);
+    // the picked slot's name, the list under it, a line about the part looked at
+    this.head = add(pixelText(scene, 8, 0, '', 0).setOrigin(0, 0.5).setTint(0xffe080), d + 1);
+    this.rows = Array.from({ length: 16 }, () => add(pixelText(scene, 14, 0, '', 0).setOrigin(0, 0.5), d + 1));
+    this.marks = Array.from({ length: 16 }, () => add(pixelText(scene, 176, 0, '', 1).setOrigin(1, 0.5).setTint(0x9cf09a), d + 1));
+    this.info = add(pixelText(scene, W / 2, 0, '').setTint(0xb8c4d4), d + 1);
+    this.hint = add(pixelText(scene, W / 2, 0, scene.sys.game.device.input.touch ? 'DOTKNIJ DWA RAZY = ZAŁÓŻ' : 'STRZAŁKI / ENTER / ESC').setTint(0x6a7a92), d + 1);
+    this.layout(scene.H);
+  }
+
+  layout(H) {
+    this.H = H;
+    for (const o of [this.bg, this.cloth]) o.setSize(W, H);
+    this.shipY = 54;
+    this.hullName.y = this.shipY + 30;
+    this.statLabels.forEach((l, i) => (l.y = 28 + i * 16));
+    this.statValues.forEach((v, i) => (v.y = 28 + i * 16));
+    this.slotsY = 98; // the top of the slots
+    this.head.y = this.slotsY + BOX * 2 + 16;
+    this.top = this.head.y + 10;
+    this.bottom = H - 36;
+    this.info.y = H - 27;
+    this.hint.y = H - 12;
+    this.draw();
+  }
+
+  /** The fitted hull's slots, the hull first: { kind, index } or (built in) { kind, fixed }. */
+  slots() {
+    const hull = ITEM[this.loadout.hull];
+    const out = [{ kind: 'hull' }];
+    for (const k of SLOTS) {
+      if (hull.fixed?.[k]) out.push({ kind: k, fixed: hull.fixed[k] });
+      for (let i = 0; i < layout(this.loadout)[k]; i++) out.push({ kind: k, index: i });
+    }
+    return out;
+  }
+
+  /** The part in a slot (null: empty). */
+  fitted(slot) {
+    if (slot.kind === 'hull') return ITEM[this.loadout.hull];
+    return ITEM[slot.fixed ?? this.loadout.slots[slot.kind][slot.index]] ?? null;
+  }
+
+  /** What the list shows for the picked slot: every part of its kind, the ones owned first. */
+  list() {
+    const slot = this.slots()[this.slot];
+    if (slot.fixed) return [];
+    const have = new Set(this.loadout.owned);
+    const all = ITEMS.filter((it) => it.kind === slot.kind);
+    const rank = (it) => (it.rarity ? RARITIES.indexOf(it.rarity) + 1 : 0);
+    return [...all.filter((it) => have.has(it.id)).sort((a, b) => rank(b) - rank(a)), ...all.filter((it) => !have.has(it.id)).sort((a, b) => rank(a) - rank(b))].map((it) => ({ it, have: have.has(it.id) }));
+  }
+
+  /** The ship as it would be with the part looked at fitted (null: nothing would change). */
+  preview(row, slot) {
+    if (!row?.have || this.fitted(slot) === row.it) return null;
+    const trial = structuredClone(this.loadout);
+    if (slot.kind === 'hull' ? !setHull(trial, row.it.id) : !equip(trial, slot.kind, slot.index, row.it.id)) return null;
+    return buildShip(trial);
+  }
+
+  draw() {
+    const g = this.gfx.clear();
+    const slots = this.slots();
+    this.slot = Math.min(this.slot, slots.length - 1);
+    const slot = slots[this.slot];
+    const list = this.list();
+    this.focus = Math.max(0, Math.min(this.focus, list.length - 1));
+    const ship = buildShip(this.loadout);
+    const next = this.preview(list[this.focus], slot);
+    const total = ITEMS.length;
+    this.owned.setText(`${this.loadout.owned.length}/${total}`);
+
+    // the ship in its frame
+    this.art.setFrame(ship.frame);
+    this.flameY = ship.flameY;
+    this.hullName.setText(ship.name).setTint(ship.color);
+    g.lineStyle(1, ship.color, 1).strokeRect(36 - 26.5, this.shipY - 27.5, 54, 64);
+
+    // the numbers: a bar each; a part looked at shows the change (green: more, red: less)
+    STATS.forEach((st, i) => {
+      const y = 28 + i * 16;
+      const v = st.get(ship);
+      const nv = next ? st.get(next) : v;
+      const k = (x) => Math.max(0, Math.min(1, (x - st.min) / (st.max - st.min)));
+      const w = 176 - STAT_X;
+      g.fillStyle(0x1c2848).fillRect(STAT_X, y + 8, w, 2);
+      if (nv > v) g.fillStyle(0x6ae486).fillRect(STAT_X, y + 8, Math.round(w * k(nv)), 2);
+      g.fillStyle(nv < v ? 0xff5a5a : 0xffd040).fillRect(STAT_X, y + 8, Math.round(w * k(v)), 2);
+      if (nv < v) g.fillStyle(0xffd040).fillRect(STAT_X, y + 8, Math.round(w * k(nv)), 2);
+      this.statValues[i].setText(st.fmt(nv)).setTint(nv > v ? 0x6ae486 : nv < v ? 0xff5a5a : 0xffffff);
+    });
+
+    // the slots
+    this.slotShip.setVisible(false);
+    this.slotArt.forEach((art, i) => {
+      const s = slots[i];
+      art.setVisible(Boolean(s) && s.kind !== 'hull');
+      if (!s) return;
+      const { x, y } = this.slotAt(i);
+      const it = this.fitted(s);
+      const on = i === this.slot;
+      g.fillStyle(on ? 0x24345c : 0x121a34).fillRect(x - BOX / 2, y - BOX / 2, BOX, BOX);
+      g.lineStyle(1, on ? 0xffe080 : it ? tint(it) : 0x33416a, on || it ? 1 : 0.8).strokeRect(x - BOX / 2 + 0.5, y - BOX / 2 + 0.5, BOX - 1, BOX - 1);
+      if (s.kind === 'hull') this.slotShip.setVisible(true).setPosition(x, y).setFrame(ship.frame);
+      else art.setFrame(`part_${s.kind}`).setPosition(x, y).setAlpha(it ? (s.fixed ? 0.55 : 1) : 0.22);
+      // a part built into the hull: a small lock in the corner
+      if (s.fixed) {
+        g.fillStyle(0x9aaec2).fillRect(x + 6, y + 7, 6, 4);
+        g.lineStyle(1, 0x9aaec2).strokeRect(x + 7.5, y + 4.5, 3, 3);
+      }
+    });
+
+    // the picked slot, and the parts for it
+    const it = this.fitted(slot);
+    const nth = slot.index != null && layout(this.loadout)[slot.kind] > 1 ? ` ${slot.index + 1}` : '';
+    this.head.setText(`${SLOT_NAME[slot.kind]}${nth}`);
+    const fit = Math.floor((this.bottom - this.top) / LINE);
+    if (!this.free) {
+      if (this.focus - this.scroll >= fit) this.scroll = this.focus - fit + 1;
+      if (this.focus < this.scroll) this.scroll = this.focus;
+    }
+    this.scroll = Math.max(0, Math.min(this.scroll, list.length - fit));
+    this.rows.forEach((r, k) => {
+      const row = list[this.scroll + k];
+      const shown = Boolean(row) && k < fit;
+      r.setVisible(shown);
+      this.marks[k].setVisible(false);
+      if (!shown) return;
+      const y = this.top + k * LINE + LINE / 2;
+      const on = this.scroll + k === this.focus;
+      if (on) {
+        g.fillStyle(0x21364a).fillRect(6, y - LINE / 2, 168, LINE);
+        g.fillStyle(0xffe080).fillTriangle(7, y - 3, 7, y + 3, 10, y);
+      }
+      r.setText(row.have ? row.it.name : '? ? ?').setY(y).setTint(tint(row.it)).setAlpha(row.have ? 1 : 0.45);
+      if (row.it === it) this.marks[k].setVisible(true).setText('ZAŁOŻONE').setY(y);
+    });
+    if (list.length > fit) {
+      const h = Math.max(10, ((this.bottom - this.top) * fit) / list.length);
+      g.fillStyle(0x365168).fillRect(176, this.top + ((this.bottom - this.top - h) * this.scroll) / Math.max(1, list.length - fit), 2, h);
+    }
+    const row = list[this.focus];
+    this.info.setText(slot.fixed ? 'NA STAŁE W TYM KADŁUBIE' : !row ? '' : row.have ? row.it.info : `${RARITY[row.it.rarity].name}: DO WYLOSOWANIA`);
+    if (slot.fixed) {
+      this.rows[0].setVisible(true).setText(ITEM[slot.fixed].name).setY(this.top + LINE / 2).setTint(tint(ITEM[slot.fixed])).setAlpha(0.7);
+    }
+  }
+
+  /** The centre of slot i: rows of five, each row centred. */
+  slotAt(i) {
+    const n = this.slots().length;
+    const row = Math.floor(i / PER_ROW);
+    const inRow = Math.min(PER_ROW, n - row * PER_ROW);
+    const gap = BOX + 6;
+    return { x: W / 2 + (i % PER_ROW - (inRow - 1) / 2) * gap, y: this.slotsY + BOX / 2 + row * (BOX + 4) };
+  }
+
+  /** Fit the part looked at into the picked slot (the fitted one: take it out). */
+  activate() {
+    const slot = this.slots()[this.slot];
+    const row = this.list()[this.focus];
+    if (slot.fixed || !row) return;
+    if (!row.have) return this.scene.sfx.denied();
+    if (slot.kind === 'hull') setHull(this.loadout, row.it.id);
+    else equip(this.loadout, slot.kind, slot.index, this.fitted(slot) === row.it ? null : row.it.id);
+    this.save();
+    this.scene.sfx.pickup();
+    this.draw();
+  }
+
+  pickSlot(i) {
+    const n = this.slots().length;
+    this.slot = (i + n) % n;
+    this.focus = 0;
+    this.scroll = 0;
+    this.free = false;
+    this.draw();
+  }
+
+  move(delta) {
+    const n = this.list().length;
+    if (!n) return;
+    this.focus = (this.focus + delta + n) % n;
+    this.free = false;
+    this.draw();
+  }
+
+  /** Returns 'close' for the back arrow. */
+  key(act) {
+    if (act === 'back') return 'close';
+    if (act === 'left') this.pickSlot(this.slot - 1);
+    else if (act === 'right') this.pickSlot(this.slot + 1);
+    else if (act === 'up') this.move(-1);
+    else if (act === 'down') this.move(1);
+    else if (act === 'confirm') this.activate();
+    return null;
+  }
+
+  /** A press: the back arrow or a slot at once; on the list it may become a drag (scroll) or, on release, a tap. */
+  pointer(p) {
+    if (p.y < 26 && p.x < 60) return 'close';
+    const n = this.slots().length;
+    for (let i = 0; i < n; i++) {
+      const c = this.slotAt(i);
+      if (Math.abs(p.x - c.x) <= BOX / 2 + 2 && Math.abs(p.y - c.y) <= BOX / 2 + 2) return this.pickSlot(i);
+    }
+    if (p.y >= this.top && p.y <= this.bottom) this.drag = { y: p.y, scroll: this.scroll, moved: false };
+    return null;
+  }
+
+  pointerMove(p) {
+    if (!this.drag || !p.isDown) return;
+    const dy = p.y - this.drag.y;
+    if (!this.drag.moved && Math.abs(dy) < 4) return;
+    this.drag.moved = true;
+    this.free = true;
+    this.scroll = this.drag.scroll - Math.round(dy / LINE);
+    this.draw();
+  }
+
+  /** A release without a drag is a tap on a part: look at it; tapped again, fit it. */
+  pointerUp() {
+    const drag = this.drag;
+    this.drag = null;
+    if (!drag || drag.moved) return;
+    const i = this.scroll + Math.floor((drag.y - this.top) / LINE);
+    if (i < 0 || i >= this.list().length) return;
+    if (i === this.focus) return this.activate();
+    this.focus = i;
+    this.draw();
+  }
+
+  update(dt) {
+    this.t += dt;
+    this.art.y = this.shipY + Math.round(Math.sin(this.t * 3) * 1.5) * 2;
+    this.flame.y = this.art.y + (this.flameY ?? 8) * 2;
+  }
+
+  destroy() {
+    for (const o of this.items) o.destroy();
+  }
+}
