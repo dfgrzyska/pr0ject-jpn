@@ -14,7 +14,9 @@ export const KEI = {
   phase: [0.66, 0.33],
   aim: 0.9,
   speed: [290, 340],
-  donut: { r: 70, w: 2.6, dur: 3.4 },
+  donut: { r: 52, w: 2.8, dur: 3.4 }, // (small enough that the whole circle stays on the screen)
+  beams: { aim: 0.8, fire: 0.6 }, // high beams: seconds of warning, seconds of fire
+  slalom: { show: 0.8, speed: 165, amp: 50, wave: 55 }, // weaving down the road: warning, speed, sway, wavelength
   cone: 7,
   lanes: [0.56, 0.71, 0.86],
   cars: 4,
@@ -27,8 +29,9 @@ export const keicar = {
    * A tiny kei car comes down the old Tōkaidō, yellow plate, mint paint, headlights glaring like eyes. It is
    * small and it is furious:
    * 1. MAŁY, ALE WŚCIEKŁY: it revs, two red lines show its lane, it honks (a ring) and rams straight down the
-   *    road at the player, out at the bottom and back in from the top; its hazard lights blink, firing; a long
-   *    honk sends rings one after another;
+   *    road at the player, out at the bottom and back in from the top; it flashes its high beams (two cones of
+   *    light at the player, then two streams of shots down them); it slaloms down the road on a weaving line
+   *    shown first, hazard lights blinking and firing to the sides; a long honk sends rings one after another;
    * 2. TUNING: spoiler, stripes, flames painted on: it drifts doughnuts round the player (shots converge on the
    *    middle), lobs traffic cones that lie on the road and come down with it (touch one and it's a crash,
    *    shoot one and it flies off), and rams twice in a row;
@@ -37,7 +40,7 @@ export const keicar = {
    * Its skid marks stay on the road and go by with it.
    */
   spawnKei(w, base) {
-    const g = { kind: 'keicar', state: 'enter', t: 0, stage: 1, phase: 0, step: 0, timer: 1.2, parts: [], awake: false, defeated: false, x: w.x, act: null, cones: [], marks: [], traffic: [], melons: [], skidT: 0, take: { body: 1 } };
+    const g = { kind: 'keicar', state: 'enter', t: 0, stage: 1, phase: 0, step: 0, timer: 1.2, parts: [], awake: false, defeated: false, x: w.x, act: null, cones: [], marks: [], traffic: [], melons: [], splats: [], skidT: 0, take: { body: 1 } };
     const body = this.pool.spawn('kei_0', w.x, -60, { ...base, role: 'body', group: g, hp: KEI.hp, maxHp: KEI.hp, radius: 13, segs: [{ x: 0, y: 0, r: 12 }, { x: 0, y: 0, r: 12 }] });
     body.setDepth(DEPTH.air - 0.1);
     g.body = body;
@@ -96,7 +99,7 @@ export const keicar = {
 
   /** What it does next, by phase. */
   keiNext(g) {
-    const plan = [['charge', 'hazard', 'charge', 'honk'], ['donut', 'cones', 'charge2', 'cones'], ['traffic', 'melons', 'charge', 'melons']][g.stage - 1];
+    const plan = [['charge', 'beams', 'slalom', 'honk'], ['donut', 'cones', 'charge2', 'cones'], ['traffic', 'melons', 'charge', 'melons']][g.stage - 1];
     const kind = plan[g.phase++ % plan.length];
     g.act = { kind, t: 0, step: 0 };
   },
@@ -111,6 +114,8 @@ export const keicar = {
     a.t += dt;
     if (a.kind === 'charge' || a.kind === 'charge2') return this.keiCharge(g, a, dt);
     if (a.kind === 'hazard') return this.keiHazard(g, a, dt);
+    if (a.kind === 'beams') return this.keiBeams(g, a, dt);
+    if (a.kind === 'slalom') return this.keiSlalom(g, a, dt);
     if (a.kind === 'honk') return this.keiHonk(g, a, dt);
     if (a.kind === 'donut') return this.keiDonut(g, a, dt);
     if (a.kind === 'cones') return this.keiThrowCones(g, a, dt);
@@ -160,6 +165,79 @@ export const keicar = {
     }
   },
 
+  /** High beams: they flash, two cones of light swing onto the player, then two streams of shots pour down them. */
+  keiBeams(g, a, dt) {
+    const s = this.scene;
+    const e = g.body;
+    const B = KEI.beams;
+    const lamps = [-1, 1].map((sx) => [e.x + sx * 7, e.y + 18]);
+    if (a.t < B.aim) {
+      // the warning: the beams follow the player for most of it, then hold
+      if (a.t < B.aim * 0.7) a.aim = lamps.map(([x, y], i) => Math.atan2(s.player.y - y, s.player.x + (i ? 10 : -10) - x));
+      g.beamT = g.t + 0.05;
+      if (Math.floor(a.t * 14) % 2) {
+        this.tele.lineStyle(1, 0xfff0a0, 0.7);
+        lamps.forEach(([x, y], i) => {
+          for (const da of [-0.06, 0.06]) this.tele.lineBetween(x, y, x + Math.cos(a.aim[i] + da) * 300, y + Math.sin(a.aim[i] + da) * 300);
+        });
+      }
+      if (a.step === 0 && a.t > 0.05) {
+        a.step = 1;
+        s.fx.text(e.x, e.y + 34, 'PIKA PIKA!', 0.8, 0xfff0a0);
+      }
+      return;
+    }
+    g.beamT = g.t + 0.05;
+    if ((a.fire = (a.fire ?? 0) - dt) <= 0 && this.canFire(e)) {
+      a.fire = 0.06;
+      lamps.forEach(([x, y], i) => s.bullets.fire(x, y, a.aim[i] + (Math.random() - 0.5) * 0.05, normal * 1.25));
+    }
+    if (a.t > B.aim + B.fire) this.keiDone(g, 0.9);
+  },
+
+  /** The slalom: a weaving line shown down the road, then it weaves down it, hazard lights firing to the sides. */
+  keiSlalom(g, a, dt) {
+    const s = this.scene;
+    const e = g.body;
+    const L = KEI.slalom;
+    if (a.x0 === undefined) {
+      a.x0 = Phaser.Math.Clamp(s.player.x, L.amp + 14, VIEW.width - L.amp - 14);
+      a.ph = Math.random() * TAU;
+      a.phase = 'show';
+    }
+    const path = (y) => a.x0 + Math.sin((y - KEI.home) / L.wave + a.ph) * L.amp;
+    if (a.phase === 'show') {
+      // it lines up at the top of the line, revving; the line blinks down the road
+      g.x += (path(e.y) - g.x) * Math.min(1, dt * 6);
+      e.x = g.x + (Math.random() - 0.5) * 1.6;
+      this.keiExhaust(g, dt, 3);
+      if (Math.floor(a.t * 10) % 2) {
+        this.tele.lineStyle(1, 0xffb050, 0.7);
+        for (let y = e.y + 20; y < s.H; y += 14) this.tele.lineBetween(path(y), y, path(y + 7), y + 7);
+      }
+      if (a.t > L.show) Object.assign(a, { phase: 'go', t: 0, fire: 0 });
+      return;
+    }
+    // weaving down: nose along the line, the hazard lamps firing out to the sides by turns
+    e.y += L.speed * dt;
+    const x = path(e.y);
+    e.setRotation(-Math.atan2(path(e.y + 4) - x, 4) * 0.8);
+    e.x = g.x = x;
+    this.keiSkid(g, dt);
+    g.hazardT = g.t + 0.05;
+    if ((a.fire -= dt) <= 0 && this.canFire(e)) {
+      a.fire = 0.28;
+      a.side = -(a.side ?? 1);
+      s.bullets.fan(e.x + a.side * 10, e.y - 18, a.side < 0 ? Math.PI : 0, 3, 0.7, slow);
+    }
+    if (e.y > s.H + 60) {
+      g.x = 30 + Math.random() * (VIEW.width - 60);
+      e.y = -60;
+      e.setRotation(0);
+      Object.assign(a, { kind: 'charge', phase: 'back', t: 0 });
+    }
+  },
+
   /** Hazard lights: they blink, and each blink fires a little fan from that side's lamp. */
   keiHazard(g, a, dt) {
     const e = g.body;
@@ -190,8 +268,9 @@ export const keicar = {
     const e = g.body;
     const R = KEI.donut.r;
     if (a.cx === undefined) {
-      a.cx = Phaser.Math.Clamp(s.player.x, R * 0.6 + 10, VIEW.width - R * 0.6 - 10);
-      a.cy = Phaser.Math.Clamp(s.player.y - 10, s.H * 0.4, s.H - R * 0.9);
+      // the circle (R * 1.1 across, R * 0.85 up and down) kept whole on the screen, with room for the car
+      a.cx = Phaser.Math.Clamp(s.player.x, R * 1.1 + 16, VIEW.width - R * 1.1 - 16);
+      a.cy = Phaser.Math.Clamp(s.player.y - 10, s.H * 0.4, s.H - R * 0.85 - 18);
       a.ang = Math.atan2(e.y - a.cy, e.x - a.cx);
       a.fire = 0;
       s.fx.text(e.x, e.y + 30, 'DORIFTO!', 1, 0xff9a60);
@@ -200,8 +279,8 @@ export const keicar = {
     a.ang += KEI.donut.w * dt * (0.4 + 0.6 * into);
     const tx = a.cx + Math.cos(a.ang) * R * 1.1;
     const ty = a.cy + Math.sin(a.ang) * R * 0.85;
-    e.x += (tx - e.x) * Math.min(1, dt * (2 + into * 10));
-    e.y += (ty - e.y) * Math.min(1, dt * (2 + into * 10));
+    e.x = Phaser.Math.Clamp(e.x + (tx - e.x) * Math.min(1, dt * (2 + into * 10)), 14, VIEW.width - 14);
+    e.y = Phaser.Math.Clamp(e.y + (ty - e.y) * Math.min(1, dt * (2 + into * 10)), 20, s.H - 16);
     g.x = e.x;
     // nose along the circle, the tail kicked out (a drift)
     e.setRotation(a.ang + Math.PI + 0.45);
@@ -259,7 +338,7 @@ export const keicar = {
         if ((L.next -= dt) <= 0) {
           L.left--;
           L.next = (KEI.gap + Math.random() * 18) / L.sp;
-          const frame = ['mini_r', 'mini_b', 'mini_w'][Math.floor(Math.random() * 3)];
+          const frame = ['mini_r', 'mini_b', 'mini_w', 'mini_y'][Math.floor(Math.random() * 4)];
           if (g.body.texture.has(frame)) {
             const spr = this.segPool.spawn(frame, L.dir > 0 ? -24 : VIEW.width + 24, L.y).setDepth(DEPTH.air - 0.15).setRotation(L.dir > 0 ? -DOWN : DOWN);
             g.traffic.push({ spr, vx: L.dir * L.sp });
@@ -365,14 +444,29 @@ export const keicar = {
         g.melons[n++] = m;
         continue;
       }
-      // splat: red flesh, a ring of black seeds
-      this.segPool.kill(m.spr);
+      // splat: red flesh and rind flying, a ring of black seeds
       b.shot('splat', m.tx, m.ty, 0, 0, 6, { life: 0.12 });
-      s.fx.shards(m.tx, m.ty, 6, true);
+      if (m.spr.texture.has('suika_splat_0')) {
+        m.spr.setFrame('suika_splat_0').setScale(m.spr.base * 1.3);
+        g.splats.push({ spr: m.spr, t: 0 });
+      } else this.segPool.kill(m.spr);
+      s.fx.text(m.tx, m.ty - 16, 'GUSHA!', 0.5, 0xff8a6a);
       const off = Math.random() * TAU;
-      for (let i = 0; i < 10; i++) b.shot('eb_ink', m.tx, m.ty, off + (i / 10) * TAU, slow * (0.75 + (i % 2) * 0.3), 1.8);
+      for (let i = 0; i < 10; i++) b.shot('jb_seed', m.tx, m.ty, off + (i / 10) * TAU, slow * (0.75 + (i % 2) * 0.3), 2, { spin: true });
     }
     g.melons.length = n;
+    // the bursting melons' frames, then gone
+    let k = 0;
+    for (const sp of g.splats) {
+      sp.t += dt;
+      if (sp.t > 0.3) {
+        this.segPool.kill(sp.spr);
+        continue;
+      }
+      sp.spr.setFrame(`suika_splat_${Math.min(2, Math.floor(sp.t * 10))}`).setAlpha(sp.t > 0.2 ? (0.3 - sp.t) * 10 : 1);
+      g.splats[k++] = sp;
+    }
+    g.splats.length = k;
   },
 
   /** Skid marks behind it, left on the road, going by with it and fading. */
@@ -409,11 +503,13 @@ export const keicar = {
   keiPose(g) {
     const e = g.body;
     let frame;
-    if (g.stage >= 3) frame = g.t < (g.throwUntil ?? 0) ? 'keitora_1' : 'keitora_0';
-    else if (g.stage === 2) frame = 'kei_tuned';
-    else if (g.act?.kind === 'hazard') frame = g.act.step % 2 ? 'kei_1' : 'kei_0';
-    else if (g.act?.kind === 'charge') frame = 'kei_angry';
-    else frame = Math.floor(g.t * 1.5) % 4 === 0 ? 'kei_1' : 'kei_0';
+    const roll = Math.floor(g.t * 14) % 2; // the wheels turning
+    if (g.stage >= 3) frame = g.t < (g.throwUntil ?? 0) ? 'keitora_1' : roll ? 'keitora_2' : 'keitora_0';
+    else if (g.stage === 2) frame = roll ? 'kei_tuned_1' : 'kei_tuned';
+    else if (g.t < (g.beamT ?? 0)) frame = 'kei_beam';
+    else if (g.t < (g.hazardT ?? 0) || g.act?.kind === 'hazard') frame = Math.floor(g.t * 6) % 2 ? 'kei_1' : roll ? 'kei_2' : 'kei_0';
+    else if (g.act?.kind === 'charge' || g.act?.kind === 'slalom') frame = roll ? 'kei_angry_1' : 'kei_angry';
+    else frame = roll ? 'kei_2' : 'kei_0';
     if (e.texture.has(frame) && e.frame.name !== frame) e.setFrame(frame);
     const sn = Math.sin(e.rotation);
     const cs = Math.cos(e.rotation);
@@ -426,10 +522,11 @@ export const keicar = {
   },
 
   keiCleanup(g) {
-    for (const list of [g.cones, g.marks, g.traffic, g.melons]) for (const o of list) this.segPool.kill(o.spr);
+    for (const list of [g.cones, g.marks, g.traffic, g.melons, g.splats]) for (const o of list) this.segPool.kill(o.spr);
     g.cones = [];
     g.marks = [];
     g.traffic = [];
     g.melons = [];
+    g.splats = [];
   },
 };

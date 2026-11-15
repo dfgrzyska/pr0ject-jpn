@@ -60,17 +60,32 @@ u innych bossów (`flashTint`), żeby jasny automat nie bielał.
 ## 2. Kei car (KEI)
 
 Stałe: `KEI` w `src/game/enemies/keicar.js` (2400 HP, progi 66% / 33%). Tło pędzi jak w pościgu (warstwa dalsza
-w pętli, 70 px/s); pachołki i ślady opon leżą na drodze i przesuwają się razem z nią.
+w pętli 2304 px, 70 px/s); pachołki i ślady opon leżą na drodze i przesuwają się razem z nią.
+
+Wygląd (druga wersja): wysokie, wąskie pudełko kei-wagonu z krótką maską, kremowym dachem z relingami nad miętowym
+lakierem, czarne plastikowe zderzaki, małe koła w samych narożnikach (kręcą się), okrągłe reflektory-oczy w
+chromowanych obwódkach, grill-uśmiech, lusterka, żółta tablica klasy kei (pusta). Po tuningu w stylu bōsōzoku:
+rury wydechowe „takeyari” sterczące z tyłu, wysokie skrzydło, wysunięty spojler, płomienie, fioletowa poświata pod
+autem. W fazie 3 biała ciężarówka kei typu cab-over z arbuzami i kapustą na pace.
+
+Tło (druga wersja): Tōkaidō z *53 stacji* Hiroshigego z góry — droga z ubitej ochry z koleinami, kamykami i kępkami
+trawy oraz namalowanymi pasami, sosny po obu stronach rzucające cień na drogę, a za nimi po kolei: zalane pola
+ryżowe z odbiciem nieba i chmur, rzędami sadzonek i czaplami; złoty ryż z rolnikami w słomkowych kapeluszach;
+łukowate rzędy krzewów herbaty z Shizuoki; wioska z krytymi strzechą domami (dym z paleniska) i białym magazynem
+kura; czerwona brama torii z kamiennymi latarniami; przydrożna herbaciarnia z ławkami i podróżnymi; gaj
+bambusowy; kopce milowe ichirizuka; rzeka z drewnianym mostem i łódkami.
 
 - **Faza 1 — mały, ale wściekły:** warczy, dwie czerwone linie pokazują pas, trąbi („PAAAP!”, pierścień) i
-  taranuje w dół drogi, wyjeżdża dołem i wraca z góry; światła awaryjne migają i każde mignięcie strzela małym
-  wachlarzem; długie trąbienie — kilka pierścieni po kolei.
-- **Faza 2 — tuning:** spojler, pasy, namalowane płomienie. Drift w kółko wokół gracza („DORIFTO!”), pociski lecą
-  do środka koła; rzuca pachołki na drogę — leżą i jadą w dół razem z nią (dotknięcie = zderzenie, strzał je
-  zbija); taranuje dwa razy z rzędu.
-- **Faza 3 — kei-tora:** rozkłada się w mini ciężarówkę. Godzina szczytu: dwa z trzech pasów przecinają ekran
-  sznurki małych aut (najpierw miga strzałka w poprzek pasa, między autami są luki); arbuzy z paki lecą łukiem
-  w gracza i pękają pierścieniem pestek.
+  taranuje w dół drogi, wyjeżdża dołem i wraca z góry. Długie światła („PIKA PIKA!”): dwa stożki światła
+  namierzają gracza (0,8 s), potem dwa strumienie szybkich pocisków lecą wzdłuż nich. Slalom: najpierw miga
+  falista linia w dół drogi, potem auto jedzie po niej, a światła awaryjne strzelają na boki. Długie trąbienie —
+  kilka pierścieni po kolei.
+- **Faza 2 — tuning:** drift w kółko wokół gracza („DORIFTO!”), pociski lecą do środka koła; koło ma promień
+  52 px i całe mieści się na ekranie (auto nie wyjeżdża poza krawędź); rzuca pachołki na drogę — leżą i jadą
+  w dół razem z nią (dotknięcie = zderzenie, strzał je zbija); taranuje dwa razy z rzędu.
+- **Faza 3 — kei-tora:** godzina szczytu: dwa z trzech pasów przecinają ekran sznurki małych aut kei (najpierw
+  miga strzałka w poprzek pasa, między autami są luki); arbuzy z paki lecą łukiem w gracza i rozpryskują się
+  („GUSHA!”) pierścieniem czarnych pestek.
 
 ## 3. Kot z budowy (GENBA)
 

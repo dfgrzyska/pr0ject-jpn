@@ -37,7 +37,7 @@ test('every encounter is a one-boss arena with its art generated', () => {
     const frames = JSON.parse(readFileSync(new URL(`../../public/assets/bg/${id}/enemies.json`, import.meta.url))).frames;
     return new Set(Array.isArray(frames) ? frames.map((f) => f.filename) : Object.keys(frames));
   };
-  for (const f of ['kei_0', 'kei_1', 'kei_angry', 'kei_tuned', 'keitora_0', 'keitora_1', 'mini_r', 'mini_b', 'mini_w', 'cone', 'suika_3', 'skid']) assert(names('ex2').has(f), f);
+  for (const f of ['kei_0', 'kei_1', 'kei_angry', 'kei_tuned', 'keitora_0', 'keitora_1', 'mini_r', 'mini_b', 'mini_w', 'cone', 'suika_3', 'skid', 'kei_2', 'kei_angry_1', 'kei_beam', 'kei_tuned_1', 'keitora_2', 'mini_y', 'suika_splat_2', 'jb_seed']) assert(names('ex2').has(f), f);
   for (const f of ['neko_0', 'neko_1', 'neko_pounce', 'neko_hiss', 'neko_hiss_bare', 'neko_pounce_bare', 'tower_0', 'tower_1', 'tower_rubble', 'ibeam', 'crane_hook', 'spanner_3', 'hardhat_1']) assert(names('ex3').has(f), f);
   for (const f of ['lect_0', 'lect_ear', 'lect_cry', 'lect_bang', 'lect_wave', 'ticket_0', 'ticket_1', 'ticket_x']) assert(names('ex7').has(f), f);
   for (const f of ['baba_0', 'baba_1', 'baba_shout', 'baba_bare', 'baba_bare_1', 'baba_bare_shout', 'tora_crouch', 'tora_leap', 'tora_roar', 'ame_r_0', 'ame_p_1', 'cart_1']) assert(names('ex6').has(f), f);
