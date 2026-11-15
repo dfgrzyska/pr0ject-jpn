@@ -380,6 +380,7 @@ const PATTERNS = [
   [/^POZOSTAŁO KONTYNUACJI: (\d+)$/, (n) => `CONTINUES LEFT: ${n}`],
   [/^PIECZĄTKI: (.+)$/, (n) => `STAMPS: ${n}`],
   [/^GACHA ×(\d+)$/, (n) => `GACHA ×${n}`],
+  [/^W SLOCIE (\d+)$/, (n) => `IN SLOT ${n}`],
   [/^(.+): DO WYLOSOWANIA$/, (r) => `${tr(r)}: TO BE DRAWN`],
   [/^W AUTOMACIE: (\d+)$/, (n) => `IN THE MACHINE: ${n}`],
   [/^JESZCZE (\d+)$/, (n) => `${n} MORE`],

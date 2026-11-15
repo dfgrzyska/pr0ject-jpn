@@ -109,10 +109,19 @@ export class Hangar {
 
   /** The ship as it would be with the part looked at fitted (null: nothing would change). */
   preview(row, slot) {
-    if (!row?.have || this.fitted(slot) === row.it) return null;
+    if (!row?.have || slot.fixed || (slot.kind === 'hull' && this.fitted(slot) === row.it)) return null;
     const trial = structuredClone(this.loadout);
-    if (slot.kind === 'hull' ? !setHull(trial, row.it.id) : !equip(trial, slot.kind, slot.index, row.it.id)) return null;
-    return buildShip(trial);
+    return this.apply(trial, slot, row.it) ? buildShip(trial) : null;
+  }
+
+  /**
+   * What picking a part from the list does: a part fitted already (in this slot or another of its kind) comes
+   * out; any other goes into the picked slot. The slots of a kind fill in order, with no gaps.
+   */
+  apply(state, slot, it) {
+    if (slot.kind === 'hull') return setHull(state, it.id);
+    const at = state.slots[slot.kind].indexOf(it.id);
+    return at >= 0 ? equip(state, slot.kind, at, null) : equip(state, slot.kind, slot.index, it.id);
   }
 
   draw() {
@@ -190,7 +199,10 @@ export class Hangar {
         g.fillStyle(0xffe080).fillTriangle(7, y - 3, 7, y + 3, 10, y);
       }
       r.setText(row.have ? row.it.name : '? ? ?').setY(y).setTint(tint(row.it)).setAlpha(row.have ? 1 : 0.45);
-      if (row.it === it) this.marks[k].setVisible(true).setText('ZAŁOŻONE').setY(y);
+      // fitted here, or in another slot of the kind (which one, then)
+      const at = slot.kind === 'hull' ? -1 : this.loadout.slots[slot.kind].indexOf(row.it.id);
+      if (row.it === it) this.marks[k].setVisible(true).setText('ZAŁOŻONE').setY(y).setTint(0x9cf09a);
+      else if (at >= 0) this.marks[k].setVisible(true).setText(`W SLOCIE ${at + 1}`).setY(y).setTint(0x7f9a8c);
     });
     if (list.length > fit) {
       const h = Math.max(10, ((this.bottom - this.top) * fit) / list.length);
@@ -218,8 +230,10 @@ export class Hangar {
     const row = this.list()[this.focus];
     if (slot.fixed || !row) return;
     if (!row.have) return this.scene.sfx.denied();
-    if (slot.kind === 'hull') setHull(this.loadout, row.it.id);
-    else equip(this.loadout, slot.kind, slot.index, this.fitted(slot) === row.it ? null : row.it.id);
+    this.apply(this.loadout, slot, row.it);
+    // the picked slot follows the part to where it went in (the first free slot of its kind)
+    const at = slot.kind === 'hull' ? -1 : this.loadout.slots[slot.kind].indexOf(row.it.id);
+    if (at >= 0) this.slot = this.slots().findIndex((s) => s.kind === slot.kind && s.index === at);
     this.save();
     this.scene.sfx.pickup();
     this.draw();
