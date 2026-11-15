@@ -188,15 +188,26 @@ ok. 96 s (31 / 33 / 31 s); zagrożenie ekranu średnio 4,5% / 4,9% / 3,5%, w szc
 
 ## 6. Babcia (OBACHAN)
 
-Stałe: `OBACHAN` w `src/game/enemies/obachan.js` (2400 HP, progi 66% / 33%). Babcia drepcze w lewo i w prawo.
+Stałe: `OBACHAN` w `src/game/enemies/obachan.js` (2400 HP, progi 66% / 33%). Grafika: `tools/art/encounters/obachan.mjs`
+(babcia, tygrys, wózek, cukierki, ślady na śniegu), `torasnow.mjs` (tło). Podgląd klatek z gry i pomiar pocisków:
+`node tools/preview/obachan-shots.mjs`.
 
-- **Faza 1 — ame-chan:** „AME, IRU?” — rzuca wachlarze cukierków w papierkach; zwalniają i rozwijają się
-  w małe pierścienie; taranuje ekran wózkiem z zakupami (najpierw czerwona linia i strzałka, z kosza wypadają
-  pociski, „DOITE DOITE!”); kręci torebką (pierścienie spiralą).
-- **Faza 2 — MAKETE!:** targuje się: okrzyki z wachlarzem dużych pocisków („MAKETE!”, „-50%”, „-80%!”), wózki
-  z obu stron naraz.
-- **Faza 3 — tygrys!:** tygrys zeskakuje z bluzki (na bluzce zostaje dziura) i poluje sam: przyczaja się (linia
-  celu), skacze, ląduje z rykiem (pierścień, „GAO!”), odpoczywa; babcia dalej rozdaje cukierki i się targuje.
+Babcia to jedna kukiełka w 16 pozach (każda też w wersji z pustą bluzką), pokazywana 1,15× większa niż narysowana:
+drepcze, zerka, bierze zamach i rzuca, krzyczy z ręką przy ustach, kręci torebką nad głową, wskazuje wózek, śmieje się.
+Tygrys ma 11 klatek (siedzi, mruga, liże nos, przyczaja się, skacze, ląduje, ryczy, wraca).
+
+- **Faza 1 — AME-CHAN:** wachlarze cukierków; papierek otwiera się i cukierek drży przez 0,28 s, zanim pęknie
+  w pierścień 5 pocisków. Wózek: babcia wskazuje stronę, po śniegu od tej strony rysują się koleiny, wózek brzęczy
+  przy krawędzi („CHIRIN!”) i po 1 s taranuje. Torebka: 4 pierścienie po 9 pocisków spiralą.
+- **Faza 2 — MAKETE!:** okrzyki z wachlarzem dużych pocisków („MAKETE!”, „-50%”, „-80%!”), wózki z obu stron.
+- **Faza 3 — TYGRYS!:** tygrys zrywa się z bluzki i poluje sam. Zapowiedź skoku jest na śniegu, bez linii celowania:
+  ślady łap biegną do miejsca lądowania, wokół niego zaciska się pierścień (0,95 s; cel jest stały od początku).
+  Lądowanie: pierścień 8 pocisków, „GAO!”.
+- **Koniec:** nie wybucha; siada w śniegu, zdyszana, i wyciąga cukierka, tygrys siada obok.
+- **Tło:** tygrys w śniegu Hokusaia z trwałą; na ekranie od początku. Animowane (219 elementów): padający śnieg,
+  liście bambusa (i śnieg, który z nich spada), para z pyska, mruganie, ucho, koniec ogona, iskry na śniegu.
+- **Pomiar (30 s na fazę, bez strzelania):** średnio 27 / 23 / 30 pocisków na ekranie, szczyt 60 / 62 / 54
+  (przed przeróbką: średnio 47 / 27 / 63, szczyt 104 / 62 / 114).
 
 ## 7. Konferencja prasowa (KAIKEN)
 

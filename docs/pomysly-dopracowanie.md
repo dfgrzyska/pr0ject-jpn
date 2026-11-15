@@ -7,13 +7,13 @@ miast nie byli oglądani.
 ## Ustalona kolejność
 
 1. Spotkanie 7: zamiast mównicy duża postać człowieka przy stole. **Zrobione 15.11** (opis w `random-encounters.md`).
-2. Spotkanie 6 (babcia): tło, ruchy i grafika od nowa.
+2. Spotkanie 6 (babcia): tło, ruchy i grafika od nowa. **Zrobione 15.11** (opis w `random-encounters.md`).
 3. Miasta: szczegóły, animacje i nowe ważne miejsca tam, gdzie jest pustka.
 
 ## Spotkania
 
 Liczba animowanych elementów tła: automat 10, kei car 0, kot na budowie 0, kot bez końca 5, pokój otaku 11,
-babcia 0, konferencja 193 (po przeróbce 15.11; wcześniej 0).
+babcia 219, konferencja 193 (obie po przeróbce 15.11; wcześniej 0).
 
 ### 7. Płaczący człowiek przy stole (dziś: mównica) — najsłabsze
 
@@ -34,7 +34,9 @@ Decyzja: bossem ma być duża postać człowieka przy stole konferencyjnym, nie 
 - Gameplay do sprawdzenia: „głuchota” co drugi ruch w fazie 1 (2,2 s bez obrażeń) może frustrować; trzeba, żeby
   było widać, że strzały się odbijają. Zmierzyć czas walki i gęstość pocisków jak przy pozostałych bossach.
 
-### 6. Babcia (tygrys w śniegu) — słabe, nietknięte
+### 6. Babcia (tygrys w śniegu) — zrobione 15.11
+
+Zostało: obejrzeć walkę w ruchu i ocenić jej czas z prawdziwym graczem. Poniżej pierwotna lista.
 
 - Tło: tygrys jest płaski i toporny, bambusy jednolite. Przerobić tło, dodać padający śnieg i kołyszący się bambus.
 - Boss: babcia i tygrysek mają po kilka klatek i są mali jak na bossa. Większe sprite'y, więcej póz i animacji.

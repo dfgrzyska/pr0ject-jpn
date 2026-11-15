@@ -537,6 +537,7 @@ export class Enemies {
     const body = copy(e);
     if (e.oni) body.setCrop(0, 0, 63, 60); // standing in the pond
     if (e.group?.kind === 'kaiken' && body.texture.has('kk_sob1')) body.setFrame('kk_sob1'); // one last wail
+    if (e.group?.kind === 'obachan' && body.texture.has('baba_bare_shout1')) body.setFrame('baba_bare_shout1'); // one last "MAKETE!"
     const kind = e.group?.kind ?? e.kind;
     const end =
       e.oni || kind === 'tako' || kind === 'wani' || kind === 'heikegani' || e.frame.name.startsWith('manta')
@@ -555,6 +556,8 @@ export class Enemies {
                     ? 'foxfire'
                     : kind === 'kaiken'
                       ? 'weep'
+                      : kind === 'obachan'
+                        ? 'sit'
                       : 'burst';
     const color = kind === 'bunraku' ? WOOD : CLAY;
     // what goes down with the body (the fox's last tail), kept where it was on it
@@ -578,7 +581,9 @@ export class Enemies {
         if ((d.next -= dt) <= 0) {
           d.next = 0.11;
           // (the man at the table is not blown up: tears burst from him)
-          if (d.end === 'weep') for (let i = 0; i < 4; i++) fx.part(fx.parts, 'drop_0', d.x + (Math.random() - 0.5) * 16, d.y - 12, { vx: (Math.random() - 0.5) * 160, vy: -40 - Math.random() * 80, g: 260, drag: 0.3, life: 0.6 }).setTint(0x9ad8ff);
+          // (nor the grandma: sweets spill from her pockets)
+          if (d.end === 'sit') fx.shards(d.x + (Math.random() - 0.5) * 30, d.y + (Math.random() - 0.5) * 30, 3, true);
+          else if (d.end === 'weep') for (let i = 0; i < 4; i++) fx.part(fx.parts, 'drop_0', d.x + (Math.random() - 0.5) * 16, d.y - 12, { vx: (Math.random() - 0.5) * 160, vy: -40 - Math.random() * 80, g: 260, drag: 0.3, life: 0.6 }).setTint(0x9ad8ff);
           else fx.explode(d.x + (Math.random() - 0.5) * d.r * 2.2, d.y + (Math.random() - 0.5) * d.r * 1.8, Math.random() < 0.3 ? 'm' : 's', null, (d.n = (d.n ?? 0) + 1) % 3 !== 0);
         }
       } else {
@@ -593,6 +598,10 @@ export class Enemies {
             fx.debris(d.x, d.y, 16, null, 1.9);
             fx.flash(0.5, 0.4);
             fx.shockwave(d.x, d.y);
+          } else if (d.end === 'sit') {
+            if (b.texture.has('baba_bare_down')) b.setFrame('baba_bare_down');
+            fx.smoke(d.x, d.y + 30, 5, 16);
+            fx.flash(0.3, 0.3);
           } else if (d.end === 'weep') {
             if (b.texture.has('kk_down')) b.setFrame('kk_down');
             for (let i = 0; i < 6; i++) fx.puff(d.liquid, d.x + (Math.random() - 0.5) * 60, d.y + 56 + Math.random() * 6, 0.4);
@@ -652,8 +661,8 @@ export class Enemies {
           } else b.setAlpha(1 - f).setY(d.y + f * 16);
           if (Math.random() < dt * 18) fx.puff(d.liquid, d.x + (Math.random() - 0.5) * d.r * 2.2, d.y + d.r * 0.5 + f * 10, 0.35);
           done = f >= 1;
-        } else if (d.end === 'weep') {
-          // slumped with his forehead on the table, shoulders heaving; then he fades with it
+        } else if (d.end === 'weep' || d.end === 'sit') {
+          // slumped (she: sat down in the snow, puffing) with his forehead on the table, shoulders heaving; then he fades with it
           b.setY(d.y + Math.round(Math.sin(k * 9) * 0.6));
           b.setAlpha(1 - Math.max(0, Math.min(1, (k - 1.4) / 0.7)));
           done = k >= 2.1;
@@ -689,7 +698,7 @@ export class Enemies {
     const rec = e.recoil || 0;
     if (e.group?.kind !== 'volcano' && !e.oni) e.setOrigin(0.5, 0.5 + (rec - breathe) / e.displayHeight);
     if (e.group?.kind === 'kyubi') return; // (the fox shows its wounds by losing its tails)
-    if (e.group?.kind === 'kaiken') return; // (the man at the table shows his in tears and tissues)
+    if (e.group?.kind === 'kaiken' || e.group?.kind === 'obachan') return; // (the man at the table shows his in tears and tissues; nobody cracks a grandma)
     const frac = e.hp / e.maxHp;
     const lvl = frac < 1 / 3 ? 2 : frac < 2 / 3 ? 1 : 0;
     if (!lvl && !e.wounds) return;
