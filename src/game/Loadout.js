@@ -163,7 +163,7 @@ export function buildShip(state) {
   }
   // the looks (see shipSkin.js): the paint's colours, the flame, the shots' tint
   const look = state.look ?? {};
-  ship.look = { paint: ITEM[look.paint]?.colors ?? null, flame: ITEM[look.flame]?.flame ?? null, dye: ITEM[look.dye]?.tint ?? null };
+  ship.look = { paint: ITEM[look.paint]?.colors ?? null, flame: ITEM[look.flame]?.flame ?? null, dye: ITEM[look.dye]?.tint ?? null, wake: ITEM[look.wake]?.wake ?? null };
   ship.perk = fitted.filter((it) => it.kind === 'core').map((it) => it.name).join(' + ');
   // pips out of 3 for the summary: speed, firepower
   ship.stats = [ship.speed < 95 ? 1 : ship.speed < 130 ? 2 : 3, ship.damage < 1 ? 1 : ship.damage < 1.2 ? 2 : 3];

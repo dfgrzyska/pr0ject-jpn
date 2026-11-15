@@ -144,7 +144,7 @@ test('the save comes back as it was, and a broken one starts afresh', () => {
 
 test('looks are worn one of a kind, and only owned ones', () => {
   const s = newState();
-  assert.deepEqual(s.look, { paint: null, flame: null, dye: null });
+  assert.deepEqual(s.look, { paint: null, flame: null, dye: null, wake: null });
   assert.equal(wear(s, 'paint', 'paint_urushi'), false, 'not owned');
   s.owned.push('paint_urushi', 'flame_lava', 'dye_blue');
   assert.equal(wear(s, 'paint', 'flame_lava'), false, 'a flame is no paint');
@@ -152,7 +152,7 @@ test('looks are worn one of a kind, and only owned ones', () => {
   assert.ok(wear(s, 'flame', 'flame_lava'));
   assert.ok(wear(s, 'dye', 'dye_blue'));
   const ship = buildShip(s);
-  assert.deepEqual(ship.look, { paint: ITEM.paint_urushi.colors, flame: ITEM.flame_lava.flame, dye: ITEM.dye_blue.tint });
+  assert.deepEqual(ship.look, { paint: ITEM.paint_urushi.colors, flame: ITEM.flame_lava.flame, dye: ITEM.dye_blue.tint, wake: null });
   assert.equal(ship.damage, buildShip(newState()).damage, 'looks change no numbers');
   assert.ok(wear(s, 'paint', null));
   assert.equal(buildShip(s).look.paint, null);

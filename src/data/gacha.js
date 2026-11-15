@@ -21,7 +21,7 @@ export const PITY = { every: 10, min: 'SR' };
 export const SLOTS = ['engine', 'gun', 'bomb', 'core', 'omamori'];
 
 /** What changes only the looks, one of each worn at a time on any hull. */
-export const LOOKS = ['paint', 'flame', 'dye'];
+export const LOOKS = ['paint', 'flame', 'dye', 'wake'];
 
 // A part's `fx` is applied to the ship being put together: `set` (fields taken as they are), then `add`, then
 // `mul`; `bombMul` multiplies the bomb's damage. `line`: parts of one line (the same upgrade in five rarities)
@@ -219,6 +219,20 @@ export const ITEMS = [
   { id: 'dye_lime', kind: 'dye', rarity: 'R', name: 'BARWNIK: LIMONKA', info: 'KOLOR TWOICH POCISKÓW', tint: 0xd8f060 },
   { id: 'dye_apricot', kind: 'dye', rarity: 'R', name: 'BARWNIK: MORELA', info: 'KOLOR TWOICH POCISKÓW', tint: 0xffc8a0 },
   { id: 'dye_ice', kind: 'dye', rarity: 'R', name: 'BARWNIK: LÓD', info: 'KOLOR TWOICH POCISKÓW', tint: 0xd0f4ff },
+  // ---- wakes: what the ship scatters behind it when it moves (frames of the shared sprites; tints, a scale,
+  // gravity `g`, growth, alpha, life in s and spin as the particle takes them)
+  { id: 'wake_sakura', kind: 'wake', rarity: 'N', name: 'ŚLAD: PŁATKI SAKURY', info: 'SYPIE SIĘ ZA STATKIEM', wake: { frames: ['petal_0', 'petal_1', 'petal_2', 'petal_3'] } },
+  { id: 'wake_momiji', kind: 'wake', rarity: 'N', name: 'ŚLAD: LIŚCIE KLONU', info: 'SYPIE SIĘ ZA STATKIEM', wake: { frames: ['momiji_0', 'momiji_1', 'momiji_2', 'momiji_3'] } },
+  { id: 'wake_drops', kind: 'wake', rarity: 'N', name: 'ŚLAD: KROPLE', info: 'SYPIE SIĘ ZA STATKIEM', wake: { frames: ['drop_0', 'drop_1'], g: 30, spin: 0 } },
+  { id: 'wake_snow', kind: 'wake', rarity: 'R', name: 'ŚLAD: LODOWE ODŁAMKI', info: 'SYPIE SIĘ ZA STATKIEM', wake: { frames: ['shard_0', 'shard_1', 'shard_2'] } },
+  { id: 'wake_embers', kind: 'wake', rarity: 'R', name: 'ŚLAD: ŻAR', info: 'SYPIE SIĘ ZA STATKIEM', wake: { frames: ['ember_0', 'ember_1'], g: -10, spin: 0 } },
+  { id: 'wake_sparks', kind: 'wake', rarity: 'R', name: 'ŚLAD: ISKRY', info: 'SYPIE SIĘ ZA STATKIEM', wake: { frames: ['spark_0', 'spark_1', 'spark_2'], life: 0.3, spin: 0 } },
+  { id: 'wake_neon', kind: 'wake', rarity: 'R', name: 'ŚLAD: NEONOWE ISKRY', info: 'SYPIE SIĘ ZA STATKIEM', wake: { frames: ['dot_1', 'dot_2'], tints: [0xff4fb0, 0x4fe8ff, 0xffe04f, 0x9a7aff], spin: 0 } },
+  { id: 'wake_steam', kind: 'wake', rarity: 'R', name: 'ŚLAD: PARA', info: 'SYPIE SIĘ ZA STATKIEM', wake: { frames: ['wisp_s_0', 'wisp_s_1'], g: -14, grow: 0.9, alpha: 0.5, spin: 0 } },
+  { id: 'wake_gold', kind: 'wake', rarity: 'SR', name: 'ŚLAD: ZŁOTY PYŁ', info: 'SYPIE SIĘ ZA STATKIEM', wake: { frames: ['dot_1', 'dot_2'], tints: [0xffd040, 0xfff4a8, 0xf0a020], life: 0.7, spin: 0 } },
+  { id: 'wake_foxfire', kind: 'wake', rarity: 'SR', name: 'ŚLAD: LISIE OGNIKI', info: 'SYPIE SIĘ ZA STATKIEM', wake: { frames: ['kitsunebi_0', 'kitsunebi_1'], g: -24, scale: 0.5, spin: 0 } },
+  { id: 'wake_rainbow', kind: 'wake', rarity: 'SSR', name: 'ŚLAD: TĘCZOWY PYŁ', info: 'SYPIE SIĘ ZA STATKIEM', wake: { frames: ['dot_2'], tints: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], life: 0.8, spin: 0 } },
+  { id: 'wake_cranes', kind: 'wake', rarity: 'SSR', name: 'ŚLAD: PAPIEROWE ŻURAWIE', info: 'SYPIE SIĘ ZA STATKIEM', wake: { frames: ['orizuru_0', 'orizuru_1', 'orizuru_2'], scale: 0.45, life: 0.8, spin: 0 } },
 ];
 
 export const ITEM = Object.fromEntries(ITEMS.map((it) => [it.id, it]));

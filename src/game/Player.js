@@ -277,6 +277,27 @@ export class Player {
       p.a0 = blink ? 0.3 : 0.85;
       p.setTint(Math.random() < 0.5 ? 0xffb050 : 0xfff0a0);
     }
+    // a wake out of the gachapon: scattered to the sides while the ship is moving (the faster, the more)
+    const wake = this.ship.look?.wake;
+    if (wake && this.alive && this.entering <= 0) {
+      const spd = Math.hypot(this.vx || 0, this.vy || 0);
+      const rate = 8 + Math.min(36, spd * 0.32 + Math.abs(this.bank) * 20);
+      if (spd >= 32 && Math.random() < Math.min(1, dt * rate) * 0.8) {
+        const fx = this.scene.fx;
+        const side = Math.random() < 0.5 ? -1 : 1;
+        const wp = fx.part(fx.parts, wake.frames[Math.floor(Math.random() * wake.frames.length)], this.x + side * (6 + Math.random() * 4), this.y + 2);
+        wp.vx = side * (40 + Math.random() * 28) - (this.vx || 0) * 0.15;
+        wp.vy = 20 + Math.random() * 22;
+        wp.drag = 2;
+        wp.g = wake.g ?? 12;
+        wp.grow = wake.grow ?? 0;
+        wp.spin = (wake.spin ?? 1) * side * (4 + Math.random() * 4);
+        wp.life = wp.max = (wake.life ?? 0.5) * (0.8 + Math.random() * 0.4);
+        wp.a0 = wake.alpha ?? 0.65;
+        wp.setScale((wake.scale ?? 1) * wp.base);
+        if (wake.tints) wp.setTint(wake.tints[Math.floor(Math.random() * wake.tints.length)]);
+      }
+    }
     this.sprite.setAlpha(blink ? 0.35 : 1);
     this.flame.setAlpha(blink ? 0.35 : 1);
     const hotGlow = this.alive && this.jam <= 0 && this.heat >= HEAT.boostAt;

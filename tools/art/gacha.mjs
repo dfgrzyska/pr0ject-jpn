@@ -442,6 +442,17 @@ function partDye() {
   return s.render({ outline: 2 });
 }
 
+/** A wake: petals strewn in a curve. */
+function partWake() {
+  const s = new HiSprite(72, 72, RAMPS);
+  for (const [x, y, r] of [[20, 14, 9], [38, 24, 10], [50, 42, 9], [30, 46, 7], [44, 60, 6], [18, 34, 5]]) {
+    s.dot(x, y, r, 0xf08bb0);
+    s.dot(x - r * 0.25, y - r * 0.25, r * 0.6, 0xffd3e2);
+    s.dot(x + r * 0.3, y + r * 0.3, r * 0.22, 0xc85a85);
+  }
+  return s.render({ outline: 2 });
+}
+
 /** The title screen's paper card at half its width (two side by side: the gachapon, the hangar): its two ends joined. */
 function halfCard(active) {
   const full = card(false, active);
@@ -478,5 +489,6 @@ export function gachaAtlas() {
   add('part_paint', partPaint());
   add('part_flame', partFlame());
   add('part_dye', partDye());
+  add('part_wake', partWake());
   return out;
 }

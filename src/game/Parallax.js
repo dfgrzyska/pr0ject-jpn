@@ -278,7 +278,6 @@ export class Parallax {
     this.near.sweep();
     let j = 0;
     const isLeaf = this.nearKind === 'sakura' || this.nearKind === 'momiji';
-    const leafPrefix = this.nearKind === 'momiji' ? 'momiji_' : 'petal_';
     const pl = isLeaf && this.scene.player?.alive ? this.scene.player : null;
     for (const b of this.bitsLive) {
       if (pl && Math.abs(b.x - pl.x) < 46 && Math.abs(b.y - pl.y) < 46) {
@@ -303,31 +302,7 @@ export class Parallax {
       } else this.bitsLive[j++] = b;
     }
     this.bitsLive.length = j;
-    // Kyoto only: a light wake during deliberate maneuvers. Ambient leaves still part above.
-    if (pl && !pl.entering && this.nearKind === 'sakura') {
-      const spd = Math.hypot(pl.vx || 0, pl.vy || 0);
-      const rate = 8 + Math.min(36, spd * 0.32 + Math.abs(pl.bank) * 20);
-      // Previously each successful roll emitted TWO petals. One at 0.8 of the old
-      // probability retains 40% of the count (60% less), even on slower frames.
-      const chance = Math.min(1, dt * rate) * 2 * 0.4;
-      if (spd >= 32 && Math.random() < chance) {
-        const side = Math.random() < 0.5 ? -1 : 1;
-        const wp = this.scene.fx.part(
-          this.scene.fx.parts,
-          `${leafPrefix}${Math.floor(Math.random() * 4)}`,
-          pl.x + side * (6 + Math.random() * 4),
-          pl.y + 2,
-        );
-        wp.vx = side * (40 + Math.random() * 28) - (pl.vx || 0) * 0.15;
-        wp.vy = 20 + Math.random() * 22;
-        wp.drag = 2;
-        wp.g = 12;
-        wp.spin = side * (4 + Math.random() * 4);
-        wp.life = wp.max = 0.4 + Math.random() * 0.2;
-        wp.a0 = 0.65;
-        wp.setScale(1);
-      }
-    }
+    // (the petals the ship used to scatter in Kyoto are a wake out of the gachapon now: see Player)
   }
 
   /** Move a drifting bit (sprite or bob) along; true once it has left the screen. */
