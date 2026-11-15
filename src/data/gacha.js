@@ -35,13 +35,13 @@ export const ITEMS = [
     slots: { engine: 1, gun: 1, bomb: 1, core: 1, omamori: 1 },
   },
   {
-    id: 'hull_oni', kind: 'hull', rarity: 'SR', name: 'ONI', info: 'DWA DZIAŁA, CIĘŻKI SILNIK NA STAŁE',
+    id: 'hull_oni', kind: 'hull', rarity: 'SR', name: 'ONI', info: 'DWA DZIAŁA, CIĘŻKI SILNIK',
     ship: { id: 'oni', name: 'ONI', role: 'CIĘŻKI', color: 0x6ae486, frame: 'ship_oni', life: 'icon_life_oni', lives: 3, damage: 1.25, hit: 1.7, graze: 7, pickup: 11, flameY: 8 },
     slots: { engine: 0, gun: 2, bomb: 1, core: 1, omamori: 1 },
     fixed: { engine: 'engine_heavy' },
   },
   {
-    id: 'hull_tsubame', kind: 'hull', rarity: 'SR', name: 'TSUBAME', info: 'DWA OMAMORI, LEKKA BOMBA NA STAŁE',
+    id: 'hull_tsubame', kind: 'hull', rarity: 'SR', name: 'TSUBAME', info: 'DWA OMAMORI, LEKKA BOMBA',
     ship: { id: 'tsubame', name: 'TSUBAME', role: 'SZYBKI', color: 0x5cacf2, frame: 'ship_tsubame', life: 'icon_life_tsubame', lives: 3, damage: 0.95, hit: 1.1, graze: 11, pickup: 16, flameY: 6 },
     slots: { engine: 1, gun: 1, bomb: 0, core: 1, omamori: 2 },
     fixed: { bomb: 'bomb_cut' },
@@ -59,12 +59,12 @@ export const ITEMS = [
   // ---- bombs: damage to everything on screen, s of invulnerability, s enemy bullets stay cancelled; grazes to earn it back
   { id: 'bomb_cranes', kind: 'bomb', starter: true, name: 'SENBAZURU', info: 'POCISKI ZMIENIA W ŻURAWIE', fx: { set: { bomb: { kind: 'cranes', damage: 45, invulnerable: 2.2, clear: 1.0 }, perBomb: 32 } } },
   { id: 'bomb_shock', kind: 'bomb', rarity: 'R', name: 'WSTRZĄS', info: 'NAJMOCNIEJSZA, WOLNO WRACA', fx: { set: { bomb: { kind: 'shock', damage: 75, invulnerable: 2.2, clear: 0.5 }, perBomb: 40 } } },
-  { id: 'bomb_cut', kind: 'bomb', rarity: 'R', name: 'CIĘCIE WIATRU', info: 'LEKKA, WRACA DWA RAZY SZYBCIEJ', fx: { set: { bomb: { kind: 'cut', damage: 25, invulnerable: 1.2, clear: 0.6 }, perBomb: 20 } } },
+  { id: 'bomb_cut', kind: 'bomb', rarity: 'R', name: 'CIĘCIE WIATRU', info: 'LEKKA, SZYBKO WRACA', fx: { set: { bomb: { kind: 'cut', damage: 25, invulnerable: 1.2, clear: 0.6 }, perBomb: 20 } } },
 
   // ---- cores: what the ship does that others don't (see Player.perks)
   { id: 'core_ofuda', kind: 'core', starter: true, name: 'TALIZMANY OFUDA', info: 'GRAZING SKŁADA TALIZMANY', fx: { set: { ofuda: true } } },
-  { id: 'core_rage', kind: 'core', rarity: 'SR', name: 'GNIEW SZTURMOWY', info: 'IM WYŻEJ, TYM MOCNIEJ; TARANUJE', fx: { set: { rage: 0.2, ram: true } } },
-  { id: 'core_momentum', kind: 'core', rarity: 'SR', name: 'PĘD JASKÓŁKI', info: 'RUCH I GRAZING PRZYSPIESZAJĄ OGIEŃ', fx: { set: { momentum: true } } },
+  { id: 'core_rage', kind: 'core', rarity: 'SR', name: 'GNIEW SZTURMOWY', info: 'IM WYŻEJ, TYM MOCNIEJ', fx: { set: { rage: 0.2, ram: true } } },
+  { id: 'core_momentum', kind: 'core', rarity: 'SR', name: 'PĘD JASKÓŁKI', info: 'RUCH PRZYSPIESZA OGIEŃ', fx: { set: { momentum: true } } },
 
   // ---- omamori: small charms
   ...graded('oma_speed', 'omamori', 'DOPALACZ', (v) => `${pct(v)} PRĘDKOŚCI`, [0.04, 0.08, 0.12, 0.16, 0.2], (v) => ({ mul: { speed: 1 + v, dragSpeed: 1 + v } })),

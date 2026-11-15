@@ -218,6 +218,65 @@ export class Sfx {
   }
 
   /** size: 's' popcorn/diver/carrier, 'm' shooter/turret/player, 'l' heavy. */
+  // ---- the gachapon (src/game/Gacha.js)
+  /** The ticket going into its slot: paper, then the machine's chirp. */
+  ticketIn() {
+    if (!this.ready('gticket', 0.1)) return;
+    const t = this.now();
+    this.sweep(5200, 1800, 0.09, 0.12, t);
+    this.blip('square', 880, 1320, 0.07, 0.07, t + 0.1);
+    this.blip('square', 1320, 1760, 0.09, 0.07, t + 0.18);
+  }
+
+  /** One notch of the crank. */
+  crankClick() {
+    if (!this.ready('gcrank', 0.05)) return;
+    const t = this.now();
+    this.sweep(2600, 500, 0.045, 0.2, t);
+    this.blip('triangle', 190, 120, 0.06, 0.16, t);
+  }
+
+  /** The capsules knocking about under the glass. */
+  capsuleRattle() {
+    if (!this.ready('grattle', 0.07)) return;
+    this.blip('sine', 520 + Math.random() * 380, 300, 0.035, 0.05, this.now());
+  }
+
+  /** The capsule landing: a hollow plastic knock, softer with each bounce (`k`: 1 the first). */
+  capsuleBounce(k = 1) {
+    if (!this.ready('gbounce', 0.05)) return;
+    const t = this.now();
+    this.blip('sine', 420, 170, 0.09, 0.22 / k, t);
+    this.sweep(1800, 400, 0.05, 0.1 / k, t);
+  }
+
+  /** The capsule cracking open. */
+  capsuleOpen() {
+    if (!this.ready('gopen', 0.1)) return;
+    const t = this.now();
+    this.sweep(6000, 900, 0.16, 0.24, t);
+    this.blip('square', 320, 1280, 0.12, 0.09, t);
+  }
+
+  /** The prize shown: a rising run of notes, longer and brighter the rarer it is (`tier`: 0 plain .. 4 legendary). */
+  prize(tier) {
+    if (!this.ready('gprize', 0.2)) return;
+    const t = this.now();
+    const scale = [523, 659, 784, 1047, 1319, 1568, 2093]; // C E G C E G C
+    const n = 3 + tier;
+    for (let i = 0; i < n; i++) this.blip(tier >= 3 ? 'square' : 'triangle', scale[i], scale[i] * 1.005, 0.16 + (i === n - 1 ? 0.3 : 0), 0.11, t + i * 0.075);
+    if (tier >= 2) for (let i = 0; i < n; i++) this.blip('sine', scale[i] * 2, scale[i] * 2, 0.2, 0.05, t + i * 0.075);
+    if (tier >= 4) for (let i = 0; i < 8; i++) this.blip('sine', 2093 + Math.random() * 2000, 3000, 0.08, 0.04, t + 0.6 + i * 0.07);
+  }
+
+  /** No ticket to put in. */
+  denied() {
+    if (!this.ready('gdenied', 0.2)) return;
+    const t = this.now();
+    this.blip('square', 220, 180, 0.09, 0.09, t);
+    this.blip('square', 180, 150, 0.12, 0.09, t + 0.11);
+  }
+
   explode(size) {
     if (!this.ready(`boom_${size}`, BOOM_GAP[size] ?? 0.05)) return;
     const t = this.now();

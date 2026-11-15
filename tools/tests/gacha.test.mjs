@@ -17,6 +17,7 @@ test('the catalogue is sound', () => {
   for (const it of ITEMS) {
     assert.ok(it.starter || RARITY[it.rarity], `${it.id} has a rarity`);
     assert.ok(it.name && it.info, `${it.id} has a name and a line about it`);
+    assert.ok(it.name.length <= 24 && it.info.length <= 26, `${it.id}: its name and line fit the screen`);
     if (it.kind === 'hull') for (const id of Object.values(it.fixed ?? {})) assert.ok(ITEM[id], `${it.id}: built-in ${id} exists`);
   }
   assert.ok(ITEMS.length <= 500, 'the machine holds 500 at most');

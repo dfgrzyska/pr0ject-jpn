@@ -22,6 +22,7 @@ import { Player } from '../game/Player.js';
 import { Pool } from '../game/Pool.js';
 import { Score } from '../game/Score.js';
 import { PreFlight } from '../game/PreFlight.js';
+import { Gacha } from '../game/Gacha.js';
 import { buildShip, grant, loadState, newState, saveState } from '../game/Loadout.js';
 import { KITS, TICKETS } from '../data/gacha.js';
 import { INK, PALE, StampBook, hasStamp, pressStamp, stampFrame } from '../game/Stamps.js';
@@ -321,6 +322,21 @@ export class Stage extends Phaser.Scene {
     this.music.unlock();
     if (go.encounter) this.scene.restart({ order: randomOrder(lastCity()), pos: 0, encounter: go.encounter, dev: true, devStart: 0, god });
     else this.scene.restart({ order: randomOrder(go.index), pos: 0, dev: true, devStart: go.t, god });
+  }
+
+  /** The gachapon, from the title screen. */
+  openGacha() {
+    this.music.unlock();
+    this.hud.closePanel();
+    this.journey.setMode('backdrop');
+    this.state = 'gacha';
+    this.gacha = new Gacha(this, this.loadout, () => saveLoadout(this.loadout));
+  }
+
+  closeGacha() {
+    this.gacha?.destroy();
+    this.gacha = null;
+    this.showTitle(); // (the title shows the tickets left)
   }
 
   openSelect() {
@@ -641,6 +657,7 @@ export class Stage extends Phaser.Scene {
     if (this.hud.hitDebug(p)) return this.debug.toggle();
     if (this.state === 'city') return this.journey.pointerDown(p);
     if (this.state === 'dev') return this.devMenu.pointer(p);
+    if (this.state === 'gacha') return this.gacha.pointer(p) === 'close' && this.closeGacha();
     if (this.state === 'title') {
       if (this.hud.hitLang(p)) return this.toggleLang();
       if (this.hud.hitInstall(p)) return install().then(() => this.state === 'title' && this.showTitle());
@@ -690,6 +707,11 @@ export class Stage extends Phaser.Scene {
       else if (confirm || bomb) this.devMenu.activate();
       return;
     }
+    if (this.state === 'gacha') {
+      const act = escape ? 'back' : down(k.LEFT) || down(k.A) ? 'left' : down(k.RIGHT) || down(k.D) ? 'right' : confirm || bomb ? 'confirm' : null;
+      if (act && this.gacha.key(act) === 'close') this.closeGacha();
+      return;
+    }
     if (escape || down(k.P)) { this.togglePause(); if (this.paused) return; }
     if (down(k.M)) this.music.toggle();
     if (down(k.G)) this.debug.toggle();
@@ -700,8 +722,8 @@ export class Stage extends Phaser.Scene {
       else if (down(k.L)) this.toggleLang();
       else if (down(k.B)) this.openDevBosses();
       else if (down(k.I) && canInstall()) install().then(() => this.state === 'title' && this.showTitle());
-      else if (down(k.UP) || down(k.W)) this.journey.focus = (this.journey.focus + 3) % 4;
-      else if (down(k.DOWN) || down(k.S)) this.journey.focus = (this.journey.focus + 1) % 4;
+      else if (down(k.UP) || down(k.W)) this.journey.focus = (this.journey.focus + this.journey.menuButtons.length - 1) % this.journey.menuButtons.length;
+      else if (down(k.DOWN) || down(k.S)) this.journey.focus = (this.journey.focus + 1) % this.journey.menuButtons.length;
       else if (confirm || bomb) this.journey.activate();
     } else if (this.state === 'city') {
       if (down(k.UP) || down(k.W) || down(k.LEFT) || down(k.A)) this.journey.step(-1);
@@ -739,6 +761,7 @@ export class Stage extends Phaser.Scene {
     this.journey?.layout(this.H);
     this.pauseMenu?.layout(this.H);
     this.select?.layout(this.H);
+    this.gacha?.layout(this.H);
     this.map?.layout(this.H);
     this.ending?.layout(this.H);
     this.book?.layout(this.H);
@@ -789,9 +812,10 @@ export class Stage extends Phaser.Scene {
     const playing = this.state === 'play';
     // the moving background steps back when the screen fills with bullets
     this.parallax.props.calmTarget = Math.max(0, Math.min(1, (this.bullets.pool.live.length - 10) / 30));
-    this.parallax.update(dt, !['title', 'city', 'book', 'select'].includes(this.state), this.H);
+    this.parallax.update(dt, !['title', 'city', 'book', 'select', 'gacha'].includes(this.state), this.H);
     this.journey?.update(dt);
     this.select?.update(dt);
+    this.gacha?.update(dt);
     if (playing) {
       this.t += dt;
       this.waves.update(this.t, (w) => this.enemies.spawn(w));

@@ -47,14 +47,18 @@ export class JourneyMenu {
     this.stamps = add(pixelText(scene, 90, 0, 'PIECZĄTKI', 0.5, INK_FONT), DEPTH.overlay + 2);
     this.yokai = add(pixelText(scene, 90, 0, 'ALBUM YOKAI', 0.5, INK_FONT), DEPTH.overlay + 2);
     this.food = add(pixelText(scene, 90, 0, 'SMAKI JAPONII', 0.5, INK_FONT), DEPTH.overlay + 2);
-    this.menuButtons = [this.newGame, this.stamps, this.yokai, this.food];
+    this.gacha = add(pixelText(scene, 90, 0, 'GACHAPON', 0.5, INK_FONT), DEPTH.overlay + 2);
+    this.menuButtons = [this.newGame, this.stamps, this.yokai, this.food, this.gacha];
     this.dev = add(pixelText(scene, 177, 46, 'BOSSY', 1).setTint(0x8a9ab0), DEPTH.overlay + 2); // the developer boss screen
     this.cards = this.menuButtons.map((_, i) => add(scene.add.image(90, 0, 'menu', `${i ? 'paper' : 'start'}_off`).setScale(FINE)));
     this.icons = ['icon_stamp', 'icon_yokai', 'icon_food'].map((frame) => add(scene.add.image(29, 0, 'menu', frame).setScale(FINE), DEPTH.overlay + 2));
+    this.icons.push(add(scene.add.image(29, 0, 'gacha', 'icon_gacha').setScale(FINE), DEPTH.overlay + 2));
     // Sakura petals, turning as they fall.
     this.petals = Array.from({ length: 18 }, (_, n) => add(scene.add.image(0, 0, 'menu', `petal_${n % 2}`).setScale(FINE), DEPTH.overlay + 1.5));
     const counts = [STAGES.filter((s) => hasStamp(s.id, true)).length, YOKAI.filter((e) => discoveries.has(e.id)).length, FOODS.filter((e) => discoveries.has(e.id)).length];
     this.counts = [STAGES.length, YOKAI.length, FOODS.length].map((total, i) => add(pixelText(scene, 148, 0, `${counts[i]}/${total}`, 0.5, INK_FONT).setTint(0x76583d), DEPTH.overlay + 2));
+    // (the gachapon's row: the tickets in hand)
+    this.counts.push(add(pixelText(scene, 148, 0, `×${scene.loadout.tickets}`, 0.5, INK_FONT).setTint(scene.loadout.tickets ? 0xa4322d : 0x76583d), DEPTH.overlay + 2));
     this.titleDecor = [this.sky, this.cloth, this.evening, ...this.lanterns, ...this.cards, ...this.icons, ...this.counts, ...this.petals];
     this.name = add(pixelText(scene, 90, 0, ''));
     this.subtitle = add(pixelText(scene, 90, 0, ''));
@@ -90,6 +94,7 @@ export class JourneyMenu {
     this.logo.y = title.logoY;
     this.tagline.y = title.taglineY;
     this.caption.y = title.captionY;
+    this.captionFits = title.captionY - title.buttons[title.buttons.length - 1] >= 24; // (a short screen: the buttons need the room)
     this.menuButtons.forEach((button, i) => {
       button.y = title.buttons[i];
       this.cards[i].y = button.y + 1;
@@ -126,6 +131,7 @@ export class JourneyMenu {
     this.map.setVisible(cities || mode === 'backdrop');
     this.clouds.forEach((o) => o.setVisible(cities));
     for (const o of [this.heading, this.name, this.subtitle, this.next, ...this.labels]) o.setVisible(cities);
+    this.caption.setVisible(title && this.captionFits);
     this.ship.setVisible(title || cities).setDepth(DEPTH.overlay + (title ? 0.5 : 2));
     if (cities) this.ship.setRotation(0);
     this.back.setVisible(cities);
@@ -195,6 +201,7 @@ export class JourneyMenu {
   activate() {
     if (this.focus === 0) this.scene.openCities();
     else if (this.focus === 1) this.scene.openBook();
+    else if (this.focus === 4) this.scene.openGacha();
     else this.scene.openCollection(this.focus === 2 ? 'yokai' : 'food');
   }
   remember() { try { localStorage.setItem(CITY_KEY, STAGES[this.index].id); } catch { /* private mode */ } }

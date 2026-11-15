@@ -62,6 +62,7 @@ export class Boot extends Phaser.Scene {
     this.load.image('font540_ink', 'font540_ink.png');
     this.load.image('japan', 'japan.png'); // the map between stages (at 540 px)
     this.load.atlas('menu', 'menu.png', 'menu.json'); // the title screen (at 540 px)
+    this.load.atlas('gacha', 'gacha.png', 'gacha.json'); // the gachapon screen (at 540 px)
     this.load.image('menu_waves', 'menu_waves.png');
     this.load.image('menu_washi', 'menu_washi.png'); // the paper of the books
     this.load.image('ending', 'ending.png'); // the ending's last picture (Fuji at sunrise)

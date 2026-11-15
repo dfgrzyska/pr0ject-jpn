@@ -3,6 +3,7 @@
 //   node tools/gen-art.mjs --preview      -> also writes previews to tools/preview/
 //   node tools/gen-art.mjs --only=stage1  -> only that stage's backgrounds & props (leaves shared assets untouched)
 //   node tools/gen-art.mjs --only=shared  -> only shared sprites, icons, font, map & ending
+//   node tools/gen-art.mjs --only=gacha   -> only the gachapon screen's atlas
 //   node tools/gen-art.mjs --only=enemies -> only the cities' 540 px enemies (bg/<id>/enemies.*) and the portraits
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -46,6 +47,7 @@ import * as kirifuri from './art/encounters/kirifuri.mjs';
 import { kaikenEnemies } from './art/encounters/kaiken.mjs';
 import { addCracks } from './art/cracks540.mjs';
 import { shared540 } from './art/shared540/index.mjs';
+import { gachaAtlas } from './art/gacha.mjs';
 import { buildIcon, downsample } from './art/icon.mjs';
 
 // cities whose enemies are drawn at 540 px (docs/enemies-540-plan.md): their atlas, and what of it the album
@@ -147,6 +149,15 @@ write('ending.png', ending.toPNG());
 write('ending_clouds.png', buildEndingClouds().toPNG());
 write('ending_night.png', buildEndingNight().toPNG());
 if (preview) writeFileSync(join(previewDir, 'ending_x1.png'), ending.toPNG());
+}
+
+// the gachapon screen (at 540 px): its machine, capsules, ticket, the pictures of the parts
+if (!only || only === 'gacha') {
+  console.log('gacha');
+  const { raster, json } = packAtlas(gachaAtlas(), 1024, 2, 'gacha.png');
+  write('gacha.png', raster.toPNG());
+  write('gacha.json', Buffer.from(JSON.stringify(json)));
+  if (preview) writeFileSync(join(previewDir, 'gacha.png'), raster.scaled(1, 0x30304a).toPNG());
 }
 
 // the shared sprites at 540 px (effects, bullets, the ship): sprites540, the same frame names three times the size
