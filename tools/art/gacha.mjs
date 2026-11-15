@@ -4,6 +4,8 @@
 // the capsules in the five rarities (whole, and their two halves for when they crack open), the ticket, a sparkle,
 // and the pictures of the kinds of part a capsule can hold.
 import { shotSkins } from './shots.mjs';
+import { enemyBulletSkins } from './ebullets.mjs';
+import { ITEMS } from '../../src/data/gacha.js';
 import { HiSprite, tones, speckle, inPoly } from '../lib/hisprite.mjs';
 import { Raster } from '../lib/raster.mjs';
 import { MACHINE, CAPSULE, BALL, NEKO } from '../../src/data/gachaLayout.js';
@@ -443,6 +445,56 @@ function partDye() {
   return s.render({ outline: 2 });
 }
 
+/** A bullet with its rim, dark hairline and white core. */
+function bullet(s, x, y, r, body, ring) {
+  s.dot(x, y, r, INK);
+  s.dot(x, y, r - 2, ring);
+  s.dot(x, y, r - 5, body);
+  s.dot(x, y, r * 0.3, 0xffffff);
+}
+
+/** A colour for the enemies' bullets: three of them, a colour each. */
+function partEbColor() {
+  const s = new HiSprite(72, 72, RAMPS);
+  bullet(s, 22, 24, 15, 0xff3838, 0xffb0a8);
+  bullet(s, 50, 30, 15, 0x22d0e8, 0xb0f4ff);
+  bullet(s, 32, 52, 15, 0xf2d21a, 0xfff4a8);
+  return s.render({ outline: 0 });
+}
+
+/** A shape for the enemies' bullets: a star of a bullet. */
+function partEbShape() {
+  const s = new HiSprite(72, 72, RAMPS);
+  const star = (r) => Array.from({ length: 10 }, (_, i) => {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const q = i % 2 ? r * 0.5 : r;
+    return [36 + Math.cos(a) * q, 38 + Math.sin(a) * q];
+  });
+  for (let y = 0; y < 72; y++)
+    for (let x = 0; x < 72; x++) {
+      const at = (r) => inPoly(star(r), x + 0.5, y + 0.5);
+      if (at(34)) s.px(x, y, at(30) ? (at(22) ? 0xe63cff : 0xee9cff) : INK);
+    }
+  s.dot(36, 38, 7, 0xffffff);
+  return s.render({ outline: 0 });
+}
+
+/** A marker for the hitbox: a ring, cross hairs, the dot in the middle. */
+function partMarker() {
+  const s = new HiSprite(72, 72, RAMPS);
+  s.dot(36, 36, 26, INK);
+  s.dot(36, 36, 23, 0x4fe8ff);
+  s.dot(36, 36, 18, INK);
+  for (const [x0, y0, x1, y1] of [[36, 4, 36, 22], [36, 50, 36, 68], [4, 36, 22, 36], [50, 36, 68, 36]]) {
+    s.line(x0, y0, x1, y1, INK, 7);
+    s.line(x0, y0, x1, y1, 0xffffff, 3);
+  }
+  s.dot(36, 36, 8, INK);
+  s.dot(36, 36, 5.5, 0xffffff);
+  s.dot(36, 36, 2.5, 0xff3838);
+  return s.render({ outline: 0 });
+}
+
 /** A skin for the shots: three needles in flight. */
 function partShot() {
   const s = new HiSprite(72, 72, RAMPS);
@@ -479,6 +531,8 @@ export function gachaAtlas() {
   const out = [];
   const add = (name, raster) => out.push({ name, raster });
   for (const s of shotSkins()) out.push(s); // the skins for the player's shots (shots.mjs)
+  // the enemy bullets' shapes, the colours' pictures and the hitbox's markers (ebullets.mjs)
+  for (const s of enemyBulletSkins(Object.fromEntries(ITEMS.filter((it) => it.kind === 'eb_color').map((it) => [it.pic.slice(7), it.body])))) out.push(s);
   add('machine', machine());
   add('crank', crank());
   add('glass', glass());
@@ -504,5 +558,8 @@ export function gachaAtlas() {
   add('part_dye', partDye());
   add('part_wake', partWake());
   add('part_shot', partShot());
+  add('part_eb_color', partEbColor());
+  add('part_eb_shape', partEbShape());
+  add('part_marker', partMarker());
   return out;
 }

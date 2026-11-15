@@ -1,5 +1,5 @@
 import { DEPTH, RENDER_SCALE, VIEW } from '../config.js';
-import { ITEM, ITEMS, LOOKS, RARITIES, RARITY, SHOT_FRAMES, SLOTS } from '../data/gacha.js';
+import { ITEM, ITEMS, RARITIES, RARITY, SHOT_FRAMES, SLOTS } from '../data/gacha.js';
 import { pixelText } from './Hud.js';
 import { buildShip, equip, layout, setHull, wear } from './Loadout.js';
 import { applySkin, flameLook } from './shipSkin.js';
@@ -14,10 +14,15 @@ const W = VIEW.width;
 const LINE = 12; // a row of the list
 const BOX = 26; // a slot
 const PER_ROW = 5;
-const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW', wake: 'ŚLAD ZA STATKIEM', shot_basic: 'POCISKI: PODSTAWOWA', shot_spread: 'POCISKI: ROZRZUT', shot_laser: 'POCISKI: LASER', shot_homing: 'POCISKI: NAPROWADZANE' };
+const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW', wake: 'ŚLAD ZA STATKIEM', shot_basic: 'POCISKI: PODSTAWOWA', shot_spread: 'POCISKI: ROZRZUT', shot_laser: 'POCISKI: LASER', shot_homing: 'POCISKI: NAPROWADZANE', marker: 'ZNACZNIK HITBOXA', eb_color: 'WROGIE POCISKI: KOLOR', eb_shape: 'WROGIE POCISKI: KSZTAŁT' };
 // a slot's picture: the kind's (the four weapons' skins share one), or the fitted skin itself
-const slotFrame = (kind, it) => (it?.skin ? `${SHOT_FRAMES[kind][0]}_${it.skin}` : kind.startsWith('shot_') ? 'part_shot' : `part_${kind}`);
-const TABS = [{ id: 'parts', name: 'CZĘŚCI', x: 50 }, { id: 'look', name: 'WYGLĄD', x: 130 }];
+const slotFrame = (kind, it) => (it?.pic ? it.pic : it?.skin ? `${SHOT_FRAMES[kind][0]}_${it.skin}` : kind.startsWith('shot_') ? 'part_shot' : `part_${kind}`);
+// the tabs: the parts, then the looks (of the ship, of the shots: its own and the enemies')
+const TABS = [
+  { id: 'parts', name: 'CZĘŚCI', x: 30 },
+  { id: 'ship', name: 'STATEK', x: 90, kinds: ['paint', 'flame', 'wake', 'marker'] },
+  { id: 'shots', name: 'POCISKI', x: 150, kinds: ['dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape'] },
+];
 const TAB_Y = 95;
 const STATS = [
   { label: 'PRĘDKOŚĆ', get: (s) => s.speed, min: 60, max: 190, fmt: (v) => String(Math.round(v)) },
@@ -89,7 +94,8 @@ export class Hangar {
 
   /** The fitted hull's slots, the hull first: { kind, index } or (built in) { kind, fixed }. */
   slots() {
-    if (this.tab === 'look') return LOOKS.map((kind) => ({ kind, look: true }));
+    const tab = TABS.find((t) => t.id === this.tab);
+    if (tab.kinds) return tab.kinds.map((kind) => ({ kind, look: true }));
     const hull = ITEM[this.loadout.hull];
     const out = [{ kind: 'hull' }];
     for (const k of SLOTS) {
@@ -192,7 +198,7 @@ export class Hangar {
       g.fillStyle(on ? 0x24345c : 0x121a34).fillRect(x - BOX / 2, y - BOX / 2, BOX, BOX);
       g.lineStyle(1, on ? 0xffe080 : it ? tint(it) : 0x33416a, on || it ? 1 : 0.8).strokeRect(x - BOX / 2 + 0.5, y - BOX / 2 + 0.5, BOX - 1, BOX - 1);
       if (s.kind === 'hull') this.slotShip.setVisible(true).setPosition(x, y).setFrame(ship.frame);
-      else art.setFrame(slotFrame(s.kind, it)).setPosition(x, y).setAlpha(it ? (s.fixed ? 0.55 : 1) : 0.22).setScale(it?.skin ? Math.min(FINE * 3, (BOX - 6) / art.height) : FINE);
+      else art.setFrame(slotFrame(s.kind, it)).setPosition(x, y).setAlpha(it ? (s.fixed ? 0.55 : 1) : 0.22).setScale(it?.skin || it?.pic ? Math.min(FINE * 3, (BOX - 6) / art.height) : FINE);
       // a part built into the hull: a small lock in the corner
       if (s.fixed) {
         g.fillStyle(0x9aaec2).fillRect(x + 6, y + 7, 6, 4);
@@ -287,7 +293,7 @@ export class Hangar {
   /** Returns 'close' for the back arrow. */
   key(act) {
     if (act === 'back') return 'close';
-    if (act === 'tab') this.setTab(this.tab === 'parts' ? 'look' : 'parts');
+    if (act === 'tab') this.setTab(TABS[(TABS.findIndex((t) => t.id === this.tab) + 1) % TABS.length].id);
     if (act === 'left') this.pickSlot(this.slot - 1);
     else if (act === 'right') this.pickSlot(this.slot + 1);
     else if (act === 'up') this.move(-1);
@@ -299,7 +305,7 @@ export class Hangar {
   /** A press: the back arrow or a slot at once; on the list it may become a drag (scroll) or, on release, a tap. */
   pointer(p) {
     if (p.y < 26 && p.x < 60) return 'close';
-    if (Math.abs(p.y - TAB_Y) <= 8) return this.setTab(p.x < W / 2 ? 'parts' : 'look');
+    if (Math.abs(p.y - TAB_Y) <= 8) return this.setTab(TABS[Math.min(TABS.length - 1, Math.floor((p.x * TABS.length) / W))].id);
     const n = this.slots().length;
     for (let i = 0; i < n; i++) {
       const c = this.slotAt(i);

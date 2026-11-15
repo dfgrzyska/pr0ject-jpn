@@ -153,7 +153,7 @@ test('looks are worn one of a kind, and only owned ones', () => {
   assert.ok(wear(s, 'flame', 'flame_lava'));
   assert.ok(wear(s, 'dye', 'dye_blue'));
   const ship = buildShip(s);
-  assert.deepEqual(ship.look, { paint: ITEM.paint_urushi.colors, flame: ITEM.flame_lava.flame, dye: ITEM.dye_blue.tint, wake: null, shots: {} });
+  assert.deepEqual(ship.look, { paint: ITEM.paint_urushi.colors, flame: ITEM.flame_lava.flame, dye: ITEM.dye_blue.tint, wake: null, shots: {}, marker: null, ebColor: null, ebShape: null });
   s.owned.push('shot_laser_dragon', 'shot_basic_kunai');
   assert.ok(wear(s, 'shot_laser', 'shot_laser_dragon'));
   assert.equal(wear(s, 'shot_laser', 'shot_basic_kunai'), false, 'a skin goes on its own weapon');
@@ -161,6 +161,12 @@ test('looks are worn one of a kind, and only owned ones', () => {
   // every skin in the catalogue is drawn
   const drawn = new Set(Object.keys(JSON.parse(readFileSync(new URL('../../public/assets/gacha.json', import.meta.url))).frames));
   for (const it of ITEMS.filter((i) => i.skin)) for (const f of SHOT_FRAMES[it.kind]) assert.ok(drawn.has(`${f}_${it.skin}`), `${f}_${it.skin} is in the gacha atlas`);
+  for (const it of ITEMS.filter((i) => i.pic)) assert.ok(drawn.has(it.pic), `${it.pic} is in the gacha atlas`);
+  for (const it of ITEMS.filter((i) => i.shape)) for (const n of ['eb_s', 'eb_m']) for (const k of ['', '_0', '_7', '_f0', '_f2']) assert.ok(drawn.has(`${n}${k}_${it.shape}`), `${n}${k}_${it.shape} is in the gacha atlas`);
+  s.owned.push('eb_color_cyan', 'eb_shape_star', 'marker_eye');
+  assert.ok(wear(s, 'eb_color', 'eb_color_cyan') && wear(s, 'eb_shape', 'eb_shape_star') && wear(s, 'marker', 'marker_eye'));
+  const worn = buildShip(s).look;
+  assert.deepEqual([worn.ebColor, worn.ebShape, worn.marker], [ITEM.eb_color_cyan.body, 'star', 'hitbox_eye']);
   assert.equal(ship.damage, buildShip(newState()).damage, 'looks change no numbers');
   assert.ok(wear(s, 'paint', null));
   assert.equal(buildShip(s).look.paint, null);

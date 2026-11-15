@@ -9,8 +9,65 @@ import { setCustomFrame } from './enemyArt.js';
 const css = (c) => `#${c.toString(16).padStart(6, '0')}`;
 const BANKS = ['', '_l', '_r'];
 
-/** Paint the ship (or show it in its own livery again). Returns the ship. */
+// The enemies' standard bullets (eb_s, eb_m and their frames) in a shape and a colour out of the gachapon: the
+// shape's frames (the gacha atlas, tools/art/ebullets.mjs) or the bullets' own are copied into a texture of the
+// game's, their magenta turned into the colour, and that texture stands in for them.
+const EB = ['eb_s', 'eb_m'];
+const ebFrames = (n) => [n, ...[0, 1, 2, 3, 4, 5, 6, 7].map((k) => `${n}_${k}`), ...[0, 1, 2].map((k) => `${n}_f${k}`)];
+const EB_CELL = 34;
+let ebWorn = '';
+
+function bulletSkin(scene, ship) {
+  const color = ship.look?.ebColor ?? null;
+  const shape = ship.look?.ebShape ?? null;
+  const from = scene.textures.exists(shape ? 'gacha' : 'sprites') ? scene.textures.get(shape ? 'gacha' : 'sprites') : null;
+  const name = (f) => (shape ? `${f}_${shape}` : f);
+  const worn = (color == null && !shape) || !from?.has(name('eb_s')) ? '' : `${color}|${shape}`;
+  if (worn === ebWorn) return;
+  ebWorn = worn;
+  const all = EB.flatMap(ebFrames);
+  if (!worn) {
+    for (const f of all) setCustomFrame(f, null);
+    return;
+  }
+  const w = EB_CELL * ebFrames('eb_s').length;
+  const h = EB_CELL * EB.length;
+  let tex = scene.textures.exists('eb_skin') ? scene.textures.get('eb_skin') : null;
+  if (!tex) {
+    tex = scene.textures.createCanvas('eb_skin', w, h);
+    EB.forEach((n, row) => ebFrames(n).forEach((f, i) => {
+      const size = scene.textures.get('sprites').get(f).cutWidth;
+      tex.add(f, 0, i * EB_CELL, row * EB_CELL, size, size);
+    }));
+  }
+  const src = from.getSourceImage();
+  const ctx = tex.context;
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, w, h);
+  EB.forEach((n, row) => ebFrames(n).forEach((f, i) => {
+    const fr = from.get(name(f));
+    ctx.drawImage(src, fr.cutX, fr.cutY, fr.cutWidth, fr.cutHeight, i * EB_CELL, row * EB_CELL, fr.cutWidth, fr.cutHeight);
+  }));
+  if (color != null) {
+    // (the rule of tools/art/ebullets.mjs recolour(): magenta becomes the colour, its tints and darks with it)
+    const body = [(color >> 16) & 255, (color >> 8) & 255, color & 255];
+    const img = ctx.getImageData(0, 0, w, h);
+    const d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const g = d[i + 1];
+      if (!d[i + 3] || d[i] - g < 40 || d[i + 2] - g < 40) continue;
+      const t = (g - 60) / 195;
+      for (let k = 0; k < 3; k++) d[i + k] = t >= 0 ? Math.round(body[k] + (255 - body[k]) * Math.min(1, t)) : Math.round(body[k] * (g / 60));
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  tex.refresh();
+  for (const f of all) setCustomFrame(f, 'eb_skin');
+}
+
+/** Paint the ship (or show it in its own livery again), and dress the enemies' bullets. Returns the ship. */
 export function applySkin(scene, ship) {
+  bulletSkin(scene, ship);
   const base = ship.frame;
   const atlas = scene.textures.exists('sprites540') ? scene.textures.get('sprites540') : null;
   const colors = ship.look?.paint;

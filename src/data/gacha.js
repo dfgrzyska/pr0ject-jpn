@@ -21,7 +21,7 @@ export const PITY = { every: 10, min: 'SR' };
 export const SLOTS = ['engine', 'gun', 'bomb', 'core', 'omamori'];
 
 /** What changes only the looks, one of each worn at a time on any hull. */
-export const LOOKS = ['paint', 'flame', 'dye', 'wake', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing'];
+export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape'];
 
 /** The frames a skin for a weapon's shots replaces (kind -> frames; the skin's own are <frame>_<skin>). */
 export const SHOT_FRAMES = { shot_basic: ['ps_needle'], shot_spread: ['ps_spread'], shot_laser: ['ps_laser_1', 'ps_laser_2', 'ps_laser_3'], shot_homing: ['ps_homing_0'] };
@@ -273,6 +273,52 @@ export const ITEMS = [
   { id: 'shot_homing_bubble', kind: 'shot_homing', rarity: 'N', name: 'POCISKI: BĄBELKI', info: 'SKÓRKA NAPROWADZANYCH', skin: 'bubble' },
   { id: 'shot_homing_ghost', kind: 'shot_homing', rarity: 'SR', name: 'POCISKI: DUSZKI', info: 'SKÓRKA NAPROWADZANYCH', skin: 'ghost' },
   { id: 'shot_homing_swallow', kind: 'shot_homing', rarity: 'R', name: 'POCISKI: JASKÓŁKI', info: 'SKÓRKA NAPROWADZANYCH', skin: 'swallow' },
+  // ---- the enemies' standard bullets: a colour (`body`: what their magenta becomes) and a shape (`shape`: the
+  // frames are eb_s... / eb_m..._<shape>, tools/art/ebullets.mjs); `pic`: the item's own picture in the gacha atlas
+  { id: 'eb_color_red', kind: 'eb_color', rarity: 'N', name: 'KOLOR: CZERWIEŃ', info: 'KOLOR WROGICH POCISKÓW', body: 0xff3838, pic: 'eb_pal_red' },
+  { id: 'eb_color_orange', kind: 'eb_color', rarity: 'N', name: 'KOLOR: POMARAŃCZ', info: 'KOLOR WROGICH POCISKÓW', body: 0xff8a1e, pic: 'eb_pal_orange' },
+  { id: 'eb_color_yellow', kind: 'eb_color', rarity: 'N', name: 'KOLOR: ŻÓŁĆ', info: 'KOLOR WROGICH POCISKÓW', body: 0xf2d21a, pic: 'eb_pal_yellow' },
+  { id: 'eb_color_lime', kind: 'eb_color', rarity: 'N', name: 'KOLOR: LIMONKA', info: 'KOLOR WROGICH POCISKÓW', body: 0x9be022, pic: 'eb_pal_lime' },
+  { id: 'eb_color_green', kind: 'eb_color', rarity: 'N', name: 'KOLOR: ZIELEŃ', info: 'KOLOR WROGICH POCISKÓW', body: 0x2fcf5a, pic: 'eb_pal_green' },
+  { id: 'eb_color_cyan', kind: 'eb_color', rarity: 'N', name: 'KOLOR: CYJAN', info: 'KOLOR WROGICH POCISKÓW', body: 0x22d0e8, pic: 'eb_pal_cyan' },
+  { id: 'eb_color_mint', kind: 'eb_color', rarity: 'R', name: 'KOLOR: MIĘTA', info: 'KOLOR WROGICH POCISKÓW', body: 0x4fe8b0, pic: 'eb_pal_mint' },
+  { id: 'eb_color_blue', kind: 'eb_color', rarity: 'R', name: 'KOLOR: BŁĘKIT', info: 'KOLOR WROGICH POCISKÓW', body: 0x3a86ff, pic: 'eb_pal_blue' },
+  { id: 'eb_color_indigo', kind: 'eb_color', rarity: 'R', name: 'KOLOR: INDYGO', info: 'KOLOR WROGICH POCISKÓW', body: 0x5a54ff, pic: 'eb_pal_indigo' },
+  { id: 'eb_color_violet', kind: 'eb_color', rarity: 'R', name: 'KOLOR: FIOLET', info: 'KOLOR WROGICH POCISKÓW', body: 0xa24bff, pic: 'eb_pal_violet' },
+  { id: 'eb_color_pink', kind: 'eb_color', rarity: 'R', name: 'KOLOR: RÓŻ SAKURY', info: 'KOLOR WROGICH POCISKÓW', body: 0xff6fae, pic: 'eb_pal_pink' },
+  { id: 'eb_color_crimson', kind: 'eb_color', rarity: 'R', name: 'KOLOR: KARMAZYN', info: 'KOLOR WROGICH POCISKÓW', body: 0xc81e4a, pic: 'eb_pal_crimson' },
+  { id: 'eb_color_ghost', kind: 'eb_color', rarity: 'SR', name: 'KOLOR: DUCH', info: 'KOLOR WROGICH POCISKÓW', body: 0xa8d4ff, pic: 'eb_pal_ghost' },
+  { id: 'eb_color_ink', kind: 'eb_color', rarity: 'SR', name: 'KOLOR: TUSZ', info: 'KOLOR WROGICH POCISKÓW', body: 0x2a2438, pic: 'eb_pal_ink' },
+  { id: 'eb_shape_diamond', kind: 'eb_shape', rarity: 'N', name: 'KSZTAŁT: ROMB', info: 'KSZTAŁT WROGICH POCISKÓW', shape: 'diamond', pic: 'eb_m_diamond' },
+  { id: 'eb_shape_square', kind: 'eb_shape', rarity: 'N', name: 'KSZTAŁT: PIECZĘĆ HANKO', info: 'KSZTAŁT WROGICH POCISKÓW', shape: 'square', pic: 'eb_m_square' },
+  { id: 'eb_shape_hex', kind: 'eb_shape', rarity: 'N', name: 'KSZTAŁT: SZEŚCIOKĄT', info: 'KSZTAŁT WROGICH POCISKÓW', shape: 'hex', pic: 'eb_m_hex' },
+  { id: 'eb_shape_triangle', kind: 'eb_shape', rarity: 'N', name: 'KSZTAŁT: ŁUSKA UROKO', info: 'KSZTAŁT WROGICH POCISKÓW', shape: 'triangle', pic: 'eb_m_triangle' },
+  { id: 'eb_shape_star', kind: 'eb_shape', rarity: 'R', name: 'KSZTAŁT: GWIAZDKA', info: 'KSZTAŁT WROGICH POCISKÓW', shape: 'star', pic: 'eb_m_star' },
+  { id: 'eb_shape_sakura', kind: 'eb_shape', rarity: 'R', name: 'KSZTAŁT: KWIAT SAKURY', info: 'KSZTAŁT WROGICH POCISKÓW', shape: 'sakura', pic: 'eb_m_sakura' },
+  { id: 'eb_shape_ume', kind: 'eb_shape', rarity: 'R', name: 'KSZTAŁT: KWIAT ŚLIWY', info: 'KSZTAŁT WROGICH POCISKÓW', shape: 'ume', pic: 'eb_m_ume' },
+  { id: 'eb_shape_shuriken', kind: 'eb_shape', rarity: 'R', name: 'KSZTAŁT: SHURIKEN', info: 'KSZTAŁT WROGICH POCISKÓW', shape: 'shuriken', pic: 'eb_m_shuriken' },
+  { id: 'eb_shape_snowflake', kind: 'eb_shape', rarity: 'R', name: 'KSZTAŁT: ŚNIEŻYNKA', info: 'KSZTAŁT WROGICH POCISKÓW', shape: 'snowflake', pic: 'eb_m_snowflake' },
+  { id: 'eb_shape_coin', kind: 'eb_shape', rarity: 'R', name: 'KSZTAŁT: MONETA', info: 'KSZTAŁT WROGICH POCISKÓW', shape: 'coin', pic: 'eb_m_coin' },
+  { id: 'eb_shape_heart', kind: 'eb_shape', rarity: 'SR', name: 'KSZTAŁT: SERCE', info: 'KSZTAŁT WROGICH POCISKÓW', shape: 'heart', pic: 'eb_m_heart' },
+  { id: 'eb_shape_hitodama', kind: 'eb_shape', rarity: 'SR', name: 'KSZTAŁT: OGNIK HITODAMA', info: 'KSZTAŁT WROGICH POCISKÓW', shape: 'hitodama', pic: 'eb_m_hitodama' },
+  { id: 'eb_shape_takoyaki', kind: 'eb_shape', rarity: 'SR', name: 'KSZTAŁT: TAKOYAKI', info: 'KSZTAŁT WROGICH POCISKÓW', shape: 'takoyaki', pic: 'eb_m_takoyaki' },
+  { id: 'eb_shape_pinwheel', kind: 'eb_shape', rarity: 'SR', name: 'KSZTAŁT: WIATRACZEK', info: 'KSZTAŁT WROGICH POCISKÓW', shape: 'pinwheel', pic: 'eb_m_pinwheel' },
+  { id: 'eb_shape_kiku', kind: 'eb_shape', rarity: 'SR', name: 'KSZTAŁT: CHRYZANTEMA', info: 'KSZTAŁT WROGICH POCISKÓW', shape: 'kiku', pic: 'eb_m_kiku' },
+  { id: 'eb_shape_eye', kind: 'eb_shape', rarity: 'SSR', name: 'KSZTAŁT: OKO', info: 'KSZTAŁT WROGICH POCISKÓW', shape: 'eye', pic: 'eb_m_eye' },
+
+  // ---- markers: the dot that shows where the ship can be hit
+  { id: 'marker_ring', kind: 'marker', rarity: 'N', name: 'ZNACZNIK: PIERŚCIEŃ', info: 'ZNACZNIK HITBOXA STATKU', pic: 'hitbox_ring' },
+  { id: 'marker_square', kind: 'marker', rarity: 'N', name: 'ZNACZNIK: KWADRAT', info: 'ZNACZNIK HITBOXA STATKU', pic: 'hitbox_square' },
+  { id: 'marker_diamond', kind: 'marker', rarity: 'N', name: 'ZNACZNIK: ROMB', info: 'ZNACZNIK HITBOXA STATKU', pic: 'hitbox_diamond' },
+  { id: 'marker_cross', kind: 'marker', rarity: 'N', name: 'ZNACZNIK: KRZYŻYK', info: 'ZNACZNIK HITBOXA STATKU', pic: 'hitbox_cross' },
+  { id: 'marker_target', kind: 'marker', rarity: 'R', name: 'ZNACZNIK: TARCZA', info: 'ZNACZNIK HITBOXA STATKU', pic: 'hitbox_target' },
+  { id: 'marker_hinomaru', kind: 'marker', rarity: 'R', name: 'ZNACZNIK: HINOMARU', info: 'ZNACZNIK HITBOXA STATKU', pic: 'hitbox_hinomaru' },
+  { id: 'marker_star', kind: 'marker', rarity: 'R', name: 'ZNACZNIK: GWIAZDKA', info: 'ZNACZNIK HITBOXA STATKU', pic: 'hitbox_star' },
+  { id: 'marker_moon', kind: 'marker', rarity: 'R', name: 'ZNACZNIK: KSIĘŻYC', info: 'ZNACZNIK HITBOXA STATKU', pic: 'hitbox_moon' },
+  { id: 'marker_sakura', kind: 'marker', rarity: 'SR', name: 'ZNACZNIK: SAKURA', info: 'ZNACZNIK HITBOXA STATKU', pic: 'hitbox_sakura' },
+  { id: 'marker_heart', kind: 'marker', rarity: 'SR', name: 'ZNACZNIK: SERCE', info: 'ZNACZNIK HITBOXA STATKU', pic: 'hitbox_heart' },
+  { id: 'marker_coin', kind: 'marker', rarity: 'SR', name: 'ZNACZNIK: MONETA', info: 'ZNACZNIK HITBOXA STATKU', pic: 'hitbox_coin' },
+  { id: 'marker_eye', kind: 'marker', rarity: 'SSR', name: 'ZNACZNIK: OKO', info: 'ZNACZNIK HITBOXA STATKU', pic: 'hitbox_eye' },
 ];
 
 export const ITEM = Object.fromEntries(ITEMS.map((it) => [it.id, it]));

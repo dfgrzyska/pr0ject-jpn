@@ -67,6 +67,7 @@ export class Player {
 
   setShip(ship) {
     this.ship = ship;
+    this.dot.setFrame(ship.look?.marker ?? 'hitbox'); // (a marker out of the gachapon)
     this.lives = this.fullLives();
     this.shipFrame(ship.frame);
   }
