@@ -2,7 +2,7 @@
 // the orange Sakurajima ferries crossing day and night, the fish farms' rings of floats with their feeding boat, fishing boats,
 // gulls, dolphins leaping, and the shadow of the ash plume drifting over the water. The water itself is the far layer.
 import { C, S, night, hashPx, scaleColor, rampColor, rng, fbm } from '../nagasaki/canvas.mjs';
-import { W, BAY, ISLAND, SHINJIMA } from './geo.mjs';
+import { W, BAY, ISLAND, SHINJIMA, OKIKO, KANZE } from './geo.mjs';
 
 export function paintBay(k) {
   const { img, Y, U, kit, objects, glowPx } = k;
@@ -272,6 +272,123 @@ export function paintBay(k) {
     k.strollers(x - 8, u - 12, 10, 8, 3);
     kit.orbit(x, u, 30, gull, { ry: 22, w: 0.26, n: 2, d: 2.2, a: 0.9 });
   }
+  // Okikojima: black pines to the water's edge over low lava cliffs, a clearing with a small shrine (a stone torii, its
+  // hall under a red roof), a concrete landing on the channel side with a path up, a boat alongside, herons in the pines
+  {
+    const { x, u } = OKIKO;
+    const PINE = [0x16281e, 0x223a28, 0x325030, 0x486a3c];
+    // the cliffs: a band of dark rock round the shore, lit on the west, the swell breaking white at its foot
+    img.fine(x - 22, Y(u + 30), 44, 60, (X, Yy) => {
+      const i = Yy * k.FW + X;
+      if (k.fineWater[i]) return k.shoreD[i] < 2.2 && hashPx(X >> 1, Yy >> 1, 2880) < 0.7 ? [0xeef4f2, 0.85] : null;
+      const d = k.shoreD[i];
+      if (d > 9) return null;
+      return rampColor([0x14100e, 0x241e1a, 0x3a302a, 0x54483e], 0.9 - d / 10 + (hashPx(X >> 1, Yy >> 2, 2881) - 0.5) * 0.5 - (X / S - x) / 60, X, Yy);
+    });
+    // the shrine's clearing and the path down to the landing
+    const cy = Y(u + 4);
+    img.fine(x - 7, cy - 6, 14, 12, (X, Yy, xx, yy) => (((xx - x) / 7) ** 2 + ((yy - cy) / 6) ** 2 < 1 ? rampColor([0x8a8474, 0x9c9684, 0xaea896], hashPx(X >> 1, Yy >> 1, 2882), X, Yy) : null));
+    const land = [x + 15, u - 10];
+    for (let t = 0; t <= 1; t += 0.01) {
+      const px = x + 2 + (land[0] - x - 2) * t + Math.sin(t * 6) * 1.2;
+      const py = cy + 4 + (Y(land[1]) - cy - 4) * t;
+      img.rectPx(px * S, py * S, 4, 3, t * 100 % 8 < 1 ? 0x6a6458 : 0x9c9684);
+    }
+    k.reserve(x - 8, cy - 7, 16, 14);
+    k.forest(x - 20, x + 20, u - 28, u + 28, [PINE, [0x1a2e20, 0x28442a, 0x3a5a34, 0x507444]], 2883, 3.2, 5.4, (a, b) => !k.wet(a, Y(b)) && !k.anyWet(a - 3, Y(b) - 3, 6, 6) && ((a - x) / 8) ** 2 + ((Y(b) - cy) / 7) ** 2 > 1);
+    k.house(x - 4, cy - 5, 8, 5, 4, 'jp', { ramp: C.redTile, wall: 0xd8ccb0, door: true, reserve: false });
+    objects.push({
+      y: cy + 5,
+      draw: () => {
+        const X = x * S;
+        const Yb = (cy + 5) * S;
+        for (const s of [-1, 1]) for (let j = 0; j < 14; j++) for (let i = 0; i < 2; i++) img.px(X + s * 7 + i, Yb - j, C.granite[2]);
+        for (let i = -11; i <= 11; i++) for (let j = 0; j < 3; j++) img.px(X + i, Yb - 16 + j, j ? C.granite[2] : C.granite[0]);
+        for (let i = -8; i <= 8; i++) img.px(X + i, Yb - 11, C.granite[1]);
+      },
+    });
+    // the landing: a concrete ramp into the water, bollards, a boat made fast
+    const ly = Y(land[1]);
+    img.fine(land[0] - 1, ly - 2, 9, 5, (X, Yy, xx) => (xx > land[0] + 7.4 ? 0x6a6a66 : Yy % 6 === 0 ? 0x8a8a84 : 0xa8a69e));
+    for (const dx of [2, 6]) img.rectPx((land[0] + dx) * S, (ly - 2) * S + 1, 3, 3, 0x2a2a2e);
+    kit.loop(land[0] + 9, land[1] - 3, [fisher(u, 0xe8e4dc)], { d: 0.02 });
+    k.strollers(x - 3, u + 2, 6, 5, 2);
+    // herons roosting in the crowns, white; one or two lifting off and circling
+    for (let q = 0; q < 9; q++) {
+      const hx = x - 12 + hashPx(q, 1, 2884) * 24;
+      const hy = Y(u - 20 + hashPx(q, 2, 2884) * 40);
+      if (!k.wet(hx, hy)) k.late.push(() => {
+        img.rectPx(hx * S, hy * S, 3, 2, 0xf4f4ee);
+        img.px(hx * S + 3, hy * S - 1, 0xf4f4ee);
+      });
+    }
+    kit.orbit(x, u, 24, gull, { ry: 30, w: -0.22, n: 3, d: 2.2, a: 0.9 });
+  }
+  // Kanze: a shelf of black reef awash in the middle of the channel, weed on it, the swell breaking round it; on it a white
+  // lighthouse (a round tower from above, its gallery, the red lantern, a long shadow), flashing; cormorants drying their wings
+  {
+    const { x, u } = KANZE;
+    const y = Y(u);
+    img.fine(x - 12, y - 10, 24, 20, (X, Yy) => {
+      const i = Yy * k.FW + X;
+      if (k.fineWater[i]) return null;
+      const d = k.shoreD[i];
+      const g = hashPx(X >> 1, Yy >> 1, 2886);
+      if (d < 3) return g < 0.5 ? 0x1a2420 : 0x26342a; // weed at the water's edge
+      return rampColor([0x16120f, 0x26201c, 0x3a322c, 0x524840], 0.3 + g * 0.6 - (Yy / S - y) / 30, X, Yy);
+    });
+    k.reserve(x - 10, y - 8, 20, 16);
+    objects.push({
+      y: y + 4,
+      draw: () => {
+        const CX = x * S;
+        const CY = (y - 1) * S;
+        // its shadow, long, to the lower right; the concrete base; the tower
+        for (let q = 0; q < 40; q++) for (let w = -6; w <= 6; w++) img.px(CX + 6 + q * 0.8 + w * 0.4, CY + 6 + q * 0.7 - w * 0.5, 0x04080c, 0.36 - q * 0.007);
+        img.discPx(CX, CY, 12, 0x7a7a74);
+        img.discPx(CX, CY, 10.5, 0x9a9a92);
+        for (let j = -8; j <= 8; j++) for (let i = -8; i <= 8; i++) {
+          const d = Math.hypot(i, j);
+          if (d <= 8) img.px(CX + i, CY + j, d > 6.8 ? 0x8a8e94 : i + j < -4 ? 0xffffff : i + j > 5 ? 0xc8ccd2 : 0xeceef0);
+        }
+        // the gallery's rail, the lantern: glass round a red-capped light
+        for (let a = 0; a < 6.3; a += 0.2) img.px(CX + Math.cos(a) * 6, CY + Math.sin(a) * 6, 0x3a3e46);
+        img.discPx(CX, CY, 4, 0x9ad0e0);
+        img.discPx(CX, CY, 2.4, 0xd83a2a);
+        img.px(CX - 1, CY - 1, 0xffb0a0);
+      },
+    });
+    // the light: a flash every few seconds, its glow on the water
+    const flash = [k.sprite(15, 15, u, (r) => {
+      r.discPx(22, 22, 22, 0xfff0c0, 0.16);
+      r.discPx(22, 22, 12, 0xfff0c0, 0.3);
+      r.discPx(22, 22, 4, 0xffffff);
+      for (let i = -22; i <= 22; i++) {
+        r.px(22 + i, 22, 0xffffff, 0.7 - Math.abs(i) / 34);
+        r.px(22, 22 + i, 0xffffff, 0.7 - Math.abs(i) / 34);
+      }
+    }, false)];
+    kit.loop(x - 7.5, u + 8.5, flash, { fps: 2, seq: [0, -1, -1, -1, -1, -1, 0, -1], fx: 1, d: 2 });
+    // the swell breaking on the reef: foam thrown up all round it, over and over
+    const surf = [0, 1, 2, 3].map((f) => k.sprite(8, 5, u, (r) => {
+      const g = rng(40 + f);
+      for (let q = 0; q < 22 - f * 4; q++) {
+        const a = g() * 6.283;
+        const d = (2 + f * 2.6) * (0.6 + g() * 0.5);
+        r.rectPx(12 + Math.cos(a) * d * 1.5, 7 + Math.sin(a) * d * 0.9, f < 2 ? 2 : 1, 1, 0xf2f6f4, 0.9 - f * 0.18);
+      }
+    }, false));
+    kit.spot([[x - 15, u + 11, 30, 3], [x - 15, u - 8, 30, 3], [x - 15, u + 8, 4, 16], [x + 11, u + 8, 4, 16]], surf, { rate: 5, fps: 7, a: 0.9 });
+    // cormorants on the rocks, black, two with their wings held out
+    for (const [dx, dy, open] of [[-6, 3, true], [-3, 5, false], [5, 4, true], [7, 1, false], [-7, -3, false]]) k.late.push(() => {
+      const X = (x + dx) * S;
+      const Yy = (y + dy) * S;
+      img.rectPx(X, Yy, 2, 4, 0x0c0c10);
+      img.px(X, Yy - 1, 0xc8a040);
+      if (open) for (const s of [-1, 1]) for (let q = 1; q < 5; q++) img.px(X + s * q + (s > 0 ? 1 : 0), Yy + 1 - (q > 2 ? 1 : 0), 0x0c0c10);
+    });
+    kit.orbit(x, u, 20, gull, { ry: 14, w: 0.3, n: 2, d: 2.2, a: 0.9 });
+  }
   // Tagiri: gas from the drowned Aira caldera bubbling up through the bay in a pale, sulphurous stain, ringed with rising bubbles
   for (const [x, u, rx, ry, s2] of [[38, 3700, 26, 18, 1], [100, 4020, 22, 16, 2], [132, 3200, 16, 12, 3]]) {
     img.fine(x - rx, Y(u + ry), rx * 2, ry * 2, (X, Yy, xx, yy) => {
@@ -292,7 +409,7 @@ export function paintBay(k) {
     for (let j = 6; j < FHh - 6; j++) for (let i = 14; i < 72; i++) r.px(i, j, j === 6 ? 0xffffff : (i - 14) % 6 === 0 ? 0x4a5a6a : j % 3 ? 0xdcdcd4 : 0x8ab0c8);
     for (let j = 9; j < FHh - 9; j++) for (let i = 58; i < 68; i++) r.px(i, j, 0x2a3a4a);
   });
-  kit.path([[120, 3300], [150, 3560], [100, 3780], [48, 3640], [66, 3380], [120, 3300]], [cruiser], { sp: 7, mode: 'wrap', turn: 'rot', d: 0.02, s0: 0.1, wake: wake(3600) });
+  kit.path([[120, 3300], [140, 3560], [100, 3780], [62, 3650], [66, 3380], [120, 3300]], [cruiser], { sp: 7, mode: 'wrap', turn: 'rot', d: 0.02, s0: 0.1, wake: wake(3600) });
   // a string of kayaks heading out towards the islet
   const kayak = k.sprite(7, 2, 3800, (r) => {
     for (let i = 0; i < 21; i++) for (let j = 1; j < 5; j++) if (Math.abs(i - 10) * 0.2 + Math.abs(j - 2.5) < 2) r.px(i, j, 0xe8a020);
@@ -343,7 +460,7 @@ export function paintBay(k) {
       r.px(X + 2 + (f ? 1 : 0), Yy, c, 0.6);
     }
   }, false));
-  for (const [x, u, rr] of [[120, 3380, 16], [34, 3610, 12], [116, 3960, 14], [150, 4110, 12]]) kit.orbit(x, u, rr, shoal, { ry: rr * 0.6, w: 0.14, n: 1, a: 0.5, d: 0.02 });
+  for (const [x, u, rr] of [[120, 3380, 16], [66, 3560, 12], [116, 3960, 14], [150, 4110, 12]]) kit.orbit(x, u, rr, shoal, { ry: rr * 0.6, w: 0.14, n: 1, a: 0.5, d: 0.02 });
   // the shadow of a plume of ash blown out over the bay, drifting across the water
   const plume = k.sprite(100, 60, 3300, (r) => {
     for (let j = 0; j < 180; j += 1)

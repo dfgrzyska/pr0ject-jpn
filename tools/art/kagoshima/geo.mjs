@@ -40,7 +40,19 @@ export const landD = (x, u) => {
 /** Shinjima, "New Island", thrown up by the 1779 eruption: a low green islet out in the bay. */
 export const SHINJIMA = { x: 146, u: 3850, rx: 26, ry: 38 };
 export const onShinjima = (x, u) => ((x - SHINJIMA.x) / SHINJIMA.rx) ** 2 + ((u - SHINJIMA.u) / SHINJIMA.ry) ** 2 + (fbm(x, u, { seed: 93, scale: 12, octaves: 2 }) - 0.5) * 0.5 < 1;
+/** Okikojima, the pine-covered islet in the channel between the city and Sakurajima. */
+export const OKIKO = { x: 28, u: 3602, rx: 18, ry: 27 };
+export const onOkiko = (x, u) => ((x - OKIKO.x) / OKIKO.rx) ** 2 + ((u - OKIKO.u) / OKIKO.ry) ** 2 + (fbm(x, u, { seed: 94, scale: 10, octaves: 2 }) - 0.5) * 0.55 < 1;
+/** Kanze: a reef in the middle of the channel that only shows at low water, a lighthouse standing on it. */
+export const KANZE = { x: 150, u: 3272, rx: 9, ry: 7 };
+export const onKanze = (x, u) => ((x - KANZE.x) / KANZE.rx) ** 2 + ((u - KANZE.u) / KANZE.ry) ** 2 + (fbm(x, u, { seed: 95, scale: 5, octaves: 2 }) - 0.5) * 0.7 < 1;
+/** The Nojiri: a debris-flow channel down the lava, walled in concrete, stepped with check dams, ending in a basin. */
+export const SABO = [5652, 6090];
+export const saboX = (u) => 152 + 11 * Math.sin((u - 5600) / 74) + 4 * Math.sin((u - 5600) / 23);
+export const BASIN = { x: 150, u0: 5596, u1: 5652, hw: 21 };
 export function isWater(x, u) {
+  if (u > 3560 && u < 3644 && x < 54 && onOkiko(x, u)) return false;
+  if (u > 3258 && u < 3286 && x > 134 && onKanze(x, u)) return false;
   if (u >= RIVER[0] + 3 && u <= RIVER[1] - 3) return true;
   if (u > 3780 && u < 3920 && x > 110 && onShinjima(x, u)) return false;
   return u < L && landD(x, u) <= 0;

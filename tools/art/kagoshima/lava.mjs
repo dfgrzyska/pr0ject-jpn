@@ -4,7 +4,7 @@
 // floating plates of crust, with its two side vents, where Sakurajima wakes. The lava breathes, patch by patch, out of step.
 import { C, S, hashPx, scaleColor, rampColor, rng, fbm, HiCanvas, mix } from '../nagasaki/canvas.mjs';
 import { puff } from '../props.mjs';
-import { W, L, LAVA, LAVA_ROAD, ROAD_END, CRATER, VENTS, lavaRoadX, smooth } from './geo.mjs';
+import { W, L, LAVA, LAVA_ROAD, ROAD_END, CRATER, VENTS, lavaRoadX, smooth, SABO, saboX, BASIN } from './geo.mjs';
 import { vapourOf } from './coast.mjs';
 import { LEAF } from './city.mjs';
 
@@ -83,6 +83,119 @@ export function paintLava(k) {
   for (let i = 0; i < pts.length; i += 3) {
     const [x, u] = pts[i];
     for (const s of [-6.4, 6.4]) if (x + s > 1 && x + s < W - 1) img.rectPx((x + s) * S, Y(u) * S - 4, 2, 6, i % 2 ? 0xe8e4dc : 0xd83a2a);
+  }
+  // ------------------------------------------------------------ the Nojiri: where the mudflows come down
+  // Every heavy rain sends ash and boulders down the gullies off the summit, so the gully is walled: a concrete channel
+  // down the lava, stepped with check dams (each a bar across with a notch, the bed below it scoured, boulders piled above),
+  // one of them a slit dam of steel pipes; it ends in a wide basin dug to catch what comes down, a last dam across its
+  // foot, diggers clearing it. Above, the raw gullies it gathers, cut into the ash.
+  {
+    const CON = [0x74726c, 0x8a8880, 0xa09e94, 0xb6b4a8];
+    const BED = [0x4a4640, 0x5c5850, 0x6e6a60, 0x827e72];
+    const [u0, u1] = SABO;
+    const HW = 6.5; // the channel's half width, walls and all
+    const dams = [];
+    for (let u = u0 + 34; u < u1 - 20; u += 58) dams.push(u);
+    const SLIT = dams[4];
+    img.fine(120, Y(u1 + 2), 60, u1 - u0 + 4, (X, Yy, xx, yy) => {
+      const u = L - yy;
+      if (u < u0 || u > u1) return null;
+      const d = xx - saboX(u);
+      const hw = HW * (0.8 + 0.2 * smooth(u1, u1 - 80, u)); // (narrower where it leaves the gully)
+      if (Math.abs(d) > hw) return Math.abs(d) < hw + 1.4 && d > 0 ? [0x0c0a0a, 0.4] : null; // the wall's shadow on the lava
+      if (Math.abs(d) > hw - 1.5) return rampColor(CON, d < 0 ? 0.9 : 0.5, X, Yy); // the walls: lit on the west, their tops flat
+      // the bed: ash and gravel washed into ribbons, darker and wet down the middle, boulders
+      const below = dams.reduce((m, du) => (u < du && du - u < m ? du - u : m), 99); // how far under the next dam up
+      let v = 0.5 + Math.sin(d * 1.3 + u * 0.21) * 0.12 + (hashPx(X >> 1, Yy, 5420) - 0.5) * 0.3 - Math.max(0, 1 - Math.abs(d) / 2) * 0.16;
+      if (below < 7) v -= 0.3 * (1 - below / 7); // scoured under a dam
+      if (hashPx(X >> 2, Yy >> 2, 5421) < 0.06) return ((X & 3) + (Yy & 3) < 3 ? 0x9a968c : 0x3a3632); // boulders
+      return rampColor(BED, v, X, Yy);
+    });
+    k.reserve(126, Y(u1 + 2), 54, u1 - u0 + 4);
+    for (const du of dams) {
+      const cx = saboX(du);
+      const y = Y(du);
+      if (du === SLIT) {
+        // the slit dam: a row of steel pipes across, rust-red, a tree trunk and boulders caught against it
+        for (let i = -5; i <= 5; i += 2) {
+          img.rectPx((cx + i) * S - 2, y * S - 5, 5, 9, 0x8a4a2a);
+          img.rectPx((cx + i) * S - 2, y * S - 5, 2, 9, 0xb86a3a);
+          img.rectPx((cx + i) * S + 3, y * S - 2, 3, 8, 0x0c0a0a, 0.4);
+        }
+        for (let q = 0; q < 24; q++) img.rectPx((cx - 4.5 + (q % 8) * 1.2) * S, (y - 2 - (q >> 3) * 1.2) * S, 3, 3, hashPx(q, 3, 5422) < 0.4 ? 0x3a3632 : 0x8a867c);
+        img.rectPx((cx - 4) * S, (y - 5) * S, 24, 3, 0x4a3420);
+        continue;
+      }
+      // a check dam: its crest (pale, wing walls stepping up to the banks, the notch in the middle), its face in shadow,
+      // what it has caught heaped behind it
+      for (let i = -HW * S + 3; i < HW * S - 3; i++) {
+        const notch = Math.abs(i) < 6;
+        for (let j = -4; j <= 3; j++) img.px(cx * S + i, y * S + j, j > 1 ? 0x2a2826 : notch ? (j < -2 ? 0x8a8880 : 0x5c5850) : j < -1 ? 0xd8d6ca : 0xa09e94);
+        for (let j = 4; j < 8; j++) img.px(cx * S + i, y * S + j, 0x0c0a0a, notch ? 0.5 : 0.3);
+      }
+      for (let q = 0; q < 30; q++) img.rectPx((cx - 4.6 + hashPx(q, du, 5423) * 9.2) * S, (y - 2 - hashPx(q, du, 5424) * 5) * S, 3, 2, hashPx(q, du, 5425) < 0.5 ? 0x8a867c : 0x4a4640);
+    }
+    // the basin: a wide pit walled in concrete, its floor spread with what the last flow left, tyre tracks across it, a
+    // ramp down from the road side; the last dam across its foot with a culvert's dark mouth
+    const b = BASIN;
+    const by0 = Y(b.u1);
+    img.fine(b.x - b.hw - 1, by0, b.hw * 2 + 2, b.u1 - b.u0, (X, Yy, xx, yy) => {
+      const u = L - yy;
+      const hw = b.hw - Math.max(0, u - (b.u1 - 14)) * 0.9; // drawing in to the channel's mouth at the top
+      const d = xx - b.x;
+      if (Math.abs(d) > hw + 1) return null;
+      if (Math.abs(d) > hw - 1.4 || u < b.u0 + 3) return rampColor(CON, d < 0 && u > b.u0 + 3 ? 0.9 : 0.55, X, Yy);
+      if (u < b.u0 + 6) return [0x0c0a0a, 0.5]; // the dam's shadow... it stands on the downhill side
+      const fan = Math.hypot(d * 0.7, u - b.u1) / 46; // the debris spreads from the mouth
+      let v = 0.62 - fan * 0.28 + Math.sin(Math.atan2(d, b.u1 - u) * 9 + fan * 6) * 0.07 + (hashPx(X >> 1, Yy >> 1, 5426) - 0.5) * 0.26;
+      if (Math.abs(d - 9 - Math.sin(u * 0.2) * 2) < 0.5 || Math.abs(d - 12 - Math.sin(u * 0.2) * 2) < 0.5) v -= 0.22; // tyre tracks
+      if (hashPx(X >> 2, Yy >> 2, 5427) < 0.05 * (1.4 - fan)) return ((X & 3) + (Yy & 3) < 3 ? 0x9a968c : 0x3a3632);
+      return rampColor(BED, v, X, Yy);
+    });
+    k.reserve(b.x - b.hw - 2, by0 - 1, b.hw * 2 + 4, b.u1 - b.u0 + 3);
+    img.rectPx((b.x - 3) * S, (Y(b.u0) - 4) * S, 18, 8, 0x0a0808); // the culvert
+    // a digger and a tipper at work on the floor, a man waving the lorry back; the works road down to them from the highway
+    k.late.push(() => {
+      const X = (b.x + 9) * S;
+      const Yy = (Y(b.u0 + 22)) * S;
+      img.rectPx(X - 9, Yy - 7, 18, 14, 0xe0a020);
+      img.rectPx(X - 9, Yy - 7, 18, 2, 0xf8c850);
+      img.rectPx(X - 4, Yy - 4, 8, 8, 0x2a3a4a);
+      for (let q = 0; q < 16; q++) img.rectPx(X + 9 + q, Yy - 2 - q * 0.6, 3, 3, 0xc88a18);
+      img.rectPx(X + 24, Yy - 15, 7, 6, 0x3a3632);
+      const TX = (b.x - 8) * S;
+      const TY = (Y(b.u0 + 34)) * S;
+      img.rectPx(TX - 8, TY - 14, 16, 26, 0x4a6a8a);
+      img.rectPx(TX - 7, TY - 13, 14, 17, 0x6e6a60);
+      img.rectPx(TX - 7, TY + 5, 14, 6, 0xd8dce0);
+      img.rectPx(TX + 14, TY + 8, 3, 5, 0xe8e4dc);
+      img.px(TX + 15, TY + 7, 0xd8a070);
+    });
+    const ru = 5612;
+    k.road([[lavaRoadX(ru), ru], [b.x - b.hw - 1, ru + 6]], 2.4, { side: 0, lanes: false, piece: true, pave: [0x5a5650, 0x6a665e, 0x7a766c] });
+    // signs along the channel's bank: yellow, a mudflow warning; a siren on a pole by the basin
+    for (const su of [5700, 5830, 5960]) k.late.push(() => {
+      const X = (saboX(su) - HW - 3) * S;
+      const Yy = Y(su) * S;
+      img.rectPx(X, Yy - 12, 2, 12, 0x5a5a5e);
+      img.rectPx(X - 4, Yy - 20, 10, 9, 0xf0c020);
+      img.rectPx(X - 2, Yy - 18, 6, 5, 0x1a1a1e);
+    });
+    // the gullies above: three raw cuts in the ash coming together at the channel's head, their sides slumping
+    for (const [gx, len, bend] of [[-16, 150, 0.5], [2, 190, -0.2], [20, 130, -0.6]]) {
+      for (let q = 0; q < len * S; q++) {
+        const t = q / (len * S);
+        const u = u1 + q / S;
+        const x = saboX(u1) + gx * t ** 0.7 + Math.sin(t * 9 + gx) * 3 * t + bend * 10 * t * t;
+        const w = (1 - t) * 6 + 1.5;
+        const Yy = Math.round(Y(u) * S);
+        for (let i = -w; i <= w; i++) {
+          const X = Math.round(x * S + i);
+          if (X < 0 || X >= W * S || k.isRes(X / S, Yy / S)) continue;
+          img.px(X, Yy, Math.abs(i) > w - 1.5 ? (i < 0 ? 0x8a867c : 0x1a1614) : rampColor(BED, 0.25 + hashPx(X >> 1, Yy >> 1, 5428) * 0.4, X, Yy));
+        }
+      }
+    }
   }
   // the Yunohira observatory: its car park at the road's end, the low building, the crescent terrace looking at the crater
   {

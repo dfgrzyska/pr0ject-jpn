@@ -8,7 +8,7 @@ miast nie byli oglądani.
 
 1. Spotkanie 7: zamiast mównicy duża postać człowieka przy stole. **Zrobione 15.11** (opis w `random-encounters.md`).
 2. Spotkanie 6 (babcia): tło, ruchy i grafika od nowa. **Zrobione 15.11** (opis w `random-encounters.md`).
-3. Miasta: szczegóły, animacje i nowe ważne miejsca tam, gdzie jest pustka.
+3. Miasta: szczegóły, animacje i nowe ważne miejsca tam, gdzie jest pustka. Kagoshima zrobiona 15.11.
 
 ## Spotkania
 
@@ -85,12 +85,25 @@ Zrobione: pasy chmur na pustym papierze i pięć kluczy lecących żurawi.
 Wszystkie mają po kilkaset animowanych elementów (Kioto 1415, Osaka 871, Beppu 459, Sapporo 386, Nagasaki 366,
 Hiroszima 336, Kagoshima 333, Okinawa 235).
 
-### Kagoshima
+### Kagoshima — zrobione 15.11
 
-- Dwa z ośmiu odcinków to prawie jednolite pole lawy, zatoka jest pusta.
-- Dodać: prom na Sakurajimę, delfiny w zatoce, opad popiołu, żarzące się szczeliny, zasypaną bramę torii
-  w Kurokami, pola rzodkwi.
-- Nazwane są tylko 2 atrakcje (Sengan-en, Sakurajima). Kandydaci: Tenmonkan, Shiroyama, Kinko-wan, Kurokami.
+Przegląd w grze (`node tools/preview/stage-shots.mjs`) pokazał, że większość pierwotnej listy już istniała: promy
+na Sakurajimę, delfiny, opad popiołu, żarzące się szczeliny, zasypana brama torii w Kurokami, pola rzodkwi, a w zatoce
+także tagiri, statek wycieczkowy, kajaki, boje i hodowle ryb. Pierwotna ocena „pusto” wzięła się z oglądania samych
+plików tła, bez ruchomych elementów.
+
+Dodane:
+
+- Nazwy miejsc na całej trasie (było 2, jest 17 różnych): Kagoshima-Chuo, Tenmonkan, Shiroyama, Kotsuki-gawa,
+  Sengan-en, Sunamushi Onsen, Kurozu no Sato, Kinko-wan, Kanze, Okikojima, Shinjima, Sakurajima-ko, Sakurajima,
+  Kurokami, Nojiri-gawa, Arimura, Yunohira, Minamidake.
+- Zatoka: wysepka Okikojima (sosny, chram z torii, przystań z łodzią, czaple) i rafa Kanze z latarnią (błysk, piana
+  przyboju, kormorany).
+- Lawa: koryto spływów błotnych Nojiri-gawa w betonowych ścianach, z zaporami przeciwrumowiskowymi (jedna szczelinowa
+  ze stalowych rur), zakończone osadnikiem z koparką i wywrotką; droga robocza łączy osadnik z szosą, nad korytem trzy
+  żleby w popiele.
+
+Zostało: nazwy nie były oglądane w grze na pasku (zrzuty robione ze skokiem w czasie zasłania plansza tytułowa).
 
 ### Okinawa
 
