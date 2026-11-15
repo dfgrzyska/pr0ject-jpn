@@ -47,7 +47,10 @@ function curve(pts) {
 }
 
 // the great wave's spine: from its foot, bottom left, up the wall, over the crest and down into the claw
-const SPINE = curve([[-30, 2700], [10, 2330], [50, 1960], [110, 1620], [180, 1350], [260, 1170], [350, 1110], [430, 1160], [480, 1260], [500, 1380]]);
+// (all of it set OFF rows lower than the print's proportions would put it: the strip starts at its bottom and the
+// fight sees its lower half best, so the crest's claws have to arch over the top of the screen from the start)
+const OFF = 320;
+const SPINE = curve([[-30, 2700], [10, 2330], [50, 1960], [110, 1620], [180, 1350], [260, 1170], [350, 1110], [430, 1160], [480, 1260], [500, 1380]].map(([x, y]) => [x, y + OFF * (y < 2600 ? 1 : 0.2)]));
 const width = (t) => 200 * (1 - t) ** 1.25 + 18; // thick at the foot, thin at the claw's tip
 
 export function buildFar() {
@@ -108,17 +111,17 @@ function claw(img, x, y, ang, len, r, curl, depth, rand) {
 export function buildMid() {
   const img = new Raster(FW, FH);
   const rand = rng(1831);
-  const horizon = 1760;
+  const horizon = 1760 + OFF;
   // ---- the sky: aged paper, a grey band darkening to the top as in the print, soft fibres
   for (let y = 0; y < horizon; y++)
     for (let x = 0; x < FW; x++) {
       const n = fbm(x * 0.5, y * 0.07, { seed: 11, scale: 7 }) - 0.5;
-      const v = 0.78 - Math.max(0, 1000 - y) / 1900 + n * 0.08;
+      const v = 0.78 - Math.max(0, 1000 + OFF - y) / 1900 + n * 0.08;
       img.set(x, y, ramp(PAPER, v));
     }
   // a bottle-cap sun, crimped, high up behind the crest
   {
-    const [cx, cy, R] = [400, 520, 42];
+    const [cx, cy, R] = [400, 520 + OFF, 42];
     for (let y = cy - R - 8; y <= cy + R + 8; y++)
       for (let x = cx - R - 8; x <= cx + R + 8; x++) {
         const a = Math.atan2(y - cy, x - cx);
@@ -132,7 +135,7 @@ export function buildMid() {
   }
   // the cartouche, top left: a drink's label, a red border, brush marks for writing, a red seal
   {
-    const [x0, y0, w, h] = [36, 230, 96, 176];
+    const [x0, y0, w, h] = [36, 230 + OFF, 96, 176];
     for (let y = y0; y < y0 + h; y++)
       for (let x = x0; x < x0 + w; x++) {
         const edge = Math.min(x - x0, x0 + w - 1 - x, y - y0, y0 + h - 1 - y);
@@ -156,7 +159,7 @@ export function buildMid() {
   }
   // ---- Fuji, small in the trough: blue flanks with Hokusai's streaks, the snow cap's ragged hem
   {
-    const [px, py, half] = [400, 1610, 92];
+    const [px, py, half] = [400, 1610 + OFF, 92];
     for (let y = py; y < horizon + 10; y++) {
       const t = (y - py) / (horizon + 10 - py);
       const w = 8 + half * Math.pow(t, 0.85);
@@ -221,7 +224,7 @@ export function buildMid() {
     }
     return [best, Math.sqrt(bd)];
   };
-  for (let y = 1000; y < FH; y++)
+  for (let y = 1000 + OFF; y < FH; y++)
     for (let x = 0; x < FW; x++) {
       const [s, d] = near(x, y);
       if (d > s.w) continue;
@@ -285,7 +288,7 @@ export function buildMid() {
     const out = s.w * (1.1 + sr() * 1.8);
     const bx = s.x + s.nx * out + (sr() - 0.5) * 50;
     const by = s.y + s.ny * out + sr() * 80;
-    if (by > 1700) continue;
+    if (by > 1700 + OFF) continue;
     const r = 1.4 + sr() * 3.6;
     if (sr() < 0.5) blob(img, bx, by, r, FOAM, LINE, false);
     else {
@@ -298,10 +301,10 @@ export function buildMid() {
     const ca = Math.cos(ang);
     const sa = Math.sin(ang);
     for (let q = -len / 2; q <= len / 2; q += 0.5)
-      for (let w = -10; w <= 6; w += 0.5) {
+      for (let w = -12; w <= 9; w += 0.5) {
         const taper = 1 - Math.pow(Math.abs(q) / (len / 2), 3);
-        const top = -2 * taper;
-        const bot = 6 * taper;
+        const top = -3 * taper;
+        const bot = 8.5 * taper;
         if (w < top - 1 || w > bot) continue;
         const x = cx + ca * q - sa * w;
         const y = cy + sa * q + ca * w;
@@ -312,16 +315,16 @@ export function buildMid() {
     // the rowers: a row of hunched figures, blue backs, pale heads, oars slanting into the water
     for (let i = 0; i < 8; i++) {
       const q = -len / 2 + len * (0.15 + i * 0.09);
-      const x = cx + ca * q + sa * 6;
-      const y = cy + sa * q - ca * 6;
-      blob(img, x, y, 4, 0x2a4a80, INK, false);
-      blob(img, x + ca * 2 + sa * 3, y + sa * 2 - ca * 3, 2, 0xe8d8b8, INK, false);
+      const x = cx + ca * q + sa * 7;
+      const y = cy + sa * q - ca * 7;
+      blob(img, x, y, 5.5, 0x2a4a80, INK, false);
+      blob(img, x + ca * 2.5 + sa * 4, y + sa * 2.5 - ca * 4, 2.8, 0xe8d8b8, INK, false);
       for (let o = 0; o < 16; o++) img.set(x - sa * -o * 0.3 + ca * o * 0.6, y + ca * o * 0.9 + sa * o * 0.2, 0x5a4020);
     }
   };
-  boat(150, 2420, -0.18, 150);
-  boat(330, 2580, 0.12, 130);
-  boat(170, 1960, -0.95, 120);
+  boat(170, 2470, -0.2, 200);
+  boat(360, 2620, 0.1, 170);
+  boat(200, 2230, -0.9, 150);
   // the paper's grain over everything, then muted a little (every stage's middle layer is, so bullets stand out)
   for (let y = 0; y < FH; y++)
     for (let x = 0; x < FW; x++) {
@@ -339,7 +342,7 @@ export function buildMid() {
   };
   const b = [bubble(3), bubble(5), bubble(7)];
   const rise = [[b[0], b[1], b[2]]];
-  for (const [x, y] of [[60, 2100], [140, 1700], [230, 1350], [330, 1220], [420, 1300], [470, 1500], [250, 2300], [400, 2200], [80, 2550]]) kit.emit(Math.round(x / S), Math.round(L - y / S), rise, { rate: 1.2, life: [2.5, 4], vy: 14, sx: 10, wf: 0.6, a: 0.85, tint: 1 });
+  for (const [x, y] of [[60, 2300], [140, 1990], [230, 1670], [330, 1540], [420, 1620], [470, 1820], [250, 2400], [400, 2350], [80, 2600]]) kit.emit(Math.round(x / S), Math.round(L - y / S), rise, { rate: 1.2, life: [2.5, 4], vy: 14, sx: 10, wf: 0.6, a: 0.85, tint: 1 });
   const glint = (() => {
     const out = new Raster(9, 9);
     for (let i = -4; i <= 4; i++) {
