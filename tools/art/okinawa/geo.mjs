@@ -52,7 +52,36 @@ export const REEFS = [
   [6620, 40, 18],
   [6760, 150, 22],
   [5958, 46, 30],
+  // patch reefs between the Keramas (the channels between them stay deep and blue)
+  [330, 122, 14],
+  [356, 140, 11],
+  [64, 62, 12],
+  [706, 72, 13],
+  [34, 162, 10],
+  // the barrier reef off the north coast: a broken arc of reef flat from the west across to the east, passes between
+  // its lengths where the boats go through; patch reefs inside it, a long spur towards the lighthouse island
+  [5338, 70, 15],
+  [5366, 92, 12],
+  [5484, 162, 16],
+  [5512, 142, 12],
+  [5702, 20, 16],
+  [5730, 40, 13],
+  [5764, 160, 14],
+  [5866, 120, 22],
+  [6064, 150, 16],
+  [6092, 168, 13],
+  [6362, 24, 15],
+  [6390, 44, 12],
+  [6432, 150, 17],
+  [6462, 128, 12],
+  [6540, 96, 13],
+  [6866, 60, 16],
+  [6902, 84, 13],
+  [7004, 150, 18],
+  [7062, 30, 16],
 ];
+/** The mozuku farm: seaweed nets pegged out over the reef flat at [u, x]. */
+export const MOZUKU = [5866, 120];
 const SHALLOWS = { pts: [[90, 4640], [88, 4760], [94, 4880], [92, 5040]], w: 30 };
 
 export const eastEdge = (u) => 240 - 120 * smooth(JUNGLE[0], JUNGLE[0] + 380, u);

@@ -8,7 +8,7 @@ miast nie byli oglądani.
 
 1. Spotkanie 7: zamiast mównicy duża postać człowieka przy stole. **Zrobione 15.11** (opis w `random-encounters.md`).
 2. Spotkanie 6 (babcia): tło, ruchy i grafika od nowa. **Zrobione 15.11** (opis w `random-encounters.md`).
-3. Miasta: szczegóły, animacje i nowe ważne miejsca tam, gdzie jest pustka. Kagoshima zrobiona 15.11.
+3. Miasta: szczegóły, animacje i nowe ważne miejsca tam, gdzie jest pustka. Kagoshima i Okinawa zrobione 15.11.
 
 ## Spotkania
 
@@ -105,10 +105,19 @@ Dodane:
 
 Zostało: nazwy nie były oglądane w grze na pasku (zrzuty robione ze skokiem w czasie zasłania plansza tytułowa).
 
-### Okinawa
+### Okinawa — zrobione 15.11
 
-- Najmniej animacji; pierwszy i ostatni odcinek to otwarte morze z kilkoma wysepkami.
-- Dodać: rafy koralowe pod wodą, cienie mant, łodzie, wieloryby.
+Przegląd w grze pokazał to samo co w Kagoshimie: rafy, cienie mant, żółwie, humbaki, łodzie, statek wycieczkowy
+i szkwały już były. Morze wyglądało pusto, bo raf było tylko osiem małych plam.
+
+Dodane:
+
+- Rafa barierowa u północnych brzegów (19 nowych płatów w przerywanym łuku, z przejściami dla łodzi) i pięć raf
+  między wyspami Kerama. Rafy są danymi w `geo.mjs` (`REEFS`), więc koralowce i piana przyboju rysują się same.
+- Regaty sabani między wyspami Kerama: sześć łodzi pod kolorowymi żaglami z wioślarzami i łódź eskorty.
+- Farma mozuku na rafie: sieci z wodorostami w rzędach, tyczki, dwie płaskodenne łodzie, nurek.
+- Nazwy miejsc na morskich odcinkach (było 9, jest 17 różnych): Kerama Shoto, Onna Kaigan, Yanbaru, Kouri Ohashi,
+  Kouri-jima, Sangosho, Mozuku-batake, Maboroshi no Shima, Todai-jima.
 
 ### Sapporo
 

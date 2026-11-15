@@ -3,7 +3,7 @@
 // humpbacks and squalls. Only what floats or flies moves, and it moves on the water.
 import { C as _C, S, hashPx, scaleColor, rampColor, rng, fbm, mix, HiCanvas } from '../nagasaki/canvas.mjs';
 import { puff } from '../props.mjs';
-import { W, L, ISLETS, REEFS, MAIN_S, ROAD_U, VILLAGE, landD, shallowS, reefD, kindAt, KIND, isWater } from './geo.mjs';
+import { W, L, ISLETS, REEFS, MOZUKU, MAIN_S, ROAD_U, VILLAGE, landD, shallowS, reefD, kindAt, KIND, isWater } from './geo.mjs';
 import { C } from './common.mjs';
 
 const WHITE_DECK = 0xf2f2ee;
@@ -134,6 +134,24 @@ export function paintKerama(k) {
   kit.path([[210, 170], [96, 280], [sx + 30, PIER_U]], [ferry], { sp: 8, mode: 'pp', hold: 9, turn: 'rot', d: 0.02, s0: 0.5, wake: wake(300) });
   kit.path([[60, 660], [120, 500], [60, 330], [120, 240]], [sail(k, 450, 0xe8e4d8)], { sp: 5, mode: 'pp', hold: 4, turn: 'rot', d: 0.02, s0: 0.3, wake: wake(450) });
   kit.path([[30, 700], [100, 640], [40, 560], [110, 450]], [sail(k, 600, 0x3a6ab0)], { sp: 5, mode: 'pp', hold: 5, turn: 'rot', d: 0.02, s0: 0.6, wake: wake(600) });
+  // sabani racing between the islands, as they do every summer from Zamami to Naha: slim wooden boats under one
+  // square sail each (every crew its own colour), paddlers in a row, the escort boat keeping up behind them
+  const sabani = (col, seed2) => craft(k, 15, 4, 400, 0x8a5a30, 0xc89a60, (r, FL, FHh) => {
+    const mid = FHh >> 1;
+    for (let q = 0; q < 5; q++) {
+      r.rectPx(8 + q * 6, mid - 1, 3, 3, [0x2a3a6a, 0xf0f0e8, 0xc83a2a][(q + seed2) % 3]);
+      r.px(9 + q * 6, mid, 0xe8c090);
+      for (let t = 1; t < 6; t++) r.px(9 + q * 6, mid + (q % 2 ? t : -t) * 1.4, 0x5a3a1a); // the paddles, alternate sides
+    }
+    // the sail, from above: a leaning panel, its yard, a stripe across it
+    for (let i = 16; i < 34; i++) for (let j = -7; j <= -2; j++) r.px(i + j * 0.5, mid + j, j === -5 ? 0xffffff : col, 0.95);
+    for (let i = 14; i < 36; i++) r.px(i - 3.5, mid - 8, 0x4a3018);
+  });
+  for (const [i, col] of [0xe8442a, 0xf2e8c8, 0x2a6ab0, 0xf0c020, 0x3a9a5a, 0xf2e8c8].entries()) {
+    const off = i * 13 - 30;
+    kit.path([[-24, 120 + off * 0.4 + i * 9], [70, 300 + off * 0.5], [130, 470 + off * 0.3], [206, 560 + off * 0.6]], [sabani(col, i)], { sp: 7.4 - (i % 3) * 0.5, turn: 'rot', d: 0.02, s0: 0.08 + i * 0.045, wake: wake(400) });
+  }
+  kit.path([[-24, 96], [66, 268], [126, 436], [206, 530]], [fisher(k, 400, 0xe8e4dc)], { sp: 7, turn: 'rot', d: 0.02, s0: 0.02, wake: wake(400) });
   void plant;
 }
 
@@ -380,6 +398,40 @@ export function paintOpenSea(k) {
     kit.loop(46, 5945, [fisher(k, 5940, 0xe8e4dc)], { d: 0.02 });
     kit.loop(66, 5956, [fisher(k, 5950, 0x2a5a8a)], { d: 0.02 });
     k.reserve(14, Y(5980), 70, 40);
+  }
+  // the mozuku farm on the reef flat: long nets pegged out just under the water, dark with weed, in ranks with lanes
+  // between for the boats; a pole at every corner, pale floats along the edges; two flat-bottomed boats working it,
+  // a diver down beside one (his bubbles), a raft heaped with what they have cut
+  {
+    const [mu, mx] = MOZUKU;
+    for (let row = 0; row < 5; row++)
+      for (let col = 0; col < 3; col++) {
+        const x0 = mx - 17 + col * 12;
+        const u0 = mu + 13 - row * 6.4;
+        if (reefD(x0 + 5, u0 - 2) < 2) continue;
+        img.fine(x0, Y(u0), 10, 5, (X, Yy, xx, yy) => {
+          const ex = Math.min(xx - x0, x0 + 10 - xx);
+          const ey = Math.min(yy - Y(u0), Y(u0) + 5 - yy);
+          if (Math.min(ex, ey) < 0.34) return hashPx(X >> 1, Yy >> 1, 5870) < 0.3 ? 0xf2f0e4 : [0x1e3a2a, 0.7]; // the edge rope, floats along it
+          const weed = hashPx(X >> 1, Yy, 5871 + row * 3 + col);
+          return [(X + Yy) % 5 === 0 ? 0x16301e : weed < 0.5 ? 0x2c4a22 : weed < 0.85 ? 0x3c5a26 : 0x5a7030, 0.78]; // the net's mesh, the weed on it
+        });
+        for (const [dx, dy] of [[0, 0], [10, 0], [0, 5], [10, 5]]) k.late.push(() => {
+          img.rectPx((x0 + dx) * S - 1, (Y(u0) + dy) * S - 4, 2, 5, 0xc8b890);
+          img.px((x0 + dx) * S - 1, (Y(u0) + dy) * S - 5, 0xe84a2a);
+        });
+      }
+    const flat = (col) => craft(k, 11, 5, mu, col, 0xd8d4c4, (r, FL, FHh) => {
+      for (let j = 4; j < FHh - 4; j++) for (let i = 5; i < 22; i++) r.px(i, j, (i * 3 + j) % 4 < 2 ? 0x2c4a22 : 0x4a6a2c); // the catch, heaped
+      r.rectPx(24, (FHh >> 1) - 2, 4, 4, 0xe8a020);
+      r.px(25, FHh >> 1, 0xe8c090);
+    });
+    kit.loop(mx - 24, mu + 2, [flat(0x3a7a9a)], { d: 0.02 });
+    kit.path([[mx + 22, mu + 16], [mx + 22, mu - 18], [mx - 26, mu - 20], [mx + 22, mu + 16]], [flat(0xe8e4dc)], { sp: 2.6, mode: 'wrap', turn: 'rot', d: 0.02, s0: 0.2, wake: wake(mu) });
+    const bub = [0, 1, 2].map((f) => k.sprite(5, 5, mu, (r) => {
+      for (let q = 0; q < 4 + f; q++) r.discPx(3 + ((q * 5 + f * 3) % 9), 3 + ((q * 7 + f * 2) % 9), 1 + (q % 2) * 0.6, 0xe8f8f8, 0.75 - f * 0.18);
+    }, false));
+    kit.spot([[mx - 30, mu + 6, 5, 5]], bub, { rate: 1.8, fps: 5, a: 0.85 });
   }
   // a cruise liner passing far out, sailboats, fishers working, a long line of floats
   const cruise = k.hull(44, 12, 5500, 0x22304a, 0xf2f2ee, (r, FL, FHh) => {
