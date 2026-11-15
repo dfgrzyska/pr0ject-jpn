@@ -870,6 +870,9 @@ export const heya = {
       }
     }
     g.tinted = night > 0.01;
+    // a hit flashes the occupant with the monitor (shots at it count: it should look like it)
+    if (e.flash > 0 && d.who) d.who.setTint(0x707070).setTintMode(Phaser.TintModes.ADD);
+    else if (d.who && d.who.tintMode === Phaser.TintModes.ADD) d.who.clearTint();
   },
 
   heyaCleanup(g) {
