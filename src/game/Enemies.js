@@ -276,6 +276,8 @@ export class Enemies {
   damage(e, amount, byBomb = false, bean = false) {
     // a bomb blows the lid off a vinegar jar; otherwise invulnerable things shrug it off
     if (e.dead || e.hp <= 0 || e.ghost || (e.invuln && !(byBomb && e.lidded))) return;
+    // a part that hands on a share of every hit to the boss it belongs to (the otaku room's towers -> its monitor)
+    if (e.passOn && !e.passOn.to.dead && e.passOn.to.group === e.group) this.damage(e.passOn.to, amount * e.passOn.k, byBomb, bean);
     const crabBlock = e.kind === 'heikegani' && e.guarding && !byBomb && Math.abs(this.scene.player.x - e.x) < 27;
     const boss = e.type === 'heavy' || e.type === 'boss' || e.type === 'kuroko';
     if (boss) {
@@ -374,6 +376,10 @@ export class Enemies {
     }
     if (e.group?.kind === 'sankibo' && e.role === 'brazier') {
       this.brazierDown(e);
+      return;
+    }
+    if (e.group?.kind === 'heya' && e.role === 'tower') {
+      this.heyaTowerDown(e);
       return;
     }
     if (e.group?.kind === 'sankibo' && e.role === 'body') {

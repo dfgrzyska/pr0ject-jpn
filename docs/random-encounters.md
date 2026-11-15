@@ -22,7 +22,7 @@ Debug: `?ex=ex1` — to spotkanie zaraz po wyborze statku; `?ex=always` — spot
 | 2 | Kei car (`ex2`, `src/game/enemies/keicar.js`) | *53 stacje Tōkaidō* Hiroshigego (1833–34): droga z sosnami, polami ryżowymi i mostkami pędzi w pętli, na starcie most Nihonbashi z orszakiem daimyō | zrobiony |
 | 3 | Kot z budowy (`ex3`, `src/game/enemies/genba.js`; własny rudy kot w żółtym kasku z latarką, bez pozy i hasła znanego mema) | namazu-e (1855): budowa w ulicy Edo dokopała się do olbrzymiego suma; kamień kaname-ishi na jego głowie, mieszczanie ciągną za wąsy | zrobiony |
 | 4 | Kot bez końca (`ex4`, `src/game/enemies/nagai.js`) | *Smok dymu uciekający z Fuji* Hokusaia (1849): jak w oryginale tusz sumi na jedwabiu: Fuji to niezamalowany jedwab obrysowany szarym laserunkiem nieba i rysami żlebów, za nią kłęby czarnego dymu wiją się w górę i kończą kocią głową z dymu (oczy z gołego jedwabiu, wąsy suchym pędzlem); na pierwszym planie wzgórza z kępami drzew, czerwona pieczęć bez znaków | zrobiony |
-| 5 | Pokój otaku (`ex5`, `src/game/enemies/heya.js`; bossem jest pokój, trafia się monitor) | ściana oklejona „plakatami” w manierze portretów aktorów Sharaku (1794): wielkie głowy kabuki na ciemnym tle z miką; jeden w słuchawkach, jeden z padem, jeden z kocimi uszami; żaden nie kopiuje konkretnej odbitki | zrobiony |
+| 5 | Pokój otaku (`ex5`, `src/game/enemies/heya.js`; bossem jest pokój, trafia się monitor) | sam pokój z góry (ujęcie 3/4), przewijany od drzwi do biurka: wejście z butami, paczkami i workami śmieci, tatami z rozgrzebanym futonem, kotatsu przed starym telewizorem z konsolą, regały mang, suszarka z praniem, wiatrak, puszki i kable; na tylnej ścianie „plakaty” w manierze portretów aktorów Sharaku (1794), zasłonięte okno, półka z figurkami (`tools/art/encounters/otakuroom.mjs`) | zrobiony |
 | 6 | Babcia (`ex6`, `src/game/enemies/obachan.js`; fioletowa trwała, tygrys na bluzce, torebka, wózek z zakupami, cukierki dla wszystkich) | *Tygrys w śniegu* Hokusaia (1849): tygrys przyczajony w zaśnieżonym bambusowym gaju ryczy w niebo — z fioletową trwałą; w śniegu cukierki i zasypany wózek | zrobiony |
 | 7 | Płacząca mównica (`ex7`, `src/game/enemies/mownica.js`; ożywiona mównica z mikrofonami, nawiązanie tylko do zachowania ze słynnej konferencji: ręka przy uchu, płacz, walenie w stół, bilety kolejowe; bez nazwiska, wyglądu i funkcji) | *Wodospad Kirifuri na górze Kurokami* Hokusaia (ok. 1832): wodospad leje się z dwóch zaciśniętych, płaczących oczu na szczycie urwiska | zrobiony (pierwsza wersja) |
 
@@ -138,18 +138,34 @@ Czas walki w symulacji (statek stale pod głową): ok. 111 s (36 / 40 / 36 s), d
 
 ## 5. Pokój otaku (HEYA)
 
-Stałe: `HEYA` w `src/game/enemies/heya.js` (2500 HP, progi 66% / 33%). Twierdza na górze ekranu: wieże mang
-z lewej, piramida kubków po zupkach i pudła z dostaw z prawej, biurko z kineskopowym monitorem w środku (to w niego
-się strzela), za nim postać zawinięta w koc — widać tylko oczy. Żadnych marek: kubki z gładkim paskiem, grzbiety
-w jednolitych kolorach.
+Stałe: `HEYA` w `src/game/enemies/heya.js` (monitor 3000 HP, progi 66% / 33%). Boss złożony z animowanych części:
+postać w kocu w gwiazdki (kocie słuchawki świecą, okulary odbijają ekran, oddycha i mruga), jej dłonie na
+klawiaturze, kineskopowy monitor (słaby punkt) z osobną warstwą ekranu (buźka, czat, „LAG...”, ruletka gacha,
+kamera domofonu, niebieski ekran błędu, śnieżenie), biurko z mechaniczną klawiaturą, energetykami i maskotką,
+komputer z kręcącymi się wentylatorami i tęczowym RGB, drugi ekran z grą. Po bokach dwie wieże: mangi (lewa) i kubki
+po zupkach z kartonami (prawa) — osobne cele po 320 HP; 30% obrażeń zadanych wieży trafia też w monitor. Zestrzelona
+wieża wali się w stertę (pierścień pocisków, punkty), a jej ataki znikają (zastępuje je „pisanie”: wachlarz i
+pierścień z ekranu). Żadnych marek. Grafika: `tools/art/encounters/heya.mjs`.
 
-- **Faza 1 — twierdza z mang:** tomy mangi lecą wirując i otwierają się w wachlarz kartek („BAM!”); kubki z zupką
-  lecą łukiem w gracza (miga okrąg) i rozlewają wrzący bulion („ZURU!”); całe stosy tomów spadają na gracza
-  (najpierw czerwony obrys) i rozsypują się pierścieniem („DOSA!”).
-- **Faza 2 — tryb nocny:** gaśnie światło („KLIK.”, tło ciemnieje, monitor i oczy świecą); z ekranu lecą „linijki
-  czatu” — rzędy pocisków przez cały ekran z luką, w luce „www”; między nimi kubki i mangi.
-- **Faza 3 — gacha:** twierdza się wali (rozsypane tomy, pęknięty ekran, czerwone oczy); kapsułki gacha wyskakują
-  w górę i spadają na gracza, pękając pierścieniem („PON!”), złota (1 na 5) gwiazdą („SSR!”); mangi szybsze.
+**Dzwonek do drzwi** (wszystkie fazy, co 7–9,5 s): „PIN-PON!” u dołu ekranu; lokator chowa się pod kocem i drży,
+na ekranie kamera domofonu z kurierem; przez 1,7 s nie atakuje, a monitor przyjmuje podwójne obrażenia; potem
+„...?”.
+
+- **Faza 1 — twierdza z mang:** tomy lecą wirując i otwierają się w wachlarz 7 kartek („BAM!”); kubki lecą łukiem
+  (na ziemi rośnie cień), rozlewają wrzący bulion i pryskają pierścieniem („ZURU!”); stosy tomów spadają na gracza
+  (najpierw ciemniejący cień z obwódką) i rozsypują się pierścieniem („DOSA!”). Wieże chwieją się przy rzutach i
+  trafieniach.
+- **Faza 2 — tryb nocny:** gaśnie światło („KLIK.”); pokój tonie w mroku, zostaje plama światła monitora (migocze)
+  i jego poświata na podłodze. Czat spływa jako dymki z pocisków (dwa rzędy na raz, luka między dymkami oznaczona
+  „www”); „LAG...”: wszystkie pociski na ekranie zawisają na 1 s, potem lecą dalej, ok. 40% w zmienionym kierunku.
+- **Faza 3 — gacha:** reszta twierdzy się wali, monitor pęka, ekran śnieży, oczy płoną. Na ekranie kręci się
+  ruletka; wynik decyduje o ataku: N (1/2) — 5 kapsułek pękających pierścieniem, R (1/3) — 4 pękające spiralą,
+  SSR (1/6) — 3 złote pękające gwiazdą. Kapsułkę można zestrzelić w locie, zanim pęknie (zwykła 1 trafienie, złota 3);
+  pierwsza zestrzelona złota zostawia nagrodę (fioletowy power-up).
+
+Tło (`otakuroom.mjs`) animuje: grę w telewizorze, powiadomienia telefonu na futonie, wiatrak, diody routera,
+światło w szparze zasłon, parę nad kubkiem na kotatsu. Czas walki w symulacji (statek stale pod monitorem):
+ok. 96 s (32 / 31 / 33 s); zagrożenie ekranu średnio 5,6% / 8,9% / 3,9%.
 
 ## 6. Babcia (OBACHAN)
 

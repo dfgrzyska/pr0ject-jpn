@@ -31,7 +31,7 @@ export function buildFar() {
 }
 
 /** One poster: an actor's big head on mica, in the old manner, with a twist (0 plain, 1 headphones, 2 a controller, 3 cat ears). */
-function poster(seed, twist) {
+export function poster(seed, twist) {
   const p = new Raster(PW, PH);
   const rand = rng(seed);
   const ell = (cx, cy, rx, ry) => (x, y) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1;

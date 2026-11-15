@@ -38,7 +38,7 @@ import { genbaEnemies } from './art/encounters/genba.mjs';
 import * as namazu from './art/encounters/namazu.mjs';
 import * as fujismoke from './art/encounters/fujismoke.mjs';
 import { nagaiEnemies } from './art/encounters/nagai.mjs';
-import * as sharaku from './art/encounters/sharaku.mjs';
+import * as otakuroom from './art/encounters/otakuroom.mjs';
 import { heyaEnemies } from './art/encounters/heya.mjs';
 import * as torasnow from './art/encounters/torasnow.mjs';
 import { obachanEnemies } from './art/encounters/obachan.mjs';
@@ -83,7 +83,7 @@ const STAGES = [
   { id: 'ex2', art: tokaido }, // the kei car's: the Tōkaidō of Hiroshige's Fifty-three Stations, racing by
   { id: 'ex3', art: namazu }, // the site cat's: a namazu-e, the giant catfish under a building site in Edo
   { id: 'ex4', art: fujismoke }, // the endless cat's: Hokusai's dragon of smoke escaping from Mount Fuji
-  { id: 'ex5', art: sharaku }, // the otaku room's: a wall of posters after Sharaku's actor portraits
+  { id: 'ex5', art: otakuroom }, // the otaku room itself, door to desk (Sharaku-style posters on its back wall)
   { id: 'ex6', art: torasnow }, // the grandma's: Hokusai's tiger in the snow, with a purple perm
   { id: 'ex7', art: kirifuri }, // the lectern's: Hokusai's Kirifuri waterfall, pouring from two weeping eyes
 ];

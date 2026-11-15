@@ -1,171 +1,634 @@
-// Random encounter 5 (ex5): the hikikomori's room, which is the boss. A fortress built of what piles up when no one
-// goes out: towers of manga volumes on one side, a pyramid of empty instant-noodle cups and delivery boxes on the
-// other, a low desk in the middle with a big old CRT monitor glowing on it; behind the monitor a blanket-wrapped
-// shape, only two eyes showing. Lights on; lights off (only the screen and the eyes); fallen in (phase 3). Its
-// manga volumes (spinning), noodle cups (tumbling), a toppling stack, gacha capsules. No brands anywhere: the cups
-// have plain bands, the spines plain colours, the boxes plain tape.
-import { HiSprite, tones, speckle } from '../../lib/hisprite.mjs';
-import { rng, mix as mixc } from '../../lib/raster.mjs';
+// Random encounter 5 (ex5): the hikikomori's room, which is the boss. Drawn as separate parts so each can move:
+// - the occupant: a blanket-wrapped shape behind the desk, cat-ear headphones glowing, round glasses catching the
+//   screen, a stray tuft of hair; it breathes, blinks, glares, and hides under the blanket when the doorbell rings;
+// - its sleeves over the keyboard: typing, resting, flinging;
+// - the old CRT monitor (the weak point), its screen a separate glowing layer: a face, chat scrolling, a frozen
+//   "LAG", a gacha roulette, the intercom's camera when someone rings, a blue error screen, static;
+// - the desk: a mechanical keyboard, a mouse, energy drinks, a mug of pens, sticky notes, a little mascot figure,
+//   cables, a subwoofer and a bag underneath; the PC tower with its fans and RGB going round; a second screen on an
+//   arm playing a pixel game;
+// - two towers that can be shot down: the manga (series in runs of numbered volumes, a boxed figure on top) and the
+//   noodle cups (a pyramid with chopsticks left in, delivery boxes and a pizza box behind); each wobbles and comes
+//   down into a heap;
+// - what it throws: manga volumes, noodle cups, a toppling stack, gacha capsules; steam.
+// No brands anywhere: plain bands on the cups, plain-coloured spines with abstract title blocks, plain tape.
+import { HiSprite, tones, speckle, mottle } from '../../lib/hisprite.mjs';
+import { Raster, rng, mix, fbm } from '../../lib/raster.mjs';
 
-const BASE = {
-  k: tones([0x14121a, 0x26242e, 0x44424e]), // dark: the eye hole, the screen's frame
-  q: tones([0x3a2a5a, 0x5a4a8a, 0x8a7ab8]), // the blanket, lilac
-  o: tones([0x6a4a2a, 0x9a7044, 0xc89a64]), // the desk, wood
-  m: tones([0x8a8470, 0xc8c2a8, 0xf0ead0]), // the monitor's plastic, old beige
-  w: tones([0x9a948a, 0xe8e4dc, 0xffffff]), // the cups, paper white
+const RAMPS = {
+  k: tones([0x14121a, 0x26242e, 0x44424e]), // dark plastic, holes
+  q: tones([0x2a2a5a, 0x40448a, 0x6a74c0]), // the blanket, navy
+  Q: tones([0x5a3a6a, 0x8a5a9a, 0xc08ad0]), // its lining, lilac
+  o: tones([0x5a3a22, 0x8a6038, 0xc0905a]), // the desk, wood
+  m: tones([0x8a8470, 0xc8c2a8, 0xf0ead0]), // old beige plastic
+  w: tones([0x9a948a, 0xe8e4dc, 0xffffff]), // paper white
   b: tones([0x6a4a24, 0xa87a44, 0xd8aa70]), // cardboard
-  s: tones([0x5a5a64, 0xa8aab4, 0xe0e2ea]), // the keyboard
-  r: tones([0x7a1a1a, 0xd03a2a, 0xff8a6a]), // book colours
+  s: tones([0x4a4a54, 0x8a8c96, 0xd0d2da]), // grey metal, keys
+  h: tones([0x2a1a1a, 0x4a3030, 0x6a4a44]), // hair, dark
+  f: tones([0xb07a5a, 0xe8b894, 0xffe0c8]), // skin
+  r: tones([0x7a1a1a, 0xd03a2a, 0xff8a6a]),
   g: tones([0x1a5a2a, 0x3a9a4a, 0x8ad88a]),
   u: tones([0x1a2a6a, 0x3a5ac0, 0x8aa8f0]),
   y: tones([0x8a6a10, 0xe0b830, 0xfff0a0]),
   p: tones([0x7a2a5a, 0xd05a9a, 0xffa8d0]),
+  c: tones([0x1a5a6a, 0x3aa8b8, 0x9af0f0]),
+  n: tones([0x3a2a1a, 0xd08a2a, 0xffd07a]), // orange
 };
-const BOOKS = ['r', 'g', 'u', 'y', 'p', 'w'];
-// lights off: everything sinks into the dark blue of a room lit only by a screen
-const NIGHT = Object.fromEntries(Object.entries(BASE).map(([k, v]) => [k, v.map((c) => mixc(c, 0x0a0c1e, 0.62))]));
+const SERIES = ['r', 'g', 'u', 'y', 'p', 'c', 'n', 'w', 'k', 'Q'];
+const INK = 0x14121a;
 
-/** A manga volume lying flat in a stack, its spine to us: w x h at (x, y), a band of a lighter tone. */
-function book(s, x, y, w, h, mat, lean = 0) {
-  s.poly([[x, y], [x + w, y + lean], [x + w, y + h + lean], [x, y + h]], mat, { flat: 0.55 });
-  s.line(x + 1, y + h * 0.35, x + w - 1, y + h * 0.35 + lean, 0xf4eee0, 1, 0.6);
-}
-
-/** A noodle cup: a short tapered tub, a coloured band, a peeled-back lid. */
-function cup(s, cx, by, h = 20, lid = 0) {
-  const top = 9;
-  const bot = 6.5;
-  s.poly([[cx - top, by - h], [cx + top, by - h], [cx + bot, by], [cx - bot, by]], 'w', { flat: 0.6 });
-  s.shade([cx - top, by - h, cx + top, by], (x) => x > cx + 2, -0.15);
-  s.paint([cx - top, by - h * 0.62, cx + top, by - h * 0.42], (x, y) => Math.abs(x - cx) < top - ((y - (by - h)) / h) * (top - bot), 'r', () => 0.55);
-  if (lid) s.poly([[cx - top, by - h], [cx + top - 4, by - h - 6], [cx + top, by - h - 3], [cx - top + 2, by - h + 1]], 'm', { flat: 0.7 });
-}
-
-/** A delivery box, its tape. */
-function box(s, x, y, w, h) {
-  s.paint([x, y, x + w, y + h], () => true, 'b', (px) => 0.6 - (px - x) / (w * 3), { pat: speckle({ amt: 0.05 }) });
-  s.paint([x + w / 2 - 2, y, x + w / 2 + 2, y + h], () => true, 'm', () => 0.75);
-}
-
-// ---------------------------------------------------------------- the room (100 x 60 -> 300 x 180)
-// state: 0 lights on, 1 the screen scrolling, 'angry' the screen red, 'night' lights off, 'ruin' fallen in
-export function room(state) {
-  const night = state === 'night';
-  const ruin = state === 'ruin';
-  const s = new HiSprite(300, 180, night ? NIGHT : BASE);
-  const rand = rng(7);
-  const cx = 150;
-  // behind the desk: the blanket-wrapped shape, a hood with a dark hole and two eyes in it
-  s.ellipse(cx, 60, 52, 44, 'q', { bias: 0.05, pat: speckle({ amt: 0.05 }) });
-  s.shade([cx - 52, 16, cx + 52, 104], (x, y) => (Math.floor(x / 12) + Math.floor(y / 12)) % 2 === 0, -0.08); // checks
-  s.ellipse(cx, 38, 18, 12, 'k', { flat: 0.15 });
-  const eye = ruin || state === 'angry' ? 0xff4a3a : night ? 0xe8f4ff : 0xd8e8f0;
-  for (const sx of [-1, 1]) {
-    s.dot(cx + sx * 7, 38, 2.6, eye);
-    if (!ruin && state !== 'angry') s.dot(cx + sx * 7 - 0.6, 37.4, 0.9, 0xffffff);
+// ---------------------------------------------------------------- a tiny pixel font for the screens (3 x 5)
+const FONT = {
+  A: '010101111101101', B: '110101110101110', C: '011100100100011', D: '110101101101110', E: '111100110100111',
+  G: '011100101101011', I: '111010010010111', L: '100100100100111', N: '101111111101101', H: '101101111101101', V: '101101101101010', O: '010101101101010',
+  P: '110101110100100', R: '110101110101101', S: '011100010001110', W: '101101111111101', '!': '010010010000010',
+  '?': '110001010000010', '.': '000000000000010', ':': '000010000010000', '(': '001010010010001', ')': '100010010010100',
+  0: '111101101101111', 1: '010110010010111', 2: '110001010100111', 3: '110001010001110',
+};
+function text(r, x, y, str, c, px = 2, a = 1) {
+  for (const ch of str) {
+    const g = FONT[ch];
+    if (g) for (let i = 0; i < 15; i++) if (g[i] === '1') for (let j = 0; j < px; j++) for (let k = 0; k < px; k++) r.set(x + (i % 3) * px + k, y + Math.floor(i / 3) * px + j, c, a);
+    x += 4 * px;
   }
-  // the manga towers, left: columns of volumes, each a little askew
-  if (!ruin) {
-    for (const [x0, top] of [[6, 40], [40, 22], [74, 58]]) {
-      let y = 150;
-      while (y > top) {
-        const h = 5 + Math.floor(rand() * 4);
-        const w = 30 + Math.floor(rand() * 6);
-        book(s, x0 + Math.floor(rand() * 5) - 2, y - h, w, h, BOOKS[Math.floor(rand() * BOOKS.length)], Math.floor(rand() * 3) - 1);
-        y -= h + 1;
+}
+
+// ---------------------------------------------------------------- the screens (124 x 94, glowing)
+const SW = 124;
+const SH = 94;
+function screen(bg0, bg1, draw) {
+  const r = new Raster(SW, SH);
+  for (let y = 0; y < SH; y++)
+    for (let x = 0; x < SW; x++) {
+      // a curved tube: darker at the corners, scanlines
+      const ex = (x - SW / 2) / (SW / 2);
+      const ey = (y - SH / 2) / (SH / 2);
+      const v = Math.max(0, 1 - (ex * ex * ey * ey) * 1.6 - (ex ** 4 + ey ** 4) * 0.25);
+      if (ex ** 6 + ey ** 6 > 1.05) continue;
+      r.set(x, y, mix(bg0, bg1, v * (y % 3 === 0 ? 0.82 : 1)));
+    }
+  draw?.(r);
+  return r;
+}
+const block = (r, gx, gy, c, n = 6) => {
+  for (let y = 0; y < n - 1; y++) for (let x = 0; x < n - 1; x++) r.set(gx + x, gy + y, c);
+};
+function faceScreen(kind) {
+  const red = kind === 'angry';
+  return screen(red ? 0x2a0408 : 0x041a3a, red ? 0x6a0a14 : 0x0a3a6a, (r) => {
+    const c = red ? 0xff5a4a : 0x8ae8ff;
+    const at = (gx, gy) => block(r, 26 + gx * 6, 16 + gy * 6, c);
+    if (kind === 'idle') for (const [x, y] of [[0, 3], [1, 2], [2, 3], [9, 3], [10, 2], [11, 3], [4, 7], [5, 8], [6, 8], [7, 7]]) at(x, y);
+    if (kind === 'blink') for (const [x, y] of [[0, 3], [1, 3], [2, 3], [9, 3], [10, 3], [11, 3], [4, 7], [5, 8], [6, 8], [7, 7]]) at(x, y);
+    if (kind === 'angry') {
+      for (const [x, y] of [[0, 1], [1, 2], [2, 3], [1, 4], [0, 5], [11, 1], [10, 2], [9, 3], [10, 4], [11, 5], [4, 8], [5, 8], [6, 8], [7, 8]]) at(x, y);
+      text(r, 92, 8, '!!', 0xffd0a0, 2);
+    }
+    if (kind === 'what') {
+      for (const [x, y] of [[1, 2], [1, 3], [10, 2], [10, 3], [5, 7], [6, 7], [5, 8], [6, 8]]) at(x, y);
+      text(r, 92, 8, '?', 0xffffff, 3);
+    }
+  });
+}
+function chatScreen(f) {
+  const rand = rng(40);
+  const rows = [];
+  for (let i = 0; i < 14; i++) rows.push({ col: [0xff8ab0, 0x8affb0, 0xffe07a, 0x8ab8ff, 0xd0a0ff][Math.floor(rand() * 5)], len: 20 + Math.floor(rand() * 60), w: rand() < 0.25 });
+  return screen(0x0a1020, 0x18243a, (r) => {
+    for (let x = 6; x < SW - 6; x++) r.set(x, 10, 0x3a4a6a);
+    text(r, 8, 3, 'LIVE', 0xff5a5a, 1);
+    for (let i = 0; i < 7; i++) {
+      const row = rows[(i + f * 2) % rows.length];
+      const y = 16 + i * 10 - ((f * 3) % 10) + 6;
+      if (y < 13 || y > SH - 8) continue;
+      for (let yy = 0; yy < 5; yy++) for (let xx = 0; xx < 5; xx++) r.set(8 + xx, y + yy, row.col);
+      for (let x = 16; x < 16 + 14; x++) for (let yy = 1; yy < 4; yy++) r.set(x, y + yy, row.col, 0.9);
+      for (let x = 32; x < 32 + row.len; x++) if (x % 7) for (let yy = 1; yy < 4; yy++) r.set(x, y + yy, 0xd8e0f0, 0.75);
+      if (row.w) text(r, 34 + row.len, y, 'WWW', 0x9affd0, 1);
+    }
+  });
+}
+function lagScreen(f) {
+  return screen(0x10141c, 0x2a3040, (r) => {
+    // the picture froze mid-chat: grey bars, a spinner going round
+    for (let i = 0; i < 6; i++) for (let x = 14; x < 100 - i * 9; x++) if (x % 6) for (let yy = 0; yy < 3; yy++) r.set(x, 14 + i * 9 + yy, 0x5a6070);
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2;
+      const on = (k + f * 2) % 8;
+      const c = mix(0x404858, 0xffffff, on < 3 ? 1 - on / 3 : 0);
+      for (let yy = -2; yy <= 2; yy++) for (let xx = -2; xx <= 2; xx++) if (xx * xx + yy * yy <= 5) r.set(62 + Math.cos(a) * 14 + xx, 46 + Math.sin(a) * 14 + yy, c);
+    }
+    text(r, 40, 70, 'LAG...', 0xffe07a, 3);
+  });
+}
+const SYMS = ['cap_r', 'cap_u', 'cap_g', 'star', 'cat'];
+function sym(r, cx, cy, s, a = 1) {
+  const col = { cap_r: 0xff5a4a, cap_u: 0x5a8aff, cap_g: 0x5ad06a, star: 0xffd84a, cat: 0xffffff }[s];
+  if (s.startsWith('cap')) {
+    // a capsule toy: a clear dome on top (the toy inside showing), the coloured half below
+    for (let y = -8; y <= 8; y++) for (let x = -8; x <= 8; x++) if (x * x + y * y <= 64) r.set(cx + x, cy + y, y < 0 ? mix(col, 0xffffff, 0.75) : col, y < 0 ? a * 0.55 : a);
+    for (let y = -6; y <= -1; y++) for (let x = -3; x <= 3; x++) if (x * x + (y + 3) ** 2 < 10) r.set(cx + x, cy + y, 0xffe0a0, a);
+    for (let x = -8; x <= 8; x++) r.set(cx + x, cy, mix(col, 0xffffff, 0.4), a);
+  } else if (s === 'star') {
+    for (let y = -9; y <= 9; y++)
+      for (let x = -9; x <= 9; x++) {
+        const ang = Math.atan2(y, x);
+        const rr = Math.hypot(x, y);
+        if (rr < 4 + 5 * Math.abs(Math.cos(ang * 2.5 + Math.PI / 2)) ** 2) r.set(cx + x, cy + y, col, a);
+      }
+  } else {
+    for (let y = -6; y <= 7; y++) for (let x = -8; x <= 8; x++) if ((x / 8) ** 2 + (y / 7) ** 2 <= 1) r.set(cx + x, cy + y, col, a);
+    for (const sx of [-1, 1]) for (let k = 0; k < 6; k++) for (let w = 0; w < 6 - k; w++) r.set(cx + sx * (4 + w * 0.5), cy - 5 - k, col, a);
+    for (const sx of [-1, 1]) r.set(cx + sx * 3, cy, INK, a), r.set(cx + sx * 3, cy + 1, INK, a);
+  }
+}
+function reelScreen(f, result) {
+  return screen(0x2a0a3a, 0x5a1a6a, (r) => {
+    // the gacha machine: three reels in a gold frame; spinning (blurred), or stopped on a pull
+    for (let x = 8; x < SW - 8; x++) for (const y of [18, 19, 72, 73]) r.set(x, y, 0xe0b840);
+    for (let k = 0; k < 3; k++) {
+      const x0 = 14 + k * 34;
+      for (let y = 20; y < 72; y++) for (let x = x0; x < x0 + 28; x++) r.set(x, y, mix(0x10061a, 0x2a1a3a, 1 - Math.abs(y - 46) / 26));
+      if (result) sym(r, x0 + 14, 46, result === 'ssr' ? 'star' : result === 'r' ? ['cat', 'cap_u', 'cat'][k] : ['cap_r', 'cap_g', 'cap_u'][k]);
+      else for (let j = -1; j <= 1; j++) {
+        const y = 46 + j * 22 + ((f * 9 + k * 7) % 22);
+        if (y > 26 && y < 66) sym(r, x0 + 14, y, SYMS[(f + k * 2 + j + 5) % SYMS.length], 0.55);
       }
     }
-    // the cups, right: a pyramid, boxes behind
-    box(s, 228, 60, 46, 36);
-    box(s, 254, 40, 40, 30);
-    for (let row = 0; row < 4; row++) for (let i = 0; i < 4 - row; i++) cup(s, 226 + row * 10 + i * 20, 152 - row * 22, 20, (row + i) % 3 === 0);
-  } else {
-    // fallen in: books slid into heaps on the floor, cups rolled over, a box split
-    for (let i = 0; i < 26; i++) {
-      const x = 4 + rand() * 96;
-      const y = 120 + rand() * 40;
-      book(s, x, y, 26 + rand() * 8, 6, BOOKS[Math.floor(rand() * BOOKS.length)], Math.floor(rand() * 13) - 6);
+    if (result === 'ssr') {
+      for (let k = 0; k < 16; k++) {
+        const a = (k / 16) * Math.PI * 2;
+        for (let d = 30; d < 70; d += 1) if (k % 2 === 0) r.set(62 + Math.cos(a) * d, 46 + Math.sin(a) * d * 0.7, 0xffe880, 0.18);
+      }
+      text(r, 44, 78, 'SSR!', 0xffe060, 3);
+    } else if (result === 'r') text(r, 56, 78, 'R', 0x9ab8ff, 3);
+    else if (result) {
+      // N, five pixels wide (the 3 x 5 font has no room for its diagonal)
+      const g = ['10001', '11001', '10101', '10011', '10001'];
+      for (let j = 0; j < 5; j++) for (let i = 0; i < 5; i++) if (g[j][i] === '1') for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) r.set(55 + i * 3 + b, 78 + j * 3 + a, 0xd0d0d8);
     }
-    box(s, 236, 110, 44, 30);
-    for (let i = 0; i < 6; i++) cup(s, 214 + i * 13 + rand() * 4, 168 - (i % 2) * 12, 18, i % 2);
+    else text(r, 34, 4, 'GACHA', 0xffe07a, 2);
+  });
+}
+function doorScreen(f) {
+  // the intercom's camera: a greenish view of the front door, someone in a cap holding a parcel
+  return screen(0x0a1a0e, 0x3a5a3a, (r) => {
+    const g = (v) => mix(0x0a1a0e, 0xb8e8b0, v);
+    for (let y = 8; y < 86; y++) for (let x = 30; x < 94; x++) if (x < 34 || x > 90 || y < 12) r.set(x, y, g(0.25));
+    for (let y = 30; y < 86; y++) for (let x = 46; x < 78; x++) {
+      const head = (x - 62) ** 2 / 64 + (y - 38) ** 2 / 81 < 1;
+      const cap = y < 34 && y > 26 && Math.abs(x - 62) < 11;
+      const body = y > 46 && Math.abs(x - 62) < 14 + (y - 46) * 0.2;
+      if (cap) r.set(x, y, g(0.5));
+      else if (head) r.set(x, y, g(0.62));
+      else if (body) r.set(x, y, g(0.42));
+    }
+    for (let y = 56; y < 74; y++) for (let x = 50; x < 76; x++) r.set(x, y, g(0.78)); // the parcel
+    for (let x = 50; x < 76; x++) r.set(x, 64, g(0.5));
+    if (f) for (let y = -3; y <= 3; y++) for (let x = -3; x <= 3; x++) if (x * x + y * y < 10) r.set(104 + x, 10 + y, 0xff3a3a);
+    text(r, 8, 6, 'REC', 0xd0f0c8, 1);
+    for (let y = 0; y < SH; y += 2) for (let x = 0; x < SW; x++) if (r.alpha(x, y)) r.set(x, y, 0x000000, 0.15);
+  });
+}
+function bsodScreen() {
+  return screen(0x0a2a8a, 0x1a4ac0, (r) => {
+    text(r, 14, 12, ':(', 0xffffff, 4);
+    for (let i = 0; i < 5; i++) for (let x = 14; x < 100 - i * 11; x++) if (x % 5) r.set(x, 44 + i * 7, 0xd8e4ff), r.set(x, 45 + i * 7, 0xd8e4ff);
+  });
+}
+function staticScreen(f) {
+  const rand = rng(90 + f);
+  return screen(0x101014, 0x404048, (r) => {
+    for (let y = 0; y < SH; y++) for (let x = 0; x < SW; x++) if (r.alpha(x, y) && rand() < 0.5) r.set(x, y, mix(0x202024, 0xd0d0d8, rand()));
+    for (let x = 0; x < SW; x++) r.set(x, (f * 37) % SH, 0xffffff, 0.5);
+  });
+}
+
+// ---------------------------------------------------------------- the monitor (168 x 150): a chunky old CRT
+export function monitor(cracked) {
+  const s = new HiSprite(168, 150, RAMPS);
+  // the tube's bulk behind, the stand, the bezel
+  s.poly([[30, 6], [138, 6], [150, 122], [18, 122]], 'm', { flat: 0.42 });
+  s.paint([4, 2, 164, 128], (x, y) => x > 6 && x < 162 && y > 4 && y < 126, 'm', (x, y) => 0.7 - (x - 6) / 520 - (y - 4) / 700, { pat: speckle({ amt: 0.03 }) });
+  s.paint([60, 126, 108, 146], (x, y) => Math.abs(x - 84) < 18 + (y - 126) * 0.7, 'm', () => 0.45);
+  s.paint([18, 14, 150, 116], () => true, 'k', () => 0.25); // the recess round the glass
+  s.paint([20, 16, 148, 114], () => true, 'k', () => 0.1);
+  // the chin: a power button, a green lamp, two little knobs, a vent
+  s.ellipse(140, 120, 4, 3, 'm', { flat: 0.35 });
+  s.dot(128, 120, 1.6, 0x6aff6a);
+  for (const x of [30, 40]) s.ellipse(x, 120, 2.6, 2.6, 's', { flat: 0.5 });
+  for (let k = 0; k < 9; k++) s.line(56 + k * 6, 119, 56 + k * 6, 123, 0x8a8470, 1);
+  // a sticky note on the bezel corner, a strip of tape
+  s.poly([[146, 20], [164, 18], [166, 36], [148, 38]], 'y', { flat: 0.75 });
+  s.line(150, 26, 160, 25, 0x8a6a10, 1);
+  s.line(150, 30, 158, 29, 0x8a6a10, 1);
+  if (cracked) {
+    for (const [x0, y0, x1, y1] of [[8, 40, 20, 52], [20, 52, 14, 66], [150, 90, 160, 100], [160, 100, 156, 112]]) s.line(x0, y0, x1, y1, 0x4a4438, 1);
+    s.paint([4, 2, 164, 128], (x, y) => x > 6 && x < 162 && y > 4 && y < 126 && fbm(x, y, { seed: 77, scale: 12 }) > 0.66, 'm', () => 0.3);
   }
-  // the desk, the monitor on it, the keyboard
-  s.paint([70, 112, 230, 168], (x, y) => y < 122 || (y > 122 && (x < 80 || x > 220)), 'o', (x, y) => (y < 122 ? 0.7 : 0.4), { pat: speckle({ amt: 0.06 }) });
-  s.paint([106, 50, 194, 120], (x, y) => x > 106 && x < 194 && y > 50 && y < 120, 'm', (x, y) => 0.68 - (x - 106) / 300 - (y - 50) / 400);
-  s.paint([116, 58, 184, 108], () => true, 'k', () => 0.2);
-  const scr = state === 'angry' ? [0x6a0a10, 0xff3a2a] : ruin ? [0x20242a, 0xb8c0c8] : [0x0a2a5a, 0x7ad8ff];
-  s.paint([119, 61, 181, 105], () => true, 'k', () => 0.1, { glow: true });
-  for (let y = 61; y <= 105; y++) for (let x = 119; x <= 181; x++) s.px(x, y, mixc(scr[0], scr[1], (y % 3 === 0 ? 0.08 : 0.16) + (ruin ? rand() * 0.6 : 0)));
-  const ink = scr[1];
-  const face = (glyph) => {
-    // the screen's face, in big screen-pixels
-    for (const [gx, gy] of glyph) s.paint([119 + gx * 3, 61 + gy * 3, 121 + gx * 3, 63 + gy * 3], () => true, 'k', () => 0.1, { glow: true }), s.line(119 + gx * 3, 61 + gy * 3, 121 + gx * 3, 61 + gy * 3, ink, 3);
+  return s.render({ outline: 2 });
+}
+
+// ---------------------------------------------------------------- the occupant (240 x 200)
+// mood: 'b0'/'b1' breathing, 'blink', 'angry', 'hide0'/'hide1' under the blanket (trembling)
+export function occupant(mood) {
+  const s = new HiSprite(240, 200, RAMPS);
+  const hide = mood.startsWith('hide');
+  const up = mood === 'b1' ? -2 : 0;
+  const shake = mood === 'hide1' ? 2 : 0;
+  const cx = 120 + shake;
+  // the blanket heaped round it: wide at the bottom, a hood at the top; a pattern of little stars
+  const top = hide ? 70 : 22 + up;
+  s.paint([0, top, 240, 200], (x, y) => {
+    const t = (y - top) / (200 - top);
+    const half = 52 + t * 70 + Math.sin(y * 0.08) * 3;
+    return Math.abs(x - cx) < half && (y > top + 18 || (x - cx) ** 2 / (52 * 52) + (y - top - 18) ** 2 / (18 * 18) < 1);
+  }, 'q', (x, y) => 0.62 - (x - cx) / 300 - (y - top) / 600, { pat: mottle({ amt: 0.1 }) });
+  // folds
+  for (const [x0, y0, x1, y1] of [[cx - 70, 150, cx - 40, 110], [cx + 60, 160, cx + 40, 115], [cx - 20, 190, cx - 10, 150], [cx + 26, 196, cx + 20, 160]]) s.shade([0, 0, 240, 200], (x, y) => Math.abs((x - x0) * (y1 - y0) - (y - y0) * (x1 - x0)) / Math.hypot(x1 - x0, y1 - y0) < 3 && y > Math.min(y0, y1) && y < Math.max(y0, y1), -0.2);
+  const rand = rng(12);
+  for (let k = 0; k < 26; k++) {
+    const x = cx - 100 + rand() * 200;
+    const y = top + 14 + rand() * (190 - top);
+    for (let a = 0; a < 5; a++) {
+      const ang = (a / 5) * Math.PI * 2 - Math.PI / 2;
+      const ex = x + Math.cos(ang) * 3;
+      const ey = y + Math.sin(ang) * 3;
+      if (s.mat[Math.floor(ey) * 240 + Math.floor(ex)] && s.mat[Math.floor(y) * 240 + Math.floor(x)]) s.line(x, y, ex, ey, 0xffe08a, 1, 0.8);
+    }
+  }
+  if (hide) {
+    // just a lump, trembling; the tuft of hair sticking out of the top, the headphones' glow through the cloth
+    s.tube(cx - 2, top + 2, cx + 8, top - 16, 2.4, 'h', { rb: 1 });
+    s.tube(cx + 8, top - 16, cx + 16, top - 12, 1.6, 'h', { rb: 0.8 });
+    for (const sx of [-1, 1]) s.dot(cx + sx * 34, top + 26, 4, 0xff7ac8, 0.35);
+    s.line(cx - 40, top + 50, cx + 40, top + 52, 0x1a1a3a, 1, 0.6);
+    return s.render({ outline: 2 });
+  }
+  // the opening of the hood: the lining, the dark inside, a face in the screen's light
+  s.ellipse(cx, 72 + up, 44, 40, 'Q', { bias: 0.05 });
+  s.ellipse(cx, 76 + up, 36, 32, 'k', { flat: 0.12 });
+  s.ellipse(cx, 84 + up, 26, 22, 'f', { flat: 0.32 });
+  // fringe of dark hair over the brow, the tuft standing up out of the hood
+  s.paint([cx - 34, 50 + up, cx + 34, 78 + up], (x, y) => (x - cx) ** 2 / (34 * 34) + (y - 56 - up) ** 2 / (22 * 22) < 1 && y < 70 + up + Math.abs(Math.sin((x - cx) * 0.3)) * 6, 'h', () => 0.45);
+  s.tube(cx + 4, 34 + up, cx + 12, 10 + up, 2.6, 'h', { rb: 1.2 });
+  s.tube(cx + 12, 10 + up, cx + 22, 16 + up, 1.8, 'h', { rb: 0.8 });
+  // cat-ear headphones over the hood
+  s.paint([cx - 60, 30 + up, cx + 60, 60 + up], (x, y) => Math.abs(Math.hypot(x - cx, (y - 70 - up) * 1.2) - 50) < 4 && y < 58 + up, 's', () => 0.5);
+  for (const sx of [-1, 1]) {
+    s.ellipse(cx + sx * 46, 74 + up, 12, 16, 's', { bias: 0.05 });
+    s.ellipse(cx + sx * 47, 74 + up, 6, 9, 'p', { flat: 0.9, glow: true });
+    s.poly([[cx + sx * 26, 36 + up], [cx + sx * 44, 18 + up], [cx + sx * 46, 42 + up]], 's', { flat: 0.55 });
+    s.poly([[cx + sx * 31, 36 + up], [cx + sx * 42, 25 + up], [cx + sx * 43, 39 + up]], 'p', { flat: 0.85, glow: true });
+  }
+  // round glasses catching the screen; the eyes behind (or shut, or glaring)
+  for (const sx of [-1, 1]) {
+    const ex = cx + sx * 12;
+    const ey = 86 + up;
+    for (let a = 0; a < Math.PI * 2; a += 0.05) s.px(ex + Math.cos(a) * 9, ey + Math.sin(a) * 8, 0x2a2a32);
+    s.paint([ex - 8, ey - 7, ex + 8, ey + 7], (x, y) => (x - ex) ** 2 / 64 + (y - ey) ** 2 / 49 < 1, 'c', () => 0.55, { glow: true });
+    if (mood === 'blink') s.line(ex - 5, ey + 1, ex + 5, ey + 1, INK, 1);
+    else if (mood === 'angry') {
+      s.dot(ex, ey + 1, 2.4, 0xff4a3a);
+      s.line(ex - 6, ey - 6 + sx * 0, ex + 6, ey - 3, INK, 2);
+    } else {
+      s.dot(ex, ey + 1, 2.2, INK);
+      s.dot(ex - 0.8, ey, 0.8, 0xffffff);
+    }
+    // the screen's reflection: two pale streaks
+    s.line(ex - 6, ey - 3, ex - 2, ey - 6, 0xe8ffff, 1, 0.8);
+    s.line(ex + 1, ey + 5, ex + 5, ey + 2, 0xe8ffff, 1, 0.5);
+  }
+  s.line(cx - 3, 86 + up, cx + 3, 86 + up, 0x2a2a32, 1);
+  if (mood === 'angry') s.line(cx - 5, 100 + up, cx + 5, 98 + up, INK, 1);
+  else s.line(cx - 3, 99 + up, cx + 3, 99 + up, 0x8a5040, 1);
+  return s.render({ outline: 2 });
+}
+
+// ---------------------------------------------------------------- its sleeves on the keyboard (120 x 54): 0/1 typing, 2 a hand up
+export function hands(f) {
+  const s = new HiSprite(120, 54, RAMPS);
+  for (const sx of [-1, 1]) {
+    const lift = f === 2 && sx > 0 ? -22 : (f === 0 && sx < 0) || (f === 1 && sx > 0) ? -4 : 0;
+    const hx = 60 + sx * 26;
+    s.tube(60 + sx * 58, 6, hx, 34 + lift, 11, 'q', { rb: 9 });
+    s.ellipse(hx, 40 + lift, 8, 6, 'f', { bias: 0.08 });
+    for (let k = -1; k <= 1; k++) s.ellipse(hx + k * 4.5, 45 + lift, 2.2, 3, 'f', { bias: 0.1 });
+  }
+  return s.render({ outline: 2 });
+}
+
+// ---------------------------------------------------------------- the desk (420 x 150)
+export function desk() {
+  const s = new HiSprite(420, 150, RAMPS);
+  const rand = rng(21);
+  // underneath first: the dark under the desk, a subwoofer, a backpack, cables in a tangle
+  s.paint([14, 30, 406, 150], () => true, 'k', (x, y) => 0.12 + (y - 30) / 900);
+  s.paint([296, 86, 352, 148], () => true, 'k', () => 0.35);
+  s.ellipse(324, 118, 18, 18, 's', { flat: 0.3 });
+  s.ellipse(324, 118, 8, 8, 'k', { flat: 0.2 });
+  s.ellipse(80, 126, 30, 24, 'g', { bias: 0.05, pat: speckle({ amt: 0.05 }) });
+  s.tube(64, 108, 96, 106, 3, 'k');
+  for (let k = 0; k < 7; k++) {
+    let x = 150 + rand() * 120;
+    let y = 40;
+    const c = [0x1a1a20, 0x30303a, 0xd0d0d0, 0x2a2a6a][k % 4];
+    for (let j = 0; j < 60; j++) {
+      x += Math.sin(j * 0.3 + k) * 2;
+      y += 1.6;
+      s.px(x, y, c);
+      s.px(x + 1, y, c);
+    }
+  }
+  // the legs and the drawer unit (left), a drawer pulled half out, papers sticking out of it
+  s.paint([14, 30, 30, 150], () => true, 'o', () => 0.4);
+  s.paint([390, 30, 406, 150], () => true, 'o', () => 0.36);
+  s.paint([30, 30, 120, 150], () => true, 'o', (x) => 0.52 - (x - 30) / 400, { pat: speckle({ amt: 0.04 }) });
+  for (const y of [60, 96, 130]) {
+    s.line(32, y, 118, y, 0x3a2414, 1);
+    s.paint([66, y - 18, 84, y - 14], () => true, 's', () => 0.6);
+  }
+  s.paint([32, 62, 124, 90], () => true, 'o', () => 0.6);
+  s.poly([[50, 62], [96, 60], [94, 66], [52, 68]], 'w', { flat: 0.8 });
+  // the top: a thick slab of wood, its front edge
+  s.paint([0, 0, 420, 34], () => true, 'o', (x, y) => (y < 24 ? 0.66 - x / 1600 : 0.4), { pat: speckle({ amt: 0.05 }), tex: 0.06 });
+  for (let x = 0; x < 420; x += 1) s.px(x, 24, 0x3a2414, 0.6);
+  // on it, left to right: a mug of pens, energy cans (one crushed), a mascot figure, sticky notes, the keyboard,
+  // the mouse on its mat, a phone face down, crumbs
+  s.tube(28, 2, 28, 20, 10, 'w', { rb: 10 });
+  s.paint([18, 0, 38, 4], () => true, 'k', () => 0.2);
+  for (const [dx, c] of [[-5, 'r'], [0, 'u'], [5, 'y'], [2, 'k']]) s.tube(28 + dx, 2, 28 + dx * 1.6, -12, 1.4, c);
+  for (const [x, c, crushed] of [[56, 'g', 0], [72, 'p', 0], [88, 'c', 1]]) {
+    if (crushed) s.poly([[x - 6, 20], [x + 8, 18], [x + 9, 8], [x - 2, 4], [x - 7, 10]], c, { flat: 0.55 });
+    else s.tube(x, 0, x, 20, 6, c);
+    if (!crushed) s.paint([x - 6, 6, x + 6, 10], () => true, 'w', () => 0.8);
+  }
+  // the mascot: a round little thing with a star on its head (no one's character)
+  s.ellipse(114, 10, 9, 8, 'y', { bias: 0.08 });
+  s.dot(110, 9, 1.3, INK);
+  s.dot(118, 9, 1.3, INK);
+  s.line(112, 13, 116, 13, 0x8a3a1a, 1);
+  for (let a = 0; a < 5; a++) s.line(114, -2, 114 + Math.cos(a * 1.257 - 1.57) * 5, 2 + Math.sin(a * 1.257 - 1.57) * 5, 0xff7a4a, 2);
+  s.paint([106, 18, 122, 22], () => true, 'k', () => 0.3);
+  for (const [x, y, c] of [[134, 14, 'y'], [142, 16, 'p'], [150, 13, 'c']]) s.poly([[x, y], [x + 10, y - 1], [x + 11, y + 8], [x + 1, y + 9]], c, { flat: 0.8 });
+  // the keyboard: a mechanical one, keys in rows, a few bright keycaps
+  s.paint([166, 4, 286, 24], () => true, 'k', () => 0.3);
+  const caps = { 3: 'r', 17: 'y', 30: 'c', 41: 'p' };
+  for (let r = 0; r < 4; r++)
+    for (let c = 0; c < 14; c++) {
+      const x = 169 + c * 8.3 + (r % 2) * 2;
+      const y = 6 + r * 4.4;
+      s.paint([x, y, x + 6.5, y + 3.4], () => true, caps[r * 14 + c] ?? 's', () => 0.55);
+    }
+  s.paint([300, 4, 352, 26], () => true, 'u', () => 0.3);
+  s.ellipse(326, 14, 7, 9, 'k', { bias: 0.1 });
+  s.dot(326, 10, 1.4, 0xff4a8a);
+  s.tube(326, 5, 318, -6, 0.9, 'k');
+  s.paint([366, 6, 394, 20], () => true, 'k', () => 0.35);
+  for (let k = 0; k < 9; k++) s.px(200 + rand() * 200, 16 + rand() * 8, 0xe8c070);
+  return s.render({ outline: 2 });
+}
+
+// ---------------------------------------------------------------- the PC tower (72 x 150): glass side, fans, RGB going round
+export function pc(f) {
+  const s = new HiSprite(72, 150, RAMPS);
+  s.paint([2, 2, 70, 148], () => true, 'k', (x) => 0.35 - x / 400);
+  s.paint([8, 10, 62, 138], () => true, 'k', () => 0.08);
+  const hue = (k) => {
+    const h = ((k + f) % 6) / 6;
+    const c = [0xff3a6a, 0xffa83a, 0xf0f03a, 0x3aff8a, 0x3aa8ff, 0xb03aff];
+    return c[Math.floor(h * 6) % 6];
   };
-  if (state === 0 || state === 'night') face([[5, 6], [6, 5], [7, 6], [13, 6], [14, 5], [15, 6], [9, 10], [10, 11], [11, 10]]); // ^_^ (more or less)
-  if (state === 1) for (let r = 0; r < 6; r++) for (let c = 0; c < 6 + ((r * 5) % 9); c++) if ((c * 7 + r * 3) % 5) s.line(122 + c * 3.4, 64 + r * 7, 123.5 + c * 3.4, 64 + r * 7, ink, 2); // lines of chat scrolling by
-  if (state === 'angry') face([[5, 4], [6, 5], [7, 6], [6, 7], [5, 8], [15, 4], [14, 5], [13, 6], [14, 7], [15, 8], [8, 11], [9, 11], [10, 11], [11, 11], [12, 11]]); // >_<
-  if (ruin) for (const [x0, y0, x1, y1] of [[130, 61, 150, 84], [150, 84, 142, 105], [150, 84, 176, 76]]) s.line(x0, y0, x1, y1, 0xffffff, 1);
-  // the screen lights the desk (and in the dark, the shape behind it)
-  s.paint([116, 122, 184, 132], () => true, 's', () => 0.6);
-  for (let k = 0; k < 6; k++) for (let j = 0; j < 2; j++) s.dot(120 + k * 10.5, 125 + j * 4, 0.8, 0x4a4c56);
-  s.dot(196, 128, 3, 0xd8d4c4);
-  return s.render();
+  // fans: rings of colour, blades (turning a step a frame)
+  for (const [k, cy] of [[0, 34], [2, 72], [4, 110]]) {
+    for (let a = 0; a < Math.PI * 2; a += 0.04) s.px(35 + Math.cos(a) * 18, cy + Math.sin(a) * 18, hue(k + Math.floor((a / (Math.PI * 2)) * 6)));
+    for (let a = 0; a < Math.PI * 2; a += 0.04) s.px(35 + Math.cos(a) * 17, cy + Math.sin(a) * 17, hue(k + Math.floor((a / (Math.PI * 2)) * 6)), 0.6);
+    for (let b = 0; b < 7; b++) {
+      const a = (b / 7) * Math.PI * 2 + f * 0.45;
+      s.line(35 + Math.cos(a) * 4, cy + Math.sin(a) * 4, 35 + Math.cos(a + 0.5) * 15, cy + Math.sin(a + 0.5) * 15, 0x3a3a46, 2);
+    }
+    s.dot(35, cy, 4, 0x24242c);
+  }
+  // the strip down the front edge, and a power button
+  for (let y = 10; y < 138; y++) s.px(64, y, hue(Math.floor(y / 22)), 1), s.px(65, y, hue(Math.floor(y / 22)), 0.6);
+  s.dot(36, 144, 2, hue(1));
+  return s.render({ outline: 2 });
+}
+
+// ---------------------------------------------------------------- the second screen on its arm (96 x 96): a pixel game running
+export function second(f) {
+  const s = new HiSprite(96, 96, RAMPS);
+  s.tube(48, 70, 48, 94, 3, 's');
+  s.paint([30, 88, 66, 95], () => true, 's', () => 0.4);
+  s.paint([2, 4, 94, 68], () => true, 'k', () => 0.3);
+  const r = new Raster(84, 56);
+  for (let y = 0; y < 56; y++) for (let x = 0; x < 84; x++) r.set(x, y, mix(0x5ab8ff, 0xc8f0ff, y / 56));
+  // hills scrolling, a little hero jumping over a block
+  for (let x = 0; x < 84; x++) {
+    const h = 40 + Math.sin((x + f * 6) * 0.08) * 5;
+    for (let y = Math.floor(h); y < 46; y++) r.set(x, y, 0x3aa84a);
+    for (let y = 46; y < 56; y++) r.set(x, y, mix(0x6a4a2a, 0x8a6a3a, ((x * 7 + y * 13 + f * 6) % 11) / 11));
+  }
+  // (an invented hero: a round white blob with a teal scarf, hopping over grey rocks)
+  for (let y = 0; y < 7; y++) for (let x = 0; x < 9; x++) if ((x - 4) ** 2 / 20 + (y - 4) ** 2 / 12 < 1) r.set(56 - f * 6 + x, 39 + y, y < 3 ? 0xb0b0b8 : 0x80808a);
+  const jy = [0, -10, -4][f];
+  for (let y = 0; y < 9; y++) for (let x = 0; x < 9; x++) if ((x - 4) ** 2 + (y - 4) ** 2 < 18) r.set(21 + x, 37 + jy + y, y === 5 ? 0x2ad0c0 : 0xffffff);
+  r.set(26, 39 + jy, 0x14121a);
+  r.set(24, 39 + jy, 0x14121a);
+  for (let y = 0; y < 56; y++) for (let x = 0; x < 84; x++) {
+    const i = r.idx(x, y);
+    s.px(6 + x, 8 + y, (r.data[i] << 16) | (r.data[i + 1] << 8) | r.data[i + 2]);
+    s.glow[(8 + y) * 96 + 6 + x] = 1;
+  }
+  return s.render({ outline: 2 });
+}
+
+// ---------------------------------------------------------------- the towers (150 x 260); 0 upright, 1 swaying; 'heap' brought down
+/** A volume lying in a stack, spine out: its series colour, a white title block of glyph ticks, its number. */
+function vol(s, x, y, w, h, mat, n, lean = 0) {
+  s.poly([[x, y], [x + w, y + lean], [x + w, y + h + lean], [x, y + h]], mat, { flat: 0.6 });
+  s.paint([x + 4, y + 1.5, x + w * 0.55, y + h - 1.5], () => true, 'w', () => 0.82);
+  for (let k = 0; k < 4; k++) s.px(x + 6 + k * 3.5, y + h / 2, INK, 0.75);
+  for (let k = 0; k < Math.min(4, n); k++) s.px(x + w - 5 - k * 2.2, y + h / 2 + lean, 0xffffff, 0.9);
+  s.px(x + w * 0.7, y + 2, 0xffffff, 0.6);
+}
+export function mangaTower(f) {
+  const heap = f === 'heap';
+  const s = new HiSprite(150, 260, RAMPS);
+  const rand = rng(31);
+  if (heap) {
+    for (let i = 0; i < 46; i++) vol(s, 4 + rand() * 106, 196 + rand() * 54, 34, 8, SERIES[Math.floor(rand() * SERIES.length)], 1 + Math.floor(rand() * 4), Math.floor(rand() * 15) - 7);
+    s.poly([[70, 220], [104, 212], [110, 240], [74, 248]], 'p', { flat: 0.6 });
+    return s.render({ outline: 2 });
+  }
+  const sway = f === 1 ? 1 : 0;
+  for (const [x0, top] of [[4, 70], [52, 30], [100, 92]]) {
+    let y = 256;
+    let ser = Math.floor(rand() * SERIES.length);
+    let n = 1;
+    let left = 3 + Math.floor(rand() * 5);
+    while (y > top) {
+      const h = 8 + Math.floor(rand() * 2);
+      const w = 40 + Math.floor(rand() * 4);
+      const t = (256 - y) / 226;
+      vol(s, x0 + Math.floor(rand() * 3) - 1 + sway * t * 6 * (x0 === 52 ? -1 : 1), y - h, w, h, SERIES[ser], n++, 0);
+      y -= h + 0.6;
+      if (--left === 0) {
+        ser = (ser + 1 + Math.floor(rand() * 3)) % SERIES.length;
+        n = 1;
+        left = 3 + Math.floor(rand() * 6);
+      }
+    }
+  }
+  // a boxed figure on the tallest column, a desk lamp on the shortest
+  const bx = 56 + sway * 6;
+  s.paint([bx, 0, bx + 34, 30], () => true, 'u', (x) => 0.6 - (x - bx) / 120);
+  s.paint([bx + 4, 4, bx + 30, 26], () => true, 'c', () => 0.85, { glow: true });
+  s.ellipse(bx + 17, 12, 5, 5, 'f', { bias: 0.1 });
+  s.paint([bx + 12, 16, bx + 22, 26], () => true, 'p', () => 0.6);
+  s.tube(124, 90, 124, 70, 2, 's');
+  s.tube(124, 70, 136, 56, 2, 's');
+  s.poly([[128, 50], [146, 50], [140, 62], [132, 62]], 'y', { flat: 0.7 });
+  return s.render({ outline: 2 });
+}
+/** A noodle cup: a tapered tub, a coloured band, a peeled-back lid, chopsticks left in some. */
+function cup(s, cx, by, h, band, lid, sticks) {
+  const top = 11;
+  const bot = 8;
+  s.poly([[cx - top, by - h], [cx + top, by - h], [cx + bot, by], [cx - bot, by]], 'w', { flat: 0.62 });
+  s.shade([cx - top, by - h, cx + top, by], (x) => x > cx + 3, -0.16);
+  s.paint([cx - top, by - h * 0.64, cx + top, by - h * 0.4], (x, y) => Math.abs(x - cx) < top - ((y - (by - h)) / h) * (top - bot), band, () => 0.6);
+  for (let k = -1; k <= 1; k++) s.px(cx + k * 4, by - h * 0.52, 0xffffff, 0.8);
+  s.paint([cx - top, by - h - 2, cx + top, by - h + 1], () => true, 'w', () => 0.45);
+  if (lid) s.poly([[cx - top, by - h], [cx + top - 5, by - h - 7], [cx + top, by - h - 4], [cx - top + 2, by - h + 1]], 'm', { flat: 0.75 });
+  if (sticks) for (const dx of [0, 3]) s.tube(cx + dx, by - h - 1, cx + dx + 8, by - h - 20, 1, 'o');
+}
+function box(s, x, y, w, h, arrows) {
+  s.paint([x, y, x + w, y + h], () => true, 'b', (px, py) => 0.62 - (px - x) / (w * 3) - (py - y) / (h * 6), { pat: speckle({ amt: 0.05 }) });
+  s.paint([x + w / 2 - 3, y, x + w / 2 + 3, y + h], () => true, 'm', () => 0.72);
+  if (arrows) for (const dx of [8, 16]) s.line(x + dx, y + 12, x + dx, y + 4, 0x3a2414, 1), s.line(x + dx - 2, y + 6, x + dx, y + 4, 0x3a2414, 1), s.line(x + dx + 2, y + 6, x + dx, y + 4, 0x3a2414, 1);
+}
+export function cupTower(f) {
+  const heap = f === 'heap';
+  const s = new HiSprite(150, 260, RAMPS);
+  const rand = rng(41);
+  const bands = ['r', 'n', 'y', 'g', 'u', 'p'];
+  if (heap) {
+    box(s, 70, 200, 60, 40, true);
+    for (let i = 0; i < 16; i++) cup(s, 10 + rand() * 130, 210 + rand() * 46, 22, bands[i % 6], i % 2, 0);
+    return s.render({ outline: 2 });
+  }
+  const sway = f === 1 ? 1 : 0;
+  // behind: boxes stacked, a pizza box on top
+  box(s, 66, 44, 74, 56, true);
+  box(s, 76, 4, 60, 42, false);
+  s.paint([60, 100, 146, 112], () => true, 'w', () => 0.7);
+  s.paint([64, 102, 142, 106], () => true, 'r', () => 0.45);
+  // the pyramid of cups, row on row (narrower up top), leaning when it sways
+  for (let row = 0; row < 6; row++) {
+    const n = 5 - Math.floor(row * 0.75);
+    for (let i = 0; i < n; i++) {
+      const cx = 18 + row * 11 + i * 24 + sway * row * 2.5;
+      cup(s, cx, 256 - row * 27, 26, bands[(row * 3 + i) % 6], (row + i) % 3 === 0, (row + i * 2) % 5 === 1);
+    }
+  }
+  return s.render({ outline: 2 });
 }
 
 // ---------------------------------------------------------------- what it throws
-/** A manga volume tumbling: 0 cover, 1 edge on, 2 the back, 3 flung open (pages fanning). */
 export function manga(f) {
-  const s = new HiSprite(30, 30, BASE);
-  if (f === 1) s.paint([12, 3, 18, 27], () => true, 'w', () => 0.7);
-  else if (f === 3) {
-    s.poly([[15, 8], [2, 4], [3, 24], [15, 27]], 'w', { flat: 0.8 });
-    s.poly([[15, 8], [28, 4], [27, 24], [15, 27]], 'w', { flat: 0.6 });
-    for (let k = 0; k < 4; k++) s.line(5, 9 + k * 4, 13, 11 + k * 4, 0x3a3a46, 1), s.line(17, 11 + k * 4, 25, 9 + k * 4, 0x3a3a46, 1);
+  const s = new HiSprite(36, 36, RAMPS);
+  if (f === 1) {
+    s.paint([15, 3, 21, 33], () => true, 'w', () => 0.7);
+    s.paint([15, 3, 17, 33], () => true, 'p', () => 0.55);
+  } else if (f === 3) {
+    s.poly([[18, 9], [2, 4], [3, 29], [18, 32]], 'w', { flat: 0.82 });
+    s.poly([[18, 9], [34, 4], [33, 29], [18, 32]], 'w', { flat: 0.62 });
+    for (let k = 0; k < 3; k++) for (const sx of [-1, 1]) s.paint([18 + sx * 3 - (sx < 0 ? 12 : 0), 9 + k * 7, 18 + sx * 3 + (sx > 0 ? 12 : 0), 14 + k * 7], () => true, 'k', () => 0.5);
   } else {
-    s.paint([6, 3, 24, 27], () => true, f === 0 ? 'p' : 'u', (x) => 0.7 - (x - 6) / 50);
-    s.paint([6, 3, 9, 27], () => true, 'w', () => 0.75);
-    if (f === 0) s.ellipse(16, 13, 4.5, 5, 'w', { flat: 0.8 }), s.dot(14.5, 12.5, 1, 0x14121a), s.dot(17.5, 12.5, 1, 0x14121a);
+    s.paint([7, 3, 29, 33], () => true, f === 0 ? 'p' : 'u', (x) => 0.72 - (x - 7) / 60);
+    s.paint([7, 3, 10, 33], () => true, 'w', () => 0.75);
+    if (f === 0) {
+      s.ellipse(19, 15, 6, 7, 'f', { flat: 0.8 });
+      s.paint([12, 6, 26, 12], () => true, 'h', () => 0.5);
+      s.dot(17, 15, 1.3, INK);
+      s.dot(21.5, 15, 1.3, INK);
+      s.paint([12, 26, 26, 30], () => true, 'w', () => 0.85);
+    }
   }
-  return s.render({ outline: 1 });
+  return s.render({ outline: 2 });
 }
-
-/** A noodle cup tumbling: 0 upright, 1 on its side, broth splashing out. */
 export function noodle(f) {
-  const s = new HiSprite(30, 30, BASE);
-  if (f === 0) cup(s, 15, 25, 20, 1);
+  const s = new HiSprite(36, 36, RAMPS);
+  if (f === 0) cup(s, 18, 31, 24, 'r', 1, 1);
   else {
-    s.poly([[4, 8], [24, 10], [24, 22], [4, 24]], 'w', { flat: 0.6 });
-    s.paint([10, 8, 15, 24], () => true, 'r', () => 0.55);
-    s.ellipse(26, 16, 3, 6, 'y', { flat: 0.6 });
-    for (const [x, y] of [[28, 10], [29, 20], [27, 25]]) s.dot(x, y, 1.2, 0xf0c060);
+    s.poly([[4, 10], [28, 12], [28, 26], [4, 28]], 'w', { flat: 0.62 });
+    s.paint([12, 10, 18, 28], () => true, 'r', () => 0.55);
+    s.ellipse(30, 19, 3.5, 7, 'y', { flat: 0.6 });
+    for (const [x, y] of [[33, 12], [34, 24], [31, 30]]) s.dot(x, y, 1.4, 0xf0c060);
   }
-  return s.render({ outline: 1 });
+  return s.render({ outline: 2 });
 }
-
-/** A tall stack of volumes, falling end on (like the site cat's beams). */
 export function stack() {
-  const s = new HiSprite(36, 120, BASE);
+  const s = new HiSprite(48, 132, RAMPS);
   const rand = rng(11);
-  for (let y = 2; y < 116; y += 7) book(s, 3 + Math.floor(rand() * 3), y, 28, 6, BOOKS[Math.floor(rand() * BOOKS.length)]);
-  return s.render({ outline: 1 });
+  let n = 1;
+  for (let y = 2; y < 128; y += 9) vol(s, 3 + Math.floor(rand() * 3), y, 40, 8, SERIES[Math.floor(y / 36) % SERIES.length], n++);
+  return s.render({ outline: 2 });
 }
-
-/** A gacha capsule: two halves, coloured over clear; the gold one is the rare pull. */
 export function gacha(col) {
-  const s = new HiSprite(24, 24, BASE);
-  s.ellipse(12, 12, 9.5, 9.5, 'w', { bias: 0.1 });
-  s.paint([2, 2, 22, 12], (x, y) => (x - 12) ** 2 + (y - 12) ** 2 < 90, col, (x, y) => 0.75 - (x - 2) / 40 - (y - 2) / 40, col === 'y' ? { glow: true } : {});
-  s.line(3, 12, 21, 12, 0x6a6470, 1);
-  s.dot(8, 7, 1.4, 0xffffff);
-  return s.render({ outline: 1 });
+  const s = new HiSprite(27, 27, RAMPS);
+  // the coloured half below, a clear dome above with the little toy inside
+  s.ellipse(13.5, 13.5, 11, 11, col, { bias: 0.1, ...(col === 'y' ? { glow: true } : {}) });
+  s.paint([2, 2, 25, 13], (x, y) => (x - 13.5) ** 2 + (y - 13.5) ** 2 < 121, 'w', (x, y) => 0.9 - (x - 2) / 50);
+  s.ellipse(13.5, 9.5, 4, 3.5, col === 'y' ? 'p' : 'y', { flat: 0.6 });
+  s.line(3, 13.5, 24, 13.5, 0xd8d8e0, 1);
+  s.dot(8, 6, 1.8, 0xffffff);
+  if (col === 'y') for (const [x, y] of [[3, 3], [24, 5], [22, 24]]) s.dot(x, y, 1, 0xffffff);
+  return s.render({ outline: 2 });
+}
+/** A puff of steam (3 sizes). */
+export function steam(k) {
+  const r = new Raster(18, 18);
+  const R = 3 + k * 2.4;
+  for (let y = 0; y < 18; y++)
+    for (let x = 0; x < 18; x++) {
+      const n = fbm(x, y, { seed: 50 + k, scale: 3 });
+      const d = Math.hypot(x - 9, y - 9) / R + (n - 0.5) * 0.5;
+      if (d < 1) r.set(x, y, 0xf0f4ff, 0.5 * (1 - d));
+    }
+  return r;
 }
 
 export function heyaEnemies(add) {
-  add('heya_0', room(0));
-  add('heya_1', room(1));
-  add('heya_angry', room('angry'));
-  add('heya_night', room('night'));
-  add('heya_ruin', room('ruin'));
+  add('heya_mon', monitor(false));
+  add('heya_mon_crack', monitor(true));
+  for (const m of ['b0', 'b1', 'blink', 'angry', 'hide0', 'hide1']) add(`heya_who_${m}`, occupant(m));
+  for (let f = 0; f < 3; f++) add(`heya_hands_${f}`, hands(f));
+  add('heya_desk', desk());
+  for (let f = 0; f < 6; f++) add(`heya_pc_${f}`, pc(f));
+  for (let f = 0; f < 3; f++) add(`heya_second_${f}`, second(f));
+  add('heya_tl_0', mangaTower(0));
+  add('heya_tl_1', mangaTower(1));
+  add('heya_tl_heap', mangaTower('heap'));
+  add('heya_tr_0', cupTower(0));
+  add('heya_tr_1', cupTower(1));
+  add('heya_tr_heap', cupTower('heap'));
+  // the screens
+  add('scr_idle', faceScreen('idle'));
+  add('scr_blink', faceScreen('blink'));
+  add('scr_angry', faceScreen('angry'));
+  add('scr_what', faceScreen('what'));
+  for (let f = 0; f < 3; f++) add(`scr_chat_${f}`, chatScreen(f));
+  for (let f = 0; f < 2; f++) add(`scr_lag_${f}`, lagScreen(f));
+  for (let f = 0; f < 3; f++) add(`scr_reel_${f}`, reelScreen(f, null));
+  add('scr_res_n', reelScreen(0, 'n'));
+  add('scr_res_r', reelScreen(0, 'r'));
+  add('scr_res_ssr', reelScreen(0, 'ssr'));
+  for (let f = 0; f < 2; f++) add(`scr_door_${f}`, doorScreen(f));
+  add('scr_bsod', bsodScreen());
+  for (let f = 0; f < 2; f++) add(`scr_static_${f}`, staticScreen(f));
+  // what it throws
   for (let f = 0; f < 4; f++) add(`manga_${f}`, manga(f));
   add('noodle_0', noodle(0));
   add('noodle_1', noodle(1));
@@ -174,4 +637,5 @@ export function heyaEnemies(add) {
   add('gacha_u', gacha('u'));
   add('gacha_g', gacha('g'));
   add('gacha_gold', gacha('y'));
+  for (let k = 0; k < 3; k++) add(`heya_steam_${k}`, steam(k));
 }

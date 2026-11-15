@@ -7,6 +7,7 @@ export const TAU = Math.PI * 2;
 // per-skin extras, listed so a pooled sprite never keeps a previous enemy's state
 export const EXTRAS = {
   flashTint: null, // the hit flash's tint (null: the usual)
+  passOn: null, // { to, k }: hands k of every hit on to another part of its boss (the otaku room's towers)
   armor: 0,
   maxArmor: 0,
   lantern: false,
