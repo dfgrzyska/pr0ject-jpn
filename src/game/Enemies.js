@@ -20,7 +20,7 @@ import { genba } from './enemies/genba.js';
 import { nagai } from './enemies/nagai.js';
 import { heya } from './enemies/heya.js';
 import { obachan } from './enemies/obachan.js';
-import { mownica } from './enemies/mownica.js';
+import { kaiken } from './enemies/kaiken.js';
 // the second phases of the minibosses (Yuki-onna and the Oranda-bune have theirs; the bunraku puppet's go by
 // its puppeteers): its name on the banner
 const HEAVY_P2 = { tanuki: 'TANUKI PIJE SAKE', manta: 'KORALOWA SPIRALA', raiju: 'PRZEŁADOWANIE PIORUNA', wani: 'FAŁSZYWE CIENIE', heikegani: 'PĘKNIĘTY PANCERZ' };
@@ -228,7 +228,7 @@ export class Enemies {
         if (w.boss === 'nagai') return this.spawnNagai(w, base);
         if (w.boss === 'heya') return this.spawnHeya(w, base);
         if (w.boss === 'obachan') return this.spawnObachan(w, base);
-        if (w.boss === 'mownica') return this.spawnMownica(w, base);
+        if (w.boss === 'kaiken') return this.spawnKaiken(w, base);
         return w.boss === 'kuma' ? this.spawnKuma(w, base) : this.spawnBoss(w, base);
       default:
         return;
@@ -460,7 +460,7 @@ export class Enemies {
   /** HP shown in the top bar: the mid-stage heavy or the whole boss pair. */
   bossBar() {
     const g = this.bossGroup;
-    if (g && !g.defeated && (g.kind === 'kuma' || g.kind === 'volcano' || g.kind === 'tako' || g.kind === 'oni' || g.kind === 'kyubi' || g.kind === 'sankibo' || g.kind === 'jihanki' || g.kind === 'keicar' || g.kind === 'genba' || g.kind === 'nagai' || g.kind === 'heya' || g.kind === 'obachan' || g.kind === 'mownica' ? g.awake : g.parts.some((p) => !p.dead && p.group === g && p.y > 0))) {
+    if (g && !g.defeated && (g.kind === 'kuma' || g.kind === 'volcano' || g.kind === 'tako' || g.kind === 'oni' || g.kind === 'kyubi' || g.kind === 'sankibo' || g.kind === 'jihanki' || g.kind === 'keicar' || g.kind === 'genba' || g.kind === 'nagai' || g.kind === 'heya' || g.kind === 'obachan' || g.kind === 'kaiken' ? g.awake : g.parts.some((p) => !p.dead && p.group === g && p.y > 0))) {
       // parts are pooled sprites: once dead they may come back as other enemies, so check the group
       let hp = 0;
       for (const p of g.parts) if (!p.dead && p.group === g) hp += Math.max(0, p.hp);
@@ -518,7 +518,7 @@ export class Enemies {
     if (g.kind === 'nagai') return this.updateNagai(g, dt);
     if (g.kind === 'heya') return this.updateHeya(g, dt);
     if (g.kind === 'obachan') return this.updateObachan(g, dt);
-    if (g.kind === 'mownica') return this.updateMownica(g, dt);
+    if (g.kind === 'kaiken') return this.updateKaiken(g, dt);
     this.updateShisa(g, dt);
   }
 
@@ -534,6 +534,7 @@ export class Enemies {
     const copy = (o) => s.add.sprite(o.x, o.y, o.texture.key, o.frame.name).setDepth(o.depth).setFlipX(o.flipX).setRotation(o.rotation).setScale(o.scaleX, o.scaleY);
     const body = copy(e);
     if (e.oni) body.setCrop(0, 0, 63, 60); // standing in the pond
+    if (e.group?.kind === 'kaiken' && body.texture.has('kk_sob1')) body.setFrame('kk_sob1'); // one last wail
     const kind = e.group?.kind ?? e.kind;
     const end =
       e.oni || kind === 'tako' || kind === 'wani' || kind === 'heikegani' || e.frame.name.startsWith('manta')
@@ -550,7 +551,9 @@ export class Enemies {
                   ? 'cool'
                   : kind === 'kyubi'
                     ? 'foxfire'
-                    : 'burst';
+                    : kind === 'kaiken'
+                      ? 'weep'
+                      : 'burst';
     const color = kind === 'bunraku' ? WOOD : CLAY;
     // what goes down with the body (the fox's last tail), kept where it was on it
     const extra = kind === 'kyubi' ? e.group.tails.filter((tl) => !tl.lost && !tl.dead).map((tl) => ({ s: copy(tl), ox: tl.x - e.x, oy: tl.y - e.y })) : [];
@@ -572,7 +575,9 @@ export class Enemies {
         for (const x of d.extra) x.s.setPosition(b.x + x.ox, b.y + x.oy).setTint(Math.floor(d.t * 14) % 2 ? 0x707070 : 0x000000).setTintMode(Phaser.TintModes.ADD);
         if ((d.next -= dt) <= 0) {
           d.next = 0.11;
-          fx.explode(d.x + (Math.random() - 0.5) * d.r * 2.2, d.y + (Math.random() - 0.5) * d.r * 1.8, Math.random() < 0.3 ? 'm' : 's', null, (d.n = (d.n ?? 0) + 1) % 3 !== 0);
+          // (the man at the table is not blown up: tears burst from him)
+          if (d.end === 'weep') for (let i = 0; i < 4; i++) fx.part(fx.parts, 'drop_0', d.x + (Math.random() - 0.5) * 16, d.y - 12, { vx: (Math.random() - 0.5) * 160, vy: -40 - Math.random() * 80, g: 260, drag: 0.3, life: 0.6 }).setTint(0x9ad8ff);
+          else fx.explode(d.x + (Math.random() - 0.5) * d.r * 2.2, d.y + (Math.random() - 0.5) * d.r * 1.8, Math.random() < 0.3 ? 'm' : 's', null, (d.n = (d.n ?? 0) + 1) % 3 !== 0);
         }
       } else {
         const k = d.t - 1.1;
@@ -586,6 +591,10 @@ export class Enemies {
             fx.debris(d.x, d.y, 16, null, 1.9);
             fx.flash(0.5, 0.4);
             fx.shockwave(d.x, d.y);
+          } else if (d.end === 'weep') {
+            if (b.texture.has('kk_down')) b.setFrame('kk_down');
+            for (let i = 0; i < 6; i++) fx.puff(d.liquid, d.x + (Math.random() - 0.5) * 60, d.y + 56 + Math.random() * 6, 0.4);
+            fx.flash(0.3, 0.3);
           } else if (d.end === 'sink') {
             fx.explode(d.x, d.y, 'm');
             fx.flash(0.3, 0.3);
@@ -641,6 +650,11 @@ export class Enemies {
           } else b.setAlpha(1 - f).setY(d.y + f * 16);
           if (Math.random() < dt * 18) fx.puff(d.liquid, d.x + (Math.random() - 0.5) * d.r * 2.2, d.y + d.r * 0.5 + f * 10, 0.35);
           done = f >= 1;
+        } else if (d.end === 'weep') {
+          // slumped with his forehead on the table, shoulders heaving; then he fades with it
+          b.setY(d.y + Math.round(Math.sin(k * 9) * 0.6));
+          b.setAlpha(1 - Math.max(0, Math.min(1, (k - 1.4) / 0.7)));
+          done = k >= 2.1;
         } else if (d.end === 'cool') {
           // the crater goes dark and still, smoke drifting off it
           const f = Math.min(1, k / 1.8);
@@ -673,6 +687,7 @@ export class Enemies {
     const rec = e.recoil || 0;
     if (e.group?.kind !== 'volcano' && !e.oni) e.setOrigin(0.5, 0.5 + (rec - breathe) / e.displayHeight);
     if (e.group?.kind === 'kyubi') return; // (the fox shows its wounds by losing its tails)
+    if (e.group?.kind === 'kaiken') return; // (the man at the table shows his in tears and tissues)
     const frac = e.hp / e.maxHp;
     const lvl = frac < 1 / 3 ? 2 : frac < 2 / 3 ? 1 : 0;
     if (!lvl && !e.wounds) return;
@@ -749,7 +764,7 @@ export class Enemies {
     if (e.group?.kind === 'nagai' && e.role === 'body') this.nagaiCleanup(e.group); // its endless body, the yarn
     if (e.group?.kind === 'heya' && e.role === 'body') this.heyaCleanup(e.group); // what it threw, the dark
     if (e.group?.kind === 'obachan' && e.role === 'body') this.obachanCleanup(e.group); // her sweets, trolleys, the tiger
-    if (e.group?.kind === 'mownica' && e.role === 'body') this.mownicaCleanup(e.group); // its tickets
+    if (e.group?.kind === 'kaiken' && e.role === 'body') this.kaikenCleanup(e.group); // his tickets, the table
     if (e.puppets) for (const p of e.puppets) if (!p.dead && p.master === e) this.pool.kill(p);
     if (e.burnt) for (const bt of e.burnt) if (bt) this.woundPool.kill(bt);
     e.burnt = null;
@@ -1269,4 +1284,4 @@ export class Enemies {
 }
 
 // each city's enemies and bosses live in its own module (src/game/enemies/): their methods join the class here
-Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, mownica);
+Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, kaiken);

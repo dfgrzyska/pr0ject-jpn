@@ -1,7 +1,7 @@
 {
   "id": "ex7",
   "encounter": true,
-  "name": "PŁACZĄCA MÓWNICA",
+  "name": "KONFERENCJA PRASOWA",
   "subtitle": "NIESPODZIEWANE SPOTKANIE",
   "skin": "kyoto",
   "enemyArt": true,
@@ -10,8 +10,8 @@
   "boss": true,
   "end": 400,
   "music": { "schedule": [[0, "s8_boss"]], "boss": "s8_boss" },
-  "warnings": { "boss": "KONFERENCJA SIĘ ZACZYNA", "bossDown": "MÓWNICA POKONANA!", "bossDownSub": "PAN TEGO NIE ZROZUMIE" },
+  "warnings": { "boss": "KONFERENCJA SIĘ ZACZYNA", "bossDown": "KONFERENCJA ZAKOŃCZONA!", "bossDownSub": "PAN TEGO NIE ZROZUMIE" },
   "waves": [
-    { "t": 2.5, "type": "boss", "boss": "mownica", "x": 90, "card": ["PŁACZĄCA MÓWNICA", "KONFERENCJA PRASOWA"] }
+    { "t": 2.5, "type": "boss", "boss": "kaiken", "x": 90, "card": ["PŁACZĄCY PAN", "KONFERENCJA PRASOWA"] }
   ]
 }

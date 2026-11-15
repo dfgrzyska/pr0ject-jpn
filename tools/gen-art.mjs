@@ -43,7 +43,7 @@ import { heyaEnemies } from './art/encounters/heya.mjs';
 import * as torasnow from './art/encounters/torasnow.mjs';
 import { obachanEnemies } from './art/encounters/obachan.mjs';
 import * as kirifuri from './art/encounters/kirifuri.mjs';
-import { mownicaEnemies } from './art/encounters/mownica.mjs';
+import { kaikenEnemies } from './art/encounters/kaiken.mjs';
 import { addCracks } from './art/cracks540.mjs';
 import { shared540 } from './art/shared540/index.mjs';
 import { buildIcon, downsample } from './art/icon.mjs';
@@ -66,7 +66,7 @@ const ENEMY_ART = [
   { id: 'ex4', build: nagaiEnemies, portraits: [] },
   { id: 'ex5', build: heyaEnemies, portraits: [] },
   { id: 'ex6', build: obachanEnemies, portraits: [] },
-  { id: 'ex7', build: mownicaEnemies, portraits: [] },
+  { id: 'ex7', build: kaikenEnemies, portraits: [] },
 ];
 
 // background generators per stage (id = folder under public/assets/bg/)
@@ -85,7 +85,7 @@ const STAGES = [
   { id: 'ex4', art: fujismoke }, // the endless cat's: Hokusai's dragon of smoke escaping from Mount Fuji
   { id: 'ex5', art: otakuroom }, // the otaku room itself, door to desk (Sharaku-style posters on its back wall)
   { id: 'ex6', art: torasnow }, // the grandma's: Hokusai's tiger in the snow, with a purple perm
-  { id: 'ex7', art: kirifuri }, // the lectern's: Hokusai's Kirifuri waterfall, pouring from two weeping eyes
+  { id: 'ex7', art: kirifuri }, // the press conference's: Hokusai's Kirifuri waterfall, pouring from two weeping eyes
 ];
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
