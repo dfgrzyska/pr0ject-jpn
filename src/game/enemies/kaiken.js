@@ -443,6 +443,7 @@ export const kaiken = {
     if (g.deco.glass) g.deco.glass.setRotation(0);
     if (won && stay.length) {
       this.kaikenDeco(g, 'puddle', 'kk_puddle_2');
+      g.deco.mics?.setFrame('kk_mics_1').setDepth(DEPTH.air + MAN - 0.01); // knocked apart, his head down among them
       if (g.deco.glass?.texture.has('kk_glass_dry')) g.deco.glass.setFrame('kk_glass_dry');
       const all = Object.values(g.deco);
       s.tweens.add({ targets: all, alpha: 0, delay: 2500, duration: 700, onComplete: () => all.forEach((sp) => this.segPool.kill(sp)) });
