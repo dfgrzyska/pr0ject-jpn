@@ -29,19 +29,19 @@ export const HEYA = {
 
 // where the parts sit, in logical px from the desk's anchor (VIEW centre, HEYA.home), and how deep
 const LAYOUT = {
-  who: [0, -46, -0.17],
-  glow: [0, -46, -0.165],
+  who: [0, 24, -0.105],
+  glow: [0, 24, -0.104],
   pc: [36, -26, -0.16],
   second: [-38, -12, -0.16],
   desk: [0, 22, -0.15],
-  pet: [34, -4, -0.128],
+  pet: [-52, 50, -0.106],
   mon: [0, -22, -0.12],
   scr: [0, -25.3, -0.115],
   hands: [5, 1, -0.125],
   tl: [-66, -6, -0.13],
   tr: [66, -6, -0.13],
 };
-const CAN_SPOTS = [-44, 46, -38, 52, -50, 58, -32];
+const CAN_SPOTS = [[-44, 60], [46, 58], [-56, 54], [58, 62], [-38, 66], [52, 50], [-62, 64]]; // (empties on the floor round the chair)
 const CAN_COLS = ['g', 'p', 'c', 'y', 'r'];
 const NIGHT_TINT = 0x6a70a0;
 const FLOOR = DEPTH.mid + 0.7; // stains, the light under the door: on the floor, under everything that moves
@@ -72,7 +72,7 @@ export const heya = {
     g.body = mon;
     g.parts.push(mon);
     g.maxTotal = HEYA.hp;
-    const first = { who: 'heya_who_b0', glow: 'heya_wglow_b0', pc: 'heya_pc_0', second: 'heya_second_0', desk: 'heya_desk', pet: 'heya_pet_idle0', scr: 'scr_idle', hands: 'heya_hands_0' };
+    const first = { who: 'heya_who_b0', glow: 'heya_wglow_b0', pc: 'heya_pc_0', second: 'heya_second_0', desk: 'heya_desk', pet: 'heya_pet_idle0', scr: 'scr_idle' };
     for (const k of Object.keys(first)) if (mon.texture.has(first[k])) g.deco[k] = this.segPool.spawn(first[k], VIEW.width / 2, g.ay).setDepth(DEPTH.air + LAYOUT[k][2]);
     g.deco.glow?.setAlpha(0);
     if (mon.texture.has('heya_feet')) g.feet = this.segPool.spawn('heya_feet', VIEW.width / 2, s.H - 10).setDepth(FLOOR).setAlpha(0);
@@ -182,11 +182,10 @@ export const heya = {
         if (kind === 'cups' && !this.heyaTower(g, 'tr')) kind = 'typing';
         if (kind === 'lag' && s.bullets.pool.live.length < 10) kind = 'bubbles';
         g.act = { kind, t: 0, step: 0 };
-        // a throw is shown coming: the glasses glint, a hand reaches for the tower it comes from
+        // a throw is shown coming: an arm reaches out of the blanket for the tower it comes from
         if (kind === 'manga' || kind === 'cups' || kind === 'stacks') {
           g.reach = kind === 'cups' ? 4 : g.stage < 3 ? 3 : 0;
           g.reachT = g.t + HEYA.reach + 0.15;
-          this.heyaGlint(g);
         }
       }
     } else if (!g.act && g.timer > 0.3 && g.t > g.drinkAt && this.canFire(e)) {
@@ -247,8 +246,10 @@ export const heya = {
 
   /** A glint off both lenses (the occupant's look before a throw, or at a good pull). */
   heyaGlint(g) {
+    // (it glances back over its shoulder: the glint off its one lens showing)
     const [wx, wy] = [VIEW.width / 2 + LAYOUT.who[0], g.ay + LAYOUT.who[1]];
-    for (const sx of [-1, 1]) this.heyaBit(g, 'heya_glint', wx + sx * 4, wy - 4.7, { life: 0.45, depth: DEPTH.air - 0.16, pulse: 1.7 });
+    g.lookT = g.t + 0.5;
+    this.heyaBit(g, 'heya_glint', wx - 9.3, wy - 14.3, { life: 0.45, depth: DEPTH.air - 0.1, pulse: 1.7 });
   },
 
   heyaAct(g, dt) {
@@ -483,7 +484,8 @@ export const heya = {
     if (g.defeated || !e || e.dead || g.cans.length >= CAN_SPOTS.length) return;
     const frame = `heya_can_${CAN_COLS[g.cans.length % CAN_COLS.length]}`;
     if (!e.texture.has(frame)) return;
-    g.cans.push({ spr: this.segPool.spawn(frame, 0, 0).setDepth(DEPTH.air - 0.118), dx: CAN_SPOTS[g.cans.length] });
+    const [dx, dy] = CAN_SPOTS[g.cans.length];
+    g.cans.push({ spr: this.segPool.spawn(frame, 0, 0).setDepth(DEPTH.air - 0.107), dx, dy });
   },
 
   /** A jolt through the floor: a couple of things lying about hop (and the hamster dives into its house). */
@@ -746,18 +748,29 @@ export const heya = {
       g.jumpT = g.t + 0.35;
       g.jumpCd = g.t + 3;
       const [wx, wy] = [x0 + LAYOUT.who[0], g.ay + LAYOUT.who[1]];
-      this.heyaBit(g, 'heya_sweat', wx + 16, wy - 18, { vx: 20, vy: -30, ay: 160, life: 0.6, depth: DEPTH.air - 0.11 });
-      s.fx.text(wx - 26, wy + 14, 'KRZK!', 0.45, 0xff9ad0);
+      this.heyaBit(g, 'heya_sweat', wx + 12, wy - 24, { vx: 20, vy: -30, ay: 160, life: 0.6, depth: DEPTH.air - 0.1 });
+      s.fx.text(wx + 30, wy - 18, 'KRZK!', 0.45, 0xff9ad0);
     }
     const hurt = g.t < (g.hurtT ?? 0);
     e.setPosition(x0 + LAYOUT.mon[0], g.ay + LAYOUT.mon[1]);
+    // shots at the occupant in front of the desk count as shots at the room (they do not pass through it)
+    const [ox, oy] = [x0 + LAYOUT.who[0], g.ay + LAYOUT.who[1]];
+    e.shotSegs ??= [{ x: 0, y: 0, r: 13, take: 1 }, { x: 0, y: 0, r: 18, take: 1 }];
+    e.shotSegs[0].x = ox;
+    e.shotSegs[0].y = oy - 8;
+    e.shotSegs[1].x = ox;
+    e.shotSegs[1].y = oy + 14;
     if (e.texture.has('heya_mon_crack')) e.setFrame(g.stage === 3 ? 'heya_mon_crack' : 'heya_mon');
     const d = g.deco;
     const at = (k) => [x0 + LAYOUT[k][0], g.ay + LAYOUT[k][1]];
-    // the occupant
-    let mood = Math.floor(g.t / 0.9) % 2 ? 'b1' : 'b0';
-    if (g.t % 3.7 < 0.14) mood = 'blink';
-    if (hurt || g.stage === 3 || e.hp < e.maxHp * 0.12) mood = 'angry';
+    // the occupant, its back to us: breathing, its elbows going when it types; now and then a glance back at us;
+    // turned round glaring while it is being hit (and for good, near the end)
+    if (lost > 0) g.glareT = g.t + 0.5;
+    let mood = g.t < (g.typeT ?? 0) ? (Math.floor(g.t * 10) % 2 ? 't1' : 't0') : Math.floor(g.t / 0.9) % 2 ? 'b1' : 'b0';
+    if (g.t % 5.5 < 0.6 || g.t < (g.lookT ?? 0)) mood = 'look';
+    if (g.t < (g.glareT ?? 0) || ((g.stage === 3 || e.hp < e.maxHp * 0.12) && g.t % 2.6 < 1)) mood = 'glare';
+    if (g.t < (g.reachT ?? 0) && g.reach) mood = g.reach === 4 ? 'reachR' : 'reachL';
+    if (g.t < (g.throwT ?? 0)) mood = g.reach === 4 ? 'reachR' : g.reach === 3 ? 'reachL' : 'throw';
     if (g.t < (g.drinkT ?? 0)) mood = 'drink';
     if (g.t < (g.sighT ?? 0)) mood = 'sigh';
     if (g.t < (g.jumpT ?? 0)) mood = 'jump';
@@ -780,7 +793,7 @@ export const heya = {
     }
     if (d.second) d.second.setPosition(...at('second')).setFrame(hiding ? 'heya_second_pause' : `heya_second_${Math.floor(g.t * 4) % 3}`);
     d.desk?.setPosition(...at('desk'));
-    for (const c of g.cans) c.spr.setPosition(x0 + c.dx, g.ay + 1);
+    for (const c of g.cans) c.spr.setPosition(x0 + c.dx, g.ay + c.dy);
     // the hamster: breathing, now and then a run in its wheel, into its house when the bell rings or things fall
     if (d.pet) {
       if (g.t > g.petRunAt + 2.2) g.petRunAt = g.t + 7 + Math.random() * 6;

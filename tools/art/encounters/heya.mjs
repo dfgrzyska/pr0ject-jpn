@@ -1,7 +1,7 @@
 // Random encounter 5 (ex5): the hikikomori's room, which is the boss. Drawn as separate parts so each can move:
-// - the occupant: a blanket-wrapped shape behind the desk, cat-ear headphones glowing, round glasses catching the
-//   screen, a stray tuft of hair; it breathes, blinks, glares, and hides under the blanket when the doorbell rings;
-// - its sleeves over the keyboard: typing, resting, flinging;
+// - the occupant, its back to us in a gaming chair in front of the desk, a blanket over its head, cat-ear headphones;
+//   it glances back over its shoulder, turns round glaring when hit, reaches out for its towers, hides when the bell rings;
+// - (its arms are part of it: elbows going as it types, one out to a tower, a can, both up for a good pull);
 // - the old CRT monitor (the weak point), its screen a separate glowing layer: a face, chat scrolling, a frozen
 //   "LAG", a gacha roulette, the intercom's camera when someone rings, a blue error screen, static;
 // - the desk: a mechanical keyboard, a mouse, energy drinks, a mug of pens, sticky notes, a little mascot figure,
@@ -229,101 +229,103 @@ export function monitor(cracked) {
   return s.render({ outline: 2 });
 }
 
-// ---------------------------------------------------------------- the occupant (240 x 200)
-// mood: 'b0'/'b1' breathing, 'blink', 'angry', 'hide0'/'hide1' under the blanket (trembling), 'jump' (hit hard),
-// 'drink' (an energy drink), 'cheer' (an SSR pull), 'sigh' (a common one)
+// ---------------------------------------------------------------- the occupant (240 x 200), seen from behind
+// It sits in a gaming chair in front of the desk, its back to us, a blanket over its head and shoulders, cat-ear
+// headphones over the blanket. mood: 'b0'/'b1' breathing, 't0'/'t1' typing (the elbows going), 'look' (a glance
+// back at us over the left shoulder), 'glare' (hit: it turns round, furious), 'jump' (hit hard: up out of the seat,
+// eyes wide), 'drink', 'cheer' (an SSR: both arms up), 'sigh' (a common pull: slumped), 'reachL'/'reachR' (an arm
+// out to a tower), 'throw' (an arm up), 'hide0'/'hide1' (the blanket pulled right over, trembling)
 function buildOccupant(mood) {
   const s = new HiSprite(240, 200, RAMPS);
+  const cx = 120 + (mood === 'hide1' ? 2 : 0);
+  const up = mood === 'b1' ? -2 : mood === 'jump' ? -12 : mood === 'cheer' ? -4 : mood === 'sigh' ? 6 : 0;
   const hide = mood.startsWith('hide');
-  const up = mood === 'b1' ? -2 : mood === 'jump' ? -9 : mood === 'cheer' ? -4 : 0;
-  const shake = mood === 'hide1' ? 2 : 0;
-  const cx = 120 + shake;
-  // the blanket heaped round it: wide at the bottom, a hood at the top; a pattern of little stars
-  const top = hide ? 70 : 22 + up;
+  const top = hide ? 60 : 22 + up;
+  // the blanket: over the head (a hood from behind), down over the shoulders and the chair's back; little stars
+  const shoulder = hide ? 70 : 64;
   s.paint([0, top, 240, 200], (x, y) => {
-    const t = (y - top) / (200 - top);
-    const half = 52 + t * 70 + Math.sin(y * 0.08) * 3;
-    return Math.abs(x - cx) < half && (y > top + 18 || (x - cx) ** 2 / (52 * 52) + (y - top - 18) ** 2 / (18 * 18) < 1);
-  }, 'q', (x, y) => 0.62 - (x - cx) / 300 - (y - top) / 600, { pat: mottle({ amt: 0.1 }) });
-  // folds
-  for (const [x0, y0, x1, y1] of [[cx - 70, 150, cx - 40, 110], [cx + 60, 160, cx + 40, 115], [cx - 20, 190, cx - 10, 150], [cx + 26, 196, cx + 20, 160]]) s.shade([0, 0, 240, 200], (x, y) => Math.abs((x - x0) * (y1 - y0) - (y - y0) * (x1 - x0)) / Math.hypot(x1 - x0, y1 - y0) < 3 && y > Math.min(y0, y1) && y < Math.max(y0, y1), -0.2);
+    const head = (x - cx) ** 2 / (34 * 34) + (y - top - 30) ** 2 / (32 * 32) < 1;
+    const body = y > top + 40 && Math.abs(x - cx) < shoulder + (y - top - 40) * 0.25 - (y > 176 ? (y - 176) * 1.2 : 0);
+    const neck = y > top + 30 && y <= top + 44 && Math.abs(x - cx) < 34 + (y - top - 30) * 2.2;
+    return head || body || neck;
+  }, 'q', (x, y) => 0.6 - (x - cx) / 320 - (y - top) / 700, { pat: mottle({ amt: 0.1 }) });
+  // folds down the back
+  for (const [x0, y0, x1, y1] of [[cx - 30, top + 60, cx - 40, 196], [cx + 8, top + 56, cx + 14, 196], [cx + 44, top + 64, cx + 56, 196]]) s.shade([0, 0, 240, 200], (x, y) => Math.abs((x - x0) * (y1 - y0) - (y - y0) * (x1 - x0)) / Math.hypot(x1 - x0, y1 - y0) < 2.5 && y > y0 && y < y1, -0.16);
   const rand = rng(12);
-  for (let k = 0; k < 26; k++) {
-    const x = cx - 100 + rand() * 200;
-    const y = top + 14 + rand() * (190 - top);
+  for (let k = 0; k < 24; k++) {
+    const x = cx - 80 + rand() * 160;
+    const y = top + 6 + rand() * (190 - top);
     for (let a = 0; a < 5; a++) {
       const ang = (a / 5) * Math.PI * 2 - Math.PI / 2;
       const ex = x + Math.cos(ang) * 3;
       const ey = y + Math.sin(ang) * 3;
-      if (s.mat[Math.floor(ey) * 240 + Math.floor(ex)] && s.mat[Math.floor(y) * 240 + Math.floor(x)]) s.line(x, y, ex, ey, 0xffe08a, 1, 0.8);
+      if (s.mat[Math.floor(ey) * 240 + Math.floor(ex)] === 'q' && s.mat[Math.floor(y) * 240 + Math.floor(x)] === 'q') s.line(x, y, ex, ey, 0xffe08a, 1, 0.8);
     }
   }
+  // the tuft of hair sticking up out of the blanket
+  s.tube(cx + 2, top + 2, cx + 8, top - 18, 2.4, 'h', { rb: 1 });
+  s.tube(cx + 8, top - 18, cx + 17, top - 13, 1.6, 'h', { rb: 0.8 });
+  // the chair's backrest, in front of it (we look at its back): black, coloured stripes, a headrest cushion; the
+  // blanket hangs down either side of it
+  const cb = top + 50;
+  s.paint([66, cb - 14, 174, 200], (x, y) => Math.abs(x - 120) < 46 + (y - cb) * 0.06 && (y > cb || (x - 120) ** 2 / (46 * 46) + (y - cb) ** 2 / (14 * 14) < 1), 'k', (x) => 0.46 - (x - 66) / 420, { pat: speckle({ amt: 0.04 }) });
+  for (const sx of [-1, 1]) s.paint([66, cb - 10, 174, 200], (x, y) => Math.abs(x - 120 - sx * 28) < 4 && y > cb - 8 && Math.abs(x - 120) < 46 + (y - cb) * 0.06, 'p', () => 0.62);
+  s.ellipse(120, cb + 2, 22, 9, 'k', { bias: 0.1 }); // the headrest cushion
+  s.paint([100, cb + 40, 140, cb + 56], (x, y) => (x - 120) ** 2 / 400 + (y - cb - 48) ** 2 / 64 < 1, 'p', () => 0.7); // a badge
   if (hide) {
-    // just a lump, trembling; the tuft of hair sticking out of the top, the headphones' glow through the cloth
-    s.tube(cx - 2, top + 2, cx + 8, top - 16, 2.4, 'h', { rb: 1 });
-    s.tube(cx + 8, top - 16, cx + 16, top - 12, 1.6, 'h', { rb: 0.8 });
-    for (const sx of [-1, 1]) s.dot(cx + sx * 34, top + 26, 4, 0xff7ac8, 0.35);
-    s.line(cx - 40, top + 50, cx + 40, top + 52, 0x1a1a3a, 1, 0.6);
+    for (const sx of [-1, 1]) s.dot(cx + sx * 34, top + 30, 4, 0xff7ac8, 0.35);
     return s;
   }
-  // the opening of the hood: the lining, the dark inside, a face in the screen's light
-  s.ellipse(cx, 72 + up, 44, 40, 'Q', { bias: 0.05 });
-  s.ellipse(cx, 76 + up, 36, 32, 'k', { flat: 0.12 });
-  s.ellipse(cx, 84 + up, 26, 22, 'f', { flat: 0.32 });
-  // fringe of dark hair over the brow, the tuft standing up out of the hood
-  s.paint([cx - 34, 50 + up, cx + 34, 78 + up], (x, y) => (x - cx) ** 2 / (34 * 34) + (y - 56 - up) ** 2 / (22 * 22) < 1 && y < 70 + up + Math.abs(Math.sin((x - cx) * 0.3)) * 6, 'h', () => 0.45);
-  s.tube(cx + 4, 34 + up, cx + 12, 10 + up, 2.6, 'h', { rb: 1.2 });
-  s.tube(cx + 12, 10 + up, cx + 22, 16 + up, 1.8, 'h', { rb: 0.8 });
-  // cat-ear headphones over the hood
-  s.paint([cx - 60, 30 + up, cx + 60, 60 + up], (x, y) => Math.abs(Math.hypot(x - cx, (y - 70 - up) * 1.2) - 50) < 4 && y < 58 + up, 's', () => 0.5);
+  // the headphones over the blanket: the band across the top, cat ears on it, the glowing cups at the sides
+  s.paint([cx - 46, top - 6, cx + 46, top + 24], (x, y) => Math.abs(Math.hypot(x - cx, (y - top - 30) * 1.15) - 36) < 3.5 && y < top + 22, 's', () => 0.5);
+  const turned = mood === 'look' || mood === 'glare' || mood === 'jump';
   for (const sx of [-1, 1]) {
-    s.ellipse(cx + sx * 46, 74 + up, 12, 16, 's', { bias: 0.05 });
-    s.ellipse(cx + sx * 47, 74 + up, 6, 9, 'p', { flat: 0.9, glow: true });
-    s.poly([[cx + sx * 26, 36 + up], [cx + sx * 44, 18 + up], [cx + sx * 46, 42 + up]], 's', { flat: 0.55 });
-    s.poly([[cx + sx * 31, 36 + up], [cx + sx * 42, 25 + up], [cx + sx * 43, 39 + up]], 'p', { flat: 0.85, glow: true });
+    s.poly([[cx + sx * 16, top + 4], [cx + sx * 30, top - 14], [cx + sx * 34, top + 6]], 's', { flat: 0.55 });
+    s.poly([[cx + sx * 20, top + 4], [cx + sx * 29, top - 6], [cx + sx * 31, top + 4]], 'p', { flat: 0.85, glow: true });
+    const ox = turned && sx < 0 ? 4 : 0;
+    s.ellipse(cx + sx * 36 + ox, top + 32, 9, 13, 's', { bias: 0.05 });
+    s.ellipse(cx + sx * 38 + ox, top + 32, 4, 8, 'p', { flat: 0.9, glow: true });
   }
-  // round glasses catching the screen; the eyes behind (or shut, or glaring)
-  for (const sx of [-1, 1]) {
-    const ex = cx + sx * 12;
-    const ey = 86 + up;
-    for (let a = 0; a < Math.PI * 2; a += 0.05) s.px(ex + Math.cos(a) * 9, ey + Math.sin(a) * 8, 0x2a2a32);
-    s.paint([ex - 8, ey - 7, ex + 8, ey + 7], (x, y) => (x - ex) ** 2 / 64 + (y - ey) ** 2 / 49 < 1, 'c', () => 0.55, { glow: true });
-    if (mood === 'blink' || mood === 'drink') s.line(ex - 5, ey + 1, ex + 5, ey + 1, INK, 1);
-    else if (mood === 'sigh') {
-      s.line(ex - 5, ey, ex + 5, ey, INK, 1);
-      s.dot(ex, ey + 2, 1.6, INK);
-    } else if (mood === 'cheer') {
-      for (let k = -4; k <= 4; k++) s.px(ex + k, ey + 2 - (4 - Math.abs(k)) * 0.8, INK);
+  // the face, when it looks back over its left shoulder: the hood's edge turned, a cheek, a lens, an eye
+  if (turned) {
+    const fx = cx - 22;
+    const fy = top + 34;
+    s.paint([fx - 18, fy - 22, fx + 14, fy + 20], (x, y) => (x - fx) ** 2 / (16 * 16) + (y - fy) ** 2 / (20 * 20) < 1, 'Q', () => 0.6);
+    s.paint([fx - 16, fy - 18, fx + 12, fy + 18], (x, y) => (x - fx + 2) ** 2 / (13 * 13) + (y - fy) ** 2 / (17 * 17) < 1, 'k', () => 0.12);
+    s.paint([fx - 16, fy - 14, fx + 8, fy + 16], (x, y) => (x - fx + 4) ** 2 / (10 * 10) + (y - fy - 2) ** 2 / (14 * 14) < 1, 'f', () => 0.35);
+    s.paint([fx - 16, fy - 16, fx + 8, fy - 4], (x, y) => (x - fx + 4) ** 2 / (11 * 11) + (y - fy + 8) ** 2 / (8 * 8) < 1 && y < fy - 6 + Math.abs(Math.sin(x * 0.5)) * 3, 'h', () => 0.45);
+    const ex = fx - 6;
+    const ey = fy + 1;
+    for (let a = 0; a < Math.PI * 2; a += 0.06) s.px(ex + Math.cos(a) * 7, ey + Math.sin(a) * 6, 0x2a2a32);
+    s.paint([ex - 6, ey - 5, ex + 6, ey + 5], (x, y) => (x - ex) ** 2 / 36 + (y - ey) ** 2 / 25 < 1, 'c', () => 0.55, { glow: true });
+    if (mood === 'glare') {
+      s.dot(ex - 1, ey + 1, 2.2, 0xff4a3a);
+      s.line(ex - 7, ey - 7, ex + 5, ey - 4, INK, 2);
     } else if (mood === 'jump') {
-      s.dot(ex, ey + 1, 3, 0xffffff);
-      s.dot(ex, ey + 1, 1.2, INK);
-    }
-    else if (mood === 'angry') {
-      s.dot(ex, ey + 1, 2.4, 0xff4a3a);
-      s.line(ex - 6, ey - 6 + sx * 0, ex + 6, ey - 3, INK, 2);
+      s.dot(ex - 1, ey + 1, 2.6, 0xffffff);
+      s.dot(ex - 1, ey + 1, 1, INK);
     } else {
-      s.dot(ex, ey + 1, 2.2, INK);
-      s.dot(ex - 0.8, ey, 0.8, 0xffffff);
+      s.dot(ex - 2, ey + 1, 1.8, INK);
+      s.dot(ex - 2.6, ey + 0.4, 0.6, 0xffffff);
     }
-    // the screen's reflection: two pale streaks
-    s.line(ex - 6, ey - 3, ex - 2, ey - 6, 0xe8ffff, 1, 0.8);
-    s.line(ex + 1, ey + 5, ex + 5, ey + 2, 0xe8ffff, 1, 0.5);
+    s.line(ex - 5, ey - 3, ex - 2, ey - 5, 0xe8ffff, 1, 0.8);
+    if (mood === 'jump') s.ellipse(fx - 4, fy + 12, 2, 2.4, 'k', { flat: 0.2 });
   }
-  s.line(cx - 3, 86 + up, cx + 3, 86 + up, 0x2a2a32, 1);
-  if (mood === 'angry') s.line(cx - 5, 100 + up, cx + 5, 98 + up, INK, 1);
-  else if (mood === 'jump' || mood === 'cheer') s.ellipse(cx, 100 + up, 3, mood === 'cheer' ? 3 : 2.4, 'k', { flat: 0.2 });
-  else s.line(cx - 3, 99 + up, cx + 3, 99 + up, 0x8a5040, 1);
+  // the arms: elbows going at the keyboard, or out of the blanket to a tower, up to throw, a can, both up
+  const sleeve = (x0, y0, x1, y1, hand = true) => {
+    s.tube(x0, y0, x1, y1, 12, 'q', { rb: 9 });
+    if (hand) s.ellipse(x1, y1, 7.5, 6.5, 'f', { bias: 0.08 });
+  };
+  if (mood === 't0' || mood === 't1') for (const sx of [-1, 1]) s.ellipse(cx + sx * (64 + ((mood === 't0') === sx < 0 ? 3 : 0)), top + 78 + ((mood === 't0') === sx < 0 ? -3 : 0), 12, 16, 'q', { bias: 0.05 });
+  if (mood === 'reachL') sleeve(cx - 54, top + 70, cx - 116, top + 54);
+  if (mood === 'reachR') sleeve(cx + 54, top + 70, cx + 116, top + 54);
+  if (mood === 'throw') sleeve(cx + 52, top + 70, cx + 76, top - 4);
   if (mood === 'drink') {
-    // a sleeve up to the face, an energy drink tipped to the mouth
-    s.tube(cx + 70, 160, cx + 14, 104, 12, 'q', { rb: 9 });
-    s.tube(cx + 2, 104, cx + 18, 90, 6, 'g');
-    s.paint([cx + 4, 92, cx + 16, 100], (x, y) => Math.abs((x - cx - 10) + (y - 96)) < 4, 'w', () => 0.8);
-    s.ellipse(cx + 16, 106, 7, 6, 'f', { bias: 0.08 });
+    sleeve(cx + 50, top + 72, cx + 36, top + 22);
+    s.tube(cx + 34, top + 30, cx + 40, top + 8, 6, 'g');
+    s.paint([cx + 31, top + 14, cx + 43, top + 20], () => true, 'w', () => 0.8);
   }
-  if (mood === 'cheer') for (const sx of [-1, 1]) {
-    s.tube(cx + sx * 60, 130, cx + sx * 74, 40 + up, 12, 'q', { rb: 9 });
-    s.ellipse(cx + sx * 76, 34 + up, 8, 7, 'f', { bias: 0.08 });
-  }
+  if (mood === 'cheer') for (const sx of [-1, 1]) sleeve(cx + sx * 50, top + 70, cx + sx * 74, top - 16);
   return s;
 }
 export function occupant(mood) {
@@ -783,9 +785,9 @@ function offScreen(k) {
 export function heyaEnemies(add) {
   add('heya_mon', monitor(false));
   add('heya_mon_crack', monitor(true));
-  for (const m of ['b0', 'b1', 'blink', 'angry', 'hide0', 'hide1', 'jump', 'drink', 'cheer', 'sigh']) add(`heya_who_${m}`, occupant(m));
-  for (const m of ['b0', 'b1', 'blink', 'angry', 'jump', 'drink', 'cheer', 'sigh']) add(`heya_wglow_${m}`, occupantGlow(m));
-  for (let f = 0; f < 5; f++) add(`heya_hands_${f}`, hands(f));
+  const MOODS = ['b0', 'b1', 't0', 't1', 'look', 'glare', 'jump', 'drink', 'cheer', 'sigh', 'reachL', 'reachR', 'throw'];
+  for (const m of [...MOODS, 'hide0', 'hide1']) add(`heya_who_${m}`, occupant(m));
+  for (const m of MOODS) add(`heya_wglow_${m}`, occupantGlow(m));
   for (let f = 0; f < 6; f++) add(`heya_pc_hot_${f}`, pc(f, true));
   add('heya_second_pause', second(0, true));
   add('heya_glint', glint());

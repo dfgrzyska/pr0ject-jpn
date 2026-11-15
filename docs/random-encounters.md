@@ -139,8 +139,9 @@ Czas walki w symulacji (statek stale pod głową): ok. 111 s (36 / 40 / 36 s), d
 ## 5. Pokój otaku (HEYA)
 
 Stałe: `HEYA` w `src/game/enemies/heya.js` (monitor 3000 HP, progi 66% / 33%). Boss złożony z animowanych części:
-postać w kocu w gwiazdki (kocie słuchawki świecą, okulary odbijają ekran, oddycha i mruga), jej dłonie na
-klawiaturze, kineskopowy monitor (słaby punkt) z osobną warstwą ekranu (buźka, czat, „LAG...”, ruletka gacha,
+lokator siedzi tyłem do nas w fotelu gamingowym przed biurkiem, z kocem w gwiazdki na głowie i kocimi słuchawkami
+(oddycha, łokcie chodzą przy pisaniu, co jakiś czas zerka przez ramię, po trafieniu odwraca się ze złością, ręką
+sięga po wieżę przed rzutem); strzały w niego liczą się jak w monitor. Nad nim kineskopowy monitor (słaby punkt) z osobną warstwą ekranu (buźka, czat, „LAG...”, ruletka gacha,
 kamera domofonu, niebieski ekran błędu, śnieżenie), biurko z mechaniczną klawiaturą, energetykami i maskotką,
 komputer z kręcącymi się wentylatorami i tęczowym RGB, drugi ekran z grą. Po bokach dwie wieże: mangi (lewa) i kubki
 po zupkach z kartonami (prawa) — osobne cele po 320 HP; 30% obrażeń zadanych wieży trafia też w monitor. Zestrzelona
@@ -165,13 +166,13 @@ na ekranie kamera domofonu z kurierem; przez 1,7 s nie atakuje, a monitor przyjm
   SSR (1/6) — 3 złote pękające gwiazdą. Kapsułkę można zestrzelić w locie, zanim pęknie (zwykła 1 trafienie, złota 3);
   pierwsza zestrzelona złota zostawia nagrodę (fioletowy power-up).
 
-Animacje walki: przed rzutem błyskają okulary i dłoń sięga do wieży, z której poleci atak (0,3 s); stos wyrasta
+Animacje walki: przed rzutem ręka wysuwa się spod koca w stronę wieży, z której poleci atak (0,3 s); stos wyrasta
 nad wieżą mang, chwieje się i przewraca, a potem spada na cel; otwarta manga wyrzuca fruwające kartki; kubek
 po wylądowaniu toczy się, a bulion zostaje na podłodze jako parująca plama; na dymkach czatu migają „LOL”, „GG”,
 „???”, „:)”; przy „LAG” pociski drgają, wypełnia się pasek ładowania, odblokowanie błyska; bęben gachy zwalnia
 z tykaniem, SSR to złoty błysk, konfetti i lokator z rękami w górze (przy N westchnienie); kapsułki rozpadają się
 na połówki i zabawkę, która odbija się od podłogi. Lokator podskakuje po serii mocnych trafień (kropla potu,
-„KRZK!”), co ok. 13 s pije energetyk („PSST!”), a puste puszki zbierają się na biurku. Chomik w terrarium
+„KRZK!”), co ok. 13 s pije energetyk („PSST!”), a puste puszki zbierają się na podłodze wokół fotela. Chomik w terrarium (na podłodze obok fotela)
 oddycha, biega w kołowrotku i chowa się do domku przy dzwonku i wstrząsach. Monitor słabnie: poniżej 50% dymi,
 poniżej 40% obraz drga i śnieży, poniżej 20% wyskakuje okienko „BATERIA?”. W fazie 2 komputer się przegrzewa
 (czerwone RGB, szybsze wentylatory, para). Przy dzwonku pod drzwiami (dół ekranu) pojawia się światło z cieniem
