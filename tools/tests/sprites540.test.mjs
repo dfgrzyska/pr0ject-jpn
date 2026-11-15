@@ -13,7 +13,8 @@ const boot = readFileSync(new URL('../../src/scenes/Boot.js', import.meta.url), 
 test('every sprites540 frame is three times its namesake in sprites.png', () => {
   assert(Object.keys(hi).length > 0);
   for (const [name, f] of Object.entries(hi)) {
-    const old = legacy[name];
+    // (a ship's paint layers, <frame>_g and <frame>_p0..., are only here: the size of the ship they are of)
+    const old = legacy[name.replace(/_(g|p\d)$/, '')];
     assert(old, `${name} is not in sprites.png`);
     assert.equal(f.frame.w, old.frame.w * 3, `${name} width`);
     assert.equal(f.frame.h, old.frame.h * 3, `${name} height`);
