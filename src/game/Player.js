@@ -3,6 +3,7 @@ import { BEANS, BOMB, DEPTH, FROST, GRAZE, HEAT, MOMENTUM, OFUDA, PLAYER, SURGE,
 import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
 import { baseScale, sharedArt, spriteTexture } from './enemyArt.js';
+import { flameLook } from './shipSkin.js';
 
 const WEAPON_NAMES = { basic: 'PODSTAWOWA', spread: 'ROZRZUT', laser: 'LASER', homing: 'NAPROWADZANE' };
 const WEAPON_TINT = { spread: 0xff8a6a, laser: 0x8ac8ff, homing: 0x9cf09a };
@@ -253,7 +254,7 @@ export class Player {
     const f = this.ship.frame;
     this.shipFrame(this.bank < -0.35 ? `${f}_l` : this.bank > 0.35 ? `${f}_r` : f);
     this.sprite.setPosition(this.x, this.y).setRotation(this.bank * 0.065);
-    this.flame.setPosition(this.x, this.y + this.ship.flameY).setScale(1 - this.thrust * 0.12, 1 + this.thrust * 0.45);
+    this.flame.setPosition(this.x, this.y + this.ship.flameY).setScale(1 - this.thrust * 0.12, (1 + this.thrust * 0.45) * flameLook(this.flame, this.ship));
     this.dot.setPosition(this.x, this.y);
     const beans = this.alive && this.beanT > 0 && (this.beanT > 2 || Math.floor(this.beanT * 8) % 2 === 0);
     this.beanOrbit.forEach((b, i) => {
@@ -435,6 +436,7 @@ export class Player {
       s.damage *= this.ship.pointBlank;
     }
     if (hot) s.setTint(0xffb070);
+    else if (this.ship.look?.dye) s.setTint(this.ship.look.dye); // (a dye out of the gachapon)
     return s;
   }
 

@@ -49,6 +49,8 @@ export const EXPLICIT = {
   s: 0x5a5a78,
   e: 0x6a6670,
   h: 0xfff8e0,
+  f: 0xd4d4d4, // a white flame's middle (tinted in the game)
+  i: 0xa2a2a2, // ...and its edge
   n: 0x1a1622,
   q: 0xf08bb0, // sakura mid
   u: 0xc85a85, // sakura deep

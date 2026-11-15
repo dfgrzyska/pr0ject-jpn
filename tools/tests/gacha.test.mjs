@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ITEM, ITEMS, PITY, RARITIES, RARITY, TICKETS } from '../../src/data/gacha.js';
-import { buildShip, equip, grant, layout, loadState, newState, pool, pull, saveState, setHull } from '../../src/game/Loadout.js';
+import { buildShip, equip, grant, layout, loadState, newState, pool, pull, saveState, setHull, wear } from '../../src/game/Loadout.js';
 
 const memory = () => {
   const m = new Map();
@@ -140,4 +140,21 @@ test('the save comes back as it was, and a broken one starts afresh', () => {
   assert.deepEqual(fixed.slots.gun, [null]);
   storage.setItem('shmupjp.gacha', 'not json');
   assert.equal(loadState(storage).tickets, TICKETS.first);
+});
+
+test('looks are worn one of a kind, and only owned ones', () => {
+  const s = newState();
+  assert.deepEqual(s.look, { paint: null, flame: null, dye: null });
+  assert.equal(wear(s, 'paint', 'paint_urushi'), false, 'not owned');
+  s.owned.push('paint_urushi', 'flame_lava', 'dye_blue');
+  assert.equal(wear(s, 'paint', 'flame_lava'), false, 'a flame is no paint');
+  assert.ok(wear(s, 'paint', 'paint_urushi'));
+  assert.ok(wear(s, 'flame', 'flame_lava'));
+  assert.ok(wear(s, 'dye', 'dye_blue'));
+  const ship = buildShip(s);
+  assert.deepEqual(ship.look, { paint: ITEM.paint_urushi.colors, flame: ITEM.flame_lava.flame, dye: ITEM.dye_blue.tint });
+  assert.equal(ship.damage, buildShip(newState()).damage, 'looks change no numbers');
+  assert.ok(wear(s, 'paint', null));
+  assert.equal(buildShip(s).look.paint, null);
+  for (const it of ITEMS.filter((i) => i.kind === 'paint')) assert.equal(it.colors.length, 4, `${it.id} has four colours`);
 });

@@ -49,7 +49,7 @@ export function smooth3(src) {
 
 const NAMES = /^(btn_|icon_|wpn_|pip_|stamp_icon$|pickup_mame$|hitbox$|orizuru_[0-9]|ice_block$|ps_bean)/; // (not orizuru_glow: a soft glow)
 // the small effects of group A done the same way: sparks, the muzzle flash, the engine flame, splashes, blood, debris
-const FX = /^(spark_|muzzle_|flame_|splash$|splat$|bloodball_|debris_|debris_hot)/;
+const FX = /^(spark_|muzzle_|flamew?_|splash$|splat$|bloodball_|debris_|debris_hot)/;
 
 export function ui540(add) {
   for (const { name, raster } of buildSprites()) if (NAMES.test(name) || FX.test(name)) add(name, smooth3(raster));

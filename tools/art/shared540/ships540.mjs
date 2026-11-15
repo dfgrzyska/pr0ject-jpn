@@ -4,7 +4,7 @@
 // surface lit from the upper left, the seams between liveries inked, a glint on the canopy.
 import { HiSprite } from '../../lib/hisprite.mjs';
 import { Mask } from '../../lib/spritekit.mjs';
-import { SHIP, SHIP_HOUOU, SHIP_ONI, SHIP_TSUBAME } from './shipmasks.mjs';
+import { ROLES, SHIP, SHIP_HOUOU, SHIP_ONI, SHIP_TSUBAME } from './shipmasks.mjs';
 
 function bankMask(rows, bank) {
   const m = Mask.fromRows(rows, true);
@@ -23,7 +23,12 @@ function bankMask(rows, bank) {
   return m;
 }
 
-export function ship540(rows, bank = 0) {
+/**
+ * `layer`: for paint jobs (src/game/shipSkin.js lays them over each other, each in its colour). 'g': the whole
+ * ship with its livery (the letters in `roles`) in neutral white; a number: only that role's panels, in white,
+ * with no outline.
+ */
+export function ship540(rows, bank = 0, layer = null, roles = '') {
   const m = bankMask(rows, bank);
   const W = (m.w + 2) * 3;
   const H = (m.h + 2) * 3;
@@ -67,7 +72,14 @@ export function ship540(rows, bank = 0) {
     return l;
   };
   const s = new HiSprite(W, H, {});
-  for (const L of new Set(mat)) if (L !== '.') s.paint([0, 0, W, H], (x, y) => mat[Math.floor(y) * W + Math.floor(x)] === L, L, (x, y) => light(Math.floor(x), Math.floor(y)), { tex: 0.04, seed: 5 });
+  const one = typeof layer === 'number' ? roles[layer] : null;
+  for (const L of new Set(mat)) {
+    if (L === '.' || (one && L !== one)) continue;
+    s.paint([0, 0, W, H], (x, y) => mat[Math.floor(y) * W + Math.floor(x)] === L, layer != null && roles.includes(L) ? 'W' : L, (x, y) => light(Math.floor(x), Math.floor(y)), { tex: 0.04, seed: 5 });
+  }
+  // (a layer keeps only the details on its own panels)
+  const rawPx = s.px.bind(s);
+  if (one) s.px = (x, y, ...rest) => (mat[Math.round(y) * W + Math.round(x)] === one ? rawPx(x, y, ...rest) : s);
   // panel seams down the hull either side of the spine, rivets along them, from below the canopy
   const cxw = W / 2;
   let canopyEnd = 0;
@@ -97,7 +109,7 @@ export function ship540(rows, bank = 0) {
   let gy = -1;
   for (let y = 0; y < H && gx < 0; y++) for (let x = 0; x < W; x++) if (mat[y * W + x] === 'C') { gx = x; gy = y; break; }
   if (gx >= 0) for (let k = 0; k < 4; k++) s.px(gx + 1 + (k >> 1), gy + 2 + k, 0xffffff, 0.9);
-  return s.render({ outline: 2 });
+  return s.render({ outline: one ? 0 : 2 });
 }
 
 export function ships540(add) {
@@ -105,5 +117,10 @@ export function ships540(add) {
     add(name, ship540(rows, 0));
     add(`${name}_l`, ship540(rows, -1));
     add(`${name}_r`, ship540(rows, 1));
+    // for the paint jobs: the ship in neutral white, and each of its livery's colours as a layer
+    for (const [suffix, bank] of [['', 0], ['_l', -1], ['_r', 1]]) {
+      add(`${name}${suffix}_g`, ship540(rows, bank, 'g', ROLES[name]));
+      for (let i = 0; i < ROLES[name].length; i++) add(`${name}${suffix}_p${i}`, ship540(rows, bank, i, ROLES[name]));
+    }
   }
 }

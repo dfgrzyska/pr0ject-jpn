@@ -139,6 +139,8 @@ const FLAMES = [
   ['hh...hh', 'hy...yh', 'yy...yy', 'oo...oo', '.o...o.'],
 ];
 FLAMES.forEach((rows, i) => add(`flame_${i}`, renderMask(fromRows(rows), { outline: false })));
+// the same in white, for the flame colours out of the gachapon (tinted in the game)
+FLAMES.forEach((rows, i) => add(`flamew_${i}`, renderMask(fromRows(rows, false, { h: 'w', y: 'f', o: 'i' }), { outline: false })));
 
 add('hitbox', renderMask(fromRows(['.kkk.', 'kwwwk', 'kwmwk', 'kwwwk', '.kkk.']), { outline: false }));
 

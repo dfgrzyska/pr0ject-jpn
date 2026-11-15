@@ -5,6 +5,7 @@ import { pixelText } from './Hud.js';
 import { parts } from './Loadout.js';
 import { tr } from '../i18n.js';
 import { sharedArt } from './enemyArt.js';
+import { flameLook } from './shipSkin.js';
 
 const W = VIEW.width;
 const SHIP_X = 35;
@@ -88,6 +89,7 @@ export class PreFlight {
     this.t += dt;
     this.art.y = this.shipY + Math.round(Math.sin(this.t * 3) * 1.5) * 2;
     this.flame.y = this.art.y + this.ship.flameY * 2;
+    this.flame.setScale(2, 2 * flameLook(this.flame, this.ship));
     this.start.setVisible(Math.floor(this.t * 2.5) % 2 === 0);
   }
 

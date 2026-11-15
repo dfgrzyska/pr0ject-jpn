@@ -7,6 +7,13 @@ import { RENDER_SCALE } from '../config.js';
 
 const where = new Map(); // frame name -> texture key of the city atlas that has it
 const hi = new Set(); // frames sprites540 has: the shared sprites (effects, bullets, the ship...) at 540 px
+const custom = new Map(); // frame name -> a texture made in the game that stands in for it (the painted ship)
+
+/** Show `frame` from the texture `key` from now on (null: from its atlas again). */
+export function setCustomFrame(frame, key) {
+  if (key) custom.set(frame, key);
+  else custom.delete(frame);
+}
 
 /** sprites540 is in: its frames are taken from there (docs/graphics-540-plan.md, step 6). */
 export function registerSharedHi(textures) {
@@ -16,7 +23,7 @@ export function registerSharedHi(textures) {
 
 /** The texture a shared frame comes from: sprites540 when it has it, else the old sprites atlas. */
 export function spriteTexture(frame) {
-  return hi.has(frame) ? 'sprites540' : 'sprites';
+  return custom.get(frame) ?? (hi.has(frame) ? 'sprites540' : 'sprites');
 }
 
 /**

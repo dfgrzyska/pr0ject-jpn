@@ -1,4 +1,4 @@
-import { DEFAULTS, ITEM, ITEMS, KITS, PITY, RARITIES, RARITY, SLOTS, TICKETS } from '../data/gacha.js';
+import { DEFAULTS, ITEM, ITEMS, KITS, LOOKS, PITY, RARITIES, RARITY, SLOTS, TICKETS } from '../data/gacha.js';
 
 // The player's side of the gachapon: tickets, what came out of the machine so far, and the ship put together
 // from it (a hull and the parts in its slots). Kept in the browser. Every function here takes the state as
@@ -47,7 +47,17 @@ function normalize(state) {
     if (DEFAULTS[k] && count[k] > 0 && !slots[k].some(Boolean)) slots[k][0] = DEFAULTS[k];
   }
   state.slots = slots;
+  // the looks: one of each kind at most, owned
+  state.look = Object.fromEntries(LOOKS.map((k) => [k, ITEM[state.look?.[k]]?.kind === k && have.has(state.look[k]) ? state.look[k] : null]));
   return state;
+}
+
+/** Wear a paint job, a flame colour or a dye (null: take it off). False if it is not the player's. */
+export function wear(state, kind, id) {
+  if (!LOOKS.includes(kind)) return false;
+  if (id != null && (ITEM[id]?.kind !== kind || !state.owned.includes(id))) return false;
+  state.look[kind] = id;
+  return true;
 }
 
 const fittedLine = (slots, line) => SLOTS.some((k) => slots[k].some((id) => id && ITEM[id].line === line));
@@ -151,6 +161,9 @@ export function buildShip(state) {
     for (const [k, v] of Object.entries(fx.mul ?? {})) ship[k] *= v;
     if (fx.bombMul) ship.bomb.damage *= fx.bombMul;
   }
+  // the looks (see shipSkin.js): the paint's colours, the flame, the shots' tint
+  const look = state.look ?? {};
+  ship.look = { paint: ITEM[look.paint]?.colors ?? null, flame: ITEM[look.flame]?.flame ?? null, dye: ITEM[look.dye]?.tint ?? null };
   ship.perk = fitted.filter((it) => it.kind === 'core').map((it) => it.name).join(' + ');
   // pips out of 3 for the summary: speed, firepower
   ship.stats = [ship.speed < 95 ? 1 : ship.speed < 130 ? 2 : 3, ship.damage < 1 ? 1 : ship.damage < 1.2 ? 2 : 3];

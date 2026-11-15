@@ -25,6 +25,7 @@ import { PreFlight } from '../game/PreFlight.js';
 import { Gacha } from '../game/Gacha.js';
 import { Hangar } from '../game/Hangar.js';
 import { buildShip, grant, loadState, newState, saveState } from '../game/Loadout.js';
+import { applySkin } from '../game/shipSkin.js';
 import { KITS, TICKETS } from '../data/gacha.js';
 import { INK, PALE, StampBook, hasStamp, pressStamp, stampFrame } from '../game/Stamps.js';
 import { Waves } from '../game/Waves.js';
@@ -137,7 +138,7 @@ export class Stage extends Phaser.Scene {
     this.ticketsWon = 0; // in this city (shown on its results)
     this.dev = Boolean(data.dev); // a fight picked on the developer screen: no tickets for it
     this.fixedShip = Object.hasOwn(KITS, qShip ?? ''); // (debug: the hangar does not change it)
-    this.ship = this.carry?.ship ?? buildShip(this.fixedShip ? newState(qShip) : this.loadout);
+    this.ship = applySkin(this, this.carry?.ship ?? buildShip(this.fixedShip ? newState(qShip) : this.loadout));
     this.continues = this.carry?.continues ?? 0; // easy: continues used in this game
     // the whole journey so far, for the ending: ships lost, bombs used, time flown, stamps won, cities cleared
     this.run = this.carry?.run ?? { deaths: 0, bombs: 0, time: 0, stamps: [], cities: [] };
@@ -365,6 +366,7 @@ export class Stage extends Phaser.Scene {
     this.hangar?.destroy();
     this.hangar = null;
     if (!this.fixedShip) this.ship = buildShip(this.loadout); // (the title flies it past the mountain)
+    applySkin(this, this.ship); // (the hangar may have shown another paint)
     this.showTitle();
   }
 
@@ -741,7 +743,7 @@ export class Stage extends Phaser.Scene {
       return;
     }
     if (this.state === 'hangar') {
-      const act = escape ? 'back' : down(k.LEFT) || down(k.A) ? 'left' : down(k.RIGHT) || down(k.D) ? 'right' : down(k.UP) || down(k.W) ? 'up' : down(k.DOWN) || down(k.S) ? 'down' : confirm || bomb ? 'confirm' : null;
+      const act = escape ? 'back' : down(k.LEFT) || down(k.A) ? 'left' : down(k.RIGHT) || down(k.D) ? 'right' : down(k.UP) || down(k.W) ? 'up' : down(k.DOWN) || down(k.S) ? 'down' : confirm || bomb ? 'confirm' : down(k.TAB) || down(k.Q) || down(k.E) ? 'tab' : null;
       if (act && this.hangar.key(act) === 'close') this.closeHangar();
       return;
     }

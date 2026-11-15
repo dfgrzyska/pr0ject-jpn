@@ -1,3 +1,7 @@
+// Which letters of each ship are its livery, the hull's main colour first: a paint job recolours them in this
+// order (see ships540.mjs: the neutral ship and a layer for each).
+export const ROLES = { ship: 'WOJT', ship_oni: 'WAUY', ship_tsubame: 'LW', ship_houou: 'RYQ' };
+
 // The ships' masks (left halves, mirrored), the same as tools/art/sprites.mjs draws at 1x.
 export const SHIP = [
   '.......W',

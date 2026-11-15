@@ -106,6 +106,7 @@ export class Boot extends Phaser.Scene {
       if (key.startsWith('enemies_')) this.cityArtIn(key);
     });
     anim('flame', ['flame_0', 'flame_1', 'flame_2', 'flame_1'], 20);
+    anim('flamew', ['flamew_0', 'flamew_1', 'flamew_2', 'flamew_1'], 20); // (white: tinted, see shipSkin.js)
     for (const c of ['red', 'blue', 'green', 'purple']) anim(`pickup_${c}`, [0, 1, 2, 3, 4, 5, 6, 7].map((f) => `pickup_${c}_${f}`), 10); // the weapon tokens turning
     anim('popcorn', ['popcorn_0', 'popcorn_1'], 3);
     anim('shooter', ['shooter_0', 'shooter_1'], 4);

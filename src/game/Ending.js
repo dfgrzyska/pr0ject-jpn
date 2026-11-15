@@ -7,6 +7,7 @@ import { JapanMap } from './JapanMap.js';
 import { INK } from './Stamps.js';
 import { portrait } from './enemyArt.js';
 import { sharedArt } from './enemyArt.js';
+import { flameLook } from './shipSkin.js';
 
 const W = VIEW.width;
 const D = DEPTH.overlay + 2;
@@ -192,6 +193,7 @@ export class Ending {
     this.ship = this.add(sharedArt(s.add.sprite(-20, H + 20, 'sprites', ship.frame)).setDepth(D + 1));
     this.flame = this.add(sharedArt(s.add.sprite(0, 0, 'sprites', 'flame_0')).setDepth(D + 0.9).play('flame'));
     this.flameY = ship.flameY;
+    flameLook(this.flame, ship);
     // petals drifting off the branch and the trees
     this.petals = [];
     for (let i = 0; i < 22; i++) this.petals.push(this.add(s.add.image(0, 0, 'menu', `petal_${i % 2}`).setScale(FINE).setDepth(D + 1.5)));

@@ -1,7 +1,8 @@
 import { DEPTH, RENDER_SCALE, VIEW } from '../config.js';
-import { ITEM, ITEMS, RARITIES, RARITY, SLOTS } from '../data/gacha.js';
+import { ITEM, ITEMS, LOOKS, RARITIES, RARITY, SLOTS } from '../data/gacha.js';
 import { pixelText } from './Hud.js';
-import { buildShip, equip, layout, setHull } from './Loadout.js';
+import { buildShip, equip, layout, setHull, wear } from './Loadout.js';
+import { applySkin, flameLook } from './shipSkin.js';
 import { sharedArt } from './enemyArt.js';
 
 // The hangar, off the title screen: the ship as it is fitted, its numbers, the hull's slots, and under them the
@@ -13,7 +14,9 @@ const W = VIEW.width;
 const LINE = 12; // a row of the list
 const BOX = 26; // a slot
 const PER_ROW = 5;
-const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI' };
+const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW' };
+const TABS = [{ id: 'parts', name: 'CZĘŚCI', x: 50 }, { id: 'look', name: 'WYGLĄD', x: 130 }];
+const TAB_Y = 95;
 const STATS = [
   { label: 'PRĘDKOŚĆ', get: (s) => s.speed, min: 60, max: 190, fmt: (v) => String(Math.round(v)) },
   { label: 'SIŁA OGNIA', get: (s) => s.damage, min: 0.8, max: 1.7, fmt: (v) => `×${v.toFixed(2)}` },
@@ -29,6 +32,7 @@ export class Hangar {
     this.loadout = loadout;
     this.save = save;
     this.t = 0;
+    this.tab = 'parts'; // PARTS (the hull and what goes in its slots) or LOOKS (paint, flame, dye)
     this.slot = 0; // the slot picked
     this.focus = 0; // the row of the list looked at
     this.scroll = 0;
@@ -52,6 +56,7 @@ export class Hangar {
     // its numbers
     this.statLabels = STATS.map((s) => add(pixelText(scene, STAT_X, 0, s.label, 0).setOrigin(0, 0.5).setTint(0xb0aec0), d + 1));
     this.statValues = STATS.map(() => add(pixelText(scene, 176, 0, '', 1).setOrigin(1, 0.5), d + 1));
+    this.tabs = TABS.map((t) => add(pixelText(scene, t.x, TAB_Y, t.name), d + 1));
     // the slots: a picture each (the kind's, or the hull itself)
     this.slotArt = Array.from({ length: PER_ROW * 2 }, () => add(scene.add.image(0, 0, 'gacha', 'part_gun').setScale(FINE), d + 1));
     this.slotShip = add(sharedArt(scene.add.image(0, 0, 'sprites', 'ship')), d + 1.1);
@@ -71,7 +76,7 @@ export class Hangar {
     this.hullName.y = this.shipY + 30;
     this.statLabels.forEach((l, i) => (l.y = 28 + i * 16));
     this.statValues.forEach((v, i) => (v.y = 28 + i * 16));
-    this.slotsY = 98; // the top of the slots
+    this.slotsY = 106; // the top of the slots
     this.head.y = this.slotsY + BOX * 2 + 16;
     this.top = this.head.y + 10;
     this.bottom = H - 36;
@@ -82,6 +87,7 @@ export class Hangar {
 
   /** The fitted hull's slots, the hull first: { kind, index } or (built in) { kind, fixed }. */
   slots() {
+    if (this.tab === 'look') return LOOKS.map((kind) => ({ kind, look: true }));
     const hull = ITEM[this.loadout.hull];
     const out = [{ kind: 'hull' }];
     for (const k of SLOTS) {
@@ -94,6 +100,7 @@ export class Hangar {
   /** The part in a slot (null: empty). */
   fitted(slot) {
     if (slot.kind === 'hull') return ITEM[this.loadout.hull];
+    if (slot.look) return ITEM[this.loadout.look[slot.kind]] ?? null;
     return ITEM[slot.fixed ?? this.loadout.slots[slot.kind][slot.index]] ?? null;
   }
 
@@ -109,7 +116,7 @@ export class Hangar {
 
   /** The ship as it would be with the part looked at fitted (null: nothing would change). */
   preview(row, slot) {
-    if (!row?.have || slot.fixed || (slot.kind === 'hull' && this.fitted(slot) === row.it)) return null;
+    if (!row?.have || slot.fixed || ((slot.kind === 'hull' || slot.look) && this.fitted(slot) === row.it)) return null;
     const trial = structuredClone(this.loadout);
     return this.apply(trial, slot, row.it) ? buildShip(trial) : null;
   }
@@ -120,6 +127,7 @@ export class Hangar {
    */
   apply(state, slot, it) {
     if (slot.kind === 'hull') return setHull(state, it.id);
+    if (slot.look) return wear(state, slot.kind, state.look[slot.kind] === it.id ? null : it.id);
     const slots = state.slots[slot.kind];
     const from = slots.indexOf(it.id);
     if (from === slot.index) return equip(state, slot.kind, slot.index, null);
@@ -141,7 +149,16 @@ export class Hangar {
     const total = ITEMS.length;
     this.owned.setText(`${this.loadout.owned.length}/${total}`);
 
-    // the ship in its frame
+    // the tabs
+    TABS.forEach((t, i) => {
+      const on = t.id === this.tab;
+      this.tabs[i].setTint(on ? 0xffe080 : 0x6a7a92);
+      if (on) g.fillStyle(0xffe080).fillRect(t.x - 22, TAB_Y + 6, 44, 1);
+    });
+
+    // the ship in its frame, in the paint and with the flame looked at
+    applySkin(this.scene, next ?? ship);
+    this.flameLong = flameLook(this.flame, next ?? ship);
     this.art.setFrame(ship.frame);
     this.flameY = ship.flameY;
     this.hullName.setText(ship.name).setTint(ship.color);
@@ -205,7 +222,7 @@ export class Hangar {
       }
       r.setText(row.have ? row.it.name : '? ? ?').setY(y).setTint(tint(row.it)).setAlpha(row.have ? 1 : 0.45);
       // fitted here, or in another slot of the kind (which one, then)
-      const at = slot.kind === 'hull' ? -1 : this.loadout.slots[slot.kind].indexOf(row.it.id);
+      const at = slot.kind === 'hull' || slot.look ? -1 : this.loadout.slots[slot.kind].indexOf(row.it.id);
       if (row.it === it) this.marks[k].setVisible(true).setText('ZAŁOŻONE').setY(y).setTint(0x9cf09a);
       else if (at >= 0) this.marks[k].setVisible(true).setText(`W SLOCIE ${at + 1}`).setY(y).setTint(0x7f9a8c);
     });
@@ -241,6 +258,13 @@ export class Hangar {
     this.draw();
   }
 
+  setTab(tab) {
+    if (tab === this.tab) return;
+    this.tab = tab;
+    this.scene.sfx.tick?.();
+    this.pickSlot(0);
+  }
+
   pickSlot(i) {
     const n = this.slots().length;
     this.slot = (i + n) % n;
@@ -261,6 +285,7 @@ export class Hangar {
   /** Returns 'close' for the back arrow. */
   key(act) {
     if (act === 'back') return 'close';
+    if (act === 'tab') this.setTab(this.tab === 'parts' ? 'look' : 'parts');
     if (act === 'left') this.pickSlot(this.slot - 1);
     else if (act === 'right') this.pickSlot(this.slot + 1);
     else if (act === 'up') this.move(-1);
@@ -272,6 +297,7 @@ export class Hangar {
   /** A press: the back arrow or a slot at once; on the list it may become a drag (scroll) or, on release, a tap. */
   pointer(p) {
     if (p.y < 26 && p.x < 60) return 'close';
+    if (Math.abs(p.y - TAB_Y) <= 8) return this.setTab(p.x < W / 2 ? 'parts' : 'look');
     const n = this.slots().length;
     for (let i = 0; i < n; i++) {
       const c = this.slotAt(i);
@@ -307,6 +333,7 @@ export class Hangar {
     this.t += dt;
     this.art.y = this.shipY + Math.round(Math.sin(this.t * 3) * 1.5) * 2;
     this.flame.y = this.art.y + (this.flameY ?? 8) * 2;
+    this.flame.setScale(2, 2 * (this.flameLong ?? 1));
   }
 
   destroy() {

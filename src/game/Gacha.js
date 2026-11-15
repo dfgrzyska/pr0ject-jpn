@@ -15,7 +15,7 @@ const MX = (W - MACHINE.w * FINE) / 2; // the machine's left edge
 const SHOWN = 30; // capsules under the glass at most
 const BALL = (BALL_FRAME * FINE) / 2 - 0.4; // their radius, in game units (they overlap a touch: no gaps between them)
 const RAINBOW = [0xff5a5a, 0xffb040, 0xfff060, 0x6ae486, 0x5cacf2, 0xb070f0];
-const KIND = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI' };
+const KIND = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK' };
 // how long each step of a draw takes, s (a draw of ten runs them at half the time)
 const TIME = { ticket: 0.55, crank: 1.0, shake: 0.85, open: 0.4 };
 const ease = (k) => k * k * (3 - 2 * k);

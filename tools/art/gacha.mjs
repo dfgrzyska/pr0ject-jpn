@@ -406,6 +406,42 @@ function partOmamori() {
   return s.render({ outline: 2 });
 }
 
+/** A paint job: a tin of red paint, a run down its side. */
+function partPaint() {
+  const s = new HiSprite(72, 72, RAMPS);
+  s.poly([[17, 24], [55, 24], [55, 60], [17, 60]], 's', { flat: 0.5 });
+  s.ellipse(36, 60, 19, 6, 's');
+  s.shade([17, 24, 55, 66], (x) => x > 46, -0.14);
+  s.ellipse(36, 24, 19, 7, 'r');
+  s.poly([[22, 24], [30, 24], [30, 42], [26, 48], [22, 42]], 'r');
+  s.poly([[40, 26], [46, 26], [46, 36], [43, 40], [40, 36]], 'r');
+  for (let a = Math.PI; a < Math.PI * 2; a += 0.04) for (const r of [22, 23]) s.px(36 + Math.cos(a) * r, 22 + Math.sin(a) * r * 0.8, 0xe8b830);
+  return s.render({ outline: 2 });
+}
+
+/** A flame colour: a flame, hot at the heart. */
+function partFlame() {
+  const s = new HiSprite(72, 72, RAMPS);
+  s.poly([[36, 5], [49, 28], [55, 45], [47, 61], [36, 66], [25, 61], [17, 45], [23, 28]], 'q');
+  s.poly([[36, 26], [45, 45], [41, 59], [31, 59], [27, 45]], 'g');
+  s.dot(36, 53, 5.5, 0xfff8c0);
+  s.dot(36, 55, 2.6, 0xffffff);
+  return s.render({ outline: 2 });
+}
+
+/** A dye for the shots: a drop of ink, three needles in its colour. */
+function partDye() {
+  const s = new HiSprite(72, 72, RAMPS);
+  s.poly([[30, 8], [44, 34], [46, 46], [40, 58], [30, 62], [20, 58], [14, 46], [16, 34]], 'R');
+  s.dot(23, 44, 3.2, 0xffffff);
+  s.dot(26, 38, 1.6, 0xffffff);
+  for (const [x, y] of [[52, 14], [58, 30], [52, 46]]) {
+    s.line(x, y, x, y + 14, 0x3a82f0, 3);
+    s.line(x, y + 2, x, y + 9, 0xa8d8ff, 1);
+  }
+  return s.render({ outline: 2 });
+}
+
 /** The title screen's paper card at half its width (two side by side: the gachapon, the hangar): its two ends joined. */
 function halfCard(active) {
   const full = card(false, active);
@@ -439,5 +475,8 @@ export function gachaAtlas() {
   add('part_bomb', partBomb());
   add('part_core', partCore());
   add('part_omamori', partOmamori());
+  add('part_paint', partPaint());
+  add('part_flame', partFlame());
+  add('part_dye', partDye());
   return out;
 }
