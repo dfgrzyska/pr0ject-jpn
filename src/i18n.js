@@ -75,6 +75,7 @@ const EN = {
   'DOTKNIJ, ABY WYBRAĆ': 'TAP TO CHOOSE',
   'NOWA GRA': 'NEW GAME',
   'PIECZĄTKI': 'STAMPS',
+  'KOLEKCJA': 'COLLECTION',
   'WYBIERZ MIASTO': 'CHOOSE A CITY',
   'DALEJ >': 'NEXT >',
   '< WRÓĆ': '< BACK',

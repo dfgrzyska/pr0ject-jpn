@@ -52,19 +52,56 @@ export const ITEMS = [
   { id: 'engine_heavy', kind: 'engine', rarity: 'R', name: 'SILNIK CIĘŻKI', info: 'WOLNY, PRECYZYJNY', fx: { set: { speed: 78, touchGain: 1.0, dragSpeed: 240 } } },
   { id: 'engine_swallow', kind: 'engine', rarity: 'SR', name: 'SILNIK JASKÓŁKA', info: 'BARDZO SZYBKI', fx: { set: { speed: 150, touchGain: 1.35, dragSpeed: 1400 } } },
 
+  { id: 'engine_turbo', kind: 'engine', rarity: 'N', name: 'SILNIK TURBO', info: 'SZYBSZY OD STANDARDOWEGO', fx: { set: { speed: 128, touchGain: 1.22, dragSpeed: 850 } } },
+  { id: 'engine_hover', kind: 'engine', rarity: 'N', name: 'SILNIK ZAWIS', info: 'SPOKOJNY, UŁATWIA GRAZING', fx: { set: { speed: 100, touchGain: 1.1, dragSpeed: 520 }, add: { graze: 3 } } },
+  // (fireSlow: the speed kept while the guns fire)
+  { id: 'engine_focus', kind: 'engine', rarity: 'R', name: 'SILNIK SKUPIENIE', info: 'SZYBKI, GDY NIE STRZELASZ', fx: { set: { speed: 160, touchGain: 1.3, dragSpeed: 1200, fireSlow: 0.55 } } },
+  // (inertia: how fast it picks up and loses speed on the keys, 1/s)
+  { id: 'engine_drift', kind: 'engine', rarity: 'R', name: 'SILNIK DRYF', info: 'SZYBKI, Z BEZWŁADNOŚCIĄ', fx: { set: { speed: 140, touchGain: 1.25, dragSpeed: 480, inertia: 6 } } },
+  // (dodge: s between the hits it throws the ship clear of by itself)
+  { id: 'engine_dash', kind: 'engine', rarity: 'SSR', name: 'SILNIK ZRYW', info: 'SAM UNIKA CIOSU CO 15 S', fx: { set: { speed: 118, touchGain: 1.18, dragSpeed: 700, dodge: 15 } } },
+
   // ---- guns
   { id: 'gun_focus', kind: 'gun', rarity: 'R', name: 'SKUPIONA WIĄZKA', info: 'POCISKI LECĄ CIAŚNIEJ', fx: { set: { spread: 0.75 } } },
   ...graded('gun_power', 'gun', 'SIŁA OGNIA', (v) => `${pct(v)} OBRAŻEŃ`, [0.04, 0.08, 0.12, 0.18, 0.25], (v) => ({ mul: { damage: 1 + v } })),
+
+  ...graded('gun_rate', 'gun', 'SZYBKOSTRZELNOŚĆ', (v) => `${pct(v)} SZYBKOSTRZELNOŚCI`, [0.04, 0.08, 0.12, 0.16, 0.2], (v) => ({ mul: { fireRate: 1 + v } })),
+  { id: 'gun_tail', kind: 'gun', rarity: 'N', name: 'DZIAŁKO OGONOWE', info: 'STRZELA TEŻ DO TYŁU', fx: { set: { tail: true } } },
+  { id: 'gun_wide', kind: 'gun', rarity: 'R', name: 'SZEROKI WACHLARZ', info: 'POCISKI LECĄ SZERZEJ', fx: { set: { spread: 1.3 } } },
+  { id: 'gun_rapid', kind: 'gun', rarity: 'R', name: 'LEKKIE LUFY', info: '+25% TEMPA, -15% OBRAŻEŃ', fx: { mul: { fireRate: 1.25, damage: 0.85 } } },
+  { id: 'gun_close', kind: 'gun', rarity: 'R', name: 'Z PRZYŁOŻENIA', info: '+25% OBRAŻEŃ Z BLISKA', fx: { set: { pointBlank: 1.25 } } },
+  { id: 'gun_start_spread', kind: 'gun', rarity: 'R', name: 'START: ROZRZUT', info: 'ZACZYNASZ Z ROZRZUTEM', fx: { set: { startWeapon: 'spread' } } },
+  { id: 'gun_start_laser', kind: 'gun', rarity: 'R', name: 'START: LASER', info: 'ZACZYNASZ Z LASEREM', fx: { set: { startWeapon: 'laser' } } },
+  { id: 'gun_start_homing', kind: 'gun', rarity: 'R', name: 'START: NAPROWADZANE', info: 'ZACZYNASZ Z NAPROWADZANYMI', fx: { set: { startWeapon: 'homing' } } },
+  { id: 'gun_heavy', kind: 'gun', rarity: 'SR', name: 'CIĘŻKIE LUFY', info: '+20% OBRAŻEŃ, -15% TEMPA', fx: { mul: { damage: 1.2, fireRate: 0.85 } } },
+  { id: 'gun_pierce', kind: 'gun', rarity: 'SR', name: 'PRZEBIJAJĄCE IGŁY', info: 'IGŁY PRZEBIJAJĄ DROBNICĘ', fx: { set: { needlePierce: 1 } } },
 
   // ---- bombs: damage to everything on screen, s of invulnerability, s enemy bullets stay cancelled; grazes to earn it back
   { id: 'bomb_cranes', kind: 'bomb', starter: true, name: 'SENBAZURU', info: 'POCISKI ZMIENIA W ŻURAWIE', fx: { set: { bomb: { kind: 'cranes', damage: 45, invulnerable: 2.2, clear: 1.0 }, perBomb: 32 } } },
   { id: 'bomb_shock', kind: 'bomb', rarity: 'R', name: 'WSTRZĄS', info: 'NAJMOCNIEJSZA, WOLNO WRACA', fx: { set: { bomb: { kind: 'shock', damage: 75, invulnerable: 2.2, clear: 0.5 }, perBomb: 40 } } },
   { id: 'bomb_cut', kind: 'bomb', rarity: 'R', name: 'CIĘCIE WIATRU', info: 'LEKKA, SZYBKO WRACA', fx: { set: { bomb: { kind: 'cut', damage: 25, invulnerable: 1.2, clear: 0.6 }, perBomb: 20 } } },
 
+  { id: 'bomb_quick', kind: 'bomb', rarity: 'R', name: 'SZYBKIE ŁADOWANIE', info: 'SŁABA, WRACA BŁYSKAWICZNIE', fx: { set: { bomb: { kind: 'cut', damage: 30, invulnerable: 1.0, clear: 0.5 }, perBomb: 14 } } },
+  { id: 'bomb_guard', kind: 'bomb', rarity: 'R', name: 'DŁUGA OSŁONA', info: 'DŁUGA NIETYKALNOŚĆ', fx: { set: { bomb: { kind: 'shock', damage: 40, invulnerable: 4.0, clear: 1.5, shout: 'OSŁONA!' }, perBomb: 46 } } },
+  { id: 'bomb_magnet', kind: 'bomb', rarity: 'R', name: 'MAGNES NA POCISKI', info: 'POCISKI ZMIENIA W PUNKTY', fx: { set: { bomb: { kind: 'magnet', damage: 10, invulnerable: 1.8, clear: 1.2, shout: 'MAGNES!' }, perBomb: 30 } } },
+  // (bombMax: charges held; each graze count earns one back)
+  { id: 'bomb_twin', kind: 'bomb', rarity: 'SR', name: 'DWIE MAŁE', info: 'DWA ŁADUNKI, KAŻDY SŁABSZY', fx: { set: { bomb: { kind: 'cut', damage: 28, invulnerable: 1.4, clear: 0.6, shout: 'RAZ, DWA!' }, perBomb: 30, bombMax: 2 } } },
+  // (bursts: fireworks after the first blast, each doing `burst` to everything)
+  { id: 'bomb_hanabi', kind: 'bomb', rarity: 'SR', name: 'HANABI', info: 'SERIA WYBUCHÓW NA BOSSA', fx: { set: { bomb: { kind: 'hanabi', damage: 30, invulnerable: 2.0, clear: 0.4, bursts: 5, burst: 20, shout: 'HANABI!' }, perBomb: 38 } } },
+  // (slow: s the bullets crawl instead of being cancelled)
+  { id: 'bomb_slow', kind: 'bomb', rarity: 'SSR', name: 'ZWOLNIENIE CZASU', info: 'POCISKI PEŁZNĄ PRZEZ 4 S', fx: { set: { bomb: { kind: 'slow', damage: 20, invulnerable: 1.0, clear: 0, slow: 4, shout: 'CZAS STOP!' }, perBomb: 34 } } },
+
   // ---- cores: what the ship does that others don't (see Player.perks)
   { id: 'core_ofuda', kind: 'core', starter: true, name: 'TALIZMANY OFUDA', info: 'GRAZING SKŁADA TALIZMANY', fx: { set: { ofuda: true } } },
   { id: 'core_rage', kind: 'core', rarity: 'SR', name: 'GNIEW SZTURMOWY', info: 'IM WYŻEJ, TYM MOCNIEJ', fx: { set: { rage: 0.2, ram: true } } },
   { id: 'core_momentum', kind: 'core', rarity: 'SR', name: 'PĘD JASKÓŁKI', info: 'RUCH PRZYSPIESZA OGIEŃ', fx: { set: { momentum: true } } },
+
+  { id: 'core_graze', kind: 'core', rarity: 'R', name: 'ŁOWCA GRAZINGU', info: 'GRAZING DAJE 2× PUNKTÓW', fx: { set: { grazePoints: 2 } } },
+  { id: 'core_bastion', kind: 'core', rarity: 'R', name: 'OSTATNI BASTION', info: '+30% NA OSTATNIM ŻYCIU', fx: { set: { lastStand: 0.3 } } },
+  { id: 'core_surge', kind: 'core', rarity: 'R', name: 'DŁUGI PRZYPŁYW', info: 'SKUPIENIE DUCHA TRWA 9 S', fx: { set: { surgeTime: 9, surgeNeed: 30 } } },
+  { id: 'core_turret', kind: 'core', rarity: 'SR', name: 'WIEŻYCZKA NA START', info: 'KAŻDE MIASTO Z WIEŻYCZKĄ', fx: { set: { startTurrets: 1 } } },
+  { id: 'core_will', kind: 'core', rarity: 'SR', name: 'ŻELAZNA WOLA', info: 'ŚMIERĆ NIE ZABIERA MOCY', fx: { set: { keepPower: true } } },
+  { id: 'core_second', kind: 'core', rarity: 'SSR', name: 'DRUGA SZANSA', info: 'RAZ NA MIASTO CHRONI', fx: { set: { secondChance: true } } },
 
   // ---- omamori: small charms
   ...graded('oma_speed', 'omamori', 'DOPALACZ', (v) => `${pct(v)} PRĘDKOŚCI`, [0.04, 0.08, 0.12, 0.16, 0.2], (v) => ({ mul: { speed: 1 + v, dragSpeed: 1 + v } })),
@@ -72,6 +109,10 @@ export const ITEMS = [
   ...graded('oma_magnet', 'omamori', 'MAGNES', (v) => `+${v} PX ZASIĘGU ZBIERANIA`, [2, 4, 6, 8, 10], (v) => ({ add: { pickup: v } })),
   { id: 'oma_graze', kind: 'omamori', rarity: 'R', name: 'OKO JASTRZĘBIA', info: 'WIĘKSZY ZASIĘG GRAZINGU', fx: { add: { graze: 2 } } },
   { id: 'oma_small', kind: 'omamori', rarity: 'SR', name: 'ZIARNKO RYŻU', info: 'MNIEJSZY HITBOX', fx: { add: { hit: -0.2 } } },
+  { id: 'oma_bonus', kind: 'omamori', rarity: 'N', name: 'SAKIEWKA', info: '2× PREMIA ZA MOC MAX', fx: { set: { maxBonus: 2 } } },
+  { id: 'oma_invuln', kind: 'omamori', rarity: 'R', name: 'PAPIEROWY PARASOL', info: '+1 S OSŁONY PO ODRODZENIU', fx: { set: { respawnInvuln: 1 } } },
+  { id: 'oma_purple', kind: 'omamori', rarity: 'R', name: 'FIOLETOWA WSTĄŻKA', info: 'CZĘŚCIEJ WYPADA WIEŻYCZKA', fx: { set: { purpleShare: 0.16 } } },
+  { id: 'oma_life', kind: 'omamori', rarity: 'SSR', name: 'DARUMA', info: '+1 ŻYCIE', fx: { add: { lives: 1 } } },
 ];
 
 export const ITEM = Object.fromEntries(ITEMS.map((it) => [it.id, it]));

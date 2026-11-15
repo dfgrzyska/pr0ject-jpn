@@ -28,6 +28,7 @@ import { buildShip, grant, loadState, newState, saveState } from '../game/Loadou
 import { KITS, TICKETS } from '../data/gacha.js';
 import { INK, PALE, StampBook, hasStamp, pressStamp, stampFrame } from '../game/Stamps.js';
 import { Waves } from '../game/Waves.js';
+import { BOOK_TABS, BookTabs } from '../game/BookTabs.js';
 import { DiscoveryBook, DiscoveryNotice, FoodTrail, discoveries } from '../game/Discoveries.js';
 import { yokaiForEnemy } from '../data/discoveries.js';
 import { isEasy, rules } from '../difficulty.js';
@@ -148,6 +149,7 @@ export class Stage extends Phaser.Scene {
     this.paused = false;
     this.pauseMenu = null;
     this.bombClear = 0;
+    this.bulletSlow = 0;
     this.t = 0;
     this.endTimer = 0;
     this.clearT = 0;
@@ -209,7 +211,7 @@ export class Stage extends Phaser.Scene {
     if (q.get('turrets')) this.player.turrets = Phaser.Math.Clamp(Number(q.get('turrets')), 0, TURRETS.max);
     if (q.get('power')) this.player.level = Phaser.Math.Clamp(Number(q.get('power')), 1, PLAYER.maxPower);
 
-    this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,K,L,I,G,Y,F,B,ESC,P,ENTER,SPACE');
+    this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,K,L,I,G,Y,F,B,Q,E,TAB,ESC,P,ENTER,SPACE');
     this.input.on('pointerdown', (p) => this.onPointerDown(this.logicalPointer(p)));
     this.input.on('wheel', (p, over, dx, dy) => this.state === 'dev' && this.devMenu?.wheel(dy));
     this.input.on('pointermove', (p) => {
@@ -278,26 +280,34 @@ export class Stage extends Phaser.Scene {
     this.showTitle();
   }
 
-  /** The stamp book, opened from the title screen. */
-  openBook() {
+  /** The collection, opened from the title screen: the stamp book, the yōkai album, the food journal, a tab each. */
+  openBook(tab = this.bookTab ?? 'stamps') {
     this.hud.closePanel();
     this.journey.setMode('backdrop');
     this.state = 'book';
-    this.book = new StampBook(this, t);
+    this.book?.destroy();
+    this.bookTab = tab; // (it opens again where it was left)
+    this.book = tab === 'stamps' ? new StampBook(this, t) : new DiscoveryBook(this, tab);
+    this.book.title.setVisible(false); // the tabs stand in its place
+    this.tabs ??= new BookTabs(this);
+    this.tabs.set(tab);
   }
 
   closeBook() {
     this.book.destroy();
     this.book = null;
+    this.tabs?.destroy();
+    this.tabs = null;
     this.state = 'title';
     this.showTitle();
   }
 
-  openCollection(kind) {
-    this.hud.closePanel();
-    this.journey.setMode('backdrop');
-    this.state = 'book';
-    this.book = new DiscoveryBook(this, kind);
+  openCollection(kind) { this.openBook(kind); }
+
+  /** The next (or the previous) tab of the collection. */
+  turnBook(dir) {
+    this.sfx.tick?.();
+    this.openBook(BOOK_TABS[(BOOK_TABS.indexOf(this.bookTab) + dir + BOOK_TABS.length) % BOOK_TABS.length]);
   }
 
   discoverEnemy(enemy, bossDefeated = false) {
@@ -377,7 +387,8 @@ export class Stage extends Phaser.Scene {
       const c = this.carry;
       Object.assign(this.score, { score: c.score, mult: c.mult, progress: c.progress });
       Object.assign(this.player, { lives: c.lives, weapon: c.weapon, level: c.level, turrets: c.turrets ?? 0 });
-    }
+    } else if (this.ship.startWeapon && this.player.weapon === 'basic') this.player.weapon = this.ship.startWeapon; // (a gun part)
+    this.player.turrets = Math.max(this.player.turrets, this.ship.startTurrets ?? 0); // (a core: a turret to start every city with)
     this.state = 'play';
     this.stampEligible = !this.encounter && !this.player.god && !(this.debugStart && !this.carry); // (an encounter has no stamp)
     this.stampChance = this.stampEligible; // lost with a life or a bomb (Player)
@@ -495,7 +506,7 @@ export class Stage extends Phaser.Scene {
       for (const e of this.enemies.live) if (!e.dead && e.type !== 'boss') this.enemies.remove(e);
       this.enemies.pool.sweep();
     }
-    this.player.bombs = 1; // the bomb refills after a boss
+    this.player.bombs = this.player.bombMax(); // the bomb refills after a boss
     this.bullets.cancelAll(this.fx);
     this.fx.flash(0.6, 0.6);
     if (this.stage.warnings?.bossDown) this.hud.show(this.stage.warnings.bossDown, this.stage.warnings.bossDownSub ?? '', 2.4);
@@ -575,7 +586,7 @@ export class Stage extends Phaser.Scene {
     this.music.play('clear', true);
     this.clearT = 0;
     this.endTimer = 3;
-    this.player.bombs = 1; // stages without a boss refill the bomb at the end
+    this.player.bombs = this.player.bombMax(); // stages without a boss refill the bomb at the end
     this.player.drag = null;
     const next = STAGES[this.order[this.pos + 1]];
     this.bullets.cancelAll(this.fx);
@@ -684,6 +695,8 @@ export class Stage extends Phaser.Scene {
       return this.journey.pointerDown(p);
     }
     if (this.state === 'book') {
+      const tab = this.tabs.hit(p);
+      if (tab) { if (tab !== this.bookTab) { this.sfx.tick?.(); this.openBook(tab); } return; }
       if (this.book.pointer) return this.book.pointer(p);
       return this.book.hitTurn(p) || this.closeBook();
     }
@@ -749,12 +762,13 @@ export class Stage extends Phaser.Scene {
       else if (down(k.I) && canInstall()) install().then(() => this.state === 'title' && this.showTitle());
       else if (down(k.UP) || down(k.W)) this.journey.focus = (this.journey.focus + this.journey.menuButtons.length - 1) % this.journey.menuButtons.length;
       else if (down(k.DOWN) || down(k.S)) this.journey.focus = (this.journey.focus + 1) % this.journey.menuButtons.length;
-      else if ((down(k.LEFT) || down(k.A) || down(k.RIGHT) || down(k.D)) && this.journey.focus >= 4) this.journey.focus = 9 - this.journey.focus; // (the last row holds two)
       else if (confirm || bomb) this.journey.activate();
     } else if (this.state === 'city') {
       if (down(k.UP) || down(k.W) || down(k.LEFT) || down(k.A)) this.journey.step(-1);
       if (down(k.DOWN) || down(k.S) || down(k.RIGHT) || down(k.D)) this.journey.step(1);
       if (confirm || bomb) this.confirmCity();
+    } else if (this.state === 'book' && (down(k.TAB) || down(k.Q) || down(k.E))) {
+      this.turnBook(down(k.Q) ? -1 : 1);
     } else if (this.state === 'book' && this.book.key) {
       // the yōkai album and the food journal: a grid, then an entry's page
       const act = down(k.LEFT) || down(k.A) ? 'left' : down(k.RIGHT) || down(k.D) ? 'right' : down(k.UP) || down(k.W) ? 'up'
@@ -890,7 +904,9 @@ export class Stage extends Phaser.Scene {
     this.player.update(dt, playing ? this.keys : null, playing && !this.ceasefire);
     this.enemies.update(dt);
     this.shadows?.update(this.H);
-    this.bullets.update(dt, this.H);
+    // (the time-slow bomb: the enemies' bullets crawl for a while)
+    if (this.bulletSlow > 0) this.bulletSlow -= dt;
+    this.bullets.update(this.bulletSlow > 0 ? dt * 0.3 : dt, this.H);
     this.updatePickups(dt);
     this.foodTrail.update(dt);
     this.fx.update(dt, this.parallax);

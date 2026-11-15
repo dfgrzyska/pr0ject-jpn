@@ -162,7 +162,7 @@ export class Enemies {
         let color = CARRIER_COLORS[Math.floor(Math.random() * 3)];
         if (color === this.lastCarrier) color = CARRIER_COLORS[Math.floor(Math.random() * 3)];
         // now and then the purple token instead: the wing turrets and their shield (TURRETS)
-        if (this.carriers > 1 && this.lastCarrier !== 'purple' && Math.random() < TURRETS.share) color = 'purple';
+        if (this.carriers > 1 && this.lastCarrier !== 'purple' && Math.random() < TURRETS.share + (this.scene.player.ship.purpleShare ?? 0)) color = 'purple';
         this.lastCarrier = color;
         e = this.pool.spawn(look.frame.replace('{c}', color), w.x, -10, { ...base, color, path: w.path ?? (look.melt ? 'drift' : 'zigzag'), melt: look.melt ?? 0 });
         if (look.anim) e.play(look.anim.replace('{c}', e.color));
@@ -495,7 +495,7 @@ export class Enemies {
     s.fx.text(x, y + 34, 'PRZEŁAMANIE!', 1.4, 0xffe080);
     s.fx.text(x, y + 46, `${pts}`, 1.2, 0xffe080);
     const p = s.player;
-    if (p.bombs === 0) p.grazeCharge = Math.min(p.grazePerBomb() - 1, p.grazeCharge + PHASE.charge);
+    if (p.bombs < p.bombMax()) p.grazeCharge = Math.min(p.grazePerBomb() - 1, p.grazeCharge + PHASE.charge);
     s.hud.show(`FAZA ${['I', 'II', 'III'][n - 1]}`, title, 1.8);
     s.fx.flash(0.35, 0.3);
     s.fx.shockwave(x, y);

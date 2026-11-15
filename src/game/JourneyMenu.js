@@ -9,6 +9,7 @@ import { discoveries } from './Discoveries.js';
 import { YOKAI, FOODS } from '../data/discoveries.js';
 import { hasStamp } from './Stamps.js';
 import { sharedArt } from './enemyArt.js';
+import { ITEMS } from '../data/gacha.js';
 
 const FINE = 1 / RENDER_SCALE; // the menu's art and the map are drawn at 540 px
 const CITY_KEY = 'shmupjp.startCity';
@@ -44,20 +45,21 @@ export class JourneyMenu {
     this.caption = add(pixelText(scene, 90, 0, 'OSIEM MIAST. JEDNA PODRÓŻ.').setTint(0xc8ac85));
     this.heading = add(pixelText(scene, 90, 50, 'WYBIERZ MIASTO'));
     this.newGame = add(pixelText(scene, 85, 0, 'WYRUSZ W PODRÓŻ'), DEPTH.overlay + 2);
-    this.stamps = add(pixelText(scene, 90, 0, 'PIECZĄTKI', 0.5, INK_FONT), DEPTH.overlay + 2);
-    this.yokai = add(pixelText(scene, 90, 0, 'ALBUM YOKAI', 0.5, INK_FONT), DEPTH.overlay + 2);
-    this.food = add(pixelText(scene, 90, 0, 'SMAKI JAPONII', 0.5, INK_FONT), DEPTH.overlay + 2);
-    // the last row holds two: the gachapon (with the tickets in hand) and the hangar
-    this.gacha = add(pixelText(scene, 52, 0, `GACHA ×${scene.loadout.tickets}`, 0.5, INK_FONT), DEPTH.overlay + 2);
-    this.hangar = add(pixelText(scene, 128, 0, 'HANGAR', 0.5, INK_FONT), DEPTH.overlay + 2);
-    this.menuButtons = [this.newGame, this.stamps, this.yokai, this.food, this.gacha, this.hangar];
+    // the collection: the stamp book, the yōkai album and the food journal, a tab each
+    this.album = add(pixelText(scene, 90, 0, 'KOLEKCJA', 0.5, INK_FONT), DEPTH.overlay + 2);
+    this.gacha = add(pixelText(scene, 90, 0, 'GACHA', 0.5, INK_FONT), DEPTH.overlay + 2);
+    this.hangar = add(pixelText(scene, 90, 0, 'HANGAR', 0.5, INK_FONT), DEPTH.overlay + 2);
+    this.menuButtons = [this.newGame, this.album, this.gacha, this.hangar];
     this.dev = add(pixelText(scene, 177, 46, 'BOSSY', 1).setTint(0x8a9ab0), DEPTH.overlay + 2); // the developer boss screen
-    this.cards = this.menuButtons.map((b, i) => add(scene.add.image(i < 4 ? 90 : b.x, 0, i < 4 ? 'menu' : 'gacha', this.cardFrame(i, false)).setScale(FINE)));
-    this.icons = ['icon_stamp', 'icon_yokai', 'icon_food'].map((frame) => add(scene.add.image(29, 0, 'menu', frame).setScale(FINE), DEPTH.overlay + 2));
+    this.cards = this.menuButtons.map((b, i) => add(scene.add.image(90, 0, 'menu', this.cardFrame(i, false)).setScale(FINE)));
+    this.icons = [['menu', 'icon_stamp', 1], ['gacha', 'icon_gacha', 1], ['gacha', 'part_gun', 0.75]]
+      .map(([atlas, frame, k]) => add(scene.add.image(29, 0, atlas, frame).setScale(FINE * k), DEPTH.overlay + 2));
     // Sakura petals, turning as they fall.
     this.petals = Array.from({ length: 18 }, (_, n) => add(scene.add.image(0, 0, 'menu', `petal_${n % 2}`).setScale(FINE), DEPTH.overlay + 1.5));
-    const counts = [STAGES.filter((s) => hasStamp(s.id, true)).length, YOKAI.filter((e) => discoveries.has(e.id)).length, FOODS.filter((e) => discoveries.has(e.id)).length];
-    this.counts = [STAGES.length, YOKAI.length, FOODS.length].map((total, i) => add(pixelText(scene, 148, 0, `${counts[i]}/${total}`, 0.5, INK_FONT).setTint(0x76583d), DEPTH.overlay + 2));
+    const found = STAGES.filter((s) => hasStamp(s.id, true)).length + [...YOKAI, ...FOODS].filter((e) => discoveries.has(e.id)).length;
+    // (how much of the collection is found, the tickets in hand, the parts won)
+    const counts = [`${found}/${STAGES.length + YOKAI.length + FOODS.length}`, `×${scene.loadout.tickets}`, `${scene.loadout.owned.length}/${ITEMS.length}`];
+    this.counts = counts.map((text) => add(pixelText(scene, 148, 0, text, 0.5, INK_FONT).setTint(0x76583d), DEPTH.overlay + 2));
     this.titleDecor = [this.sky, this.cloth, this.evening, ...this.lanterns, ...this.cards, ...this.icons, ...this.counts, ...this.petals];
     this.name = add(pixelText(scene, 90, 0, ''));
     this.subtitle = add(pixelText(scene, 90, 0, ''));
@@ -95,9 +97,9 @@ export class JourneyMenu {
     this.caption.y = title.captionY;
     this.captionFits = title.captionY - title.buttons[title.buttons.length - 1] >= 24; // (a short screen: the buttons need the room)
     this.menuButtons.forEach((button, i) => {
-      button.y = title.buttons[Math.min(i, 4)];
+      button.y = title.buttons[i];
       this.cards[i].y = button.y + 1;
-      if (i && i < 4) { this.icons[i - 1].y = button.y; this.counts[i - 1].y = button.y; }
+      if (i) { this.icons[i - 1].y = button.y; this.counts[i - 1].y = button.y; }
     });
     this.name.y = H - 73;
     this.subtitle.y = H - 58;
@@ -197,18 +199,14 @@ export class JourneyMenu {
     if (this.drag === p.id && p.isDown) this.slide(p.y);
   }
   pointerUp(p) { if (this.drag === p.id) this.drag = null; }
-  /** The title button under the pointer (the last row holds two, side by side), else -1. */
-  buttonAt(p) {
-    const i = this.menuButtons.findIndex((b) => Math.abs(p.y - b.y) <= 15);
-    return i === 4 && p.x > 90 ? 5 : i;
-  }
-  cardFrame(i, on) { return `${i === 0 ? 'start' : i < 4 ? 'paper' : 'half'}_${on ? 'on' : 'off'}`; }
+  /** The title button under the pointer, else -1. */
+  buttonAt(p) { return this.menuButtons.findIndex((b) => Math.abs(p.y - b.y) <= 15); }
+  cardFrame(i, on) { return `${i === 0 ? 'start' : 'paper'}_${on ? 'on' : 'off'}`; }
   activate() {
     if (this.focus === 0) this.scene.openCities();
     else if (this.focus === 1) this.scene.openBook();
-    else if (this.focus === 4) this.scene.openGacha();
-    else if (this.focus === 5) this.scene.openHangar();
-    else this.scene.openCollection(this.focus === 2 ? 'yokai' : 'food');
+    else if (this.focus === 2) this.scene.openGacha();
+    else this.scene.openHangar();
   }
   remember() { try { localStorage.setItem(CITY_KEY, STAGES[this.index].id); } catch { /* private mode */ } }
 
@@ -255,10 +253,10 @@ export class JourneyMenu {
       });
       for (const [i, text] of this.menuButtons.entries()) {
         const active = this.focus === i;
-        const reveal = Math.max(0, Math.min(1, (this.modeTime - Math.min(i, 4) * 0.1) / 0.4));
+        const reveal = Math.max(0, Math.min(1, (this.modeTime - i * 0.1) / 0.4));
         text.setAlpha(reveal);
         this.cards[i].setAlpha(reveal);
-        if (i && i < 4) { this.icons[i - 1].setAlpha(reveal); this.counts[i - 1].setAlpha(reveal); }
+        if (i) { this.icons[i - 1].setAlpha(reveal); this.counts[i - 1].setAlpha(reveal); }
         if (active && i === 0) {
           const offset = Math.round(Math.sin(this.time * 5) * 1);
           g.fillStyle(0xffe4ad, reveal).fillTriangle(154 + offset, text.y - 3, 154 + offset, text.y + 3, 158 + offset, text.y);

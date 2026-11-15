@@ -70,6 +70,11 @@ export class Player {
     this.shipFrame(ship.frame);
   }
 
+  /** Bombs the ship can hold (two with the twin bomb). */
+  bombMax() {
+    return this.ship.bombMax ?? 1;
+  }
+
   /** The ship's lives at the start of a game (two more on easy). */
   fullLives() {
     return this.ship.lives + rules().extraLives;
@@ -94,8 +99,10 @@ export class Player {
     this.entering = 0.7;
     this.x = VIEW.width / 2;
     this.y = this.scene.H + 20;
-    this.invulnerable = rules().invulnerable;
-    this.bombs = 1;
+    this.invulnerable = rules().invulnerable + (this.ship.respawnInvuln ?? 0);
+    this.bombs = this.bombMax();
+    this.hanabi = null;
+    this.ix = this.iy = 0;
     this.heat = 0;
     this.jam = 0;
     this.frost = 0;
@@ -161,7 +168,10 @@ export class Player {
         this.scene.sfx.explode('s');
       }
     } else this.frost = Math.max(0, this.frost - FROST.thaw * dt);
-    const slowK = this.frozen > 0 ? 0 : 1 - this.frost * FROST.slow;
+    // (an engine that gives way to the guns: slower while they fire)
+    const slowK = (this.frozen > 0 ? 0 : 1 - this.frost * FROST.slow) * (firing && this.ship.fireSlow ? this.ship.fireSlow : 1);
+    if (this.dodgeCool > 0) this.dodgeCool -= dt;
+    if (this.hanabi && this.alive) this.hanabiUpdate(dt);
     if (this.alive) {
       if (this.entering > 0) {
         this.entering = Math.max(0, this.entering - dt);
@@ -177,8 +187,16 @@ export class Player {
         if (keys.UP.isDown || keys.W.isDown) ay -= 1;
         if (keys.DOWN.isDown || keys.S.isDown) ay += 1;
         const len = Math.hypot(ax, ay) || 1;
-        this.x += (ax / len) * this.ship.speed * slowK * dt;
-        this.y += (ay / len) * this.ship.speed * slowK * dt;
+        let mx = ax / len;
+        let my = ay / len;
+        if (this.ship.inertia) {
+          // a drifting engine: the ship takes a moment to get going, and to stop
+          const k = Math.min(1, this.ship.inertia * dt);
+          mx = this.ix += (mx - this.ix) * k;
+          my = this.iy += (my - this.iy) * k;
+        }
+        this.x += mx * this.ship.speed * slowK * dt;
+        this.y += my * this.ship.speed * slowK * dt;
         bank = ax;
         this.clamp();
       }
@@ -357,7 +375,7 @@ export class Player {
   fire(dt) {
     const w = WEAPONS[this.weapon];
     // Tsubame's momentum: faster fire
-    const k = 1 + (this.ship.momentum ? MOMENTUM.fire * this.momentum : 0);
+    const k = (1 + (this.ship.momentum ? MOMENTUM.fire * this.momentum : 0)) * (this.ship.fireRate ?? 1);
     this.fireTimer -= dt * k;
     while (this.fireTimer <= 0) {
       this.fireTimer += w.interval;
@@ -394,7 +412,8 @@ export class Player {
     s.vx = vx;
     s.vy = vy;
     const surge = this.surge > 0;
-    s.damage = damage * this.ship.damage * (1 + this.rage) * (hot ? HEAT.boost : 1) * (surge ? SURGE.damage : 1);
+    s.damage = damage * this.ship.damage * (1 + this.rage) * (hot ? HEAT.boost : 1) * (surge ? SURGE.damage : 1) * (this.lives <= 1 ? 1 + (this.ship.lastStand ?? 0) : 1);
+    s.flipY = false;
     if (surge) {
       s.vx *= SURGE.speed;
       s.vy *= SURGE.speed;
@@ -408,6 +427,13 @@ export class Player {
     s.hitE = null;
     s.arm = 0;
     if (extra) Object.assign(s, extra);
+    // point blank: a shot hits harder while it is young (the pellets of the spread, and every shot with that gun part)
+    s.closeK = s.close > 0 ? WEAPONS.spread.closeBonus : 1;
+    if (this.ship.pointBlank) {
+      s.close ||= 0.18;
+      s.closeK *= this.ship.pointBlank;
+      s.damage *= this.ship.pointBlank;
+    }
     if (hot) s.setTint(0xffb070);
     return s;
   }
@@ -419,12 +445,16 @@ export class Player {
     this.muzzleT = 0.04;
     this.muzzle.setFrame(this.volleys % 2 ? 'muzzle_0' : 'muzzle_1');
     this.scene.sfx.shot(this.weapon === 'homing' ? 'basic' : this.weapon);
+    // a tail gun: a needle astern with every third volley
+    if (this.ship.tail && this.volleys % 3 === 0) this.shot('ps_needle', x, y + 8, 0, WEAPONS.basic.speed, 1, 2).flipY = true;
     switch (this.weapon) {
       case 'basic': {
         const n = 1 + this.level;
         const { speed, damage } = WEAPONS.basic;
         const gap = 6 * (this.ship.spread ?? 1);
-        for (let i = 0; i < n; i++) this.shot('ps_needle', x + (i - (n - 1) / 2) * gap, y - 6, 0, -speed, damage, 2);
+        // (piercing needles go on through small fry, hitting a little softer)
+        const pierce = this.ship.needlePierce ?? 0;
+        for (let i = 0; i < n; i++) this.shot('ps_needle', x + (i - (n - 1) / 2) * gap, y - 6, 0, -speed, damage * (pierce ? 0.85 : 1), 2, pierce ? { pierce } : null);
         break;
       }
       case 'spread': {
@@ -497,7 +527,7 @@ export class Player {
   /** A bullet brushed past the hit dot: points, and while the bomb is spent, a step towards a new one. */
   graze(b) {
     const s = this.scene;
-    s.score.add(GRAZE.points * s.score.mult);
+    s.score.add(GRAZE.points * s.score.mult * (this.ship.grazePoints ?? 1));
     s.fx.spark(b.x, b.y);
     s.sfx.graze();
     if (this.ship.momentum) this.momentum = Math.min(1, this.momentum + MOMENTUM.graze);
@@ -505,11 +535,11 @@ export class Player {
       this.ofudaCharge = 0;
       this.addOfuda();
     }
-    if (this.bombs > 0) {
+    if (this.bombs >= this.bombMax()) {
       // the bomb is ready: the grazes build up a spirit surge instead
-      if (this.surge <= 0 && ++this.surgeCharge >= SURGE.need) {
+      if (this.surge <= 0 && ++this.surgeCharge >= (this.ship.surgeNeed ?? SURGE.need)) {
         this.surgeCharge = 0;
-        this.surge = SURGE.time;
+        this.surge = this.ship.surgeTime ?? SURGE.time;
         s.fx.text(this.x, this.y - 18, 'SKUPIENIE DUCHA!', 1.2, 0x9ad8ff);
         s.sfx.powerUp();
       }
@@ -517,7 +547,7 @@ export class Player {
     }
     if (++this.grazeCharge >= this.grazePerBomb()) {
       this.grazeCharge = 0;
-      this.bombs = 1;
+      this.bombs++;
       s.fx.text(this.x, this.y - 18, 'BOMBA GOTOWA', 1.2, 0xffe080);
       s.sfx.powerUp();
     }
@@ -565,7 +595,7 @@ export class Player {
     const turn = WEAPONS.homing.turn;
     for (const s of this.shots.live) {
       s.life -= dt;
-      if (s.close > 0 && (s.close -= dt) <= 0) s.damage /= WEAPONS.spread.closeBonus; // out of point-blank range
+      if (s.close > 0 && (s.close -= dt) <= 0) s.damage /= s.closeK; // out of point-blank range
       if (s.homing && (s.arm -= dt) <= 0) {
         // armed: seek the nearest target in range (before that the orb flies out along its launch arc)
         const t = enemies.nearest(s.x, s.y);
@@ -604,7 +634,7 @@ export class Player {
         this.scene.sfx.powerUp();
         fx.text(this.x, this.y - 18, this.turrets === TURRETS.max ? 'ZŁOTA TARCZA' : 'WIEŻYCZKA', 1, this.turrets === TURRETS.max ? 0xffe080 : 0x8ac8ff);
       } else {
-        this.scene.score.add(this.scene.score.maxPowerBonus());
+        this.scene.score.add(this.scene.score.maxPowerBonus() * (this.ship.maxBonus ?? 1));
         fx.text(this.x, this.y - 18, 'BONUS', 1, 0xffe080);
       }
       return;
@@ -616,7 +646,7 @@ export class Player {
         this.scene.sfx.powerUp();
         fx.text(this.x, this.y - 18, this.level === PLAYER.maxPower ? 'MOC MAX' : 'MOC +1', 1, WEAPON_TINT[type]);
       } else {
-        this.scene.score.add(this.scene.score.maxPowerBonus());
+        this.scene.score.add(this.scene.score.maxPowerBonus() * (this.ship.maxBonus ?? 1));
         fx.text(this.x, this.y - 18, 'BONUS', 1, 0xffe080);
       }
     } else {
@@ -628,7 +658,7 @@ export class Player {
 
   bomb() {
     if (!this.alive || this.bombs <= 0 || this.entering > 0 || this.scene.ceasefire) return false;
-    this.bombs = 0;
+    this.bombs--;
     // each ship's own bomb: Oni's shockwave hits hardest, Tsuru's turns the cancelled bullets into paper cranes,
     // Tsubame's wind cut is light and short, but back twice as soon
     const bm = this.ship.bomb ?? { kind: 'shock', damage: BOMB.damage, invulnerable: BOMB.invulnerable, clear: BOMB.clearTime };
@@ -638,8 +668,21 @@ export class Player {
     s.stampChance = false; // no stamp for this city now
     s.run.bombs++;
     s.bombClear = bm.clear;
+    const caught = s.bullets.pool.live.filter((b) => !b.dead).length;
+    if (bm.kind === 'slow') {
+      // time slowed: the bullets stay, crawling, for the ship to thread
+      s.bombClear = 0;
+      s.bulletSlow = bm.slow;
+    }
     const cranes = bm.kind === 'cranes' ? s.bullets.pool.live.filter((b) => !b.dead).slice(0, 24).map((b) => [b.x, b.y]) : [];
-    s.bullets.cancelAll(s.fx);
+    if (bm.kind !== 'slow') s.bullets.cancelAll(s.fx);
+    if (bm.kind === 'magnet' && caught) {
+      // every bullet caught is worth points
+      const pts = caught * 100 * s.score.mult;
+      s.score.add(pts);
+      s.fx.text(this.x, this.y - 36, `+${pts}`, 1.4, 0x9cf09a);
+    }
+    if (bm.kind === 'hanabi') this.hanabi = { n: bm.bursts, t: 0.3, damage: bm.burst };
     s.fx.flash(bm.kind === 'cut' ? 0.45 : 0.75, bm.kind === 'cut' ? 0.3 : 0.45);
     s.fx.shockwave(this.x, this.y);
     if (bm.kind === 'shock') s.fx.shockwave(this.x, this.y - 30);
@@ -650,8 +693,24 @@ export class Player {
       o.setScale(0.55 * o.base);
       s.score.add(20 * s.score.mult);
     }
-    s.fx.text(this.x, this.y - 24, bm.kind === 'shock' ? 'WSTRZĄS!' : bm.kind === 'cranes' ? 'SENBAZURU!' : 'CIĘCIE WIATRU!', 1.2, this.ship.color);
+    s.fx.text(this.x, this.y - 24, bm.shout ?? (bm.kind === 'shock' ? 'WSTRZĄS!' : bm.kind === 'cranes' ? 'SENBAZURU!' : 'CIĘCIE WIATRU!'), 1.2, this.ship.color);
     return true;
+  }
+
+  /** The fireworks of the hanabi bomb: one burst after another over the enemies. */
+  hanabiUpdate(dt) {
+    const h = this.hanabi;
+    if ((h.t -= dt) > 0) return;
+    h.t = 0.32;
+    const s = this.scene;
+    const x = 30 + Math.random() * (VIEW.width - 60);
+    const y = 40 + Math.random() * (s.H * 0.4);
+    s.enemies.damageAll(h.damage);
+    s.fx.shockwave(x, y);
+    s.fx.petalBurst(x, y, 22);
+    s.fx.flash(0.25, 0.2);
+    s.sfx.explode('m');
+    if (--h.n <= 0) this.hanabi = null;
   }
 
   hit() {
@@ -661,6 +720,25 @@ export class Player {
     if (this.shieldT > 0) return;
     if (this.turrets > 0) {
       this.loseTurret();
+      return;
+    }
+    // the dash engine: it throws the ship clear by itself, then needs a while
+    if (this.ship.dodge && !(this.dodgeCool > 0)) {
+      this.dodgeCool = this.ship.dodge;
+      this.invulnerable = 0.7;
+      s.fx.rings.push({ x: this.x, y: this.y, r: 8, life: 0.3 });
+      s.fx.text(this.x, this.y - 18, 'ZRYW!', 1, 0x9ad8ff);
+      s.sfx.graze();
+      return;
+    }
+    // a second chance: once a city, the hit is shrugged off
+    if (this.ship.secondChance && !this.chanceUsed) {
+      this.chanceUsed = true;
+      this.invulnerable = 2;
+      s.bullets.cancelAll(s.fx);
+      s.fx.flash(0.4, 0.3);
+      s.fx.text(this.x, this.y - 18, 'DRUGA SZANSA!', 1.4, 0xffe080);
+      s.sfx.powerUp();
       return;
     }
     // easy: with the bomb ready, it goes off by itself instead
@@ -688,7 +766,7 @@ export class Player {
     this.surgeCharge = 0;
     for (const o of this.ofuda) o.on = false;
     // lose power; the lost level drops as a pickup that can be caught again
-    const lost = Math.min(rules().deathPowerLoss, this.level - 1);
+    const lost = this.ship.keepPower ? 0 : Math.min(rules().deathPowerLoss, this.level - 1);
     if (lost > 0) {
       this.level -= lost;
       const color = WEAPONS.typeToColor[this.weapon];

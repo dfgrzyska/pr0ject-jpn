@@ -290,7 +290,7 @@ export class Hud {
     const fracW = Math.round(20 * s.score.fraction);
     const heatW = p.heatOn ? Math.round(22 * p.heat) : -1;
     const beanW = p.beanT > 0 ? Math.round((22 * p.beanT) / BEANS.time) : -1;
-    const grz = p.bombs === 0 ? p.grazeCharge : 0;
+    const grz = p.bombs < p.bombMax() ? p.grazeCharge : 0;
     const key = `${fracW},${maxed ? 1 : 0},${heatC},${heatW},${beanW},${grz},${this.H}`;
     if (key !== this.barKey) {
       this.barKey = key;
@@ -310,17 +310,17 @@ export class Hud {
         this.bar.fillStyle(0x120e1a, 1).fillRect(44, y, 24, 4);
         this.bar.fillStyle(0xf0c878, 1).fillRect(45, y + 1, Math.round((22 * p.beanT) / BEANS.time), 2);
       }
-      if (p.bombs === 0 && p.grazeCharge > 0) {
+      if (p.bombs < p.bombMax() && p.grazeCharge > 0) {
         // the ring round the bomb button fills with every graze
         const a = -Math.PI / 2;
         this.bar.lineStyle(2, 0xffe080, 0.85);
         this.bar.beginPath();
         this.bar.arc(this.bombBtn.x, this.bombBtn.y, 15, a, a + (Math.PI * 2 * p.grazeCharge) / p.grazePerBomb());
         this.bar.strokePath();
-      } else if (p.bombs > 0 && (p.surgeCharge > 0 || p.surge > 0)) {
+      } else if (p.bombs >= p.bombMax() && (p.surgeCharge > 0 || p.surge > 0)) {
         // with the bomb ready, the grazes fill a blue ring towards a spirit surge (full and pulsing during one)
         const a = -Math.PI / 2;
-        const k = p.surge > 0 ? 1 : p.surgeCharge / SURGE.need;
+        const k = p.surge > 0 ? 1 : p.surgeCharge / (p.ship.surgeNeed ?? SURGE.need);
         this.bar.lineStyle(2, 0x9ad8ff, p.surge > 0 ? 0.55 + 0.4 * Math.sin(this.scene.t * 14) : 0.8);
         this.bar.beginPath();
         this.bar.arc(this.bombBtn.x, this.bombBtn.y, 15, a, a + Math.PI * 2 * k);
