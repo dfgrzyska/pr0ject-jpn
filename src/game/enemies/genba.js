@@ -17,6 +17,7 @@ export const GENBA = {
   swing: { dur: 4.2, reach: 1.05 },
   fissure: { n: 9, gap: 17 },
   pounce: { aim: 0.8, again: 0.5, speed: 320, n: 3 },
+  spanner: { wind: 0.55, dur: 1.9, bow: 26 }, // the spanner: wind-up, seconds out and back, how far its loop bows
   scratch: { warn: 0.55 },
   zoom: { speed: 300, inset: 18 },
   nap: { dur: 2.2, take: 1.5 },
@@ -121,12 +122,27 @@ export const genba = {
         if (a.step >= 3) this.genbaDone(g);
         break;
       case 'spanner':
-        if (a.t > a.step * 0.5) {
+        // the wind-up: the spanner held up in its paw, glinting, for a good half second; then thrown at where the
+        // player is (each of two throws winds up afresh)
+        const sc = g.stage >= 3 ? GENBA.catScale : 1;
+        const [px, py] = [c.x + 10 * sc, c.y - 4 * sc]; // its raised paw (from the art)
+        if (a.step % 2 === 0 && a.step < 4) {
           a.step++;
-          g.throwT = 0.4;
-          s.time.delayedCall(150, () => !g.defeated && this.genbaSpin(g, 'spanner', c.x + 10, c.y - 10));
+          a.t0 = a.t;
+          g.windT = g.t + GENBA.spanner.wind;
+          if (g.body.texture.has('spanner_0')) a.held = this.segPool.spawn('spanner_1', px, py - 6).setDepth(DEPTH.air - 0.105);
+          s.fx.text(px + 4, py - 24, 'CHAKI!', 0.5, 0xd8e0f0);
+        } else if (a.step % 2 === 1 && a.t - a.t0 > GENBA.spanner.wind) {
+          a.step++;
+          g.throwT = 0.25;
+          if (a.held) this.segPool.kill(a.held);
+          a.held = null;
+          this.genbaSpin(g, 'spanner', px, py - 6);
+        } else if (a.held) {
+          a.held.setPosition(px, py - 6).setFrame(`spanner_${Math.floor(a.t * 3) % 2 ? 1 : 2}`);
+          if (Math.random() < dt * 6) s.fx.spark(px + (Math.random() - 0.5) * 6, py - 10);
         }
-        if (a.step >= 2) this.genbaDone(g, 1.4);
+        if (a.step >= 4 && a.t - a.t0 > GENBA.spanner.wind + 0.6) this.genbaDone(g, 1.2);
         break;
       case 'hat':
         if (a.step === 0) {
@@ -366,11 +382,16 @@ export const genba = {
         const pulse = 0.85 + Math.sin(bm.t * (14 + k * 18)) * 0.15; // (beating faster as it comes)
         bm.shadow?.setAlpha((0.45 + k * 0.55) * pulse).setScale(bm.shadow.base * (1.5 - k * 0.5), bm.shadow.base * (1.12 - k * 0.12));
       } else if (!bm.landed) {
-        const k = Math.min(1, (bm.t - warn) / 0.22);
-        bm.spr.setVisible(true).setPosition(bm.x, -60 + (bm.y + 60) * k * k);
+        // it drops straight down onto its shadow (seen from above: high up it shows above the shadow and bigger,
+        // and the two meet as it hits the ground)
+        const k = Math.min(1, (bm.t - warn) / 0.32);
+        const h = 150 * (1 - k * k);
+        bm.spr.setVisible(true).setPosition(bm.x, bm.y - h).setScale(bm.spr.base * (1 + h / 300)).setAlpha(Math.min(1, k * 4));
+        bm.shadow?.setAlpha(1).setScale(bm.shadow.base);
         if (k >= 1) {
           bm.landed = true;
           bm.left = 0.8;
+          bm.spr.setScale(bm.spr.base);
           if (bm.shadow) this.segPool.kill(bm.shadow);
           bm.shadow = null;
           s.cameras.main.shake(100, 0.003);
@@ -446,7 +467,10 @@ export const genba = {
     if (!g.body.texture.has(frame)) return;
     const pl = this.scene.player;
     const spr = this.segPool.spawn(frame, x, y).setDepth(DEPTH.air + 0.04);
-    g.spinners.push({ spr, kind, x0: x, y0: y, tx: pl.x, ty: pl.y, t: 0, dur: kind === 'hardhat' ? 1.6 : 1.3, side: Math.random() < 0.5 ? -1 : 1 });
+    spr.setScale(spr.base * 1.25);
+    // its trail: three fading copies a few frames behind it, so its path can be read at a glance
+    const trail = [1, 2, 3].map((i) => this.segPool.spawn(frame, x, y).setDepth(DEPTH.air + 0.035).setAlpha(0.5 - i * 0.13).setScale(spr.base * (1.25 - i * 0.08)));
+    g.spinners.push({ spr, trail, past: [], kind, x0: x, y0: y, tx: pl.x, ty: pl.y, t: 0, dur: kind === 'hardhat' ? 1.6 : GENBA.spanner.dur, side: Math.random() < 0.5 ? -1 : 1 });
   },
 
   genbaSpinners(g, dt) {
@@ -461,13 +485,21 @@ export const genba = {
       const home = this.genbaCat(g);
       const bx = sp.x0 + (home.x - sp.x0) * k;
       const by = sp.y0 + (home.y - sp.y0) * k;
-      const x = bx + (sp.tx - bx) * out + sp.side * Math.sin(k * Math.PI * 2) * 30;
+      const x = bx + (sp.tx - bx) * out + sp.side * Math.sin(k * Math.PI * 2) * GENBA.spanner.bow;
       const y = by + (sp.ty - by) * out;
       sp.spr.setPosition(x, y);
-      sp.spr.setFrame(sp.kind === 'hardhat' ? `hardhat_${Math.floor(sp.t * 8) % 2}` : `spanner_${Math.floor(sp.t * 16) % 4}`);
-      if (pl.alive && Math.hypot(pl.x - x, pl.y - y) < (sp.kind === 'hardhat' ? 9 : 6)) pl.hit();
+      const frame = sp.kind === 'hardhat' ? `hardhat_${Math.floor(sp.t * 8) % 2}` : `spanner_${Math.floor(sp.t * 14) % 4}`;
+      sp.spr.setFrame(frame);
+      sp.past.unshift([x, y]);
+      if (sp.past.length > 10) sp.past.length = 10;
+      sp.trail?.forEach((tr, i) => {
+        const p = sp.past[Math.min(sp.past.length - 1, (i + 1) * 3)];
+        tr.setPosition(p[0], p[1]).setFrame(frame);
+      });
+      if (pl.alive && Math.hypot(pl.x - x, pl.y - y) < (sp.kind === 'hardhat' ? 9 : 5)) pl.hit();
       if (k >= 1) {
         this.segPool.kill(sp.spr);
+        for (const tr of sp.trail ?? []) this.segPool.kill(tr);
         if (sp.kind === 'hardhat') g.hatOut = false; // (back on its head)
         continue;
       }
@@ -552,7 +584,7 @@ export const genba = {
     if (g.throwT > 0) g.throwT -= dt;
     const blink = g.t % 3.1 < 0.12;
     const idle = ['_stand', '_stand1', '_stand2', '_stand3'][Math.floor(g.t * 4) % 4]; // breathing, the tail swaying
-    const throwing = g.throwT > 0 ? (g.throwT > 0.25 ? '_throw0' : '_throw1') : null;
+    const throwing = g.t < (g.windT ?? 0) ? '_throw0' : g.throwT > 0 ? (g.throwT > 0.25 ? '_throw0' : '_throw1') : null;
     const hurt = g.t < (g.hurtT ?? 0) ? '_hurt' : null;
     if (g.stage < 3) {
       const frame = g.stage === 2 ? (Math.floor(g.t * 3) % 2 ? 'tower_lean_1' : 'tower_lean') : `tower_${Math.floor(g.t * 4) % 4}`;
@@ -602,7 +634,11 @@ export const genba = {
       this.segPool.kill(bm.spr);
       if (bm.shadow) this.segPool.kill(bm.shadow);
     }
-    for (const sp of g.spinners) this.segPool.kill(sp.spr);
+    for (const sp of g.spinners) {
+      this.segPool.kill(sp.spr);
+      for (const tr of sp.trail ?? []) this.segPool.kill(tr);
+    }
+    if (g.act?.held) this.segPool.kill(g.act.held);
     for (const m of g.marks) this.segPool.kill(m.spr);
     for (const k of g.crew ?? []) this.segPool.kill(k.spr);
     for (const b of g.bits ?? []) this.segPool.kill(b.spr);
