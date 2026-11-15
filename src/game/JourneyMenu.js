@@ -57,8 +57,8 @@ export class JourneyMenu {
     // Sakura petals, turning as they fall.
     this.petals = Array.from({ length: 18 }, (_, n) => add(scene.add.image(0, 0, 'menu', `petal_${n % 2}`).setScale(FINE), DEPTH.overlay + 1.5));
     const found = STAGES.filter((s) => hasStamp(s.id, true)).length + [...YOKAI, ...FOODS].filter((e) => discoveries.has(e.id)).length;
-    // (how much of the collection is found, the tickets in hand, the parts won)
-    const counts = [`${found}/${STAGES.length + YOKAI.length + FOODS.length}`, `×${scene.loadout.tickets}`, `${scene.loadout.owned.length}/${ITEMS.length}`];
+    // (how much of the collection is found, the tickets in hand, how much of the machine is won)
+    const counts = [`${found}/${STAGES.length + YOKAI.length + FOODS.length}`, `×${scene.loadout.tickets}`, `${Math.floor((scene.loadout.owned.length / ITEMS.length) * 100)}%`];
     this.counts = counts.map((text) => add(pixelText(scene, 148, 0, text, 0.5, INK_FONT).setTint(0x76583d), DEPTH.overlay + 2));
     this.titleDecor = [this.sky, this.cloth, this.evening, ...this.lanterns, ...this.cards, ...this.icons, ...this.counts, ...this.petals];
     this.name = add(pixelText(scene, 90, 0, ''));

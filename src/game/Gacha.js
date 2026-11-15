@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, VIEW } from '../config.js';
-import { RARITIES, RARITY } from '../data/gacha.js';
+import { RARITIES, RARITY, SHOT_FRAMES } from '../data/gacha.js';
 import { BALL as BALL_FRAME, MACHINE } from '../data/gachaLayout.js';
 import { pixelText } from './Hud.js';
 import { pool, pull } from './Loadout.js';
@@ -15,7 +15,7 @@ const MX = (W - MACHINE.w * FINE) / 2; // the machine's left edge
 const SHOWN = 30; // capsules under the glass at most
 const BALL = (BALL_FRAME * FINE) / 2 - 0.4; // their radius, in game units (they overlap a touch: no gaps between them)
 const RAINBOW = [0xff5a5a, 0xffb040, 0xfff060, 0x6ae486, 0x5cacf2, 0xb070f0];
-const KIND = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK', wake: 'ŚLAD' };
+const KIND = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK', wake: 'ŚLAD', shot_basic: 'POCISKI', shot_spread: 'POCISKI', shot_laser: 'POCISKI', shot_homing: 'POCISKI' };
 // how long each step of a draw takes, s (a draw of ten runs them at half the time)
 const TIME = { ticket: 0.55, crank: 1.0, shake: 0.85, open: 0.4 };
 const ease = (k) => k * k * (3 - 2 * k);
@@ -367,9 +367,9 @@ export class Gacha {
     const it = this.item;
     const d = DEPTH.overlay + 9.2;
     this.prize?.destroy();
-    this.prize = it.kind === 'hull' ? sharedArt(this.scene.add.image(0, 0, 'sprites', it.ship.frame)) : this.scene.add.image(0, 0, 'gacha', `part_${it.kind}`);
+    this.prize = it.kind === 'hull' ? sharedArt(this.scene.add.image(0, 0, 'sprites', it.ship.frame)) : this.scene.add.image(0, 0, 'gacha', it.skin ? `${SHOT_FRAMES[it.kind].at(-1)}_${it.skin}` : `part_${it.kind}`);
     this.prize.setDepth(d);
-    this.prizeScale = it.kind === 'hull' ? 3 : FINE * 2;
+    this.prizeScale = it.kind === 'hull' ? 3 : it.skin ? FINE * (it.kind === 'shot_laser' ? 3 : 6) : FINE * 2;
     const col = RARITY[it.rarity].color;
     this.kind.setText(KIND[it.kind]).setVisible(true).setY(this.cy - 44);
     this.rarity.setText(RARITY[it.rarity].name).setTint(col).setVisible(true).setY(this.cy + 46);

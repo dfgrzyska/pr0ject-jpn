@@ -1,5 +1,5 @@
 import { DEPTH, RENDER_SCALE, VIEW } from '../config.js';
-import { ITEM, ITEMS, LOOKS, RARITIES, RARITY, SLOTS } from '../data/gacha.js';
+import { ITEM, ITEMS, LOOKS, RARITIES, RARITY, SHOT_FRAMES, SLOTS } from '../data/gacha.js';
 import { pixelText } from './Hud.js';
 import { buildShip, equip, layout, setHull, wear } from './Loadout.js';
 import { applySkin, flameLook } from './shipSkin.js';
@@ -14,7 +14,9 @@ const W = VIEW.width;
 const LINE = 12; // a row of the list
 const BOX = 26; // a slot
 const PER_ROW = 5;
-const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW', wake: 'ŚLAD ZA STATKIEM' };
+const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW', wake: 'ŚLAD ZA STATKIEM', shot_basic: 'POCISKI: PODSTAWOWA', shot_spread: 'POCISKI: ROZRZUT', shot_laser: 'POCISKI: LASER', shot_homing: 'POCISKI: NAPROWADZANE' };
+// a slot's picture: the kind's (the four weapons' skins share one), or the fitted skin itself
+const slotFrame = (kind, it) => (it?.skin ? `${SHOT_FRAMES[kind][0]}_${it.skin}` : kind.startsWith('shot_') ? 'part_shot' : `part_${kind}`);
 const TABS = [{ id: 'parts', name: 'CZĘŚCI', x: 50 }, { id: 'look', name: 'WYGLĄD', x: 130 }];
 const TAB_Y = 95;
 const STATS = [
@@ -190,7 +192,7 @@ export class Hangar {
       g.fillStyle(on ? 0x24345c : 0x121a34).fillRect(x - BOX / 2, y - BOX / 2, BOX, BOX);
       g.lineStyle(1, on ? 0xffe080 : it ? tint(it) : 0x33416a, on || it ? 1 : 0.8).strokeRect(x - BOX / 2 + 0.5, y - BOX / 2 + 0.5, BOX - 1, BOX - 1);
       if (s.kind === 'hull') this.slotShip.setVisible(true).setPosition(x, y).setFrame(ship.frame);
-      else art.setFrame(`part_${s.kind}`).setPosition(x, y).setAlpha(it ? (s.fixed ? 0.55 : 1) : 0.22);
+      else art.setFrame(slotFrame(s.kind, it)).setPosition(x, y).setAlpha(it ? (s.fixed ? 0.55 : 1) : 0.22).setScale(it?.skin ? Math.min(FINE * 3, (BOX - 6) / art.height) : FINE);
       // a part built into the hull: a small lock in the corner
       if (s.fixed) {
         g.fillStyle(0x9aaec2).fillRect(x + 6, y + 7, 6, 4);

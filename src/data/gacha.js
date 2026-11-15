@@ -21,7 +21,10 @@ export const PITY = { every: 10, min: 'SR' };
 export const SLOTS = ['engine', 'gun', 'bomb', 'core', 'omamori'];
 
 /** What changes only the looks, one of each worn at a time on any hull. */
-export const LOOKS = ['paint', 'flame', 'dye', 'wake'];
+export const LOOKS = ['paint', 'flame', 'dye', 'wake', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing'];
+
+/** The frames a skin for a weapon's shots replaces (kind -> frames; the skin's own are <frame>_<skin>). */
+export const SHOT_FRAMES = { shot_basic: ['ps_needle'], shot_spread: ['ps_spread'], shot_laser: ['ps_laser_1', 'ps_laser_2', 'ps_laser_3'], shot_homing: ['ps_homing_0'] };
 
 // A part's `fx` is applied to the ship being put together: `set` (fields taken as they are), then `add`, then
 // `mul`; `bombMul` multiplies the bomb's damage. `line`: parts of one line (the same upgrade in five rarities)
@@ -233,6 +236,43 @@ export const ITEMS = [
   { id: 'wake_foxfire', kind: 'wake', rarity: 'SR', name: 'ŚLAD: LISIE OGNIKI', info: 'SYPIE SIĘ ZA STATKIEM', wake: { frames: ['kitsunebi_0', 'kitsunebi_1'], g: -24, scale: 0.5, spin: 0 } },
   { id: 'wake_rainbow', kind: 'wake', rarity: 'SSR', name: 'ŚLAD: TĘCZOWY PYŁ', info: 'SYPIE SIĘ ZA STATKIEM', wake: { frames: ['dot_2'], tints: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], life: 0.8, spin: 0 } },
   { id: 'wake_cranes', kind: 'wake', rarity: 'SSR', name: 'ŚLAD: PAPIEROWE ŻURAWIE', info: 'SYPIE SIĘ ZA STATKIEM', wake: { frames: ['orizuru_0', 'orizuru_1', 'orizuru_2'], scale: 0.45, life: 0.8, spin: 0 } },
+  // ---- skins for the shots, a weapon each (`skin`: the frames are <the shot's frame>_<skin>, tools/art/shots.mjs)
+  { id: 'shot_basic_kunai', kind: 'shot_basic', rarity: 'R', name: 'POCISKI: KUNAI', info: 'SKÓRKA BRONI PODSTAWOWEJ', skin: 'kunai' },
+  { id: 'shot_basic_chopsticks', kind: 'shot_basic', rarity: 'N', name: 'POCISKI: PAŁECZKI', info: 'SKÓRKA BRONI PODSTAWOWEJ', skin: 'chopsticks' },
+  { id: 'shot_basic_rice', kind: 'shot_basic', rarity: 'N', name: 'POCISKI: ZIARNA RYŻU', info: 'SKÓRKA BRONI PODSTAWOWEJ', skin: 'rice' },
+  { id: 'shot_basic_pixels', kind: 'shot_basic', rarity: 'R', name: 'POCISKI: PIKSELE', info: 'SKÓRKA BRONI PODSTAWOWEJ', skin: 'pixels' },
+  { id: 'shot_basic_ink', kind: 'shot_basic', rarity: 'R', name: 'POCISKI: PĘDZEL TUSZU', info: 'SKÓRKA BRONI PODSTAWOWEJ', skin: 'ink' },
+  { id: 'shot_basic_arrow', kind: 'shot_basic', rarity: 'N', name: 'POCISKI: STRZAŁY', info: 'SKÓRKA BRONI PODSTAWOWEJ', skin: 'arrow' },
+  { id: 'shot_basic_icicle', kind: 'shot_basic', rarity: 'N', name: 'POCISKI: SOPLE', info: 'SKÓRKA BRONI PODSTAWOWEJ', skin: 'icicle' },
+  { id: 'shot_basic_dango', kind: 'shot_basic', rarity: 'SR', name: 'POCISKI: DANGO', info: 'SKÓRKA BRONI PODSTAWOWEJ', skin: 'dango' },
+  { id: 'shot_basic_feather', kind: 'shot_basic', rarity: 'N', name: 'POCISKI: PIÓRA', info: 'SKÓRKA BRONI PODSTAWOWEJ', skin: 'feather' },
+  { id: 'shot_spread_sakura', kind: 'shot_spread', rarity: 'N', name: 'POCISKI: KWIATY SAKURY', info: 'SKÓRKA ROZRZUTU', skin: 'sakura' },
+  { id: 'shot_spread_momiji', kind: 'shot_spread', rarity: 'N', name: 'POCISKI: LIŚCIE KLONU', info: 'SKÓRKA ROZRZUTU', skin: 'momiji' },
+  { id: 'shot_spread_shuriken', kind: 'shot_spread', rarity: 'R', name: 'POCISKI: SHURIKEN', info: 'SKÓRKA ROZRZUTU', skin: 'shuriken' },
+  { id: 'shot_spread_coin', kind: 'shot_spread', rarity: 'R', name: 'POCISKI: MONETY 5 JENÓW', info: 'SKÓRKA ROZRZUTU', skin: 'coin' },
+  { id: 'shot_spread_hanabi', kind: 'shot_spread', rarity: 'SR', name: 'POCISKI: ISKRY HANABI', info: 'SKÓRKA ROZRZUTU', skin: 'hanabi' },
+  { id: 'shot_spread_confetti', kind: 'shot_spread', rarity: 'N', name: 'POCISKI: KONFETTI', info: 'SKÓRKA ROZRZUTU', skin: 'confetti' },
+  { id: 'shot_spread_snow', kind: 'shot_spread', rarity: 'N', name: 'POCISKI: PŁATKI ŚNIEGU', info: 'SKÓRKA ROZRZUTU', skin: 'snow' },
+  { id: 'shot_spread_fan', kind: 'shot_spread', rarity: 'R', name: 'POCISKI: WACHLARZE', info: 'SKÓRKA ROZRZUTU', skin: 'fan' },
+  { id: 'shot_spread_hanafuda', kind: 'shot_spread', rarity: 'SR', name: 'POCISKI: KARTY HANAFUDA', info: 'SKÓRKA ROZRZUTU', skin: 'hanafuda' },
+  { id: 'shot_laser_lightning', kind: 'shot_laser', rarity: 'SR', name: 'POCISKI: BŁYSKAWICA', info: 'SKÓRKA LASERA', skin: 'lightning' },
+  { id: 'shot_laser_paper', kind: 'shot_laser', rarity: 'N', name: 'POCISKI: WSTĘGA PAPIERU', info: 'SKÓRKA LASERA', skin: 'paper' },
+  { id: 'shot_laser_water', kind: 'shot_laser', rarity: 'N', name: 'POCISKI: STRUMIEŃ WODY', info: 'SKÓRKA LASERA', skin: 'water' },
+  { id: 'shot_laser_neon', kind: 'shot_laser', rarity: 'R', name: 'POCISKI: NEON', info: 'SKÓRKA LASERA', skin: 'neon' },
+  { id: 'shot_laser_rainbow', kind: 'shot_laser', rarity: 'SSR', name: 'POCISKI: TĘCZA', info: 'SKÓRKA LASERA', skin: 'rainbow' },
+  { id: 'shot_laser_ramen', kind: 'shot_laser', rarity: 'R', name: 'POCISKI: MAKARON RAMEN', info: 'SKÓRKA LASERA', skin: 'ramen' },
+  { id: 'shot_laser_dragon', kind: 'shot_laser', rarity: 'SSR', name: 'POCISKI: SMOK', info: 'SKÓRKA LASERA', skin: 'dragon' },
+  { id: 'shot_laser_moon', kind: 'shot_laser', rarity: 'R', name: 'POCISKI: BLASK KSIĘŻYCA', info: 'SKÓRKA LASERA', skin: 'moon' },
+  { id: 'shot_laser_thread', kind: 'shot_laser', rarity: 'N', name: 'POCISKI: CZERWONA NIĆ', info: 'SKÓRKA LASERA', skin: 'thread' },
+  { id: 'shot_homing_dango', kind: 'shot_homing', rarity: 'N', name: 'POCISKI: KULKI DANGO', info: 'SKÓRKA NAPROWADZANYCH', skin: 'dango' },
+  { id: 'shot_homing_hitodama', kind: 'shot_homing', rarity: 'SR', name: 'POCISKI: HITODAMA', info: 'SKÓRKA NAPROWADZANYCH', skin: 'hitodama' },
+  { id: 'shot_homing_crane', kind: 'shot_homing', rarity: 'SR', name: 'POCISKI: ŻURAWIE ORIGAMI', info: 'SKÓRKA NAPROWADZANYCH', skin: 'crane' },
+  { id: 'shot_homing_temari', kind: 'shot_homing', rarity: 'R', name: 'POCISKI: PIŁKI TEMARI', info: 'SKÓRKA NAPROWADZANYCH', skin: 'temari' },
+  { id: 'shot_homing_fish', kind: 'shot_homing', rarity: 'R', name: 'POCISKI: ZŁOTE RYBKI', info: 'SKÓRKA NAPROWADZANYCH', skin: 'fish' },
+  { id: 'shot_homing_firefly', kind: 'shot_homing', rarity: 'R', name: 'POCISKI: ŚWIETLIKI', info: 'SKÓRKA NAPROWADZANYCH', skin: 'firefly' },
+  { id: 'shot_homing_bubble', kind: 'shot_homing', rarity: 'N', name: 'POCISKI: BĄBELKI', info: 'SKÓRKA NAPROWADZANYCH', skin: 'bubble' },
+  { id: 'shot_homing_ghost', kind: 'shot_homing', rarity: 'SR', name: 'POCISKI: DUSZKI', info: 'SKÓRKA NAPROWADZANYCH', skin: 'ghost' },
+  { id: 'shot_homing_swallow', kind: 'shot_homing', rarity: 'R', name: 'POCISKI: JASKÓŁKI', info: 'SKÓRKA NAPROWADZANYCH', skin: 'swallow' },
 ];
 
 export const ITEM = Object.fromEntries(ITEMS.map((it) => [it.id, it]));

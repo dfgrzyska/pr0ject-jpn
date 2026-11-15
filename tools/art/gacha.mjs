@@ -3,6 +3,7 @@
 // tray, a sign in katakana), its crank, the glass's reflections, the lucky cat on its roof (beckoning: two frames),
 // the capsules in the five rarities (whole, and their two halves for when they crack open), the ticket, a sparkle,
 // and the pictures of the kinds of part a capsule can hold.
+import { shotSkins } from './shots.mjs';
 import { HiSprite, tones, speckle, inPoly } from '../lib/hisprite.mjs';
 import { Raster } from '../lib/raster.mjs';
 import { MACHINE, CAPSULE, BALL, NEKO } from '../../src/data/gachaLayout.js';
@@ -442,6 +443,17 @@ function partDye() {
   return s.render({ outline: 2 });
 }
 
+/** A skin for the shots: three needles in flight. */
+function partShot() {
+  const s = new HiSprite(72, 72, RAMPS);
+  for (const [x, y] of [[20, 26], [36, 8], [52, 26]]) {
+    s.poly([[x, y], [x + 6, y + 12], [x + 4, y + 38], [x - 4, y + 38], [x - 6, y + 12]], 'g');
+    s.line(x, y + 4, x, y + 30, 0xffffff, 2);
+    s.dot(x, y + 37, 3, 0xf07a20);
+  }
+  return s.render({ outline: 2 });
+}
+
 /** A wake: petals strewn in a curve. */
 function partWake() {
   const s = new HiSprite(72, 72, RAMPS);
@@ -466,6 +478,7 @@ function halfCard(active) {
 export function gachaAtlas() {
   const out = [];
   const add = (name, raster) => out.push({ name, raster });
+  for (const s of shotSkins()) out.push(s); // the skins for the player's shots (shots.mjs)
   add('machine', machine());
   add('crank', crank());
   add('glass', glass());
@@ -490,5 +503,6 @@ export function gachaAtlas() {
   add('part_flame', partFlame());
   add('part_dye', partDye());
   add('part_wake', partWake());
+  add('part_shot', partShot());
   return out;
 }

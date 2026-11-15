@@ -430,7 +430,7 @@ export class Player {
 
   shot(frame, x, y, vx, vy, damage, radius, extra) {
     const hot = this.heat >= HEAT.boostAt;
-    const s = this.shots.spawn(frame, x, y);
+    const s = this.shots.spawn(this.ship.look?.shots?.[frame] ?? frame, x, y); // (in its skin out of the gachapon)
     s.vx = vx;
     s.vy = vy;
     const surge = this.surge > 0;
@@ -609,7 +609,9 @@ export class Player {
         life,
         arm,
       });
-      s.play('homing');
+      // (a skin out of the gachapon is one frame: it does not flicker between the orb's two)
+      if (this.ship.look?.shots?.ps_homing_0) s.anims.stop();
+      else s.play('homing');
     }
   }
 

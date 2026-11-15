@@ -19,6 +19,8 @@ export function setCustomFrame(frame, key) {
 export function registerSharedHi(textures) {
   if (!textures.exists('sprites540')) return;
   for (const name of textures.get('sprites540').getFrameNames()) hi.add(name);
+  // the skins for the player's shots are in the gachapon's atlas (tools/art/shots.mjs)
+  if (textures.exists('gacha')) for (const name of textures.get('gacha').getFrameNames()) if (name.startsWith('ps_')) custom.set(name, 'gacha');
 }
 
 /** The texture a shared frame comes from: sprites540 when it has it, else the old sprites atlas. */

@@ -1,7 +1,8 @@
+import { readFileSync } from 'node:fs';
 // Run: node --test tools/tests/gacha.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ITEM, ITEMS, PITY, RARITIES, RARITY, TICKETS } from '../../src/data/gacha.js';
+import { ITEM, ITEMS, PITY, RARITIES, RARITY, TICKETS, LOOKS, SHOT_FRAMES } from '../../src/data/gacha.js';
 import { buildShip, equip, grant, layout, loadState, newState, pool, pull, saveState, setHull, wear } from '../../src/game/Loadout.js';
 
 const memory = () => {
@@ -144,7 +145,7 @@ test('the save comes back as it was, and a broken one starts afresh', () => {
 
 test('looks are worn one of a kind, and only owned ones', () => {
   const s = newState();
-  assert.deepEqual(s.look, { paint: null, flame: null, dye: null, wake: null });
+  assert.deepEqual(s.look, Object.fromEntries(LOOKS.map((k) => [k, null])));
   assert.equal(wear(s, 'paint', 'paint_urushi'), false, 'not owned');
   s.owned.push('paint_urushi', 'flame_lava', 'dye_blue');
   assert.equal(wear(s, 'paint', 'flame_lava'), false, 'a flame is no paint');
@@ -152,7 +153,14 @@ test('looks are worn one of a kind, and only owned ones', () => {
   assert.ok(wear(s, 'flame', 'flame_lava'));
   assert.ok(wear(s, 'dye', 'dye_blue'));
   const ship = buildShip(s);
-  assert.deepEqual(ship.look, { paint: ITEM.paint_urushi.colors, flame: ITEM.flame_lava.flame, dye: ITEM.dye_blue.tint, wake: null });
+  assert.deepEqual(ship.look, { paint: ITEM.paint_urushi.colors, flame: ITEM.flame_lava.flame, dye: ITEM.dye_blue.tint, wake: null, shots: {} });
+  s.owned.push('shot_laser_dragon', 'shot_basic_kunai');
+  assert.ok(wear(s, 'shot_laser', 'shot_laser_dragon'));
+  assert.equal(wear(s, 'shot_laser', 'shot_basic_kunai'), false, 'a skin goes on its own weapon');
+  assert.deepEqual(buildShip(s).look.shots, { ps_laser_1: 'ps_laser_1_dragon', ps_laser_2: 'ps_laser_2_dragon', ps_laser_3: 'ps_laser_3_dragon' });
+  // every skin in the catalogue is drawn
+  const drawn = new Set(Object.keys(JSON.parse(readFileSync(new URL('../../public/assets/gacha.json', import.meta.url))).frames));
+  for (const it of ITEMS.filter((i) => i.skin)) for (const f of SHOT_FRAMES[it.kind]) assert.ok(drawn.has(`${f}_${it.skin}`), `${f}_${it.skin} is in the gacha atlas`);
   assert.equal(ship.damage, buildShip(newState()).damage, 'looks change no numbers');
   assert.ok(wear(s, 'paint', null));
   assert.equal(buildShip(s).look.paint, null);

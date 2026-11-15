@@ -1,4 +1,4 @@
-import { DEFAULTS, ITEM, ITEMS, KITS, LOOKS, PITY, RARITIES, RARITY, SLOTS, TICKETS } from '../data/gacha.js';
+import { DEFAULTS, ITEM, ITEMS, KITS, LOOKS, PITY, RARITIES, RARITY, SHOT_FRAMES, SLOTS, TICKETS } from '../data/gacha.js';
 
 // The player's side of the gachapon: tickets, what came out of the machine so far, and the ship put together
 // from it (a hull and the parts in its slots). Kept in the browser. Every function here takes the state as
@@ -163,7 +163,9 @@ export function buildShip(state) {
   }
   // the looks (see shipSkin.js): the paint's colours, the flame, the shots' tint
   const look = state.look ?? {};
-  ship.look = { paint: ITEM[look.paint]?.colors ?? null, flame: ITEM[look.flame]?.flame ?? null, dye: ITEM[look.dye]?.tint ?? null, wake: ITEM[look.wake]?.wake ?? null };
+  ship.look = { paint: ITEM[look.paint]?.colors ?? null, flame: ITEM[look.flame]?.flame ?? null, dye: ITEM[look.dye]?.tint ?? null, wake: ITEM[look.wake]?.wake ?? null, shots: {} };
+  // (the shots' skins: the frame a shot is fired with -> the frame it is shown with)
+  for (const [kind, frames] of Object.entries(SHOT_FRAMES)) if (ITEM[look[kind]]) for (const f of frames) ship.look.shots[f] = `${f}_${ITEM[look[kind]].skin}`;
   ship.perk = fitted.filter((it) => it.kind === 'core').map((it) => it.name).join(' + ');
   // pips out of 3 for the summary: speed, firepower
   ship.stats = [ship.speed < 95 ? 1 : ship.speed < 130 ? 2 : 3, ship.damage < 1 ? 1 : ship.damage < 1.2 ? 2 : 3];
