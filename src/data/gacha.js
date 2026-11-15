@@ -2,6 +2,8 @@
 // Only things that already work in the game are listed here: the machine never gives out a promise.
 
 /** The five rarities, commonest first: the odds of a capsule, its colour (the capsule and the glow round the prize). */
+import { YOKAI } from './discoveries.js';
+
 export const RARITY = {
   N: { rate: 0.5, color: 0xf2f2f2, name: 'ZWYKŁY' },
   R: { rate: 0.3, color: 0x5cacf2, name: 'RZADKI' },
@@ -511,6 +513,14 @@ export const ITEMS = [
   { id: 'decal_pet_koi', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: KARP', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_pet_koi' },
   { id: 'decal_pet_fox', kind: 'decal', rarity: 'R', name: 'NAKLEJKA: LIS', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_pet_fox' },
   { id: 'decal_pet_frog', kind: 'decal', rarity: 'N', name: 'NAKLEJKA: ŻABA', info: 'NAKLEJKA NA KADŁUB', pic: 'decal_pet_frog' },
+  // ---- cards to collect (the KARTY tab of the collection): the yōkai of the album, three more bosses, and a
+  // postcard from each city (its stamp); `card`: the picture's frame, the city, a postcard or not
+  ...YOKAI.map((e) => ({ id: `card_${e.id}`, kind: 'card', rarity: e.type === 'boss' ? 'SSR' : e.type === 'heavy' ? 'SR' : 'R', name: `KARTA: ${e.name}`.slice(0, 24), info: 'KARTA DO KOLEKCJI', card: { frame: e.frame, stage: e.stage, name: e.name } })),
+  { id: 'card_higuma', kind: 'card', rarity: 'SSR', name: 'KARTA: HIGUMA', info: 'KARTA DO KOLEKCJI', card: { frame: 'kuma_0', stage: 'stage3', name: 'HIGUMA' } },
+  { id: 'card_sakurajima', kind: 'card', rarity: 'SSR', name: 'KARTA: SAKURAJIMA', info: 'KARTA DO KOLEKCJI', card: { frame: 'crater_0', stage: 'stage4', name: 'SAKURAJIMA' } },
+  { id: 'card_tako', kind: 'card', rarity: 'SSR', name: 'KARTA: TAKO', info: 'KARTA DO KOLEKCJI', card: { frame: 'tako_0', stage: 'stage5', name: 'TAKO' } },
+  ...[['stage1', 'KIOTO'], ['stage2', 'OKINAWA'], ['stage3', 'SAPPORO'], ['stage4', 'KAGOSHIMA'], ['stage5', 'OSAKA'], ['stage6', 'BEPPU'], ['stage7', 'HIROSZIMA'], ['stage8', 'NAGASAKI']].map(([stage, city]) => (
+    { id: `card_post_${stage}`, kind: 'card', rarity: 'N', name: `POCZTÓWKA: ${city}`, info: 'POCZTÓWKA DO KOLEKCJI', card: { frame: `stamp_${stage}`, stage, name: `POCZTÓWKA: ${city}`, post: true } })),
 ];
 
 export const ITEM = Object.fromEntries(ITEMS.map((it) => [it.id, it]));

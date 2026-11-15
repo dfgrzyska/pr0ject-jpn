@@ -539,6 +539,22 @@ function partDecal() {
   return s.render({ outline: 2 });
 }
 
+/** A card to collect: a gold frame, a fox's face in it. */
+function partCard() {
+  const s = new HiSprite(72, 72, RAMPS);
+  s.poly([[14, 6], [58, 6], [58, 66], [14, 66]], 'g');
+  s.poly([[18, 10], [54, 10], [54, 52], [18, 52]], 'i');
+  s.poly([[24, 18], [32, 26], [24, 34]], 'q');
+  s.poly([[48, 18], [40, 26], [48, 34]], 'q');
+  s.dot(36, 34, 12, 0xf07a20);
+  s.dot(30, 40, 5, 0xffffff);
+  s.dot(42, 40, 5, 0xffffff);
+  s.dot(31, 32, 1.6, INK);
+  s.dot(41, 32, 1.6, INK);
+  s.line(22, 58, 50, 58, INK, 2);
+  return s.render({ outline: 2 });
+}
+
 /** A title: a scroll with lines of writing and a red seal. */
 function partTitle() {
   const s = new HiSprite(72, 72, RAMPS);
@@ -698,6 +714,7 @@ export function gachaAtlas() {
   add('part_blast', partBlast());
   for (const s of decalArt()) out.push(s); // the stickers (decals.mjs)
   add('part_title', partTitle());
+  add('part_card', partCard());
   add('part_decal', partDecal());
   add('part_shield', partShield());
   add('part_companion', partCompanion());

@@ -6,6 +6,7 @@ import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { SourceTextModule, SyntheticModule } from 'node:vm';
 import { YOKAI, FOODS, createDiscoveryStore, yokaiForEnemy } from '../../src/data/discoveries.js';
 import * as config from '../../src/config.js';
+import { ITEMS, RARITY } from '../../src/data/gacha.js';
 import { buildSprites } from '../art/sprites.mjs';
 import { buildFont, FONT } from '../art/font.mjs';
 import { Raster, rgb } from '../lib/raster.mjs';
@@ -55,7 +56,7 @@ const pixelText = (s, x, y, text, origin = 0.5, font = 'pixel') => Object.assign
 const mod = new SourceTextModule(readFileSync(new URL('../../src/game/Discoveries.js', import.meta.url), 'utf8'));
 await mod.link(async (path) => {
   const exports = path.includes('config') ? config : path.includes('data/discoveries') ? { YOKAI, FOODS, createDiscoveryStore }
-    : path.includes('stages') ? { STAGES: stages } : path.includes('i18n') ? { getLang: () => language }
+    : path.includes('data/gacha') ? { ITEMS, RARITY } : path.includes('stages') ? { STAGES: stages } : path.includes('i18n') ? { getLang: () => language }
       : path.includes('Hud') ? { pixelText } : path.includes('enemyArt') ? { portrait: (scene, img, frame) => (img.setFrame(frame), 1), sharedArt: (o) => o } : { INK_FONT: 'ink' };
   return new SyntheticModule(Object.keys(exports), function () { for (const [k, v] of Object.entries(exports)) this.setExport(k, v); });
 });

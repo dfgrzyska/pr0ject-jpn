@@ -3,11 +3,11 @@ import { getLang } from '../i18n.js';
 import { pixelText } from './Hud.js';
 import { INK_FONT } from '../scenes/Boot.js';
 
-/** The collection's three books, in the order of their tabs. */
-export const BOOK_TABS = ['stamps', 'yokai', 'food'];
-const NAMES = { pl: ['PIECZĄTKI', 'YOKAI', 'SMAKI'], en: ['STAMPS', 'YOKAI', 'FOOD'] };
-const EDGE = [10, 74, 122, 170]; // where each tab starts and the last one ends (the first name is the long one)
-const X = [0, 1, 2].map((i) => (EDGE[i] + EDGE[i + 1]) / 2);
+/** The collection's four books, in the order of their tabs. */
+export const BOOK_TABS = ['stamps', 'yokai', 'food', 'cards'];
+const NAMES = { pl: ['PIECZĄTKI', 'YOKAI', 'SMAKI', 'KARTY'], en: ['STAMPS', 'YOKAI', 'FOOD', 'CARDS'] };
+const EDGE = [8, 68, 103, 138, 172]; // where each tab starts and the last one ends (the first name is the long one)
+const X = BOOK_TABS.map((_, i) => (EDGE[i] + EDGE[i + 1]) / 2);
 const Y = 18;
 
 /** The tabs printed across the top of the collection's page, where each book's own title used to be. */
@@ -23,8 +23,9 @@ export class BookTabs {
     const at = BOOK_TABS.indexOf(tab);
     const g = this.gfx.clear();
     this.labels.forEach((label, i) => label.setTint(i === at ? 0xa8321a : 0x8a7a60));
-    g.fillStyle(0xc4b28c).fillRect(EDGE[1], Y - 5, 1, 10).fillRect(EDGE[2], Y - 5, 1, 10);
-    g.fillStyle(0xb83a1a).fillRect(EDGE[at] + 4, Y + 7, EDGE[at + 1] - EDGE[at] - 8, 2);
+    g.fillStyle(0xc4b28c);
+    for (let i = 1; i < BOOK_TABS.length; i++) g.fillRect(EDGE[i], Y - 5, 1, 10);
+    g.fillStyle(0xb83a1a).fillRect(EDGE[at] + 3, Y + 7, EDGE[at + 1] - EDGE[at] - 6, 2);
   }
 
   /** The tab under the pointer, else null. */

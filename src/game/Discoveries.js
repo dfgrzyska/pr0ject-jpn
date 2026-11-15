@@ -1,6 +1,7 @@
 import { DEPTH, PLAYER, VIEW } from '../config.js';
 import { YOKAI, FOODS, createDiscoveryStore } from '../data/discoveries.js';
 import { STAGES } from '../data/stages.js';
+import { ITEMS, RARITY } from '../data/gacha.js';
 import { getLang } from '../i18n.js';
 import { pixelText } from './Hud.js';
 import { INK_FONT } from '../scenes/Boot.js';
@@ -105,6 +106,8 @@ export class FoodTrail {
  * the grid when there are more than 16 entries), then the chosen entry's own page; locked pages keep a location
  * hint but hide the story.
  */
+// the cards out of the gachapon, as the album's entries: known when the player owns them
+const CARDS = ITEMS.filter((it) => it.kind === 'card').map((it) => ({ id: it.id, frame: it.card.frame, stage: it.card.stage, name: it.card.name, rarity: it.rarity, post: Boolean(it.card.post) }));
 const GRID = 4;
 const PER_PAGE = GRID * GRID;
 const TILE = 36;
@@ -114,7 +117,9 @@ export class DiscoveryBook {
   constructor(scene, kind) {
     this.scene = scene;
     this.kind = kind;
-    this.entries = kind === 'food' ? FOODS : YOKAI;
+    this.entries = kind === 'food' ? FOODS : kind === 'cards' ? CARDS : YOKAI;
+    const owned = new Set(scene.loadout?.owned ?? []);
+    this.has = kind === 'cards' ? (e) => owned.has(e.id) : (e) => discoveries.has(e.id);
     this.index = 0;
     this.mode = 'grid';
     this.items = [];
@@ -235,7 +240,7 @@ export class DiscoveryBook {
     this.sheet.setSize(170, H - 36);
     g.lineStyle(1, 0xa8321a).strokeRect(9, 10, 162, H - 44);
     this.title.setText(food ? words('SMAKI JAPONII', 'TASTES OF JAPAN') : words('ALBUM YOKAI', 'YOKAI ALBUM')).setPosition(90, 24);
-    this.count.setText(`${this.entries.filter((entry) => discoveries.has(entry.id)).length} / ${this.entries.length}`).setPosition(90, 39);
+    this.count.setText(`${this.entries.filter((entry) => this.has(entry)).length} / ${this.entries.length}`).setPosition(90, 39);
     for (const o of [this.art, this.secret, this.name, this.city, this.story, this.hint]) o.setVisible(!grid);
     for (const o of [this.gridName, this.gridCity, this.open]) o.setVisible(grid);
     for (const t of this.tiles) {
@@ -243,7 +248,7 @@ export class DiscoveryBook {
       t.mark.setVisible(false);
     }
     const e = this.entries[this.index];
-    const known = discoveries.has(e.id);
+    const known = this.has(e);
     const city = STAGES.find((s) => s.id === e.stage);
     if (grid) this.layoutGrid(H, g);
     else this.layoutPage(H, g, e, known, city, food);
@@ -273,17 +278,20 @@ export class DiscoveryBook {
       const e = this.entries[first + slot];
       const { x, y } = this.tileXY(slot);
       if (!e) continue;
-      const known = discoveries.has(e.id);
+      const known = this.has(e);
       const focused = first + slot === this.index;
       g.fillStyle(known ? 0xf4ead2 : 0xe2d6b8, 0.85).fillRect(x - TILE / 2, y - TILE / 2, TILE, TILE);
       g.lineStyle(1, focused ? 0xa8321a : 0xbba782).strokeRect(x - TILE / 2, y - TILE / 2, TILE, TILE);
       if (focused) g.lineStyle(1, 0xa8321a).strokeRect(x - TILE / 2 + 2, y - TILE / 2 + 2, TILE - 4, TILE - 4);
+      // (a card: a band in its rarity's colour along the foot)
+      if (known && e.rarity) g.fillStyle(RARITY[e.rarity].color).fillRect(x - TILE / 2 + 3, y + TILE / 2 - 5, TILE - 6, 2);
       const t = this.tiles[slot];
       if (known) {
         const base = portrait(this.scene, t.art, e.frame);
         t.art.setScale(base);
         const fit = Math.min((TILE - 6) / (t.art.width * base), (TILE - 6) / (t.art.height * base));
         t.art.setScale(base * (fit < 1 ? fit : Math.min(2, Math.floor(fit)))).setPosition(x, y).setVisible(true);
+        t.art.setTint(e.post ? 0xa8321a : 0xffffff); // (a postcard: the city's stamp, in red ink)
       } else t.mark.setPosition(x, y).setVisible(true);
     }
   }
@@ -295,6 +303,8 @@ export class DiscoveryBook {
     this.art.setPosition(90, 87).setVisible(known).setScale(base);
     const fit = Math.min(70 / (this.art.width * base), 55 / (this.art.height * base));
     this.art.setScale(base * (fit < 1 ? fit : Math.min(3, Math.floor(fit))));
+    this.art.setTint(e.post ? 0xa8321a : 0xffffff);
+    if (e.rarity && known) g.fillStyle(RARITY[e.rarity].color).fillRect(52, 115, 76, 2);
     this.secret.setPosition(90, 87).setVisible(!known);
     this.name.setText(known ? e.name : '???').setPosition(90, 128);
     this.city.setText(`${city.name}${food ? ` / ${e.place}` : ''}`).setPosition(90, 143);
@@ -303,12 +313,15 @@ export class DiscoveryBook {
     const target = e.type === 'boss' ? words('BOSSA', 'THE BOSS') : e.type === 'heavy' ? words('MINIBOSSA', 'THE MINIBOSS')
       : e.id === 'kitsune' ? words('DRONA Z LISIĄ MASKĄ', 'A FOX-MASK DRONE') : e.id === 'chochin' ? words('CZERWONY LAMPION', 'A RED LANTERN')
         : e.id === 'kappa' ? words('WODNĄ KAPPĘ', 'A WATER KAPPA') : words('KOCIĄ WIEŻYCZKĘ', 'A CAT TURRET');
-    const copy = known ? (en() ? e.en : e.pl) : food
+    const copy = e.rarity ? (known
+      ? (e.post ? words(`Pocztówka z podróży: ${city.name}. Wylosowana w automacie gacha.`, `A postcard from the journey: ${city.name}. Won from the gacha machine.`) : words(`Karta kolekcjonerska: ${e.name}. Wylosowana w automacie gacha.`, `A collector's card: ${e.name}. Won from the gacha machine.`))
+      : words('Tę kartę można wylosować w automacie gacha. Kupony dają pokonani bossowie.', 'This card comes out of the gacha machine. Beaten bosses give tickets.'))
+      : known ? (en() ? e.en : e.pl) : food
       ? words(`Szukaj złotej ikonki jedzenia w okolicy: ${e.place}. Zbierz ją statkiem.`, `Look for a golden food icon near ${e.place}. Collect it with your ship.`)
       : words(`Pokonaj ${target} w tym mieście, aby odkryć ilustrację i opowieść.`, `Defeat ${target} in this city to reveal the illustration and story.`);
     this.story.setText(wrapJournal(copy)).setPosition(15, 158);
     const category = e.category?.split(' / ');
-    this.hint.setText(known ? (food ? words('ZAPISANO W DZIENNIKU', 'SAVED IN YOUR JOURNAL') : category[en() ? 1 : 0] ?? category[0]) : words('JESZCZE NIEODKRYTE', 'NOT DISCOVERED YET')).setPosition(15, H - 63);
+    this.hint.setText(e.rarity ? (known ? RARITY[e.rarity].name : words('JESZCZE NIE WYLOSOWANA', 'NOT WON YET')) : known ? (food ? words('ZAPISANO W DZIENNIKU', 'SAVED IN YOUR JOURNAL') : category[en() ? 1 : 0] ?? category[0]) : words('JESZCZE NIEODKRYTE', 'NOT DISCOVERED YET')).setPosition(15, H - 63);
   }
 
   destroy() { for (const o of this.items) o.destroy(); }
