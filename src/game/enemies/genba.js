@@ -18,7 +18,7 @@ export const GENBA = {
   fissure: { n: 9, gap: 17 },
   pounce: { aim: 0.8, again: 0.5, speed: 320, n: 3 },
   spanner: { wind: 0.55, dur: 1.9, bow: 26 }, // the spanner: wind-up, seconds out and back, how far its loop bows
-  scratch: { warn: 0.55 },
+  scratch: { warn: 0.7 },
   zoom: { speed: 300, inset: 18 },
   nap: { dur: 2.2, take: 1.5 },
   catScale: 1.3,
@@ -303,9 +303,21 @@ export const genba = {
       a.x = Phaser.Math.Clamp(s.player.x, 30, VIEW.width - 30);
       a.y = Phaser.Math.Clamp(s.player.y - 10, s.H * 0.4, s.H - 40);
       s.fx.text(e.x, e.y - 44, 'NYAAA!', 0.9, 0xff9a60);
+      // where it will land: the three marks show faintly on the ground first, darker and clearer as the paw comes down
+      if (e.texture.has('claws')) {
+        const m = this.segPool.spawn('claws', a.x, a.y).setDepth(DEPTH.ground + 0.65);
+        a.ghost = { spr: m.setScale(m.base * 4.4).setTint(0x5a1408).setTintMode(Phaser.TintModes.MULTIPLY).setAlpha(0.15), t: 0, ghost: true };
+        g.marks.push(a.ghost);
+      }
+    }
+    if (a.step === 1 && a.ghost) {
+      const k = Math.min(1, a.t / GENBA.scratch.warn);
+      const blink = k > 0.7 && Math.floor(a.t * 16) % 2 ? 0.25 : 0;
+      a.ghost.spr.setAlpha(0.15 + k * 0.5 + blink);
     }
     if (a.step === 1 && a.t > GENBA.scratch.warn) {
       a.step = 2;
+      if (a.ghost) a.ghost.done = true;
       // the claw marks themselves, big across the screen; along each, a row of shots flying out from it
       if (e.texture.has('claws')) {
         const m = this.segPool.spawn('claws', a.x, a.y).setDepth(DEPTH.ground + 0.7);
@@ -416,6 +428,12 @@ export const genba = {
     let n = 0;
     for (const m of g.marks) {
       m.t += dt;
+      if (m.ghost) {
+        // a warning mark lives only until the cut (or, if the move was cut short, a moment longer)
+        if (m.done || m.t > 1.5) this.segPool.kill(m.spr);
+        else g.marks[n++] = m;
+        continue;
+      }
       if (m.t > 0.9) {
         this.segPool.kill(m.spr);
         continue;

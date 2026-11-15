@@ -109,8 +109,9 @@ sznurem, wąsy wyciągnięte za płot, za które ciągną mieszczanie; inni okł
   (strefy jak gejzery w Beppu); wieża pęka i się przechyla, belki spadają gęściej.
 - **Faza 3 — zawalenie:** wieża się wali, kot schodzi walczyć. Trzy skoki pod rząd: przed każdym przyczaja się
   z szeroko otwartymi oczami i kręci zadkiem (pierwszy raz dłużej), skacze tam, gdzie był gracz, ląduje z
-  pierścieniem pazurów i kurzem. Pazury („NYAAA!”): unosi łapę, a potem przez gracza przecinają ekran trzy wielkie
-  ślady pazurów i trzy rzędy pocisków rozlatują się od nich. Kask jak bumerang. „ZUUUM!” — kocie szaleństwo: pędzi
+  pierścieniem pazurów i kurzem. Pazury („NYAAA!”): namierza miejsce gracza i unosi łapę; przez 0,7 s w tym miejscu na ziemi
+  prześwitują trzy ciemne rysy (coraz wyraźniejsze, na końcu migają), po czym przecinają je trzy wielkie ślady pazurów
+  i trzy rzędy pocisków rozlatują się od nich prostopadle — uciekać wzdłuż ukosu rys. Kask jak bumerang. „ZUUUM!” — kocie szaleństwo: pędzi
   dookoła ekranu wzdłuż krawędzi i zrzuca pociski do środka. Na koniec siada i myje łapę („PERO PERO...”) — przez
   2,2 s bierze 1,5× obrażeń.
 
