@@ -14,14 +14,15 @@ const W = VIEW.width;
 const LINE = 12; // a row of the list
 const BOX = 26; // a slot
 const PER_ROW = 5;
-const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW', wake: 'ŚLAD ZA STATKIEM', shot_basic: 'POCISKI: PODSTAWOWA', shot_spread: 'POCISKI: ROZRZUT', shot_laser: 'POCISKI: LASER', shot_homing: 'POCISKI: NAPROWADZANE', marker: 'ZNACZNIK HITBOXA', eb_color: 'WROGIE POCISKI: KOLOR', eb_shape: 'WROGIE POCISKI: KSZTAŁT' };
+const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW', wake: 'ŚLAD ZA STATKIEM', shot_basic: 'POCISKI: PODSTAWOWA', shot_spread: 'POCISKI: ROZRZUT', shot_laser: 'POCISKI: LASER', shot_homing: 'POCISKI: NAPROWADZANE', marker: 'ZNACZNIK HITBOXA', eb_color: 'WROGIE POCISKI: KOLOR', eb_shape: 'WROGIE POCISKI: KSZTAŁT', blast: 'WYBUCHY', bomb_look: 'WYGLĄD BOMBY' };
 // a slot's picture: the kind's (the four weapons' skins share one), or the fitted skin itself
 const slotFrame = (kind, it) => (it?.pic ? it.pic : it?.skin ? `${SHOT_FRAMES[kind][0]}_${it.skin}` : kind.startsWith('shot_') ? 'part_shot' : `part_${kind}`);
-// the tabs: the parts, then the looks (of the ship, of the shots: its own and the enemies')
+// the tabs: the parts, then the looks (of the ship, of the shots: its own and the enemies', of the effects)
 const TABS = [
-  { id: 'parts', name: 'CZĘŚCI', x: 30 },
-  { id: 'ship', name: 'STATEK', x: 90, kinds: ['paint', 'flame', 'wake', 'marker'] },
-  { id: 'shots', name: 'POCISKI', x: 150, kinds: ['dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape'] },
+  { id: 'parts', name: 'CZĘŚCI', x: 21 },
+  { id: 'ship', name: 'STATEK', x: 65, kinds: ['paint', 'flame', 'wake', 'marker'] },
+  { id: 'shots', name: 'POCISKI', x: 112, kinds: ['dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape'] },
+  { id: 'fx', name: 'EFEKTY', x: 159, kinds: ['blast', 'bomb_look'] },
 ];
 const TAB_Y = 95;
 const STATS = [
@@ -161,7 +162,7 @@ export class Hangar {
     TABS.forEach((t, i) => {
       const on = t.id === this.tab;
       this.tabs[i].setTint(on ? 0xffe080 : 0x6a7a92);
-      if (on) g.fillStyle(0xffe080).fillRect(t.x - 22, TAB_Y + 6, 44, 1);
+      if (on) g.fillStyle(0xffe080).fillRect(t.x - t.name.length * 3, TAB_Y + 6, t.name.length * 6, 1);
     });
 
     // the ship in its frame, in the paint and with the flame looked at
@@ -305,7 +306,7 @@ export class Hangar {
   /** A press: the back arrow or a slot at once; on the list it may become a drag (scroll) or, on release, a tap. */
   pointer(p) {
     if (p.y < 26 && p.x < 60) return 'close';
-    if (Math.abs(p.y - TAB_Y) <= 8) return this.setTab(TABS[Math.min(TABS.length - 1, Math.floor((p.x * TABS.length) / W))].id);
+    if (Math.abs(p.y - TAB_Y) <= 8) return this.setTab(TABS.reduce((a, t) => (Math.abs(p.x - t.x) < Math.abs(p.x - a.x) ? t : a)).id);
     const n = this.slots().length;
     for (let i = 0; i < n; i++) {
       const c = this.slotAt(i);

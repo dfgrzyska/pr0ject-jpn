@@ -21,7 +21,7 @@ export const PITY = { every: 10, min: 'SR' };
 export const SLOTS = ['engine', 'gun', 'bomb', 'core', 'omamori'];
 
 /** What changes only the looks, one of each worn at a time on any hull. */
-export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape'];
+export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape', 'blast', 'bomb_look'];
 
 /** The frames a skin for a weapon's shots replaces (kind -> frames; the skin's own are <frame>_<skin>). */
 export const SHOT_FRAMES = { shot_basic: ['ps_needle'], shot_spread: ['ps_spread'], shot_laser: ['ps_laser_1', 'ps_laser_2', 'ps_laser_3'], shot_homing: ['ps_homing_0'] };
@@ -319,6 +319,38 @@ export const ITEMS = [
   { id: 'marker_heart', kind: 'marker', rarity: 'SR', name: 'ZNACZNIK: SERCE', info: 'ZNACZNIK HITBOXA STATKU', pic: 'hitbox_heart' },
   { id: 'marker_coin', kind: 'marker', rarity: 'SR', name: 'ZNACZNIK: MONETA', info: 'ZNACZNIK HITBOXA STATKU', pic: 'hitbox_coin' },
   { id: 'marker_eye', kind: 'marker', rarity: 'SSR', name: 'ZNACZNIK: OKO', info: 'ZNACZNIK HITBOXA STATKU', pic: 'hitbox_eye' },
+  // ---- explosions: the fireball's colours from its dark edge to its pale heart (`ramp`), the light it casts
+  // (`glow`) and the bits it throws in place of the city's own (`bits`, as Fx.cityBits takes them; more: times as many)
+  { id: 'blast_blue', kind: 'blast', rarity: 'N', name: 'WYBUCH: BŁĘKITNY OGIEŃ', info: 'WYGLĄD WYBUCHÓW', blast: { ramp: [0x16226e, 0x2a5ee8, 0x4fb8ff, 0xc8f0ff], glow: 0x70b0ff } },
+  { id: 'blast_green', kind: 'blast', rarity: 'N', name: 'WYBUCH: ZIELONY OGIEŃ', info: 'WYGLĄD WYBUCHÓW', blast: { ramp: [0x0e4a22, 0x22a84a, 0x7ae86a, 0xe0ffc0], glow: 0x80ff90 } },
+  { id: 'blast_violet', kind: 'blast', rarity: 'N', name: 'WYBUCH: FIOLETOWY OGIEŃ', info: 'WYGLĄD WYBUCHÓW', blast: { ramp: [0x3a1470, 0x8a3ae8, 0xc88aff, 0xf0dcff], glow: 0xc090ff } },
+  { id: 'blast_pink', kind: 'blast', rarity: 'N', name: 'WYBUCH: RÓŻOWY OGIEŃ', info: 'WYGLĄD WYBUCHÓW', blast: { ramp: [0x7a1848, 0xe83a8a, 0xff8ac0, 0xffe0ee], glow: 0xff90c0 } },
+  { id: 'blast_ice', kind: 'blast', rarity: 'R', name: 'WYBUCH: LÓD', info: 'WYGLĄD WYBUCHÓW', blast: { ramp: [0x2a5a8a, 0x6ab8e8, 0xb8ecff, 0xf0fcff], glow: 0xb0e0ff, bits: { frames: ['shard_0', 'shard_1', 'shard_2'], speed: 85, life: 0.6, drag: 2.4, g: 0 } } },
+  { id: 'blast_sakura', kind: 'blast', rarity: 'R', name: 'WYBUCH: SAKURA', info: 'WYGLĄD WYBUCHÓW', blast: { ramp: [0x8a2a50, 0xf06a9a, 0xffa8c8, 0xffe8f0], glow: 0xffa0c0, bits: { frames: ['petal_0', 'petal_1', 'petal_2', 'petal_3'], speed: 55, life: 1.1, drag: 1.8, g: 16 } } },
+  { id: 'blast_momiji', kind: 'blast', rarity: 'R', name: 'WYBUCH: MOMIJI', info: 'WYGLĄD WYBUCHÓW', blast: { ramp: [0x6a1a10, 0xd8401a, 0xff8a2a, 0xffd890], bits: { frames: ['momiji_0', 'momiji_1', 'momiji_2', 'momiji_3'], speed: 62, life: 1.05, drag: 1.85, g: 15 } } },
+  { id: 'blast_neon', kind: 'blast', rarity: 'R', name: 'WYBUCH: NEON', info: 'WYGLĄD WYBUCHÓW', blast: { ramp: [0x5a0a7a, 0xff2ad0, 0x4fe8ff, 0xf0ffff], glow: 0xff60e0, bits: { frames: ['dot_1', 'dot_2'], tints: [0xff4fb0, 0x4fe8ff, 0xffe04f, 0x9a7aff], speed: 95, life: 0.45, drag: 2.4, g: 0 } } },
+  { id: 'blast_gold', kind: 'blast', rarity: 'R', name: 'WYBUCH: ZŁOTO', info: 'WYGLĄD WYBUCHÓW', blast: { ramp: [0x6a4208, 0xd89a18, 0xffd848, 0xfff8c0], glow: 0xffd060, bits: { frames: ['dot_1', 'dot_2'], tints: [0xffd040, 0xfff4a8, 0xf0a020], speed: 80, life: 0.7, drag: 2.2, g: 30 } } },
+  { id: 'blast_ink', kind: 'blast', rarity: 'R', name: 'WYBUCH: TUSZ', info: 'WYGLĄD WYBUCHÓW', blast: { ramp: [0x0c0a12, 0x2a2634, 0x5a5668, 0xb8b4c4], glow: 0x808090, bits: { frames: ['ashf_1', 'ashf_2'], speed: 55, life: 0.9, drag: 1.8, g: 10 } } },
+  { id: 'blast_foxfire', kind: 'blast', rarity: 'SR', name: 'WYBUCH: LISI OGIEŃ', info: 'WYGLĄD WYBUCHÓW', blast: { ramp: [0x101a6a, 0x2a4ae8, 0x6aa8ff, 0xd0f0ff], glow: 0x6090ff, bits: { frames: ['kitsunebi_0', 'kitsunebi_1'], speed: 40, life: 0.7, drag: 1.4, g: -24, scale: 0.5 } } },
+  { id: 'blast_hanabi', kind: 'blast', rarity: 'SR', name: 'WYBUCH: FAJERWERKI', info: 'WYGLĄD WYBUCHÓW', blast: { ramp: [0x6a1a40, 0xff4a6a, 0xffc04a, 0xfff8c0], bits: { frames: ['dot_2'], tints: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], speed: 130, life: 0.7, drag: 2.6, g: 20, more: 2 } } },
+  { id: 'blast_cranes', kind: 'blast', rarity: 'SR', name: 'WYBUCH: ŻURAWIE', info: 'WYGLĄD WYBUCHÓW', blast: { ramp: [0x6a6a80, 0xb8c0d8, 0xe8f0ff, 0xffffff], glow: 0xffffff, bits: { frames: ['orizuru_0', 'orizuru_1', 'orizuru_2'], speed: 60, life: 0.9, drag: 1.6, g: -6, scale: 0.45 } } },
+  { id: 'blast_steam', kind: 'blast', rarity: 'SR', name: 'WYBUCH: PARA ONSEN', info: 'WYGLĄD WYBUCHÓW', blast: { ramp: [0x7a8090, 0xb8c4d0, 0xe0e8f0, 0xffffff], glow: 0xffffff, bits: { frames: ['wisp_s_0', 'wisp_s_1'], speed: 22, life: 0.8, drag: 1.2, g: -14, grow: 0.9, alpha: 0.7 } } },
+  { id: 'blast_beans', kind: 'blast', rarity: 'SR', name: 'WYBUCH: FASOLKI SETSUBUN', info: 'WYGLĄD WYBUCHÓW', blast: { ramp: [0x5a3a10, 0xc8902a, 0xf0d070, 0xfff4c0], glow: 0xffd070, bits: { frames: ['bean_bit'], speed: 90, life: 0.6, drag: 1.5, g: 90, more: 2 } } },
+  { id: 'blast_rainbow', kind: 'blast', rarity: 'SSR', name: 'WYBUCH: TĘCZA', info: 'WYGLĄD WYBUCHÓW', blast: { ramp: [0x5a1f9a, 0x3a82f0, 0x6ae486, 0xffe04f], glow: 0xffffff, bits: { frames: ['dot_1', 'dot_2'], tints: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], speed: 100, life: 0.8, drag: 2.2, g: 0, more: 2 } } },
+
+  // ---- the bomb's looks: the colour of its ring (one of a list: a ring each) and of its flash, what it scatters
+  { id: 'bomb_look_momiji', kind: 'bomb_look', rarity: 'N', name: 'BOMBA: LIŚCIE KLONU', info: 'WYGLĄD WYBUCHU BOMBY', bomb: { ring: 0xff8a2a, frames: ['momiji_0', 'momiji_1', 'momiji_2', 'momiji_3'] } },
+  { id: 'bomb_look_snow', kind: 'bomb_look', rarity: 'N', name: 'BOMBA: ŚNIEŻYCA', info: 'WYGLĄD WYBUCHU BOMBY', bomb: { ring: 0xb8ecff, flash: 0xd8f0ff, frames: ['shard_0', 'shard_1', 'shard_2'] } },
+  { id: 'bomb_look_wave', kind: 'bomb_look', rarity: 'N', name: 'BOMBA: FALA', info: 'WYGLĄD WYBUCHU BOMBY', bomb: { ring: 0x4fb8ff, flash: 0xc8e8ff, frames: ['drop_0', 'drop_1'] } },
+  { id: 'bomb_look_embers', kind: 'bomb_look', rarity: 'N', name: 'BOMBA: ŻAR', info: 'WYGLĄD WYBUCHU BOMBY', bomb: { ring: 0xff5a2a, flash: 0xffd0a0, frames: ['ember_0', 'ember_1'] } },
+  { id: 'bomb_look_steam', kind: 'bomb_look', rarity: 'R', name: 'BOMBA: PARA', info: 'WYGLĄD WYBUCHU BOMBY', bomb: { ring: 0xffffff, frames: ['wisp_s_0', 'wisp_s_1'] } },
+  { id: 'bomb_look_sparks', kind: 'bomb_look', rarity: 'R', name: 'BOMBA: ISKRY', info: 'WYGLĄD WYBUCHU BOMBY', bomb: { ring: 0xffe04f, flash: 0xfff4c0, frames: ['spark_0', 'spark_1', 'spark_2'] } },
+  { id: 'bomb_look_neon', kind: 'bomb_look', rarity: 'R', name: 'BOMBA: NEON', info: 'WYGLĄD WYBUCHU BOMBY', bomb: { ring: [0xff4fb0, 0x4fe8ff], flash: 0xff9ae0, frames: ['dot_1', 'dot_2'], tints: [0xff4fb0, 0x4fe8ff, 0xffe04f, 0x9a7aff], scale: 1.6 } },
+  { id: 'bomb_look_gold', kind: 'bomb_look', rarity: 'R', name: 'BOMBA: ZŁOTY PYŁ', info: 'WYGLĄD WYBUCHU BOMBY', bomb: { ring: 0xffd040, flash: 0xfff0b0, frames: ['dot_1', 'dot_2'], tints: [0xffd040, 0xfff4a8, 0xf0a020], scale: 1.6 } },
+  { id: 'bomb_look_ink', kind: 'bomb_look', rarity: 'SR', name: 'BOMBA: TUSZ', info: 'WYGLĄD WYBUCHU BOMBY', bomb: { ring: 0x2a2438, flash: 0x14101c, frames: ['ashf_1', 'ashf_2'] } },
+  { id: 'bomb_look_foxfire', kind: 'bomb_look', rarity: 'SR', name: 'BOMBA: LISIE OGNIKI', info: 'WYGLĄD WYBUCHU BOMBY', bomb: { ring: 0x6aa8ff, flash: 0xc0d8ff, frames: ['kitsunebi_0', 'kitsunebi_1'], scale: 0.5 } },
+  { id: 'bomb_look_cranes', kind: 'bomb_look', rarity: 'SR', name: 'BOMBA: TYSIĄC ŻURAWI', info: 'WYGLĄD WYBUCHU BOMBY', bomb: { ring: 0xffffff, frames: ['orizuru_0', 'orizuru_1', 'orizuru_2'], scale: 0.45 } },
+  { id: 'bomb_look_rainbow', kind: 'bomb_look', rarity: 'SSR', name: 'BOMBA: TĘCZA', info: 'WYGLĄD WYBUCHU BOMBY', bomb: { ring: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], frames: ['dot_2'], tints: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], scale: 1.6 } },
 ];
 
 export const ITEM = Object.fromEntries(ITEMS.map((it) => [it.id, it]));

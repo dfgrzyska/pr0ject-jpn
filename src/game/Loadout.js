@@ -163,7 +163,7 @@ export function buildShip(state) {
   }
   // the looks (see shipSkin.js): the paint's colours, the flame, the shots' tint
   const look = state.look ?? {};
-  ship.look = { paint: ITEM[look.paint]?.colors ?? null, flame: ITEM[look.flame]?.flame ?? null, dye: ITEM[look.dye]?.tint ?? null, wake: ITEM[look.wake]?.wake ?? null, shots: {}, marker: ITEM[look.marker]?.pic ?? null, ebColor: ITEM[look.eb_color]?.body ?? null, ebShape: ITEM[look.eb_shape]?.shape ?? null };
+  ship.look = { paint: ITEM[look.paint]?.colors ?? null, flame: ITEM[look.flame]?.flame ?? null, dye: ITEM[look.dye]?.tint ?? null, wake: ITEM[look.wake]?.wake ?? null, shots: {}, marker: ITEM[look.marker]?.pic ?? null, ebColor: ITEM[look.eb_color]?.body ?? null, ebShape: ITEM[look.eb_shape]?.shape ?? null, blast: ITEM[look.blast]?.blast ?? null, bombLook: ITEM[look.bomb_look]?.bomb ?? null };
   // (the shots' skins: the frame a shot is fired with -> the frame it is shown with)
   for (const [kind, frames] of Object.entries(SHOT_FRAMES)) if (ITEM[look[kind]]) for (const f of frames) ship.look.shots[f] = `${f}_${ITEM[look[kind]].skin}`;
   ship.perk = fitted.filter((it) => it.kind === 'core').map((it) => it.name).join(' + ');

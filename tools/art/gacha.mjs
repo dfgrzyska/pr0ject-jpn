@@ -495,6 +495,29 @@ function partMarker() {
   return s.render({ outline: 0 });
 }
 
+/** A look for the explosions: a fireball in blue. */
+function partBlast() {
+  const s = new HiSprite(72, 72, RAMPS);
+  for (const [x, y, r] of [[36, 36, 26], [20, 26, 12], [54, 24, 11], [52, 52, 13], [20, 52, 11]]) s.dot(x, y, r, INK);
+  for (const [x, y, r] of [[36, 36, 23], [20, 26, 9], [54, 24, 8], [52, 52, 10], [20, 52, 8]]) s.dot(x, y, r, 0x2a5ee8);
+  for (const [x, y, r] of [[36, 36, 17], [22, 28, 5], [52, 26, 4], [50, 50, 6]]) s.dot(x, y, r, 0x4fb8ff);
+  s.dot(36, 36, 11, 0xc8f0ff);
+  s.dot(36, 36, 6, 0xffffff);
+  return s.render({ outline: 0 });
+}
+
+/** A look for the bomb: its ring, bits thrown out of it. */
+function partBombLook() {
+  const s = new HiSprite(72, 72, RAMPS);
+  s.dot(36, 36, 30, INK);
+  s.dot(36, 36, 27, 0xffd040);
+  s.dot(36, 36, 22, INK);
+  s.dot(36, 36, 19, 0x18244a);
+  for (const [x, y, c] of [[36, 24, 0xff5a5a], [47, 31, 0xffa040], [47, 43, 0x6ae486], [36, 49, 0x4fc8ff], [25, 43, 0xb070f0], [25, 31, 0xffe04f]]) s.dot(x, y, 3.5, c);
+  s.dot(36, 36, 5, 0xffffff);
+  return s.render({ outline: 0 });
+}
+
 /** A skin for the shots: three needles in flight. */
 function partShot() {
   const s = new HiSprite(72, 72, RAMPS);
@@ -561,5 +584,7 @@ export function gachaAtlas() {
   add('part_eb_color', partEbColor());
   add('part_eb_shape', partEbShape());
   add('part_marker', partMarker());
+  add('part_blast', partBlast());
+  add('part_bomb_look', partBombLook());
   return out;
 }

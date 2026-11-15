@@ -709,10 +709,11 @@ export class Player {
       s.fx.text(this.x, this.y - 36, `+${pts}`, 1.4, 0x9cf09a);
     }
     if (bm.kind === 'hanabi') this.hanabi = { n: bm.bursts, t: 0.3, damage: bm.burst };
-    s.fx.flash(bm.kind === 'cut' ? 0.45 : 0.75, bm.kind === 'cut' ? 0.3 : 0.45);
-    s.fx.shockwave(this.x, this.y);
-    if (bm.kind === 'shock') s.fx.shockwave(this.x, this.y - 30);
-    s.fx.petalBurst(this.x, this.y, bm.kind === 'cut' ? 20 : 48);
+    const bl = this.ship.look?.bombLook; // (its look out of the gachapon: the ring, the flash, what it scatters)
+    s.fx.flash(bm.kind === 'cut' ? 0.45 : 0.75, bm.kind === 'cut' ? 0.3 : 0.45, bl?.flash);
+    s.fx.shockwave(this.x, this.y, bl?.ring);
+    if (bm.kind === 'shock') s.fx.shockwave(this.x, this.y - 30, bl?.ring);
+    s.fx.petalBurst(this.x, this.y, bm.kind === 'cut' ? 20 : 48, bl);
     s.enemies.damageAll(bm.damage);
     for (const [cx, cy] of cranes) {
       const o = this.shot('orizuru_0', cx, cy, (Math.random() - 0.5) * 60, -90, 2, 4, { homing: true, life: 1.8, arm: 0.12 });
@@ -732,9 +733,10 @@ export class Player {
     const x = 30 + Math.random() * (VIEW.width - 60);
     const y = 40 + Math.random() * (s.H * 0.4);
     s.enemies.damageAll(h.damage);
-    s.fx.shockwave(x, y);
-    s.fx.petalBurst(x, y, 22);
-    s.fx.flash(0.25, 0.2);
+    const bl = this.ship.look?.bombLook;
+    s.fx.shockwave(x, y, bl?.ring);
+    s.fx.petalBurst(x, y, 22, bl);
+    s.fx.flash(0.25, 0.2, bl?.flash);
     s.sfx.explode('m');
     if (--h.n <= 0) this.hanabi = null;
   }

@@ -3,6 +3,7 @@ import { DEPTH, VIEW } from '../config.js';
 import { tr } from '../i18n.js';
 import { pixelText } from './Hud.js';
 import { Pool } from './Pool.js';
+import { blastSkinned } from './shipSkin.js';
 
 // What an explosion of each size throws out besides its fireball: puffs of smoke rolling off it, pieces of
 // debris, the city's own bits (below), the light it casts on the ground (how far, in glow sprites) and, on
@@ -65,16 +66,17 @@ export class Fx {
     e.vx = 0;
     e.vy = 0;
     this.scene.sfx.explode(size);
-    e.play(`expl_${size}`);
+    const look = this.scene.ship?.look?.blast; // (a look out of the gachapon: its colours, glow and bits)
+    e.play(look?.ramp && blastSkinned() ? `expl_${size}_skin` : `expl_${size}`);
     e.once('animationcomplete', () => pool.kill(e));
     const k = BLAST[size];
     const onGround = u !== null;
-    this.light(x, y, k.glow, onGround);
+    this.light(x, y, k.glow, onGround, look?.glow);
     if (!light) {
       this.smoke(x, y, k.smoke, k.speed * 4, onGround);
       this.debris(x, y, k.debris, null, k.speed, onGround);
     }
-    this.cityBits(x, y, light ? 2 : k.bits, k.speed, onGround);
+    this.cityBits(x, y, (light ? 2 : k.bits) * (look?.bits?.more ?? 1), k.speed, onGround, look?.bits ?? this.bits);
     if (onGround && k.scorch >= 0) {
       const s = this.scorch.spawn(`scorch_${k.scorch}`, x, y);
       s.setFlipX(Math.random() < 0.5).setFlipY(Math.random() < 0.5);
@@ -134,8 +136,7 @@ export class Fx {
   }
 
   /** The city's own bits in a blast. */
-  cityBits(x, y, n, speed = 1, ground = false) {
-    const b = this.bits;
+  cityBits(x, y, n, speed = 1, ground = false, b = this.bits) {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
       const v = b.speed * speed * (0.4 + Math.random() * 0.8);
@@ -150,6 +151,7 @@ export class Fx {
       p.a0 = b.alpha ?? 1;
       p.ground = ground;
       if (b.tints) p.setTint(b.tints[i % b.tints.length]);
+      if (b.scale) p.setScale(b.scale * p.base);
     }
   }
 
@@ -174,14 +176,16 @@ export class Fx {
     s.once('animationcomplete', () => this.sparks.kill(s));
   }
 
-  flash(alpha, duration) {
+  flash(alpha, duration, color = 0xffffff) {
+    this.flashRect.setFillStyle(color);
     this.flashA = alpha;
     this.flashDur = duration;
     this.flashT = duration;
   }
 
-  shockwave(x, y) {
-    this.rings.push({ x, y, r: 4, life: 0.6 });
+  /** color: the ring's (one of a list); the bomb's look out of the gachapon. */
+  shockwave(x, y, color = null) {
+    this.rings.push({ x, y, r: 4, life: 0.6, c: Array.isArray(color) ? color[Math.floor(Math.random() * color.length)] : color });
     for (const pool of [this.smokes, this.parts, this.petals]) {
       for (const p of pool.live) {
         if (p.ground) continue;
@@ -252,11 +256,14 @@ export class Fx {
     }
   }
 
-  petalBurst(x, y, n) {
+  /** look: what flies in place of the petals ({ frames, tints, scale }: the bomb's look out of the gachapon). */
+  petalBurst(x, y, n, look = null) {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
       const v = 60 + Math.random() * 160;
-      const p = this.petals.spawn(`petal_${i % 4}`, x, y);
+      const p = this.petals.spawn(look?.frames ? look.frames[i % look.frames.length] : `petal_${i % 4}`, x, y);
+      if (look?.tints) p.setTint(look.tints[i % look.tints.length]);
+      if (look?.scale) p.setScale(look.scale * p.base);
       p.vx = Math.cos(a) * v;
       p.vy = Math.sin(a) * v;
       p.life = 0.8 + Math.random() * 0.8;
@@ -393,7 +400,7 @@ export class Fx {
     this.rings.length = n;
     for (const r of this.rings) {
       r.r += 420 * dt;
-      this.ring.lineStyle(3, 0xffd6e5, Math.min(1, r.life * 2.5));
+      this.ring.lineStyle(3, r.c ?? 0xffd6e5, Math.min(1, r.life * 2.5));
       this.ring.strokeCircle(r.x, r.y, r.r);
       this.ring.lineStyle(1, 0xffffff, Math.min(1, r.life * 2.5));
       this.ring.strokeCircle(r.x, r.y, r.r * 0.8);
