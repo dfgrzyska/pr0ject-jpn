@@ -237,12 +237,18 @@ export function skid() {
   return s.render({ outline: 0 });
 }
 
-/** A seed, black, a bullet of its own (pointing up: the game turns it along its flight). */
+/**
+ * A seed, a bullet of its own (pointing up: the game turns it along its flight): bigger than the other cities'
+ * pellets, glossy black with a white glint, ringed in the melon's pink and then a dark edge, so it reads on the road.
+ */
 export function seed() {
-  const s = new HiSprite(15, 15, RAMPS);
-  s.paint([0, 0, 15, 15], (x, y) => ((x - 7.5) / 3.4) ** 2 + ((y - 8) / 5.2) ** 2 < 1 && y > 2.5 + Math.abs(x - 7.5) * 0.8, 'k', (x, y) => 0.5 - (x - 7.5) / 20, { glow: true });
-  s.dot(6.5, 7, 0.8, 0xc8c8d0);
-  return s.render({ outline: 2, outlineColor: 0xf8d0c0 });
+  const s = new HiSprite(21, 21, RAMPS);
+  const inSeed = (x, y, k = 0) => ((x - 10.5) / (4.6 + k)) ** 2 + ((y - 11.5) / (6.8 + k)) ** 2 < 1 && y > 3.2 - k + Math.abs(x - 10.5) * 0.75;
+  s.paint([0, 0, 21, 21], (x, y) => inSeed(x, y, 1.6) && !inSeed(x, y), 'e', () => 0.85, { glow: true }); // the pink halo of flesh
+  s.paint([0, 0, 21, 21], (x, y) => inSeed(x, y), 'k', (x, y) => 0.55 - (x - 10.5) / 14 - (y - 11.5) / 30, { glow: true });
+  s.line(9, 8, 9, 12, 0xffffff, 1);
+  s.px(10, 7, 0xffffff);
+  return s.render({ outline: 1, outlineColor: 0x2a0a0a });
 }
 
 export function keicarEnemies(add) {
