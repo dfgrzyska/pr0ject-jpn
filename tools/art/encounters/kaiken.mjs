@@ -112,6 +112,18 @@ function head(s, hx, hy, a, f) {
       if (!wide) s.line(...P(sx * 10, 3), ...P(sx * 22, 3), SKIN_LINE, 1); // a bag under the eye
     }
   }
+  // his glasses: round dark frames, a bridge, the arms back to the ears, a glint on each lens
+  const FRAME = 0x1a1420;
+  for (const sx of [-1, 1]) {
+    for (let a = 0; a < Math.PI * 2; a += 0.03) {
+      const [gx, gy] = P(sx * 16 + Math.cos(a) * 11.5, -3 + Math.sin(a) * 9.5);
+      for (let w = 0; w < 2; w++) for (let v = 0; v < 2; v++) s.px(gx + w, gy + v, FRAME);
+    }
+    s.line(...P(sx * 27, -5), ...P(sx * 34, -3), FRAME, 2);
+    s.line(...P(sx * 16 - 7, -8), ...P(sx * 16 - 3, -10), 0xffffff, 1, 0.7);
+    s.line(...P(sx * 16 - 8, -5), ...P(sx * 16 - 1, -9), 0xffffff, 1, 0.45);
+  }
+  s.line(...P(-5, -5), ...P(5, -5), FRAME, 2);
   // the nose (red when he cries)
   path(s, [P(-1, 1), P(-3, 11), P(3, 12)], SKIN_LINE, 2);
   if (f.flush) fillE(s, ...P(0, 9), (5) * K, (4.5) * K, 0xe0503c, 0.45);

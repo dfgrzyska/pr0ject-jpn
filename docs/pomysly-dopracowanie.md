@@ -6,16 +6,19 @@ miast nie byli oglądani.
 
 ## Ustalona kolejność
 
-1. Spotkanie 7: zamiast mównicy duża postać człowieka przy stole.
+1. Spotkanie 7: zamiast mównicy duża postać człowieka przy stole. **Zrobione 15.11** (opis w `random-encounters.md`).
 2. Spotkanie 6 (babcia): tło, ruchy i grafika od nowa.
 3. Miasta: szczegóły, animacje i nowe ważne miejsca tam, gdzie jest pustka.
 
 ## Spotkania
 
 Liczba animowanych elementów tła: automat 10, kei car 0, kot na budowie 0, kot bez końca 5, pokój otaku 11,
-babcia 0, mównica 0.
+babcia 0, konferencja 193 (po przeróbce 15.11; wcześniej 0).
 
 ### 7. Płaczący człowiek przy stole (dziś: mównica) — najsłabsze
+
+Zrobione 15.11 (postać w okularach, 22 pozy, nowe tło). Zostało: obejrzeć walkę w ruchu na telefonie i ocenić
+jej czas z prawdziwym graczem. Poniżej pierwotna lista.
 
 Decyzja: bossem ma być duża postać człowieka przy stole konferencyjnym, nie ożywiona mównica.
 

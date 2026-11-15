@@ -198,14 +198,26 @@ Stałe: `OBACHAN` w `src/game/enemies/obachan.js` (2400 HP, progi 66% / 33%). Ba
 - **Faza 3 — tygrys!:** tygrys zeskakuje z bluzki (na bluzce zostaje dziura) i poluje sam: przyczaja się (linia
   celu), skacze, ląduje z rykiem (pierścień, „GAO!”), odpoczywa; babcia dalej rozdaje cukierki i się targuje.
 
-## 7. Płacząca mównica (MOWNICA)
+## 7. Konferencja prasowa (KAIKEN)
 
-Stałe: `MOWNICA` w `src/game/enemies/mownica.js` (2400 HP, progi 66% / 33%). Pierwsza wersja do przerobienia.
+Stałe: `KAIKEN` w `src/game/enemies/kaiken.js` (2400 HP, progi 66% / 33%). Grafika: `tools/art/encounters/kaiken.mjs`
+(postać), `kirifuri.mjs` (tło). Podgląd klatek z gry i pomiar pocisków: `node tools/preview/kaiken-shots.mjs`.
 
-- **Faza 1 — „HA? NANI?”:** wachlarze „odpowiedzi” w gracza; co drugi ruch przykłada rękę do ucha i przez 2,2 s
-  nic nie słyszy: strzały nie zadają obrażeń, a część wraca do gracza jako echo.
-- **Faza 2 — „UAAA!”:** szloch — łuki łez z obu oczu w rytmie łapania oddechu; walenie pięściami w stół („DON!”,
-  podwójny pierścień, wstrząs ekranu); wymachiwanie ręką (strumień pocisków omiatający ekran).
-- **Faza 3 — „ZMIENIĘ ŚWIAT!”:** rzuca bilety kolejowe (numerowane w górę, do #195), które spadają, kołysząc się;
-  co piąty ma czerwony stempel „pociąg nie jechał” i pęka pierścieniem („UNKYŪ!”). Po wygranej: „PAN TEGO NIE
-  ZROZUMIE”.
+Boss to wymyślony pan w garniturze i okularach za stołem konferencyjnym (bez nazwiska, podobizny i funkcji;
+nawiązanie tylko do zachowania). Jedna kukiełka w 22 pozach, pokazywana 1,35× większa niż narysowana; stół,
+mikrofony, szklanka, kałuża łez i zużyte chusteczki to osobne części.
+
+- **Faza 1 — „HA? NANI?”:** wachlarze „odpowiedzi” z ust; siorbnięcie nosem (po trzy łzy na boki); co czwarty ruch
+  przykłada rękę do ucha i przez 1,6 s nic nie słyszy: strzały zatrzymują się na łuku narysowanym przed stołem
+  i odskakują w bok, a część wraca jako echo.
+- **Faza 2 — „UAAA!”:** szloch (łuki łez z obu oczu); walenie pięściami w stół („DON!”, podwójny pierścień, wstrząs,
+  mikrofony i szklanka podskakują, kałuża chlapie); wymachiwanie ręką (strumień pocisków z dłoni).
+- **Faza 3 — „ZMIENIĘ ŚWIAT!”:** rzuca bilety kolejowe (numerowane, do #195), które spadają, obracając się; co piąty
+  ma czerwony stempel i pęka pierścieniem („UNKYŪ!”). Po wygranej osuwa się czołem na stół: „PAN TEGO NIE ZROZUMIE”.
+- **Co widać w trakcie:** kałuża łez rośnie z fazami i spływa po obrusie, między atakami wyciera nos (rośnie kupka
+  chusteczek), po bokach ekranu błyskają flesze.
+- **Tło:** wodospad Kirifuri Hokusaia; twarz w skale (krzaczaste brwi, zaciśnięte powieki) jest na ekranie od początku,
+  pod stołem. Animowane: woda w każdym strumieniu, błyski łez na powiekach, krople, mgła, bryzgi, zmarszczki na
+  stawie, czterech pielgrzymów z parasolami.
+- **Pomiar (30 s na fazę, bez strzelania):** średnio 21 / 36 / 24 pocisków na ekranie, szczyt 32 / 54 / 54
+  (automat: 17 / 34 / 22, szczyt 33 / 57 / 54).
