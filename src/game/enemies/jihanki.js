@@ -17,6 +17,8 @@ export const JIHANKI = {
   shake: 2.4,
   jackpot: 0.35,
   stun: 3.5,
+  rage: 2.6, // a lost draw: seconds of rage...
+  rain: 8, // ...and how many cans it rains down in them
   stunTake: 1.6,
   gift: 3000, // points for a free (golden) can caught
 };
@@ -299,7 +301,8 @@ export const jihanki = {
         }
       } else {
         s.fx.text(e.x, e.y - 64, 'HAZURE...', 1.4, 0xb0aec0);
-        g.rage = 2.6;
+        g.rage = JIHANKI.rage;
+        g.rain = 0;
       }
     }
     if (L.t > 0.9 + 3 * 0.45 + 1.2) {
@@ -314,7 +317,7 @@ export const jihanki = {
     g.rage -= dt;
     s.cameras.main.shake(40, 0.002);
     if ((g.rain = (g.rain ?? 0) - dt) <= 0) {
-      g.rain = 0.26;
+      g.rain = JIHANKI.rage / JIHANKI.rain;
       const pl = s.player;
       const tx = Phaser.Math.Clamp(Math.random() < 0.5 ? pl.x + (Math.random() - 0.5) * 40 : 14 + Math.random() * (VIEW.width - 28), 12, VIEW.width - 12);
       const ty = s.H * (0.5 + Math.random() * 0.42);

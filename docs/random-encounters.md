@@ -51,8 +51,8 @@ u innych bossów (`flashTint`), żeby jasny automat nie bielał.
   „PSSSHHH!” i dwa krzyżujące się strumienie piany. Wstrząśnięte puszki pękają spiralą.
 - **Faza 3 — loteria:** cyfry na wyświetlaczu kręcą się i stają po kolei. Pierwsze losowanie zawsze przegrywa;
   potem 35% na cztery takie same: „ATARI!”, automat oszołomiony na 3,5 s (bierze 1,6× obrażeń) i wypluwa trzy
-  złote puszki — złapane dają punkty, a przy zużytej bombie — bombę. Przegrana („HAZURE...”): szał, puszki spadają
-  z góry ekranu. Między losowaniami automat skacze za graczem.
+  złote puszki — złapane dają punkty, a przy zużytej bombie — bombę. Przegrana („HAZURE...”): szał, 8 puszek spada
+  z góry ekranu w 2,6 s (stałe `rage` i `rain`). Między losowaniami automat skacze za graczem.
 
 ## 2. Kei car (KEI)
 
