@@ -5,41 +5,48 @@ import { slow, normal, DOWN, TAU } from './shared.js';
 
 /**
  * The site (GENBA): life (the tower, then the cat), the tower's place, the phases' thresholds, the beams (warning,
- * fall), the crane hook's swing (seconds, reach), the fissure (zones, spacing), the cat's pounce (aim, speed) and
- * how much bigger the cat is shown once it comes down to fight.
+ * fall), the crane hook's swing (seconds, reach), the fissure (zones, spacing), the cat's pounces (crouch, speed,
+ * how many in a row), its claw swipe (warning), its zoomies (speed, how far in from the edges), its wash (seconds,
+ * how much harder it is hit then), and how much bigger the cat is shown once it comes down to fight.
  */
 export const GENBA = {
   hp: 2500,
-  home: 100,
+  home: 116,
   phase: [0.66, 0.33],
   beamWarn: 0.9,
   swing: { dur: 4.2, reach: 1.05 },
   fissure: { n: 9, gap: 17 },
-  pounce: { aim: 0.8, speed: 300 },
-  catScale: 1.5,
+  pounce: { aim: 0.8, again: 0.5, speed: 320, n: 3 },
+  scratch: { warn: 0.55 },
+  zoom: { speed: 300, inset: 18 },
+  nap: { dur: 2.2, take: 1.5 },
+  catScale: 1.3,
 };
+const ROOF = -54; // the cat's place on the tower's roof, off the tower's centre (logical px)
 
 export const genba = {
   /**
    * A tower going up on a building site in an old Edo street, a ginger cat in a yellow hard hat working on top of
    * it; under the site, the giant catfish of the old prints. Three phases:
-   * 1. BUDOWA W TOKU: the cat flings bolts and boomerangs its spanner; the crane drops I-beams (a red shadow
-   *    first) that shatter into shards; the crane's hook swings across the screen on its cable;
+   * 1. BUDOWA W TOKU: the cat flings bolts and boomerangs its spanner; the crane drops I-beams (their shadows grow
+   *    on the ground first) that shatter into shards; the crane's hook comes down on its cable and swings across;
    * 2. NAMAZU SIĘ BUDZI: the catfish shakes the ground: quakes, fissures running at the player and spitting mud;
    *    the tower cracks and leans, beams fall thicker;
-   * 3. ZAWALENIE: the tower comes down; the cat, furious and hatless, jumps down to fight: it pounces at the
-   *    player (a line shows where), throws its hard hat like a boomerang, sweeps its headlamp's beam of shots.
+   * 3. ZAWALENIE: the tower comes down; the cat jumps down to fight, furious: three pounces in a row (it crouches and
+   *    wiggles its rump first, as cats do), a claw swipe that tears three lines of shots across the player, its hard
+   *    hat thrown like a boomerang, its zoomies (round the edges of the screen flat out, dropping shots inwards);
+   *    then it sits down to wash a paw, and is easier to hurt for a moment.
    */
   spawnGenba(w, base) {
-    const g = { kind: 'genba', state: 'enter', t: 0, stage: 1, phase: 0, step: 0, timer: 1.4, parts: [], awake: false, defeated: false, act: null, beams: [], spinners: [], hook: null, cat: null, rubble: null, take: { body: 1 } };
-    const body = this.pool.spawn('tower_0', w.x, -140, { ...base, role: 'body', group: g, hp: GENBA.hp, maxHp: GENBA.hp, radius: 20, segs: [{ x: 0, y: 0, r: 22 }, { x: 0, y: 0, r: 22 }, { x: 0, y: 0, r: 22 }] });
+    const g = { kind: 'genba', state: 'enter', t: 0, stage: 1, phase: 0, step: 0, timer: 1.4, parts: [], awake: false, defeated: false, act: null, beams: [], spinners: [], marks: [], hook: null, cat: null, rubble: null, take: { body: 1 } };
+    const body = this.pool.spawn('tower_0', w.x, -150, { ...base, role: 'body', group: g, hp: GENBA.hp, maxHp: GENBA.hp, radius: 24, flashTint: 0x303030, segs: [{ x: 0, y: 0, r: 26 }, { x: 0, y: 0, r: 26 }, { x: 0, y: 0, r: 26 }] });
     body.setDepth(DEPTH.air - 0.12);
     g.body = body;
     g.parts.push(body);
     g.maxTotal = GENBA.hp;
     // the cat up on the roof, working (only to look at while the tower stands)
     g.hatOut = false;
-    if (body.texture.has('neko_0')) g.cat = this.segPool.spawn('neko_0', w.x, -200).setDepth(DEPTH.air - 0.11);
+    if (body.texture.has('neko_stand')) g.cat = this.segPool.spawn('neko_stand', w.x, -200).setDepth(DEPTH.air - 0.11);
     g.catX = 0;
     this.bossGroup = g;
     return body;
@@ -51,6 +58,7 @@ export const genba = {
     g.t += dt;
     this.genbaBeams(g, dt);
     this.genbaSpinners(g, dt);
+    this.genbaMarks(g, dt);
     if (g.hook) this.genbaHook(g, dt);
     if (g.state === 'enter') {
       e.y += Math.max(12, (GENBA.home - e.y) * 1.3) * dt;
@@ -70,9 +78,10 @@ export const genba = {
       this.phaseBreak(g, e.x, e.y, 3, 'ZAWALENIE');
       this.genbaCollapse(g);
     }
+    g.take.body = g.act?.kind === 'nap' ? GENBA.nap.take : 1;
     if (g.act) this.genbaAct(g, dt);
     else if ((g.timer -= dt) <= 0 && this.canFire(e)) {
-      const plan = [['bolts', 'beams', 'spanner', 'hook'], ['quake', 'beams', 'bolts', 'fissure'], ['pounce', 'hat', 'lamp', 'fissure']][g.stage - 1];
+      const plan = [['bolts', 'beams', 'spanner', 'hook'], ['quake', 'beams', 'bolts', 'fissure'], ['pounce', 'scratch', 'hat', 'zoomies', 'nap']][g.stage - 1];
       g.act = { kind: plan[g.phase++ % plan.length], t: 0, step: 0 };
     }
     this.genbaPose(g, dt);
@@ -96,28 +105,29 @@ export const genba = {
     a.t += dt;
     switch (a.kind) {
       case 'bolts':
-        // a fistful of bolts, flung in a fan (the arm up)
+        // a fistful of bolts, flung in a fan (the arm back, then over)
         if (a.t > a.step * 0.45) {
           a.step++;
-          g.throwT = 0.3;
-          if (this.canFire(g.body)) for (let i = 0; i < 7; i++) b.shot('eb_pearl', c.x + 6, c.y - 4, this.aimAt(c, 6, -4) + (i / 6 - 0.5) * 1.15, normal, 2);
+          g.throwT = 0.4;
+          if (this.canFire(g.body)) s.time.delayedCall(150, () => !g.defeated && this.canFire(g.body) && Array.from({ length: 7 }, (_, i) => b.shot('eb_pearl', c.x + 10, c.y - 8, this.aimAt(c, 10, -8) + (i / 6 - 0.5) * 1.15, normal, 2)));
         }
         if (a.step >= 3) this.genbaDone(g);
         break;
       case 'spanner':
         if (a.t > a.step * 0.5) {
           a.step++;
-          g.throwT = 0.3;
-          this.genbaSpin(g, 'spanner', c.x - 8, c.y);
+          g.throwT = 0.4;
+          s.time.delayedCall(150, () => !g.defeated && this.genbaSpin(g, 'spanner', c.x + 10, c.y - 10));
         }
         if (a.step >= 2) this.genbaDone(g, 1.4);
         break;
       case 'hat':
         if (a.step === 0) {
           a.step = 1;
-          this.genbaSpin(g, 'hardhat', c.x, c.y - 10);
+          g.throwT = 0.4;
+          this.genbaSpin(g, 'hardhat', c.x, c.y - 26);
           g.hatOut = true;
-          s.fx.text(c.x, c.y - 26, 'NYA!', 0.8, 0xffe080);
+          s.fx.text(c.x, c.y - 40, 'NYA!', 0.8, 0xffe080);
         }
         if (a.t > 1.6) this.genbaDone(g, 0.6);
         break;
@@ -135,7 +145,7 @@ export const genba = {
       case 'hook':
         if (!g.hook && a.step === 0) {
           a.step = 1;
-          if (g.body.texture.has('crane_hook')) g.hook = { t: 0, spr: this.segPool.spawn('crane_hook', 90, -20).setDepth(DEPTH.air + 0.04), side: Math.random() < 0.5 ? -1 : 1 };
+          if (g.body.texture.has('crane_hook')) g.hook = { t: 0, spr: this.segPool.spawn('crane_hook', 90, -30).setDepth(DEPTH.air + 0.04), side: Math.random() < 0.5 ? -1 : 1 };
         }
         if (!g.hook) this.genbaDone(g, 0.8);
         break;
@@ -167,14 +177,21 @@ export const genba = {
       case 'pounce':
         this.genbaPounce(g, a, dt);
         break;
-      case 'lamp':
-        // the headlamp's beam, swept from side to side: a stream of shots
-        if ((a.fire = (a.fire ?? 0) - dt) <= 0 && this.canFire(g.body)) {
-          a.fire = 0.06;
-          const sweep = Math.sin(a.t * 2.6) * 1.1;
-          b.fire(c.x, c.y - 4, DOWN + sweep, normal);
+      case 'scratch':
+        this.genbaScratch(g, a, dt);
+        break;
+      case 'zoomies':
+        this.genbaZoomies(g, a, dt);
+        break;
+      case 'nap':
+        // it sits down and washes a paw: a moment to hit it harder
+        if (a.step === 0) {
+          a.step = 1;
+          s.fx.text(c.x, c.y - 44, 'PERO PERO...', 0.9, 0xffe0b0);
         }
-        if (a.t > 2.4) this.genbaDone(g, 0.8);
+        g.body.x += (90 - g.body.x) * Math.min(1, dt * 2);
+        g.body.y += (GENBA.home - g.body.y) * Math.min(1, dt * 2);
+        if (a.t > GENBA.nap.dur) this.genbaDone(g, 0.4);
         break;
       default:
         this.genbaDone(g);
@@ -189,12 +206,12 @@ export const genba = {
     s.sfx.explode('m');
   },
 
-  /** The tower comes down: dust, rubble left at its foot; the cat jumps down, hatless and furious. */
+  /** The tower comes down: dust, rubble left at its foot; the cat jumps down, furious. */
   genbaCollapse(g) {
     const s = this.scene;
     const e = g.body;
     s.cameras.main.shake(900, 0.012);
-    for (let k = 0; k < 14; k++) s.time.delayedCall(k * 60, () => s.fx.explode(e.x + (Math.random() - 0.5) * 50, e.y + (Math.random() - 0.5) * 70, k % 3 ? 's' : 'm'));
+    for (let k = 0; k < 16; k++) s.time.delayedCall(k * 60, () => s.fx.explode(e.x + (Math.random() - 0.5) * 60, e.y + (Math.random() - 0.5) * 80, k % 3 ? 's' : 'm'));
     if (e.texture.has('tower_rubble')) g.rubble = this.segPool.spawn('tower_rubble', e.x, e.y).setDepth(DEPTH.ground + 0.6);
     if (g.cat) {
       this.segPool.kill(g.cat);
@@ -205,54 +222,128 @@ export const genba = {
     e.wounds = null;
     e.setFrame('neko_hiss');
     e.setScale(e.base * GENBA.catScale);
-    e.radius = 11;
+    e.radius = 16;
     e.segs = [];
-    e.y = GENBA.home + 10;
-    s.fx.text(e.x, e.y - 30, 'FSSHHH!', 1, 0xff9a60);
+    e.y = GENBA.home - 6;
+    s.fx.text(e.x, e.y - 40, 'FSSHHH!', 1, 0xff9a60);
     g.hatOut = false;
   },
 
-  /** Phase 3: the cat crouches, a line shows where it will spring, and it pounces; then back up. */
+  /**
+   * Pounces, three in a row: it crouches, rump wiggling and eyes wide (the longer the first time), springs at where
+   * the player was, lands with a swipe (a ring of claws, dust); then trots back up.
+   */
   genbaPounce(g, a, dt) {
     const s = this.scene;
     const e = g.body;
+    const P = GENBA.pounce;
     a.phase ??= 'aim';
+    a.n ??= 0;
+    const aim = a.n === 0 ? P.aim : P.again;
     if (a.phase === 'aim') {
       const pl = s.player;
-      if (a.t < GENBA.pounce.aim * 0.7) Object.assign(a, { tx: pl.x, ty: Math.min(pl.y, s.H - 30) });
-      e.x += (Math.random() - 0.5) * 1.2;
-      if (Math.floor(a.t * 14) % 2) {
-        this.tele.lineStyle(2, 0xff5040, 0.6);
-        this.tele.lineBetween(e.x, e.y, a.tx, a.ty);
-      }
-      if (a.t > GENBA.pounce.aim) Object.assign(a, { phase: 'go', t: 0, x0: e.x, y0: e.y, d: Math.hypot(a.tx - e.x, a.ty - e.y) });
+      if (a.t < aim * 0.7) Object.assign(a, { tx: Phaser.Math.Clamp(pl.x, 16, VIEW.width - 16), ty: Phaser.Math.Clamp(pl.y, s.H * 0.3, s.H - 30) });
+      if (a.t === dt || a.t < dt * 1.5) s.fx.text(e.x, e.y - 44, '...!', 0.6, 0xffe080);
+      if (a.t > aim) Object.assign(a, { phase: 'go', t: 0, x0: e.x, y0: e.y, d: Math.hypot(a.tx - e.x, a.ty - e.y) });
     } else if (a.phase === 'go') {
-      const k = Math.min(1, (a.t * GENBA.pounce.speed) / Math.max(1, a.d));
+      const k = Math.min(1, (a.t * P.speed) / Math.max(1, a.d));
       e.x = a.x0 + (a.tx - a.x0) * k;
-      e.y = a.y0 + (a.ty - a.y0) * k;
+      e.y = a.y0 + (a.ty - a.y0) * k - Math.sin(k * Math.PI) * 18;
       if (k >= 1) {
-        s.cameras.main.shake(150, 0.004);
+        s.cameras.main.shake(150, 0.005);
+        for (const sx of [-1, 1]) s.fx.puff('wisp_s_1', e.x + sx * 12, e.y + 20, 0.4);
         Object.assign(a, { phase: 'land', t: 0 });
       }
     } else if (a.phase === 'land') {
-      // a swipe where it lands: a short ring of claws
-      if (a.t > 0.15 && !a.swiped) {
+      if (a.t > 0.12 && !a.swiped) {
         a.swiped = true;
-        s.bullets.ring(e.x, e.y, 8, Math.random() * TAU, slow);
+        s.bullets.ring(e.x, e.y, 10, Math.random() * TAU, slow);
       }
-      if (a.t > 0.5) Object.assign(a, { phase: 'back', t: 0 });
+      if (a.t > 0.4) {
+        a.n++;
+        if (a.n < P.n) Object.assign(a, { phase: 'aim', t: 0, swiped: false });
+        else Object.assign(a, { phase: 'back', t: 0 });
+      }
     } else {
-      e.x += (90 - e.x) * Math.min(1, dt * 2.5);
-      e.y += (GENBA.home + 10 - e.y) * Math.min(1, dt * 2.5);
-      if (a.t > 1.2) this.genbaDone(g, 0.6);
+      e.x += (90 - e.x) * Math.min(1, dt * 3);
+      e.y += (GENBA.home - 6 - e.y) * Math.min(1, dt * 3);
+      if (a.t > 1) this.genbaDone(g, 0.5);
     }
   },
 
-  /** A beam: its red shadow on the ground first, then it drops, shatters into shards and lies there a moment. */
+  /** The claw swipe: a paw raised (claws out), then three lines of shots torn across where the player is. */
+  genbaScratch(g, a, dt) {
+    const s = this.scene;
+    const e = g.body;
+    if (a.step === 0) {
+      a.step = 1;
+      a.x = Phaser.Math.Clamp(s.player.x, 30, VIEW.width - 30);
+      a.y = Phaser.Math.Clamp(s.player.y - 10, s.H * 0.4, s.H - 40);
+      s.fx.text(e.x, e.y - 44, 'NYAAA!', 0.9, 0xff9a60);
+    }
+    if (a.step === 1 && a.t > GENBA.scratch.warn) {
+      a.step = 2;
+      // the claw marks themselves, big across the screen; along each, a row of shots flying out from it
+      if (e.texture.has('claws')) {
+        const m = this.segPool.spawn('claws', a.x, a.y).setDepth(DEPTH.ground + 0.7);
+        g.marks.push({ spr: m.setScale(m.base * 4.4), t: 0 });
+      }
+      const ux = 40 / Math.hypot(40, 44);
+      const uy = 44 / Math.hypot(40, 44);
+      for (let k = -1; k <= 1; k++)
+        for (let i = -4; i <= 4; i++) {
+          const x = a.x + ux * i * 11 + k * 13;
+          const y = a.y + uy * i * 11 - k * 6;
+          const out = Math.atan2(ux, -uy) + (i % 2 ? Math.PI : 0);
+          s.bullets.fire(x, y, out, slow * 0.8);
+        }
+      s.cameras.main.shake(120, 0.004);
+    }
+    if (a.t > GENBA.scratch.warn + 0.6) this.genbaDone(g, 0.6);
+  },
+
+  /** The zoomies: off it goes round the edges of the screen flat out, dropping shots in towards the middle. */
+  genbaZoomies(g, a, dt) {
+    const s = this.scene;
+    const e = g.body;
+    const Z = GENBA.zoom;
+    const x0 = Z.inset;
+    const x1 = VIEW.width - Z.inset;
+    const y0 = GENBA.home - 6;
+    const y1 = s.H - 34;
+    const corners = [[x0, y0], [x0, y1], [x1, y1], [x1, y0], [90, y0]];
+    if (a.step === 0) {
+      a.step = 1;
+      a.leg = 0;
+      a.fire = 0.2;
+      s.fx.text(e.x, e.y - 44, 'ZUUUM!', 1, 0xffe080);
+    }
+    if (a.t < 0.45) return; // (a moment of wide eyes and a twitching tail first: see the pose)
+    const [tx, ty] = corners[a.leg];
+    const d = Math.hypot(tx - e.x, ty - e.y);
+    const step = Z.speed * dt;
+    if (d <= step) {
+      e.x = tx;
+      e.y = ty;
+      a.leg++;
+      if (a.leg >= corners.length) return this.genbaDone(g, 0.5);
+    } else {
+      e.x += ((tx - e.x) / d) * step;
+      e.y += ((ty - e.y) / d) * step;
+    }
+    if (Math.random() < dt * 20) s.fx.puff('wisp_s_1', e.x + (Math.random() - 0.5) * 10, e.y + 18, 0.35);
+    if ((a.fire -= dt) <= 0 && this.canFire(e)) {
+      a.fire = 0.14;
+      s.bullets.fire(e.x, e.y, Math.atan2(s.H * 0.62 - e.y, 90 - e.x) + (Math.random() - 0.5) * 0.4, slow);
+    }
+  },
+
+  /** A beam: its shadow growing on the ground as it falls, then it lands, shatters into shards and lies a moment. */
   genbaBeam(g, x, y) {
     if (!g.body.texture.has('ibeam')) return;
-    const spr = this.segPool.spawn('ibeam', x, -50).setDepth(DEPTH.air + 0.03).setVisible(false);
-    g.beams.push({ spr, x, y, t: 0, landed: false });
+    const spr = this.segPool.spawn('ibeam', x, -60).setDepth(DEPTH.air + 0.03).setVisible(false);
+    const shadow = g.body.texture.has('beam_shadow') ? this.segPool.spawn('beam_shadow', x, y).setDepth(DEPTH.ground + 0.6).setAlpha(0) : null;
+    g.beams.push({ spr, shadow, x, y, t: 0, landed: false });
   },
 
   genbaBeams(g, dt) {
@@ -263,18 +354,21 @@ export const genba = {
       bm.t += dt;
       const warn = GENBA.beamWarn;
       if (bm.t < warn) {
-        if (Math.floor(bm.t * 12) % 2) {
-          this.tele.lineStyle(1, 0xff5040, 0.8);
-          this.tele.strokeRect(bm.x - 4.5, bm.y - 20, 9, 40);
-        }
+        // the shadow: faint and wide at first, darker and tighter as the beam comes down
+        const k = bm.t / warn;
+        bm.shadow?.setAlpha(0.2 + k * 0.7).setScale(bm.shadow.base * (1.6 - k * 0.6), bm.shadow.base * (1.15 - k * 0.15));
       } else if (!bm.landed) {
         const k = Math.min(1, (bm.t - warn) / 0.22);
-        bm.spr.setVisible(true).setPosition(bm.x, -50 + (bm.y + 50) * k * k);
+        bm.spr.setVisible(true).setPosition(bm.x, -60 + (bm.y + 60) * k * k);
         if (k >= 1) {
           bm.landed = true;
           bm.left = 0.8;
+          if (bm.shadow) this.segPool.kill(bm.shadow);
+          bm.shadow = null;
           s.cameras.main.shake(100, 0.003);
           s.fx.shards(bm.x, bm.y, 8, true);
+          for (const sx of [-1, 1]) s.fx.puff('wisp_s_1', bm.x + sx * 6, bm.y + 18, 0.4);
+          s.fx.text(bm.x, bm.y - 26, 'GAN!', 0.5, 0xffffff);
           if (pl.alive && Math.abs(pl.x - bm.x) < 5 && Math.abs(pl.y - bm.y) < 21) pl.hit();
           const off = Math.random() * TAU;
           for (let i = 0; i < 6; i++) s.bullets.shot('eb_pearl', bm.x, bm.y + (i % 2 ? -12 : 12), off + (i / 6) * TAU, slow * 0.9, 2);
@@ -288,7 +382,22 @@ export const genba = {
     g.beams.length = n;
   },
 
-  /** The crane's hook swings across on its cable (an arc of warning first); touching it is a crash. */
+  /** The claw marks fading off the ground. */
+  genbaMarks(g, dt) {
+    let n = 0;
+    for (const m of g.marks) {
+      m.t += dt;
+      if (m.t > 0.9) {
+        this.segPool.kill(m.spr);
+        continue;
+      }
+      m.spr.setAlpha(m.t < 0.1 ? m.t * 10 : 1 - (m.t - 0.1) / 0.8);
+      g.marks[n++] = m;
+    }
+    g.marks.length = n;
+  },
+
+  /** The crane's hook: it comes down on its cable at one side first, then swings across; touching it is a crash. */
   genbaHook(g, dt) {
     const s = this.scene;
     const h = g.hook;
@@ -299,21 +408,24 @@ export const genba = {
     const warn = 0.8;
     const k = Math.max(0, h.t - warn) / GENBA.swing.dur;
     const ang = DOWN + h.side * GENBA.swing.reach * Math.cos(k * Math.PI * 2.5);
-    const x = px + Math.cos(ang) * len;
-    const y = py + Math.sin(ang) * len;
+    let x = px + Math.cos(ang) * len;
+    let y = py + Math.sin(ang) * len;
     if (h.t < warn) {
-      if (Math.floor(h.t * 12) % 2) {
-        this.tele.lineStyle(1, 0xffe080, 0.6);
-        for (let q = -1; q <= 1; q += 0.1) this.tele.lineBetween(px + Math.cos(DOWN + q * GENBA.swing.reach) * len, py + Math.sin(DOWN + q * GENBA.swing.reach) * len, px + Math.cos(DOWN + (q + 0.05) * GENBA.swing.reach) * len, py + Math.sin(DOWN + (q + 0.05) * GENBA.swing.reach) * len);
-      }
-      h.spr.setPosition(px + Math.cos(DOWN + h.side * GENBA.swing.reach) * len, -20);
+      // lowered into place at its starting side, the cable paying out
+      const sa = DOWN + h.side * GENBA.swing.reach;
+      const q = h.t / warn;
+      x = px + Math.cos(sa) * len;
+      y = -30 + (py + Math.sin(sa) * len + 30) * (1 - (1 - q) ** 2);
+      h.spr.setPosition(x, y);
+      this.tele.lineStyle(1, 0x2a2a30, 0.9);
+      this.tele.lineBetween(x, -10, x, y - 10);
       return;
     }
     h.spr.setPosition(x, y);
     this.tele.lineStyle(1, 0x2a2a30, 0.9);
-    this.tele.lineBetween(px, py, x, y - 8);
+    this.tele.lineBetween(px, py, x, y - 10);
     const pl = s.player;
-    if (pl.alive && Math.hypot(pl.x - x, pl.y - y - 4) < 9) pl.hit();
+    if (pl.alive && Math.hypot(pl.x - x, pl.y - y - 4) < 10) pl.hit();
     if (k >= 1) {
       this.segPool.kill(h.spr);
       g.hook = null;
@@ -345,7 +457,7 @@ export const genba = {
       const y = by + (sp.ty - by) * out;
       sp.spr.setPosition(x, y);
       sp.spr.setFrame(sp.kind === 'hardhat' ? `hardhat_${Math.floor(sp.t * 8) % 2}` : `spanner_${Math.floor(sp.t * 16) % 4}`);
-      if (pl.alive && Math.hypot(pl.x - x, pl.y - y) < (sp.kind === 'hardhat' ? 8 : 6)) pl.hit();
+      if (pl.alive && Math.hypot(pl.x - x, pl.y - y) < (sp.kind === 'hardhat' ? 9 : 6)) pl.hit();
       if (k >= 1) {
         this.segPool.kill(sp.spr);
         if (sp.kind === 'hardhat') g.hatOut = false; // (back on its head)
@@ -356,37 +468,52 @@ export const genba = {
     g.spinners.length = n;
   },
 
-  /** The tower (leaning in phase 2), the cat on its roof walking about (its throw), or the cat itself in phase 3. */
+  /** The tower (its lamp blinking; leaning in phase 2), the cat on its roof at work, or the cat itself in phase 3. */
   genbaPose(g, dt) {
     const e = g.body;
     if (g.throwT > 0) g.throwT -= dt;
+    const blink = g.t % 3.1 < 0.12;
+    const idle = Math.floor(g.t * 1.6) % 2 ? '_stand1' : '_stand';
+    const throwing = g.throwT > 0 ? (g.throwT > 0.25 ? '_throw0' : '_throw1') : null;
     if (g.stage < 3) {
-      const frame = g.stage === 2 ? 'tower_1' : 'tower_0';
+      const frame = g.stage === 2 ? 'tower_lean' : Math.floor(g.t * 2) % 2 ? 'tower_1' : 'tower_0';
       if (e.texture.has(frame) && e.frame.name !== frame) e.setFrame(frame);
       if (g.state === 'fight') e.x = 90 + (g.stage === 2 ? Math.sin(g.t * 1.3) * 1.5 : 0);
       if (g.cat) {
-        g.catX = Math.sin(g.t * 0.7) * 16;
-        g.cat.setPosition(e.x + g.catX + (g.stage === 2 ? 2 : 0), e.y - 44 - Math.abs(Math.sin(g.t * 6)) * (g.act ? 0 : 1));
-        const cf = g.throwT > 0 ? 'neko_1' : 'neko_0';
-        if (g.cat.frame.name !== cf) g.cat.setFrame(cf);
+        g.catX = -6 + Math.sin(g.t * 0.7) * 12;
+        g.cat.setPosition(e.x + g.catX + (g.stage === 2 ? 4 : 0), e.y + ROOF - (g.act ? 0 : Math.abs(Math.sin(g.t * 5)) * 1));
+        const cf = 'neko' + (throwing ?? (blink ? '_blink' : idle));
+        if (g.cat.frame.name !== cf && g.cat.texture.has(cf)) g.cat.setFrame(cf);
       }
       const [a, b, c] = e.segs;
-      Object.assign(a, { x: e.x, y: e.y - 24 });
+      Object.assign(a, { x: e.x, y: e.y - 28 });
       Object.assign(b, { x: e.x, y: e.y + 4 });
-      Object.assign(c, { x: e.x, y: e.y + 30 });
+      Object.assign(c, { x: e.x, y: e.y + 34 });
     } else {
-      const crouch = g.act?.kind === 'pounce' && g.act.phase === 'aim';
-      const frame = (crouch ? 'neko_pounce' : 'neko_hiss') + (g.hatOut ? '_bare' : '');
-      if (e.frame.name !== frame) e.setFrame(frame);
+      const a = g.act;
+      let p;
+      if (throwing) p = throwing;
+      else if (a?.kind === 'pounce') p = a.phase === 'aim' ? (Math.floor(a.t * 10) % 2 ? '_crouch1' : '_crouch0') : a.phase === 'go' ? '_leap' : a.phase === 'land' ? '_land' : Math.floor(g.t * 8) % 2 ? '_run0' : '_run1';
+      else if (a?.kind === 'scratch') p = a.step < 2 ? '_scratch0' : '_scratch1';
+      else if (a?.kind === 'zoomies') p = a.t < 0.45 ? '_crouch0' : Math.floor(g.t * 12) % 2 ? '_run0' : '_run1';
+      else if (a?.kind === 'nap') p = '_nap';
+      else p = blink ? '_blink' : '_hiss';
+      const frame = 'neko' + p + (g.hatOut ? '_bare' : '');
+      if (e.frame.name !== frame && e.texture.has(frame)) e.setFrame(frame);
     }
   },
 
   genbaCleanup(g) {
-    for (const bm of g.beams) this.segPool.kill(bm.spr);
+    for (const bm of g.beams) {
+      this.segPool.kill(bm.spr);
+      if (bm.shadow) this.segPool.kill(bm.shadow);
+    }
     for (const sp of g.spinners) this.segPool.kill(sp.spr);
+    for (const m of g.marks) this.segPool.kill(m.spr);
     for (const o of [g.hook?.spr, g.cat, g.rubble]) if (o) this.segPool.kill(o);
     g.beams = [];
     g.spinners = [];
+    g.marks = [];
     g.hook = null;
     g.cat = null;
     g.rubble = null;

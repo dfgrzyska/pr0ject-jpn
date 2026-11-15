@@ -92,14 +92,27 @@ bambusowy; kopce milowe ichirizuka; rzeka z drewnianym mostem i łódkami.
 
 Stałe: `GENBA` w `src/game/enemies/genba.js` (2500 HP, progi 66% / 33%). Trafia się wieżę (w fazie 3 — kota).
 
-- **Faza 1 — budowa w toku:** kot na dachu wieży rzuca garście śrub i bumerangiem klucza; dźwig zrzuca dwuteowniki
-  (najpierw czerwony cień na ziemi), które rozbijają się na odłamki; hak dźwigu przelatuje wahadłem przez ekran
-  (najpierw miga łuk).
+Wygląd (druga wersja): duży rudy pręgowany kot (40 × 44 px, w fazie 3 pokazany 1,3×) z białym pyskiem, piersią
+i skarpetkami, w żółtym kasku z latarką i zielonym krzyżem, pomarańczowej kamizelce z odblaskami i pasie na
+narzędzia; oddycha i macha ogonem, mruga, bierze zamach i rzuca, syczy, przyczaja się z kręcącym się zadkiem, skacze,
+ląduje, macha łapą z pazurami, pędzi, siada i myje łapę — każda poza też bez kasku. Wieża: stalowa konstrukcja
+w zielonej siatce i rusztowaniach, drabina, światła w środku, pasy ostrzegawcze, kontener na dachu z migającą lampą
+i żuraw wieżowy; potem pęknięta i przechylona; potem gruzowisko. Tło: Edo z góry (dachówki z rzędami gąsiorów,
+cienie okapów, sosny, ludzie), plac budowy za deskowym płotem (pomosty, sterty drewna, piasek, taczka), a w wykopie
+z deskowaniem głowa olbrzymiego suma: oliwkowa, cętkowana, złote oczka, jasne wargi, kamień kaname-ishi ze świętym
+sznurem, wąsy wyciągnięte za płot, za które ciągną mieszczanie; inni okładają go młotkami; pęknięcia w mieście.
+
+- **Faza 1 — budowa w toku:** kot na dachu bierze zamach i rzuca garście śrub i klucz jak bumerang; żuraw zrzuca
+  dwuteowniki — najpierw na ziemi rośnie i ciemnieje ich cień, potem belka spada i rozbija się na odłamki
+  („GAN!”); hak żurawia najpierw zjeżdża na linie przy jednej krawędzi, potem przelatuje wahadłem przez ekran.
 - **Faza 2 — namazu się budzi:** trzęsienia („GOTO GOTO GOTO!”), szczeliny biegną w stronę gracza i plują błotem
   (strefy jak gejzery w Beppu); wieża pęka i się przechyla, belki spadają gęściej.
-- **Faza 3 — zawalenie:** wieża się wali (zostaje gruz), kot bez kasku schodzi walczyć: skacze na gracza (linia
-  pokazuje kierunek, po wylądowaniu pierścień pazurów), rzuca kaskiem jak bumerangiem, omiata ekran strumieniem
-  pocisków z latarki.
+- **Faza 3 — zawalenie:** wieża się wali, kot schodzi walczyć. Trzy skoki pod rząd: przed każdym przyczaja się
+  z szeroko otwartymi oczami i kręci zadkiem (pierwszy raz dłużej), skacze tam, gdzie był gracz, ląduje z
+  pierścieniem pazurów i kurzem. Pazury („NYAAA!”): unosi łapę, a potem przez gracza przecinają ekran trzy wielkie
+  ślady pazurów i trzy rzędy pocisków rozlatują się od nich. Kask jak bumerang. „ZUUUM!” — kocie szaleństwo: pędzi
+  dookoła ekranu wzdłuż krawędzi i zrzuca pociski do środka. Na koniec siada i myje łapę („PERO PERO...”) — przez
+  2,2 s bierze 1,5× obrażeń.
 
 ## 4. Kot bez końca (NAGAI)
 
