@@ -13,7 +13,7 @@ export const JIHANKI = {
   home: 86,
   scale: 1.3, // shown bigger than drawn (its art is 56 x 82)
   phase: [0.66, 0.33],
-  puddle: { r: 15, life: 5.5 },
+  puddle: { r: 17.25, life: 5.5, scale: 1.265 }, // (radius and art 15% bigger than at first)
   shake: 2.4,
   jackpot: 0.35,
   stun: 3.5,
@@ -468,7 +468,7 @@ export const jihanki = {
     const frame = `puddle_${hot ? 'hot' : 'cold'}_0`;
     if (!g.body.texture.has(frame)) return;
     const spr = this.segPool.spawn(frame, x, y).setDepth(DEPTH.ground + 0.5).setAlpha(0);
-    spr.setScale(spr.base * 1.1);
+    spr.setScale(spr.base * JIHANKI.puddle.scale);
     g.puddles.push({ spr, hot, x, y, t: 0, life: JIHANKI.puddle.life, r: JIHANKI.puddle.r });
   },
 

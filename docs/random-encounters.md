@@ -45,7 +45,10 @@ u innych bossów (`flashTint`), żeby jasny automat nie bielał.
 - **Faza 1 — automat ma dość:** puszki gorące (czerwone) i zimne (niebieskie) lecą łukiem w gracza (miga
   pierścień w miejscu lądowania). Gorąca rozlewa kałużę kawy: stanie w niej grzeje działa jak para w Beppu (gorące
   strzały, potem przegrzanie). Zimna — kałużę lodowej brei: szron spowalnia statek, a po chwili zamraża go w
-  bryłę (mechanika szronu z Sapporo). Kałuża trwa 5,5 s. Do tego wachlarz monet i kurtyna z przycisków (strzały
+  bryłę (mechanika szronu z Sapporo). Kałuża trwa 5,5 s, promień 17,25 px (powiększona o 15%), działa
+  od 0,13 s po rozlaniu. Kawa: gorące strzały po ok. 1,2 s, przegrzanie po ok. 2,9 s (1,8 s bez strzelania; ciepło
+  stygnie poza kałużą 0,1/s, więc się sumuje). Breja: spowalnia od razu (coraz mocniej), „SZRON!” po ok. 0,9 s
+  (−27% prędkości), zamarznięcie po ok. 1,8 s na 0,9 s. Do tego wachlarz monet i kurtyna z przycisków (strzały
   spadają po kolei wzdłuż frontu, z luką na trzy).
 - **Faza 2 — wstrząśnięty, nie zmieszany:** automat się trzęsie (cały ekran z nim), „SZURU SZURU!”, potem
   „PSSSHHH!” i dwa krzyżujące się strumienie piany. Wstrząśnięte puszki pękają spiralą.
