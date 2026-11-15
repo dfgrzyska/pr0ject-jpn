@@ -1536,13 +1536,378 @@ export function buildMid() {
     kit.emit(103, 2700, steam, { rate: 1.4, life: [1.4, 2.2], vy: 6, sx: 1, wf: 0.6, a: 0.45, tint: 1 });
   }
 
+  // ---- three places that break up the suburb's rows of houses: each takes one block, painted in place of its houses
+  // (see the blocks' loop below)
+  /** A pitched roof from above: its ridge along x, the north slope lit, standing seams, snow lying in drifts on it. */
+  const pitched = (x, y, w, h, base, seed, deep = 0.52) => img.fine(x, y, w, h, (FXr, FYr) => {
+    const i = FXr - x * S;
+    const j = FYr - y * S;
+    const across = j / (h * S);
+    const north = across < 0.5;
+    let c = scaleColor(base, north ? 1.1 : 0.8);
+    if (i % 5 === 0) c = scaleColor(c, 0.8);
+    const drift = fbm(FXr * 0.25, FYr * 0.18, { seed, scale: 3 }) + (Math.abs(across - 0.5) < 0.07 ? 0.3 : 0) + (across > 0.86 ? 0.16 : 0);
+    if (drift > deep) c = snowPx(FXr, FYr, north ? 0.72 : 0.5, 0.3, seed);
+    if (i === 0 || j === 0 || i === w * S - 1 || j === h * S - 1) c = scaleColor(c, 0.6);
+    if (Math.abs(j - (h * S) / 2) < 1) c = scaleColor(base, 0.55); // the ridge
+    return c;
+  });
+  /** A wall seen under its eaves: courses of brick or boards, a row of windows, some lit. */
+  const wallFace = (x, y, w, h, ramp, seed, lit = 0.5, cool = false) => {
+    img.fine(x, y, w, h, (FXr, FYr) => {
+      const j = FYr - y * S;
+      const c = rampColor(ramp, 0.3 + ((FXr + (j >> 1) * 3) % 6 === 0 ? -0.2 : 0.25) + (hashPx(FXr >> 1, FYr, seed) - 0.5) * 0.3, FXr, FYr);
+      return j === 0 ? scaleColor(c, 0.5) : j % 3 === 2 ? scaleColor(c, 0.8) : c;
+    });
+    const wr = rng(seed);
+    for (let i = 2; i < w - 2; i += 3)
+      for (let j = 1; j < h - 1; j += 3) {
+        const on = wr() < lit;
+        for (let q = 0; q < 4; q++) for (let p = 0; p < 4; p++) {
+          if (on) glowPx(i * S + x * S + p, (y + j) * S + q, cool ? C.cool : C.warm, 0.9);
+          else img.px(i * S + x * S + p, (y + j) * S + q, C.windowDark);
+        }
+        for (let p = -1; p < 5; p++) img.px(i * S + x * S + p, (y + j) * S + 4, 0xe8e4dc);
+      }
+  };
+
+  // Hokkaidō Jingū: the shrine in its cedar grove at the foot of Maruyama. A grey stone torii on the street, the
+  // gravel approach swept of snow between stone lanterns, a second torii, the purification basin under its little
+  // roof, the offering hall and the sanctuary behind it under plain cypress-bark roofs with their crossed finials,
+  // a fence round the court; people come up to pray, a brazier burning, fortunes tied on the racks
+  const paintJingu = () => {
+    const [bx0, bx1] = [42, 78];
+    const [u0, u1] = [1478, 1589];
+    const cx = 60;
+    const yT = Y(u1);
+    const yB = Y(u0);
+    reserveRect(bx0, yT, bx1 - bx0, yB - yT);
+    // the precinct's ground: snow under the trees, the approach and the court in raked gravel showing through
+    const courtY = yT + 34; // the court's lower edge
+    img.fine(bx0, yT, bx1 - bx0, yB - yT, (FXr, FYr, xx, yy) => {
+      const onPath = Math.abs(xx - cx) < 3.4 && yy > courtY - 2;
+      const inCourt = Math.abs(xx - cx) < 14 && yy > yT + 6 && yy <= courtY;
+      if (!onPath && !inCourt) return snowPx(FXr, FYr, 0.5, 0.4, 61);
+      const g = hashPx(FXr, FYr, 62);
+      if (g < 0.16) return snowPx(FXr, FYr, 0.6, 0.3, 63); // snow trodden into it
+      return rampColor(C.packed, 0.2 + ((FYr + Math.round(Math.sin(FXr * 0.2) * 2)) % 4 === 0 ? 0.5 : 0.15) + g * 0.3, FXr, FYr);
+    });
+    // the court's fence: posts and rails, vermilion-free here: plain wood, snow on its cap
+    for (let x = cx - 15; x <= cx + 15; x += 0.34) for (const y of [yT + 5, courtY + 1]) {
+      if (y === courtY + 1 && Math.abs(x - cx) < 4) continue; // the gate
+      img.px(x * S, y * S, C.snow[3]);
+      img.px(x * S, y * S + 1, Math.round(x * 3) % 6 === 0 ? 0x4a3824 : 0x7a5e3c);
+      img.px(x * S, y * S + 2, 0x4a3824);
+    }
+    for (let y = yT + 5; y <= courtY + 1; y += 0.34) for (const x of [cx - 15, cx + 15]) {
+      img.px(x * S, y * S, 0x7a5e3c);
+      img.px(x * S + 1, y * S, 0x4a3824);
+    }
+    const torii = (y, big) => objects.push({
+      y: y + 2,
+      shadow: () => shadowRect(cx - (big ? 9 : 7) + 3, y + 1, (big ? 18 : 14), 3, 0.5),
+      draw: () => {
+        const hw = big ? 9 : 7;
+        const X = cx * S;
+        const Yb = y * S;
+        for (const s of [-1, 1]) for (let j = 0; j < (big ? 20 : 15); j++) for (let i = 0; i < 4; i++) img.px(X + s * (hw - 2) * S + i - 2, Yb - j, i === 0 ? 0xb8b8b4 : i === 3 ? 0x6e6e6c : 0x94948f);
+        for (let i = -hw * S; i <= hw * S; i++) {
+          for (let j = 0; j < 4; j++) img.px(X + i, Yb - (big ? 22 : 17) + j - Math.round((Math.abs(i) / (hw * S)) ** 2 * 2), j === 0 ? C.snow[3] : j === 3 ? 0x6e6e6c : 0x9c9c98);
+          if (Math.abs(i) < (hw - 1) * S) for (let j = 0; j < 2; j++) img.px(X + i, Yb - (big ? 15 : 11) + j, j ? 0x6e6e6c : 0x94948f);
+        }
+        if (big) for (let j = 0; j < 5; j++) for (let i = -2; i <= 2; i++) img.px(X + i, Yb - 20 + j, 0x94948f); // the tablet
+      },
+    });
+    torii(yB - 3, true);
+    torii(courtY + 10, false);
+    // stone lanterns up both sides of the approach, lit; snow on their caps
+    for (let y = yB - 12; y > courtY + 14; y -= 11) for (const s of [-1, 1]) {
+      const X = (cx + s * 6) * S;
+      const Yy = y * S;
+      img.rectPx(X - 1, Yy - 6, 3, 7, 0x8a8a86);
+      img.rectPx(X - 2, Yy - 9, 5, 3, 0x6e6e6c);
+      img.rectPx(X - 2, Yy - 10, 5, 1, C.snow[3]);
+      glowPx(X, Yy - 5, C.lamp, 0.95);
+      pool(cx + s * 6, y - 1, 4, C.lamp, 0.22);
+    }
+    // the offering hall (wide, its roof's ridge across) and the sanctuary behind it (smaller, higher, crossed
+    // finials at both ends of the ridge, billets along it), a covered way between
+    const BARK = 0x5a4632;
+    objects.push({
+      y: courtY - 2,
+      shadow: () => {
+        shadowRect(cx - 12 + 4, yT + 18 + 2, 24, 13, 0.5);
+        shadowRect(cx - 7 + 4, yT + 7 + 2, 14, 10, 0.5);
+      },
+      draw: () => {
+        pitched(cx - 7, yT + 7, 14, 9, BARK, 64, 0.6);
+        img.fine(cx - 2, yT + 15, 4, 5, (FXr, FYr) => ((FXr + FYr) % 4 === 0 ? 0x3e3020 : 0x6a543a));
+        pitched(cx - 12, yT + 18, 24, 12, BARK, 65, 0.58);
+        // the finials and billets
+        for (const [rx, ry, hw] of [[cx, yT + 11.5, 7], [cx, yT + 24, 12]]) {
+          for (const s of [-1, 1]) for (let q = 0; q < 7; q++) {
+            img.px((rx + s * hw) * S + s * q * 0.6, ry * S - q, 0xe8d8a8);
+            img.px((rx + s * hw) * S - s * q * 0.6, ry * S - q, 0xe8d8a8);
+          }
+          for (let i = -hw + 2; i <= hw - 2; i += 2.4) img.rectPx((rx + i) * S, ry * S - 2, 2, 4, 0xe8d8a8);
+        }
+        // the hall's front under the eaves: open bays, the offering box, the bell rope, lit from inside
+        wallFace(cx - 11, yT + 30, 22, 4, [0x4a3824, 0x6a543a, 0x8a7250], 66, 0.9);
+        img.rectPx((cx - 2) * S, (yT + 34) * S, 12, 5, 0x3a2c1c);
+        for (let j = 0; j < 9; j++) img.px(cx * S, (yT + 30) * S + j, j % 2 ? 0xe8e4dc : 0xc83a2a);
+        pool(cx, yT + 35, 9, C.warm, 0.3);
+      },
+    });
+    // the purification basin under its roof; the racks of fortunes and votive plaques; a brazier, people round it
+    pitched(cx - 13, courtY - 9, 6, 5, 0x5a4632, 67, 0.62);
+    img.rectPx((cx - 12) * S, (courtY - 4) * S, 12, 3, 0x6a8a9a);
+    for (const [x, y, c] of [[cx + 8, courtY - 7, 0xf0ece0], [cx + 8, courtY - 3, 0xc8a070]]) {
+      img.rectPx(x * S, y * S - 1, 15, 1, 0x4a3824);
+      for (let i = 0; i < 15; i += 2) img.rectPx(x * S + i, y * S, 1, 4, i % 4 ? c : scaleColor(c, 0.8));
+    }
+    const bz = [cx - 9, courtY + 20];
+    img.rectPx(bz[0] * S - 3, bz[1] * S - 3, 7, 6, 0x2a2a2e);
+    for (const [dx, dy, c] of [[0, -1, 0xffe090], [-1, 0, 0xff8a30], [1, 0, 0xff6a20], [0, -2, 0xffc050]]) glowPx(bz[0] * S + dx, bz[1] * S + dy, c);
+    pool(bz[0], bz[1], 9, 0xff9a40, 0.4);
+    kit.emit(bz[0], U(bz[1]) + 1, smoke, { rate: 1.2, life: [1.6, 2.6], vy: 7, sx: 1, wf: 0.8, a: 0.4, tint: 1 });
+    crowd(bz[0] - 5, bz[1] - 3, 10, 7, 6);
+    crowd(cx - 3, courtY + 4, 6, 44, 12); // coming and going on the approach
+    crowd(cx - 9, yT + 35, 18, 6, 9); // at the hall, in rows
+    // the grove: old firs and cedars close on every side, snow on their boughs
+    const tr = rng(1478);
+    for (let n = 0; n < 150; n++) {
+      const x = bx0 + 2 + tr() * (bx1 - bx0 - 4);
+      const y = yT + 3 + tr() * (yB - yT - 8);
+      if (Math.abs(x - cx) < 17 && y < courtY + 6) continue;
+      if (Math.abs(x - cx) < 8.5) continue;
+      fir(x, y, 3.4 + tr() * 2.4);
+    }
+  };
+
+  // The Sapporo Beer Museum: the old sugar-beet mill in red brick that became the brewery's malt house: a long
+  // main block with three gables towards the yard, its tall brick chimney with the red star, the beer hall beside
+  // it, the great copper kettle standing in the forecourt, coaches drawn up, the star in lights over the door
+  const paintBeer = () => {
+    const [bx0, bx1] = [102, 138];
+    const [u0, u1] = [1752, 1869];
+    const yT = Y(u1);
+    const yB = Y(u0);
+    reserveRect(bx0, yT, bx1 - bx0, yB - yT);
+    const BRICK = C.brick;
+    const star = (X, Yy, r, c, glow = true) => {
+      for (let a = 0; a < 5; a++) {
+        const a0 = -Math.PI / 2 + (a * 2 * Math.PI) / 5;
+        const a1 = -Math.PI / 2 + ((a + 2) * 2 * Math.PI) / 5;
+        for (let t = 0; t <= 1; t += 0.05) {
+          const px = X + (Math.cos(a0) * (1 - t) + Math.cos(a1) * t) * r;
+          const py = Yy + (Math.sin(a0) * (1 - t) + Math.sin(a1) * t) * r;
+          if (glow) glowPx(px, py, c);
+          else img.px(px, py, c);
+        }
+      }
+    };
+    // the yard: snow cleared off brick setts in the forecourt, packed snow where the coaches turn
+    img.fine(bx0, yT, bx1 - bx0, yB - yT, (FXr, FYr, xx, yy) => {
+      if (yy > yT + 62) return rampColor(C.packed, 0.3 + fbm(xx, yy, { seed: 71, scale: 4 }) * 0.5 + (hashPx(FXr, FYr, 72) < 0.1 ? 0.3 : 0), FXr, FYr);
+      if (yy > yT + 44) return (FXr + (FYr >> 2) * 3) % 7 === 0 || FYr % 4 === 0 ? 0x5a3028 : hashPx(FXr >> 1, FYr >> 1, 73) < 0.2 ? C.snow[2] : 0x8a4a3a;
+      return snowPx(FXr, FYr, 0.5, 0.4, 74);
+    });
+    objects.push({
+      y: yT + 44,
+      shadow: () => {
+        shadowRect(bx0 + 2 + 5, yT + 8 + 3, 26, 34, 0.55);
+        shadowRect(bx0 + 30 + 4, yT + 14 + 3, 5, 5, 0.6);
+        for (let q = 0; q < 7; q++) shadowRect(bx0 + 34 + q * 3, yT + 19 + q * 2, 3, 2, 0.72); // the chimney's, long (stopping short of the avenue)
+      },
+      draw: () => {
+        // the main block's roof: three gables side by side, their valleys full of snow
+        for (let g = 0; g < 3; g++) pitched(bx0 + 2, yT + 8 + g * 9, 26, 9, 0x4c5562, 75 + g, 0.5);
+        // its front: three storeys of brick, arched windows in white stone, lit; the door under the star
+        wallFace(bx0 + 2, yT + 35, 26, 9, BRICK, 78, 0.6);
+        img.rectPx((bx0 + 13) * S, (yT + 40) * S, 12, 12, 0x2a1a14);
+        for (let i = 0; i < 12; i++) glowPx((bx0 + 13) * S + i, (yT + 40) * S + 11, C.warm, 0.6);
+        star((bx0 + 15) * S, (yT + 37) * S + 1, 5, 0xff3a2a);
+        pool(bx0 + 15, yT + 45, 10, C.warm, 0.3);
+        // the chimney: a square brick shaft seen from above, banded, its mouth black, the red star on its face
+        const X = (bx0 + 32.5) * S;
+        const Yc = (yT + 16.5) * S;
+        for (let j = -8; j <= 8; j++) for (let i = -8; i <= 8; i++) img.px(X + i, Yc + j, Math.max(Math.abs(i), Math.abs(j)) > 6 ? (i + j < 0 ? BRICK[2] : BRICK[0]) : Math.max(Math.abs(i), Math.abs(j)) > 4 ? BRICK[1] : 0x140c0a);
+        for (let j = 9; j < 30; j++) for (let i = -6; i <= 6; i++) img.px(X + i, Yc + j, j % 7 === 0 ? 0xd8d0c0 : (i + (j >> 1) * 3) % 5 === 0 ? BRICK[0] : BRICK[1]);
+        star(X, Yc + 18, 5, 0xe8382a, false);
+        for (let i = -8; i <= 8; i++) img.px(X + i, Yc - 9, C.snow[3]);
+      },
+    });
+    kit.emit(bx0 + 32, U(yT + 16) + 1, smoke, { rate: 1.6, life: [3, 4.5], vy: 9, sx: 1, wf: 1, a: 0.5, tint: 1 });
+    // the beer hall: a long brick shed across the yard's east side, lit along its whole length, steam from its kitchens
+    objects.push({
+      y: yT + 74,
+      shadow: () => shadowRect(bx0 + 22 + 4, yT + 50 + 3, 13, 22, 0.5),
+      draw: () => {
+        img.fine(bx0 + 22, yT + 50, 13, 20, (FXr, FYr) => {
+          const i = FXr - (bx0 + 22) * S;
+          const west = i < 20;
+          let c = scaleColor(0x4c5562, west ? 1.1 : 0.8);
+          if ((FYr % 5) === 0) c = scaleColor(c, 0.8);
+          if (fbm(FXr * 0.2, FYr * 0.25, { seed: 79, scale: 3 }) + (Math.abs(i - 20) < 3 ? 0.3 : 0) > 0.52) c = snowPx(FXr, FYr, west ? 0.7 : 0.5, 0.3, 79);
+          return Math.abs(i - 20) < 1 ? 0x2c323c : c;
+        });
+        wallFace(bx0 + 22, yT + 70, 13, 4, BRICK, 80, 0.95);
+        pool(bx0 + 28, yT + 76, 9, C.warm, 0.3);
+      },
+    });
+    kit.emit(bx0 + 30, U(yT + 54) + 1, steam, { rate: 1.2, life: [1.6, 2.4], vy: 7, sx: 1, wf: 0.6, a: 0.45, tint: 1 });
+    // the copper kettle in the forecourt: a great brewing copper on a brick plinth, green with age, snow on its dome
+    {
+      const X = (bx0 + 9) * S;
+      const Yk = (yT + 56) * S;
+      for (let j = -13; j <= 13; j++) for (let i = -13; i <= 13; i++) {
+        const d = Math.hypot(i, j);
+        if (d > 13) continue;
+        img.px(X + i + 5, Yk + j + 5, 0x0a0808, 0.4);
+      }
+      for (let j = -13; j <= 13; j++) for (let i = -13; i <= 13; i++) {
+        const d = Math.hypot(i, j);
+        if (d > 13) continue;
+        let c = d > 11 ? BRICK[0] : rampColor([0x4a2a16, 0x8a4a22, 0xc87a3a, 0xe8a860], 0.75 - d / 16 - (i + j) / 40, X + i, Yk + j);
+        if (d < 11 && (i - j) % 7 === 0 && d > 4) c = 0x4a7a6a; // verdigris down the seams
+        if (d < 5 && i + j < 2) c = C.snow[3];
+        img.px(X + i, Yk + j, c);
+      }
+    }
+    // coaches and cars in the yard, visitors crossing to the door, firs along the street side
+    for (const [x, y] of [[bx0 + 4, yB - 16], [bx0 + 11, yB - 16], [bx0 + 18, yB - 15]]) {
+      img.fine(x, y, 5, 12, (FXr, FYr) => {
+        const j = FYr - y * S;
+        return j < 3 ? 0x2a3a50 : j > 32 ? 0x8a8a94 : hashPx(FXr, FYr, 81) < 0.7 ? C.snow[3] : 0xe8e4dc;
+      });
+      for (const dx of [0, 4]) glowPx((x + dx) * S + 1, (y + 12) * S - 1, 0xff3020, 0.7);
+    }
+    for (const [x, y] of [[bx0 + 27, yB - 14], [bx0 + 32, yB - 14], [bx0 + 27, yB - 6]]) car(x, y);
+    crowd(bx0 + 6, yT + 46, 18, 12, 12);
+    crowd(bx0 + 20, yT + 76, 12, 8, 6);
+    for (let x = bx0 + 2; x < bx1 - 1; x += 5) fir(x + 1, yB - 2, 2.6);
+    for (let y = yT + 4; y < yT + 46; y += 6) fir(bx0 + 0.5, y, 2.4);
+  };
+
+  // A primary school: an L of three-storey classrooms in concrete under a flat roof, the gymnasium with its arched
+  // roof, the playground under snow with the running track just showing, a snow slide the children have built,
+  // snowmen in a row, a snowball fight, the flagpole and the clock over the door
+  const paintSchool = () => {
+    const [bx0, bx1] = [42, 78];
+    const [u0, u1] = [1890, 1999];
+    const yT = Y(u1);
+    const yB = Y(u0);
+    reserveRect(bx0, yT, bx1 - bx0, yB - yT);
+    const fx = bx0 + 18;
+    const fy = yT + 68; // the field's middle
+    img.fine(bx0, yT, bx1 - bx0, yB - yT, (FXr, FYr, xx, yy) => {
+      // the track: an oval trodden a shade darker in the snow, its lanes
+      const e = Math.hypot((xx - fx) / 15, (yy - fy) / 26);
+      if (e > 0.78 && e < 1) return rampColor(C.packed, 0.55 + ((Math.round(e * 60) % 4 === 0) ? -0.3 : 0.1) + (hashPx(FXr, FYr, 83) - 0.5) * 0.2, FXr, FYr);
+      return snowPx(FXr, FYr, 0.55, 0.4, 84);
+    });
+    const CONC = C.concrete;
+    objects.push({
+      y: yT + 40,
+      shadow: () => {
+        shadowRect(bx0 + 2 + 5, yT + 3 + 3, 32, 14, 0.5);
+        shadowRect(bx0 + 24 + 5, yT + 17 + 3, 10, 26, 0.5);
+      },
+      draw: () => {
+        const roof = (x, y, w, h, seed) => img.fine(x, y, w, h, (FXr, FYr) => {
+          const i = FXr - x * S;
+          const j = FYr - y * S;
+          if (i < 2 || j < 2 || i > w * S - 3 || j > h * S - 3) return CONC[3]; // the parapet
+          return snowPx(FXr, FYr, 0.6, 0.35, seed);
+        });
+        roof(bx0 + 2, yT + 3, 32, 11, 85);
+        roof(bx0 + 24, yT + 14, 10, 26, 86);
+        // roof plant, a water tank, the stair heads
+        for (const [x, y] of [[bx0 + 6, yT + 6], [bx0 + 18, yT + 7], [bx0 + 27, yT + 26]]) img.rectPx(x * S, y * S, 9, 7, CONC[1]);
+        wallFace(bx0 + 2, yT + 14, 22, 5, CONC, 87, 0.35, true);
+        wallFace(bx0 + 24, yT + 40, 10, 5, CONC, 88, 0.35, true);
+        // the clock over the door
+        const CX0 = (bx0 + 13) * S;
+        const CY0 = (yT + 15) * S;
+        img.discPx?.(CX0, CY0, 4, 0xf0f0e8);
+        for (let a = 0; a < 6.3; a += 0.3) img.px(CX0 + Math.cos(a) * 4, CY0 + Math.sin(a) * 4, 0x2a2a30);
+        img.px(CX0, CY0 - 2, 0x2a2a30);
+        img.px(CX0 + 2, CY0, 0x2a2a30);
+      },
+    });
+    // the gymnasium: a barrel roof, ribbed, snow slid off its crown into banks along both sides
+    objects.push({
+      y: yT + 30,
+      shadow: () => shadowRect(bx0 + 4 + 4, yT + 22 + 3, 16, 12, 0.5),
+      draw: () => {
+        img.fine(bx0 + 4, yT + 22, 16, 12, (FXr, FYr) => {
+          const j = (FYr - (yT + 22) * S) / (12 * S);
+          const lit = Math.sin(j * Math.PI);
+          let c = rampColor([0x3a5a6a, 0x4e7284, 0x6a8ea0, 0x8eb0c0], lit * 0.9 - (j > 0.5 ? 0.25 : 0), FXr, FYr);
+          if ((FXr - (bx0 + 4) * S) % 9 === 0) c = scaleColor(c, 0.75);
+          if (j < 0.14 || j > 0.84) c = snowPx(FXr, FYr, 0.6, 0.3, 89);
+          return c;
+        });
+      },
+    });
+    // the snow slide: a ramp of packed snow with a run down it, children queueing at the top
+    img.fine(bx0 + 26, yT + 52, 7, 18, (FXr, FYr) => {
+      const i = FXr - (bx0 + 26) * S;
+      const j = FYr - (yT + 52) * S;
+      if (Math.abs(i - 10) < 4) return rampColor(C.ice, 0.3 + j / 60, FXr, FYr);
+      return snowPx(FXr, FYr, 0.75 - j / 90, 0.2, 90);
+    });
+    crowd(bx0 + 26, yT + 48, 7, 4, 6);
+    for (let i = 0; i < 5; i++) snowman(bx0 + 4 + i * 5, yB - 8);
+    crowd(fx - 12, fy - 10, 10, 20, 8); // one side of the snowball fight
+    crowd(fx + 2, fy - 10, 10, 20, 8); // and the other
+    for (let q = 0; q < 14; q++) img.rectPx((fx - 3 + hashPx(q, 1, 91) * 6) * S, (fy - 8 + hashPx(q, 2, 91) * 16) * S, 2, 2, 0xffffff); // snowballs in the air
+    // the flagpole, the gate on the street with its posts, bare trees along the fence
+    img.rectPx((bx0 + 20) * S, (yT + 44) * S - 18, 2, 18, 0xb8bcc4);
+    img.rectPx((bx0 + 20) * S + 2, (yT + 44) * S - 18, 7, 5, 0xf4f4f0);
+    img.discPx?.((bx0 + 20) * S + 5, (yT + 44) * S - 16, 1.6, 0xd02a26);
+    for (let x = bx0 + 1; x < bx1; x += 0.34) {
+      if (Math.abs(x - (bx0 + 18)) < 3) continue;
+      img.px(x * S, yB * S - 2, Math.round(x * 3) % 9 === 0 ? 0x4a4a52 : 0x8a8e96);
+    }
+    for (let x = bx0 + 3; x < bx1 - 2; x += 7) bare(x, yB - 3, 3);
+  };
+
   // blocks
+  const ghosts = []; // the blocks given over to a place: where their houses would have stood
+  const ghostAt = (x, y) => ghosts.find((g) => y >= g.yT && y < g.yB && x >= g.x0 && x < g.x1);
+  /** Reserved, as it would be had every block kept its houses. */
+  const wasRes = (x, y) => {
+    const g = ghostAt(x, y);
+    return g ? g.grid[(Math.floor(y) - g.yT) * W + Math.floor(x)] === 1 : isRes(x, y);
+  };
   for (let i = 0; i < allStreets.length - 1; i++) {
     const u0 = allStreets[i] + 9;
     const u1 = allStreets[i + 1] - 9;
     if (u1 - u0 < 20 || u0 < SUBURB[0] - 20) continue;
     const kind = u0 < CENTER[0] - 40 ? 'suburb' : u0 < SUSUKINO[0] ? 'city' : 'neon';
-    for (const [x0, x1] of blocksX(u0)) fillBlock(x0, x1, u0, u1, kind);
+    for (const [x0, x1] of blocksX(u0)) {
+      // [the street under the block, the block's left edge]: the places that stand where a block of houses would
+      const place = [[1466, 41, paintJingu], [1740, 101, paintBeer], [1880, 41, paintSchool]].find(([s, bx]) => s === allStreets[i] && bx === x0);
+      if (!place) {
+        fillBlock(x0, x1, u0, u1, kind);
+        continue;
+      }
+      // The block's houses are laid out as ever and then taken away again, so that every random number drawn after
+      // this is the one it always was: nothing else in the city moves.
+      const lists = [objects, lights, lightsFine, roofEdges, beacons, neonSigns, yards, pools, kit.props];
+      const keep = lists.map((l) => l.length);
+      const yT = Y(u1);
+      const was = reserved.slice(yT * W, Y(u0) * W);
+      fillBlock(x0, x1, u0, u1, kind);
+      ghosts.push({ x0, x1, yT, yB: Y(u0), grid: reserved.slice(yT * W, Y(u0) * W) }); // (what stood there: the trees are planted by it)
+      lists.forEach((l, n) => (l.length = keep[n]));
+      reserved.set(was, yT * W);
+      img.fine(x0, yT, x1 - x0, u1 - u0, (FXr, FYr) => snowPx(FXr, FYr, 0.5, 0.4, 60));
+      const at = rand.state();
+      place[2]();
+      rand.restore(at);
+    }
   }
 
   // Susukino: the big crossing's neon walls and the ramen alley with red lanterns and steam
@@ -4421,10 +4786,19 @@ export function buildMid() {
       const isFir = rand() < fp;
       const r = isFir ? 3.5 + rand() * 2.5 : 4 + rand() * 2;
       const k = r * 0.7;
-      if (isRes(ix, iy) || isRes(ix - k, iy) || isRes(ix + k, iy) || isRes(ix, iy - k) || isRes(ix, iy + k)) continue;
+      if (wasRes(ix, iy) || wasRes(ix - k, iy) || wasRes(ix + k, iy) || wasRes(ix, iy - k) || wasRes(ix, iy + k)) continue;
       if (u < JUMP[1]) {
         const [xl, xr] = ridge(u);
         if (ix < xl + 3 || ix > xr - 3) continue;
+      }
+      if (ghostAt(ix, iy)) {
+        // (a tree that would have stood in a yard of a block now given over to a place: its random numbers are
+        // drawn all the same, the tree itself is not planted)
+        const lists = [objects, lights, lightsFine, pools];
+        const keep = lists.map((l) => l.length);
+        (isFir ? fir : bare)(x, y, r);
+        lists.forEach((l, n) => (l.length = keep[n]));
+        continue;
       }
       (isFir ? fir : bare)(x, y, r);
     }

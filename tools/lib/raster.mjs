@@ -35,6 +35,11 @@ export function rng(seed) {
   next.int = (lo, hi) => Math.floor(lo + next() * (hi - lo + 1));
   next.pick = (arr) => arr[Math.floor(next() * arr.length)];
   next.chance = (p) => next() < p;
+  // (where the sequence is, and back to it: for painting something extra without shifting what is drawn after)
+  next.state = () => a;
+  next.restore = (v) => {
+    a = v >>> 0;
+  };
   return next;
 }
 
