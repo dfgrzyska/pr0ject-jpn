@@ -1,51 +1,219 @@
-// Tokyo's middle layer. For now a block-out only (phase 0 of docs/plan-tokyo.md): the districts as plain ground
-// with a street grid, the river and the bay left open to the far layer, the three arenas ringed, a ruler up the
-// left edge (a tick every 100 u, a long one every 500). The route proper comes in phase 1, the districts after.
-import { Raster, mix, scaleColor } from '../../lib/raster.mjs';
-import { W, S, L, DISTRICTS, ARENAS } from './route.mjs';
+// Tokyo's middle layer. Phase 1 of docs/plan-tokyo.md: the skeleton of the whole route, painted from route.mjs -
+// the ground of each district, the parks and courts, the water (the rivers and the bay cut out to the far layer,
+// the moats and ponds painted), the streets with their pavements and lines, the tracks, the expressways over it
+// all, and the plots the landmarks will stand on (hatched until their district is drawn). Then the strip is graded
+// for the time of day. The districts' own files (phases 2-7) come in through PAINTERS, each given the context
+// this file builds; they draw on their plots and fill the blocks between the streets.
+//
+// Coordinates: x across, u up from the strip's bottom; a fine pixel is a third of a logical one.
+import { fbm } from '../../lib/raster.mjs';
+import { HiCanvas, hashPx } from '../hires.mjs';
+import { todGrade, tintTable } from '../props.mjs';
+import { W, S, L, DISTRICTS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, PLOTS } from './route.mjs';
+import { near, inShape, bbox, railHalf } from './geom.mjs';
 
-const hash = (a, b) => {
-  let h = (a * 374761393 + b * 668265263) | 0;
-  h = (h ^ (h >>> 13)) * 1274126177;
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+// the districts' painters, in the order they are called: (ctx) => void. (Phases 2-7 add theirs here.)
+const PAINTERS = [];
+
+const smooth = (a, b, x) => {
+  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+const shade = (c, f) => {
+  const k = (v) => Math.max(0, Math.min(255, Math.round(v * f)));
+  return (k((c >> 16) & 255) << 16) | (k((c >> 8) & 255) << 8) | k(c & 255);
 };
 
+const GROUND = {
+  park: [0x4f7c40, 0x5a8a48, 0x66964e],
+  forest: [0x2f5a32, 0x3a6a38, 0x467840],
+  gravel: [0xb0a690, 0xbcb29c, 0xc6bca6],
+  plaza: [0x9c988f, 0xa8a49a, 0xb2aea4],
+  paving: [0x8e887e, 0x9a948a, 0xa49e94],
+  sand: [0xcdbb8c, 0xd8c89a, 0xe2d4a8],
+  apron: [0x74787c, 0x7e8286, 0x888c90],
+  asphalt: [0x43454d, 0x474951, 0x4b4d55],
+};
+const PAINTED = [0x24505c, 0x2c5c68, 0x366a74, 0x447a82];
+const BANK = 0x8c887e;
+const SIDEWALK = 0xa9a59c;
+const KERB = 0x7e7a72;
+const SURFACE = { avenue: 0x45474f, street: 0x4a4c54, lane: 0x5c5c62, express: 0x52545c };
+
 export function buildMid() {
-  const img = new Raster(W * S, L * S);
-  const Y = (u) => (L - u) * S; // strip row of a height u
-  const rect = (x, u0, w, h, c) => img.rect(x * S, Y(u0 + h), w * S, h * S, c);
-  const ROAD = 0x3a3c44;
-  for (const [from, to, id, , ground] of DISTRICTS) {
-    if (id === 'bay') {
-      // open water, the bridge across it
-      rect(0, 11040, W, 22, 0xd8dce0);
-      for (let x = 20; x < W; x += 46) rect(x, 11034, 6, 34, 0xf0f2f4);
-      continue;
-    }
-    for (let u = from; u < to; u += 16)
-      for (let x = 0; x < W; x += 20) {
-        const k = hash(Math.floor(x / 20), Math.floor(u / 16) + 7);
-        rect(x, u, 20, Math.min(16, to - u), scaleColor(mix(ground, 0x202028, k * 0.18), 0.92 + k * 0.16));
+  const img = new HiCanvas(W, L, S);
+  const FW = W * S;
+  const FH = L * S;
+  const wet = new Uint8Array(FW * FH); // 1: open water (cut out), 2: painted water
+  /** Paint the box (x0, u0)-(x1, u1) a fine pixel at a time: fn(x, u, X, Y) -> a colour, or null to leave it. */
+  const paint = (x0, u0, x1, u1, fn) => {
+    const XA = Math.max(0, Math.floor(x0 * S));
+    const XB = Math.min(FW, Math.ceil(x1 * S));
+    const YA = Math.max(0, Math.floor((L - u1) * S));
+    const YB = Math.min(FH, Math.ceil((L - u0) * S));
+    for (let Yy = YA; Yy < YB; Yy++)
+      for (let X = XA; X < XB; X++) {
+        const c = fn((X + 0.5) / S, L - (Yy + 0.5) / S, X, Yy);
+        if (c !== null && c !== undefined) img.hi.set(X, Yy, c);
       }
-    if (id === 'sumida') {
-      // the river down the middle, a bridge every so often
-      for (let u = from; u < to; u++) {
-        const x0 = (58 + Math.round(Math.sin(u / 170) * 10)) * S;
-        for (let y = Y(u + 1); y < Y(u); y++) for (let x = x0; x < x0 + 64 * S; x++) img.clear(x, y);
-      }
-      for (let u = from + 110; u < to; u += 290) rect(40, u, 100, 10, 0xc8c4b8);
-    } else {
-      rect(84, from, 12, to - from, ROAD); // the avenue
-      for (let u = from + 64; u < to; u += 128) rect(0, u, W, 6, ROAD); // cross streets
-      for (let u = from; u < to; u += 12) rect(89.5, u, 1, 6, 0xd8d0a0); // its centre line
+  };
+  const fill = (shape, fn) => paint(...bbox(shape), (x, u, X, Yy) => (inShape(shape, x, u) ? fn(x, u, X, Yy) : null));
+  const ramp = (cols, x, u, seed, scale = 9) => cols[Math.min(cols.length - 1, Math.floor(fbm(x, u, { seed, scale, octaves: 2 }) * cols.length + (hashPx(x * S, u * S, seed) - 0.5) * 0.9))] ?? cols[0];
+
+  // ---- the ground of each district: what is left between everything else (the blocks the districts will fill)
+  for (const [from, to, , , ground] of DISTRICTS) paint(0, from, W, to, (x, u, X, Yy) => shade(ground, 0.95 + fbm(x, u, { seed: 31, scale: 22, octaves: 2 }) * 0.1 + (hashPx(X, Yy, 3) - 0.5) * 0.03));
+
+  const ground = (g) => fill(g, (x, u, X, Yy) => {
+    wet[Yy * FW + X] = 0;
+    return ramp(GROUND[g.kind], x, u, 41);
+  });
+  for (const g of GROUNDS) if (!g.over) ground(g);
+
+  // ---- the water: open to the far layer, or painted
+  const water = (w) => fill(w, (x, u, X, Yy) => {
+    if (w.open) {
+      wet[Yy * FW + X] = 1;
+      img.hi.clear(X, Yy);
+      return null;
     }
-    rect(0, from, W, 2, 0xf0e8d0); // the district's edge
+    wet[Yy * FW + X] = 2;
+    return ramp(PAINTED, x * 0.6, u, 57, 7);
+  });
+  for (const w of WATER) if (!w.late) water(w);
+  for (const g of GROUNDS) if (g.over) ground(g);
+  for (const w of WATER) if (w.late) water(w);
+  // its banks: a stone edge two fine pixels wide on the land side
+  {
+    const edge = [];
+    for (let Yy = 0; Yy < FH; Yy++)
+      for (let X = 0; X < FW; X++) {
+        if (wet[Yy * FW + X]) continue;
+        let by = false;
+        for (let k = 1; k <= 2 && !by; k++) by = (X >= k && wet[Yy * FW + X - k]) || (X + k < FW && wet[Yy * FW + X + k]) || (Yy >= k && wet[(Yy - k) * FW + X]) || (Yy + k < FH && wet[(Yy + k) * FW + X]);
+        if (by) edge.push(Yy * FW + X);
+      }
+    for (const i of edge) img.hi.set(i % FW, Math.floor(i / FW), shade(BANK, 0.94 + hashPx(i % FW, Math.floor(i / FW), 9) * 0.12));
   }
-  for (const [u] of ARENAS)
-    for (let a = 0; a < 720; a++) {
-      const t = (a / 720) * Math.PI * 2;
-      img.rect(Math.round((90 + Math.cos(t) * 62) * S), Math.round(Y(u) + Math.sin(t) * 62 * S), 2, 2, 0xffd040);
+
+  /** Paint along a line: fn(n, x, u, X, Y) gets the nearest point of the line (geom.mjs: near) within `reach`. */
+  const along = (pts, reach, fn) => {
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const [a, b] = [pts[i], pts[i + 1]];
+      paint(Math.min(a[0], b[0]) - reach, Math.min(a[1], b[1]) - reach, Math.max(a[0], b[0]) + reach, Math.max(a[1], b[1]) + reach, (x, u, X, Yy) => {
+        const n = near(pts, x, u);
+        return n.d <= reach ? fn(n, x, u, X, Yy) : null;
+      });
     }
-  for (let u = 0; u < L; u += 100) rect(0, u, u % 500 ? 4 : 10, 1, 0xffffff);
-  return { strip: img, meta: { width: W, artScale: S, length: L } };
+  };
+
+  // ---- the streets: every pavement first, then every roadway, then the lines, so that crossings join cleanly
+  const onGround = ROADS.filter((r) => r.cls !== 'express' && !r.over);
+  const raised = ROADS.filter((r) => r.cls === 'express' || r.over);
+  const pavement = (r) => {
+    const walk = r.cls === 'avenue' ? 2 : r.cls === 'street' ? 1.34 : 0;
+    if (walk) along(r.pts, r.w / 2 + walk, (n, x, u, X, Yy) => (n.d > r.w / 2 + walk - 0.34 ? KERB : shade(SIDEWALK, 0.96 + hashPx(X, Yy, 5) * 0.08)));
+  };
+  const roadway = (r) => {
+    const half = r.w / 2;
+    if (r.cls === 'walk')
+      along(r.pts, half, (n, x, u, X, Yy) => {
+        const joint = Math.floor(n.along * S) % 6 === 0 || Math.floor((n.side + 60) * S) % 6 === 0;
+        return shade(0xb9b1a0, (joint ? 0.86 : 0.97) + hashPx(X, Yy, 7) * 0.06);
+      });
+    else if (r.cls === 'arcade')
+      // a covered shopping street: a glass roof, its ribs across and its ridge along
+      along(r.pts, half, (n, x, u, X, Yy) => {
+        if (n.d > half - 0.67) return 0xe6ecee;
+        if (Math.abs(n.side) < 0.34) return 0xdfe8ea;
+        return Math.floor(n.along * S) % 12 === 0 ? 0xd4e0e4 : shade(0x9cc4cc, 0.94 + hashPx(X, Yy, 11) * 0.1);
+      });
+    else if (r.cls === 'deck')
+      along(r.pts, half, (n, x, u, X, Yy) => shade(0x9a7a52, (Math.floor(n.along * S) % 3 === 0 ? 0.84 : 1) + hashPx(X, Yy, 13) * 0.06));
+    else
+      along(r.pts, half, (n, x, u, X, Yy) => {
+        if (r.cls === 'express' && n.d > half - 0.67) return 0xcfd0cc; // its parapets
+        return shade(SURFACE[r.cls], 0.96 + hashPx(X, Yy, 15) * 0.08);
+      });
+  };
+  const lines = (r) => {
+    if (r.cls !== 'avenue' && r.cls !== 'street' && r.cls !== 'express') return;
+    const lanes = r.w >= 12 ? r.w / 4 : 0;
+    along(r.pts, r.w / 2 - 1, (n) => {
+      const dash = Math.floor(n.along * S) % 18 < 10;
+      if (Math.abs(n.side) < 0.17) return r.cls === 'street' ? (dash ? 0xd8d4c4 : null) : 0xe0c466; // the centre line
+      if (lanes && Math.abs(Math.abs(n.side) - lanes) < 0.17 && dash) return 0xdedad0;
+      return null;
+    });
+  };
+  for (const r of onGround) pavement(r);
+  for (const r of onGround) roadway(r);
+  for (const r of onGround) lines(r);
+
+  // ---- what stands over the streets: the tracks on their viaducts, the bridges over them, the expressways.
+  // Their shadows first (thrown to the lower right, on whatever is painted there).
+  const shadowed = new Uint8Array(FW * FH);
+  const shadow = (pts, half, len) =>
+    along(pts.map(([x, u]) => [x + len, u - len]), half, (n, x, u, X, Yy) => {
+      const i = Yy * FW + X;
+      if (!shadowed[i] && !wet[i] && img.hi.alpha(X, Yy)) {
+        shadowed[i] = 1;
+        img.hi.tint(X, Yy, 0.74);
+      }
+      return null;
+    });
+  for (const r of RAILS) if (r.style !== 'crane') shadow(r.pts, railHalf(r), r.style === 'guideway' ? 3 : 1.67);
+  for (const r of raised) shadow(r.pts, r.w / 2, r.cls === 'express' ? 3 : 1.67);
+
+  for (const r of RAILS) {
+    const half = railHalf(r);
+    if (r.style === 'guideway')
+      // the automated line: two concrete beams on cross ties
+      along(r.pts, half, (n, x, u, X, Yy) => {
+        const s = Math.abs(n.side);
+        if (Math.abs(s - 3) <= 1.34) return shade(0xb8b8b2, (Math.abs(s - 3) > 0.9 ? 0.86 : 1) - hashPx(X, Yy, 17) * 0.05);
+        return Math.floor(n.along) % 12 === 0 && Math.floor(n.along * S) % 3 !== 2 ? 0x9a9a94 : null;
+      });
+    else if (r.style === 'crane')
+      along(r.pts, half, (n) => (Math.abs(Math.abs(n.side) - 7) < 0.34 ? 0x34363c : null));
+    else
+      along(r.pts, half, (n, x, u, X, Yy) => {
+        if (n.d > half - 0.67) return 0xb4b0a8; // the viaduct's parapet
+        const s = n.side + (r.tracks - 1) * 2.5; // across the tracks, from the first one's middle
+        const t = Math.abs(s - Math.round(s / 5) * 5); // from the nearest track's middle
+        if (Math.round(t * S) === 3) return 0xd0d4d8; // a rail
+        if (t <= 1.7 && Math.floor(n.along * S) % 4 === 0) return 0x4c4238; // a sleeper
+        return [0x7a7068, 0x6c645c, 0x857b72][Math.floor(hashPx(X, Yy, 19) * 3)]; // ballast
+      });
+  }
+  for (const r of raised) pavement(r);
+  for (const r of raised) roadway(r);
+  for (const r of raised) lines(r);
+
+  // ---- the plots the landmarks will stand on: hatched, edged (a low one paler)
+  for (const [, x, u, w, h, , low] of PLOTS)
+    paint(x, u, x + w, u + h, (px, pu, X, Yy) => {
+      const rim = px - x < 0.67 || x + w - px < 0.67 || pu - u < 0.67 || u + h - pu < 0.67;
+      if (rim) return 0x34303a;
+      return (X + Yy) % 9 < 2 ? (low ? 0xa49e92 : 0x9a9488) : low ? 0xd2ccc0 : 0xc2bcb0;
+    });
+
+  // ---- the arenas: a dashed ring until their own ground is drawn
+  for (const [ax, au, , r] of ARENAS)
+    paint(ax - r - 1, au - r - 1, ax + r + 1, au + r + 1, (x, u) => {
+      const d = Math.hypot(x - ax, u - au);
+      return Math.abs(d - r) < 0.5 && Math.floor(((Math.atan2(u - au, x - ax) + Math.PI) / (Math.PI * 2)) * 72) % 2 === 0 ? 0xffd040 : null;
+    });
+
+  const ctx = { img, wet, paint, fill, along, ramp, shade, W, S, L };
+  for (const p of PAINTERS) p(ctx);
+
+  // ---- the time of day, a band of the strip at a time
+  const tod = todGrade(TOD, smooth);
+  const BAND = 16 * S;
+  for (let Y0 = 0; Y0 < FH; Y0 += BAND) {
+    const band = img.hi.crop(0, Y0, FW, Math.min(BAND, FH - Y0));
+    tod.frame(band, L - (Y0 + BAND / 2) / S);
+    img.hi.data.set(band.data, Y0 * FW * 4);
+  }
+  return { strip: img.hi, meta: { width: W, artScale: S, length: L, tint: tintTable(L, tod.white) } };
 }

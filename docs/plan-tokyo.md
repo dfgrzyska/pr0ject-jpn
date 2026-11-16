@@ -1,6 +1,6 @@
 # Plan: etap 9, TOKIO
 
-Stan: **w budowie**. Faza 0 gotowa; decyzje z sekcji 2 przyjęte według rekomendacji (do potwierdzenia przez autora). Postęp odznacza się checkboxami w sekcji 8.
+Stan: **w budowie**. Fazy 0 i 1 gotowe; decyzje z sekcji 2 przyjęte według rekomendacji (do potwierdzenia przez autora). Postęp odznacza się checkboxami w sekcji 8.
 
 ## 1. W skrócie
 
@@ -32,7 +32,7 @@ Stan: **w budowie**. Faza 0 gotowa; decyzje z sekcji 2 przyjęte według rekomen
 
 ## 4. Trasa
 
-Współrzędna `u` liczona od dołu taśmy, jak w `src/data/landmarks.js`. Czas przy przewijaniu 30 px/s. Granice są wstępne; faza 1 je ustala na stałe.
+Współrzędna `u` liczona od dołu taśmy, jak w `src/data/landmarks.js`. Czas przy przewijaniu 30 px/s. Granice dzielnic ustaliła faza 1: obowiązują te z `tools/art/tokyo/route.mjs` (`DISTRICTS`), tabela niżej pokazuje je z dokładnością do kilkudziesięciu pikseli.
 
 | u | Czas | Dzielnica | Pora | Co widać |
 |---|---|---|---|---|
@@ -48,6 +48,26 @@ Współrzędna `u` liczona od dołu taśmy, jak w `src/data/landmarks.js`. Czas 
 | 9500–10700 | 317–357 s | **SUMIDA-GAWA** | noc | Most Azuma, wysoka wieża nadawcza po drugiej stronie rzeki, łodzie yakatabune z lampionami, hala sumo w Ryōgoku, mosty Kiyosu i Eitai, targ rybny, ogród Hama-rikyū z herbaciarnią na stawie |
 | 10700–11500 | 357–383 s | **TOKYO-WAN** | noc | **Rainbow Bridge** podświetlony, wysepki dawnych fortów Daiba, promy i barki |
 | 11500–12544 | 383–440 s | **ODAIBA** | noc | Plaża z repliką **Statuy Wolności**; estakada automatycznej kolejki z jadącym składem; muzeum w kształcie statku i muzeum nauki z wielkim globusem; budynek telewizji z kulą (bez logo); terminal kontenerowy z suwnicami (arena bossa, u ≈ 12 300) |
+
+### Szkielet trasy (faza 1)
+
+Cała trasa jest zapisana jako dane w `tools/art/tokyo/route.mjs`. Każdy, kto rysuje dzielnicę, bierze wymiary stamtąd i niczego nie przesuwa na oko.
+
+- **`ROADS`**: ulice z klasą (aleja, ulica, zaułek, deptak, pasaż pod dachem, pomost, estakada) i szerokością. Kręgosłupy trasy: Ōme-kaidō (Nakano i Shinjuku), Meiji-dōri (Shinjuku, Harajuku, Shibuya), Roppongi-dōri pod estakadą, Chūō-dōri (Akihabara, Ueno), Nakamise, a od Asakusy rzeka.
+- **`RAILS`**: tory. Linia Chūō w Nakano, wiązka torów dworca Shinjuku, Yamanote przez Harajuku i Shibuyę, wiązka dworca Tokio, Yamanote przez Akihabarę do Ueno, linia Sōbu, most kolejowy w Ryōgoku, kolejka na Odaibie, szyny suwnic.
+- **`WATER`**: rzeki i zatoka wycięte do dalekiej warstwy, fosy i stawy malowane.
+- **`GROUNDS`**: parki, las Meiji, dziedzińce, place, plaża, płyta terminalu.
+- **`PLOTS`**: 110 działek pod budynki i obiekty, każda z opisem, co ma na niej stanąć. Do czasu narysowania są zakreskowane.
+- **`ARENAS`**: trzy areny. Skrzyżowanie w Shibui ma własny kwadrat asfaltu 68 × 68 px, budynki stoją dookoła.
+- **`TOD`**: pora dnia wzdłuż trasy.
+
+Zasady pracy na szkielecie:
+
+- Dzielnica rysuje swoje budynki **na działkach** i wypełnia **kwartały między ulicami**. Ulic, torów i wody nie przesuwa. Jeśli działka jest za mała albo źle leży, zmienia się ją w `route.mjs`, a nie omija w rysunku.
+- Malarze dzielnic wpinają się przez listę `PAINTERS` w `tools/art/tokyo/mid.mjs` i dostają gotowy kontekst (płótno, maskę wody, pomocnicze funkcje rysowania). Rysują przed nałożeniem pory dnia; światła nocne dojdą osobnym krokiem po niej, gdy pierwsza dzielnica będzie ich potrzebować.
+- `npm test` pilnuje topologii (`tools/tests/tokyoRoute.test.mjs`): działki nie nachodzą na siebie ani na ulice, w arenach nie stoi nic wysokiego, każda ulica i każdy tor kończy się na krawędzi taśmy, na innej ulicy, przy działce albo na placu.
+- Podgląd: `node tools/art/tokyo/overview.mjs` zapisuje całą taśmę w siedmiu kolumnach z ponumerowanymi działkami (`tools/preview/stage9_route.png`) i wypisuje klucz numerów. Z `--from=3100 --to=3600` zapisuje wybrany odcinek w pełnej rozdzielczości.
+- Łączenia kafli są zgodne z konstrukcji: taśma jest rysowana w całości i dopiero potem cięta na 14 kawałków.
 
 ### Jak czas ma się do trasy
 
@@ -134,12 +154,13 @@ Wymaga: decyzje D1–D5. Pliki: `src/data/stage9.json`, `src/data/stages.js`, `s
 - [x] `npm test` i `npx vite build` przechodzą
 
 ### Faza 1: szkielet trasy
-Wymaga: faza 0. Pliki: `tools/art/tokyo/route.mjs`, `tools/art/tokyo/mid.mjs`, `src/data/landmarks.js`.
-- [ ] Przebieg na całych 12 544 px: ulice główne, tory (pętla Yamanote, linia Chūō), rzeki Kanda i Sumida, fosy, linia brzegu, mosty, estakada kolejki
-- [ ] Granice dzielnic ustalone i wpisane do `landmarks.js`
-- [ ] Miejsca trzech aren zaznaczone i wolne od wysokich obiektów
-- [ ] Harmonogram pory dnia (`dark`, odcienie) dla całej trasy
-- [ ] Zrzut całej taśmy w skali do przeglądu; łączenia kafli sprawdzone
+Wymaga: faza 0. Pliki: `tools/art/tokyo/route.mjs`, `tools/art/tokyo/geom.mjs`, `tools/art/tokyo/mid.mjs`, `tools/art/tokyo/overview.mjs`, `src/data/landmarks.js`, `tools/tests/tokyoRoute.test.mjs`.
+- [x] Przebieg na całych 12 544 px: ulice, tory, rzeki Kanda i Sumida, fosy pałacu, stawy, linia brzegu, mosty, estakady, kolejka na Odaibie
+- [x] Granice dzielnic ustalone; 51 nazw miejsc wpisanych do `landmarks.js`
+- [x] 110 działek pod budynki z opisami; trzy areny zaznaczone, wolne od wysokich obiektów (pilnuje test)
+- [x] Harmonogram pory dnia (`TOD` w `route.mjs`, `dark` w `stage9.json`)
+- [x] Podgląd całej taśmy z numerami działek; łączenia kafli zgodne z konstrukcji
+- [x] Sprawdzone w grze: Nakano, skrzyżowanie w Shibui z minibossem, Rainbow Bridge
 
 ### Fazy 2–7: dzielnice tła
 Każda wymaga fazy 1. Jedna faza = jeden plik `tools/art/tokyo/<nazwa>.mjs` plus swoje animowane rekwizyty. Warunek ukończenia każdej: obiekty z tabeli w sekcji 4 narysowane, animacje w miejscu działają, łączenia z sąsiadami zgodne ze szkieletem, zrzuty przed i po w dzienniku.
@@ -241,4 +262,5 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-16 | Claude | 1 | Szkielet całej trasy jako dane (`route.mjs`) i jego rysunek (`mid.mjs`): ulice z chodnikami i liniami, tory, woda z kamiennym brzegiem, parki i place, zakreskowane działki, pora dnia. Test topologii. Narzędzie podglądu. | Noc od Akihabary jest na razie bardzo ciemna, bo nie ma jeszcze świateł; każda nocna dzielnica musi dodać swoje. Skrzyżowanie w Shibui ma pod spodem zwykłe chodniki alei, zebrę rysuje faza 3. Arena w Shibui ma promień 34 (sam kwadrat skrzyżowania), pozostałe 62. Układ nie trzyma stron świata, tylko kolejność miejsc. Nazwy i układ spisane z pamięci, bez weryfikacji w sieci. |
 | 2026-11-16 | Claude | 0 | Szkielet etapu: `stage9.json` (wip), makieta tła 14 kafli z dzielnicami i trzema arenami, zestawy skórek, zatrzymanie na arenie, deszcz, kolejność podróży. Sprawdzone w przeglądarce: obaj zastępczy minibossowie, boss na końcu taśmy, rzeka prześwitująca do dalekiej warstwy. | Minibossowie i boss to podstawieni Tanuki, Manta i Kyūbi, muzyka pożyczona z Osaki. Nowi minibossowie z `hold` nie mogą opierać swoich czasów na `scene.t` (zegar stoi), tylko na własnym `e.age`. Granice dzielnic w `tools/art/tokyo/route.mjs` i `landmarks.js` są wstępne, faza 1 je ustala. Pomiar na telefonie nie zrobiony. |
