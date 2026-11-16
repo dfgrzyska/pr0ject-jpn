@@ -6,6 +6,7 @@ import { buildShip, equip, layout, seen, setHull, usePreset, wear } from './Load
 import { applySkin, blastSkinned, flameLook } from './shipSkin.js';
 import { fxTint } from './premiumFx.js';
 import { drawBubble } from './bubble.js';
+import { PilotCard } from './PilotCard.js';
 import { sharedArt, spriteTexture } from './enemyArt.js';
 
 // The hangar, off the title screen. From the top: the ship (on the PARTS tab: big, with its numbers beside it; on
@@ -84,7 +85,8 @@ export class Hangar {
     this.sg = add(scene.add.graphics(), d + 0.6); // the stage's own: its rings and the bubble, drawn every frame
     this.back = add(pixelText(scene, 27, 12, '< WRÓĆ'), d + 1);
     this.title = add(pixelText(scene, W / 2, 12, 'HANGAR').setTint(0xffd6e5), d + 1);
-    this.owned = add(pixelText(scene, 176, 12, '', 1).setOrigin(1, 0.5).setTint(0x9aaec2), d + 1);
+    this.owned = add(pixelText(scene, 176, 12, '', 1).setOrigin(1, 0.5).setTint(0x9aaec2), d + 1).setVisible(false);
+    this.cardBtn = add(pixelText(scene, 154, 12, 'KARTA').setTint(0xffe080), d + 1); // the pilot's card (see PilotCard)
     // the ship, its engine burning, its companion; a dragon's body under its head (ship.anim.segs)
     this.art = add(sharedArt(scene.add.image(36, 0, 'sprites', 'ship')).setScale(2), d + 1);
     this.flame = add(sharedArt(scene.add.sprite(36, 0, 'sprites', 'flame_0')).setOrigin(0.5, 0).setScale(2).play('flame'), d + 0.9);
@@ -233,6 +235,7 @@ export class Hangar {
     this.big = this.staged && ['paint', 'paint_fx', 'flame'].includes(slot.kind) || Boolean(DECAL_DOT[slot.kind]);
     this.owned.setText(`${this.loadout.owned.length}/${ITEMS.length}`);
 
+    g.lineStyle(1, 0xffe080).strokeRect(134.5, 5.5, 39, 13);
     // the tabs (a yellow dot: something new in it)
     TABS.forEach((t, i) => {
       const on = t.id === this.tab;
@@ -457,8 +460,21 @@ export class Hangar {
     if (it?.sound) this.scene.sfx.shot('basic', it.sound);
   }
 
+  /** The pilot's card: shown over the hangar until a tap or a key. */
+  openCard() {
+    this.card = new PilotCard(this.scene, this.loadout, buildShip(this.loadout));
+    this.scene.sfx.pickup();
+  }
+
+  closeCard() {
+    this.card?.destroy();
+    this.card = null;
+  }
+
   /** Returns 'close' for the back arrow. */
   key(act) {
+    if (this.card) return act ? void this.closeCard() ?? null : null;
+    if (act === 'card') return void this.openCard() ?? null;
     if (act === 'back') return 'close';
     if (act?.startsWith('set')) this.setPreset(Number(act[3]));
     if (act === 'tab') this.setTab(TABS[(TABS.findIndex((t) => t.id === this.tab) + 1) % TABS.length].id);
@@ -472,7 +488,9 @@ export class Hangar {
 
   /** A press: the back arrow, a tab, a slot, a set or the button at once; on the stock it may become a drag (scroll) or, on release, a tap. */
   pointer(p) {
+    if (this.card) return void this.closeCard() ?? null;
     if (p.y < 24 && p.x < 60) return 'close';
+    if (p.y < 22 && p.x > 130) return void this.openCard() ?? null;
     if (Math.abs(p.y - this.setY) <= 10) {
       if (Math.abs(p.x - BTN.x) <= BTN.w / 2 + 2) return this.activate();
       const i = SET_X.findIndex((x) => Math.abs(p.x - x) <= 9);
@@ -632,6 +650,7 @@ export class Hangar {
 
   update(dt) {
     this.t += dt;
+    this.card?.update(dt);
     const k = this.small ? 1 : 2; // (the ship at its real size on the stage, and a dragon whatever the tab)
     this.sg.clear();
     if (this.staged) this.art.y = this.stage(dt);
@@ -658,6 +677,7 @@ export class Hangar {
   }
 
   destroy() {
+    this.closeCard();
     for (const o of this.items) o.destroy();
   }
 }

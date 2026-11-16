@@ -84,6 +84,9 @@ export class Gacha {
     this.info = add(pixelText(scene, W / 2, 0, '').setTint(0xb8c4d4).setVisible(false), d + 8.2);
     this.more = add(pixelText(scene, W / 2, 0, '').setTint(0xffe080).setVisible(false), d + 8.2);
     this.wearText = add(pixelText(scene, W / 2, 0, '').setVisible(false), d + 8.2); // "wear now", under the prize
+    // a legendary capsule's own opening: a banner over the prize, confetti over the whole screen
+    this.legend = add(pixelText(scene, W / 2, 0, 'LEGENDARNY!').setVisible(false), d + 8.3);
+    this.confetti = Array.from({ length: 44 }, () => add(scene.add.rectangle(0, 0, 2, 3, 0xffffff).setVisible(false), d + 8.1));
     this.layout(scene.H);
     this.fill();
     this.refresh();
@@ -340,7 +343,17 @@ export class Gacha {
     const f = this.fall;
     const amp = Math.min(1, k) ** 2;
     this.cap.setPosition(f.x + Math.sin(this.t * 60) * amp * 1.6, this.floorY - Math.abs(Math.sin(this.t * 34)) * amp * 2).setRotation(f.rot + Math.sin(this.t * 48) * amp * 0.3);
-    this.glow(this.rays.clear(), f.x, this.floorY, 12 + 22 * amp, 0.03 + 0.07 * amp);
+    const g = this.rays.clear();
+    this.glow(g, f.x, this.floorY, 12 + 22 * amp, 0.03 + 0.07 * amp);
+    // (a legendary one: beams of every colour breaking out of it as it trembles)
+    if (this.tier >= 4) {
+      for (let i = 0; i < 10; i++) {
+        const a = this.t * 1.4 + (i * Math.PI * 2) / 10;
+        const len = (30 + 70 * amp) * (0.7 + 0.3 * Math.sin(this.t * 23 + i * 2));
+        g.fillStyle(RAINBOW[i % 6], 0.35 * amp);
+        g.fillTriangle(f.x, this.floorY, f.x + Math.cos(a - 0.05) * len, this.floorY + Math.sin(a - 0.05) * len, f.x + Math.cos(a + 0.05) * len, this.floorY + Math.sin(a + 0.05) * len);
+      }
+    }
     if (k >= 1) this.open();
   }
 
@@ -391,6 +404,12 @@ export class Gacha {
     this.stars.forEach((s, i) => s.setVisible(i <= this.tier).setPosition(W / 2 + (i - this.tier / 2) * 9, this.cy + 34));
     this.scene.sfx.prize(this.tier);
     this.sparkT = 0;
+    // (a legendary one: the screen shakes, the banner and the confetti come out)
+    if (this.tier >= 4) {
+      this.scene.cameras.main.shake(380, 0.012);
+      this.legend.setVisible(true).setY(this.cy - 62);
+      for (const c of this.confetti) Object.assign(c, { wait: Math.random() * 1.2, vy: 40 + Math.random() * 50, ph: Math.random() * 6 }).setPosition(Math.random() * W, -6 - Math.random() * 30).setFillStyle(Math.random() < 0.45 ? 0xffd040 : RAINBOW[Math.floor(Math.random() * 6)]).setVisible(true);
+    }
     // (what can be worn: a shortcut to put it on at once)
     this.worn = it.kind === 'card' ? 'none' : 'ask';
     this.wearY = this.cy + 113;
@@ -423,6 +442,28 @@ export class Gacha {
     this.flash.setAlpha(this.flash.alpha * 0.9);
     // the rays: more of them, longer and brighter, the rarer
     const g = this.rays.clear();
+    if (this.tier >= 4) {
+      // a legendary one: a sunburst of every colour turning behind it, out past the screen's edges; rings of
+      // colour going out one after another; confetti falling; the banner in every colour in turn
+      for (let i = 0; i < 24; i++) {
+        const a = -this.t * 0.35 + (i * Math.PI * 2) / 24;
+        g.fillStyle(RAINBOW[i % 6], 0.11 * rise);
+        g.fillTriangle(x, y, x + Math.cos(a - 0.09) * 420, y + Math.sin(a - 0.09) * 420, x + Math.cos(a + 0.09) * 420, y + Math.sin(a + 0.09) * 420);
+      }
+      for (let i = 0; i < 3; i++) {
+        const k = (t * 0.9 + i / 3) % 1;
+        g.lineStyle(2, RAINBOW[(i * 2 + Math.floor(t * 0.9 + i / 3)) % 6], (1 - k) * 0.8).strokeCircle(x, y, 24 + k * 120);
+      }
+      for (const c of this.confetti) {
+        if ((c.wait -= dt) > 0) continue;
+        c.y += c.vy * dt;
+        c.x += Math.sin(this.t * 3 + c.ph) * 14 * dt;
+        c.setRotation(this.t * 4 + c.ph).setScale(1, 0.4 + 0.6 * Math.abs(Math.sin(this.t * 6 + c.ph)));
+        if (c.y > this.scene.H + 6) c.setPosition(Math.random() * W, -6);
+      }
+      const pop = Math.min(1, Math.max(0, (t - 0.3) / 0.2));
+      this.legend.setScale(1 + (1 - pop) * 1.5).setAlpha(pop).setTint(RAINBOW[Math.floor(this.t * 6) % 6]);
+    }
     this.glow(g, x, y, (30 + this.tier * 5) * rise, 0.06 + 0.015 * Math.sin(this.t * 5));
     const n = 6 + this.tier * 3;
     const reach = (48 + this.tier * 16) * rise;
@@ -466,7 +507,7 @@ export class Gacha {
 
   /** The prize put away: on to the next draw of a run, or back to the machine. */
   dismiss() {
-    for (const o of [this.kind, this.rarity, this.name, this.info, this.more, this.wearText, ...this.stars, ...this.sparks, ...this.halves]) o.setVisible(false);
+    for (const o of [this.kind, this.rarity, this.name, this.info, this.more, this.wearText, this.legend, ...this.confetti, ...this.stars, ...this.sparks, ...this.halves]) o.setVisible(false);
     this.prize?.destroy();
     this.prize = null;
     this.rays.clear();
