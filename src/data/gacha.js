@@ -127,6 +127,18 @@ export const ITEMS = [
     },
     slots: { engine: 1, gun: 1, bomb: 1, core: 1, omamori: 2 },
   },
+  // the dragon: the ship is its head; `segs`: its body, that many segments (<frame>_seg, the last <frame>_tail)
+  // each `gap` px behind the one before, following the head's path. Only the head can be hit
+  {
+    id: 'hull_ryu', kind: 'hull', rarity: 'UR', name: 'RYŪ', info: 'SMOK: CIAŁO LECI ZA GŁOWĄ',
+    ship: {
+      id: 'ryu', name: 'RYŪ', role: 'SMOK', color: 0x37b35a, frame: 'ship_ryu', life: 'icon_life_ryu', lives: 3, damage: 1.15, hit: 1.5, graze: 8, pickup: 12, flameY: 9, wing: 20,
+      anim: { by: 'fire', n: 2, bank: false, segs: { n: 6, gap: 8 } },
+      frames: ['', '_f1', '_seg', '_tail'].map((s) => `ship_ryu${s}`),
+      decalAt: [[0.5, 0.56], [0.38, 0.5], [0.62, 0.5], [0.5, 0.64]],
+    },
+    slots: { engine: 1, gun: 2, bomb: 1, core: 2, omamori: 1 },
+  },
 
   // ---- engines: keyboard speed, px of travel per px of finger, how fast the ship chases the finger
   { id: 'engine_standard', kind: 'engine', starter: true, name: 'SILNIK STANDARDOWY', info: 'PEWNY I PRZEWIDYWALNY', fx: { set: { speed: 112, touchGain: 1.15, dragSpeed: 650 } } },

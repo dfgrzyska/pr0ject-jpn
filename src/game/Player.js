@@ -17,6 +17,7 @@ export class Player {
     this.dot = sharedArt(scene.add.image(0, 0, 'sprites', 'hitbox')).setDepth(DEPTH.player + 0.1);
     this.pal = sharedArt(scene.add.image(0, 0, 'sprites', 'hitbox')).setDepth(DEPTH.player - 0.2).setVisible(false); // a companion out of the gachapon
     this.aura = Array.from({ length: 6 }, () => sharedArt(scene.add.image(0, 0, 'sprites', 'dot_2')).setDepth(DEPTH.player + 0.04).setVisible(false)); // an aura out of the gachapon
+    this.segs = []; // a dragon's body (ship.anim.segs): made when such a hull is fitted
     this.muzzle = sharedArt(scene.add.image(0, 0, 'sprites', 'muzzle_0')).setDepth(DEPTH.player + 0.05).setVisible(false); // flash at the nose
     this.noseGlow = scene.add.image(0, 0, 'sprites', 'glow').setDepth(DEPTH.player - 0.05).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.bank = 0;
@@ -73,6 +74,11 @@ export class Player {
     this.dot.setFrame(ship.look?.marker ?? 'hitbox'); // (a marker out of the gachapon)
     this.pal.setFrame(ship.look?.pal ?? 'hitbox');
     this.palAt = null;
+    // (a dragon's body: its segments, the tail last, each a little smaller than the one before)
+    for (const g of this.segs) g.img.destroy();
+    const body = ship.anim?.segs;
+    this.segs = Array.from({ length: body?.n ?? 0 }, (_, i) => ({ x: 0, y: 0, img: sharedArt(this.scene.add.image(0, 0, 'sprites', i === body.n - 1 ? `${ship.frame}_tail` : `${ship.frame}_seg`)).setScale(1 - i * 0.045).setDepth(DEPTH.player - 0.15 - i * 0.001).setVisible(false) }));
+    this.segsAt = null;
     this.lives = this.fullLives();
     this.shipFrame(ship.frame);
   }
@@ -93,6 +99,7 @@ export class Player {
     this.dot.setVisible(v);
     if (!v) this.pal?.setVisible(false);
     if (!v) this.aura?.forEach((a) => a.setVisible(false));
+    if (!v) this.segs?.forEach((g) => g.img.setVisible(false));
     if (!v) this.muzzle.setVisible(false);
     if (!v) this.noseGlow?.setVisible(false);
     if (!v) this.beanOrbit?.forEach((b) => b.setVisible(false));
@@ -276,11 +283,41 @@ export class Player {
       this.shipFrame(an ? this.hullFrame(dt) : this.bank < -0.35 ? `${f}_l` : this.bank > 0.35 ? `${f}_r` : f);
       this.sprite.setPosition(this.x, this.y).setRotation(this.bank * 0.065);
     }
+    // a dragon's body: each segment drawn along behind the one before it (the first behind the head), sinking a
+    // little so that it hangs below a ship at rest; the engine's flame burns at the tail's end
+    if (this.segs.length) {
+      const on = this.alive && this.sprite.visible;
+      const gap = an.segs.gap;
+      if (!this.segsAt || !on) {
+        this.segs.forEach((g, i) => Object.assign(g, { x: this.x, y: this.y + (i + 1) * gap }));
+        this.segsAt = on;
+      }
+      let px = this.x;
+      let py = this.y + 3;
+      let rot = 0;
+      for (const g of this.segs) {
+        g.y += 26 * dt;
+        const dx = px - g.x;
+        const dy = py - g.y;
+        const d = Math.hypot(dx, dy) || 1;
+        if (d > gap) {
+          g.x += dx * (1 - gap / d);
+          g.y += dy * (1 - gap / d);
+        }
+        rot = Math.atan2(py - g.y, px - g.x) + Math.PI / 2;
+        g.img.setVisible(on).setPosition(g.x, g.y).setRotation(rot).setAlpha(this.sprite.alpha);
+        px = g.x;
+        py = g.y;
+      }
+      this.flameAt = { x: px - Math.sin(rot) * 7, y: py + Math.cos(rot) * 7, rot };
+    }
     if (an?.shed && this.alive && this.sprite.visible) this.emit(an.shed, this.x, this.y, 22, 12, dt); // (embers off its wings)
     // (rising again: a burst of what it is made of, where it stops)
     if (an?.rise && this.alive && this.wasEntering && this.entering <= 0) this.burst(an.rise, this.x, this.y);
     this.wasEntering = this.entering > 0;
     this.flame.setPosition(this.x, this.y + this.ship.flameY).setScale(1 - this.thrust * 0.12, (1 + this.thrust * 0.45) * flameLook(this.flame, this.ship));
+    if (this.segs.length && this.flameAt) this.flame.setPosition(this.flameAt.x, this.flameAt.y).setRotation(this.flameAt.rot);
+    else if (this.flame.rotation) this.flame.setRotation(0);
     this.dot.setPosition(this.x, this.y);
     // the companion: behind the left wing, catching up with the ship, bobbing as it flies
     const palOn = Boolean(this.ship.look?.pal) && this.alive && this.sprite.visible;
@@ -850,6 +887,7 @@ export class Player {
     s.fx.debris(this.x, this.y, 12, this.ship.color, 1.6);
     s.fx.debris(this.x, this.y, 6, 0xffffff, 1.3);
     s.fx.flash(0.35, 0.3);
+    for (const g of this.segs) s.fx.explode(g.x, g.y, 's', null, true); // (a dragon's body goes with its head)
     if (this.ship.anim?.fold) {
       // (the paper crane comes apart into the sheet it was folded from, drifting down)
       const sheet = s.fx.part(s.fx.parts, `${this.ship.frame}_o0`, this.x, this.y, { vy: 26, drag: 0.3, g: 14, spin: 2.5, life: 1.6, a0: 0.95 });

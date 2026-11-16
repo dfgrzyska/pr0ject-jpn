@@ -98,6 +98,8 @@ export class Hangar {
     this.laneShots = [0, 1, 2].map(() => add(sharedArt(scene.add.image(36, 0, 'sprites', 'ps_needle')), d + 1.02).setVisible(false));
     this.laneEb = ['eb_m', 'eb_s'].map((f) => add(sharedArt(scene.add.image(0, 0, 'sprites', f)), d + 1.02).setVisible(false));
     this.dummy = add(scene.add.image(36, 38, 'gacha', 'lifeicon_daruma').setScale(FINE * 2), d + 1.01).setVisible(false);
+    // a dragon's body under its head (ship.anim.segs): shown at its real size, the frame has no room for more
+    this.segArt = [0, 1, 2, 3, 4].map(() => add(sharedArt(scene.add.image(36, 0, 'sprites', 'ship')), d + 0.95).setVisible(false));
     this.layout(scene.H);
   }
 
@@ -232,7 +234,12 @@ export class Hangar {
     }
     this.laneEb.forEach((b, i) => b.setVisible(this.lane).setFrame(i ? 'eb_s' : 'eb_m'));
     this.dummy.setVisible(this.lane);
-    this.art.setScale(this.lane ? 1 : 2);
+    this.body = ship.anim?.segs ? ship.frame : null;
+    this.segArt.forEach((g, i) => {
+      g.setVisible(Boolean(this.body));
+      if (this.body) g.setFrame(i === this.segArt.length - 1 ? `${this.body}_tail` : `${this.body}_seg`).setScale(1 - i * 0.05);
+    });
+    this.art.setScale(this.lane || this.body ? 1 : 2);
     this.flameLong = flameLook(this.flame, next ?? ship);
     const palPic = (next ?? ship).look?.pal;
     this.palArt.setVisible(Boolean(palPic));
@@ -418,8 +425,14 @@ export class Hangar {
 
   update(dt) {
     this.t += dt;
-    const k = this.lane ? 1 : 2; // (the test lane shows the ship at its real size, low in the frame)
-    this.art.y = this.lane ? this.shipY + 11 : this.shipY + Math.round(Math.sin(this.t * 3) * 1.5) * 2;
+    const k = this.lane || this.body ? 1 : 2; // (the test lane shows the ship at its real size, low in the frame)
+    this.art.y = this.lane ? this.shipY + 11 : this.body ? this.shipY - 14 + Math.round(Math.sin(this.t * 3) * 1.5) : this.shipY + Math.round(Math.sin(this.t * 3) * 1.5) * 2;
+    // (a dragon's body swaying under its head; in the test lane only what the frame has room for)
+    this.segArt.forEach((g, i) => {
+      const y = this.art.y + 3 + (i + 1) * 8;
+      const sway = Math.sin(this.t * 3 - (i + 1) * 0.7) * (i + 1) * 0.9;
+      g.setPosition(36 + sway, y).setRotation(Math.cos(this.t * 3 - (i + 1) * 0.7) * -0.12 * (i + 1) * 0.5).setVisible(Boolean(this.body) && y < 82);
+    });
     this.flame.y = this.art.y + (this.flameY ?? 8) * k;
     this.flame.setScale(k, k * (this.flameLong ?? 1));
     this.palArt.setPosition(this.lane ? 24 : 54, this.lane ? this.art.y + 8 + Math.sin(this.t * 5) * 1.2 : this.shipY + 22 + Math.round(Math.sin(this.t * 5) * 1.5));

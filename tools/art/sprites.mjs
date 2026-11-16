@@ -503,6 +503,7 @@ add('icon_life_orizuru', renderMask(fromRows(LIFE, true, { R: 'R', S: 'Y' })));
 add('icon_life_koinobori', renderMask(fromRows(LIFE, true, { W: 'B', R: 'Y', S: 'F' })));
 add('icon_life_kabuto', renderMask(fromRows(LIFE, true, { W: 'K', R: 'R', S: 'Y' })));
 add('icon_life_chochin', renderMask(fromRows(LIFE, true, { W: 'O', R: 'K', S: 'R' })));
+add('icon_life_ryu', renderMask(fromRows(LIFE, true, { W: 'G', R: 'Y', S: 'R' })));
 add('icon_life_maneki', renderMask(fromRows(LIFE, true, { W: 'F', R: 'R', S: 'Y' })));
 add('wpn_basic', renderMask(fromRows(['.W.W.', '.W.W.', '.W.W.', '.W.W.', '.W.W.'])));
 add('wpn_spread', renderMask(fromRows(['R.R.R', 'R.R.R', '.RRR.', '.RRR.', '..R..'])));
