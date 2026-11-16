@@ -153,6 +153,17 @@ Dodane:
 
 Nie zrobione: tramwaj (już jeździ w centrum, na przedmieściu nie ma torów, którymi mógłby dokądś dojechać).
 
+Druga tura 16.11 (mapa była najmniej lubiana; kłopotem był kolor, nie brak rzeczy):
+
+- Kolor: nocna tonacja z kontrastem (gamma w `TOD`, piąta liczba; obsługuje ją też `todGrade` w `props.mjs`)
+  zamiast płaskiego fioletu, ciemne odśnieżone jezdnie, cieplejsze i mocniejsze światło latarni i okien.
+- Centrum i Susukino: wysokie fasady z rzędami oświetlonych okien, chodniki między budynkami zamiast pól śniegu,
+  światło parterów na ziemi.
+- Nowe miejsca: diabelski młyn Noria na dachu w Susukino (gondole krążą i zmieniają kolory), kryty pasaż Tanukikoji
+  przez cały rząd kwartałów, przerwany na alejach jak prawdziwy.
+- Tramwaj iskrzy pantografem.
+- Pomysły niezrobione: pług wirnikowy z ciężarówką, narciarze biegowi w parku Nakajima, lisy, lodowisko na Odori.
+
 ### Hiroszima — zrobione 16.11
 
 Przegląd w grze: promy JR i Matsudai, łódź Aqua Net, łodzie robocze przy tratwach, rybacy, boje, mewy, jelenie

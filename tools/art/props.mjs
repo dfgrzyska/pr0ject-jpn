@@ -161,9 +161,14 @@ export function todGrade(TOD, smooth) {
       mul: TOD[i][1].map((m, k) => m + (TOD[i + 1][1][k] - m) * t),
       tc: tints[i].map((c, k) => c + (tints[i + 1][k] - c) * t),
       amt: TOD[i][3] + (TOD[i + 1][3] - TOD[i][3]) * t,
+      // (an optional fifth number: a gamma over 1 deepens the darks and leaves the lights, for a night with contrast)
+      gam: (TOD[i][4] ?? 1) + ((TOD[i + 1][4] ?? 1) - (TOD[i][4] ?? 1)) * t,
     };
   };
-  const px = (g, v, k) => v * g.mul[k] + (g.tc[k] - v * g.mul[k]) * g.amt;
+  const px = (g, v0, k) => {
+    const v = g.gam === 1 ? v0 : 255 * (v0 / 255) ** g.gam;
+    return v * g.mul[k] + (g.tc[k] - v * g.mul[k]) * g.amt;
+  };
   return {
     frame(r, u) {
       const g = at(u);

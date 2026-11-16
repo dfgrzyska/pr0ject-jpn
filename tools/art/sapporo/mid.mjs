@@ -56,8 +56,8 @@ const PARK_SIZE = { board: [8, 5], bench: [8, 3], tent: [8, 9], kitchen: [7, 15]
 
 const C = {
   snow: [0xa4aec6, 0xbec8da, 0xd6dcea, 0xecf0f8],
-  packed: [0xaeaaa4, 0xbcb8b0, 0xcac6be],
-  track: 0x8a8378,
+  packed: [0x66646a, 0x77757a, 0x8a8888],
+  track: 0x4a484e,
   bank: 0xf4f6fa,
   ice: [0x86a0b8, 0x98b2c6, 0xb0c6d6, 0xc8dae6],
   water: 0x1c2c3c,
@@ -70,9 +70,9 @@ const C = {
   fir: [0x0e201c, 0x16302a, 0x22463a, 0x345e4c, 0x4a7a62],
   twigTip: 0x7a6c76,
   windowDark: 0x2a3444,
-  warm: 0xffd88a,
+  warm: 0xffc860,
   cool: 0xd8ecff,
-  lamp: 0xffb868,
+  lamp: 0xffa64e,
 };
 const NEON = [0xff4aa8, 0x40e8ff, 0xffe040, 0x66ff8a, 0xff8a30, 0xb46cff, 0xff5050];
 
@@ -80,10 +80,10 @@ const NEON = [0xff4aa8, 0x40e8ff, 0xffe040, 0x66ff8a, 0xff8a30, 0xb46cff, 0xff50
 const TOD = [
   [0, [1.0, 0.93, 0.9], 0xffa070, 0.05], // sunset at the ski jump
   [900, [0.98, 0.86, 0.86], 0xd0607a, 0.07], // the sun gone: pink
-  [1700, [0.84, 0.74, 0.92], 0x6a4a8a, 0.09], // violet dusk over the suburb
-  [2600, [0.66, 0.66, 0.9], 0x2a2c66, 0.1], // the blue hour in the centre
-  [3500, [0.5, 0.55, 0.8], 0x141c44, 0.1], // night from Susukino on
-  [L, [0.5, 0.55, 0.8], 0x141c44, 0.1],
+  [1700, [0.88, 0.8, 0.95], 0x6a4a8a, 0.07, 1.12], // violet dusk over the suburb
+  [2600, [0.7, 0.76, 0.98], 0x1c2a66, 0.07, 1.3], // the blue hour in the centre
+  [3500, [0.56, 0.68, 0.96], 0x0c1840, 0.06, 1.5], // night from Susukino on: moonlit snow, everything else gone dark
+  [L, [0.56, 0.68, 0.96], 0x0c1840, 0.06, 1.5],
 ];
 
 const smooth = (a, b, x) => {
@@ -229,8 +229,8 @@ export function buildMid() {
     let c = rampColor(C.packed, fbm(FXr / S, FYr / S, { seed: 31, scale: 4, octaves: 2 }) + (fbm(FXr, FYr, { seed: 30, scale: 2 }) - 0.5) * 0.25, FXr, FYr);
     const lane = hw >= 5 ? Math.abs(a - hw / 2) : a;
     const rut = Math.abs(lane - 1.5);
-    if (rut < 0.55 && fbm(along * 0.3, across, { seed: 33, scale: 3 }) > 0.3) c = rut < 0.25 ? 0x6e6860 : C.track;
-    else if (rut < 0.8 && hashPx(FXr, FYr, 34) < 0.3) c = 0x9a948a;
+    if (rut < 0.55 && fbm(along * 0.3, across, { seed: 33, scale: 3 }) > 0.3) c = rut < 0.25 ? 0x34343a : C.track;
+    else if (rut < 0.8 && hashPx(FXr, FYr, 34) < 0.3) c = 0x5c5a5e;
     if (a > hw - 0.6) c = mix(c, 0xc8ccd4, 0.5);
     img.px(FXr, FYr, c);
   };
@@ -493,8 +493,10 @@ export function buildMid() {
     const Y1 = (y + h) * S;
     objects.push({
       y: y + h + faceH,
-      shadow: () => shadowPx(X0 + 12, Y0 + 12, w * S, (h + faceH) * S, 0.5),
+      shadow: () => shadowPx(X0 + 6 + faceH, Y0 + 6 + faceH, w * S, (h + faceH) * S, 0.64),
       draw: () => {
+        // (the light of its ground floor out on the pavement before it)
+        pool(x + w / 2, y + h + faceH + 1.5, Math.max(7, w * 0.45), opt.cool ? 0xa8c8ff : C.warm, 0.2);
         for (let Yy = Y0; Yy < Y1; Yy++)
           for (let X = X0; X < X1; X++) {
             const e = Math.min(X - X0, X1 - 1 - X, Yy - Y0, Y1 - 1 - Yy);
@@ -581,7 +583,8 @@ export function buildMid() {
         // the front: floors of windows between the concrete bands
         const FY0 = Y1;
         const FY1 = (y + h + faceH) * S;
-        for (let Yy = FY0; Yy < FY1; Yy++) for (let X = X0; X < X1; X++) img.px(X, Yy, Yy === FY0 ? scaleColor(wall, 0.6) : X === X1 - 1 ? scaleColor(wall, 0.8) : (Yy - FY0) % 6 === 0 ? scaleColor(wall, 0.9) : wall);
+        const fw = scaleColor(wall, 0.58); // (the front is in its own shade: the lit windows stand out of it)
+        for (let Yy = FY0; Yy < FY1; Yy++) for (let X = X0; X < X1; X++) img.px(X, Yy, Yy === FY0 ? scaleColor(wall, 0.4) : X === X1 - 1 ? scaleColor(fw, 0.8) : X === X0 ? scaleColor(fw, 1.2) : (Yy - FY0) % 6 === 0 ? scaleColor(fw, 1.18) : fw);
         for (let r = y + h + 2; r < y + h + faceH - 1; r += 2) windowsRow(x + 2, x + w - 2, r, litP, 2, opt.cool);
         // each kind made itself known: its roof and its front
         const inner = (fn) => {
@@ -1215,7 +1218,12 @@ export function buildMid() {
     for (let i = 12; i < 22; i++) for (let j = 2; j < 5; j++) tram.px(i, j, 0xb8b4a4);
     const lit = [];
     for (let x = 2; x < 24; x += 3) lit.push([x, 1, C.warm, 0.85], [x, 4, C.warm, 0.85]);
-    kit.path([[-30, TRAM_U], [210, TRAM_U]], [frameAt(tram, TRAM_U, lit)], { sp: 10, mode: 'pp', hold: 4, turn: 'flip', s0: 0.3 });
+    // (now and then the pantograph arcs on the iced wire: a blue-white flash over the roof)
+    const tram2 = new HiCanvas(26, 6);
+    tram2.hi = tram.crop(0, 0, 26, 6); // (a copy: grading a frame changes it)
+    const tramF = frameAt(tram, TRAM_U, lit);
+    const tramArc = frameAt(tram2, TRAM_U, [...lit, [11, 0, 0x9ad0ff, 0.9], [12, 0, 0xffffff, 1], [13, 0, 0xffffff, 1], [14, 0, 0x9ad0ff, 0.9], [12, 1, 0xbfe4ff, 0.7], [13, 1, 0xbfe4ff, 0.7]]);
+    kit.path([[-30, TRAM_U], [210, TRAM_U]], [tramF, tramF, tramF, tramF, tramF, tramF, tramF, tramArc, tramF, tramArc], { sp: 10, mode: 'pp', hold: 4, turn: 'flip', fps: 7, s0: 0.3 });
   }
   // the queue standing in the southbound lane through the centre and Susukino, headlights on
   for (let u = CENTER[0] + 20; u < RIVER[0] - 12; u += 9) {
@@ -1249,6 +1257,21 @@ export function buildMid() {
 
   /** Fill a city block with lots (houses in the suburb, offices/neon further in). */
   const fillBlock = (x0, x1, u0, u1, kind) => {
+    if (kind !== 'suburb') {
+      // downtown the ground between the buildings is pavement, cleared: slabs showing through, snow left in
+      // patches and trodden grey, heaped white along the kerb
+      const [py0, py1] = [Y(u1), Y(u0)];
+      img.fine(x0, py0, x1 - x0, py1 - py0, (FXr, FYr, x, y) => {
+        if (isRes(x, y)) return null;
+        const e = Math.min(x - x0, x1 - x, y - py0, py1 - y);
+        const n = fbm(FXr / S, FYr / S, { seed: 91, scale: 6, octaves: 2 });
+        if (e < 1.6 + (fbm(FXr * 0.3, FYr * 0.3, { seed: 92, scale: 3 }) - 0.5) * 1.4) return e < 0.5 ? 0xd0d6e2 : snowPx(FXr, FYr, 0.7, 0.3, 7);
+        if (n > 0.6) return snowPx(FXr, FYr, 0.45, 0.35, 7);
+        const joint = FXr % 9 === 0 || FYr % 9 === 0;
+        const c = rampColor([0x5e6068, 0x6c6e76, 0x7c7e86], n * 1.3 + (hashPx(FXr, FYr, 93) - 0.5) * 0.3, FXr, FYr);
+        return joint ? scaleColor(c, 0.8) : n > 0.5 ? mix(c, 0xb8c0d0, 0.35) : c;
+      });
+    }
     const rows = kind === 'suburb' ? Math.max(1, Math.floor((u1 - u0) / 38)) : u1 - u0 > 70 ? 2 : 1;
     const rowH = (u1 - u0) / rows;
     for (let r = 0; r < rows; r++) {
@@ -1272,7 +1295,7 @@ export function buildMid() {
           }
         } else {
           const neon = kind === 'neon';
-          const fh = neon ? 8 + Math.floor(rand() * 6) : 5 + Math.floor(rand() * 6);
+          const fh = Math.min(Math.floor(lh * 0.55), neon ? 13 + Math.floor(rand() * 6) * 2 : 10 + Math.floor(rand() * 6) * 2); // (tall fronts: floors of lit windows)
           const bh = Math.max(10, lh - fh - 2);
           if (!anyRes(x, top, lw - 2, bh + fh + 2)) office(x, top, lw - 2, bh, fh, { neon, billboard: neon && rand() < 0.85, cool: !neon && rand() < 0.5, lit: neon ? 0.75 : 0.6 });
           else pocketPark(x, top, lw - 2, lh);
@@ -1873,6 +1896,132 @@ export function buildMid() {
     for (let x = bx0 + 3; x < bx1 - 2; x += 7) bare(x, yB - 3, 3);
   };
 
+  // ---- Susukino: the building with the Ferris wheel on its roof (Noria): the wheel face on above the roofline, its
+  // rim strung with lights, the gondolas going round (live); the boarding deck on the roof; a dark glass front with
+  // its floors lit and a sign down its corner
+  const paintNoria = () => {
+    const [bx0, bx1] = [105, 139];
+    const [u0, u1] = [3359, 3461];
+    const yT = Y(u1);
+    const yB = Y(u0);
+    reserveRect(bx0, yT, bx1 - bx0, yB - yT);
+    const nr = rng(3355);
+    img.fine(bx0, yT, bx1 - bx0, yB - yT, (FXr, FYr, xx, yy) => {
+      const n = fbm(FXr / S, FYr / S, { seed: 91, scale: 6, octaves: 2 });
+      const e = Math.min(xx - bx0, bx1 - xx, yy - yT, yB - yy);
+      if (e < 1.4) return snowPx(FXr, FYr, 0.7, 0.3, 7);
+      if (n > 0.62) return snowPx(FXr, FYr, 0.45, 0.35, 7);
+      const c = rampColor([0x5e6068, 0x6c6e76, 0x7c7e86], n * 1.3, FXr, FYr);
+      return FXr % 9 === 0 || FYr % 9 === 0 ? scaleColor(c, 0.8) : c;
+    });
+    const cx = bx0 + 17;
+    const cy = yT + 24;
+    const R = 15;
+    const CXf = cx * S + 1;
+    const CYf = cy * S + 1;
+    /** A flat roof: the parapet, the tray of snow inside it, drifted against the windward side. */
+    const roofBox = (x, y, w, h, wall) => {
+      for (let Yy = y * S; Yy < (y + h) * S; Yy++)
+        for (let X = x * S; X < (x + w) * S; X++) {
+          const e = Math.min(X - x * S, (x + w) * S - 1 - X, Yy - y * S, (y + h) * S - 1 - Yy);
+          img.px(X, Yy, e === 0 ? scaleColor(wall, 0.6) : e === 1 ? wall : e < 3 ? C.snow[3] : snowPx(X, Yy, 0.55, 0.4, 9));
+        }
+      for (let X = x * S + 3; X < (x + w) * S - 3; X++) for (let j = 0; j < 4; j++) if (4 - j + Math.round(fbm(X * 0.2, y, { seed: 46, scale: 3 }) * 2) > 0) img.px(X, y * S + 3 + j, 0xffffff, 0.7);
+    };
+    const unit = (x, y, w, h) => {
+      shadowPx(x * S + 3, y * S + 3, w * S, h * S, 0.75);
+      for (let j = 0; j < h * S; j++) for (let i = 0; i < w * S; i++) img.px(x * S + i, y * S + j, j < 2 ? C.snow[3] : i === 0 ? 0x9a9ca4 : i === w * S - 1 ? 0x5a5c64 : (i + j) % 3 === 0 ? 0x5a5c64 : 0x7a7c84);
+    };
+    objects.push({
+      y: yT + 94,
+      shadow: () => {
+        shadowRect(bx0 + 2 + 5, yT + 4 + 5, 30, 30, 0.62);
+        shadowRect(bx0 + 1 + 9, yT + 42 + 9, 32, 50, 0.62);
+      },
+      draw: () => {
+        // the annex behind the wheel, its plant on the roof
+        roofBox(bx0 + 2, yT + 4, 30, 30, 0x86888e);
+        unit(bx0 + 5, yT + 8, 6, 4);
+        unit(bx0 + 22, yT + 26, 7, 4);
+        // the main building: its roof, the boarding deck across it with the ticket hut and the queue's rails
+        roofBox(bx0 + 1, yT + 42, 32, 28, 0x9c9ea4);
+        for (let Yy = (yT + 43) * S; Yy < (yT + 49) * S; Yy++)
+          for (let X = (cx - 11) * S; X < (cx + 12) * S; X++) {
+            const j = Yy - (yT + 43) * S;
+            img.px(X, Yy, j === 0 ? 0xc8ccd6 : j === 17 ? 0x3a3e48 : (X + j) % 6 === 0 ? 0x5a5e6a : 0x747886);
+          }
+        for (let X = (cx - 11) * S; X < (cx + 12) * S; X += 6) img.px(X, (yT + 49) * S, 0xd8dce6);
+        for (let j = 0; j < 12; j++)
+          for (let i = 0; i < 15; i++) {
+            const X = (cx + 5) * S + i;
+            const Yy = (yT + 50) * S + j;
+            if (j < 3) img.px(X, Yy, C.snow[3]);
+            else if (i === 0 || i === 14 || j === 11) img.px(X, Yy, 0x4a4e5a);
+            else glowPx(X, Yy, i % 5 === 0 ? 0xb88a5a : C.warm, 0.9);
+          }
+        for (let k = 0; k < 5; k++) personPx((cx - 9 + k * 3) * S, (yT + 52) * S + (k % 2), nr);
+        unit(bx0 + 4, yT + 60, 7, 5);
+        unit(bx0 + 24, yT + 58, 6, 6);
+        // the front: dark glass in bands, most of its floors lit, the shop windows along the pavement; a great
+        // screen on its left, the name down its right corner
+        const FY0 = (yT + 70) * S;
+        const FY1 = (yT + 92) * S;
+        const X0 = (bx0 + 1) * S;
+        const X1 = (bx0 + 33) * S;
+        for (let Yy = FY0; Yy < FY1; Yy++) for (let X = X0; X < X1; X++) img.px(X, Yy, Yy === FY0 ? 0x0e1420 : (Yy - FY0) % 6 === 0 ? 0x3a4a64 : X === X0 ? 0x34425c : X === X1 - 1 ? 0x141c2a : 0x1c2638);
+        for (let r = 0; r < 8; r++)
+          for (let X = X0 + 3; X < X1 - 12; X += 4) {
+            if (nr() < 0.3) continue;
+            const c = nr() < 0.3 ? C.cool : C.warm;
+            for (let j = 1; j < 5; j++) for (let i = 0; i < 3; i++) glowPx(X + i, FY0 + r * 6 + j, j === 4 ? scaleColor(c, 0.8) : c, 0.92);
+          }
+        for (let Yy = FY1 - 10; Yy < FY1 - 1; Yy++) for (let X = X0 + 3; X < X1 - 3; X++) glowPx(X, Yy, (X - X0) % 18 < 2 ? 0x8a8070 : (X * 7 + Yy * 3) % 23 === 0 ? 0x2a2026 : 0xfff0d8, 0.95);
+        for (let j = 0; j < 24; j++)
+          for (let i = 0; i < 30; i++) {
+            const e = i === 0 || i === 29 || j === 0 || j === 23;
+            if (e) img.px(X0 + 4 + i, FY0 + 4 + j, 0x0a0c12);
+            else glowPx(X0 + 4 + i, FY0 + 4 + j, mix(0x40e8ff, 0xff4aa8, (Math.sin(i * 0.3) + Math.sin(j * 0.4 + i * 0.1) + 2) / 4), 0.9);
+          }
+        for (let Yy = FY0 + 2; Yy < FY1 - 11; Yy++) for (let i = 0; i < 8; i++) img.px(X1 - 10 + i, Yy, i === 0 || i === 7 ? 0x8a1a5a : 0x14101a);
+        for (let k = FY0 + 5; k + 6 < FY1 - 11; k += 8) glyph(X1 - 9, k, 6, 0xff4aa8, nr);
+        pool(cx, yT + 95, 16, C.warm, 0.3);
+        // the wheel: two legs down to the deck, the spokes, the double rim with a light every few degrees, the hub
+        for (const s of [-1, 1])
+          for (let t = 0; t <= 1; t += 0.004) {
+            const X = CXf + s * t * 27;
+            const Yy = CYf + t * ((yT + 43) * S - CYf);
+            img.px(X, Yy, 0xe4e8f0);
+            img.px(X + 1, Yy, 0xb0b6c4);
+            img.px(X + 2, Yy, 0x6a7080);
+          }
+        for (let k = 0; k < 16; k++) {
+          const a = (k / 16) * Math.PI * 2;
+          for (let t = 6; t < R * S - 2; t++) img.px(CXf + Math.cos(a) * t, CYf + Math.sin(a) * t, k % 2 ? 0xa8b0c2 : 0x8088a0, 0.9);
+        }
+        for (let a = 0; a < Math.PI * 2; a += 0.006) {
+          for (const [rr, c] of [[R * S, 0xe0e6f0], [R * S - 1, 0x9aa2b6], [R * S - 5, 0xc8d0de], [R * S * 0.55, 0x8a92a8]]) img.px(CXf + Math.cos(a) * rr, CYf + Math.sin(a) * rr, c);
+        }
+        for (let k = 0; k < 48; k++) {
+          const a = (k / 48) * Math.PI * 2;
+          for (let t = R * S - 5; t < R * S; t++) if (k % 2) img.px(CXf + Math.cos(a) * t, CYf + Math.sin(a) * t, 0x8a92a8);
+          const c = NEON[k % NEON.length];
+          glowPx(CXf + Math.cos(a) * (R * S - 3), CYf + Math.sin(a) * (R * S - 3), c);
+          glowPx(CXf + Math.cos(a) * (R * S - 2), CYf + Math.sin(a) * (R * S - 2), c, 0.7);
+        }
+        for (let j = -6; j <= 6; j++) for (let i = -6; i <= 6; i++) if (i * i + j * j <= 38) img.px(CXf + i, CYf + j, i * i + j * j > 26 ? 0x6a7080 : i + j < -2 ? 0xf4f6fa : 0xc8d0de);
+        for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) if (i * i + j * j <= 5) glowPx(CXf + i, CYf + j, 0xff4aa8);
+        glow(cx, cy, 0xffe0f0, 0.9);
+      },
+    });
+    // the gondolas (live): white cabins, each lit in its own colour, the colours passing round the wheel
+    const cabin = new HiCanvas(3, 3);
+    for (let j = 0; j < 9; j++)
+      for (let i = 0; i < 9; i++) {
+        if ((i === 0 || i === 8) && (j < 2 || j > 6)) continue;
+        cabin.px(i, j, j === 0 ? 0xffffff : j < 2 ? 0xe8e8e8 : j < 5 ? (i === 4 || i === 0 || i === 8 ? 0xd0d0d0 : 0x6a7a90) : j === 8 ? 0x9a9a9a : 0xf4f4f4);
+      }
+    kit.orbit(cx + 0.3, U(cy) - 0.3, R - 1, [kit.frame(cabin)], { n: 12, w: 0.16, tc: [0xffffff, 0xff9ad0, 0x9af0ff, 0xfff0a0, 0xa8ffc0, 0xffc090], tw: 0.6, d: 0.3 });
+  };
   // blocks
   const ghosts = []; // the blocks given over to a place: where their houses would have stood
   const ghostAt = (x, y) => ghosts.find((g) => y >= g.yT && y < g.yB && x >= g.x0 && x < g.x1);
@@ -1888,7 +2037,7 @@ export function buildMid() {
     const kind = u0 < CENTER[0] - 40 ? 'suburb' : u0 < SUSUKINO[0] ? 'city' : 'neon';
     for (const [x0, x1] of blocksX(u0)) {
       // [the street under the block, the block's left edge]: the places that stand where a block of houses would
-      const place = [[1466, 41, paintJingu], [1740, 101, paintBeer], [1880, 41, paintSchool]].find(([s, bx]) => s === allStreets[i] && bx === x0);
+      const place = [[1466, 41, paintJingu], [1740, 101, paintBeer], [1880, 41, paintSchool], [3350, 105, paintNoria]].find(([s, bx]) => s === allStreets[i] && bx === x0);
       if (!place) {
         fillBlock(x0, x1, u0, u1, kind);
         continue;
@@ -1961,6 +2110,59 @@ export function buildMid() {
       }
       pool(x, ay, 6, 0xff5a30, 0.25);
       if (x % 12 === 2) kit.emit(x, ALLEY + 1, steam, { rate: 1.6, life: [1.6, 2.4], vy: 7, sx: 1, wf: 0.5, a: 0.45, tint: 1 });
+    }
+  }
+
+  // ---- Tanukikoji: the covered shopping street, running east to west through the middle of every block of one
+  // row and open where the avenues cross it, as the real one is. A barrel roof of glass on steel ribs, lit from
+  // below, snow lying along its gutters; the people under it showing through; at every mouth a signboard in neon
+  // and the light spilling out onto the pavement
+  {
+    const au = 3170;
+    const ay = Y(au);
+    const tr = rng(3170);
+    const H = 24;
+    for (const [x0, x1] of blocksX(au)) {
+      if (pads.some((p) => p.x > x0 - 8 && p.x < x1 + 8 && Math.abs(p.u - au) < 16)) continue;
+      const X0 = x0 * S;
+      const X1 = x1 * S;
+      const YT = (ay - 5) * S;
+      const sign = NEON[(x0 * 3) % NEON.length];
+      objects.push({
+        y: ay + 3.4,
+        shadow: () => shadowPx(X0 + 5, YT + H, X1 - X0, 5, 0.66),
+        draw: () => {
+          for (let j = 0; j < H; j++)
+            for (let X = X0; X < X1; X++) {
+              const Yy = YT + j;
+              const v = Math.sin((j / (H - 1)) * Math.PI); // (round the barrel: the crown of it brightest)
+              if (j === 0 || j === H - 1) img.px(X, Yy, j ? 0x30364a : 0xc8ced8);
+              else if ((X - X0) % 12 === 0 || j === H >> 1) img.px(X, Yy, 0x4e566a);
+              else if (fbm(X * 0.2, Yy * 0.6, { seed: 95, scale: 3 }) > 0.4 + v * 0.34) img.px(X, Yy, snowPx(X, Yy, 0.6, 0.3, 9));
+              else {
+                img.px(X, Yy, 0x3a3228);
+                const man = hashPx(X >> 1, Yy >> 1, 96) < 0.035;
+                glowPx(X, Yy, man ? 0x2a2026 : mix(0xffb850, 0xfff0c8, v), man ? 0.85 : 0.5 + v * 0.35);
+              }
+            }
+          // paper lanterns in two rows under the glass
+          for (let X = X0 + 6; X < X1 - 3; X += 12)
+            for (const dj of [6, 17]) {
+              glowPx(X, YT + dj, 0xff5a40);
+              glowPx(X + 1, YT + dj, 0xff5a40);
+              glowPx(X, YT + dj + 1, 0xffb080);
+            }
+          // the mouths on the avenues: a board over each, its name in neon, a row of bulbs
+          for (const [edge, s] of [[X0, -1], [X1 - 1, 1]]) {
+            if ((s < 0 && x0 <= 0) || (s > 0 && x1 >= W)) continue;
+            for (let j = -4; j < H + 4; j++) for (let i = 0; i < 6; i++) img.px(edge + s * i, YT + j, i === 0 || i === 5 || j === -4 || j === H + 3 ? scaleColor(sign, 0.5) : 0x14101a);
+            for (let k = -1; k + 5 < H + 2; k += 7) glyph(Math.min(edge + s, edge + s * 4), YT + k, 4, sign, tr);
+            for (let j = -4; j < H + 4; j += 3) glowPx(edge + s * 6, YT + j, 0xfff4c0);
+          }
+          if (x0 > 0) pool(x0 - 2, ay - 1, 9, C.warm, 0.34);
+          if (x1 < W) pool(x1 + 2, ay - 1, 9, C.warm, 0.34);
+        },
+      });
     }
   }
 
@@ -4871,10 +5073,11 @@ export function buildMid() {
       const mul = TOD[i][1].map((m, k) => m + (TOD[i + 1][1][k] - m) * t);
       const tc = tint[i].map((c, k) => c + (tint[i + 1][k] - c) * t);
       const amt = TOD[i][3] + (TOD[i + 1][3] - TOD[i][3]) * t;
+      const gam = (TOD[i][4] ?? 1) + ((TOD[i + 1][4] ?? 1) - (TOD[i][4] ?? 1)) * t;
       for (let p = FYr * row; p < (FYr + 1) * row; p += 4) {
         if (!d[p + 3]) continue;
         for (let k = 0; k < 3; k++) {
-          const v = d[p + k] * mul[k];
+          const v = 255 * (d[p + k] / 255) ** gam * mul[k];
           d[p + k] = v + (tc[k] - v) * amt;
         }
       }
@@ -4891,7 +5094,7 @@ export function buildMid() {
         if (!q || !q[3]) continue;
         const dd = Math.hypot(FXr + 0.5 - CX, FYr + 0.5 - CY) / R;
         if (dd >= 1) continue;
-        const f = (1 - dd) ** 1.6 * k;
+        const f = (1 - dd) ** 1.6 * k * 1.35;
         img.setRGBAPx(FXr, FYr, Math.min(255, q[0] + cr * f), Math.min(255, q[1] + cg * f), Math.min(255, q[2] + cb * f), q[3]);
       }
   }
