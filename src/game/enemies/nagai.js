@@ -244,8 +244,11 @@ export const nagai = {
     g.segs.forEach((sg, i) => {
       const k = Math.min(tr.length - 2, Math.round((i + 1) * NAGAI.gap));
       const [x, y] = tr[k];
-      const [x2, y2] = tr[k + 1];
-      sg.setPosition(x, y).setRotation(Math.atan2(y - y2, x - x2) - DOWN);
+      // (its heading taken over a stretch of the trail, not from one point to the next: those are a pixel apart, and
+      // the lengths of the body would jitter against one another)
+      const [x1, y1] = tr[Math.max(0, k - 5)];
+      const [x2, y2] = tr[Math.min(tr.length - 1, k + 5)];
+      sg.setPosition(x, y).setRotation(Math.atan2(y1 - y2, x1 - x2) - DOWN);
       sg.setAlpha(i > n * 0.7 ? Math.max(0, 1 - (i - n * 0.7) / (n * 0.3)) : 1);
     });
     // the solid part of the body (every other segment is enough) can be shot, for bodyTake of a hit on the head
@@ -260,7 +263,7 @@ export const nagai = {
       c.x = sg.x;
       c.y = sg.y;
     }
-    const mood = g.t < (g.meowT ?? 0) ? 'nagai_head_meow' : g.t < (g.purrT ?? 0) || g.mode === 'coil' ? 'nagai_head_purr' : 'nagai_head_0';
+    const mood = g.t < (g.meowT ?? 0) ? 'nagai_head_meow' : g.t < (g.purrT ?? 0) || g.mode === 'coil' ? 'nagai_head_purr' : g.t % 3.7 < 0.13 ? 'nagai_head_blink' : 'nagai_head_0';
     if (h.texture.has(mood) && h.frame.name !== mood) h.setFrame(mood);
   },
 

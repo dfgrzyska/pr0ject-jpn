@@ -700,6 +700,7 @@ export class Enemies {
     if (e.group?.kind !== 'volcano' && !e.oni) e.setOrigin(0.5, 0.5 + (rec - breathe) / e.displayHeight);
     if (e.group?.kind === 'kyubi') return; // (the fox shows its wounds by losing its tails)
     if (e.group?.kind === 'kaiken' || e.group?.kind === 'obachan') return; // (the man at the table shows his in tears and tissues; nobody cracks a grandma)
+    if (e.group?.kind === 'genba' || e.group?.kind === 'nagai') return; // (nor a cat: the one's tower comes down round it, the other's body thins away)
     const frac = e.hp / e.maxHp;
     const lvl = frac < 1 / 3 ? 2 : frac < 2 / 3 ? 1 : 0;
     if (!lvl && !e.wounds) return;

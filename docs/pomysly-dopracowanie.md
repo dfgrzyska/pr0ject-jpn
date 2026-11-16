@@ -50,6 +50,12 @@ Dachy Edo przerobione 16.11: trzy rodzaje kwartałów (długie domy, dwa rzędy 
 i strzecha między dachówką, beczki na deszczówkę, suszarnie z praniem, noreny sklepów, świątynia, wieże strażackie.
 W grze widać to na marginesach placu budowy i u góry, gdy kadr podjedzie w trakcie dłuższej walki.
 
+Grafika walki poprawiona 16.11: wieżowiec narysowany od nowa (stalowa rama, rusztowanie z poręczami, stężeniami
+i schodami, siatka w panelach z oczkami, podwiązana w kilku przęsłach, za nią piętra z lampami, cementem i taczką,
+baner, niebieska plandeka, ogrodzenie z bramą, pręty z pomarańczowymi kapturkami, barak, żuraw kratowy z wózkiem);
+wersja pochylona z poszarpaną siatką, wiszącymi deskami i iskrami; gruz z płyt z wyrwanymi prętami, pogiętej stali,
+rur, siatki i kawałka wysięgnika. Kot nie dostaje już ciemnych pęknięć-ran.
+
 - Ruch w tle: wąsy suma, ludzie z młotami, dym z kominów.
 - Górna część z dachami Edo jest powtarzalna.
 
@@ -72,8 +78,13 @@ Zrobione: pasy chmur na pustym papierze i pięć kluczy lecących żurawi.
 
 - Górne 60% tła to pusty papier: żurawie w locie albo chmury w stylu Hokusaia.
 
-### 4. Kot bez końca — dobre
+### 4. Kot bez końca — grafika poprawiona 16.11
 
+- Poprawione 16.11: głowa narysowana od nowa i większa (uszy z kępkami, kryza policzków, „M” na czole, duże oczy,
+  poduszki z kropkami wąsów), dochodzi mruganie; ciało to teraz jedna ciągła pręgowana rura z linią grzbietu zamiast
+  sznura koralików (kawałki cieniowane w poprzek, bez obrysu na końcach, pręgi co 10 px przechodzą z kawałka na
+  kawałek). W grze kierunek kawałka liczony jest z dłuższego odcinka śladu, bo wcześniej drgały względem siebie.
+  Bez pęknięć-ran.
 - Do sprawdzenia w grze: mruganie dymnego kota (głowa wchodzi w kadr dopiero pod koniec walki).
 - Sprawdzone 15.11: w kodzie jest „MIAU!”; „MEOW!” to tłumaczenie pokazywane tylko przy języku angielskim.
 
