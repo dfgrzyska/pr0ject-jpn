@@ -1059,9 +1059,11 @@ export class Player {
   drawTurrets(blink) {
     const on = this.alive && this.turrets > 0;
     const spots = on ? this.turretSpots() : [];
+    const pod = this.ship.look?.pod ?? 'turret_wing'; // (its look out of the gachapon)
     this.turretArt.forEach((t, i) => {
       const p = spots[i];
       t.setVisible(!!p);
+      if (p && t.frame.name !== pod) t.setFrame(pod);
       if (p) t.setPosition(Math.round(p.x), Math.round(p.y)).setAlpha(blink ? 0.35 : 1);
     });
     const g = this.bubble;

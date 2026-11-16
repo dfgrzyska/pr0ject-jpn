@@ -23,7 +23,7 @@ export const PITY = { every: 10, min: 'SR' };
 export const SLOTS = ['engine', 'gun', 'bomb', 'core', 'omamori'];
 
 /** What changes only the looks, one of each worn at a time on any hull. */
-export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape', 'blast', 'bomb_look', 'title', 'sound', 'graze', 'hud_color', 'life_icon', 'companion', 'shot_turret', 'shield', 'decal_nose', 'decal_lwing', 'decal_rwing', 'decal_tail', 'paint_fx', 'aura', 'trail', 'entry', 'victory', 'death', 'seal', 'shield_shape'];
+export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape', 'blast', 'bomb_look', 'title', 'sound', 'graze', 'hud_color', 'life_icon', 'companion', 'shot_turret', 'shield', 'decal_nose', 'decal_lwing', 'decal_rwing', 'decal_tail', 'paint_fx', 'aura', 'trail', 'entry', 'victory', 'death', 'seal', 'shield_shape', 'pod'];
 
 /** The places a sticker goes on the hull: a look's slot each, all taking the one kind of item. */
 export const DECAL_SLOTS = ['decal_nose', 'decal_lwing', 'decal_rwing', 'decal_tail'];
@@ -647,6 +647,15 @@ export const ITEMS = [
   { id: 'death_soul', kind: 'death', rarity: 'SSR', name: 'UPADEK: DUSZA', info: 'EFEKT UTRATY ŻYCIA', burst: { ring: 0xc0d8ff, flash: 0xc0d8ff, frames: ['kitsunebi_0', 'kitsunebi_1'], scale: 0.5, n: 14 } },
   { id: 'death_rainbow', kind: 'death', rarity: 'UR', name: 'UPADEK: TĘCZA', info: 'EFEKT UTRATY ŻYCIA', burst: { ring: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], flash: 0xffffff, frames: ['dot_2'], tints: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], scale: 1.6, n: 44 } },
   // ---- seals: a hanko's print stamped where an enemy goes down (seal_<id>, tools/art/seals.mjs)
+  // ---- the turrets' pods: what sits on the wing tips with the purple power-up (tools/art/pods.mjs)
+  { id: 'pod_daruma', kind: 'pod', rarity: 'N', name: 'WIEŻYCZKA: DARUMA', info: 'WYGLĄD WIEŻYCZEK', pic: 'pod_daruma' },
+  { id: 'pod_lantern', kind: 'pod', rarity: 'N', name: 'WIEŻYCZKA: LAMPION', info: 'WYGLĄD WIEŻYCZEK', pic: 'pod_lantern' },
+  { id: 'pod_dango', kind: 'pod', rarity: 'N', name: 'WIEŻYCZKA: DANGO', info: 'WYGLĄD WIEŻYCZEK', pic: 'pod_dango' },
+  { id: 'pod_bamboo', kind: 'pod', rarity: 'R', name: 'WIEŻYCZKA: BAMBUS', info: 'WYGLĄD WIEŻYCZEK', pic: 'pod_bamboo' },
+  { id: 'pod_kokeshi', kind: 'pod', rarity: 'R', name: 'WIEŻYCZKA: KOKESHI', info: 'WYGLĄD WIEŻYCZEK', pic: 'pod_kokeshi' },
+  { id: 'pod_suzu', kind: 'pod', rarity: 'R', name: 'WIEŻYCZKA: DZWONEK SUZU', info: 'WYGLĄD WIEŻYCZEK', pic: 'pod_suzu' },
+  { id: 'pod_tokkuri', kind: 'pod', rarity: 'SR', name: 'WIEŻYCZKA: TOKKURI', info: 'WYGLĄD WIEŻYCZEK', pic: 'pod_tokkuri' },
+  { id: 'pod_tako', kind: 'pod', rarity: 'SR', name: 'WIEŻYCZKA: OŚMIORNICZKA', info: 'WYGLĄD WIEŻYCZEK', pic: 'pod_tako' },
   { id: 'seal_maru', kind: 'seal', rarity: 'N', name: 'PIECZĘĆ: KÓŁKO', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_maru' },
   { id: 'seal_batsu', kind: 'seal', rarity: 'N', name: 'PIECZĘĆ: KRZYŻYK', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_batsu' },
   { id: 'seal_paw', kind: 'seal', rarity: 'N', name: 'PIECZĘĆ: ŁAPKA', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_paw' },

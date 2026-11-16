@@ -8,6 +8,7 @@ import { enemyBulletSkins } from './ebullets.mjs';
 import { lookArt } from './looks.mjs';
 import { decalArt } from './decals.mjs';
 import { sealArt } from './seals.mjs';
+import { podArt, partPod } from './pods.mjs';
 import { ITEMS } from '../../src/data/gacha.js';
 import { HiSprite, tones, speckle, inPoly } from '../lib/hisprite.mjs';
 import { Raster } from '../lib/raster.mjs';
@@ -820,6 +821,8 @@ export function gachaAtlas() {
   for (const s of decalArt()) out.push(s); // the stickers (decals.mjs)
   for (const s of sealArt()) out.push(s); // the seals stamped on a kill (seals.mjs)
   add('part_seal', partSeal());
+  for (const s of podArt()) out.push(s); // the turrets' pods (pods.mjs)
+  add('part_pod', partPod());
   add('part_shield_shape', partShieldShape());
   add('part_title', partTitle());
   add('part_paint_fx', partPaintFx());

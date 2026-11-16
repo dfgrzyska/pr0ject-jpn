@@ -22,14 +22,14 @@ const CELL = 28; // a cell of the grid
 const COLS = 6;
 const BOX = 22; // a slot
 const PER_ROW = 7;
-const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW', wake: 'ŚLAD ZA STATKIEM', shot_basic: 'POCISKI: PODSTAWOWA', shot_spread: 'POCISKI: ROZRZUT', shot_laser: 'POCISKI: LASER', shot_homing: 'POCISKI: NAPROWADZANE', marker: 'ZNACZNIK HITBOXA', eb_color: 'WROGIE: KOLOR', eb_shape: 'WROGIE: KSZTAŁT', blast: 'WYBUCHY', bomb_look: 'WYGLĄD BOMBY', title: 'TYTUŁ PILOTA', sound: 'DŹWIĘK STRZAŁU', graze: 'ISKRA GRAZINGU', hud_color: 'KOLOR LICZNIKA', life_icon: 'IKONA ŻYCIA', companion: 'TOWARZYSZ', shot_turret: 'POCISKI: WIEŻYCZKI', shield: 'BAŃKA TARCZY', decal_nose: 'NAKLEJKA: DZIÓB', decal_lwing: 'NAKLEJKA: L. SKRZYDŁO', decal_rwing: 'NAKLEJKA: P. SKRZYDŁO', decal_tail: 'NAKLEJKA: OGON', paint_fx: 'ANIMACJA MALOWANIA', aura: 'AURA', trail: 'SMUGA SILNIKA', entry: 'WEJŚCIE NA PLANSZĘ', victory: 'TRIUMF NAD BOSSEM', death: 'UTRATA ŻYCIA', seal: 'PIECZĘĆ TRAFIENIA', shield_shape: 'KSZTAŁT TARCZY' };
+const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW', wake: 'ŚLAD ZA STATKIEM', shot_basic: 'POCISKI: PODSTAWOWA', shot_spread: 'POCISKI: ROZRZUT', shot_laser: 'POCISKI: LASER', shot_homing: 'POCISKI: NAPROWADZANE', marker: 'ZNACZNIK HITBOXA', eb_color: 'WROGIE: KOLOR', eb_shape: 'WROGIE: KSZTAŁT', blast: 'WYBUCHY', bomb_look: 'WYGLĄD BOMBY', title: 'TYTUŁ PILOTA', sound: 'DŹWIĘK STRZAŁU', graze: 'ISKRA GRAZINGU', hud_color: 'KOLOR LICZNIKA', life_icon: 'IKONA ŻYCIA', companion: 'TOWARZYSZ', shot_turret: 'POCISKI: WIEŻYCZKI', shield: 'BAŃKA TARCZY', decal_nose: 'NAKLEJKA: DZIÓB', decal_lwing: 'NAKLEJKA: L. SKRZYDŁO', decal_rwing: 'NAKLEJKA: P. SKRZYDŁO', decal_tail: 'NAKLEJKA: OGON', paint_fx: 'ANIMACJA MALOWANIA', aura: 'AURA', trail: 'SMUGA SILNIKA', entry: 'WEJŚCIE NA PLANSZĘ', victory: 'TRIUMF NAD BOSSEM', death: 'UTRATA ŻYCIA', seal: 'PIECZĘĆ TRAFIENIA', shield_shape: 'KSZTAŁT TARCZY', pod: 'WIEŻYCZKI' };
 // a slot's picture: the kind's (the four weapons' skins share one), or the fitted skin itself
 const itemFrame = (kind, it) => (it?.pic ? it.pic : it?.skin ? `${SHOT_FRAMES[kind][0]}_${it.skin}` : null);
 const slotFrame = (kind, it) => itemFrame(kind, it) ?? (kind.startsWith('shot_') ? 'part_shot' : `part_${lookKind(kind)}`);
 // the tabs: the parts, then the looks (of the ship, of the shots: its own and the enemies', of the effects)
 const TABS = [
   { id: 'parts', name: 'CZĘŚCI', x: 21 },
-  { id: 'ship', name: 'STATEK', x: 65, kinds: ['paint', 'paint_fx', 'decal_nose', 'decal_lwing', 'decal_rwing', 'decal_tail', 'flame', 'trail', 'wake', 'aura', 'marker', 'companion', 'title'] },
+  { id: 'ship', name: 'STATEK', x: 65, kinds: ['paint', 'paint_fx', 'decal_nose', 'decal_lwing', 'decal_rwing', 'decal_tail', 'flame', 'trail', 'wake', 'aura', 'marker', 'companion', 'pod', 'title'] },
   { id: 'shots', name: 'POCISKI', x: 112, kinds: ['dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'shot_turret', 'eb_color', 'eb_shape', 'sound'] },
   { id: 'fx', name: 'EFEKTY', x: 159, kinds: ['blast', 'bomb_look', 'seal', 'graze', 'shield', 'shield_shape', 'hud_color', 'life_icon', 'entry', 'victory', 'death'] },
 ];
@@ -106,6 +106,7 @@ export class Hangar {
     this.ebs = ['eb_m', 'eb_s'].map((f) => shared(f, d + 1.02));
     this.dummy = add(scene.add.image(STAGE.dummy.x, STAGE.dummy.y, 'gacha', 'lifeicon_daruma').setScale(FINE * 2), d + 1.01).setVisible(false);
     this.marker = shared('hitbox', d + 1.1);
+    this.pods = [0, 1].map(() => shared('turret_wing', d + 1.12)); // the turrets on the wing tips, while their look is picked
     this.aura = [0, 1, 2, 3, 4, 5].map(() => shared('dot_2', d + 1.04));
     this.boom = add(sharedArt(scene.add.sprite(0, 0, 'sprites', 'expl_m_0')), d + 1.06).setVisible(false);
     this.bits = Array.from({ length: 72 }, () => ({ img: shared('dot_2', d + 1.03), life: 0 }));
@@ -286,6 +287,7 @@ export class Hangar {
     for (const o of [...this.statLabels, ...this.statValues]) o.setVisible(!this.staged);
     for (const o of [...this.shots, ...this.ebs, this.marker]) o.setVisible(this.staged && !this.big);
     for (const o of [this.hudScore, ...this.hudLives]) o.setVisible(this.staged);
+    for (const p of this.pods) p.setVisible(slot.kind === 'pod');
     this.hudTitle.setVisible(this.staged);
     if (!this.staged) {
       for (const o of [this.dummy, this.boom, ...this.aura]) o.setVisible(false);
@@ -319,6 +321,7 @@ export class Hangar {
       }
       this.ebs.forEach((b, i) => b.setFrame(i ? 'eb_s' : 'eb_m'));
       this.marker.setFrame(shown.look?.marker ?? 'hitbox');
+      for (const p of this.pods) p.setFrame(shown.look?.pod ?? 'turret_wing');
       this.hudScore.setTint(shown.look?.hud ?? 0xffffff);
       this.hudLives.forEach((l, i) => l.setFrame(shown.life).setPosition(128 + i * 10, 48));
       this.hudTitle.setText(shown.look?.title ?? '');
@@ -627,6 +630,7 @@ export class Hangar {
     // the enemies' bullets drift down either side, as they will look
     this.ebs.forEach((b, i) => b.setPosition(i ? 92 : 22, STAGE.y0 + 8 + ((t * (i ? 24 : 17) + i * 20) % (STAGE.y1 - STAGE.y0 - 16))));
     this.marker.setPosition(ship.x, sy);
+    this.pods.forEach((p, i) => p.setPosition(ship.x + (i ? 1 : -1) * (Math.round((this.shown.wing ?? 18) / 2) - 1), sy + 2));
     // what the ship wears all the time: an aura, a trail, a wake, the bits of an animated paint
     const au = look.aura;
     this.aura.forEach((a, i) => {
@@ -674,7 +678,7 @@ export class Hangar {
       r.r += dt * 70;
       if (r.r < 30) sg.lineStyle(1.5, r.c, r.life * 2).strokeCircle(r.x, r.y, r.r);
     }
-    if (this.kind === 'shield' || this.kind === 'shield_shape') drawBubble(sg, ship.x, sy + 1, 14 + Math.sin(t * 5) * 0.6, t, { gold: t % 4 > 2, shield: look.shield, shape: look.shieldShape });
+    if (this.kind === 'shield' || this.kind === 'shield_shape' || this.kind === 'pod') drawBubble(sg, ship.x, sy + 1, 14 + Math.sin(t * 5) * 0.6, t, { gold: t % 4 > 2, shield: look.shield, shape: look.shieldShape });
     return sy;
   }
 
