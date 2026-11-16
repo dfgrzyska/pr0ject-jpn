@@ -1,4 +1,5 @@
-// Middle layer (Okinawa), at 3x the game's resolution: the Kerama islands and the resort beach (sea.mjs), Bise under its fukugi
+// Middle layer (Okinawa), at 3x the game's resolution: the Kerama islands and the resort beach (sea.mjs), the Ocean Expo park
+// with the Churaumi aquarium (expo.mjs), Bise under its fukugi
 // trees, the cane fields and the sugar mill (bise.mjs), Naha's tomb hillside, Tsuboya, Makishi market and Kokusai-dōri with its
 // eisa parade (naha.mjs), Shuri castle, the Yanbaru forest and the Kōri bridge (north.mjs), then the open sea and the lighthouse
 // island (sea.mjs). Water away from the coast stays transparent: the far layer is the deep ocean.
@@ -10,6 +11,7 @@ import { W, L, isWater, landD, shallowS, reefD, kindAt, beachW, KIND, VILLAGE, C
 import { C, tools } from './common.mjs';
 import { paintKerama, paintResort, paintOpenSea, paintLiveSea } from './sea.mjs';
 import { paintBise } from './bise.mjs';
+import { paintExpo, PARK } from './expo.mjs';
 import { paintGangala, paintCave } from './gangala.mjs';
 import { paintBase } from './kadena.mjs';
 import { paintNaha } from './naha.mjs';
@@ -125,6 +127,7 @@ export function buildMid() {
   paintKori(k);
   paintOpenSea(k);
   paintLiveSea(k);
+  paintExpo(k); // (last, so that it knows what stood on its ground before it)
 
   // ------------------------------------------------------------ whatever land is left grows
   const plants = (u) => {
@@ -151,9 +154,13 @@ export function buildMid() {
       const [r0, r1] = RADIUS[kind];
       const r = r0 + g() * (r1 - r0);
       const q = r * 0.6;
-      if (k.isRes(x, y) || k.isRes(x - q, y) || k.isRes(x + q, y) || k.isRes(x, y - q) || k.isRes(x, y + q)) continue;
+      // (in the Expo park the trees that stood there are drawn as ever, for the random numbers after them, and not planted)
+      const inPark = u > PARK[0] - 5 && u < PARK[1] + 5;
+      const res = inPark ? k.parkWas : k.isRes;
+      if (res(x, y) || res(x - q, y) || res(x + q, y) || res(x, y - q) || res(x, y + q)) continue;
       if (g() < (u > JUNGLE[0] ? 0.05 : 0.3)) continue;
-      k.t.plant(kind, x, y, r, Math.floor(g() * 1e8));
+      const seed = Math.floor(g() * 1e8);
+      if (!inPark) k.t.plant(kind, x, y, r, seed);
     }
 
   // the turrets' pads: dressed coral stone, drawn on the ground (a roof that stands over one hides it)

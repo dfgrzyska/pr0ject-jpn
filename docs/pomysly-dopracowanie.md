@@ -190,9 +190,32 @@ Dodane:
 - Nazwy miejsc: było 5, jest 22 (m.in. Mazda Stadium, Okonomimura / Hondori, Miyajimaguchi, Ono Seto, Kaki Ikada,
   Kangen-sai, Omotesando, O-Torii, Itsukushima Jinja, Gojunoto / Senjokaku, Daisho-in, Momijidani, Misen).
 
-### Kioto, Osaka, Beppu, Nagasaki
+### Okinawa, druga tura — zrobione 16.11
 
-- Nic wartego ruszania w tłach.
+Przegląd lądu w grze: parada eisa, startujące myśliwce w Kadenie, wodospad Hiji, trzcina i wóz z bawołem już były.
+Jedyna prawdziwa pustka to pas lasu między drogą nadbrzeżną a Bise (u 1160..1350): same drzewa i ścieżka.
+
+Dodane w tym pasie (`tools/art/okinawa/expo.mjs`):
+
+- Park Ocean Expo z akwarium Churaumi: parking z autokarami, plac z rekinem wielorybim z brązu i kasami, budynek
+  z pergolami, a przez szklany dach zbiornika Kuroshio widać dwa rekiny wielorybie, manty i ławice (animowane).
+- Teatr Okichan: laguna, scena z trenerami, trybuny pod żaglowym dachem, delfiny pływające i wyskakujące z wody.
+- Basen żółwi morskich z plażą, kiosk pod parasolami, klomby, ścieżki od głównej alejki Bise do każdego miejsca.
+- Reszta mapy nie zmieniła się ani o piksel (drzewa pasa są losowane jak dawniej i nie sadzone).
+- Nazwa: Churaumi Suizokukan.
+
+### Beppu — zrobione 16.11
+
+Przegląd w grze: prom z Osaki, łaźnie piaskowe, hotele z basenami, dworzec, Beppu Tower, pasaż Yayoi, Takegawara
+Onsen, kanał Haruki i park już były. Brakowało tylko nazw na pierwszych 2100 jednostkach trasy.
+
+- Nazwy: było 11, jest 21 (Beppu-wan, Beppu Kaihin Sunayu, Kitahama, Beppu-eki, Beppu Tower, Yayoi Tengai,
+  Takegawara Onsen, Ekimae-dori, Haruki-gawa, Beppu Koen).
+
+### Kioto, Osaka, Nagasaki
+
+- Nie przeglądane ponownie. Pomysły: Daimonji i Gion Matsuri w Kioto, fajerwerki i diabelski młyn Tempozan w Osace,
+  lampiony i taniec smoka w Nagasaki. Przed budowaniem sprawdzić w grze, czy już nie istnieją.
 
 ## Sprawy techniczne
 
