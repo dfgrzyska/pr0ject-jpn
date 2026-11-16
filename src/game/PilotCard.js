@@ -11,8 +11,8 @@ import { sharedArt } from './enemyArt.js';
 // a tap or a key puts it away.
 const FINE = 1 / RENDER_SCALE;
 const W = VIEW.width;
-const PAPER = 0xf4ead2;
-const INK = 0x2a2030;
+const PAPER = 0x141c38; // (night blue: the game's font has a dark edge, lost on a pale card)
+const INK = 0xf4ead2;
 const RED = 0xb83a1a;
 
 export class PilotCard {
@@ -34,7 +34,7 @@ export class PilotCard {
     // the card: cream paper, a red border and a thin one inside it, a red band for the title
     g.fillStyle(RED).fillRect(8, top, W - 16, 300);
     g.fillStyle(PAPER).fillRect(11, top + 3, W - 22, 294);
-    g.lineStyle(1, 0xd8c8a0).strokeRect(14.5, top + 6.5, W - 29, 287);
+    g.lineStyle(1, 0x33416a).strokeRect(14.5, top + 6.5, W - 29, 287);
     g.fillStyle(RED).fillRect(11, top + 3, W - 22, 20);
     add(pixelText(scene, W / 2, top + 13, ship.look?.title ?? 'PILOT').setTint(0xfff4e0));
     // the ship's window: night blue, the ship in it three times its size, its companion beside it
@@ -50,16 +50,15 @@ export class PilotCard {
     // the collection: all of it, then rarity by rarity (a bar and a count each)
     const have = new Set(loadout.owned);
     const bar = (y, label, own, all, col) => {
-      add(pixelText(scene, 24, y, label, 0).setOrigin(0, 0.5).setTint(INK));
+      add(pixelText(scene, 24, y, label, 0).setOrigin(0, 0.5).setTint(col));
       add(pixelText(scene, W - 24, y, `${own}/${all}`, 1).setOrigin(1, 0.5).setTint(INK));
-      g.fillStyle(0xd8c8a0).fillRect(24, y + 6, W - 48, 3);
+      g.fillStyle(0x2a3458).fillRect(24, y + 6, W - 48, 3);
       g.fillStyle(col).fillRect(24, y + 6, Math.round((W - 48) * (all ? own / all : 0)), 3);
-      g.lineStyle(1, INK, 0.35).strokeRect(23.5, y + 5.5, W - 47, 4);
     };
-    bar(top + 150, 'KOLEKCJA', loadout.owned.length, ITEMS.length, RED);
+    bar(top + 150, 'KOLEKCJA', loadout.owned.length, ITEMS.length, 0xffd040);
     RARITIES.forEach((r, i) => {
       const of = ITEMS.filter((it) => it.rarity === r);
-      bar(top + 168 + i * 15, RARITY[r].name, of.filter((it) => have.has(it.id)).length, of.length, [0x8e96b0, 0x3a82f0, 0xa050f0, 0xe0a020, 0xf05a9a][i]);
+      bar(top + 168 + i * 15, RARITY[r].name, of.filter((it) => have.has(it.id)).length, of.length, RARITY[r].color);
     });
     // what is worn, as pictures: the stickers, the seal, the marker, the icon of a life
     const worn = [...DECAL_SLOTS, 'seal', 'marker', 'life_icon', 'companion'].map((k) => ITEM[loadout.look[k]]?.pic).filter(Boolean);
@@ -69,7 +68,7 @@ export class PilotCard {
     });
     add(pixelText(scene, 24, top + 276, `${tr('LOSOWAŃ')}: ${loadout.pulls}`, 0).setOrigin(0, 0.5).setTint(INK));
     add(pixelText(scene, W - 24, top + 276, `${tr('KUPONY')}: ${loadout.tickets}`, 1).setOrigin(1, 0.5).setTint(INK));
-    this.hint = add(pixelText(scene, W / 2, top + 289, scene.sys.game.device.input.touch ? 'DOTKNIJ - WRÓĆ' : 'ENTER / ESC - WRÓĆ').setTint(0x8a7a5a));
+    this.hint = add(pixelText(scene, W / 2, top + 289, scene.sys.game.device.input.touch ? 'DOTKNIJ - WRÓĆ' : 'ENTER / ESC - WRÓĆ').setTint(0x9aaec2));
     this.update(0);
   }
 

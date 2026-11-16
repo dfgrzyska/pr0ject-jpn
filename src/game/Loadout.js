@@ -5,6 +5,7 @@ import { DEFAULTS, ITEM, ITEMS, KITS, LOOKS, PITY, RARITIES, RARITY, SHOT_FRAMES
 // plain data, so the rules run in tests without a browser.
 const KEY = 'shmupjp.gacha';
 const VERSION = 1;
+const RENAMED = { paint_famicom: 'paint_8bit' };
 
 const emptySlots = () => Object.fromEntries(SLOTS.map((k) => [k, []]));
 const clone = (kit) => ({ hull: kit.hull, slots: Object.fromEntries(SLOTS.map((k) => [k, [...kit.slots[k]]])) });
@@ -109,6 +110,10 @@ export function loadState(storage, legacyShip) {
   try {
     const saved = JSON.parse(storage.getItem(KEY));
     if (saved?.v === VERSION && Array.isArray(saved.owned)) {
+      // (a paint job that was renamed: a save made before knows it by its old id)
+      const renamed = (id) => RENAMED[id] ?? id;
+      saved.owned = saved.owned.map(renamed);
+      for (const set of [saved, ...(saved.presets ?? []).filter(Boolean)]) if (set.look?.paint) set.look.paint = renamed(set.look.paint);
       // (starter parts added in a later version are theirs too)
       for (const it of ITEMS) if (it.starter) saved.owned.push(it.id);
       return normalize(saved);

@@ -62,7 +62,7 @@ Razem około 490 przedmiotów: około 410 kosmetycznych i około 80 modów. Rzad
 - Zwierzęta i figurki: Koi, Tanchō, Daruma, Maneki-neko, Kokeshi, Shiba
 - Sztuka: Torii, Kabuki, Sumi-e, Wielka fala, Nō
 - Kolej i miasto: Shinkansen, Żółty doktor, Taksówka, Neon Shinjuku
-- Retro: Famicom, Kieszonkowa konsola, Arcade
+- Retro: Konsola 8-bit, Kieszonkowa konsola, Arcade
 - Seria miast (8): po jednym malowaniu w barwach każdego miasta podróży
 - Seria pór roku (4): hanami, lato z fajerwerkami, momiji, śnieg
 - Seria yōkai (8): w barwach wybranych bossów

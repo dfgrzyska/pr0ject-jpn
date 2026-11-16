@@ -239,7 +239,7 @@ export const ITEMS = [
   { id: 'paint_doctor', kind: 'paint', rarity: 'SR', name: 'ŻÓŁTY DOKTOR', info: 'MALOWANIE: KOLEJ', colors: [0xf8d020, 0x1a4ab0, 0xffffff, 0x2a2a2a] },
   { id: 'paint_taxi', kind: 'paint', rarity: 'N', name: 'TAKSÓWKA', info: 'MALOWANIE: MIASTO', colors: [0x1a1a22, 0xf0c040, 0x2a8a4a, 0xffffff] },
   { id: 'paint_neon', kind: 'paint', rarity: 'SR', name: 'NEON SHINJUKU', info: 'MALOWANIE: MIASTO', colors: [0x1a1430, 0xff3ac0, 0x3ae0ff, 0xf8f040] },
-  { id: 'paint_famicom', kind: 'paint', rarity: 'R', name: 'KONSOLA 8-BIT', info: 'MALOWANIE: RETRO', colors: [0xf0e8d8, 0xa82030, 0xd0b070, 0x2a2a2a] },
+  { id: 'paint_8bit', kind: 'paint', rarity: 'R', name: 'KONSOLA 8-BIT', info: 'MALOWANIE: RETRO', colors: [0xf0e8d8, 0xa82030, 0xd0b070, 0x2a2a2a] },
   { id: 'paint_pocket', kind: 'paint', rarity: 'N', name: 'KIESZONKOWA KONSOLA', info: 'MALOWANIE: RETRO', colors: [0xc4cfa1, 0x6b7353, 0x414141, 0x8b956d] },
   { id: 'paint_arcade', kind: 'paint', rarity: 'SR', name: 'ARCADE', info: 'MALOWANIE: RETRO', colors: [0x1a1a2a, 0xff2a6a, 0x2affea, 0xffe02a] },
   { id: 'paint_city_kyoto', kind: 'paint', rarity: 'R', name: 'BARWY KIOTO', info: 'MALOWANIE: MIASTA', colors: [0xa8321a, 0xf0c040, 0x2a2a2a, 0xf4ead2] },

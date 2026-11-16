@@ -261,3 +261,14 @@ test('what comes out of the machine is new until it is looked at', () => {
   saveState(m, s);
   assert.deepEqual(loadState(m).fresh, []);
 });
+
+test('a save from before a paint job was renamed keeps it', () => {
+  const s = newState('kitsune');
+  s.owned.push('paint_famicom');
+  s.look.paint = 'paint_famicom';
+  const m = memory();
+  saveState(m, s);
+  const back = loadState(m);
+  assert.ok(back.owned.includes('paint_8bit'));
+  assert.equal(back.look.paint, 'paint_8bit');
+});
