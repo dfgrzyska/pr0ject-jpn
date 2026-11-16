@@ -1,4 +1,4 @@
-// Nakano (u 0-700): the station over the Chūō line's four tracks, trains pulling in under it; the glass-roofed
+// Nakano (u 0-700): houses south of the tracks, the station over the Chūō line's four tracks, trains pulling in under it; the glass-roofed
 // Sun Mall arcade up to Nakano Broadway, a slab of shops with flats on top and a garden on its roof; Arai
 // Yakushi's little temple; low houses under tiled roofs, flats, car parks and pocket gardens along the lanes;
 // Ōme-kaidō under its street trees; cherries along the Kanda river. An afternoon.
@@ -15,7 +15,7 @@ export function nakano(ctx) {
     const p = plot('nakano_eki');
     // the platforms (between the tracks of each pair), their yellow lines
     ground(() => {
-      for (const uc of [45, 55])
+      for (const uc of [155, 165])
         for (let x = 2; x < 178; x++) {
           if (x >= p.x && x < p.x + p.w) continue;
           R(FX(x), FY(uc + 1.34), S, 8, 0xbdb9b0);
@@ -44,7 +44,7 @@ export function nakano(ctx) {
     });
     cover(p.x, p.u, p.w, p.h);
     // the canopies, over the trains
-    for (const uc of [45, 55])
+    for (const uc of [155, 165])
       for (const [x0, x1] of [[2, p.x], [p.x + p.w, 178]]) {
         const f = kit.frame(x1 - x0, 3.34, uc, (put, c) => {
           for (let j = 0; j < c.hi.h; j++) for (let i = 0; i < c.hi.w; i++) put(i, j, kit.canopy(i, j, c.hi.h));
@@ -52,21 +52,21 @@ export function nakano(ctx) {
         props.loop(x0, uc + 1.67, [f], { fps: 1, d: 0.1 });
       }
     // the trains: silver with an orange band; they pull in, wait, pull out the way they came
-    kit.train(47.5, -1, 0xf07a20, { stop: 80, s0: 0.15 });
-    kit.train(52.5, 1, 0xf07a20, { stop: 80, s0: 0.6 });
+    kit.train(157.5, -1, 0xf07a20, { stop: 80, s0: 0.15 });
+    kit.train(162.5, 1, 0xf07a20, { stop: 80, s0: 0.6 });
     // the square in front: bus shelters, taxis waiting, people
     for (const x of [66, 104]) {
-      mark(x, 80, (X, Y) => {
+      mark(x, 190, (X, Y) => {
         R(X, Y, 18, 5, 0xc4ccd4);
         R(X, Y + 4, 18, 1, 0x6a727c);
         R(X + 1, Y + 1, 16, 2, 0x8aa4b8);
       });
-      tree('broadleaf', x + 14, 90, 2.6);
+      tree('broadleaf', x + 14, 200, 2.6);
     }
-    for (const [x, c] of [[70, 0xe8c020], [80, 0x2a6a4a], [108, 0xe8c020]]) car(x, 96.5, false, c);
-    crowd(62, 77, 56, 14, 22);
+    for (const [x, c] of [[70, 0xe8c020], [80, 0x2a6a4a], [108, 0xe8c020]]) car(x, 206.5, false, c);
+    crowd(62, 187, 56, 14, 22);
     // the arcade's mouth: a board over it
-    mark(90, 84, (X, Y) => {
+    mark(90, 194, (X, Y) => {
       R(X - 17, Y - 12, 34, 9, 0xf0c020);
       R(X - 17, Y - 12, 34, 1, 0xfae890);
       R(X - 17, Y - 4, 34, 1, 0xa87c10);
@@ -79,11 +79,11 @@ export function nakano(ctx) {
   // ---- under the arcade's glass: the shoppers as shapes, the shop lights along both sides
   ground(() => {
     const r = kit.rand;
-    for (let k = 0; k < 130; k++) {
-      const [X, Y] = [FX(86.4 + r() * 6.6), FY(92 + r() * 232)];
+    for (let k = 0; k < 80; k++) {
+      const [X, Y] = [FX(86.4 + r() * 6.6), FY(202 + r() * 122)];
       R(X, Y, 2, 3, r() < 0.5 ? 0x587888 : 0x6a8a98);
     }
-    for (let u = 90; u < 326; u += 3) for (const x of [85.67, 94]) if (r() < 0.7) P(FX(x), FY(u), r() < 0.5 ? 0xfff0c0 : 0xf8d8a0);
+    for (let u = 200; u < 326; u += 3) for (const x of [85.67, 94]) if (r() < 0.7) P(FX(x), FY(u), r() < 0.5 ? 0xfff0c0 : 0xf8d8a0);
   });
 
   // ---- Nakano Broadway: shops below, flats above, the garden and the old pool on its roof
@@ -174,7 +174,7 @@ export function nakano(ctx) {
 
   // ---- the blocks: shops and offices by the station and along the avenue, houses and flats behind
   for (const b of blocks(0, 700)) {
-    const busy = b[1] < 330 || b[0] >= 118;
+    const busy = (b[1] >= 100 && b[1] < 330) || b[0] >= 118;
     for (const [x, u, w, h] of lots(b, rand, busy ? { depth: [12, 19], width: [10, 20] } : { depth: [9, 13], width: [8, 14] })) {
       if (w < 6 || h < 7) continue;
       const v = rand();
@@ -201,12 +201,12 @@ export function nakano(ctx) {
   }
 
   // ---- Ōme-kaidō: street trees along both pavements, crossings at Waseda-dōri and by the station
-  for (let u = 108; u < 688; u += 17) {
-    if ([200, 420, 548].some((c) => Math.abs(u - c) < 9)) continue;
+  for (let u = 12; u < 688; u += 17) {
+    if ([60, 118, 206, 268, 548].some((c) => Math.abs(u - c) < 9) || Math.abs(u - 160) < 18) continue;
     tree('broadleaf', 133, u, 2.1);
     tree('broadleaf', 147.4, u + 8, 2.1);
   }
-  for (const uc of [96, 548]) {
+  for (const uc of [206, 548]) {
     zebra(134.4, uc + 6, 11.3, 4, 'u');
     zebra(134.4, uc - 10, 11.3, 4, 'u');
   }

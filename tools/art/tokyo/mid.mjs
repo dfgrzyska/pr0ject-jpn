@@ -12,11 +12,14 @@ import { todGrade, tintTable, PropKit } from '../props.mjs';
 import { makeKit } from './kit.mjs';
 import { nakano } from './nakano.mjs';
 import { shinjuku } from './shinjuku.mjs';
+import { harajuku } from './harajuku.mjs';
+import { shibuya } from './shibuya.mjs';
 import { W, S, L, DISTRICTS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, PLOTS } from './route.mjs';
 import { near, inShape, bbox, railHalf } from './geom.mjs';
 
 // the districts' painters, in the order they are called: (ctx) => void. (Phases 2-7 add theirs here.)
-const PAINTERS = [nakano, shinjuku];
+const PAINTERS = [nakano, shinjuku, harajuku, shibuya];
+const ARENA_DRAWN = new Set(['KASA-OBAKE']); // (arenas whose own ground is drawn: no ring)
 
 const smooth = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -202,8 +205,8 @@ export function buildMid() {
     });
 
   // ---- the arenas: a dashed ring until their own ground is drawn
-  for (const [ax, au, , r] of ARENAS)
-    paint(ax - r - 1, au - r - 1, ax + r + 1, au + r + 1, (x, u) => {
+  for (const [ax, au, name, r] of ARENAS)
+    if (!ARENA_DRAWN.has(name)) paint(ax - r - 1, au - r - 1, ax + r + 1, au + r + 1, (x, u) => {
       const d = Math.hypot(x - ax, u - au);
       return Math.abs(d - r) < 0.5 && Math.floor(((Math.atan2(u - au, x - ax) + Math.PI) / (Math.PI * 2)) * 72) % 2 === 0 ? 0xffd040 : null;
     });
@@ -235,8 +238,44 @@ export function buildMid() {
    * The free ground between u0 and u1 as boxes [x, u, w, h], each at least minW x minH: the blocks a district
    * fills with its houses. What is given out is taken, so asking again gives what is left.
    */
-  const blocks = (u0, u1, minW = 8, minH = 8) => {
+  const blocks = (u0, u1, minW = 8, minH = 8, skew = false) => {
     const out = [];
+    if (skew) {
+      // (beside streets that run aslant: from each free run the largest box up from it, narrowing as the ground does)
+      for (let u = u0; u < u1; u++)
+        for (let x = 0; x < W; x++) {
+          if (occ[u * W + x]) continue;
+          let w = 0;
+          while (x + w < W && !occ[u * W + x + w]) w++;
+          let [a, b] = [x, x + w];
+          let best = null;
+          for (let h = 1; u + h - 1 < u1; h++) {
+            const row = (u + h - 1) * W;
+            if (h > 1) {
+              let [ba, bb] = [0, 0];
+              for (let i = a; i < b; i++) {
+                if (occ[row + i]) continue;
+                let j = i;
+                while (j < b && !occ[row + j]) j++;
+                if (j - i > bb - ba) [ba, bb] = [i, j];
+                i = j;
+              }
+              if (bb - ba < minW) break;
+              [a, b] = [ba, bb];
+            }
+            // (the squarest wins, then the larger: never a sliver the whole length of the street)
+            const [sq, bq] = [Math.min(b - a, h), best ? Math.min(best[2], best[3]) : 0];
+            if (!best || sq > bq || (sq === bq && (b - a) * h >= best[2] * best[3] && h <= 2.2 * (b - a))) best = [a, u, b - a, h];
+          }
+          occ.fill(1, u * W + x, u * W + x + w);
+          if (best && best[2] >= minW && best[3] >= minH) {
+            for (let j = 0; j < best[3]; j++) occ.fill(1, (u + j) * W + best[0], (u + j) * W + best[0] + best[2]);
+            out.push(best);
+          }
+          x += w - 1;
+        }
+      return out;
+    }
     for (let u = u0; u < u1; u++)
       for (let x = 0; x < W; x++) {
         if (occ[u * W + x]) continue;
@@ -265,9 +304,10 @@ export function buildMid() {
   const claim = (x, u, w, h) => {
     for (let j = Math.max(0, Math.floor(u)); j < Math.min(L, u + h); j++) occ.fill(1, j * W + Math.max(0, Math.floor(x)), j * W + Math.min(W, Math.ceil(x + w)));
   };
-  const ctx = { img, wet, paint, fill, along, ramp, shade, W, S, L, kit, props, tod, blocks, pave, plot, claim, cover: (x, u, w, h, d = 0.1) => covers.push([x, u, w, h, d]) };
+  const ctx = { near, ROADS, RAILS, GROUND, img, wet, paint, fill, along, ramp, shade, W, S, L, kit, props, tod, blocks, pave, plot, claim, cover: (x, u, w, h, d = 0.1) => covers.push([x, u, w, h, d]) };
   for (const p of PAINTERS) p(ctx);
   kit.flush();
+  kit.beforeGrade();
 
   // ---- the time of day, a band of the strip at a time
   const BAND = 16 * S;
@@ -276,6 +316,7 @@ export function buildMid() {
     tod.frame(band, L - (Y0 + BAND / 2) / S);
     img.hi.data.set(band.data, Y0 * FW * 4);
   }
+  kit.afterGrade(); // (the lights: windows, signs, lamps, their glow)
   for (const [x, u, w, h, d] of covers) props.loop(x, u + h, [props.frame(img.hi.crop(x * S, (L - u - h) * S, w * S, h * S))], { fps: 1, d });
   return { strip: img.hi, props: props.pack(), meta: { width: W, artScale: S, length: L, tint: tintTable(L, tod.white) } };
 }

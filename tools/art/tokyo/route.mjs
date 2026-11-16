@@ -80,7 +80,7 @@ export const WATER = [
 // park (lawn and trees), forest, gravel (shrine and palace grounds), plaza, paving (temple courts), sand,
 // apron (the pier's concrete), asphalt (the scramble's square). Drawn in this order; `over` ones after the water.
 export const GROUNDS = [
-  { id: 'nakano_ekimae', kind: 'plaza', rect: [60, 70, 60, 26] },
+  { id: 'nakano_ekimae', kind: 'plaza', rect: [60, 180, 60, 26] },
   { id: 'chuo_koen', kind: 'park', rect: [0, 876, 38, 128] },
   { id: 'gyoen', kind: 'park', rect: [0, 1812, 158, 280] },
   { id: 'meiji_no_mori', kind: 'forest', rect: [0, 2110, 84, 650] },
@@ -117,12 +117,16 @@ export const GROUNDS = [
 export const ROADS = [
   // Nakano
   { id: 'ome_kaido', cls: 'avenue', w: 12, pts: [[140, 0], [140, 1806]] },
-  { id: 'sun_mall', cls: 'arcade', w: 10, pts: [[90, 84], [90, 330]] },
+  { id: 'sun_mall', cls: 'arcade', w: 10, pts: [[90, 194], [90, 330]] },
   { id: 'waseda_dori', cls: 'street', w: 8, pts: [[0, 548], [180, 548]] },
-  { id: 'nakano_roji_1', cls: 'lane', w: 4, pts: [[0, 200], [134, 200]] },
+  { id: 'nakano_roji_1', cls: 'lane', w: 4, pts: [[0, 268], [134, 268]] },
   { id: 'nakano_roji_2', cls: 'lane', w: 4, pts: [[0, 420], [60, 420]] },
-  { id: 'nakano_roji_3', cls: 'lane', w: 4, pts: [[40, 96], [40, 694]] },
-  { id: 'nakano_ekimae_dori', cls: 'street', w: 6, pts: [[0, 96], [134, 96]] },
+  { id: 'nakano_roji_3', cls: 'lane', w: 4, pts: [[40, 206], [40, 694]] },
+  { id: 'nakano_ekimae_dori', cls: 'street', w: 6, pts: [[0, 206], [134, 206]] },
+  // (south of the station: the screen opens on u 100-420, or from 0 on a tall phone, so the station stands at 134-186)
+  { id: 'nakano_minami_dori', cls: 'street', w: 6, pts: [[0, 118], [134, 118]] },
+  { id: 'nakano_roji_4', cls: 'lane', w: 4, pts: [[0, 60], [134, 60]] },
+  { id: 'nakano_roji_5', cls: 'lane', w: 4, pts: [[60, 0], [60, 115]] },
   { id: 'kanda_kishi', cls: 'lane', w: 4, pts: [[0, 694], [180, 694]] },
   // Shinjuku
   { id: 'nishi_1', cls: 'street', w: 8, pts: [[0, 740], [180, 740]] },
@@ -147,6 +151,18 @@ export const ROADS = [
   { id: 'omotesando', cls: 'avenue', w: 12, pts: [[104, 2180], [166, 2390], [180, 2420]] },
   { id: 'meiji_sando', cls: 'walk', w: 6, pts: [[84, 2180], [50, 2200], [40, 2300], [42, 2400]] },
   { id: 'takeshita_dori', cls: 'walk', w: 5, pts: [[100, 2540], [160, 2540]] },
+  { id: 'meiji_gyoen_michi', cls: 'walk', w: 3, pts: [[52, 2476], [48, 2560], [50, 2640], [40, 2680]] }, // (the inner garden, the lawn)
+  { id: 'cat_street', cls: 'walk', w: 4, pts: [[150, 2336], [140, 2420], [132, 2470], [132, 2488]] },
+  { id: 'harajuku_roji_1', cls: 'lane', w: 4, pts: [[128, 2262], [160, 2262]] },
+  { id: 'ura_hara', cls: 'lane', w: 4, pts: [[130, 2584], [130, 2870]] },
+  { id: 'ura_hara_1', cls: 'lane', w: 4, pts: [[130, 2660], [160, 2660]] },
+  { id: 'ura_hara_2', cls: 'lane', w: 4, pts: [[130, 2760], [160, 2760]] },
+  { id: 'shibuya_roji_s', cls: 'lane', w: 4, pts: [[0, 3080], [82, 3080]] },
+  { id: 'shibuya_roji_e', cls: 'lane', w: 4, pts: [[98, 3500], [145, 3500]] },
+  { id: 'shibuya_roji_n1', cls: 'lane', w: 4, pts: [[0, 3740], [180, 3740]] },
+  { id: 'shibuya_roji_n2', cls: 'lane', w: 4, pts: [[0, 3840], [180, 3840]] },
+  { id: 'shibuya_roji_t1', cls: 'lane', w: 4, pts: [[40, 3604], [40, 3840]] },
+  { id: 'shibuya_roji_t2', cls: 'lane', w: 4, pts: [[140, 3604], [140, 3840]] },
   { id: 'shibuya_odori', cls: 'avenue', w: 16, pts: [[90, 2990], [90, 3420]] },
   { id: 'bunkamura_dori', cls: 'avenue', w: 16, pts: [[0, 3350], [180, 3350]] },
   { id: 'center_gai', cls: 'walk', w: 5, pts: [[46, 3358], [46, 3600]] },
@@ -222,7 +238,7 @@ export const ROADS = [
 // the city: drawn over the roads, with its shadow), guideway (the automated line's concrete beams), crane (the
 // gantries' two rails along the quay). An end must be on the strip's edge or under a plot (a station).
 export const RAILS = [
-  { id: 'chuo_sen', tracks: 4, pts: [[0, 50], [180, 50]] },
+  { id: 'chuo_sen', tracks: 4, pts: [[0, 160], [180, 160]] },
   { id: 'shinjuku_sen', tracks: 10, pts: [[0, 1266], [180, 1266]] },
   { id: 'yamanote_minami', tracks: 2, pts: [[180, 2140], [150, 2150], [115, 2190], [95, 2250], [95, 2820], [105, 2880], [136, 2960], [136, 3120], [154, 3200], [154, 3560], [164, 3620], [180, 3650]] },
   { id: 'tokyo_sen', tracks: 12, pts: [[0, 5990], [180, 5990]] },
@@ -238,7 +254,7 @@ export const RAILS = [
 // stands over its tracks, the bridge's pylons on its deck). low: nothing tall (allowed inside an arena).
 export const PLOTS = [
   // Nakano
-  ['nakano_eki', 30, 24, 100, 52, 'dworzec Nakano: perony pod dachami'],
+  ['nakano_eki', 30, 134, 100, 52, 'dworzec Nakano: perony pod dachami'],
   ['nakano_broadway', 62, 330, 56, 190, 'Nakano Broadway: bryła z mieszkaniami na dachu'],
   ['arai_yakushi', 4, 570, 30, 60, 'świątynia Arai Yakushi'],
   // Shinjuku

@@ -276,8 +276,8 @@ export function shinjuku(ctx) {
   // ---- Yasukuni-dōri: cars held at the lights on both sides of Ōme-kaidō, the crossing in front of the gate
   for (let k = 0; k < 5; k++) {
     car(124 - k * 7.4, 1563 + (k % 2) * 3.4, false);
-    if (k < 3) car(156 + k * 7.4, 1570 + (k % 2) * 3.4, false);
-    car(60 - k * 7.4, 1570.2 + (k % 2) * 3.4, false);
+    if (k < 3) car(172 - k * 7.4, 1570 + (k % 2) * 3.4, false, undefined, true);
+    car(34 + k * 7.4, 1570.2 + (k % 2) * 3.4, false, undefined, true);
   }
   zebra(87, 1561.3, 10, 13.4, 'x');
 
@@ -358,12 +358,13 @@ export function shinjuku(ctx) {
     if (uc !== 1400) zebra(149, uc - hw + 0.4, 4, hw * 2 - 0.8, 'x');
   }
   // (the avenue runs under both stations' tracks: the viaducts are shown again over the cars)
-  ctx.cover(131, 38, 18, 24, -0.1);
+  ctx.cover(131, 148, 18, 24, -0.1);
   ctx.cover(131, 1239, 18, 54, -0.1);
-  kit.traffic(141.5, -20, 1800, { sp: 24, gap: 190, s0: 0.2 });
-  kit.traffic(144.6, -20, 1800, { sp: 19, gap: 260, s0: 0.7 });
-  kit.traffic(138.5, 1800, -20, { sp: 23, gap: 210, s0: 0.5 });
-  kit.traffic(135.4, 1800, -20, { sp: 18, gap: 280, s0: 0.9 });
+  // (they keep to the left)
+  kit.traffic(138.5, -20, 1800, { sp: 24, gap: 190, s0: 0.2 });
+  kit.traffic(135.4, -20, 1800, { sp: 19, gap: 260, s0: 0.7 });
+  kit.traffic(141.5, 1800, -20, { sp: 23, gap: 210, s0: 0.5 });
+  kit.traffic(144.6, 1800, -20, { sp: 18, gap: 280, s0: 0.9 });
 
   // ---- Shinjuku Gyoen
   {

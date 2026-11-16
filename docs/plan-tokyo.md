@@ -1,6 +1,6 @@
 # Plan: etap 9, TOKIO
 
-Stan: **w budowie**. Fazy 0, 1 i 2 gotowe; decyzje z sekcji 2 przyjęte według rekomendacji (do potwierdzenia przez autora). Postęp odznacza się checkboxami w sekcji 8.
+Stan: **w budowie**. Fazy 0, 1, 2 i 3 gotowe; decyzje z sekcji 2 przyjęte według rekomendacji (do potwierdzenia przez autora). Postęp odznacza się checkboxami w sekcji 8.
 
 ## 1. W skrócie
 
@@ -66,6 +66,8 @@ Zasady pracy na szkielecie:
 - Dzielnica rysuje swoje budynki **na działkach** i wypełnia **kwartały między ulicami**. Ulic, torów i wody nie przesuwa. Jeśli działka jest za mała albo źle leży, zmienia się ją w `route.mjs`, a nie omija w rysunku.
 - Malarze dzielnic wpinają się przez listę `PAINTERS` w `tools/art/tokyo/mid.mjs` i dostają gotowy kontekst (płótno, maskę wody, pomocnicze funkcje rysowania). Rysują przed nałożeniem pory dnia; światła nocne dojdą osobnym krokiem po niej, gdy pierwsza dzielnica będzie ich potrzebować.
 - Budynki, domy, drzewa, auta, tłum, pociągi, ruch uliczny i dym rysuje się wspólnym zestawem `tools/art/tokyo/kit.mjs` (styl ustalony w fazie 2: dach, pod nim ściana południowa, cień w prawo w dół, długość cienia według pory dnia przez `setSun`). Kwartały między ulicami oddaje `ctx.blocks(u0, u1)`, a `lots()` z `blocks.mjs` tnie je na parcele. `ctx.cover(x, u, w, h, d)` pokazuje kawałek taśmy jeszcze raz nad ruchomymi częściami: `d = 0.1` nad pociągami (dach dworca), `d = -0.1` nad autami i pod pociągami (wiadukt nad aleją).
+- **Światła** (od fazy 3): pora dnia jest nakładana po narysowaniu wszystkiego, więc to, co ma świecić, rysuje się przez `kit.E` / `kit.ER` (piksel zachowuje kolor), `kit.halo` (poświata dodana po gradacji) i `kit.after` (dowolny krok po gradacji, np. mokry asfalt w `shibuya.mjs`). Okna, witryny, szyldy, lampiony, latarnie (`kit.lamp`) i światła aut zapalają się same według `kit.night(u)`, czyli tam, gdzie taśma ciemnieje. Klatki animowanych świateł bierze się z `kit.frame(..., true)` (bez gradacji).
+- **Skosy**: przy ulicach biegnących ukośnie kwartały bierze się przez `ctx.blocks(u0, u1, minW, minH, true)`, a parcele przez `lots(..., { small: true })`. Pociąg i auta po łuku: `kit.trainOn(pts)`, `kit.trafficOn(pts)` z `kit.offset(pts, d)` (d w lewo od kierunku jazdy). Ruch jest lewostronny.
 - `npm test` pilnuje topologii (`tools/tests/tokyoRoute.test.mjs`): działki nie nachodzą na siebie ani na ulice, w arenach nie stoi nic wysokiego, każda ulica i każdy tor kończy się na krawędzi taśmy, na innej ulicy, przy działce albo na placu.
 - Podgląd: `node tools/art/tokyo/overview.mjs` zapisuje całą taśmę w siedmiu kolumnach z ponumerowanymi działkami (`tools/preview/stage9_route.png`) i wypisuje klucz numerów. Z `--from=3100 --to=3600` zapisuje wybrany odcinek w pełnej rozdzielczości.
 - Łączenia kafli są zgodne z konstrukcji: taśma jest rysowana w całości i dopiero potem cięta na 14 kawałków.
@@ -170,10 +172,10 @@ Każda wymaga fazy 1. Jedna faza = jeden plik `tools/art/tokyo/<nazwa>.mjs` plus
   - [x] Nakano: pasaż, Broadway, stare sklepy
   - [x] Shinjuku: wieżowce i ratusz, dworzec, domy towarowe, Kabukichō, zaułki, ogród
   - [x] Animacje: neony bramy, dym z rusztów, pociągi na torach
-- [ ] **Faza 3: Harajuku i Shibuya** (u 2100–3900)
-  - [ ] Meiji Jingū, Takeshita, Omotesandō, hala Yoyogi
-  - [ ] Shibuya: dworzec, Hachikō, Moyai, skrzyżowanie, Center-gai
-  - [ ] Animacje: ekrany na ścianach, tłum na pasach, mokry asfalt z odbiciami, sygnalizatory
+- [x] **Faza 3: Harajuku i Shibuya** (u 2100–3900)
+  - [x] Meiji Jingū, Takeshita, Omotesandō, hala Yoyogi
+  - [x] Shibuya: dworzec, Hachikō, Moyai, skrzyżowanie, Center-gai
+  - [x] Animacje: ekrany na ścianach, tłum na pasach, mokry asfalt z odbiciami, sygnalizatory
 - [ ] **Faza 4: Minato i Chiyoda** (u 3900–6100)
   - [ ] Roppongi, Tokyo Tower, Zōjō-ji z figurkami Jizō
   - [ ] Parlament, pałac z fosami i mostem, wiśnie, dworzec Tokio
@@ -263,6 +265,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-16 | Claude | 3 | Dworzec Nakano przesunięty na u 134–186 (widać go od pierwszej klatki), na południe od niego nowe uliczki. Harajuku (`harajuku.mjs`): las Meiji z 1500 drzew, dwie torii, beczki sake i wina, chram z krużgankiem, staw z irysami, polana, stacja z wieżyczką, Takeshita ze słodyczami na dachach, Omotesandō pod zelkowami, hale Yoyogi. Shibuya (`shibuya.mjs`): dworzec z wieżą, plac z Moyai, Hachikō i zielonym wagonem, skrzyżowanie z pasami na czterech bokach i przekątnych, ściany ekranów, okrągła wieża, Center-gai, park na dachu nad torami. Krok świateł w `kit.mjs`. Animacje: 7 ekranów, grupki pod parasolami na pasach, sygnalizatory, kręgi deszczu, pociągi Yamanote w obie strony, auta na Meiji-dōri. Ruch w Shinjuku poprawiony na lewostronny. Zrzuty: `node tools/preview/_tokyo_shots.mjs 60 78 90 103+1`. | Auta na ramionach skrzyżowania stoją (czerwone światło dla wszystkich), żeby nic nie jeździło po arenie. Tłum na pasach jest pod przeciwnikami (`d: -0.3`), w stonowanych kolorach; do oceny w fazie 11, czy nie myli się z pociskami Kasa-obake. Pociąg Yamanote ma jedną gradację koloru na całą trasę (u 2600), więc w Shibui jest odrobinę za jasny. Auta Meiji-dōri znikają pod wiaduktem na łuku przy u 2893. Fale w `stage9.json` są nadal zastępcze. Odcinek 3640–3900 (Roppongi-dōri pod estakadą) ma zwykłe kwartały, bez własnych obiektów. |
 | 2026-11-16 | Claude | 2 | Nakano i Shinjuku narysowane (`nakano.mjs`, `shinjuku.mjs`) wspólnym zestawem `kit.mjs`: dworzec Nakano, pasaż, Broadway z ogrodem i basenem na dachu, automaty z kapsułkami, Arai Yakushi, domki i parkingi; dziewięć wieżowców z ratuszem, dworzec Shinjuku z wiatami, domy towarowe z tarasami, Kabukichō z bramą, Golden Gai, Omoide Yokochō, Gyoen ze szklarnią, herbaciarnią nad stawem i mostem. Animacje: pociągi pięciu barw wjeżdżające i odjeżdżające, auta na Ōme-kaidō (pod wiaduktami), lampy bramy, dym z rusztów. Poprawka: menu podróży wywracało się przy `?stage=9`. Zrzuty z gry: `node tools/preview/_tokyo_shots.mjs 0 28+3 44` (czas etapu + sekundy lotu). | Dworzec Nakano leży w u 28–72, a ekran startuje od u 100–420 (zależnie od wysokości), więc widać go tylko na wysokich telefonach i tylko w pierwszej sekundzie: do decyzji, czy przesunąć początek trasy. Staw w Gyoen poszerzony w `route.mjs`, żeby herbaciarnia stała nad wodą. Tłum stoi na jezdni Shinjuku-dōri celowo (deptak w dni wolne). Długie cienie wieżowców nie padają na jadące auta ani na korony drzew. Nocne dzielnice będą potrzebowały kroku świateł po nałożeniu pory dnia, którego `kit.mjs` jeszcze nie ma. |
 | 2026-11-16 | Claude | 1 | Szkielet całej trasy jako dane (`route.mjs`) i jego rysunek (`mid.mjs`): ulice z chodnikami i liniami, tory, woda z kamiennym brzegiem, parki i place, zakreskowane działki, pora dnia. Test topologii. Narzędzie podglądu. | Noc od Akihabary jest na razie bardzo ciemna, bo nie ma jeszcze świateł; każda nocna dzielnica musi dodać swoje. Skrzyżowanie w Shibui ma pod spodem zwykłe chodniki alei, zebrę rysuje faza 3. Arena w Shibui ma promień 34 (sam kwadrat skrzyżowania), pozostałe 62. Układ nie trzyma stron świata, tylko kolejność miejsc. Nazwy i układ spisane z pamięci, bez weryfikacji w sieci. |
 | 2026-11-16 | Claude | 0 | Szkielet etapu: `stage9.json` (wip), makieta tła 14 kafli z dzielnicami i trzema arenami, zestawy skórek, zatrzymanie na arenie, deszcz, kolejność podróży. Sprawdzone w przeglądarce: obaj zastępczy minibossowie, boss na końcu taśmy, rzeka prześwitująca do dalekiej warstwy. | Minibossowie i boss to podstawieni Tanuki, Manta i Kyūbi, muzyka pożyczona z Osaki. Nowi minibossowie z `hold` nie mogą opierać swoich czasów na `scene.t` (zegar stoi), tylko na własnym `e.age`. Granice dzielnic w `tools/art/tokyo/route.mjs` i `landmarks.js` są wstępne, faza 1 je ustala. Pomiar na telefonie nie zrobiony. |

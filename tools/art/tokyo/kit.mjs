@@ -42,10 +42,78 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
   const pick = (a) => a[Math.floor(rand() * a.length)];
   const FX = (x) => Math.round(x * S);
   const FY = (u) => Math.round((L - u) * S); // the fine row at height u (rows grow down the strip)
-  const P = (X, Y, c) => hi.set(X, Y, c);
-  const R = (X, Y, w, h, c) => hi.rect(X, Y, w, h, c);
+  // What stands over the ground (1 where a queued thing was painted: a building, a tree, a car, a person), so
+  // that what is done to the ground afterwards (a wet street's shine) leaves it alone.
+  const raised = new Uint8Array(FW * FH);
+  let marking = false;
+  const P = (X, Y, c) => {
+    hi.set(X, Y, c);
+    if (marking && X >= 0 && Y >= 0 && X < FW && Y < FH) raised[Y * FW + X] = 1;
+  };
+  const R = (X, Y, w, h, c) => {
+    hi.rect(X, Y, w, h, c);
+    if (marking && X < FW && X + w > 0) for (let j = Math.max(0, Y); j < Math.min(FH, Y + h); j++) raised.fill(1, j * FW + Math.max(0, X), j * FW + Math.min(FW, X + w));
+  };
   const objects = [];
   const shMask = new Uint8Array(FW * FH).fill(255);
+
+  // ---- lights. The strip is graded for its hour after everything is painted; a light is a pixel that keeps its
+  // colour through that (E), a glow added over the graded strip (halo), or anything else done then (after).
+  // night(u): 0 by day .. 1 in full night, from the grade itself, so the lights come on as the strip darkens.
+  const LIT = 0x1000000; // a wall's colour with this bit: a lit window
+  const lights = []; // idx, colour, idx, colour, ...
+  const halos = [];
+  const afters = [];
+  const glowing = new Uint8Array(FW * FH); // 1 where a light is (after the grade)
+  const night = (u) => {
+    const w = tod.white(Math.max(0, Math.min(L - 1, u)));
+    return Math.max(0, Math.min(1, (0.9 - (w[0] + w[1] + w[2]) / 765) / 0.4));
+  };
+  const nightAt = (Y) => night(L - Y / S);
+  const E = (X, Y, c) => {
+    P(X, Y, c);
+    if (X >= 0 && Y >= 0 && X < FW && Y < FH) lights.push(Y * FW + X, c);
+  };
+  const ER = (X, Y, w, h, c) => {
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) E(X + i, Y + j, c);
+  };
+  /** A glow round the fine pixel (X, Y), rx by ry, of colour c, a strong in its middle. */
+  const halo = (X, Y, rx, ry, c, a = 0.4) => halos.push([X, Y, rx, ry, c, a]);
+  const after = (fn) => afters.push(fn);
+  /** Before the grade: forget the lights something was painted over since. */
+  const beforeGrade = () => {
+    let n = 0;
+    for (let k = 0; k < lights.length; k += 2) {
+      const i = lights[k];
+      if (hi.get(i % FW, Math.floor(i / FW)) !== lights[k + 1]) continue;
+      lights[n++] = i;
+      lights[n++] = lights[k + 1];
+    }
+    lights.length = n;
+  };
+  /** After the grade: the lights back at their own colour, the glows over them, then the rest. */
+  const afterGrade = () => {
+    for (let k = 0; k < lights.length; k += 2) {
+      const i = lights[k];
+      hi.set(i % FW, Math.floor(i / FW), lights[k + 1]);
+      glowing[i] = 1;
+    }
+    const d = hi.data;
+    for (const [X, Y, rx, ry, c, a] of halos) {
+      const [cr, cg, cb] = [(c >> 16) & 255, (c >> 8) & 255, c & 255];
+      for (let j = Math.max(0, Math.floor(Y - ry)); j <= Math.min(FH - 1, Math.ceil(Y + ry)); j++)
+        for (let i = Math.max(0, Math.floor(X - rx)); i <= Math.min(FW - 1, Math.ceil(X + rx)); i++) {
+          const q = ((i - X) / rx) ** 2 + ((j - Y) / ry) ** 2;
+          const o = (j * FW + i) * 4;
+          if (q >= 1 || !d[o + 3]) continue;
+          const k = a * (1 - q) ** 2;
+          d[o] = Math.min(255, d[o] + cr * k);
+          d[o + 1] = Math.min(255, d[o + 1] + cg * k);
+          d[o + 2] = Math.min(255, d[o + 2] + cb * k);
+        }
+    }
+    for (const fn of afters) fn({ d, FW, FH, raised, glowing });
+  };
   let sun = 0.6; // how long the shadows are (a district sets it for its hour)
 
   /** The shadow of what stands on the fine box (X, Y, w, h), d fine pixels long, to the lower right. */
@@ -69,7 +137,9 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
     for (const o of objects) o.shadow?.();
     for (let i = 0; i < shMask.length; i++) if (shMask[i] < 255 && hi.data[i * 4 + 3]) hi.tint(i % FW, Math.floor(i / FW), shMask[i] / 255);
     objects.sort((a, b) => a.y - b.y || a.n - b.n);
+    marking = true;
     for (const o of objects) o.draw();
+    marking = false;
     objects.length = 0;
   };
 
@@ -149,8 +219,34 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
   };
   const lantern = (X, Y, c = 0xe0402a) => {
     R(X, Y, 2, 1, 0x2a2228);
+    if (nightAt(Y) > 0.12) {
+      ER(X, Y + 1, 2, 2, blend(c, 0xffd080, 0.35));
+      halo(X + 1, Y + 2, 7, 7, c, 0.3 * nightAt(Y));
+      return;
+    }
     R(X, Y + 1, 2, 2, c);
     P(X, Y + 1, shade(c, 1.3));
+  };
+  /** Someone under an umbrella (a wet evening): mostly clear ones and dark ones, a colour now and then. */
+  const umbrella = (X, Y, s) => {
+    const v = hashPx(X, Y, s);
+    const c = v < 0.4 ? 0xdfe8ee : v < 0.62 ? 0x2c2c34 : v < 0.74 ? 0x34406a : PAL.cloth[Math.floor(v * 97) % PAL.cloth.length];
+    hi.tint(X + 3, Y + 4, 0.75);
+    hi.tint(X + 4, Y + 4, 0.75);
+    for (let j = 0; j < 4; j++)
+      for (let i = 0; i < 4; i++) {
+        if ((i === 0 || i === 3) && (j === 0 || j === 3)) continue;
+        P(X + i, Y + j, i + j < 2 ? shade(c, 1.15) : i + j > 4 ? shade(c, 0.8) : (i + j) % 3 === 0 && v < 0.4 ? 0xb8c8d4 : c);
+      }
+  };
+  /** A street lamp at the fine pixel (X, Y): a post, its head, and at night its pool of light. */
+  const lamp = (X, Y, c = 0xfff0c8) => {
+    R(X, Y - 4, 1, 5, 0x4a4e58);
+    const n = nightAt(Y);
+    if (n > 0.12) {
+      ER(X - 1, Y - 6, 3, 2, c);
+      halo(X, Y - 2, 15, 12, c, 0.32 * n);
+    } else R(X - 1, Y - 6, 3, 2, 0xd8dce0);
   };
   const person = (X, Y, s) => {
     const c = PAL.cloth[Math.floor(hashPx(X, Y, s) * PAL.cloth.length)];
@@ -187,6 +283,7 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
       const [ci, cj] = [i % 4, j % 5];
       if (ci === 0 || cj < 2) return shade(o.wall, cj === 0 ? 1.06 : 1);
       const v = hashPx(Math.floor(i / 4), Math.floor(j / 5), s);
+      if (o.lit && hashPx(Math.floor(i / 4), Math.floor(j / 5), s + 91) < o.lit) return LIT | (v < 0.5 ? 0xffe6a0 : v < 0.8 ? 0xfff4d4 : 0xd8ecff);
       const g = v < 0.08 ? 0xcfc8b4 : v < 0.3 ? PAL.glass[2] : v < 0.7 ? PAL.glass[1] : PAL.glass[0];
       return cj === 2 ? shade(g, 1.2) : g;
     },
@@ -197,6 +294,7 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
       if ((i + j * 0.7 + s * 13) % 97 < 14) c = shade(c, 1.16);
       if (i % 6 === 0) c = shade(c, 0.78);
       else if (j % 5 === 0) c = shade(c, 0.86);
+      else if (o.lit && hashPx(Math.floor(i / 6), Math.floor(j / 5), s + 91) < o.lit * 0.8) return LIT | blend(c, hashPx(Math.floor(i / 6), j, s) < 0.7 ? 0xffe8b0 : 0xe0f0ff, 0.78);
       return c;
     },
     // flats: a balcony to every floor, washing out now and then
@@ -206,12 +304,13 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
       if (cj < 2) return shade(o.wall, cj === 0 ? 1.1 : 0.98);
       const v = hashPx(Math.floor(i / 10), Math.floor(j / 6), s);
       if (cj === 2 && v < 0.3 && ci > 1 && ci < 8) return PAL.cloth[Math.floor(v * 30) % PAL.cloth.length];
+      if (o.lit && ci < 5 && hashPx(Math.floor(i / 10), Math.floor(j / 6), s + 91) < o.lit) return LIT | (v < 0.6 ? 0xffe0a0 : 0xfff0d0);
       return ci < 5 ? (v < 0.5 ? 0x4a5666 : 0x6a7c8c) : 0x3c3e48;
     },
     // a plain wall with small windows
     plain: (o) => (i, j, w, h, s) => {
       const [ci, cj] = [i % 6, j % 6];
-      if (ci >= 2 && ci <= 3 && cj >= 2 && cj <= 4) return hashPx(Math.floor(i / 6), Math.floor(j / 6), s) < 0.25 ? 0x7c94a8 : PAL.glass[0];
+      if (ci >= 2 && ci <= 3 && cj >= 2 && cj <= 4) return o.lit && hashPx(Math.floor(i / 6), Math.floor(j / 6), s + 91) < o.lit ? LIT | 0xffe6a8 : hashPx(Math.floor(i / 6), Math.floor(j / 6), s) < 0.25 ? 0x7c94a8 : PAL.glass[0];
       return shade(o.wall, 1 + (hashPx(i, j, s) - 0.5) * 0.04);
     },
     // a department store: tall strips of window, cloth banners hanging between them, a band for its name on top
@@ -222,7 +321,7 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
         const b = PAL.sign[Math.floor(hashPx(Math.floor(i / 12), 3, s) * PAL.sign.length)];
         return ci === 10 && j % 4 === 1 ? 0xf8f4ec : b;
       }
-      if (ci >= 2 && ci <= 6 && j > 6) return j % 7 === 0 ? shade(o.wall, 0.9) : hashPx(Math.floor(i / 12), Math.floor(j / 7), s) < 0.4 ? PAL.glass[2] : PAL.glass[1];
+      if (ci >= 2 && ci <= 6 && j > 6) return j % 7 === 0 ? shade(o.wall, 0.9) : o.lit && hashPx(Math.floor(i / 12), Math.floor(j / 7), s + 91) < o.lit * 1.2 ? LIT | 0xfff0c4 : hashPx(Math.floor(i / 12), Math.floor(j / 7), s) < 0.4 ? PAL.glass[2] : PAL.glass[1];
       return shade(o.wall, 1 + (hashPx(i, j, s) - 0.5) * 0.03);
     },
     // an entertainment block: a dark wall behind stacks of signs
@@ -234,15 +333,17 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
         const c = PAL.sign[Math.floor(hashPx(col, k, s) * PAL.sign.length)];
         const [ci, cj] = [i % 5, j % 6];
         if (cj === 5) return 0x2a2630;
-        return (ci === 1 || ci === 2) && cj >= 1 && cj <= 3 && hashPx(col * 7 + ci, k * 5 + cj, s) < 0.6 ? (c === 0xf4f0e8 ? 0x2a2a30 : 0xf8f4ec) : c;
+        return (o.lit ? LIT : 0) | ((ci === 1 || ci === 2) && cj >= 1 && cj <= 3 && hashPx(col * 7 + ci, k * 5 + cj, s) < 0.6 ? (c === 0xf4f0e8 ? 0x2a2a30 : 0xf8f4ec) : c);
       }
       const [ci, cj] = [i % 5, j % 5];
+      if (o.lit && ci >= 1 && ci <= 3 && cj >= 2 && cj <= 3 && hashPx(Math.floor(i / 5), Math.floor(j / 5), s + 91) < o.lit) return LIT | 0xffe0a0;
       return ci >= 1 && ci <= 3 && cj >= 2 && cj <= 3 ? PAL.glass[Math.floor(hashPx(i >> 2, j >> 2, s) * 3)] : shade(o.wall, 0.9);
     },
     // a tower of grey stone: windows in a tight chequer, a lighter band every few floors
     granite: (o) => (i, j, w, h, s) => {
       const [ci, cj] = [i % 5, j % 5];
       if (j % 30 < 2) return shade(o.wall, 1.12);
+      if (ci < 3 && cj < 3 && o.lit && hashPx(Math.floor(i / 5), Math.floor(j / 5), s + 91) < o.lit) return LIT | 0xffeab4;
       if (ci < 3 && cj < 3) return (Math.floor(i / 5) + Math.floor(j / 5)) % 2 ? 0x3a4452 : hashPx(i, j, s) < 0.5 ? 0x4c5868 : 0x5e6c7c;
       return shade(o.wall, ci === 4 ? 0.92 : 1);
     },
@@ -250,13 +351,13 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
     brick: (o) => (i, j, w, h, s) => {
       const [ci, cj] = [i % 7, j % 7];
       if (cj === 0) return 0xd8ccb4;
-      if (ci >= 2 && ci <= 4 && cj >= 2 && cj <= 5) return cj === 2 ? 0xd8ccb4 : PAL.glass[0];
+      if (ci >= 2 && ci <= 4 && cj >= 2 && cj <= 5) return cj === 2 ? 0xd8ccb4 : o.lit && hashPx(Math.floor(i / 7), Math.floor(j / 7), s + 91) < o.lit ? LIT | 0xffe2a0 : PAL.glass[0];
       return shade(o.wall, (j + (i >> 1)) % 2 ? 1 : 0.93);
     },
   };
 
   /** The row of shop fronts along the foot of a wall: an awning or a short curtain, glass, a door. */
-  const shopfront = (X, Y, w, s) => {
+  const shopfront = (X, Y, w, s, lit = 0) => {
     let at = 0;
     while (at < w) {
       const sw = Math.min(w - at, 8 + Math.floor(hashPx(X + at, Y, s) * 7));
@@ -271,7 +372,8 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
           else if (j < 3) col = noren ? (j === 2 && i % 3 === 0 ? 0x34303a : c) : j === 2 ? shade(c, 0.75) : i % 4 < 2 ? c : 0xf4f0e8;
           else if (i >= (sw >> 1) - 1 && i <= (sw >> 1)) col = j === 3 ? 0x5a4a3a : 0x3a2e28; // the door
           else col = hashPx(x, Y + j, s) < 0.16 ? 0xffd890 : j === 3 ? 0x4a5a6c : 0x2e3a48;
-          P(x, Y + j, col);
+          if (lit && !edge && j >= 3 && !(i >= (sw >> 1) - 1 && i <= (sw >> 1))) E(x, Y + j, hashPx(x >> 1, Y + j, s) < 0.75 ? 0xffe8b0 : 0xffc870);
+          else P(x, Y + j, col);
         }
       }
       at += sw;
@@ -281,7 +383,7 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
   /** What stands on a roof: units, tanks, stair heads, by chance. */
   const rooftop = (X, Y, w, h, o, s) => {
     const r = rng(s);
-    if (o.top) return o.top({ X, Y, w, h, r, ac, tank, hut, helipad, solar, parasol, greenery, mast, P, R, lantern, person });
+    if (o.top) return o.top({ X, Y, w, h, r, ac, tank, hut, helipad, solar, parasol, greenery, mast, P, R, E, ER, halo, lantern, person, umbrella, lamp, night: nightAt(Y) });
     if (w < 9 || h < 7) return;
     if (w >= 30 && h >= 30 && r() < (o.heli ?? 0)) helipad(X + (w >> 1), Y + (h >> 1), Math.min(11, (Math.min(w, h) >> 1) - 4));
     else if (w >= 16 && h >= 12 && r() < 0.6) hut(X + 3 + Math.floor(r() * (w - 14)), Y + 2 + Math.floor(r() * Math.max(1, h - 11)), 6 + Math.floor(r() * 3), 4, o.roof);
@@ -309,6 +411,8 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
   const building = (x, u, w, h, o = {}) => {
     const s = o.s ?? Math.floor(rand() * 1e6);
     o = { wall: pick(PAL.walls), roof: pick(PAL.roofs), style: 'office', face: 6, ...o };
+    // (how many of its windows are lit: none by day, most at night)
+    o.lit ??= night(u) > 0.1 ? Math.min(0.72, night(u) * (o.style === 'balcony' ? 0.7 : 0.9)) : 0;
     const [X0, X1, YT, YB] = [FX(x), FX(x + w), FY(u + h), FY(u)];
     const fh = Math.min(Math.round(o.face * S), YB - YT - 4);
     const YF = YB - fh;
@@ -328,15 +432,23 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
       for (let j = 0; j < bfh; j++)
         for (let i = 0; i < bw; i++) {
           let c = i === 0 || i === bw - 1 || j === bfh - 1 ? PAL.ink : wall(i, j, bw, bfh, bs);
+          if (c >= LIT) {
+            E(BX0 + i, BF + j, c & 0xffffff);
+            continue;
+          }
           if (i >= bw - 3 && i < bw - 1) c = shade(c, 0.8);
           P(BX0 + i, BF + j, c);
         }
-      if (b.shop && bfh >= 12) shopfront(BX0 + 1, BB - 8, bw - 2, bs + 5);
+      if (b.shop && bfh >= 12) {
+        shopfront(BX0 + 1, BB - 8, bw - 2, bs + 5, b.lit);
+        if (b.lit > 0.25) halo(BX0 + bw / 2, BB + 2, bw / 2 + 4, 9, 0xffd890, 0.22 * b.lit); // (its light on the pavement)
+      }
       if (b.sign && bfh >= 10) {
         const sw = Math.min(bw - 6, 10 + Math.floor(hashPx(BX0, BT, bs) * 14));
         const sx = BX0 + ((bw - sw) >> 1);
         const c = b.sign === true ? PAL.sign[Math.floor(hashPx(BX0, BT, bs + 1) * PAL.sign.length)] : b.sign;
-        R(sx, BF + 1, sw, 5, c);
+        if (b.lit) ER(sx, BF + 1, sw, 5, c);
+        else R(sx, BF + 1, sw, 5, c);
         strokes(sx, BF + 1, sw, 5, c === 0xf4f0e8 || c === 0xf0c020 ? 0x2a2a30 : 0xf8f4ec, bs);
       }
       // the storeys set back on it, each with its own small shadow on this roof
@@ -387,7 +499,13 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
             let c = shade(wallC, j === 0 ? 0.7 : 1);
             const d = i - (bw >> 1);
             if (j > 0 && (d === 0 || d === 1)) c = 0x4a3a30; // the door
-            else if (j > 0 && j < fh - 1 && i % 6 >= 2 && i % 6 <= 3 && Math.abs(d) > 2) c = hashPx(X0 + i, YT, s) < 0.3 ? 0xffe0a0 : 0x5a6c7c;
+            else if (j > 0 && j < fh - 1 && i % 6 >= 2 && i % 6 <= 3 && Math.abs(d) > 2) {
+              if (hashPx(X0 + (i - (i % 6)), YT, s + 91) < nightAt(YT) * 0.9) {
+                E(X0 + i, YT + rh + j, 0xffdc98);
+                continue;
+              }
+              c = hashPx(X0 + i, YT, s) < 0.3 ? 0xffe0a0 : 0x5a6c7c;
+            }
             if (j === fh - 1) c = PAL.ink;
             P(X0 + i, YT + rh + j, c);
           }
@@ -429,29 +547,42 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
     });
 
   /** A parked or waiting car at (x, u) (its middle). */
-  const car = (x, u, v, c = pick(PAL.cars)) => queue(FY(u), () => carAt(FX(x) - (v ? 3 : 6), FY(u) - (v ? 6 : 3), v, c), () => shadowBox(FX(x) - (v ? 3 : 6), FY(u) - (v ? 6 : 3), v ? 7 : 13, v ? 13 : 7, 2, 0.7));
+  const car = (x, u, v, c = pick(PAL.cars), rev = false) => {
+    const [X, Y] = [FX(x) - (v ? 3 : 6), FY(u) - (v ? 6 : 3)];
+    // (rev: the other way round - its nose down the strip, or to the right)
+    const put = (i, j, col, e) => (e ? E : P)(v ? i : rev ? X + 12 - (i - X) : i, v && rev ? Y + 12 - (j - Y) : j, col);
+    queue(FY(u), () => {
+      const n = nightAt(Y);
+      carAt(X, Y, v, c, (i, j, col) => put(i, j, col, n > 0.2 && (col === 0xf8f0c0 || col === 0xd83030)));
+      if (n > 0.2) {
+        // its headlamps' beam on the road ahead
+        const [hx, hy] = v ? [X + 3, rev ? Y + 19 : Y - 7] : [rev ? X + 19 : X - 7, Y + 3];
+        halo(hx, hy, v ? 6 : 10, v ? 10 : 6, 0xfff0c0, 0.3 * n);
+      }
+    }, () => shadowBox(X, Y, v ? 7 : 13, v ? 13 : 7, 2, 0.7));
+  };
 
   /** People standing about in the ground box (x, u, w, h). */
-  const crowd = (x, u, w, h, n) => {
+  const crowd = (x, u, w, h, n, wet = 0) => {
     for (let k = 0; k < n; k++) {
       const [px, pu] = [x + rand() * w, u + rand() * h];
-      queue(FY(pu) + 4, () => person(FX(px), FY(pu), 77 + k));
+      const umb = wet && hashPx(k, n, 5) < wet;
+      queue(FY(pu) + 4, () => (umb ? umbrella : person)(FX(px), FY(pu), 77 + k));
     }
   };
 
   /** A frame for a moving part: draw(canvas, P) on a canvas w x h (logical), graded for the hour at u. */
-  const frame = (w, h, u, draw) => {
+  const frame = (w, h, u, draw, raw = false) => {
     const c = new HiCanvas(w, h, S);
     draw((X, Y, col, a = 1) => c.hi.set(X, Y, col, a), c);
-    return props.frame(tod.frame(c.hi, u));
+    return props.frame(raw ? c.hi : tod.frame(c.hi, u)); // (raw: a light, shown at its own colours)
   };
 
   /**
    * A train on the track at height uc: n coaches with a band of its line's colour, pulling in from one side
    * (from: -1 the left, 1 the right) to stop with its middle at x = stop, waiting, and pulling out the way it came.
    */
-  const train = (uc, from, band, { stop = 90, n = 6, sp = 34, hold = 7, s0 = rand() } = {}) => {
-    const coach = (nose) =>
+  const coachFrame = (band, nose, uc) =>
       frame(22, 4, uc, (put) => {
         for (let j = 0; j < 12; j++)
           for (let i = 0; i < 66; i++) {
@@ -463,6 +594,8 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
             put(i, j, c);
           }
       });
+  const train = (uc, from, band, { stop = 90, n = 6, sp = 34, hold = 7, s0 = rand() } = {}) => {
+    const coach = (nose) => coachFrame(band, nose, uc);
     const mid = Array(n - 2).fill(coach(0));
     const half = ((n - 1) * 23) / 2;
     if (from < 0) props.path([[-14, uc], [stop + half, uc]], [coach(1), ...mid, coach(-1)], { sp, n, gap: 23, mode: 'pp', hold, turn: 'none', cars: 1, s0 });
@@ -483,6 +616,27 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
   /** A platform canopy's colour at the fine pixel (i, j) of its h rows: dark slate between pale eaves, a rib every bay, a skylight now and then. */
   const canopy = (i, j, h) => (j === 0 || j === h - 1 ? 0xdfe6ea : i % 12 === 0 ? 0x46525e : j === (h >> 1) ? 0x8794a2 : i % 36 < 5 ? 0x9cc0d4 : 0x66748a);
 
+  /** The line `pts` moved d to the left of the way it runs (a lane beside a road's middle, one track of two). */
+  const offset = (pts, d) =>
+    pts.map((p, i) => {
+      const [a, b] = [pts[Math.max(0, i - 1)], pts[Math.min(pts.length - 1, i + 1)]];
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+      return [p[0] - ((b[1] - a[1]) / len) * d, p[1] + ((b[0] - a[0]) / len) * d];
+    });
+  /** A train running the whole of a track that bends (pts, the way it runs), round and round; graded for the hour at u. */
+  const trainOn = (pts, band, { n = 6, sp = 38, s0 = rand(), u = pts[0][1] } = {}) => {
+    const mid = Array(n - 2).fill(coachFrame(band, 0, u));
+    props.path(pts, [coachFrame(band, 1, u), ...mid, coachFrame(band, -1, u)], { sp, n, gap: 23, mode: 'wrap', turn: 'rot', cars: 1, s0 });
+  };
+  /** Cars along a lane that bends (pts, the way they drive), a gap apart; graded for the hour at u. */
+  const trafficOn = (pts, { sp = 22, gap = 200, s0 = rand(), u = pts[0][1] } = {}) => {
+    const fs = PAL.cars.map((c) => frame(4.34, 2.34, u, (put) => carAt(0, 0, false, c, (X, Y, col) => put(12 - X, Y, col))));
+    let len = 0;
+    for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    const n = Math.max(1, Math.floor(len / gap));
+    props.path(pts, Array.from({ length: n }, (_, k) => fs[(k * 5 + Math.floor(s0 * 9)) % fs.length]), { sp, n, gap, mode: 'wrap', turn: 'rot', cars: 1, s0, d: -0.2 });
+  };
+
   // smoke off a grill or a chimney: three sizes of puff, shared by every emitter
   let smokeF = null;
   const smoke = (x, u, o = {}) => {
@@ -491,8 +645,9 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
   };
 
   return {
-    train, traffic, smoke, canopy, rand, pick, FX, FY, P, R, queue, flush, shadowBox, building, house, tree, mark, ground, zebra, car, carAt, crowd, frame, strokes, shopfront,
-    ac, tank, hut, helipad, solar, parasol, greenery, mast, lantern, person, props, WALLS,
+    train, trainOn, traffic, trafficOn, offset, smoke, canopy, rand, pick, FX, FY, P, R, queue, flush, shadowBox, building, house, tree, mark, ground, zebra, car, carAt, crowd, frame, strokes, shopfront,
+    ac, tank, hut, helipad, solar, parasol, greenery, mast, lantern, person, umbrella, lamp, props, WALLS,
+    E, ER, halo, after, night, nightAt, beforeGrade, afterGrade, LIT, raised, hi, FW, FH,
     setSun: (v) => { sun = v; },
   };
 }
