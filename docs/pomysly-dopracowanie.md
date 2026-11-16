@@ -225,8 +225,15 @@ młyn Tempozan już się kręci). Słaba była Nakanoshima: trzy słynne budynki
 - Nazwy: było 13, jest 20 (Tosabori-gawa, Chuo Kokaido, Nakanoshima Toshokan, Dojima-gawa, Osaka-ko, Minato Ohashi,
   Osaka-wan).
 
-Zostało w Osace (zauważone, nie ruszane): biurowce Nakanoshimy i Umedy to nadal powtarzalne bloki z ciężkimi
-prostokątnymi cieniami; Umeda Sky Building jest mały.
+Biurowce całej Osaki, 16.11 (`building()` w `tools/art/osaka/mid.mjs`):
+
+- Cienie: zbierane do maski (najciemniejszy czynnik na piksel) i kładzione raz, więc nakładające się cienie nie
+  robią czarnych plam; cień budynku zaczyna się u jego stóp i biegnie skosem (`shadowSweep`), z miękką krawędzią.
+- Fasady biurowe w trzech odmianach (okna w otworach, okna wstęgowe, filary na całą wysokość), wybierane po
+  położeniu budynku, bez liczb losowych — układ miasta bez zmian.
+- Partery z daszkiem, szkłem holu i drzwiami (wieczorem oświetlone); na dachach nadbudówki wind z żaluzjami.
+
+Zostało: Umeda Sky Building bez zmian (po poprawie cieni czyta się dobrze).
 
 ### Kioto, Nagasaki
 

@@ -185,8 +185,26 @@ export function buildMid() {
         target.setRGBAPx(FXr, FYr, Math.min(255, q[0] + cr * f), Math.min(255, q[1] + cg * f), Math.min(255, q[2] + cb * f), q[3]);
       }
   };
+  // While the objects' shadows are being cast they are gathered here (the darkest factor wanted at each fine pixel) and
+  // laid once, so that where two overlap the ground is no darker than under one.
+  let shMask = null;
+  const shadowFine = (X, Yy, w, h, f) => {
+    const [XA, XB] = [Math.max(0, Math.round(X)), Math.min(W * S, Math.round(X + w))];
+    const [YA, YB] = [Math.max(0, Math.round(Yy)), Math.min(L * S, Math.round(Yy + h))];
+    for (let j = YA; j < YB; j++) for (let i = XA; i < XB; i++) if (f < shMask[j * W * S + i]) shMask[j * W * S + i] = f;
+  };
+  /** The shadow of a block standing on (X, Yy, w, h) of the ground, d fine pixels long, thrown to the lower right. */
+  const shadowSweep = (X, Yy, w, h, d, f) => {
+    shadowFine(X, Yy, w, h, f);
+    for (let k = 1; k <= d; k++) {
+      shadowFine(X + w + k - 1, Yy + k, 1, h, f);
+      shadowFine(X + k, Yy + h + k - 1, w, 1, f);
+    }
+  };
   const shadowRect = (x, y, w, h, f = 0.6) => {
+    if (shMask) return shadowFine(x * S, y * S, w * S, h * S, f);
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) img.tint(x + i, y + j, f);
+    return undefined;
   };
   const fill = (x0, y0, w, h, ramp, seed, scale = 5) => {
     for (let y = Math.floor(y0); y < y0 + h; y++) for (let x = Math.floor(x0); x < x0 + w; x++) img.set(x, y, rampColor(ramp, 0.2 + fbm(x, y, { seed, scale, octaves: 2 }) * 0.65, x, y));
@@ -423,13 +441,16 @@ export function buildMid() {
     const awn = rand.pick([0xc83a2a, 0x2a6a3a, 0x2a4a8a, 0xd8a020, 0x8a2a5a]);
     objects.push({
       y: y + h + faceH,
-      shadow: () => shadowRect(x + off, y + off, w, h + faceH, 0.5),
+      shadow: () => shadowSweep(x * S, (y + faceH) * S, w * S, h * S, off * S, 0.58),
       draw: () => {
         const X0 = x * S;
         const X1 = (x + w) * S;
         const Y0 = y * S;
         const Y1 = (y + h) * S;
         const br = rng(x * 131 + y * 7);
+        // (how its front is built and what stands at its foot: by where it is, no random numbers drawn)
+        const fv = style === 'office' ? Math.floor(hashPx(x, y, 31) * 10) : 0;
+        const lobby = style !== 'shop' && style !== 'warehouse' && !opt.awning && faceH * S >= 30 && w * S >= 30;
         const glowing = n > 0.25; // (after dark the lit windows shine, painted after the grade)
         const lamp = (X, Yy, c, a = 0.92) => (glowing ? glowPx(X, Yy, c, a) : img.px(X, Yy, scaleColor(c, 0.92)));
         // the roof: a membrane in panels with their seams and stains, the parapet's coping lit on the north
@@ -617,6 +638,26 @@ export function buildMid() {
               }
           }
         }
+        if (!heli && style !== 'shop' && style !== 'warehouse' && w >= 12 && h >= 10 && hashPx(x, y, 33) < 0.6) {
+          // the lift's head and the machine room: a block of its own on the roof, louvres in its side, its shadow
+          const pw = Math.max(12, Math.floor(w * S * (0.24 + hashPx(x, y, 34) * 0.2)));
+          const ph = Math.max(9, Math.min(18, Math.floor(h * S * 0.2)));
+          const PX = X0 + 5 + Math.floor(hashPx(x, y, 35) * Math.max(1, X1 - X0 - pw - 12));
+          const PY = Y0 + 4;
+          const top = scaleColor(roof, 1.14);
+          for (let j = 0; j < ph + 5; j++)
+            for (let i = 0; i < pw; i++) {
+              let c;
+              if (j < ph) c = j === 0 || i === 0 ? scaleColor(roof, 1.34) : i === pw - 1 || j === ph - 1 ? scaleColor(roof, 0.8) : (i + 3) % 9 === 0 ? scaleColor(top, 0.93) : top;
+              else c = j === ph ? scaleColor(wall, 0.5) : i > 3 && i < pw - 4 && (i >> 1) % 4 < 3 ? scaleColor(wall, j % 2 ? 0.5 : 0.66) : scaleColor(wall, 0.8);
+              if (i === pw - 1 && j >= ph) c = scaleColor(c, 0.75);
+              img.px(PX + i, PY + j, c);
+            }
+          for (let k = 0; k < 4; k++) {
+            for (let j = 2; j < ph + 5 + k; j++) if (PX + pw + k < X1 - 2 && PY + j + k < Y1 - 2) img.tintPx(PX + pw + k, PY + j + k, 0.74);
+            for (let i = 2; i < pw; i++) if (PX + i + k < X1 - 2 && PY + ph + 5 + k < Y1 - 2) img.tintPx(PX + i + k, PY + ph + 5 + k, 0.74);
+          }
+        }
         if (heli) {
           // the helipad: its painted ring and H, the edge lights
           const HX = (x + Math.floor(w / 2)) * S + 1;
@@ -694,6 +735,31 @@ export function buildMid() {
               c = r < 2 ? scaleColor(wall, 1.05) : wall;
               if (hashPx(X, Yy, 17) < 0.04) c = scaleColor(c, 0.94);
               const wx = cx % 6;
+              if (fv >= 7) {
+                // piers the whole height, glass between them, a thin line at every floor
+                if (cx > 1 && cx < fw - 2 && r > 2) {
+                  if (wx === 0) c = scaleColor(wall, 1.12);
+                  else if (wx === 5) c = scaleColor(wall, 0.78);
+                  else if (rr === 0) c = scaleColor(wall, 0.66);
+                  else if (lit_[(floor * 11 + Math.floor(cx / 6)) % 400]) {
+                    lit = true;
+                    c = Math.floor(cx / 6) & 1 ? C.warm : C.cool;
+                    if (rr === 1) c = 0xffffff;
+                  } else c = rr < 3 ? 0x50667c : (cx + r) % 11 === 0 ? 0x3e5266 : 0x2a3644;
+                }
+              } else if (fv >= 4) {
+                // ribbon windows: bands of glass from end to end, the spandrels between them
+                if (rr === 1 && cx > 1 && cx < fw - 2) c = scaleColor(wall, 1.1);
+                else if (rr === 6) c = scaleColor(wall, 0.8);
+                else if (rr >= 2 && rr <= 5 && cx > 1 && cx < fw - 2) {
+                  if (cx % 9 === 0) c = scaleColor(wall, 0.6);
+                  else if (lit_[(floor * 11 + Math.floor(cx / 9)) % 400]) {
+                    lit = true;
+                    c = Math.floor(cx / 9) & 1 ? C.cool : C.warm;
+                    if (hashPx(Math.floor(cx / 9), floor, 18 + x) > 0.8 && rr >= 4 && cx % 9 === 4) c = 0x2a2a30; // (someone at the glass)
+                  } else c = rr === 2 ? 0x587088 : (cx * 3 + r) % 13 === 0 ? 0x40566a : 0x2c3a4a;
+                }
+              } else {
               if (rr === 7 && cx > 1 && cx < fw - 2) c = scaleColor(wall, 1.12); // (the sills)
               if (rr >= 2 && rr <= 6 && cx > 2 && cx < fw - 3 && wx >= 1 && wx <= 4) {
                 const on = lit_[(floor * 11 + Math.floor(cx / 3)) % 400];
@@ -709,6 +775,22 @@ export function buildMid() {
                   if (rr === 3 && wx === 3) c = 0x5a6a7a; // (the sky in the glass)
                 }
               }
+              }
+            }
+            if (lobby && r >= FH - 10) {
+              // the ground floor: a canopy's edge and its shade, the lobby's glass between piers, the doors, a plinth
+              const lr = r - (FH - 10);
+              const dx = Math.abs(cx - (fw >> 1));
+              lit = false;
+              if (lr === 0) c = scaleColor(wall, 1.22);
+              else if (lr === 1) c = scaleColor(wall, 0.5);
+              else if (lr === 9) c = scaleColor(wall, 0.62);
+              else if (cx < 3 || cx > fw - 4 || (cx % 12 === 0 && dx > 5)) c = scaleColor(wall, 0.92);
+              else if (dx < 5) c = dx < 1 ? 0x9a9ea4 : lr < 3 ? 0x6a7078 : glowing ? 0xffe8b8 : 0x1c242e;
+              else if (glowing) {
+                lit = true;
+                c = lr < 4 ? 0xfff0c8 : (cx + lr) % 7 === 0 ? 0x6a5a4a : C.warm;
+              } else c = lr < 4 ? 0x5e7c94 : (cx + lr * 2) % 9 === 0 ? 0x4a6278 : 0x33485a;
             }
             if (X === X0) c = scaleColor(c, 1.08);
             if (X >= X1 - 2) c = scaleColor(c, X === X1 - 1 ? 0.7 : 0.85);
@@ -6025,7 +6107,23 @@ export function buildMid() {
   }
 
   // ------------------------------------------------------------ compose
+  shMask = new Float32Array(W * S * L * S).fill(1);
   for (const o of objects) o.shadow?.();
+  {
+    // (a soft edge: a fine pixel just outside a shadow takes a little of it)
+    const FW = W * S;
+    for (let j = 1; j < L * S - 1; j++)
+      for (let i = 1; i < FW - 1; i++) {
+        const q = j * FW + i;
+        const m = shMask[q];
+        if (m < 1) img.tintPx(i, j, m);
+        else {
+          const nb = Math.min(shMask[q - 1], shMask[q + 1], shMask[q - FW], shMask[q + FW]);
+          if (nb < 1) img.tintPx(i, j, 1 - (1 - nb) * 0.4);
+        }
+      }
+  }
+  shMask = null;
   objects.sort((a, b) => a.y - b.y);
   for (const o of objects) o.draw();
 
