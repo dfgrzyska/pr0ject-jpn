@@ -402,6 +402,7 @@ export class Enemies {
       }
     }
     s.score.kill(e.def);
+    if (s.ship.look?.seal) s.fx.seal(e.x, e.y, s.ship.look.seal); // (a seal out of the gachapon, stamped where it went down)
     s.discoverEnemy(e);
     if (e.type === 'decoy') {
       // a fake tanuki turns back into leaves

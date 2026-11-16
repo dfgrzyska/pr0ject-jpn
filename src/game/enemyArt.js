@@ -20,7 +20,7 @@ export function registerSharedHi(textures) {
   if (!textures.exists('sprites540')) return;
   for (const name of textures.get('sprites540').getFrameNames()) hi.add(name);
   // the skins for the player's shots and the hitbox's markers are in the gachapon's atlas (tools/art)
-  if (textures.exists('gacha')) for (const name of textures.get('gacha').getFrameNames()) if (name.startsWith('ps_') || name.startsWith('hitbox_') || name.startsWith('lifeicon_') || name.startsWith('pal_')) custom.set(name, 'gacha');
+  if (textures.exists('gacha')) for (const name of textures.get('gacha').getFrameNames()) if (name.startsWith('ps_') || name.startsWith('hitbox_') || name.startsWith('lifeicon_') || name.startsWith('pal_') || name.startsWith('seal_')) custom.set(name, 'gacha');
 }
 
 /** The texture a shared frame comes from: sprites540 when it has it, else the old sprites atlas. */

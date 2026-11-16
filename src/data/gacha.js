@@ -23,7 +23,7 @@ export const PITY = { every: 10, min: 'SR' };
 export const SLOTS = ['engine', 'gun', 'bomb', 'core', 'omamori'];
 
 /** What changes only the looks, one of each worn at a time on any hull. */
-export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape', 'blast', 'bomb_look', 'title', 'sound', 'graze', 'hud_color', 'life_icon', 'companion', 'shot_turret', 'shield', 'decal_nose', 'decal_lwing', 'decal_rwing', 'decal_tail', 'paint_fx', 'aura', 'trail', 'entry', 'victory', 'death'];
+export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape', 'blast', 'bomb_look', 'title', 'sound', 'graze', 'hud_color', 'life_icon', 'companion', 'shot_turret', 'shield', 'decal_nose', 'decal_lwing', 'decal_rwing', 'decal_tail', 'paint_fx', 'aura', 'trail', 'entry', 'victory', 'death', 'seal', 'shield_shape'];
 
 /** The places a sticker goes on the hull: a look's slot each, all taking the one kind of item. */
 export const DECAL_SLOTS = ['decal_nose', 'decal_lwing', 'decal_rwing', 'decal_tail'];
@@ -645,6 +645,30 @@ export const ITEMS = [
   { id: 'death_ink', kind: 'death', rarity: 'SSR', name: 'UPADEK: KLEKS TUSZU', info: 'EFEKT UTRATY ŻYCIA', burst: { ring: 0x2a2438, flash: 0x14101c, frames: ['ashf_1', 'ashf_2'], n: 30 } },
   { id: 'death_soul', kind: 'death', rarity: 'SSR', name: 'UPADEK: DUSZA', info: 'EFEKT UTRATY ŻYCIA', burst: { ring: 0xc0d8ff, flash: 0xc0d8ff, frames: ['kitsunebi_0', 'kitsunebi_1'], scale: 0.5, n: 14 } },
   { id: 'death_rainbow', kind: 'death', rarity: 'UR', name: 'UPADEK: TĘCZA', info: 'EFEKT UTRATY ŻYCIA', burst: { ring: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], flash: 0xffffff, frames: ['dot_2'], tints: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], scale: 1.6, n: 44 } },
+  // ---- seals: a hanko's print stamped where an enemy goes down (seal_<id>, tools/art/seals.mjs)
+  { id: 'seal_maru', kind: 'seal', rarity: 'N', name: 'PIECZĘĆ: KÓŁKO', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_maru' },
+  { id: 'seal_batsu', kind: 'seal', rarity: 'N', name: 'PIECZĘĆ: KRZYŻYK', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_batsu' },
+  { id: 'seal_paw', kind: 'seal', rarity: 'N', name: 'PIECZĘĆ: ŁAPKA', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_paw' },
+  { id: 'seal_star', kind: 'seal', rarity: 'N', name: 'PIECZĘĆ: GWIAZDA', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_star' },
+  { id: 'seal_heart', kind: 'seal', rarity: 'N', name: 'PIECZĘĆ: SERCE', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_heart' },
+  { id: 'seal_sakura', kind: 'seal', rarity: 'R', name: 'PIECZĘĆ: KWIAT SAKURY', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_sakura' },
+  { id: 'seal_bolt', kind: 'seal', rarity: 'R', name: 'PIECZĘĆ: BŁYSKAWICA', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_bolt' },
+  { id: 'seal_skull', kind: 'seal', rarity: 'R', name: 'PIECZĘĆ: CZASZKA', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_skull' },
+  { id: 'seal_dai', kind: 'seal', rarity: 'R', name: 'PIECZĘĆ: ZNAK WIELKI', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_dai' },
+  { id: 'seal_naka', kind: 'seal', rarity: 'R', name: 'PIECZĘĆ: ZNAK ŚRODEK', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_naka' },
+  { id: 'seal_yama', kind: 'seal', rarity: 'R', name: 'PIECZĘĆ: ZNAK GÓRA', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_yama' },
+  { id: 'seal_hi', kind: 'seal', rarity: 'SR', name: 'PIECZĘĆ: ZNAK OGIEŃ', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_hi' },
+  { id: 'seal_ten', kind: 'seal', rarity: 'SR', name: 'PIECZĘĆ: ZNAK NIEBO', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_ten' },
+  { id: 'seal_ou', kind: 'seal', rarity: 'SR', name: 'PIECZĘĆ: ZNAK KRÓL', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_ou' },
+  { id: 'seal_gold_dai', kind: 'seal', rarity: 'SSR', name: 'PIECZĘĆ: ZŁOTY WIELKI', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_gold_dai' },
+  { id: 'seal_gold_sakura', kind: 'seal', rarity: 'SSR', name: 'PIECZĘĆ: ZŁOTA SAKURA', info: 'ZNAK PO ZESTRZELENIU', pic: 'seal_gold_sakura' },
+  // ---- the shape of the turrets' bubble (see Player.drawTurrets), in whatever colours it has
+  { id: 'shield_shape_hex', kind: 'shield_shape', rarity: 'R', name: 'TARCZA: PLASTER MIODU', info: 'KSZTAŁT BAŃKI WIEŻYCZEK', form: 'hex' },
+  { id: 'shield_shape_oct', kind: 'shield_shape', rarity: 'R', name: 'TARCZA: OŚMIOKĄT', info: 'KSZTAŁT BAŃKI WIEŻYCZEK', form: 'oct' },
+  { id: 'shield_shape_star', kind: 'shield_shape', rarity: 'SR', name: 'TARCZA: GWIAZDA', info: 'KSZTAŁT BAŃKI WIEŻYCZEK', form: 'star' },
+  { id: 'shield_shape_lotus', kind: 'shield_shape', rarity: 'SR', name: 'TARCZA: KWIAT LOTOSU', info: 'KSZTAŁT BAŃKI WIEŻYCZEK', form: 'lotus' },
+  { id: 'shield_shape_wagasa', kind: 'shield_shape', rarity: 'SR', name: 'TARCZA: PARASOL WAGASA', info: 'KSZTAŁT BAŃKI WIEŻYCZEK', form: 'wagasa' },
+  { id: 'shield_shape_ofuda', kind: 'shield_shape', rarity: 'SSR', name: 'TARCZA: KRĄG TALIZMANÓW', info: 'KSZTAŁT BAŃKI WIEŻYCZEK', form: 'ofuda' },
 ];
 
 export const ITEM = Object.fromEntries(ITEMS.map((it) => [it.id, it]));

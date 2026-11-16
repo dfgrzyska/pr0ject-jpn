@@ -345,6 +345,13 @@ export class Fx {
     this.texts.push({ t, life, max: life, fy: t.y });
   }
 
+  /** A hanko's print where an enemy went down (a seal out of the gachapon): stamped a little askew, fading. */
+  seal(x, y, pic) {
+    const p = this.part(this.parts, pic, x, y - 2, { drag: 0, life: 0.6, a0: 0.95 });
+    p.setRotation((Math.random() - 0.5) * 0.5).setScale(1.15 * p.base);
+    p.grow = -0.5; // (pressed down: it starts a little large)
+  }
+
   /**
    * A bomb's scene out of the gachapon, across the whole screen for a second or so: a dragon flying up through
    * it, the great wave rolling over it, a parade of lanterns rising, a great fan opening from the ship, a flight

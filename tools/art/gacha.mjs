@@ -7,6 +7,7 @@ import { shotSkins } from './shots.mjs';
 import { enemyBulletSkins } from './ebullets.mjs';
 import { lookArt } from './looks.mjs';
 import { decalArt } from './decals.mjs';
+import { sealArt } from './seals.mjs';
 import { ITEMS } from '../../src/data/gacha.js';
 import { HiSprite, tones, speckle, inPoly } from '../lib/hisprite.mjs';
 import { Raster } from '../lib/raster.mjs';
@@ -641,6 +642,24 @@ function partDeath() {
   return s.render({ outline: 2 });
 }
 
+/** A seal for the kills: a hanko's block of red ink, the sign for "great" cut out of it. */
+function partSeal() {
+  const s = new HiSprite(72, 72, RAMPS);
+  s.poly([[10, 10], [62, 10], [62, 62], [10, 62]], 'r');
+  for (const [x0, y0, x1, y1] of [[20, 28, 52, 28], [36, 16, 36, 28], [36, 28, 22, 54], [36, 28, 50, 54]]) s.line(x0, y0, x1, y1, 0xfff4e0, 5);
+  return s.render({ outline: 2 });
+}
+
+/** A shape for the turrets' bubble: a honeycomb's cell, a smaller one inside it. */
+function partShieldShape() {
+  const s = new HiSprite(72, 72, RAMPS);
+  const hex = (r) => [0, 1, 2, 3, 4, 5].map((i) => [36 + Math.cos((i / 6) * Math.PI * 2) * r, 36 + Math.sin((i / 6) * Math.PI * 2) * r]);
+  s.poly(hex(30), 'R');
+  for (const r of [29, 19]) hex(r).forEach((p, i, all) => s.line(p[0], p[1], all[(i + 1) % 6][0], all[(i + 1) % 6][1], 0xc8f0ff, 2));
+  s.dot(26, 24, 4, 0xffffff);
+  return s.render({ outline: 2 });
+}
+
 /** A title: a scroll with lines of writing and a red seal. */
 function partTitle() {
   const s = new HiSprite(72, 72, RAMPS);
@@ -799,6 +818,9 @@ export function gachaAtlas() {
   for (const s of lookArt()) out.push(s); // life icons and other small looks (looks.mjs)
   add('part_blast', partBlast());
   for (const s of decalArt()) out.push(s); // the stickers (decals.mjs)
+  for (const s of sealArt()) out.push(s); // the seals stamped on a kill (seals.mjs)
+  add('part_seal', partSeal());
+  add('part_shield_shape', partShieldShape());
   add('part_title', partTitle());
   add('part_paint_fx', partPaintFx());
   add('part_aura', partAura());
