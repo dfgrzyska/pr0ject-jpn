@@ -3,7 +3,9 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ITEM, ITEMS, PITY, RARITIES, RARITY, TICKETS, LOOKS, SHOT_FRAMES } from '../../src/data/gacha.js';
-import { buildShip, equip, grant, layout, loadState, newState, pool, pull, saveState, setHull, wear } from '../../src/game/Loadout.js';
+import { gachaEn, KEEP, PHRASES, LINES } from '../../src/data/gachaEn.js';
+import { fxTint, hue } from '../../src/game/premiumFx.js';
+import { buildShip, equip, grant, layout, loadState, newState, pool, pull, saveState, setHull, usePreset, wear, wearNow } from '../../src/game/Loadout.js';
 
 const memory = () => {
   const m = new Map();
@@ -174,4 +176,70 @@ test('looks are worn one of a kind, and only owned ones', () => {
   assert.ok(wear(s, 'paint', null));
   assert.equal(buildShip(s).look.paint, null);
   for (const it of ITEMS.filter((i) => i.kind === 'paint')) assert.equal(it.colors.length, 4, `${it.id} has four colours`);
+});
+
+test('every name and line of the catalogue has its English', () => {
+  const polish = /[ĄĆĘŁŃÓŚŹŻ]/;
+  for (const it of ITEMS) {
+    const base = it.name.replace(/ (N|R|SR|SSR|UR)$/, '');
+    const which = base.includes(': ') ? base.slice(base.indexOf(': ') + 2) : base;
+    assert.ok(KEEP.has(which) || PHRASES[which], `${it.id}: "${which}" is in the phrasebook`);
+    const name = gachaEn(it.name);
+    assert.ok(!polish.test(name) && name.length <= 26, `${it.id}: "${name}" is English and fits`);
+    const info = gachaEn(it.info);
+    assert.ok(LINES[it.info.replace(/[+-]?\d+(?:[.,]\d+)?/g, '#')] || info !== it.info, `${it.id}: its line "${it.info}" is translated`);
+    assert.ok(!polish.test(info) && info.length <= 28 && !info.includes('#'), `${it.id}: "${info}" is English and fits`);
+  }
+  assert.equal(gachaEn('SIŁA OGNIA SR'), 'FIREPOWER SR');
+  assert.equal(gachaEn('+12% OBRAŻEŃ'), '+12% DAMAGE');
+  assert.equal(gachaEn('AURA: TĘCZA'), 'AURA: RAINBOW');
+});
+
+test('an animated paint job flows through its colours', () => {
+  const anim = { tints: [0xff0000, 0x0000ff], speed: 1 };
+  assert.equal(fxTint(anim, 0), 0xff0000);
+  assert.equal(fxTint(anim, 1), 0x0000ff);
+  assert.equal(fxTint(anim, 0.5), 0x800080);
+  assert.equal(fxTint({ ...anim, step: true }, 0.5), 0xff0000);
+  assert.equal(hue(0), 0xff0000);
+  assert.equal(hue(1 / 3), 0x00ff00);
+  assert.equal(hue(0, 0), 0xffffff);
+  for (const it of ITEMS.filter((i) => i.kind === 'paint_fx')) assert.ok(fxTint(it.anim, 1.234) >= 0, it.id);
+});
+
+test('three sets to switch between, each kept as it was left', () => {
+  const s = newState('kitsune');
+  s.owned.push('paint_urushi', 'hull_oni');
+  wear(s, 'paint', 'paint_urushi');
+  const first = structuredClone({ hull: s.hull, slots: s.slots, look: s.look });
+  assert.equal(usePreset(s, 0), false, 'it is the fitted one');
+  assert.ok(usePreset(s, 1));
+  assert.deepEqual({ hull: s.hull, slots: s.slots, look: s.look }, first, 'a new set starts as a copy');
+  wear(s, 'paint', null);
+  setHull(s, 'hull_oni');
+  assert.ok(usePreset(s, 0));
+  assert.deepEqual({ hull: s.hull, slots: s.slots, look: s.look }, first, 'the first set is as it was left');
+  assert.ok(usePreset(s, 1));
+  assert.equal(s.hull, 'hull_oni');
+  assert.equal(s.look.paint, null);
+  // (the sets survive a save)
+  const m = memory();
+  saveState(m, s);
+  const back = loadState(m);
+  assert.equal(back.preset, 1);
+  assert.equal(back.presets[0].look.paint, 'paint_urushi');
+});
+
+test('a prize is put on at once', () => {
+  const s = newState('kitsune');
+  assert.equal(wearNow(s, 'paint_urushi'), false, 'not the player\'s');
+  s.owned.push('paint_urushi', 'decal_sym_star', 'decal_sym_hinomaru', 'card_kyubi', 'hull_oni');
+  assert.ok(wearNow(s, 'paint_urushi'));
+  assert.equal(s.look.paint, 'paint_urushi');
+  assert.ok(wearNow(s, 'decal_sym_star'));
+  assert.ok(wearNow(s, 'decal_sym_hinomaru'));
+  assert.deepEqual([s.look.decal_nose, s.look.decal_lwing], ['decal_sym_star', 'decal_sym_hinomaru'], 'stickers take the free places in turn');
+  assert.equal(wearNow(s, 'card_kyubi'), false, 'a card is not worn');
+  assert.ok(wearNow(s, 'hull_oni'));
+  assert.equal(s.hull, 'hull_oni');
 });

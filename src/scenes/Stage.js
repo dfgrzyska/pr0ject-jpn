@@ -212,7 +212,7 @@ export class Stage extends Phaser.Scene {
     if (q.get('turrets')) this.player.turrets = Phaser.Math.Clamp(Number(q.get('turrets')), 0, TURRETS.max);
     if (q.get('power')) this.player.level = Phaser.Math.Clamp(Number(q.get('power')), 1, PLAYER.maxPower);
 
-    this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,K,L,I,G,Y,F,B,Q,E,TAB,ESC,P,ENTER,SPACE');
+    this.keys = this.input.keyboard.addKeys('UP,DOWN,LEFT,RIGHT,W,A,S,D,Z,M,K,L,I,G,Y,F,B,Q,E,T,ONE,TWO,THREE,TAB,ESC,P,ENTER,SPACE');
     this.input.on('pointerdown', (p) => this.onPointerDown(this.logicalPointer(p)));
     this.input.on('wheel', (p, over, dx, dy) => this.state === 'dev' && this.devMenu?.wheel(dy));
     this.input.on('pointermove', (p) => {
@@ -350,6 +350,8 @@ export class Stage extends Phaser.Scene {
   closeGacha() {
     this.gacha?.destroy();
     this.gacha = null;
+    if (!this.fixedShip) this.ship = buildShip(this.loadout); // (a prize may have been put on at once)
+    applySkin(this, this.ship);
     this.showTitle(); // (the title shows the tickets left)
   }
 
@@ -745,12 +747,12 @@ export class Stage extends Phaser.Scene {
       return;
     }
     if (this.state === 'hangar') {
-      const act = escape ? 'back' : down(k.LEFT) || down(k.A) ? 'left' : down(k.RIGHT) || down(k.D) ? 'right' : down(k.UP) || down(k.W) ? 'up' : down(k.DOWN) || down(k.S) ? 'down' : confirm || bomb ? 'confirm' : down(k.TAB) || down(k.Q) || down(k.E) ? 'tab' : null;
+      const act = escape ? 'back' : down(k.LEFT) || down(k.A) ? 'left' : down(k.RIGHT) || down(k.D) ? 'right' : down(k.UP) || down(k.W) ? 'up' : down(k.DOWN) || down(k.S) ? 'down' : confirm || bomb ? 'confirm' : down(k.TAB) || down(k.Q) || down(k.E) ? 'tab' : down(k.T) ? 'test' : down(k.ONE) ? 'set0' : down(k.TWO) ? 'set1' : down(k.THREE) ? 'set2' : null;
       if (act && this.hangar.key(act) === 'close') this.closeHangar();
       return;
     }
     if (this.state === 'gacha') {
-      const act = escape ? 'back' : down(k.LEFT) || down(k.A) ? 'left' : down(k.RIGHT) || down(k.D) ? 'right' : confirm || bomb ? 'confirm' : null;
+      const act = escape ? 'back' : down(k.LEFT) || down(k.A) ? 'left' : down(k.RIGHT) || down(k.D) ? 'right' : down(k.UP) || down(k.W) ? 'wear' : confirm || bomb ? 'confirm' : null;
       if (act && this.gacha.key(act) === 'close') this.closeGacha();
       return;
     }

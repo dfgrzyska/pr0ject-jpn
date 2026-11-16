@@ -1,7 +1,8 @@
 import { DEPTH, RENDER_SCALE, VIEW } from '../config.js';
 import { ITEM, ITEMS, RARITIES, RARITY, SHOT_FRAMES, SLOTS, lookKind } from '../data/gacha.js';
-import { pixelText } from './Hud.js';
-import { buildShip, equip, layout, setHull, wear } from './Loadout.js';
+import { pixelText as plainText } from './Hud.js';
+import { tr } from '../i18n.js';
+import { buildShip, equip, layout, setHull, usePreset, wear } from './Loadout.js';
 import { applySkin, flameLook } from './shipSkin.js';
 import { fxTint } from './premiumFx.js';
 import { sharedArt } from './enemyArt.js';
@@ -26,6 +27,7 @@ const TABS = [
   { id: 'fx', name: 'EFEKTY', x: 159, kinds: ['blast', 'bomb_look', 'graze', 'shield', 'hud_color', 'life_icon', 'paint_fx', 'aura', 'trail', 'entry', 'victory', 'death'] },
 ];
 const TAB_Y = 95;
+const SET_X = [72, 94, 116]; // the three sets' boxes
 const STATS = [
   { label: 'PRĘDKOŚĆ', get: (s) => s.speed, min: 60, max: 190, fmt: (v) => String(Math.round(v)) },
   { label: 'SIŁA OGNIA', get: (s) => s.damage, min: 0.8, max: 1.7, fmt: (v) => `×${v.toFixed(2)}` },
@@ -34,6 +36,16 @@ const STATS = [
 ];
 const STAT_X = 70;
 const tint = (it) => (it.rarity ? RARITY[it.rarity].color : 0xd8d4e4);
+
+// (the texts here change as the player looks around: each new one goes through the phrasebook too)
+const pixelText = (...args) => {
+  const t = plainText(...args);
+  const raw = t.setText;
+  t.setText = function (str) {
+    return raw.call(this, tr(str));
+  };
+  return t;
+};
 
 export class Hangar {
   constructor(scene, loadout, save) {
@@ -76,7 +88,32 @@ export class Hangar {
     this.marks = Array.from({ length: 16 }, () => add(pixelText(scene, 176, 0, '', 1).setOrigin(1, 0.5).setTint(0x9cf09a), d + 1));
     this.info = add(pixelText(scene, W / 2, 0, '').setTint(0xb8c4d4), d + 1);
     this.hint = add(pixelText(scene, W / 2, 0, scene.sys.game.device.input.touch ? 'DOTKNIJ DWA RAZY = ZAŁÓŻ' : 'STRZAŁKI / ENTER / ESC').setTint(0x6a7a92), d + 1);
+    // the three sets, in a row over the hint
+    this.setLabel = add(pixelText(scene, 58, 0, 'ZESTAW', 1).setOrigin(1, 0.5).setTint(0x9aaec2), d + 1);
+    this.setNums = [0, 1, 2].map((i) => add(pixelText(scene, SET_X[i], 0, String(i + 1)), d + 1));
+    // the test lane, in the ship's frame in place of the big ship: the ship at its real size firing the shots of
+    // the picked slot at a daruma, the enemies' bullets drifting past as they will look
+    this.lane = false;
+    this.laneTag = add(pixelText(scene, 13, 31, 'TEST', 0).setOrigin(0, 0.5), d + 1.2);
+    this.laneShots = [0, 1, 2].map(() => add(sharedArt(scene.add.image(36, 0, 'sprites', 'ps_needle')), d + 1.02).setVisible(false));
+    this.laneEb = ['eb_m', 'eb_s'].map((f) => add(sharedArt(scene.add.image(0, 0, 'sprites', f)), d + 1.02).setVisible(false));
+    this.dummy = add(scene.add.image(36, 38, 'gacha', 'lifeicon_daruma').setScale(FINE * 2), d + 1.01).setVisible(false);
     this.layout(scene.H);
+  }
+
+  /** The big ship, or the test lane. */
+  setLane(on) {
+    this.lane = on;
+    this.scene.sfx.tick?.();
+    this.draw();
+  }
+
+  /** Switch to another of the three sets. */
+  setPreset(i) {
+    if (!usePreset(this.loadout, i)) return;
+    this.save();
+    this.scene.sfx.pickup();
+    this.pickSlot(0);
   }
 
   layout(H) {
@@ -87,8 +124,11 @@ export class Hangar {
     this.statLabels.forEach((l, i) => (l.y = 28 + i * 16));
     this.statValues.forEach((v, i) => (v.y = 28 + i * 16));
     this.slotsY = 106; // the top of the slots
-    this.bottom = H - 36;
-    this.info.y = H - 27;
+    this.bottom = H - 50;
+    this.info.y = H - 42;
+    this.setY = H - 27;
+    this.setLabel.y = this.setY;
+    this.setNums.forEach((n) => (n.y = this.setY));
     this.hint.y = H - 12;
     this.draw();
   }
@@ -171,6 +211,26 @@ export class Hangar {
     // the ship in its frame, in the paint and with the flame looked at
     applySkin(this.scene, next ?? ship);
     this.anim = (next ?? ship).look?.paintFx ?? null;
+    // the three sets' boxes: the fitted one lit
+    [0, 1, 2].forEach((i) => {
+      const on = i === this.loadout.preset;
+      g.fillStyle(on ? 0x24345c : 0x121a34).fillRect(SET_X[i] - 9, this.setY - 7, 18, 13);
+      g.lineStyle(1, on ? 0xffe080 : 0x33416a).strokeRect(SET_X[i] - 8.5, this.setY - 6.5, 17, 12);
+      this.setNums[i].setTint(on ? 0xffe080 : this.loadout.presets[i] ? 0xd8d4e4 : 0x6a7a92);
+    });
+    // the test lane: the shots of the picked slot (the basic weapon's for any other), dyed; the enemies' bullets
+    const shown = next ?? ship;
+    this.laneTag.setTint(this.lane ? 0xffe080 : 0x6a7a92);
+    const shotKind = slot.kind in SHOT_FRAMES ? slot.kind : 'shot_basic';
+    const shotFrame = SHOT_FRAMES[shotKind][0];
+    for (const s of this.laneShots) {
+      s.setVisible(this.lane).setFrame(shown.look?.shots?.[shotFrame] ?? shotFrame);
+      if (shown.look?.dye) s.setTint(shown.look.dye);
+      else s.clearTint();
+    }
+    this.laneEb.forEach((b, i) => b.setVisible(this.lane).setFrame(i ? 'eb_s' : 'eb_m'));
+    this.dummy.setVisible(this.lane);
+    this.art.setScale(this.lane ? 1 : 2);
     this.flameLong = flameLook(this.flame, next ?? ship);
     const palPic = (next ?? ship).look?.pal;
     this.palArt.setVisible(Boolean(palPic));
@@ -303,6 +363,8 @@ export class Hangar {
   /** Returns 'close' for the back arrow. */
   key(act) {
     if (act === 'back') return 'close';
+    if (act === 'test') this.setLane(!this.lane);
+    if (act?.startsWith('set')) this.setPreset(Number(act[3]));
     if (act === 'tab') this.setTab(TABS[(TABS.findIndex((t) => t.id === this.tab) + 1) % TABS.length].id);
     if (act === 'left') this.pickSlot(this.slot - 1);
     else if (act === 'right') this.pickSlot(this.slot + 1);
@@ -315,6 +377,11 @@ export class Hangar {
   /** A press: the back arrow or a slot at once; on the list it may become a drag (scroll) or, on release, a tap. */
   pointer(p) {
     if (p.y < 26 && p.x < 60) return 'close';
+    if (p.x >= 9 && p.x <= 64 && p.y >= 26 && p.y <= 91) return this.setLane(!this.lane);
+    if (Math.abs(p.y - this.setY) <= 8) {
+      const i = SET_X.findIndex((x) => Math.abs(p.x - x) <= 10);
+      return i >= 0 ? this.setPreset(i) : null;
+    }
     if (Math.abs(p.y - TAB_Y) <= 8) return this.setTab(TABS.reduce((a, t) => (Math.abs(p.x - t.x) < Math.abs(p.x - a.x) ? t : a)).id);
     const n = this.slots().length;
     for (let i = 0; i < n; i++) {
@@ -349,10 +416,24 @@ export class Hangar {
 
   update(dt) {
     this.t += dt;
-    this.art.y = this.shipY + Math.round(Math.sin(this.t * 3) * 1.5) * 2;
-    this.flame.y = this.art.y + (this.flameY ?? 8) * 2;
-    this.flame.setScale(2, 2 * (this.flameLong ?? 1));
-    this.palArt.y = this.shipY + 22 + Math.round(Math.sin(this.t * 5) * 1.5);
+    const k = this.lane ? 1 : 2; // (the test lane shows the ship at its real size, low in the frame)
+    this.art.y = this.lane ? this.shipY + 11 : this.shipY + Math.round(Math.sin(this.t * 3) * 1.5) * 2;
+    this.flame.y = this.art.y + (this.flameY ?? 8) * k;
+    this.flame.setScale(k, k * (this.flameLong ?? 1));
+    this.palArt.setPosition(this.lane ? 24 : 54, this.lane ? this.art.y + 8 + Math.sin(this.t * 5) * 1.2 : this.shipY + 22 + Math.round(Math.sin(this.t * 5) * 1.5));
+    if (this.lane) {
+      // the shots climb from the nose to the daruma (it flinches as one lands); the bullets drift down the sides
+      const top = 44;
+      const from = this.art.y - 8;
+      let hit = false;
+      this.laneShots.forEach((s, i) => {
+        const at = (this.t * 2.6 + i / 3) % 1;
+        s.y = from - (from - top) * at;
+        hit ||= at > 0.9;
+      });
+      this.dummy.setTint(hit ? 0xffb0b0 : 0xffffff).setX(36 + (hit ? Math.round(Math.sin(this.t * 60)) : 0));
+      this.laneEb.forEach((b, i) => b.setPosition(i ? 54 : 19, (i ? 32 : 42) + ((this.t * (i ? 22 : 16) + i * 20) % (i ? 44 : 34))));
+    }
     // (an animated paint job: its colour flowing over the hull)
     if (this.anim) this.art.setTint(fxTint(this.anim, this.t));
     else this.art.clearTint();

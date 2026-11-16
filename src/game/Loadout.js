@@ -49,7 +49,40 @@ function normalize(state) {
   state.slots = slots;
   // the looks: one of each kind at most, owned
   state.look = Object.fromEntries(LOOKS.map((k) => [k, ITEM[state.look?.[k]]?.kind === lookKind(k) && have.has(state.look[k]) ? state.look[k] : null]));
+  // the three sets: the one fitted, the others as they were left (null: never used)
+  state.preset = [0, 1, 2].includes(state.preset) ? state.preset : 0;
+  state.presets = [0, 1, 2].map((i) => state.presets?.[i] ?? null);
   return state;
+}
+
+/** Switch to another of the three sets: the fitted one is put away as it is; a set never used starts as a copy. */
+export function usePreset(state, i) {
+  if (![0, 1, 2].includes(i) || i === state.preset) return false;
+  state.presets[state.preset] = structuredClone({ hull: state.hull, slots: state.slots, look: state.look });
+  const next = state.presets[i];
+  state.preset = i;
+  state.presets[i] = null;
+  if (next) {
+    Object.assign(state, structuredClone(next));
+    normalize(state);
+  }
+  return true;
+}
+
+/**
+ * Put on what just came out of the machine: a hull, a part (into a free slot of its kind, else the first), a look
+ * (a sticker: the first free place, else the nose). False for what is not worn (a card) or has no slot.
+ */
+export function wearNow(state, id) {
+  const it = ITEM[id];
+  if (!it || !state.owned.includes(id)) return false;
+  if (it.kind === 'hull') return setHull(state, id);
+  if (SLOTS.includes(it.kind)) {
+    const free = state.slots[it.kind].indexOf(null);
+    return equip(state, it.kind, free >= 0 ? free : 0, id);
+  }
+  if (it.kind === 'decal') return wear(state, DECAL_SLOTS.find((k) => !state.look[k]) ?? DECAL_SLOTS[0], id);
+  return wear(state, it.kind, id);
 }
 
 /** Wear a paint job, a flame colour or a dye (null: take it off). False if it is not the player's. */

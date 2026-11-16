@@ -190,12 +190,12 @@ Każda faza kończy się grywalnym stanem i osobnym commitem.
 0. **Dane i zapis (gotowe).** Katalog przedmiotów (`src/data/gacha.js`), stan gracza i losowanie (`src/game/Loadout.js`), składanie statku z zestawu w tym samym kształcie co `SHIPS[i]`.
 1. **Jeden statek (gotowe).** Usunięcie `ShipSelect`, ekran przed startem, przeniesienie zapisanego ulubionego statku. Podróż między miastami niesie zestaw zamiast numeru statku.
 2. **Kupony (gotowe).** Przyznawanie po minibossie, bossie i spotkaniu, napis w grze, wiersz w wynikach.
-3. **Ekran GACHA (gotowe, bez skrótu „załóż teraz”: dojdzie z hangarem).** Grafika automatu, animacja, dźwięk.
-4. **Ekran HANGAR i mody (gotowe; zostały: skrót „załóż teraz” po losowaniu, 3 zapisane zestawy, pas próbny).** Mody z sekcji 4.7 działające w grze, kadłub premium HOUOU (UR: silnik 1, działa 2, bomba 1, rdzenie 2, omamori 3), sloty trzymają swoje miejsce (pusty slot zostaje pusty).
-5. **Kosmetyka, fala 1 (gotowe poza skórkami wieżyczek).** 60 malowań (cztery kolory na warstwach kadłuba, bez wzorów: wzory i animacje dojdą z fazą 7), 20 płomieni, 12 barwników, 12 śladów za statkiem (płatki sakury wycięte z Kioto i inne), 36 skórek pocisków (po 9 na broń podstawową, rozrzut, laser i naprowadzane). Zakładka WYGLĄD w hangarze.
-6. **Kosmetyka, fala 2.** Naklejki, wrogie pociski, wybuchy, wygląd bomby, towarzysze, znaczniki, dźwięki, karty, tytuły. **Gotowe (6b):** wybuchy (16) i wygląd bomby (12), zakładka EFEKTY w hangarze. **Gotowe (6a):** wrogie pociski (14 kolorów, 16 kształtów; tylko standardowe kule, pociski tematyczne miast zostają) i znaczniki hitboxa (12); hangar ma zakładki CZĘŚCI / STATEK / POCISKI.
-7. **Animacje premium.** Sekcja 4.5.
-8. **Strojenie i testy.** Liczby modów, tempo zdobywania, test przeglądarkowy obu ekranów, tłumaczenia PL i EN wszystkich nazw.
+3. **Ekran GACHA (gotowe, ze skrótem „załóż teraz” pod nagrodą).** Grafika automatu, animacja, dźwięk.
+4. **Ekran HANGAR i mody (gotowe, razem z 3 zestawami i pasem próbnym w ramce statku).** Mody z sekcji 4.7 działające w grze, kadłub premium HOUOU (UR: silnik 1, działa 2, bomba 1, rdzenie 2, omamori 3), sloty trzymają swoje miejsce (pusty slot zostaje pusty).
+5. **Kosmetyka, fala 1 (gotowe; skórki wieżyczek doszły w fazie 6).** 60 malowań (cztery kolory na warstwach kadłuba, bez wzorów: wzory i animacje dojdą z fazą 7), 20 płomieni, 12 barwników, 12 śladów za statkiem (płatki sakury wycięte z Kioto i inne), 36 skórek pocisków (po 9 na broń podstawową, rozrzut, laser i naprowadzane). Zakładka WYGLĄD w hangarze.
+6. **Kosmetyka, fala 2 (gotowe).** Naklejki, wrogie pociski, wybuchy, wygląd bomby, towarzysze, znaczniki, dźwięki, karty, tytuły. **Gotowe (6b):** wybuchy (16) i wygląd bomby (12), zakładka EFEKTY w hangarze. **Gotowe (6a):** wrogie pociski (14 kolorów, 16 kształtów; tylko standardowe kule, pociski tematyczne miast zostają) i znaczniki hitboxa (12); hangar ma zakładki CZĘŚCI / STATEK / POCISKI. **Gotowe (6c–6h):** tytuły pilota (24), dźwięki strzału (8), iskry grazingu (8), kolory licznika (6), ikony życia (6), towarzysze (20), skórki pocisków wieżyczek (8) i kolory ich bańki (8), naklejki (55 zamiast 70, cztery miejsca na kadłubie), karty do kolekcji (25 zamiast 31, zakładka KARTY w kolekcji).
+7. **Animacje premium (gotowe).** 40 przedmiotów SSR i UR: animowane malowania (10), aury (8), smugi silnika (6), efekty wejścia (6), triumfu nad bossem (6) i utraty życia (4).
+8. **Strojenie i testy (gotowe poza strojeniem liczb).** Angielskie nazwy i opisy wszystkich 489 przedmiotów (`src/data/gachaEn.js`, test pokrycia), test przeglądarkowy obu ekranów. Liczby modów i tempo zdobywania kuponów zostały bez zmian: do decyzji po ograniu.
 
 ## 7. Ryzyka
 

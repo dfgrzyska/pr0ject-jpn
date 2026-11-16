@@ -5,6 +5,8 @@
 // setText() calls pass their text through tr(), which looks it up in the phrasebook below (whole phrases, or
 // patterns for the ones with numbers and names in them). Anything not in it (scores, Japanese words) stays.
 // t('key', { n: 3 }) is for texts written for both languages from the start.
+import { gachaEn } from './data/gachaEn.js';
+
 const KEY = 'shmupjp.lang';
 
 const STRINGS = {
@@ -435,7 +437,7 @@ export function tr(s) {
     const m = s.match(re);
     if (m) return fn(...m.slice(1));
   }
-  return s;
+  return gachaEn(s); // (the gachapon's names and lines: data/gachaEn.js)
 }
 
 setLang(lang);

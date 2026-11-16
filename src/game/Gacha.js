@@ -2,8 +2,9 @@ import Phaser from 'phaser';
 import { DEPTH, RENDER_SCALE, VIEW } from '../config.js';
 import { RARITIES, RARITY, SHOT_FRAMES } from '../data/gacha.js';
 import { BALL as BALL_FRAME, MACHINE } from '../data/gachaLayout.js';
-import { pixelText } from './Hud.js';
-import { pool, pull } from './Loadout.js';
+import { pixelText as plainText } from './Hud.js';
+import { tr } from '../i18n.js';
+import { pool, pull, wearNow } from './Loadout.js';
 import { sharedArt } from './enemyArt.js';
 
 // The gachapon, off the title screen: a ticket in the slot, a turn of the crank, and a capsule rolls out, cracks
@@ -15,10 +16,20 @@ const MX = (W - MACHINE.w * FINE) / 2; // the machine's left edge
 const SHOWN = 30; // capsules under the glass at most
 const BALL = (BALL_FRAME * FINE) / 2 - 0.4; // their radius, in game units (they overlap a touch: no gaps between them)
 const RAINBOW = [0xff5a5a, 0xffb040, 0xfff060, 0x6ae486, 0x5cacf2, 0xb070f0];
-const KIND = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK', wake: 'ŚLAD', shot_basic: 'POCISKI', shot_spread: 'POCISKI', shot_laser: 'POCISKI', shot_homing: 'POCISKI', eb_color: 'WROGIE POCISKI', eb_shape: 'WROGIE POCISKI', marker: 'ZNACZNIK', blast: 'WYBUCHY', bomb_look: 'WYGLĄD BOMBY', title: 'TYTUŁ PILOTA', sound: 'DŹWIĘK', graze: 'ISKRA', hud_color: 'LICZNIK', life_icon: 'IKONA ŻYCIA', companion: 'TOWARZYSZ', shot_turret: 'POCISKI', shield: 'TARCZA', decal: 'NAKLEJKA', card: 'KARTA', paint_fx: 'ANIMACJA', aura: 'AURA', trail: 'SMUGA', entry: 'WEJŚCIE', victory: 'TRIUMF', death: 'UPADEK' };
+const KIND = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK', wake: 'ŚLAD', shot_basic: 'POCISKI', shot_spread: 'POCISKI', shot_laser: 'POCISKI', shot_homing: 'POCISKI', eb_color: 'WROGIE POCISKI', eb_shape: 'WROGIE POCISKI', marker: 'ZNACZNIK', blast: 'WYBUCHY', bomb_look: 'WYGLĄD BOMBY', title: 'TYTUŁ PILOTA', sound: 'DŹWIĘK', graze: 'ISKRA', hud_color: 'LICZNIK', life_icon: 'IKONA ŻYCIA', companion: 'TOWARZYSZ', shot_turret: 'POCISKI', shield: 'BAŃKA TARCZY', decal: 'NAKLEJKA', card: 'KARTA', paint_fx: 'ANIMACJA', aura: 'AURA', trail: 'SMUGA', entry: 'WEJŚCIE', victory: 'TRIUMF', death: 'UPADEK' };
 // how long each step of a draw takes, s (a draw of ten runs them at half the time)
 const TIME = { ticket: 0.55, crank: 1.0, shake: 0.85, open: 0.4 };
 const ease = (k) => k * k * (3 - 2 * k);
+
+// (the texts here change as the player looks around: each new one goes through the phrasebook too)
+const pixelText = (...args) => {
+  const t = plainText(...args);
+  const raw = t.setText;
+  t.setText = function (str) {
+    return raw.call(this, tr(str));
+  };
+  return t;
+};
 
 export class Gacha {
   constructor(scene, loadout, save) {
@@ -72,6 +83,7 @@ export class Gacha {
     this.name = add(pixelText(scene, W / 2, 0, '').setVisible(false), d + 8.2);
     this.info = add(pixelText(scene, W / 2, 0, '').setTint(0xb8c4d4).setVisible(false), d + 8.2);
     this.more = add(pixelText(scene, W / 2, 0, '').setTint(0xffe080).setVisible(false), d + 8.2);
+    this.wearText = add(pixelText(scene, W / 2, 0, '').setVisible(false), d + 8.2); // "wear now", under the prize
     this.layout(scene.H);
     this.fill();
     this.refresh();
@@ -379,6 +391,22 @@ export class Gacha {
     this.stars.forEach((s, i) => s.setVisible(i <= this.tier).setPosition(W / 2 + (i - this.tier / 2) * 9, this.cy + 34));
     this.scene.sfx.prize(this.tier);
     this.sparkT = 0;
+    // (what can be worn: a shortcut to put it on at once)
+    this.worn = it.kind === 'card' ? 'none' : 'ask';
+    this.wearY = this.cy + 113;
+    this.wearText.setText(this.scene.sys.game.device.input.touch ? 'ZAŁÓŻ TERAZ' : 'GÓRA - ZAŁÓŻ TERAZ').setTint(0x9cf09a).setY(this.wearY).setVisible(false);
+  }
+
+  /** The prize put on at once (see Loadout.wearNow). */
+  wear() {
+    if (this.phase !== 'reveal' || this.worn !== 'ask' || this.pt <= 0.8) return;
+    const ok = wearNow(this.loadout, this.item.id);
+    this.worn = 'done';
+    this.wearText.setText(ok ? 'ZAŁOŻONE' : 'NIE MA NA TO SLOTU').setTint(ok ? 0x6ae486 : 0xff8a8a);
+    if (ok) {
+      this.save();
+      this.scene.sfx.pickup();
+    } else this.scene.sfx.denied();
   }
 
   /** The prize rising out of the capsule in its glow. */
@@ -433,11 +461,12 @@ export class Gacha {
     for (const o of [this.kind, this.rarity, this.name, this.info]) o.setAlpha(Math.max(0, Math.min(1, (t - 0.35) / 0.25)));
     this.stars.forEach((s, i) => s.setAlpha(Math.max(0, Math.min(1, (t - 0.4 - i * 0.07) / 0.1))).setTint(this.color(i)).setRotation(Math.sin(this.t * 3 + i) * 0.3));
     this.more.setVisible(t > 0.8 && Math.floor(this.t * 2.5) % 2 === 0);
+    this.wearText.setVisible(t > 0.8 && this.worn !== 'none');
   }
 
   /** The prize put away: on to the next draw of a run, or back to the machine. */
   dismiss() {
-    for (const o of [this.kind, this.rarity, this.name, this.info, this.more, ...this.stars, ...this.sparks, ...this.halves]) o.setVisible(false);
+    for (const o of [this.kind, this.rarity, this.name, this.info, this.more, this.wearText, ...this.stars, ...this.sparks, ...this.halves]) o.setVisible(false);
     this.prize?.destroy();
     this.prize = null;
     this.rays.clear();
@@ -481,6 +510,7 @@ export class Gacha {
       if (Math.hypot(p.x - this.crank.x, p.y - this.crank.y) < 18) return this.start(1);
       return null;
     }
+    if (this.phase === 'reveal' && this.worn === 'ask' && Math.abs(p.y - this.wearY) <= 9 && Math.abs(p.x - W / 2) <= 60) return this.wear();
     return this.confirm();
   }
 
@@ -488,6 +518,7 @@ export class Gacha {
     if (act === 'back') return this.phase === 'idle' ? 'close' : this.confirm();
     if (act === 'left' || act === 'right') this.focus = act === 'left' ? 0 : 1;
     else if (act === 'confirm') this.confirm();
+    else if (act === 'wear') this.wear();
     return null;
   }
 
