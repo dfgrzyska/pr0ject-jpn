@@ -4,6 +4,7 @@ import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
 import { baseScale, sharedArt, spriteTexture } from './enemyArt.js';
 import { flameLook } from './shipSkin.js';
+import { fxTint } from './premiumFx.js';
 
 const WEAPON_NAMES = { basic: 'PODSTAWOWA', spread: 'ROZRZUT', laser: 'LASER', homing: 'NAPROWADZANE' };
 const WEAPON_TINT = { spread: 0xff8a6a, laser: 0x8ac8ff, homing: 0x9cf09a };
@@ -15,6 +16,7 @@ export class Player {
     this.flame = sharedArt(scene.add.sprite(0, 0, 'sprites', 'flame_0')).setOrigin(0.5, 0).setDepth(DEPTH.player - 0.1).play('flame');
     this.dot = sharedArt(scene.add.image(0, 0, 'sprites', 'hitbox')).setDepth(DEPTH.player + 0.1);
     this.pal = sharedArt(scene.add.image(0, 0, 'sprites', 'hitbox')).setDepth(DEPTH.player - 0.2).setVisible(false); // a companion out of the gachapon
+    this.aura = Array.from({ length: 6 }, () => sharedArt(scene.add.image(0, 0, 'sprites', 'dot_2')).setDepth(DEPTH.player + 0.04).setVisible(false)); // an aura out of the gachapon
     this.muzzle = sharedArt(scene.add.image(0, 0, 'sprites', 'muzzle_0')).setDepth(DEPTH.player + 0.05).setVisible(false); // flash at the nose
     this.noseGlow = scene.add.image(0, 0, 'sprites', 'glow').setDepth(DEPTH.player - 0.05).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.bank = 0;
@@ -90,6 +92,7 @@ export class Player {
     this.flame.setVisible(v);
     this.dot.setVisible(v);
     if (!v) this.pal?.setVisible(false);
+    if (!v) this.aura?.forEach((a) => a.setVisible(false));
     if (!v) this.muzzle.setVisible(false);
     if (!v) this.noseGlow?.setVisible(false);
     if (!v) this.beanOrbit?.forEach((b) => b.setVisible(false));
@@ -185,6 +188,12 @@ export class Player {
         this.y += (target - this.y) * Math.min(1, dt * 6);
         this.tx = this.x;
         this.ty = this.y;
+        // (an entrance out of the gachapon: its bits streaming off the ship, a burst where it stops)
+        const en = this.ship.look?.entry;
+        if (en) {
+          this.emit({ rate: 70, vy: 70, spread: 40, life: 0.5, ...en }, this.x, this.y + 6, 14, 8, dt);
+          if (this.entering <= 0) this.burst(en, this.x, this.y);
+        }
       } else if (keys) {
         let ax = 0;
         let ay = 0;
@@ -273,6 +282,22 @@ export class Player {
       this.palAt.y += (ty - this.palAt.y) * k;
       this.pal.setPosition(this.palAt.x, this.palAt.y + Math.sin(this.scene.t * 5) * 1.2).setFlipX(tx - this.palAt.x > 1.5);
     }
+    // an aura out of the gachapon: its sprites circling the ship, behind it on the far half of the turn
+    const au = this.ship.look?.aura;
+    const auOn = Boolean(au) && this.alive && this.sprite.visible;
+    this.aura.forEach((a, i) => {
+      a.setVisible(auOn && i < au.n);
+      if (!a.visible) return;
+      const t = this.scene.t;
+      const ang = t * au.speed + (i * Math.PI * 2) / au.n;
+      const depth = DEPTH.player + (Math.sin(ang) < 0 ? -0.04 : 0.04);
+      if (a.depth !== depth) a.setDepth(depth);
+      a.setFrame(au.frames[(i + Math.floor(t * (au.anim ?? 0))) % au.frames.length]);
+      a.setPosition(this.x + Math.cos(ang) * au.r, this.y + 1 + Math.sin(ang) * au.r * 0.62).setScale(au.scale ?? 1).setRotation(au.turn ? ang : 0);
+      a.setAlpha(au.twinkle ? 0.55 + 0.45 * Math.sin(t * 9 + i * 2.1) : 1);
+      if (au.tints) a.setTint(au.tints[i % au.tints.length]);
+      else a.clearTint();
+    });
     const beans = this.alive && this.beanT > 0 && (this.beanT > 2 || Math.floor(this.beanT * 8) % 2 === 0);
     this.beanOrbit.forEach((b, i) => {
       const a = this.scene.t * 7 + i * Math.PI;
@@ -315,7 +340,12 @@ export class Player {
         if (wake.tints) wp.setTint(wake.tints[Math.floor(Math.random() * wake.tints.length)]);
       }
     }
-    this.sprite.setAlpha(blink ? 0.35 : 1);
+    // an animated paint job and a trail out of the gachapon: the bits the hull sheds, the stream from the engine
+    const pf = this.ship.look?.paintFx;
+    const shown = this.alive && this.sprite.visible;
+    if (pf?.bits && shown) this.emit(pf.bits, this.x, this.y, 14, 16, dt);
+    if (this.ship.look?.trail && shown && this.entering <= 0) this.emit(this.ship.look.trail, this.x, this.y + this.ship.flameY + 4, 3, 2, dt);
+    this.sprite.setAlpha((blink ? 0.35 : 1) * (pf?.flicker && Math.sin(this.scene.t * 37) > 0.4 ? 1 - pf.flicker : 1));
     this.flame.setAlpha(blink ? 0.35 : 1);
     const hotGlow = this.alive && this.jam <= 0 && this.heat >= HEAT.boostAt;
     const laserGlow = this.alive && this.weapon === 'laser' && this.muzzleT > -0.05;
@@ -332,6 +362,7 @@ export class Player {
     else if (this.heat >= HEAT.boostAt) this.sprite.setTint(0xffc8a0);
     else if (this.frozen > 0) this.sprite.setTint(0xa8d8ff);
     else if (this.frost > 0.12) this.sprite.setTint(Phaser.Display.Color.GetColor(255 - this.frost * 90, 255 - this.frost * 40, 255));
+    else if (pf) this.sprite.setTint(fxTint(pf, this.scene.t));
     else this.sprite.clearTint();
     this.iceBlock.setVisible(this.alive && this.frozen > 0).setPosition(this.x, this.y + 1);
     if (this.alive && this.frost > 0.3 && Math.random() < dt * 30 * this.frost) {
@@ -805,6 +836,7 @@ export class Player {
     s.fx.debris(this.x, this.y, 12, this.ship.color, 1.6);
     s.fx.debris(this.x, this.y, 6, 0xffffff, 1.3);
     s.fx.flash(0.35, 0.3);
+    if (this.ship.look?.death) this.burst(this.ship.look.death, this.x, this.y); // (a last flourish out of the gachapon)
     s.score.death();
     this.beanT = 0;
     this.momentum = 0;
@@ -824,6 +856,40 @@ export class Player {
     }
     this.respawnTimer = PLAYER.respawnDelay;
     if (this.lives <= 0) s.gameOver();
+  }
+
+  /** One bit of a premium look, now and then (b.rate a second): around (x, y) within sx by sy px, drifting down. */
+  emit(b, x, y, sx, sy, dt) {
+    if (Math.random() >= dt * b.rate) return;
+    const fx = this.scene.fx;
+    const p = fx.part(fx.parts, b.frames[Math.floor(Math.random() * b.frames.length)], x + (Math.random() - 0.5) * sx, y + (Math.random() - 0.5) * sy);
+    p.vx = (Math.random() - 0.5) * (b.spread ?? 10);
+    p.vy = b.vy ?? 30;
+    p.drag = b.drag ?? 0.4;
+    p.g = b.g ?? 0;
+    p.grow = b.grow ?? 0;
+    p.spin = (Math.random() - 0.5) * (b.spin ?? 0);
+    p.life = p.max = (b.life ?? 0.5) * (0.8 + Math.random() * 0.4);
+    p.a0 = b.alpha ?? 0.9;
+    if (b.scale) p.setScale(b.scale * p.base);
+    // (seq: the colours in turn, that many a second: a ribbon; else any of them)
+    if (b.tints) p.setTint(b.tints[b.seq ? Math.floor(this.scene.t * b.seq) % b.tints.length : Math.floor(Math.random() * b.tints.length)]);
+  }
+
+  /** A premium burst (the ship flying in, a boss beaten, the ship lost): a ring, a flash, its bits thrown out. */
+  burst(l, x, y, quiet = false) {
+    const fx = this.scene.fx;
+    if (l.flash != null && !quiet) fx.flash(0.3, 0.35, l.flash);
+    fx.rings.push({ x, y, r: 4, life: 0.6, c: Array.isArray(l.ring) ? l.ring[Math.floor(Math.random() * l.ring.length)] : l.ring });
+    fx.petalBurst(x, y, l.n ?? 30, l);
+  }
+
+  /** A boss is beaten: the victory look out of the gachapon, at the ship and then three more over the field. */
+  celebrate() {
+    const l = this.ship.look?.victory;
+    if (!l || !this.alive) return;
+    this.burst(l, this.x, this.y - 10);
+    for (let i = 1; i <= 3; i++) this.scene.time.delayedCall(i * 380, () => this.burst(l, 30 + Math.random() * (VIEW.width - 60), 50 + Math.random() * this.scene.H * 0.4, true));
   }
 
   /** Where the turrets sit: at the very tips of the wings (the first on the left), a little behind the nose. */

@@ -501,6 +501,7 @@ export class Stage extends Phaser.Scene {
     this.winTickets(this.encounter ? TICKETS.encounter : TICKETS.boss);
     this.discoverEnemy({ type: 'boss' }, true);
     this.freeze(0.45);
+    this.player.celebrate();
     this.bossDown = true;
     this.bossClearT = 3;
     if (this.scenicView) {

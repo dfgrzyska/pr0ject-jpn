@@ -555,6 +555,92 @@ function partCard() {
   return s.render({ outline: 2 });
 }
 
+/** An animated paint job: a hull in flowing bands of colour, glints on it. */
+function partPaintFx() {
+  const s = new HiSprite(72, 72, RAMPS);
+  s.poly([[36, 4], [50, 30], [66, 52], [46, 56], [36, 68], [26, 56], [6, 52], [22, 30]], 'k');
+  for (const [y, c] of [[20, 0xff5a8a], [28, 0xffa040], [36, 0xffe04f], [44, 0x6ae486], [52, 0x4fc8ff]]) {
+    const w = (y - 4) * 0.5 - 4;
+    s.line(36 - w, y, 36 + w, y, c, 5);
+  }
+  for (const [x, y, r] of [[52, 14, 7], [14, 34, 5], [58, 40, 4]]) {
+    s.line(x - r, y, x + r, y, 0xffffff, 2);
+    s.line(x, y - r, x, y + r, 0xffffff, 2);
+  }
+  return s.render({ outline: 2 });
+}
+
+/** An aura: lights on a ring around a small ship. */
+function partAura() {
+  const s = new HiSprite(72, 72, RAMPS);
+  for (let i = 0; i < 40; i++) {
+    const a = (i / 40) * Math.PI * 2;
+    s.dot(36 + Math.cos(a) * 27, 38 + Math.sin(a) * 17, 1.4, 0x33416a);
+  }
+  s.poly([[36, 20], [46, 44], [36, 40], [26, 44]], 'c');
+  for (const [i, c] of [[0, 0x6aa8ff], [1, 0xff9ac4], [2, 0xffd040], [3, 0x6ae486], [4, 0xb070f0], [5, 0xff5a5a]]) {
+    const a = (i / 6) * Math.PI * 2 + 0.4;
+    const x = 36 + Math.cos(a) * 27;
+    const y = 38 + Math.sin(a) * 17;
+    s.dot(x, y, 6.5, INK);
+    s.dot(x, y, 4.5, c);
+    s.dot(x - 1, y - 1, 1.6, 0xffffff);
+  }
+  return s.render({ outline: 2 });
+}
+
+/** A trail: a ribbon of the rainbow streaming from a ship's tail. */
+function partTrail() {
+  const s = new HiSprite(72, 72, RAMPS);
+  for (const [k, c] of [[-2, 0xff5a5a], [-1, 0xffa040], [0, 0xffe04f], [1, 0x6ae486], [2, 0x4fc8ff]]) {
+    for (let y = 30; y < 68; y += 2) s.dot(36 + k * 4 + Math.sin(y * 0.22) * 5, y, 2.6, c);
+  }
+  s.poly([[36, 4], [50, 30], [36, 25], [22, 30]], 'c');
+  return s.render({ outline: 2 });
+}
+
+/** An entrance: a ship rising out of rings. */
+function partEntry() {
+  const s = new HiSprite(72, 72, RAMPS);
+  for (const [ry, rx, c] of [[60, 28, 0x4fb8ff], [50, 20, 0x8ad8ff], [41, 12, 0xc8f0ff]]) {
+    for (let i = 0; i < 48; i++) {
+      const a = (i / 48) * Math.PI * 2;
+      s.dot(36 + Math.cos(a) * rx, ry + Math.sin(a) * rx * 0.28, 1.8, c);
+    }
+  }
+  s.poly([[36, 4], [50, 32], [36, 27], [22, 32]], 'c');
+  s.line(36, 34, 36, 46, 0xffe04f, 4);
+  return s.render({ outline: 2 });
+}
+
+/** A triumph: a firework's burst over a gold cup. */
+function partVictory() {
+  const s = new HiSprite(72, 72, RAMPS);
+  for (const [i, c] of [[0, 0xff5a5a], [1, 0xffa040], [2, 0xffe04f], [3, 0x6ae486], [4, 0x4fc8ff], [5, 0xb070f0], [6, 0xff9ac4], [7, 0xffffff]]) {
+    const a = (i / 8) * Math.PI * 2 + 0.2;
+    s.line(36 + Math.cos(a) * 7, 24 + Math.sin(a) * 7, 36 + Math.cos(a) * 20, 24 + Math.sin(a) * 20, c, 3);
+    s.dot(36 + Math.cos(a) * 22, 24 + Math.sin(a) * 22, 3, c);
+  }
+  s.dot(36, 24, 4, 0xffffff);
+  s.poly([[24, 46], [48, 46], [44, 58], [40, 60], [40, 64], [46, 68], [26, 68], [32, 64], [32, 60], [28, 58]], 'g');
+  return s.render({ outline: 2 });
+}
+
+/** A fall: a pale soul's flame drifting up, petals under it. */
+function partDeath() {
+  const s = new HiSprite(72, 72, RAMPS);
+  s.poly([[36, 4], [41, 16], [50, 26], [52, 38], [46, 50], [36, 54], [26, 50], [20, 38], [22, 26], [31, 16]], 'R');
+  s.dot(36, 38, 11, 0xc8f0ff);
+  s.dot(36, 40, 7, 0xffffff);
+  s.dot(31, 36, 2, INK);
+  s.dot(41, 36, 2, INK);
+  for (const [x, y] of [[14, 60], [30, 64], [46, 62], [60, 58]]) {
+    s.dot(x, y, 4, 0xff9ac4);
+    s.dot(x + 1, y - 1, 1.6, 0xffe0ee);
+  }
+  return s.render({ outline: 2 });
+}
+
 /** A title: a scroll with lines of writing and a red seal. */
 function partTitle() {
   const s = new HiSprite(72, 72, RAMPS);
@@ -714,6 +800,12 @@ export function gachaAtlas() {
   add('part_blast', partBlast());
   for (const s of decalArt()) out.push(s); // the stickers (decals.mjs)
   add('part_title', partTitle());
+  add('part_paint_fx', partPaintFx());
+  add('part_aura', partAura());
+  add('part_trail', partTrail());
+  add('part_entry', partEntry());
+  add('part_victory', partVictory());
+  add('part_death', partDeath());
   add('part_card', partCard());
   add('part_decal', partDecal());
   add('part_shield', partShield());

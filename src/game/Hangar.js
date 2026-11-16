@@ -3,6 +3,7 @@ import { ITEM, ITEMS, RARITIES, RARITY, SHOT_FRAMES, SLOTS, lookKind } from '../
 import { pixelText } from './Hud.js';
 import { buildShip, equip, layout, setHull, wear } from './Loadout.js';
 import { applySkin, flameLook } from './shipSkin.js';
+import { fxTint } from './premiumFx.js';
 import { sharedArt } from './enemyArt.js';
 
 // The hangar, off the title screen: the ship as it is fitted, its numbers, the hull's slots, and under them the
@@ -14,7 +15,7 @@ const W = VIEW.width;
 const LINE = 12; // a row of the list
 const BOX = 26; // a slot
 const PER_ROW = 5;
-const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW', wake: 'ŚLAD ZA STATKIEM', shot_basic: 'POCISKI: PODSTAWOWA', shot_spread: 'POCISKI: ROZRZUT', shot_laser: 'POCISKI: LASER', shot_homing: 'POCISKI: NAPROWADZANE', marker: 'ZNACZNIK HITBOXA', eb_color: 'WROGIE POCISKI: KOLOR', eb_shape: 'WROGIE POCISKI: KSZTAŁT', blast: 'WYBUCHY', bomb_look: 'WYGLĄD BOMBY', title: 'TYTUŁ PILOTA', sound: 'DŹWIĘK STRZAŁU', graze: 'ISKRA GRAZINGU', hud_color: 'KOLOR LICZNIKA', life_icon: 'IKONA ŻYCIA', companion: 'TOWARZYSZ', shot_turret: 'POCISKI: WIEŻYCZKI', shield: 'BAŃKA TARCZY', decal_nose: 'NAKLEJKA: DZIÓB', decal_lwing: 'NAKLEJKA: LEWE SKRZYDŁO', decal_rwing: 'NAKLEJKA: PRAWE SKRZYDŁO', decal_tail: 'NAKLEJKA: OGON' };
+const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW', wake: 'ŚLAD ZA STATKIEM', shot_basic: 'POCISKI: PODSTAWOWA', shot_spread: 'POCISKI: ROZRZUT', shot_laser: 'POCISKI: LASER', shot_homing: 'POCISKI: NAPROWADZANE', marker: 'ZNACZNIK HITBOXA', eb_color: 'WROGIE POCISKI: KOLOR', eb_shape: 'WROGIE POCISKI: KSZTAŁT', blast: 'WYBUCHY', bomb_look: 'WYGLĄD BOMBY', title: 'TYTUŁ PILOTA', sound: 'DŹWIĘK STRZAŁU', graze: 'ISKRA GRAZINGU', hud_color: 'KOLOR LICZNIKA', life_icon: 'IKONA ŻYCIA', companion: 'TOWARZYSZ', shot_turret: 'POCISKI: WIEŻYCZKI', shield: 'BAŃKA TARCZY', decal_nose: 'NAKLEJKA: DZIÓB', decal_lwing: 'NAKLEJKA: LEWE SKRZYDŁO', decal_rwing: 'NAKLEJKA: PRAWE SKRZYDŁO', decal_tail: 'NAKLEJKA: OGON', paint_fx: 'ANIMACJA MALOWANIA', aura: 'AURA', trail: 'SMUGA SILNIKA', entry: 'WEJŚCIE NA PLANSZĘ', victory: 'TRIUMF NAD BOSSEM', death: 'UTRATA ŻYCIA' };
 // a slot's picture: the kind's (the four weapons' skins share one), or the fitted skin itself
 const slotFrame = (kind, it) => (it?.pic ? it.pic : it?.skin ? `${SHOT_FRAMES[kind][0]}_${it.skin}` : kind.startsWith('shot_') ? 'part_shot' : `part_${lookKind(kind)}`);
 // the tabs: the parts, then the looks (of the ship, of the shots: its own and the enemies', of the effects)
@@ -22,7 +23,7 @@ const TABS = [
   { id: 'parts', name: 'CZĘŚCI', x: 21 },
   { id: 'ship', name: 'STATEK', x: 65, kinds: ['paint', 'decal_nose', 'decal_lwing', 'decal_rwing', 'decal_tail', 'flame', 'wake', 'marker', 'companion', 'title'] },
   { id: 'shots', name: 'POCISKI', x: 112, kinds: ['dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'shot_turret', 'eb_color', 'eb_shape', 'sound'] },
-  { id: 'fx', name: 'EFEKTY', x: 159, kinds: ['blast', 'bomb_look', 'graze', 'shield', 'hud_color', 'life_icon'] },
+  { id: 'fx', name: 'EFEKTY', x: 159, kinds: ['blast', 'bomb_look', 'graze', 'shield', 'hud_color', 'life_icon', 'paint_fx', 'aura', 'trail', 'entry', 'victory', 'death'] },
 ];
 const TAB_Y = 95;
 const STATS = [
@@ -67,7 +68,7 @@ export class Hangar {
     this.statValues = STATS.map(() => add(pixelText(scene, 176, 0, '', 1).setOrigin(1, 0.5), d + 1));
     this.tabs = TABS.map((t) => add(pixelText(scene, t.x, TAB_Y, t.name), d + 1));
     // the slots: a picture each (the kind's, or the hull itself)
-    this.slotArt = Array.from({ length: PER_ROW * 2 }, () => add(scene.add.image(0, 0, 'gacha', 'part_gun').setScale(FINE), d + 1));
+    this.slotArt = Array.from({ length: PER_ROW * 3 }, () => add(scene.add.image(0, 0, 'gacha', 'part_gun').setScale(FINE), d + 1));
     this.slotShip = add(sharedArt(scene.add.image(0, 0, 'sprites', 'ship')), d + 1.1);
     // the picked slot's name, the list under it, a line about the part looked at
     this.head = add(pixelText(scene, 8, 0, '', 0).setOrigin(0, 0.5).setTint(0xffe080), d + 1);
@@ -86,8 +87,6 @@ export class Hangar {
     this.statLabels.forEach((l, i) => (l.y = 28 + i * 16));
     this.statValues.forEach((v, i) => (v.y = 28 + i * 16));
     this.slotsY = 106; // the top of the slots
-    this.head.y = this.slotsY + BOX * 2 + 16;
-    this.top = this.head.y + 10;
     this.bottom = H - 36;
     this.info.y = H - 27;
     this.hint.y = H - 12;
@@ -152,6 +151,9 @@ export class Hangar {
     const slots = this.slots();
     this.slot = Math.min(this.slot, slots.length - 1);
     const slot = slots[this.slot];
+    // (the list starts under the slots: two rows of them, three on a tab with more)
+    this.head.y = this.slotsY + Math.max(2, Math.ceil(slots.length / PER_ROW)) * (BOX + 4) + 8;
+    this.top = this.head.y + 10;
     const list = this.list();
     this.focus = Math.max(0, Math.min(this.focus, list.length - 1));
     const ship = buildShip(this.loadout);
@@ -168,6 +170,7 @@ export class Hangar {
 
     // the ship in its frame, in the paint and with the flame looked at
     applySkin(this.scene, next ?? ship);
+    this.anim = (next ?? ship).look?.paintFx ?? null;
     this.flameLong = flameLook(this.flame, next ?? ship);
     const palPic = (next ?? ship).look?.pal;
     this.palArt.setVisible(Boolean(palPic));
@@ -236,7 +239,9 @@ export class Hangar {
       r.setText(row.have ? row.it.name : '? ? ?').setY(y).setTint(tint(row.it)).setAlpha(row.have ? 1 : 0.45);
       // fitted here, or in another slot of the kind (which one, then)
       const at = slot.kind === 'hull' || slot.look ? -1 : this.loadout.slots[slot.kind].indexOf(row.it.id);
-      if (row.it === it) this.marks[k].setVisible(true).setText('ZAŁOŻONE').setY(y).setTint(0x9cf09a);
+      // (a long name leaves no room for the word: a green tick's square then)
+      if (row.it === it && row.it.name.length > 19) g.fillStyle(0x9cf09a).fillRect(169, y - 2, 4, 4);
+      else if (row.it === it) this.marks[k].setVisible(true).setText('ZAŁOŻONE').setY(y).setTint(0x9cf09a);
       else if (at >= 0) this.marks[k].setVisible(true).setText(`W SLOCIE ${at + 1}`).setY(y).setTint(0x7f9a8c);
     });
     if (list.length > fit) {
@@ -348,6 +353,9 @@ export class Hangar {
     this.flame.y = this.art.y + (this.flameY ?? 8) * 2;
     this.flame.setScale(2, 2 * (this.flameLong ?? 1));
     this.palArt.y = this.shipY + 22 + Math.round(Math.sin(this.t * 5) * 1.5);
+    // (an animated paint job: its colour flowing over the hull)
+    if (this.anim) this.art.setTint(fxTint(this.anim, this.t));
+    else this.art.clearTint();
   }
 
   destroy() {

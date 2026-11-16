@@ -23,7 +23,7 @@ export const PITY = { every: 10, min: 'SR' };
 export const SLOTS = ['engine', 'gun', 'bomb', 'core', 'omamori'];
 
 /** What changes only the looks, one of each worn at a time on any hull. */
-export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape', 'blast', 'bomb_look', 'title', 'sound', 'graze', 'hud_color', 'life_icon', 'companion', 'shot_turret', 'shield', 'decal_nose', 'decal_lwing', 'decal_rwing', 'decal_tail'];
+export const LOOKS = ['paint', 'flame', 'wake', 'marker', 'dye', 'shot_basic', 'shot_spread', 'shot_laser', 'shot_homing', 'eb_color', 'eb_shape', 'blast', 'bomb_look', 'title', 'sound', 'graze', 'hud_color', 'life_icon', 'companion', 'shot_turret', 'shield', 'decal_nose', 'decal_lwing', 'decal_rwing', 'decal_tail', 'paint_fx', 'aura', 'trail', 'entry', 'victory', 'death'];
 
 /** The places a sticker goes on the hull: a look's slot each, all taking the one kind of item. */
 export const DECAL_SLOTS = ['decal_nose', 'decal_lwing', 'decal_rwing', 'decal_tail'];
@@ -521,6 +521,49 @@ export const ITEMS = [
   { id: 'card_tako', kind: 'card', rarity: 'SSR', name: 'KARTA: TAKO', info: 'KARTA DO KOLEKCJI', card: { frame: 'tako_0', stage: 'stage5', name: 'TAKO' } },
   ...[['stage1', 'KIOTO'], ['stage2', 'OKINAWA'], ['stage3', 'SAPPORO'], ['stage4', 'KAGOSHIMA'], ['stage5', 'OSAKA'], ['stage6', 'BEPPU'], ['stage7', 'HIROSZIMA'], ['stage8', 'NAGASAKI']].map(([stage, city]) => (
     { id: `card_post_${stage}`, kind: 'card', rarity: 'N', name: `POCZTÓWKA: ${city}`, info: 'POCZTÓWKA DO KOLEKCJI', card: { frame: `stamp_${stage}`, stage, name: `POCZTÓWKA: ${city}`, post: true } })),
+  // ---- premium animations (all SSR or UR). An animated hull: the tint flowing over it (premiumFx.js) and the
+  // bits it sheds; an aura: sprites circling the ship; a trail: bits streaming from the engine; and a burst (a
+  // ring, a flash, bits thrown: as the bomb's look) when the ship flies in, beats a boss, is lost
+  { id: 'paint_fx_holo', kind: 'paint_fx', rarity: 'SSR', name: 'ANIMACJA: HOLOGRAM', info: 'ANIMOWANE MALOWANIE', anim: { tints: [0x8af0ff, 0xffffff, 0xb8a8ff, 0xffffff], speed: 3, flicker: 0.3 } },
+  { id: 'paint_fx_gold', kind: 'paint_fx', rarity: 'SSR', name: 'ANIMACJA: PŁYNNE ZŁOTO', info: 'ANIMOWANE MALOWANIE', anim: { tints: [0xffe08a, 0xfff8d8, 0xf0b040], speed: 1.2, bits: { frames: ['dot_1'], tints: [0xffd040, 0xfff4a8], rate: 12, vy: 16, life: 0.5 } } },
+  { id: 'paint_fx_neon', kind: 'paint_fx', rarity: 'SSR', name: 'ANIMACJA: NEON', info: 'ANIMOWANE MALOWANIE', anim: { tints: [0xff7ad0, 0x7af0ff, 0xfff07a, 0xb09aff], speed: 2 } },
+  { id: 'paint_fx_fire', kind: 'paint_fx', rarity: 'SSR', name: 'ANIMACJA: ŻAR', info: 'ANIMOWANE MALOWANIE', anim: { tints: [0xffb070, 0xfff0c0, 0xff8a50], speed: 4, bits: { frames: ['ember_0', 'ember_1'], rate: 18, vy: -6, g: -40, life: 0.5 } } },
+  { id: 'paint_fx_sakura', kind: 'paint_fx', rarity: 'SSR', name: 'ANIMACJA: PŁATKI', info: 'ANIMOWANE MALOWANIE', anim: { tints: [0xffd0e0, 0xffffff], speed: 1, bits: { frames: ['petal_0', 'petal_1', 'petal_2', 'petal_3'], rate: 9, vy: 18, g: 14, spin: 8, life: 0.9, spread: 26 } } },
+  { id: 'paint_fx_wave', kind: 'paint_fx', rarity: 'SSR', name: 'ANIMACJA: FALE', info: 'ANIMOWANE MALOWANIE', anim: { tints: [0x8ac8ff, 0xe0f4ff, 0x5aa0f0], speed: 1.5, bits: { frames: ['drop_0', 'drop_1'], rate: 9, vy: 26, g: 40, life: 0.5 } } },
+  { id: 'paint_fx_kintsugi', kind: 'paint_fx', rarity: 'SSR', name: 'ANIMACJA: KINTSUGI', info: 'ANIMOWANE MALOWANIE', anim: { tints: [0xffffff, 0xffd860, 0xffffff, 0xffffff], speed: 1.5 } },
+  { id: 'paint_fx_stars', kind: 'paint_fx', rarity: 'UR', name: 'ANIMACJA: GWIEZDNE NIEBO', info: 'ANIMOWANE MALOWANIE', anim: { tints: [0x7a8aff, 0xb0a0ff, 0x6a9aff], speed: 0.8, bits: { frames: ['dot_1'], tints: [0xffffff, 0xfff4a8], rate: 16, vy: 0, life: 0.3, spread: 0 } } },
+  { id: 'paint_fx_rainbow', kind: 'paint_fx', rarity: 'UR', name: 'ANIMACJA: TĘCZOWA LAKA', info: 'ANIMOWANE MALOWANIE', anim: { hue: true, speed: 0.4, sat: 0.45 } },
+  { id: 'paint_fx_storm', kind: 'paint_fx', rarity: 'UR', name: 'ANIMACJA: BŁYSKAWICE', info: 'ANIMOWANE MALOWANIE', anim: { tints: [0xc8d4ff, 0xc8d4ff, 0xc8d4ff, 0xc8d4ff, 0xc8d4ff, 0xc8d4ff, 0xffffff, 0xfff48a], step: true, speed: 10, bits: { frames: ['spark_0', 'spark_1', 'spark_2'], tints: [0xfff48a, 0xffffff], rate: 7, vy: 0, life: 0.15, spread: 0 } } },
+  { id: 'aura_foxfire', kind: 'aura', rarity: 'SSR', name: 'AURA: LISIE OGNIKI', info: 'KRĄŻY WOKÓŁ STATKU', aura: { frames: ['kitsunebi_0', 'kitsunebi_1'], anim: 8, n: 3, r: 13, speed: 2.4, scale: 0.5 } },
+  { id: 'aura_sakura', kind: 'aura', rarity: 'SSR', name: 'AURA: PŁATKI SAKURY', info: 'KRĄŻY WOKÓŁ STATKU', aura: { frames: ['petal_0', 'petal_1', 'petal_2', 'petal_3'], n: 5, r: 12, speed: 1.8, turn: true } },
+  { id: 'aura_momiji', kind: 'aura', rarity: 'SSR', name: 'AURA: LIŚCIE KLONU', info: 'KRĄŻY WOKÓŁ STATKU', aura: { frames: ['momiji_0', 'momiji_1', 'momiji_2', 'momiji_3'], n: 4, r: 13, speed: -1.6, turn: true } },
+  { id: 'aura_snow', kind: 'aura', rarity: 'SSR', name: 'AURA: PŁATKI ŚNIEGU', info: 'KRĄŻY WOKÓŁ STATKU', aura: { frames: ['flake_1'], n: 6, r: 13, speed: 1.2, tints: [0xe8f6ff] } },
+  { id: 'aura_embers', kind: 'aura', rarity: 'SSR', name: 'AURA: ŻAR', info: 'KRĄŻY WOKÓŁ STATKU', aura: { frames: ['ember_0', 'ember_1'], anim: 6, n: 5, r: 12, speed: 3 } },
+  { id: 'aura_drops', kind: 'aura', rarity: 'SSR', name: 'AURA: KROPLE', info: 'KRĄŻY WOKÓŁ STATKU', aura: { frames: ['drop_0', 'drop_1'], n: 4, r: 13, speed: -2.2 } },
+  { id: 'aura_stars', kind: 'aura', rarity: 'UR', name: 'AURA: GWIAZDY', info: 'KRĄŻY WOKÓŁ STATKU', aura: { frames: ['dot_2', 'dot_1'], n: 6, r: 14, speed: 2, tints: [0xffd040, 0xffffff, 0xfff4a8], twinkle: true } },
+  { id: 'aura_rainbow', kind: 'aura', rarity: 'UR', name: 'AURA: TĘCZA', info: 'KRĄŻY WOKÓŁ STATKU', aura: { frames: ['dot_2'], n: 6, r: 13, speed: 2.6, tints: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0] } },
+  { id: 'trail_comet', kind: 'trail', rarity: 'SSR', name: 'SMUGA: KOMETA', info: 'SMUGA ZA SILNIKIEM', trail: { frames: ['dot_2'], tints: [0xffffff, 0x9ad8ff, 0x4f9aff], rate: 45, vy: 60, life: 0.45, scale: 1.4, spread: 6 } },
+  { id: 'trail_sakura', kind: 'trail', rarity: 'SSR', name: 'SMUGA: PŁATKI', info: 'SMUGA ZA SILNIKIEM', trail: { frames: ['petal_0', 'petal_1', 'petal_2', 'petal_3'], rate: 16, vy: 46, life: 0.9, spin: 8, spread: 26 } },
+  { id: 'trail_foxfire', kind: 'trail', rarity: 'SSR', name: 'SMUGA: LISI OGIEŃ', info: 'SMUGA ZA SILNIKIEM', trail: { frames: ['kitsunebi_0', 'kitsunebi_1'], rate: 11, vy: 40, life: 0.6, scale: 0.5, spread: 10 } },
+  { id: 'trail_gold', kind: 'trail', rarity: 'SSR', name: 'SMUGA: ZŁOTY PYŁ', info: 'SMUGA ZA SILNIKIEM', trail: { frames: ['dot_1'], tints: [0xffd040, 0xfff4a8, 0xf0a020], rate: 34, vy: 50, life: 0.7, spread: 30 } },
+  { id: 'trail_ink', kind: 'trail', rarity: 'SSR', name: 'SMUGA: TUSZ', info: 'SMUGA ZA SILNIKIEM', trail: { frames: ['ashf_1', 'ashf_2'], rate: 16, vy: 44, life: 0.8, grow: 0.5, alpha: 0.6, spread: 8 } },
+  { id: 'trail_rainbow', kind: 'trail', rarity: 'UR', name: 'SMUGA: TĘCZA', info: 'SMUGA ZA SILNIKIEM', trail: { frames: ['dot_2'], tints: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], seq: 9, rate: 55, vy: 62, life: 0.55, scale: 1.3, spread: 4 } },
+  { id: 'entry_petals', kind: 'entry', rarity: 'SSR', name: 'WEJŚCIE: BURZA PŁATKÓW', info: 'EFEKT WEJŚCIA NA PLANSZĘ', burst: { ring: 0xffa8c8, frames: ['petal_0', 'petal_1', 'petal_2', 'petal_3'], n: 36 } },
+  { id: 'entry_foxfire', kind: 'entry', rarity: 'SSR', name: 'WEJŚCIE: LISIE OGNIE', info: 'EFEKT WEJŚCIA NA PLANSZĘ', burst: { ring: 0x6aa8ff, flash: 0xc0d8ff, frames: ['kitsunebi_0', 'kitsunebi_1'], scale: 0.5, n: 22 } },
+  { id: 'entry_thunder', kind: 'entry', rarity: 'SSR', name: 'WEJŚCIE: GROM', info: 'EFEKT WEJŚCIA NA PLANSZĘ', burst: { ring: 0xfff48a, flash: 0xffffc0, frames: ['spark_0', 'spark_1', 'spark_2'], tints: [0xfff48a, 0xffffff], n: 30 } },
+  { id: 'entry_wave', kind: 'entry', rarity: 'SSR', name: 'WEJŚCIE: WIELKA FALA', info: 'EFEKT WEJŚCIA NA PLANSZĘ', burst: { ring: 0x4fb8ff, flash: 0xc8e8ff, frames: ['drop_0', 'drop_1'], n: 36 } },
+  { id: 'entry_gold', kind: 'entry', rarity: 'SSR', name: 'WEJŚCIE: ZŁOTY DESZCZ', info: 'EFEKT WEJŚCIA NA PLANSZĘ', burst: { ring: 0xffd040, frames: ['dot_1', 'dot_2'], tints: [0xffd040, 0xfff4a8, 0xf0a020], scale: 1.6, n: 40 } },
+  { id: 'entry_rainbow', kind: 'entry', rarity: 'UR', name: 'WEJŚCIE: TĘCZA', info: 'EFEKT WEJŚCIA NA PLANSZĘ', burst: { ring: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], flash: 0xffffff, frames: ['dot_2'], tints: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], scale: 1.6, n: 44 } },
+  { id: 'victory_hanabi', kind: 'victory', rarity: 'SSR', name: 'TRIUMF: FAJERWERKI', info: 'EFEKT PO POKONANIU BOSSA', burst: { ring: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], frames: ['dot_2'], tints: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], scale: 1.4, n: 36 } },
+  { id: 'victory_petals', kind: 'victory', rarity: 'SSR', name: 'TRIUMF: DESZCZ PŁATKÓW', info: 'EFEKT PO POKONANIU BOSSA', burst: { ring: 0xffa8c8, frames: ['petal_0', 'petal_1', 'petal_2', 'petal_3'], n: 40 } },
+  { id: 'victory_cranes', kind: 'victory', rarity: 'SSR', name: 'TRIUMF: TYSIĄC ŻURAWI', info: 'EFEKT PO POKONANIU BOSSA', burst: { ring: 0xffffff, frames: ['orizuru_0', 'orizuru_1', 'orizuru_2'], scale: 0.45, n: 26 } },
+  { id: 'victory_gold', kind: 'victory', rarity: 'SSR', name: 'TRIUMF: ZŁOTE KONFETTI', info: 'EFEKT PO POKONANIU BOSSA', burst: { ring: 0xffd040, frames: ['dot_1', 'dot_2'], tints: [0xffd040, 0xfff4a8, 0xf0a020], scale: 1.6, n: 44 } },
+  { id: 'victory_foxfire', kind: 'victory', rarity: 'SSR', name: 'TRIUMF: LISIE OGNIE', info: 'EFEKT PO POKONANIU BOSSA', burst: { ring: 0x6aa8ff, frames: ['kitsunebi_0', 'kitsunebi_1'], scale: 0.5, n: 24 } },
+  { id: 'victory_rainbow', kind: 'victory', rarity: 'UR', name: 'TRIUMF: TĘCZA', info: 'EFEKT PO POKONANIU BOSSA', burst: { ring: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], flash: 0xffffff, frames: ['petal_0', 'petal_1', 'petal_2', 'petal_3'], tints: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], n: 48 } },
+  { id: 'death_petals', kind: 'death', rarity: 'SSR', name: 'UPADEK: OSTATNIE PŁATKI', info: 'EFEKT UTRATY ŻYCIA', burst: { ring: 0xffa8c8, frames: ['petal_0', 'petal_1', 'petal_2', 'petal_3'], n: 34 } },
+  { id: 'death_ink', kind: 'death', rarity: 'SSR', name: 'UPADEK: KLEKS TUSZU', info: 'EFEKT UTRATY ŻYCIA', burst: { ring: 0x2a2438, flash: 0x14101c, frames: ['ashf_1', 'ashf_2'], n: 30 } },
+  { id: 'death_soul', kind: 'death', rarity: 'SSR', name: 'UPADEK: DUSZA', info: 'EFEKT UTRATY ŻYCIA', burst: { ring: 0xc0d8ff, flash: 0xc0d8ff, frames: ['kitsunebi_0', 'kitsunebi_1'], scale: 0.5, n: 14 } },
+  { id: 'death_rainbow', kind: 'death', rarity: 'UR', name: 'UPADEK: TĘCZA', info: 'EFEKT UTRATY ŻYCIA', burst: { ring: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], flash: 0xffffff, frames: ['dot_2'], tints: [0xff5a5a, 0xffa040, 0xffe04f, 0x6ae486, 0x4fc8ff, 0xb070f0], scale: 1.6, n: 44 } },
 ];
 
 export const ITEM = Object.fromEntries(ITEMS.map((it) => [it.id, it]));
