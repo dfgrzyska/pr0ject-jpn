@@ -5,6 +5,7 @@ import { Pool } from './Pool.js';
 import { baseScale, sharedArt, spriteTexture } from './enemyArt.js';
 import { flameLook } from './shipSkin.js';
 import { fxTint } from './premiumFx.js';
+import { drawBubble } from './bubble.js';
 
 const WEAPON_NAMES = { basic: 'PODSTAWOWA', spread: 'ROZRZUT', laser: 'LASER', homing: 'NAPROWADZANE' };
 const WEAPON_TINT = { spread: 0xff8a6a, laser: 0x8ac8ff, homing: 0x9cf09a };
@@ -1055,58 +1056,10 @@ export class Player {
     const g = this.bubble;
     g.clear();
     if (!on && !(this.alive && this.shieldT > 0)) return;
-    const gold = this.turrets >= 2;
+    // (its colours and its shape out of the gachapon: see bubble.js)
     const t = this.scene.t;
-    const r = this.wingSpan() / 2 + 4 + Math.sin(t * 5) * 0.6;
-    const flash = this.shieldT > 0 ? this.shieldT / TURRETS.grace : 0;
-    // (the bubble's colours out of the gachapon: its fill and its rim)
-    const sl = this.ship.look?.shield;
-    const hue = sl?.cycle ? Phaser.Display.Color.HSVToRGB((t * 0.35) % 1, gold ? 0.75 : 0.55, 1).color : null;
-    const [col, edge] = hue != null ? [hue, 0xffffff] : (sl ? (gold ? sl.two : sl.one) : gold ? [0xffd860, 0xfff0b0] : [0x6ab8ff, 0xa8dcff]);
-    const fillA = (gold ? 0.16 : 0.12) + flash * 0.25;
-    const lineA = (gold ? 0.75 : 0.55) + flash * 0.25;
-    const cx = this.x;
-    const cy = this.y + 1;
-    g.fillStyle(col, fillA);
-    g.lineStyle(1, edge, lineA);
-    // (its shape out of the gachapon: a honeycomb's cell, an octagon, a star, a lotus, a paper parasol, a ring of
-    // talismans; else the plain bubble)
-    const shp = this.ship.look?.shieldShape;
-    const ring = (n, k, turn) => Array.from({ length: n }, (_, i) => {
-      const a = turn + (i / n) * Math.PI * 2;
-      const q = Array.isArray(k) ? k[i % k.length] : k;
-      return new Phaser.Math.Vector2(cx + Math.cos(a) * r * q, cy + Math.sin(a) * r * 0.9 * q);
-    });
-    if (shp === 'hex' || shp === 'oct' || shp === 'star') {
-      const pts = shp === 'hex' ? ring(6, 1.08, t * 0.5) : shp === 'oct' ? ring(8, 1.05, -t * 0.4) : ring(16, [1.14, 0.88], t * 0.6);
-      g.fillPoints(pts, true);
-      g.strokePoints(pts, true);
-      if (shp !== 'star') g.lineStyle(1, edge, lineA * 0.4).strokePoints(shp === 'hex' ? ring(6, 0.8, t * 0.5) : ring(8, 0.8, -t * 0.4), true);
-    } else if (shp === 'lotus') {
-      for (const p of ring(8, 0.62, t * 0.35)) {
-        g.fillEllipse(p.x, p.y, r * 0.86, r * 0.8);
-        g.strokeEllipse(p.x, p.y, r * 0.86, r * 0.8);
-      }
-    } else {
-      g.fillEllipse(cx, cy, r * 2, r * 1.8);
-      g.strokeEllipse(cx, cy, r * 2, r * 1.8);
-      if (shp === 'wagasa') {
-        // the parasol's ribs turning, its hub
-        g.lineStyle(1, edge, lineA * 0.55);
-        for (const p of ring(12, 1, t * 0.7)) g.lineBetween(cx, cy, p.x, p.y);
-        g.strokeEllipse(cx, cy, r * 1.3, r * 1.17);
-      } else if (shp === 'ofuda') {
-        // paper talismans going round on the rim, a red sign on each
-        for (const p of ring(8, 1, t * 0.9)) {
-          g.fillStyle(0xfff4e0, Math.min(1, lineA + 0.25)).fillRect(p.x - 1.5, p.y - 3, 3, 6);
-          g.fillStyle(0xd2361f, Math.min(1, lineA + 0.25)).fillRect(p.x - 0.5, p.y - 1.5, 1, 3);
-        }
-      }
-    }
-    // a highlight sliding round the bubble (a bright glint on the gold one)
-    const a = t * (gold ? 2.6 : 1.4);
-    g.fillStyle(0xffffff, gold ? 0.8 : 0.45);
-    g.fillCircle(this.x + Math.cos(a) * r * 0.72, this.y + 1 + Math.sin(a) * r * 0.64, gold ? 1.3 : 1);
+    const look = this.ship.look;
+    drawBubble(g, this.x, this.y + 1, this.wingSpan() / 2 + 4 + Math.sin(t * 5) * 0.6, t, { gold: this.turrets >= 2, flash: this.shieldT > 0 ? this.shieldT / TURRETS.grace : 0, shield: look?.shield, shape: look?.shieldShape });
   }
 
   weaponName() {

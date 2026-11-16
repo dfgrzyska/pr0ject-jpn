@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { ITEM, ITEMS, PITY, RARITIES, RARITY, TICKETS, LOOKS, SHOT_FRAMES } from '../../src/data/gacha.js';
 import { gachaEn, KEEP, PHRASES, LINES } from '../../src/data/gachaEn.js';
 import { fxTint, hue } from '../../src/game/premiumFx.js';
+import { seen } from '../../src/game/Loadout.js';
 import { buildShip, equip, grant, layout, loadState, newState, pool, pull, saveState, setHull, usePreset, wear, wearNow } from '../../src/game/Loadout.js';
 
 const memory = () => {
@@ -242,4 +243,21 @@ test('a prize is put on at once', () => {
   assert.equal(wearNow(s, 'card_kyubi'), false, 'a card is not worn');
   assert.ok(wearNow(s, 'hull_oni'));
   assert.equal(s.hull, 'hull_oni');
+});
+
+test('what comes out of the machine is new until it is looked at', () => {
+  const s = newState('kitsune');
+  grant(s, 5);
+  const it = pull(s, seeded(3));
+  assert.deepEqual(s.fresh, it.kind === 'card' ? [] : [it.id]);
+  if (it.kind !== 'card') {
+    assert.ok(seen(s, it.id));
+    assert.equal(seen(s, it.id), false);
+  }
+  assert.deepEqual(s.fresh, []);
+  // (a save keeps it; what is not the player's is dropped)
+  s.fresh.push('paint_urushi');
+  const m = memory();
+  saveState(m, s);
+  assert.deepEqual(loadState(m).fresh, []);
 });

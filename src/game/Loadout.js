@@ -50,9 +50,19 @@ function normalize(state) {
   // the looks: one of each kind at most, owned
   state.look = Object.fromEntries(LOOKS.map((k) => [k, ITEM[state.look?.[k]]?.kind === lookKind(k) && have.has(state.look[k]) ? state.look[k] : null]));
   // the three sets: the one fitted, the others as they were left (null: never used)
+  // what came out of the machine and has not been looked at in the hangar yet
+  state.fresh = [...new Set(state.fresh ?? [])].filter((id) => have.has(id) && ITEM[id].kind !== 'card');
   state.preset = [0, 1, 2].includes(state.preset) ? state.preset : 0;
   state.presets = [0, 1, 2].map((i) => state.presets?.[i] ?? null);
   return state;
+}
+
+/** A thing looked at in the hangar: no longer new. True if it was. */
+export function seen(state, id) {
+  const at = state.fresh?.indexOf(id) ?? -1;
+  if (at < 0) return false;
+  state.fresh.splice(at, 1);
+  return true;
 }
 
 /** Switch to another of the three sets: the fitted one is put away as it is; a set never used starts as a copy. */
@@ -148,6 +158,7 @@ export function pull(state, rnd = Math.random) {
   state.pulls++;
   state.dry = RARITIES.indexOf(rarity) >= from ? 0 : state.dry + 1;
   state.owned.push(item.id);
+  if (item.kind !== 'card') (state.fresh ??= []).push(item.id);
   return item;
 }
 
