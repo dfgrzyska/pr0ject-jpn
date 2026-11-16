@@ -481,7 +481,7 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
     const [bw, rh] = [X1 - X0, YB - YT - fh];
     const mid = rh >> 1;
     queue(
-      YB,
+      o.over === undefined ? YB : FY(o.over) + (o.rank ?? 1), // (over: a storey standing on the house whose foot is at that height)
       () => {
         for (let j = 0; j < rh; j++)
           for (let i = 0; i < bw; i++) {

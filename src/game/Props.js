@@ -180,7 +180,8 @@ export class Props {
   loop(p) {
     const o = p.objs[0];
     const step = Math.floor(this.time * p.fps + p.ph * 97);
-    const i = p.seq ? p.seq[step % p.seq.length] : step % p.f.length;
+    // (by: lit by the flight itself - a tower's lamps coming on as it rises into view)
+    const i = p.by ? Math.max(0, Math.min(p.f.length - 1, Math.floor((this.px.uTop - p.by[0]) / p.by[1]))) : p.seq ? p.seq[step % p.seq.length] : step % p.f.length;
     o.setVisible(i >= 0);
     if (i >= 0) this.setFrame(o, p.f[i]);
     if (p.z) {

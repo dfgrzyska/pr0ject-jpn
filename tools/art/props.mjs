@@ -259,10 +259,11 @@ export class PropKit {
    * from, by default where it stands, so the levels of one building can share theirs and stay together.
    * sc: shown this many times its size (a soft thing drawn at half the resolution, to save room).
    */
-  loop(x, u, f, { fps = 6, seq, ph = this.rand(), a, d, tint, fx, z, ax, au, sc } = {}) {
+  loop(x, u, f, { fps = 6, seq, ph = this.rand(), a, d, tint, fx, z, ax, au, sc, by } = {}) {
     const [, h] = this.maxSize(f);
     const m = z ? Math.ceil(Math.abs(z) * 520) : 0;
-    return this.add({ k: 'loop', x, u, f, fps, seq, ph, a, d, tint, fx, z, ax, au, sc }, [u - h * (sc ?? 1) - m, u + m]);
+    // (by: [u, step] - not a cycle: frame 0 until the screen's top reaches u, the next every `step` px of the flight after)
+    return this.add({ k: 'loop', x, u, f, fps, seq, ph, a, d, tint, fx, z, ax, au, sc, by }, [u - h * (sc ?? 1) - m, u + m]);
   }
 
   /**
