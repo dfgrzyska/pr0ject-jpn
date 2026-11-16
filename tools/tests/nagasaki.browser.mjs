@@ -108,6 +108,7 @@ try {
       const s = game.scene.getScene('Stage');
       s.openCollection('yokai');
       s.book.index = s.book.entries.findIndex(e => e.id === 'oranda');
+      s.book.mode = 'page'; // (the album opens on its grid of tiles: this is the entry's own page)
       s.book.layout(s.H);
       return { width: s.book.art.displayWidth, height: s.book.art.displayHeight, visible: s.book.art.visible };
     });
