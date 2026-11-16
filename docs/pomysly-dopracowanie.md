@@ -8,7 +8,7 @@ miast nie byli oglądani.
 
 1. Spotkanie 7: zamiast mównicy duża postać człowieka przy stole. **Zrobione 15.11** (opis w `random-encounters.md`).
 2. Spotkanie 6 (babcia): tło, ruchy i grafika od nowa. **Zrobione 15.11** (opis w `random-encounters.md`).
-3. Miasta: szczegóły, animacje i nowe ważne miejsca tam, gdzie jest pustka. Kagoshima i Okinawa zrobione 15.11.
+3. Miasta: szczegóły, animacje i nowe ważne miejsca tam, gdzie jest pustka. Kagoshima i Okinawa zrobione 15.11, Sapporo 16.11.
 
 ## Spotkania
 
@@ -119,12 +119,21 @@ Dodane:
 - Nazwy miejsc na morskich odcinkach (było 9, jest 17 różnych): Kerama Shoto, Onna Kaigan, Yanbaru, Kouri Ohashi,
   Kouri-jima, Sangosho, Mozuku-batake, Maboroshi no Shima, Todai-jima.
 
-### Sapporo
+### Sapporo — zrobione 16.11
 
-- Trzy odcinki to powtarzalna siatka osiedli.
-- Nazwane są 3 atrakcje (Okurayama, Susukino, Odori), choć w tle jest więcej: rzeźby śnieżne, wieża telewizyjna,
-  kopuła. Dodać nazwy.
-- Przełamać siatkę: tramwaj, browar-muzeum, park.
+Tu uwaga z dokumentu była trafna: przedmieście między skocznią a centrum to były same rzędy domów.
+
+Dodane:
+
+- Hokkaidō Jingū: brama torii, aleja z latarniami, pawilon pod śniegiem, jodły dookoła.
+- Muzeum piwa (Sapporo Biiru-en): hala z czerwonej cegły z gwiazdą, komin z dymem, beczki na dziedzińcu.
+- Szkoła podstawowa: budynek, boisko odśnieżone w prostokąt, bałwany, bramki.
+- Każde z tych miejsc zajmuje jedną kwartę zamiast jej domów. Reszta miasta nie drgnęła ani o piksel (domy kwarty
+  są losowane jak dawniej i cofane, żeby ciąg liczb losowych został ten sam).
+- Nazwy miejsc: były 3, jest 13 (Maruyama, Hokkaido Jingu, Sapporo Biiru-en, Shogakko, Tokeidai, Akarenga,
+  Nijo Ichiba, Toyohira-gawa, Nakajima Koen, Terebi-to i dawne trzy).
+
+Nie zrobione: tramwaj (już jeździ w centrum, na przedmieściu nie ma torów, którymi mógłby dokądś dojechać).
 
 ### Hiroszima
 
