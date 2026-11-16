@@ -43,19 +43,23 @@ Zostało: obejrzeć walkę w ruchu i ocenić jej czas z prawdziwym graczem. Poni
 - Ataki: przejrzeć od zera (czytelność zapowiedzi, balans, czas walki).
 - Tygrys i wózek: zapowiedzi bez linii celowania, znakami w świecie gry (jak u kei cara i kota na budowie).
 
-### 3. Kot na budowie — ruch w tle zrobiony 15.11
+### 3. Kot na budowie — zrobione 16.11
 
 Zrobione: młoty, połysk biegnący po wąsach suma, mruganie, bąble w błocie, kurz z pęknięć, dym nad dachami.
-Zostało: powtarzalne dachy Edo w górnej części.
+Dachy Edo przerobione 16.11: trzy rodzaje kwartałów (długie domy, dwa rzędy z zaułkiem, domy wokół podwórza), gont
+i strzecha między dachówką, beczki na deszczówkę, suszarnie z praniem, noreny sklepów, świątynia, wieże strażackie.
+W grze widać to na marginesach placu budowy i u góry, gdy kadr podjedzie w trakcie dłuższej walki.
 
 - Ruch w tle: wąsy suma, ludzie z młotami, dym z kominów.
 - Górna część z dachami Edo jest powtarzalna.
 
-### 2. Kei car — częściowo zrobione 15.11
+### 2. Kei car — zrobione 16.11
 
 Zrobione: „BŁYSK!”, cienie arbuzów i strzałki malowane na jezdni zamiast okręgów i linii, jaskółki i czaple nad drogą.
 Nie da się bez zmian w silniku: ruch na ziemi (rolnicy, woda, flagi), bo pola to jeden zapętlony obraz pędzący 70 px/s.
-Zostało: słaby obraz startowy Nihonbashi.
+Nihonbashi narysowany od nowa 16.11: kanał między kamiennymi nabrzeżami, łukowy most w osi drogi (wcześniej pas
+desek w poprzek ekranu), orszak daimyō z lektyką, targ rybny, składy, tablice ogłoszeń, schody do wody, barki
+i dwie płynące łodzie.
 
 - Ruch w tle: rolnicy, ptaki nad polami, zmarszczki na wodzie w poletkach, flagi przy herbaciarni.
 - Arbuzy: zastąpić okręgi lądowania i strzałki godzin szczytu znakami w świecie gry.
@@ -73,10 +77,13 @@ Zrobione: pasy chmur na pustym papierze i pięć kluczy lecących żurawi.
 - Do sprawdzenia w grze: mruganie dymnego kota (głowa wchodzi w kadr dopiero pod koniec walki).
 - Sprawdzone 15.11: w kodzie jest „MIAU!”; „MEOW!” to tłumaczenie pokazywane tylko przy języku angielskim.
 
-### 5. Pokój otaku — dobre
+### 5. Pokój otaku — sprawdzone w grze 16.11
 
 - Do sprawdzenia w grze: błysk lokatora przy trafieniu (zmiana wypchnięta bez testu), animacje tła (pranie, kurz,
   GAME OVER w telewizorze), szybkie efekty (konfetti, plamy po bulionie).
+- Sprawdzone 16.11 (`tools/preview/heya-shots.mjs`): błysk lokatora przy trafieniu działa i gaśnie; trzy fazy
+  rysują się bez błędów; boss kończy się na 132 px z 420, więc nie jest ciasno. Nie złapane na zrzutach: konfetti
+  (tylko przy losie SSR) i GAME OVER w telewizorze.
 - Poprawione 15.11: drugi ekran nie zostaje już na klatce pauzy, gdy boss padnie w trakcie dzwonka.
 - Boss zajmuje więcej miejsca w pionie, odkąd lokator siedzi w fotelu przed biurkiem; ocenić, czy nie jest ciasno.
 
@@ -157,5 +164,6 @@ Dodane:
 ## Sprawy techniczne
 
 - Poprawione 15.11: testy `nagasaki` i `rendering` uruchamiają przeglądarkę i serwer tak jak pozostałe (bez ścieżki
-  do Chrome z Windowsa). `rendering` przechodzi; `nagasaki` pada na asercji widoczności sprite'a 13×12 — padał tak
-  samo przed zmianą, do zbadania osobno.
+  do Chrome z Windowsa). `rendering` przechodzi.
+- Poprawione 16.11: test `nagasaki` przechodzi. Album otwiera się teraz na siatce kafelków, a test sprawdzał
+  ilustrację bez przejścia na stronę wpisu.
