@@ -60,7 +60,7 @@ export const TOD = [
 // late: drawn after the land that is put back over the water (GROUNDS: over).
 export const WATER = [
   { id: 'kanda_nakano', chain: [[0, 712, 5], [60, 706, 5], [120, 716, 5], [180, 708, 5]] },
-  { id: 'gyoen_ike', ell: [70, 1900, 30, 20] },
+  { id: 'gyoen_ike', ell: [76, 1900, 38, 20] },
   { id: 'gyoen_ike2', ell: [112, 1960, 18, 26] },
   { id: 'meiji_ike', ell: [66, 2620, 10, 22] },
   { id: 'kokyo_hori', ring: [8, 5166, 164, 604, 26] },

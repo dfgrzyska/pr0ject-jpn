@@ -1,5 +1,5 @@
 import { DEPTH, RENDER_SCALE, VIEW } from '../config.js';
-import { STAGES } from '../data/stages.js';
+import { STAGES, ALL_STAGES } from '../data/stages.js';
 import { MAP, project } from '../data/japan.js';
 import { pixelText } from './Hud.js';
 import { tr } from '../i18n.js';
@@ -79,8 +79,9 @@ export class JourneyMenu {
     this.setMode('title');
   }
 
+  // (by index every stage is known, one in the works too: ?stage=9 opens the menu on it)
   city(i) {
-    const [x, y] = project(...STAGES[i].map);
+    const [x, y] = project(...ALL_STAGES[i].map);
     return { x: Math.round(x * this.map.scaleX * RENDER_SCALE), y: Math.round(y * this.map.scaleY * RENDER_SCALE + this.map.y) };
   }
 
@@ -150,8 +151,8 @@ export class JourneyMenu {
     this.scene.tweens.killTweensOf(this.map);
     const scale = cities ? 0.8 : 1;
     this.scene.tweens.add({ targets: this.map, scaleX: scale * FINE, scaleY: scale * FINE, y: Math.round((this.H - MAP.h * scale) / 2), alpha: title ? 0.58 : 1, duration: 450, ease: 'Sine.easeInOut' });
-    this.name.setText(STAGES[this.index].name).setTint(0xffe080);
-    this.subtitle.setText(tr(STAGES[this.index].subtitle));
+    this.name.setText(ALL_STAGES[this.index].name).setTint(0xffe080);
+    this.subtitle.setText(tr(ALL_STAGES[this.index].subtitle));
     this.next.setTint(0xffe080);
   }
 
@@ -164,8 +165,8 @@ export class JourneyMenu {
     this.flight = { from, to, cx: (from.x + to.x) / 2 + (to.y - from.y) / distance * bend,
       cy: (from.y + to.y) / 2 - (to.x - from.x) / distance * bend, t: 0, duration: Math.min(0.7, 0.4 + distance / 500) };
     this.index = index;
-    this.name.setText(STAGES[index].name);
-    this.subtitle.setText(tr(STAGES[index].subtitle));
+    this.name.setText(ALL_STAGES[index].name);
+    this.subtitle.setText(tr(ALL_STAGES[index].subtitle));
   }
 
   step(delta) {
@@ -218,7 +219,7 @@ export class JourneyMenu {
     else if (this.focus === 2) this.scene.openGacha();
     else this.scene.openHangar();
   }
-  remember() { try { localStorage.setItem(CITY_KEY, STAGES[this.index].id); } catch { /* private mode */ } }
+  remember() { try { localStorage.setItem(CITY_KEY, ALL_STAGES[this.index].id); } catch { /* private mode */ } }
 
   update(dt) {
     this.time += dt;

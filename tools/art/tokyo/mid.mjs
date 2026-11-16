@@ -8,12 +8,15 @@
 // Coordinates: x across, u up from the strip's bottom; a fine pixel is a third of a logical one.
 import { fbm } from '../../lib/raster.mjs';
 import { HiCanvas, hashPx } from '../hires.mjs';
-import { todGrade, tintTable } from '../props.mjs';
+import { todGrade, tintTable, PropKit } from '../props.mjs';
+import { makeKit } from './kit.mjs';
+import { nakano } from './nakano.mjs';
+import { shinjuku } from './shinjuku.mjs';
 import { W, S, L, DISTRICTS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, PLOTS } from './route.mjs';
 import { near, inShape, bbox, railHalf } from './geom.mjs';
 
 // the districts' painters, in the order they are called: (ctx) => void. (Phases 2-7 add theirs here.)
-const PAINTERS = [];
+const PAINTERS = [nakano, shinjuku];
 
 const smooth = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -146,8 +149,9 @@ export function buildMid() {
     });
   };
   for (const r of onGround) pavement(r);
-  for (const r of onGround) roadway(r);
+  for (const r of onGround) if (r.cls !== 'arcade') roadway(r);
   for (const r of onGround) lines(r);
+  for (const r of onGround) if (r.cls === 'arcade') roadway(r); // (its roof over the lanes that cross under it)
 
   // ---- what stands over the streets: the tracks on their viaducts, the bridges over them, the expressways.
   // Their shadows first (thrown to the lower right, on whatever is painted there).
@@ -204,16 +208,74 @@ export function buildMid() {
       return Math.abs(d - r) < 0.5 && Math.floor(((Math.atan2(u - au, x - ax) + Math.PI) / (Math.PI * 2)) * 72) % 2 === 0 ? 0xffd040 : null;
     });
 
-  const ctx = { img, wet, paint, fill, along, ramp, shade, W, S, L };
+  // ---- the districts. What they may build on: the ground that nothing of the route takes (occ: a logical
+  // pixel is 1 where there is water, a street with its pavements, tracks, a ground of its own kind or a plot).
+  const occ = new Uint8Array(W * L);
+  const take = (x0, u0, x1, u1, test) => {
+    for (let u = Math.max(0, Math.floor(u0)); u < Math.min(L, Math.ceil(u1)); u++) for (let x = Math.max(0, Math.floor(x0)); x < Math.min(W, Math.ceil(x1)); x++) if (!occ[u * W + x] && test(x + 0.5, u + 0.5)) occ[u * W + x] = 1;
+  };
+  for (let u = 0; u < L; u++) for (let x = 0; x < W; x++) if (wet[((L - 1 - u) * S + 1) * FW + x * S + 1]) occ[u * W + x] = 1;
+  for (const r of ROADS) {
+    const reach = r.w / 2 + (r.cls === 'avenue' ? 2.6 : r.cls === 'street' ? 2 : 0.8);
+    for (let i = 0; i + 1 < r.pts.length; i++) {
+      const [a, b] = [r.pts[i], r.pts[i + 1]];
+      take(Math.min(a[0], b[0]) - reach, Math.min(a[1], b[1]) - reach, Math.max(a[0], b[0]) + reach, Math.max(a[1], b[1]) + reach, (x, u) => near(r.pts, x, u).d <= reach);
+    }
+  }
+  for (const r of RAILS) {
+    const reach = railHalf(r) + 1;
+    for (let i = 0; i + 1 < r.pts.length; i++) {
+      const [a, b] = [r.pts[i], r.pts[i + 1]];
+      take(Math.min(a[0], b[0]) - reach, Math.min(a[1], b[1]) - reach, Math.max(a[0], b[0]) + reach, Math.max(a[1], b[1]) + reach, (x, u) => near(r.pts, x, u).d <= reach);
+    }
+  }
+  for (const g of GROUNDS) take(...bbox(g), (x, u) => inShape(g, x, u));
+  for (const [, x, u, w, h] of PLOTS) take(x - 1, u - 1, x + w + 1, u + h + 1, () => true);
+  /**
+   * The free ground between u0 and u1 as boxes [x, u, w, h], each at least minW x minH: the blocks a district
+   * fills with its houses. What is given out is taken, so asking again gives what is left.
+   */
+  const blocks = (u0, u1, minW = 8, minH = 8) => {
+    const out = [];
+    for (let u = u0; u < u1; u++)
+      for (let x = 0; x < W; x++) {
+        if (occ[u * W + x]) continue;
+        let w = 0;
+        while (x + w < W && !occ[u * W + x + w]) w++;
+        let h = 1;
+        grow: for (; u + h < u1; h++) for (let i = 0; i < w; i++) if (occ[(u + h) * W + x + i]) break grow;
+        for (let j = 0; j < h; j++) occ.fill(1, (u + j) * W + x, (u + j) * W + x + w);
+        if (w >= minW && h >= minH) out.push([x, u, w, h]);
+        x += w - 1;
+      }
+    return out;
+  };
+  /** Paint the ground box (x, u, w, h) as a ground of a kind (a plot that is a court, a yard). */
+  const pave = (x, u, w, h, kind, seed = 41) => paint(x, u, x + w, u + h, (px, pu) => ramp(GROUND[kind], px, pu, seed));
+  const plot = (id) => {
+    const p = PLOTS.find((q) => q[0] === id);
+    return { x: p[1], u: p[2], w: p[3], h: p[4] };
+  };
+  const tod = todGrade(TOD, smooth);
+  const props = new PropKit(9109, { artScale: S });
+  const kit = makeKit({ img, W, L, S, seed: 9009, props, tod });
+  const covers = []; // boxes of the strip shown again over the moving parts (a station's roof over its trains)
+  // (d: how high - 0.1 is over the trains; -0.1 is over the cars on the ground and under the trains)
+  /** Keep the ground box (x, u, w, h) out of the blocks (a forecourt the district lays out itself). */
+  const claim = (x, u, w, h) => {
+    for (let j = Math.max(0, Math.floor(u)); j < Math.min(L, u + h); j++) occ.fill(1, j * W + Math.max(0, Math.floor(x)), j * W + Math.min(W, Math.ceil(x + w)));
+  };
+  const ctx = { img, wet, paint, fill, along, ramp, shade, W, S, L, kit, props, tod, blocks, pave, plot, claim, cover: (x, u, w, h, d = 0.1) => covers.push([x, u, w, h, d]) };
   for (const p of PAINTERS) p(ctx);
+  kit.flush();
 
   // ---- the time of day, a band of the strip at a time
-  const tod = todGrade(TOD, smooth);
   const BAND = 16 * S;
   for (let Y0 = 0; Y0 < FH; Y0 += BAND) {
     const band = img.hi.crop(0, Y0, FW, Math.min(BAND, FH - Y0));
     tod.frame(band, L - (Y0 + BAND / 2) / S);
     img.hi.data.set(band.data, Y0 * FW * 4);
   }
-  return { strip: img.hi, meta: { width: W, artScale: S, length: L, tint: tintTable(L, tod.white) } };
+  for (const [x, u, w, h, d] of covers) props.loop(x, u + h, [props.frame(img.hi.crop(x * S, (L - u - h) * S, w * S, h * S))], { fps: 1, d });
+  return { strip: img.hi, props: props.pack(), meta: { width: W, artScale: S, length: L, tint: tintTable(L, tod.white) } };
 }
