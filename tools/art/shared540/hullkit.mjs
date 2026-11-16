@@ -23,6 +23,7 @@ export function hullSheet(W, H, mats, layer = null, ramps = {}) {
   const box = (pts) => [Math.min(...pts.map((p) => p[0])), Math.min(...pts.map((p) => p[1])), Math.max(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[1]))];
   const kit = {
     s,
+    shape,
     role,
     W,
     H,

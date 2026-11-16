@@ -187,7 +187,7 @@ export function applySkin(scene, ship) {
     frames.forEach((name, i) => {
       if (/_o\d$/.test(name)) return; // (still a sheet being folded: no stickers yet)
       // (a banked ship is narrower, and so are wings raised in a beat: their stickers move in with them)
-      const narrow = (/_[lr]$/.test(name) ? 0.84 : 1) * (name.includes('_f1') ? 0.8 : name.includes('_f2') ? 0.6 : 1);
+      const narrow = (/_[lr]$/.test(name) ? 0.84 : 1) * (!ship.anim?.wings ? 1 : name.includes('_f1') ? 0.8 : name.includes('_f2') ? 0.6 : 1);
       decals.forEach((pic, n) => {
         if (!pic || !gacha.has(pic)) return;
         const f = gacha.get(pic);

@@ -66,7 +66,7 @@ export const ITEMS = [
     ship: {
       id: 'houou', name: 'HOUOU', role: 'PREMIUM', color: 0xffd040, frame: 'ship_houou', life: 'icon_life_houou', lives: 3, damage: 1.1, hit: 1.3, graze: 9, pickup: 13, flameY: 9, wing: 24,
       // (alive: its wings beat, it sheds embers, and it rises out of a burst of them)
-      anim: { rate: 8, shed: { frames: ['ember_0', 'ember_1'], rate: 9, vy: 22, g: -30, life: 0.5, spread: 14 }, rise: { ring: 0xff8a2a, flash: 0xffd0a0, frames: ['ember_0', 'ember_1'], n: 30 } },
+      anim: { rate: 8, wings: true, shed: { frames: ['ember_0', 'ember_1'], rate: 9, vy: 22, g: -30, life: 0.5, spread: 14 }, rise: { ring: 0xff8a2a, flash: 0xffd0a0, frames: ['ember_0', 'ember_1'], n: 30 } },
       frames: ['', '_l', '_r', '_f1', '_f1_l', '_f1_r', '_f2', '_f2_l', '_f2_r'].map((s) => `ship_houou${s}`),
       decalAt: [[0.5, 0.48], [0.3, 0.38], [0.7, 0.38], [0.5, 0.66]],
     },
@@ -79,12 +79,53 @@ export const ITEMS = [
     id: 'hull_orizuru', kind: 'hull', rarity: 'UR', name: 'ORIZURU', info: 'ORIGAMI: MACHA SKRZYDŁAMI',
     ship: {
       id: 'orizuru', name: 'ORIZURU', role: 'ORIGAMI', color: 0xf0ecff, frame: 'ship_orizuru', life: 'icon_life_orizuru', lives: 3, damage: 1, hit: 1.2, graze: 10, pickup: 13, flameY: 5.5, wing: 22,
-      anim: { rate: 9, fold: true },
+      anim: { rate: 9, fold: true, wings: true },
       frames: ['', '_l', '_r', '_f1', '_f1_l', '_f1_r', '_f2', '_f2_l', '_f2_r', '_o0', '_o1', '_o2'].map((s) => `ship_orizuru${s}`),
       decalAt: [[0.5, 0.42], [0.3, 0.53], [0.7, 0.53], [0.5, 0.64]],
     },
     slots: { engine: 1, gun: 1, bomb: 1, core: 1, omamori: 2 },
     fixed: { core: 'core_ofuda' },
+  },
+  // more hulls that move (tools/art/shared540/hulls.mjs). `anim.by`: what sets the frames off (see Player.hullFrame)
+  {
+    id: 'hull_koinobori', kind: 'hull', rarity: 'SSR', name: 'KOINOBORI', info: 'KARP: FALUJE NA WIETRZE',
+    ship: {
+      id: 'koinobori', name: 'KOINOBORI', role: 'KARP', color: 0x5cacf2, frame: 'ship_koinobori', life: 'icon_life_koinobori', lives: 3, damage: 0.95, hit: 1.1, graze: 11, pickup: 15, flameY: 12, wing: 16,
+      anim: { rate: 7, cycle: [0, 1, 2, 3], bank: false },
+      frames: ['', '_f1', '_f2', '_f3'].map((s) => `ship_koinobori${s}`),
+      decalAt: [[0.5, 0.34], [0.38, 0.48], [0.62, 0.48], [0.5, 0.62]],
+    },
+    slots: { engine: 1, gun: 1, bomb: 1, core: 1, omamori: 1 },
+  },
+  {
+    id: 'hull_kabuto', kind: 'hull', rarity: 'UR', name: 'KABUTO', info: 'HEŁM: OTWIERA PANCERZ',
+    ship: {
+      id: 'kabuto', name: 'KABUTO', role: 'PANCERNY', color: 0xd2361f, frame: 'ship_kabuto', life: 'icon_life_kabuto', lives: 3, damage: 1.2, hit: 1.6, graze: 7, pickup: 11, flameY: 9, wing: 26,
+      anim: { by: 'fire', n: 3 },
+      frames: ['', '_l', '_r', '_f1', '_f1_l', '_f1_r', '_f2', '_f2_l', '_f2_r'].map((s) => `ship_kabuto${s}`),
+      decalAt: [[0.5, 0.5], [0.24, 0.5], [0.76, 0.5], [0.5, 0.72]],
+    },
+    slots: { engine: 1, gun: 2, bomb: 1, core: 1, omamori: 1 },
+  },
+  {
+    id: 'hull_chochin', kind: 'hull', rarity: 'SSR', name: 'CHŌCHIN-OBAKE', info: 'LAMPION: MRUGA, MA JĘZYK',
+    ship: {
+      id: 'chochin', name: 'CHŌCHIN', role: 'DUCH', color: 0xf58220, frame: 'ship_chochin', life: 'icon_life_chochin', lives: 3, damage: 1, hit: 1.3, graze: 12, pickup: 12, flameY: 8, wing: 18,
+      anim: { rate: 5, blink: 3.7, graze: true, bank: false },
+      frames: ['', '_f1', '_f2', '_b', '_t'].map((s) => `ship_chochin${s}`),
+      decalAt: [[0.22, 0.42], [0.2, 0.6], [0.8, 0.6], [0.8, 0.4]],
+    },
+    slots: { engine: 1, gun: 1, bomb: 1, core: 1, omamori: 3 },
+  },
+  {
+    id: 'hull_maneki', kind: 'hull', rarity: 'SSR', name: 'MANEKI-NEKO', info: 'KOT SZCZĘŚCIA: MACHA ŁAPKĄ',
+    ship: {
+      id: 'maneki', name: 'MANEKI', role: 'SZCZĘŚCIARZ', color: 0xfffaf0, frame: 'ship_maneki', life: 'icon_life_maneki', lives: 3, damage: 1, hit: 1.4, graze: 9, pickup: 22, flameY: 10, wing: 20,
+      anim: { by: 'volley', n: 3, bank: false },
+      frames: ['', '_f1', '_f2'].map((s) => `ship_maneki${s}`),
+      decalAt: [[0.5, 0.2], [0.3, 0.74], [0.74, 0.84], [0.5, 0.9]],
+    },
+    slots: { engine: 1, gun: 1, bomb: 1, core: 1, omamori: 2 },
   },
 
   // ---- engines: keyboard speed, px of travel per px of finger, how fast the ship chases the finger

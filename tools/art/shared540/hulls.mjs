@@ -4,10 +4,18 @@
 import { Raster } from '../../lib/raster.mjs';
 import { crane, ORIZURU_FRAMES } from './orizuru540.mjs';
 import { phoenix, HOUOU_FRAMES } from './houou540.mjs';
+import { carp, KOINOBORI_FRAMES } from './koinobori540.mjs';
+import { kabuto, KABUTO_FRAMES } from './kabuto540.mjs';
+import { lantern, CHOCHIN_FRAMES } from './chochin540.mjs';
+import { cat, MANEKI_FRAMES } from './maneki540.mjs';
 
 export const HULLS = [
   { base: 'ship_orizuru', frames: ORIZURU_FRAMES, draw: crane, roles: 3 },
   { base: 'ship_houou', frames: HOUOU_FRAMES, draw: phoenix, roles: 3 },
+  { base: 'ship_koinobori', frames: KOINOBORI_FRAMES, draw: carp, roles: 3 },
+  { base: 'ship_kabuto', frames: KABUTO_FRAMES, draw: kabuto, roles: 3 },
+  { base: 'ship_chochin', frames: CHOCHIN_FRAMES, draw: lantern, roles: 3 },
+  { base: 'ship_maneki', frames: MANEKI_FRAMES, draw: cat, roles: 3 },
 ];
 
 export function hulls540(add) {
