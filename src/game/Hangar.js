@@ -211,7 +211,8 @@ export class Hangar {
     // the ship in its frame, in the paint and with the flame looked at
     applySkin(this.scene, next ?? ship);
     this.anim = (next ?? ship).look?.paintFx ?? null;
-    this.beat = ship.anim ? { frame: ship.frame, rate: ship.anim.rate } : null; // (a hull that moves: its wings beat here too)
+    // (a hull that moves does so here too: through its frames in turn, whatever sets them off in a game)
+    this.beat = ship.anim ? { frame: ship.frame, rate: ship.anim.rate ?? 4, cycle: ship.anim.cycle ?? (ship.anim.n ? [...Array(ship.anim.n).keys(), ...Array(ship.anim.n).keys()].slice(0, ship.anim.n).concat([...Array(ship.anim.n).keys()].reverse().slice(1, -1)) : [0, 1, 2, 1]) } : null;
     // the three sets' boxes: the fitted one lit
     [0, 1, 2].forEach((i) => {
       const on = i === this.loadout.preset;
@@ -437,7 +438,7 @@ export class Hangar {
     }
     // (an animated paint job: its colour flowing over the hull)
     if (this.beat) {
-      const b = [0, 1, 2, 1][Math.floor(this.t * this.beat.rate) % 4];
+      const b = this.beat.cycle[Math.floor(this.t * this.beat.rate) % this.beat.cycle.length];
       const frame = b ? `${this.beat.frame}_f${b}` : this.beat.frame;
       if (this.art.frame.name !== frame) this.art.setFrame(frame);
     }

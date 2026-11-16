@@ -1,7 +1,7 @@
 // Sprite definitions: player ship, enemies (Fushimi Inari robot designs), bullets, pickups, FX, UI.
 import { Mask, renderMask } from '../lib/spritekit.mjs';
 import { Raster, fbm, bayer } from '../lib/raster.mjs';
-import { crane, ORIZURU_FRAMES } from './shared540/orizuru540.mjs';
+import { hullsLow } from './shared540/hulls.mjs';
 import { okinawaSprites } from './okinawa/sprites.mjs';
 import { sapporoSprites } from './sapporo/sprites.mjs';
 import { tanukiSprites } from './kyoto/tanuki.mjs';
@@ -127,18 +127,13 @@ function shipFrame(bank, rows = SHIP) {
   }
   return renderMask(m);
 }
-for (const [name, rows] of [['ship', SHIP], ['ship_oni', SHIP_ONI], ['ship_tsubame', SHIP_TSUBAME], ['ship_houou', SHIP_HOUOU]]) {
+for (const [name, rows] of [['ship', SHIP], ['ship_oni', SHIP_ONI], ['ship_tsubame', SHIP_TSUBAME]]) {
   add(name, shipFrame(0, rows));
   add(`${name}_l`, shipFrame(-1, rows));
   add(`${name}_r`, shipFrame(1, rows));
 }
-// ORIZURU is drawn at 540 px only (shared540/orizuru540.mjs): each of its frames at a third, for this atlas
-for (const [suffix, opts] of ORIZURU_FRAMES) {
-  const hi = crane(opts);
-  const lo = new Raster(hi.w / 3, hi.h / 3);
-  for (let y = 0; y < lo.h; y++) for (let x = 0; x < lo.w; x++) if (hi.alpha(x * 3 + 1, y * 3 + 1)) lo.set(x, y, hi.get(x * 3 + 1, y * 3 + 1));
-  add(`ship_orizuru${suffix}`, lo);
-}
+// the hulls that move are drawn at 540 px only (shared540/hulls.mjs): each of their frames at a third, for this atlas
+hullsLow(add);
 
 // Engine flames (no outline), drawn under the ship's two nozzles.
 const FLAMES = [

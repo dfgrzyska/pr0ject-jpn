@@ -266,19 +266,20 @@ export class Player {
       if (firing && this.entering <= 0 && this.jam <= 0) this.fire(dt);
     }
     const f = this.ship.frame;
-    const an = this.ship.anim; // (a hull that moves: ORIZURU)
-    const folding = an && this.alive && this.entering > 0 ? 1 - this.entering / 0.7 : 1;
+    const an = this.ship.anim; // (a hull that moves, see hullFrame)
+    const folding = an?.fold && this.alive && this.entering > 0 ? 1 - this.entering / 0.7 : 1;
     if (folding < 0.8) {
-      // flying in, it folds itself out of a sheet, turning as it does
+      // flying in, the paper crane folds itself out of a sheet, turning as it does
       this.shipFrame(`${f}_o${folding < 0.3 ? 0 : folding < 0.55 ? 1 : 2}`);
       this.sprite.setPosition(this.x, this.y).setRotation((0.8 - folding) ** 2 * 9);
     } else {
-      // its wings beat (faster as it climbs): spread, half raised, raised, and back
-      const beat = an ? [0, 1, 2, 1][Math.floor(this.scene.t * an.rate * (1 + Math.max(0, this.thrust) * 0.5)) % 4] : 0;
-      const fb = beat ? `${f}_f${beat}` : f;
-      this.shipFrame(this.bank < -0.35 ? `${fb}_l` : this.bank > 0.35 ? `${fb}_r` : fb);
+      this.shipFrame(an ? this.hullFrame(dt) : this.bank < -0.35 ? `${f}_l` : this.bank > 0.35 ? `${f}_r` : f);
       this.sprite.setPosition(this.x, this.y).setRotation(this.bank * 0.065);
     }
+    if (an?.shed && this.alive && this.sprite.visible) this.emit(an.shed, this.x, this.y, 22, 12, dt); // (embers off its wings)
+    // (rising again: a burst of what it is made of, where it stops)
+    if (an?.rise && this.alive && this.wasEntering && this.entering <= 0) this.burst(an.rise, this.x, this.y);
+    this.wasEntering = this.entering > 0;
     this.flame.setPosition(this.x, this.y + this.ship.flameY).setScale(1 - this.thrust * 0.12, (1 + this.thrust * 0.45) * flameLook(this.flame, this.ship));
     this.dot.setPosition(this.x, this.y);
     // the companion: behind the left wing, catching up with the ship, bobbing as it flies
@@ -526,6 +527,7 @@ export class Player {
     this.volleys++;
     this.muzzleT = 0.04;
     this.muzzle.setFrame(this.volleys % 2 ? 'muzzle_0' : 'muzzle_1');
+    this.volleyAt = this.scene.t; // (a hull that moves may answer a volley, see hullFrame)
     this.scene.sfx.shot(this.weapon === 'homing' ? 'basic' : this.weapon, this.ship.look?.sound);
     // a tail gun: a needle astern with every third volley
     if (this.ship.tail && this.volleys % 3 === 0) this.shot('ps_needle', x, y + 8, 0, WEAPONS.basic.speed, 1, 2).flipY = true;
@@ -610,6 +612,7 @@ export class Player {
   graze(b) {
     const s = this.scene;
     s.score.add(GRAZE.points * s.score.mult * (this.ship.grazePoints ?? 1));
+    this.grazeT = 0.3; // (a hull that moves may answer a graze, see hullFrame)
     const gl = this.ship.look?.graze; // (the spark's look out of the gachapon)
     s.fx.spark(b.x, b.y, gl ? gl.tints[Math.floor(Math.random() * gl.tints.length)] : null);
     if (gl?.bits) s.fx.cityBits(b.x, b.y, 1, 1, false, gl.bits);
@@ -847,7 +850,7 @@ export class Player {
     s.fx.debris(this.x, this.y, 12, this.ship.color, 1.6);
     s.fx.debris(this.x, this.y, 6, 0xffffff, 1.3);
     s.fx.flash(0.35, 0.3);
-    if (this.ship.anim) {
+    if (this.ship.anim?.fold) {
       // (the paper crane comes apart into the sheet it was folded from, drifting down)
       const sheet = s.fx.part(s.fx.parts, `${this.ship.frame}_o0`, this.x, this.y, { vy: 26, drag: 0.3, g: 14, spin: 2.5, life: 1.6, a0: 0.95 });
       sheet.setScale(0.8 * sheet.base);
@@ -872,6 +875,37 @@ export class Player {
     }
     this.respawnTimer = PLAYER.respawnDelay;
     if (this.lives <= 0) s.gameOver();
+  }
+
+  /**
+   * The frame of a hull that moves (ship.anim), as <frame>[_fN][_l|_r]. Which N: by time, through `cycle` at
+   * `rate` a second, faster as the ship climbs (by: 'time', wings beating); by the guns, opening as they fire and
+   * closing as they rest (by: 'fire', frames 0..n-1); or for a moment after each volley (by: 'volley'). On top of
+   * that a frame of its own for a moment after a graze (_t) and for a blink now and then (_b). bank: false for a
+   * hull with no frames of its own for a bank.
+   */
+  hullFrame(dt) {
+    const an = this.ship.anim;
+    const f = this.ship.frame;
+    const t = this.scene.t;
+    this.grazeT = Math.max(0, (this.grazeT ?? 0) - dt);
+    let n = 0;
+    if (an.by === 'fire') {
+      const firing = t - (this.volleyAt ?? -9) < 0.25;
+      this.open = Math.max(0, Math.min(1, (this.open ?? 0) + (firing ? dt * 7 : -dt * 3.5)));
+      n = Math.round(this.open * (an.n - 1));
+    } else if (an.by === 'volley') {
+      const since = t - (this.volleyAt ?? -9);
+      n = since < 0.07 ? 1 : since < 0.16 ? 2 : since < 0.24 ? 1 : 0;
+    } else {
+      const cycle = an.cycle ?? [0, 1, 2, 1];
+      n = cycle[Math.floor(t * an.rate * (1 + Math.max(0, this.thrust) * 0.5)) % cycle.length];
+    }
+    let name = n ? `${f}_f${n}` : f;
+    if (an.graze && this.grazeT > 0) name = `${f}_t`;
+    else if (an.blink && t % an.blink < 0.13) name = `${f}_b`;
+    if (an.bank === false || name.endsWith('_t') || name.endsWith('_b')) return name;
+    return this.bank < -0.35 ? `${name}_l` : this.bank > 0.35 ? `${name}_r` : name;
   }
 
   /** One bit of a premium look, now and then (b.rate a second): around (x, y) within sx by sy px, drifting down. */

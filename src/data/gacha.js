@@ -63,7 +63,13 @@ export const ITEMS = [
   // the premium one: every slot there is, nothing built in
   {
     id: 'hull_houou', kind: 'hull', rarity: 'UR', name: 'HOUOU', info: 'FENIKS: WSZYSTKIE SLOTY',
-    ship: { id: 'houou', name: 'HOUOU', role: 'PREMIUM', color: 0xffd040, frame: 'ship_houou', life: 'icon_life_houou', lives: 3, damage: 1.1, hit: 1.3, graze: 9, pickup: 13, flameY: 8.5 },
+    ship: {
+      id: 'houou', name: 'HOUOU', role: 'PREMIUM', color: 0xffd040, frame: 'ship_houou', life: 'icon_life_houou', lives: 3, damage: 1.1, hit: 1.3, graze: 9, pickup: 13, flameY: 9, wing: 24,
+      // (alive: its wings beat, it sheds embers, and it rises out of a burst of them)
+      anim: { rate: 8, shed: { frames: ['ember_0', 'ember_1'], rate: 9, vy: 22, g: -30, life: 0.5, spread: 14 }, rise: { ring: 0xff8a2a, flash: 0xffd0a0, frames: ['ember_0', 'ember_1'], n: 30 } },
+      frames: ['', '_l', '_r', '_f1', '_f1_l', '_f1_r', '_f2', '_f2_l', '_f2_r'].map((s) => `ship_houou${s}`),
+      decalAt: [[0.5, 0.48], [0.3, 0.38], [0.7, 0.38], [0.5, 0.66]],
+    },
     slots: { engine: 1, gun: 2, bomb: 1, core: 2, omamori: 3 },
   },
   // the hull that moves: a paper crane (tools/art/shared540/orizuru540.mjs). `anim`: its wings beat `rate` frames
@@ -73,7 +79,7 @@ export const ITEMS = [
     id: 'hull_orizuru', kind: 'hull', rarity: 'UR', name: 'ORIZURU', info: 'ORIGAMI: MACHA SKRZYDŁAMI',
     ship: {
       id: 'orizuru', name: 'ORIZURU', role: 'ORIGAMI', color: 0xf0ecff, frame: 'ship_orizuru', life: 'icon_life_orizuru', lives: 3, damage: 1, hit: 1.2, graze: 10, pickup: 13, flameY: 5.5, wing: 22,
-      anim: { rate: 9 },
+      anim: { rate: 9, fold: true },
       frames: ['', '_l', '_r', '_f1', '_f1_l', '_f1_r', '_f2', '_f2_l', '_f2_r', '_o0', '_o1', '_o2'].map((s) => `ship_orizuru${s}`),
       decalAt: [[0.5, 0.42], [0.3, 0.53], [0.7, 0.53], [0.5, 0.64]],
     },
