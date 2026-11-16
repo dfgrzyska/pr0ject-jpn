@@ -273,7 +273,16 @@ export class Player {
       if (this.beanT > 0) this.beanT -= dt;
       if (firing && this.entering <= 0 && this.jam <= 0) this.fire(dt);
     }
-    const f = this.ship.frame;
+    const f = this.growFrame();
+    // (a hull that grows: a gold ring and sparks off it as it puts more on)
+    if (f !== this.grown) {
+      if (this.grown && this.alive && this.level > this.grownAt) {
+        this.scene.fx.rings.push({ x: this.x, y: this.y, r: 5, life: 0.4, c: 0xffe080 });
+        for (const dx of [-7, 7]) this.scene.fx.spark(this.x + dx, this.y - 1, 0xffe080);
+      }
+      this.grown = f;
+    }
+    this.grownAt = this.level;
     const an = this.ship.anim; // (a hull that moves, see hullFrame)
     const folding = an?.fold && this.alive && this.entering > 0 ? 1 - this.entering / 0.7 : 1;
     if (folding < 0.8) {
@@ -986,6 +995,13 @@ export class Player {
     else if (an.blink && t % an.blink < 0.13) name = `${f}_b`;
     if (an.bank === false || name.endsWith('_t') || name.endsWith('_b')) return name;
     return this.bank < -0.35 ? `${name}_l` : this.bank > 0.35 ? `${name}_r` : name;
+  }
+
+  /** The hull's frame at the weapon's power: a hull that grows (ship.grow) has more on it the higher that is. */
+  growFrame() {
+    let f = this.ship.frame;
+    for (const [lv, frame] of this.ship.grow ?? []) if (this.level >= lv) f = frame;
+    return f;
   }
 
   /** One bit of a premium look, now and then (b.rate a second): around (x, y) within sx by sy px, drifting down. */

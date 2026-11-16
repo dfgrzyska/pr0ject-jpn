@@ -17,6 +17,7 @@ import { logoSprites } from './logo.mjs';
 import { foodSprites } from './foods.mjs';
 import { pickupToken, TOKEN_FRAMES } from './token.mjs';
 import { turretShot, wingTurret } from './turret.mjs';
+import { SHIP_V1, SHIP_V2 } from './shared540/shipmasks.mjs';
 
 const out = [];
 const add = (name, raster) => out.push({ name, raster });
@@ -127,7 +128,7 @@ function shipFrame(bank, rows = SHIP) {
   }
   return renderMask(m);
 }
-for (const [name, rows] of [['ship', SHIP], ['ship_oni', SHIP_ONI], ['ship_tsubame', SHIP_TSUBAME]]) {
+for (const [name, rows] of [['ship', SHIP], ['ship_v1', SHIP_V1], ['ship_v2', SHIP_V2], ['ship_oni', SHIP_ONI], ['ship_tsubame', SHIP_TSUBAME]]) {
   add(name, shipFrame(0, rows));
   add(`${name}_l`, shipFrame(-1, rows));
   add(`${name}_r`, shipFrame(1, rows));

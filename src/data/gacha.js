@@ -42,10 +42,16 @@ const graded = (line, kind, name, info, values, fx) =>
 const pct = (v) => `+${Math.round(v * 100)}%`;
 
 export const ITEMS = [
-  // ---- hulls: the frame (looks, size, lives, base firepower) and its slots; `fixed` parts are built in
+  // ---- hulls: the frame (looks, size, lives, base firepower) and its slots; `fixed` parts are built in.
+  // `grow`: the hull has more on it as the weapon's power rises ([power, frame]: guns on the wings, then broader
+  // wings and gold), and less again when power is lost; the looks only (tools/art/shared540/shipmasks.mjs)
   {
-    id: 'hull_tsuru', kind: 'hull', starter: true, name: 'TSURU', info: 'ZRÓWNOWAŻONY',
-    ship: { id: 'kitsune', name: 'TSURU', role: 'STANDARD', color: 0xffb868, frame: 'ship', life: 'icon_life', lives: 3, damage: 1.05, hit: 1.4, graze: 8, pickup: 11, flameY: 8.5 },
+    id: 'hull_tsuru', kind: 'hull', starter: true, name: 'TSURU', info: 'ROŚNIE Z MOCĄ BRONI',
+    ship: {
+      id: 'kitsune', name: 'TSURU', role: 'STANDARD', color: 0xffb868, frame: 'ship', life: 'icon_life', lives: 3, damage: 1.05, hit: 1.4, graze: 8, pickup: 11, flameY: 8.5,
+      grow: [[3, 'ship_v1'], [5, 'ship_v2']],
+      frames: ['ship', 'ship_v1', 'ship_v2'].flatMap((f) => [f, `${f}_l`, `${f}_r`]),
+    },
     slots: { engine: 1, gun: 1, bomb: 1, core: 1, omamori: 1 },
   },
   {
