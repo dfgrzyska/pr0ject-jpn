@@ -747,7 +747,7 @@ export class Stage extends Phaser.Scene {
       return;
     }
     if (this.state === 'hangar') {
-      const act = escape ? 'back' : down(k.LEFT) || down(k.A) ? 'left' : down(k.RIGHT) || down(k.D) ? 'right' : down(k.UP) || down(k.W) ? 'up' : down(k.DOWN) || down(k.S) ? 'down' : confirm || bomb ? 'confirm' : down(k.TAB) || down(k.Q) || down(k.E) ? 'tab' : down(k.K) ? 'card' : down(k.ONE) ? 'set0' : down(k.TWO) ? 'set1' : down(k.THREE) ? 'set2' : null;
+      const act = escape ? 'back' : down(k.LEFT) || down(k.A) ? 'left' : down(k.RIGHT) || down(k.D) ? 'right' : down(k.UP) || down(k.W) ? 'up' : down(k.DOWN) || down(k.S) ? 'down' : confirm || bomb ? 'confirm' : down(k.TAB) || down(k.Q) || down(k.E) ? 'tab' : down(k.K) ? 'card' : down(k.F) ? 'sort' : down(k.ONE) ? 'set0' : down(k.TWO) ? 'set1' : down(k.THREE) ? 'set2' : null;
       if (act && this.hangar.key(act) === 'close') this.closeHangar();
       return;
     }

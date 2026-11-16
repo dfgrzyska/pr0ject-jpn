@@ -778,6 +778,14 @@ export class Player {
   collect(color) {
     const fx = this.scene.fx;
     this.scene.sfx.pickup();
+    // (a hull that catches: into its paw, with a glint of gold and a few coins shaken loose; see hullFrame)
+    const paw = this.ship.anim?.catch;
+    if (paw) {
+      this.catchT = 0.5;
+      fx.spark(this.x + paw[0], this.y + paw[1], 0xffd040);
+      fx.rings.push({ x: this.x + paw[0], y: this.y + paw[1], r: 2, life: 0.3, c: 0xffe080 });
+      fx.debris(this.x + paw[0], this.y + paw[1], 4, 0xffd040, 0.7);
+    }
     if (color === 'mame') {
       this.beanT = BEANS.time;
       fx.text(this.x, this.y - 18, 'FASOLKI!', 1.2, 0xffe080);
@@ -970,6 +978,9 @@ export class Player {
       const cycle = an.cycle ?? [0, 1, 2, 1];
       n = cycle[Math.floor(t * an.rate * (1 + Math.max(0, this.thrust) * 0.5)) % cycle.length];
     }
+    // (catching: the paw beckons twice, whatever the guns do)
+    this.catchT = Math.max(0, (this.catchT ?? 0) - dt);
+    if (an.catch && this.catchT > 0) n = [2, 1, 0, 1, 2, 1, 0][Math.floor((0.5 - this.catchT) / 0.072)] ?? 0;
     let name = n ? `${f}_f${n}` : f;
     if (an.graze && this.grazeT > 0) name = `${f}_t`;
     else if (an.blink && t % an.blink < 0.13) name = `${f}_b`;

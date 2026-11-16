@@ -95,12 +95,12 @@ export const ITEMS = [
       frames: ['', '_f1', '_f2', '_f3'].map((s) => `ship_koinobori${s}`),
       decalAt: [[0.5, 0.34], [0.38, 0.48], [0.62, 0.48], [0.5, 0.62]],
     },
-    slots: { engine: 1, gun: 1, bomb: 1, core: 1, omamori: 1 },
+    slots: { engine: 1, gun: 1, bomb: 1, core: 1, omamori: 2 },
   },
   {
-    id: 'hull_kabuto', kind: 'hull', rarity: 'UR', name: 'KABUTO', info: 'HEŁM: OTWIERA PANCERZ',
+    id: 'hull_kabuto', kind: 'hull', rarity: 'UR', name: 'KABUTO', info: 'HEŁM: PANCERZ, 4 ŻYCIA',
     ship: {
-      id: 'kabuto', name: 'KABUTO', role: 'PANCERNY', color: 0xd2361f, frame: 'ship_kabuto', life: 'icon_life_kabuto', lives: 3, damage: 1.2, hit: 1.6, graze: 7, pickup: 11, flameY: 9, wing: 26,
+      id: 'kabuto', name: 'KABUTO', role: 'PANCERNY', color: 0xd2361f, frame: 'ship_kabuto', life: 'icon_life_kabuto', lives: 4, damage: 1.2, hit: 1.6, graze: 7, pickup: 11, flameY: 9, wing: 26,
       anim: { by: 'fire', n: 3 },
       frames: ['', '_l', '_r', '_f1', '_f1_l', '_f1_r', '_f2', '_f2_l', '_f2_r'].map((s) => `ship_kabuto${s}`),
       decalAt: [[0.5, 0.5], [0.24, 0.5], [0.76, 0.5], [0.5, 0.72]],
@@ -115,13 +115,14 @@ export const ITEMS = [
       frames: ['', '_f1', '_f2', '_b', '_t'].map((s) => `ship_chochin${s}`),
       decalAt: [[0.22, 0.42], [0.2, 0.6], [0.8, 0.6], [0.8, 0.4]],
     },
-    slots: { engine: 1, gun: 1, bomb: 1, core: 1, omamori: 3 },
+    slots: { engine: 1, gun: 1, bomb: 1, core: 1, omamori: 2 },
   },
   {
-    id: 'hull_maneki', kind: 'hull', rarity: 'SSR', name: 'MANEKI-NEKO', info: 'KOT SZCZĘŚCIA: MACHA ŁAPKĄ',
+    id: 'hull_maneki', kind: 'hull', rarity: 'SSR', name: 'MANEKI-NEKO', info: 'KOT SZCZĘŚCIA: ŁAPIE ŁAPKĄ',
     ship: {
       id: 'maneki', name: 'MANEKI', role: 'SZCZĘŚCIARZ', color: 0xfffaf0, frame: 'ship_maneki', life: 'icon_life_maneki', lives: 3, damage: 1, hit: 1.4, graze: 9, pickup: 22, flameY: 10, wing: 20,
-      anim: { by: 'volley', n: 3, bank: false },
+      // (catch: what it picks up it catches in its raised paw, at `catch` px from its middle, beckoning twice)
+      anim: { by: 'volley', n: 3, bank: false, catch: [-7, -8] },
       frames: ['', '_f1', '_f2'].map((s) => `ship_maneki${s}`),
       decalAt: [[0.5, 0.2], [0.3, 0.74], [0.74, 0.84], [0.5, 0.9]],
     },

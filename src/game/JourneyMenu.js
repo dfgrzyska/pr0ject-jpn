@@ -10,6 +10,8 @@ import { YOKAI, FOODS } from '../data/discoveries.js';
 import { hasStamp } from './Stamps.js';
 import { sharedArt } from './enemyArt.js';
 import { ITEMS } from '../data/gacha.js';
+import { flameLook } from './shipSkin.js';
+import { fxTint } from './premiumFx.js';
 
 const FINE = 1 / RENDER_SCALE; // the menu's art and the map are drawn at 540 px
 const CITY_KEY = 'shmupjp.startCity';
@@ -40,6 +42,12 @@ export class JourneyMenu {
     this.gfx = add(scene.add.graphics(), DEPTH.overlay + 1.5);
     this.labels = STAGES.map((s) => add(pixelText(scene, 0, 0, s.name)));
     this.ship = add(sharedArt(scene.add.image(0, 0, 'sprites', scene.ship.frame)), DEPTH.overlay + 2);
+    // (over the title it flies as it is fitted: its engine burning, its companion after it, a dragon's body behind its head)
+    const body = scene.ship.anim?.segs;
+    this.flame = add(sharedArt(scene.add.sprite(0, 0, 'sprites', 'flame_0')).setOrigin(0.5, 0).play('flame'), DEPTH.overlay + 0.45);
+    this.flameLong = flameLook(this.flame, scene.ship);
+    this.pal = scene.ship.look?.pal ? add(scene.add.image(0, 0, 'gacha', scene.ship.look.pal).setScale(FINE), DEPTH.overlay + 0.5) : null;
+    this.segs = Array.from({ length: body?.n ?? 0 }, (_, i) => add(sharedArt(scene.add.image(0, 0, 'sprites', scene.ship.frame)).setFrame(`${scene.ship.frame}_${i === body.n - 1 ? 'tail' : 'seg'}`).setScale(1 - i * 0.045), DEPTH.overlay + 0.48 - i * 0.001));
     this.logo = add(scene.add.image(90, 0, 'menu', 'logo').setScale(FINE));
     this.tagline = add(pixelText(scene, 90, 0, 'LEĆ PRZEZ JAPONIĘ').setTint(0xffdba8));
     this.caption = add(pixelText(scene, 90, 0, 'OSIEM MIAST. JEDNA PODRÓŻ.').setTint(0xc8ac85));
@@ -134,7 +142,9 @@ export class JourneyMenu {
     for (const o of [this.heading, this.name, this.subtitle, this.next, ...this.labels]) o.setVisible(cities);
     this.caption.setVisible(title && this.captionFits);
     this.ship.setVisible(title || cities).setDepth(DEPTH.overlay + (title ? 0.5 : 2));
-    if (cities) this.ship.setRotation(0);
+    if (cities) this.ship.setRotation(0).setFrame(this.scene.ship.frame);
+    for (const o of [this.pal, ...this.segs]) o?.setVisible(title);
+    this.flame.setVisible(title && !this.segs.length);
     this.back.setVisible(cities);
     this.hint.setVisible(title || cities);
     this.scene.tweens.killTweensOf(this.map);
@@ -236,8 +246,28 @@ export class JourneyMenu {
       this.lanterns.forEach((o, i) => o.setRotation(Math.sin(this.time * 1.4 + i * 2) * 0.055));
       // A small ship crosses the mountain vista, above the menu cards.
       const t = (this.time * 0.045) % 1;
-      const x = -18 + t * 216, y = this.titleLayout.artY + 135 - Math.sin(t * Math.PI) * 24;
-      this.ship.setPosition(Math.round(x), Math.round(y)).setRotation(Math.atan2(-24 * Math.PI * Math.cos(t * Math.PI), 216) + Math.PI / 2).setAlpha(0.9);
+      const path = (u) => ({ x: -18 + u * 216, y: this.titleLayout.artY + 135 - Math.sin(u * Math.PI) * 24, rot: Math.atan2(-24 * Math.PI * Math.cos(u * Math.PI), 216) + Math.PI / 2 });
+      const { x, y, rot } = path(t);
+      this.ship.setPosition(Math.round(x), Math.round(y)).setRotation(rot).setAlpha(0.9);
+      // (as it is fitted: a hull that moves goes through its frames, an animated paint flows over it)
+      const ship = this.scene.ship, an = ship.anim, pf = ship.look?.paintFx;
+      if (an) {
+        const cycle = an.cycle ?? (an.n === 2 ? [0, 1] : [0, 1, 2, 1]);
+        const b = cycle[Math.floor(this.time * (an.rate ?? 4)) % cycle.length];
+        const frame = b ? `${ship.frame}_f${b}` : ship.frame;
+        if (this.ship.frame.name !== frame) this.ship.setFrame(frame);
+      }
+      if (pf) this.ship.setTint(fxTint(pf, this.time));
+      this.flame.setPosition(x - Math.sin(rot) * ship.flameY, y + Math.cos(rot) * ship.flameY).setRotation(rot).setScale(1, this.flameLong ?? 1).setAlpha(0.9);
+      if (this.pal) {
+        const q = path(t - 0.075);
+        this.pal.setPosition(q.x, q.y + 7 + Math.sin(this.time * 5) * 1.5).setAlpha(0.9);
+      }
+      this.segs.forEach((s, i) => {
+        const q = path(t - (i + 1) * 0.036);
+        s.setPosition(q.x, q.y + Math.sin(this.time * 4 - i * 0.8) * 1.2).setRotation(q.rot).setAlpha(0.9);
+        if (pf) s.setTint(fxTint(pf, this.time));
+      });
       for (let n = 1; n <= 14; n++) {
         const u = t - n * 0.009;
         if (u < 0) continue;

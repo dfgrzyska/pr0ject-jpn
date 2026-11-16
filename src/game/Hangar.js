@@ -22,7 +22,7 @@ const CELL = 28; // a cell of the grid
 const COLS = 6;
 const BOX = 22; // a slot
 const PER_ROW = 7;
-const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW', wake: 'ŚLAD ZA STATKIEM', shot_basic: 'POCISKI: PODSTAWOWA', shot_spread: 'POCISKI: ROZRZUT', shot_laser: 'POCISKI: LASER', shot_homing: 'POCISKI: NAPROWADZANE', marker: 'ZNACZNIK HITBOXA', eb_color: 'WROGIE POCISKI: KOLOR', eb_shape: 'WROGIE POCISKI: KSZTAŁT', blast: 'WYBUCHY', bomb_look: 'WYGLĄD BOMBY', title: 'TYTUŁ PILOTA', sound: 'DŹWIĘK STRZAŁU', graze: 'ISKRA GRAZINGU', hud_color: 'KOLOR LICZNIKA', life_icon: 'IKONA ŻYCIA', companion: 'TOWARZYSZ', shot_turret: 'POCISKI: WIEŻYCZKI', shield: 'BAŃKA TARCZY', decal_nose: 'NAKLEJKA: DZIÓB', decal_lwing: 'NAKLEJKA: LEWE SKRZYDŁO', decal_rwing: 'NAKLEJKA: PRAWE SKRZYDŁO', decal_tail: 'NAKLEJKA: OGON', paint_fx: 'ANIMACJA MALOWANIA', aura: 'AURA', trail: 'SMUGA SILNIKA', entry: 'WEJŚCIE NA PLANSZĘ', victory: 'TRIUMF NAD BOSSEM', death: 'UTRATA ŻYCIA', seal: 'PIECZĘĆ TRAFIENIA', shield_shape: 'KSZTAŁT TARCZY' };
+const SLOT_NAME = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK POCISKÓW', wake: 'ŚLAD ZA STATKIEM', shot_basic: 'POCISKI: PODSTAWOWA', shot_spread: 'POCISKI: ROZRZUT', shot_laser: 'POCISKI: LASER', shot_homing: 'POCISKI: NAPROWADZANE', marker: 'ZNACZNIK HITBOXA', eb_color: 'WROGIE: KOLOR', eb_shape: 'WROGIE: KSZTAŁT', blast: 'WYBUCHY', bomb_look: 'WYGLĄD BOMBY', title: 'TYTUŁ PILOTA', sound: 'DŹWIĘK STRZAŁU', graze: 'ISKRA GRAZINGU', hud_color: 'KOLOR LICZNIKA', life_icon: 'IKONA ŻYCIA', companion: 'TOWARZYSZ', shot_turret: 'POCISKI: WIEŻYCZKI', shield: 'BAŃKA TARCZY', decal_nose: 'NAKLEJKA: DZIÓB', decal_lwing: 'NAKLEJKA: L. SKRZYDŁO', decal_rwing: 'NAKLEJKA: P. SKRZYDŁO', decal_tail: 'NAKLEJKA: OGON', paint_fx: 'ANIMACJA MALOWANIA', aura: 'AURA', trail: 'SMUGA SILNIKA', entry: 'WEJŚCIE NA PLANSZĘ', victory: 'TRIUMF NAD BOSSEM', death: 'UTRATA ŻYCIA', seal: 'PIECZĘĆ TRAFIENIA', shield_shape: 'KSZTAŁT TARCZY' };
 // a slot's picture: the kind's (the four weapons' skins share one), or the fitted skin itself
 const itemFrame = (kind, it) => (it?.pic ? it.pic : it?.skin ? `${SHOT_FRAMES[kind][0]}_${it.skin}` : null);
 const slotFrame = (kind, it) => itemFrame(kind, it) ?? (kind.startsWith('shot_') ? 'part_shot' : `part_${lookKind(kind)}`);
@@ -43,6 +43,9 @@ const STATS = [
   { label: 'BOMBA', get: (s) => s.bomb.damage, min: 15, max: 125, fmt: (v) => String(Math.round(v)) },
   { label: 'ŻYCIA', get: (s) => s.lives, min: 0, max: 5, fmt: (v) => String(v) },
 ];
+// the orders the stock can be shown in (the last: only what has not been looked at yet)
+const SORTS = [['rare', 'UKŁAD: OD NAJRZADSZYCH'], ['common', 'UKŁAD: OD ZWYKŁYCH'], ['name', 'UKŁAD: ALFABETYCZNIE'], ['new', 'UKŁAD: TYLKO NOWE']];
+const SORT_X = 163; // its button, at the right end of the slot's name
 const STAT_X = 70;
 // the stage (the tabs of looks): its panel, where the ship flies in it, the daruma it fires at
 const STAGE = { x0: 9, y0: 24, x1: 171, y1: 90, ship: { x: 58, y: 72 }, dummy: { x: 58, y: 37 } };
@@ -72,6 +75,8 @@ export class Hangar {
     this.slot = 0; // the slot picked
     this.focus = 0; // which of the slot's things is looked at
     this.scroll = 0; // rows scrolled
+    this.sort = 0; // which of SORTS
+    this.newIds = new Set(loadout.fresh); // (what was new when the slot was picked: looked at, it stays in the list)
     this.items = [];
     const d = DEPTH.overlay + 1;
     const add = (o, depth = d) => {
@@ -114,7 +119,7 @@ export class Hangar {
     this.slotShip = add(sharedArt(scene.add.image(0, 0, 'sprites', 'ship')), d + 1.1);
     // the picked slot's name and how much of it is the player's; then the grid's pictures, or the list's rows
     this.head = add(pixelText(scene, 8, 0, '', 0).setOrigin(0, 0.5).setTint(0xffe080), d + 1);
-    this.count = add(pixelText(scene, 172, 0, '', 1).setOrigin(1, 0.5).setTint(0x9aaec2), d + 1);
+    this.count = add(pixelText(scene, SORT_X - 5, 0, '', 1).setOrigin(1, 0.5).setTint(0x9aaec2), d + 1);
     this.cells = Array.from({ length: COLS * 5 }, () => add(scene.add.image(0, 0, 'gacha', 'part_gun'), d + 1).setVisible(false));
     this.rows = Array.from({ length: 14 }, () => add(pixelText(scene, 14, 0, '', 0).setOrigin(0, 0.5), d + 1));
     this.marks = Array.from({ length: 14 }, () => add(pixelText(scene, 172, 0, '', 1).setOrigin(1, 0.5), d + 1));
@@ -125,7 +130,8 @@ export class Hangar {
     this.setLabel = add(pixelText(scene, 8, 0, 'ZESTAW', 0).setOrigin(0, 0.5).setTint(0x9aaec2), d + 1);
     this.setNums = [0, 1, 2].map((i) => add(pixelText(scene, SET_X[i], 0, String(i + 1)), d + 1));
     this.btn = add(pixelText(scene, BTN.x, 0, ''), d + 1);
-    this.hint = add(pixelText(scene, W / 2, 0, scene.sys.game.device.input.touch ? 'SLOT, POTEM PRZEDMIOT' : 'STRZAŁKI / ENTER / TAB / ESC').setTint(0x6a7a92), d + 1);
+    this.hintText = scene.sys.game.device.input.touch ? 'SLOT, POTEM PRZEDMIOT' : 'STRZAŁKI / ENTER / TAB / F';
+    this.hint = add(pixelText(scene, W / 2, 0, this.hintText).setTint(0x6a7a92), d + 1);
     this.layout(scene.H);
   }
 
@@ -174,12 +180,26 @@ export class Hangar {
     return ITEM[slot.fixed ?? this.loadout.slots[slot.kind][slot.index]] ?? null;
   }
 
-  /** Everything of the slot's kind, and which of it the player owns (the rarest first). */
+  /** Everything of the slot's kind (`all`), how much of it the player owns (`n`), and what of that is shown, in the order picked (`own`). */
   stock(slot = this.slots()[this.slot]) {
     const all = slot.fixed ? [] : ITEMS.filter((it) => it.kind === lookKind(slot.kind));
     const have = new Set(this.loadout.owned);
     const rank = (it) => (it.rarity ? RARITIES.indexOf(it.rarity) + 1 : 0);
-    return { all: all.length, own: all.filter((it) => have.has(it.id)).sort((a, b) => rank(b) - rank(a)) };
+    const mode = SORTS[this.sort][0];
+    const mine = all.filter((it) => have.has(it.id));
+    const own = mode === 'new' ? mine.filter((it) => this.newIds.has(it.id)) : [...mine];
+    const label = (it) => tr(short(it, slot.look));
+    own.sort(mode === 'common' ? (a, b) => rank(a) - rank(b) : mode === 'name' ? (a, b) => label(a).localeCompare(label(b)) : (a, b) => rank(b) - rank(a));
+    return { all: all.length, n: mine.length, own };
+  }
+
+  /** The next order for the stock (the hint's line says which for a moment). */
+  cycleSort() {
+    this.sort = (this.sort + 1) % SORTS.length;
+    this.hint.setText(SORTS[this.sort][1]).setTint(0xffe080);
+    this.toast = 2.2;
+    this.scene.sfx.tick?.();
+    this.pickSlot(this.slot);
   }
 
   /** The owned things of the picked slot, as the grid or the list shows them. */
@@ -220,7 +240,7 @@ export class Hangar {
     const slots = this.slots();
     this.slot = Math.min(this.slot, slots.length - 1);
     const slot = slots[this.slot];
-    const { all, own } = this.stock(slot);
+    const { all, own, n: mine } = this.stock(slot);
     this.focus = Math.max(0, Math.min(this.focus, own.length - 1));
     const looked = own[this.focus] ?? null;
     if (looked && seen(this.loadout, looked.id)) this.save(); // (looked at: no longer new)
@@ -334,7 +354,14 @@ export class Hangar {
     const it = this.fitted(slot);
     const nth = slot.index != null && layout(this.loadout)[slot.kind] > 1 ? ` ${slot.index + 1}` : '';
     this.head.setText(`${SLOT_NAME[slot.kind]}${nth}`);
-    this.count.setText(slot.fixed ? '' : `${own.length}/${all}`);
+    this.count.setText(slot.fixed ? '' : `${mine}/${all}`);
+    // the order's button: three bars as the order goes (lit when it is not the usual one); a dot for "only the new"
+    const mode = SORTS[this.sort][0];
+    const hy = this.head.y;
+    g.fillStyle(0x121a34).fillRect(SORT_X - 2, hy - 6, 15, 12);
+    g.lineStyle(1, this.sort ? 0xffe080 : 0x33416a).strokeRect(SORT_X - 1.5, hy - 5.5, 14, 11);
+    [mode === 'common' ? 3 : mode === 'name' ? 7 : 9, mode === 'name' ? 7 : 6, mode === 'common' ? 9 : mode === 'name' ? 7 : 3].forEach((w, i) => g.fillStyle(this.sort ? 0xffe080 : 0x9aaec2).fillRect(SORT_X + 1, hy - 3 + i * 3, mode === 'new' ? Math.min(w, 5) : w, 1));
+    if (mode === 'new') g.fillStyle(0xffe04f).fillRect(SORT_X + 7, hy - 2, 3, 3);
     const asGrid = this.grid(slot, own);
     this.asGrid = asGrid;
     const unit = asGrid ? CELL : LINE;
@@ -392,7 +419,7 @@ export class Hangar {
       const h = Math.max(10, ((this.bottom - this.top) * fit) / total);
       g.fillStyle(0x365168).fillRect(176, this.top + ((this.bottom - this.top - h) * this.scroll) / Math.max(1, total - fit), 2, h);
     }
-    this.empty.setVisible(!slot.fixed && !own.length).setY(this.top + 16).setText('JESZCZE NIC: LOSUJ W AUTOMACIE');
+    this.empty.setVisible(!slot.fixed && !own.length).setY(this.top + 16).setText(mine ? 'NIC NOWEGO W TYM SLOCIE' : 'JESZCZE NIC: LOSUJ W AUTOMACIE');
 
     // the thing looked at; the button: put it on, or take it off
     this.name.setText(slot.fixed || !asGrid || !looked ? '' : short(looked, slot.look)).setTint(looked ? tint(looked) : 0xffffff); // (the list shows the name itself)
@@ -440,6 +467,7 @@ export class Hangar {
   pickSlot(i) {
     const n = this.slots().length;
     this.slot = (i + n) % n;
+    this.newIds = new Set(this.loadout.fresh);
     this.scroll = 0;
     this.free = false;
     // (start on what is fitted, so its neighbours are at hand)
@@ -475,6 +503,7 @@ export class Hangar {
   key(act) {
     if (this.card) return act ? void this.closeCard() ?? null : null;
     if (act === 'card') return void this.openCard() ?? null;
+    if (act === 'sort') return void this.cycleSort() ?? null;
     if (act === 'back') return 'close';
     if (act?.startsWith('set')) this.setPreset(Number(act[3]));
     if (act === 'tab') this.setTab(TABS[(TABS.findIndex((t) => t.id === this.tab) + 1) % TABS.length].id);
@@ -497,6 +526,7 @@ export class Hangar {
       return i >= 0 ? this.setPreset(i) : null;
     }
     if (Math.abs(p.y - TAB_Y) <= 7) return this.setTab(TABS.reduce((a, t) => (Math.abs(p.x - t.x) < Math.abs(p.x - a.x) ? t : a)).id);
+    if (Math.abs(p.y - this.head.y) <= 8 && p.x >= SORT_X - 6) return void this.cycleSort() ?? null;
     const n = this.slots().length;
     for (let i = 0; i < n; i++) {
       const c = this.slotAt(i);
@@ -651,6 +681,7 @@ export class Hangar {
   update(dt) {
     this.t += dt;
     this.card?.update(dt);
+    if (this.toast > 0 && (this.toast -= dt) <= 0) this.hint.setText(this.hintText).setTint(0x6a7a92);
     const k = this.small ? 1 : 2; // (the ship at its real size on the stage, and a dragon whatever the tab)
     this.sg.clear();
     if (this.staged) this.art.y = this.stage(dt);

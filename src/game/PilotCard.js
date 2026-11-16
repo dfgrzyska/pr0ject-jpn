@@ -40,9 +40,13 @@ export class PilotCard {
     // the ship's window: night blue, the ship in it three times its size, its companion beside it
     g.fillStyle(0x0c1430).fillRect(22, top + 30, W - 44, 92);
     g.lineStyle(1, ship.color).strokeRect(22.5, top + 30.5, W - 45, 91);
-    this.shipY = top + 70;
-    this.art = add(sharedArt(scene.add.image(W / 2, this.shipY, 'sprites', 'ship')).setFrame(ship.frame).setScale(3), d + 1.1);
-    this.flame = add(sharedArt(scene.add.sprite(W / 2, 0, 'sprites', 'flame_0')).setOrigin(0.5, 0).setScale(3).play('flame'), d + 1);
+    // (a dragon: twice its size, higher up, its body coiling down the window under its head)
+    const body = ship.anim?.segs;
+    this.k = body ? 2 : 3;
+    this.shipY = body ? top + 48 : top + 70;
+    this.art = add(sharedArt(scene.add.image(W / 2, this.shipY, 'sprites', 'ship')).setFrame(ship.frame).setScale(this.k), d + 1.1);
+    this.segs = Array.from({ length: body?.n ?? 0 }, (_, i) => add(sharedArt(scene.add.image(W / 2, 0, 'sprites', 'ship')).setFrame(`${ship.frame}_${i === body.n - 1 ? 'tail' : 'seg'}`).setScale(this.k * (1 - i * 0.045)), d + 1.05 - i * 0.001));
+    this.flame = add(sharedArt(scene.add.sprite(W / 2, 0, 'sprites', 'flame_0')).setOrigin(0.5, 0).setScale(this.k).play('flame'), d + 1);
     this.flameLong = flameLook(this.flame, ship);
     if (ship.anim?.segs) this.flame.setVisible(false);
     if (ship.look?.pal) this.pal = add(scene.add.image(W / 2 + 46, 0, 'gacha', ship.look.pal).setScale(FINE * 2), d + 1.1);
@@ -84,8 +88,20 @@ export class PilotCard {
       if (this.art.frame.name !== frame) this.art.setFrame(frame);
     }
     this.art.y = this.shipY + Math.round(Math.sin(this.t * 2.4) * 2);
-    this.flame.y = this.art.y + ship.flameY * 3;
-    this.flame.setScale(3, 3 * (this.flameLong ?? 1));
+    this.flame.y = this.art.y + ship.flameY * this.k;
+    this.flame.setScale(this.k, this.k * (this.flameLong ?? 1));
+    // (the dragon's body: an S down the window, flowing; each segment turned along it)
+    let px = this.art.x;
+    let py = this.art.y + 4;
+    this.segs.forEach((g, i) => {
+      const s = (i + 1) * 12.5;
+      const x = W / 2 + Math.sin(s / 21 - this.t * 2.2) * 24 * Math.min(1, s / 30);
+      const y = this.art.y + 8 + s * 0.62;
+      g.setPosition(x, y).setRotation(Math.atan2(py - y, px - x) + Math.PI / 2);
+      if (ship.look?.paintFx) g.setTint(fxTint(ship.look.paintFx, this.t));
+      px = x;
+      py = y;
+    });
     if (ship.look?.paintFx) this.art.setTint(fxTint(ship.look.paintFx, this.t));
     this.pal?.setY(this.shipY + 26 + Math.sin(this.t * 4) * 2);
   }

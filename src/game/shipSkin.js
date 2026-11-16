@@ -137,7 +137,8 @@ export function applySkin(scene, ship) {
   blastSkin(scene, ship);
   const base = ship.frame;
   const atlas = scene.textures.exists('sprites540') ? scene.textures.get('sprites540') : null;
-  const colors = atlas?.has(`${base}_g`) ? ship.look?.paint : null;
+  // (an animated paint job with no paint under it: the hull in white, so the colours flowing over it stay their own)
+  const colors = atlas?.has(`${base}_g`) ? ship.look?.paint ?? (ship.look?.paintFx ? [0xffffff] : null) : null;
   const decals = atlas?.has(base) && scene.textures.exists('gacha') ? ship.look?.decals : null;
   // (a hull that moves has more frames than the three of a bank: all of them are dressed)
   const frames = ship.frames ?? BANKS.map((b) => `${base}${b}`);
