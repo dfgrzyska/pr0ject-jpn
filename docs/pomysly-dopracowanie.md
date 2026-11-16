@@ -212,9 +212,25 @@ Onsen, kanał Haruki i park już były. Brakowało tylko nazw na pierwszych 2100
 - Nazwy: było 11, jest 21 (Beppu-wan, Beppu Kaihin Sunayu, Kitahama, Beppu-eki, Beppu Tower, Yayoi Tengai,
   Takegawara Onsen, Ekimae-dori, Haruki-gawa, Beppu Koen).
 
-### Kioto, Osaka, Nagasaki
+### Osaka — Nakanoshima zrobiona 16.11
 
-- Nie przeglądane ponownie. Pomysły: Daimonji i Gion Matsuri w Kioto, fajerwerki i diabelski młyn Tempozan w Osace,
+Przegląd całej trasy w grze: zamek, Shinsekai, Dotonbori i nocna część są bogate (fajerwerki nie, ale diabelski
+młyn Tempozan już się kręci). Słaba była Nakanoshima: trzy słynne budynki w grubych pikselach starego stylu.
+
+- Przerysowane w pełnej rozdzielczości (`tools/art/osaka/nakanoshima.mjs`): Chuo Kokaido (cegła w granitowych
+  pasach, miedziane dachy, sklepienie nad salą, wielkie okno łukowe, wieżyczki z kopułami), urząd miasta (granit,
+  przeszklony dziedziniec, znak miasta, flagi na dachu — animowane), biblioteka (portyk z czterema kolumnami,
+  miedziana kopuła).
+- Stoją dokładnie na dawnych działkach; reszta Osaki nie zmieniła się ani o piksel.
+- Nazwy: było 13, jest 20 (Tosabori-gawa, Chuo Kokaido, Nakanoshima Toshokan, Dojima-gawa, Osaka-ko, Minato Ohashi,
+  Osaka-wan).
+
+Zostało w Osace (zauważone, nie ruszane): biurowce Nakanoshimy i Umedy to nadal powtarzalne bloki z ciężkimi
+prostokątnymi cieniami; Umeda Sky Building jest mały.
+
+### Kioto, Nagasaki
+
+- Nie przeglądane ponownie. Pomysły: Daimonji i Gion Matsuri w Kioto, fajerwerki w Osace,
   lampiony i taniec smoka w Nagasaki. Przed budowaniem sprawdzić w grze, czy już nie istnieją.
 
 ## Sprawy techniczne

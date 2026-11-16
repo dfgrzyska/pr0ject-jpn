@@ -27,6 +27,7 @@ import { Raster, fbm, rng, bayer, scaleColor, rgb, mix } from '../../lib/raster.
 import { crownPixels, rampColor } from '../nature.mjs';
 import { PropKit, Window, puff, todGrade, tintTable, planTraffic } from '../props.mjs';
 import { drawLionHall } from './lion-hall.mjs';
+import { publicHall, cityHall, library } from './nakanoshima.mjs';
 import { HiCanvas, hashPx } from '../hires.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
@@ -1624,46 +1625,35 @@ export function buildMid() {
         y: y + 38,
         shadow: () => shadowRect(x + 5, y + 5, 40, 38, 0.5),
         draw: () => {
-          for (let yy = y; yy < y + 24; yy++)
-            for (let xx = x; xx < x + 40; xx++) {
-              const ax = Math.abs(xx - x - 20);
-              const arch = ax < 11 && yy < y + 16 - Math.floor((ax * ax) / 30);
-              let c = arch ? (yy - y < 3 ? C.copper[4] : xx < x + 22 ? C.copper[2] : C.copper[1]) : (xx + yy) % 3 === 0 ? C.brick[0] : C.brick[1];
-              if (!arch && ((yy - y) % 6 === 0 || xx === x || xx === x + 39)) c = 0xe8e0d0;
-              img.set(xx, yy, c);
-            }
-          for (const tx of [x + 1, x + 35]) {
-            img.rect(tx, y - 4, 4, 6, C.brick[1]);
-            img.disc(tx + 2, y - 4, 2.2, C.copper[2]);
-            img.set(tx + 2, y - 7, C.gold);
-          }
-          img.rect(x + 10, y + 15, 20, 1, 0xf0e8d8);
-          for (let yy = y + 24; yy < y + 38; yy++)
-            for (let xx = x; xx < x + 40; xx++) img.set(xx, yy, yy === y + 24 ? 0x4a2a20 : (yy - y) % 5 === 0 ? 0xe8e0d0 : (xx - x) % 5 === 2 && (yy - y) % 5 > 1 ? 0x2a2224 : C.brick[2]);
-          img.rect(x + 15, y + 31, 10, 7, 0x2a1e1a);
-          img.rect(x + 15, y + 31, 10, 1, 0xe8e0d0);
-          for (let xx = x + 3; xx < x + 38; xx += 5) glow(xx, y + 28, C.warm, 0.7);
+          publicHall({ img, S, glowPx }, x, y);
         },
       });
       reserveRect(x - 1, y - 8, 42, 48);
     }
     // City Hall: a grey granite block
     building(109, Y(1620), 32, 22, 14, { style: 'office', roof: 0x8a8a86, wall: 0xb8b2a6, items: ['hut', 'ac'] });
+    objects.pop(); // (the block it was: its ground and its random numbers kept, the building drawn anew)
+    objects.push({ y: Y(1620) + 36, shadow: () => shadowRect(109 + 6, Y(1620) + 6, 32, 36, 0.5), draw: () => cityHall({ img, S, glowPx }, 109, Y(1620)) });
+    {
+      // its flags along the roof's edge over the front (live): the sun disc, the city's blue mark, each on its white pole
+      const flag = (f, paint) => {
+        const r = new HiCanvas(5, 6);
+        for (let j = 0; j < 18; j++) r.px(1, j, j === 0 ? 0xe8b830 : 0xe8e8e4);
+        for (let j = 1; j < 8; j++) for (let i = 2; i < 13; i++) r.px(i, j + Math.round(Math.sin((i + f * 2.1) * 0.8) * 1.2) + 1, paint(i - 2, j - 1));
+        for (let i = 2; i < 6; i++) r.px(i, 17, 0x101018, 0.3);
+        return kit.frame(tod.frame(r, 1590));
+      };
+      const sun = (i, j) => (Math.hypot(i - 5, j - 3) < 2.3 ? 0xd8202a : 0xf8f8f4);
+      const city = (i, j) => (i === 5 && j > 0 && j < 6 ? 0x1a4a9a : Math.abs(i - 5) === 4 - j && j > 0 && j < 4 ? 0x1a4a9a : 0xf8f8f4);
+      for (const [fx, paint] of [[112, sun], [124, city], [135, sun]]) kit.loop(fx, U(Y(1620) + 16), [0, 1, 2].map((f) => flag(f, paint)), { fps: 5 });
+    }
     // the library with its green dome
     {
       const x = 109;
       const y = Y(1840);
       building(x, y, 32, 20, 9, { style: 'office', roof: 0x9a968a, wall: 0xd8d0c0, lit: 0.2, items: ['ac'] });
-      objects.push({
-        y: y + 24,
-        draw: () => {
-          img.disc(x + 16, y + 9, 7, C.copper[1]);
-          img.disc(x + 15, y + 8, 4, C.copper[3]);
-          img.disc(x + 14, y + 7, 1.5, C.copper[4]);
-          img.rect(x + 15, y + 1, 2, 2, C.gold);
-          for (let xx = x + 5; xx < x + 29; xx += 3) img.rect(xx, y + 21, 1, 8, 0xf0ece0);
-        },
-      });
+      objects.pop();
+      objects.push({ y: y + 31, shadow: () => shadowRect(x + 5, y + 5, 32, 29, 0.5), draw: () => library({ img, S }, x, y) });
     }
     {
       // the rose garden: beds of roses between gravel paths, rose arches
