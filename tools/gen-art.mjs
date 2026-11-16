@@ -23,6 +23,7 @@ import * as osaka from './art/osaka/index.mjs';
 import * as beppu from './art/beppu/index.mjs';
 import * as nagasaki from './art/nagasaki/index.mjs';
 import * as hiroshima from './art/hiroshima/index.mjs';
+import * as tokyo from './art/tokyo/index.mjs';
 import { kyotoEnemies, KYOTO_PORTRAITS } from './art/kyoto/enemies.mjs';
 import { okinawaEnemies, OKINAWA_PORTRAITS } from './art/okinawa/enemies.mjs';
 import { sapporoEnemies, SAPPORO_PORTRAITS } from './art/sapporo/enemies.mjs';
@@ -81,6 +82,7 @@ const STAGES = [
   { id: 'stage6', art: beppu },
   { id: 'stage7', art: hiroshima },
   { id: 'stage8', art: nagasaki },
+  { id: 'stage9', art: tokyo }, // (in the works: docs/plan-tokyo.md)
   { id: 'ex1', art: greatwave }, // the vending machine's arena: the Great Wave, fizzy
   { id: 'ex2', art: tokaido }, // the kei car's: the Tōkaidō of Hiroshige's Fifty-three Stations, racing by
   { id: 'ex3', art: namazu }, // the site cat's: a namazu-e, the giant catfish under a building site in Edo

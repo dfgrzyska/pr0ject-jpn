@@ -1,5 +1,5 @@
 import { DEPTH, VIEW } from '../config.js';
-import { STAGES } from '../data/stages.js';
+import { ALL_STAGES as STAGES } from '../data/stages.js';
 import { ENCOUNTERS } from '../data/encounters.js';
 import { pixelText } from './Hud.js';
 import { tr } from '../i18n.js';

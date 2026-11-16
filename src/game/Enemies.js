@@ -67,6 +67,19 @@ export class Enemies {
     return this.pool.live.length;
   }
 
+  /**
+   * The look of a wave's enemy: the skin's entry for its type, or for its "look" (an alternative entry, e.g. the
+   * Kyoto tanuki). A long city has several sets of looks, one per stretch of the flight: the stage file's "sets"
+   * ([[from second, set name], ...]) say which is on, the skin's `sets` what each one looks like; what a set does
+   * not draw falls back on the skin's own.
+   */
+  lookOf(w) {
+    const name = w.look ?? w.type;
+    let set = null;
+    if (this.skin.sets) for (const [from, id] of this.scene.stage.sets ?? []) if ((w.t ?? 0) >= from) set = id;
+    return this.skin.sets?.[set]?.[name] ?? this.skin[name];
+  }
+
   spawn(w) {
     const def = ENEMIES[w.type];
     if (!def) {
@@ -97,7 +110,7 @@ export class Enemies {
     };
     if (w.hp == null && def.weight > 0 && w.type !== 'boss' && w.type !== 'heavy') base.hp = Math.round(base.hp * this.toughness);
     base.maxHp = base.hp;
-    const look = this.skin[w.look ?? w.type]; // look: an alternative skin entry, e.g. the Kyoto tanuki
+    const look = this.lookOf(w);
     if (!look && w.type !== 'boss') return; // e.g. snowploughs exist only in Sapporo
     if (w.type === 'turret' && !w.pattern && look.pattern) base.pattern = look.pattern;
     let e;
@@ -170,7 +183,7 @@ export class Enemies {
         break;
       }
       case 'heavy':
-        e = this.pool.spawn(look.frame, w.x, -30, { ...base, kind: look.kind ?? null, song: w.music ?? null, p2: false });
+        e = this.pool.spawn(look.frame, w.x, -30, { ...base, kind: look.kind ?? null, song: w.music ?? null, p2: false, hold: Boolean(w.hold) });
         if (w.hp == null && HEAVY.hp[look.kind ?? 'manta']) e.hp = e.maxHp = HEAVY.hp[look.kind ?? 'manta'];
         if (look.anim) e.play(look.anim);
         if (look.kind === 'heikegani') e.radius = Math.round(e.radius * 1.25);
@@ -187,6 +200,8 @@ export class Enemies {
         e.u = s.parallax.stripU(-10);
         e.timer = 0.9;
         e.head = this.heads.spawn(`${look.head}0`, w.x, -10);
+        e.look = look; // (its own head and wreck: a city may have several sets, see lookOf)
+        e.wreck = look.wreck;
         if (look.lid) Object.assign(e, { lidded: true, invuln: true, lid: 'shut', timer: 1 + Math.random() * 0.8 });
         break;
       }
@@ -1168,15 +1183,16 @@ export class Enemies {
     if (e.lidded) return this.jar(e, dt, b);
     const p = s.player;
     const ang = Math.atan2(p.y - e.y, p.x - e.x);
-    if (this.skin.turret.beckon) {
+    const tl = e.look ?? this.skin.turret;
+    if (tl.beckon) {
       // maneki-neko: the raised paw beckons, faster and faster as the shot comes
       const rate = this.canFire(e) && e.timer < 0.7 ? 12 : 3;
-      e.head.setFrame(`${this.skin.turret.head}${Math.floor(e.age * rate) % 2}`).setPosition(e.x - 5, e.y - 7);
+      e.head.setFrame(`${tl.head}${Math.floor(e.age * rate) % 2}`).setPosition(e.x - 5, e.y - 7);
     } else {
       // head frame i points along (-sin, cos) of i * 22.5deg
       const th = Math.atan2(-(p.x - e.x), p.y - e.y);
       const i = ((Math.round(th / (TAU / 16)) % 16) + 16) % 16;
-      e.head.setFrame(`${this.skin.turret.head}${i}`).setPosition(e.x, e.y - 1);
+      e.head.setFrame(`${tl.head}${i}`).setPosition(e.x, e.y - 1);
     }
     e.heat = e.pattern === 'puff' && this.canFire(e) && e.timer < 0.55; // a steam nozzle glows red before it fires
     if (this.canFire(e)) {

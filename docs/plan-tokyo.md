@@ -1,6 +1,6 @@
 # Plan: etap 9, TOKIO
 
-Stan: **propozycja, czeka na akceptację** (sekcja 2). Postęp odznacza się checkboxami w sekcji 8.
+Stan: **w budowie**. Faza 0 gotowa; decyzje z sekcji 2 przyjęte według rekomendacji (do potwierdzenia przez autora). Postęp odznacza się checkboxami w sekcji 8.
 
 ## 1. W skrócie
 
@@ -17,7 +17,7 @@ Stan: **propozycja, czeka na akceptację** (sekcja 2). Postęp odznacza się che
 | D1 | Kierunek trasy | **Nakano → Odaiba** (opis niżej). Dzięki temu Akihabara i Asakusa wypadają w nocy, a mech w nocnej zatoce. Odwrotny kierunek (start w Asakusie) daje Akihabarę za dnia, czyli słabsze światła. |
 | D2 | Drugi miniboss | **Kasa-obake**, parasol-zjawa z folkloru, na skrzyżowaniu w deszczu. Hachikō zostaje przyjaznym odkryciem, nie celem. |
 | D3 | Miejsce Tokio w podróży | Dziewiąte miasto, zawsze **ostatnie** w kolejności (pozostałe osiem dalej losowo). Wymaga zmian w książeczce pieczątek i zakończeniu (faza 13). |
-| D4 | Długość | Około 440 s. Miniboss 1 w okolicach 112 s, miniboss 2 w 303 s, boss w 410 s. |
+| D4 | Długość | Około 440 s zegara etapu plus czas obu walk na arenach. Miniboss 1 w 104 s, miniboss 2 w 295 s, boss w 400 s. |
 | D5 | Wygląd mecha | Własny projekt w stylu zbroi samuraja (sekcja 6.3), bez podobieństw do znanych serii. |
 
 ## 3. Zasady, które obowiązują obie zmiany roboczą
@@ -49,9 +49,15 @@ Współrzędna `u` liczona od dołu taśmy, jak w `src/data/landmarks.js`. Czas 
 | 10700–11500 | 357–383 s | **TOKYO-WAN** | noc | **Rainbow Bridge** podświetlony, wysepki dawnych fortów Daiba, promy i barki |
 | 11500–12544 | 383–440 s | **ODAIBA** | noc | Plaża z repliką **Statuy Wolności**; estakada automatycznej kolejki z jadącym składem; muzeum w kształcie statku i muzeum nauki z wielkim globusem; budynek telewizji z kulą (bez logo); terminal kontenerowy z suwnicami (arena bossa, u ≈ 12 300) |
 
+### Jak czas ma się do trasy
+
+- Góra ekranu jest w `u = 420 + 30 × t`, środek ekranu około 185 px niżej. Kolumna „Czas" w tabeli jest przybliżona (liczona jako u / 30).
+- Fala minibossa z polem `"hold": true` zatrzymuje przewijanie i zegar etapu, dopóki miniboss żyje. Arena stoi więc pod walką, a fale, pogoda i muzyka czekają. Po walce wszystko rusza z tego samego miejsca, więc tło i fale dalej się zgadzają.
+- Przewijanie kończy się na końcu taśmy (404 s zegara). Boss wchodzi w 400 s i walczy nad nieruchomym terminalem.
+
 ## 5. Przeciwnicy
 
-Pięć istniejących typów zachowań (`popcorn`, `diver`, `shooter`, `turret`, `carrier`) dostaje skórki zależne od dzielnicy. Zachowania zostają bez zmian, żeby nie mnożyć kodu. Wymaga to pola skórki w fali (faza 0); jeśli okaże się za drogie, zostaje jeden zestaw na cały etap (pierwszy wiersz).
+Pięć istniejących typów zachowań (`popcorn`, `diver`, `shooter`, `turret`, `carrier`) dostaje skórki zależne od dzielnicy. Zachowania zostają bez zmian, żeby nie mnożyć kodu. Zestaw wybiera się czasem: pole `sets` w `stage9.json` (`[[od sekundy, nazwa zestawu], ...]`), a wygląd każdego zestawu jest w `SKINS.tokyo.sets` w `src/game/skins.js`. Czego zestaw nie rysuje, bierze się z wpisu głównego. Fale nie muszą nic podawać.
 
 | Odcinek | popcorn | diver | shooter | turret (naziemny) | carrier |
 |---|---|---|---|---|---|
@@ -117,13 +123,15 @@ Każda faza ma: zakres, pliki, które wolno ruszać, warunek ukończenia. „Wym
 
 ### Faza 0: silnik i szkielet etapu
 Wymaga: decyzje D1–D5. Pliki: `src/data/stage9.json`, `src/data/stages.js`, `src/scenes/Boot.js`, `src/scenes/Stage.js`, `src/game/Parallax.js`, `src/game/skins.js`, `tools/gen-art.mjs`, `tools/art/tokyo/index.mjs`.
-- [ ] `stage9.json` z pustą listą fal, zarejestrowany w `stages.js`; etap uruchamia się z menu deweloperskiego
-- [ ] Tło o 14 kaflach ładuje się i przewija (pamięć i czas ładowania zmierzone na telefonie albo w emulacji)
-- [ ] Dwie fale `heavy` w jednym etapie: każda z własną kartą, ostrzeżeniem i muzyką
-- [ ] Pole skórki w fali (zestawy z sekcji 5) albo zapisana decyzja o jednym zestawie
-- [ ] Tokio zawsze ostatnie w kolejności podróży (D3)
-- [ ] Deszcz jako wariant pogody
-- [ ] `npm test` i `npx vite build` przechodzą
+- [x] `stage9.json` zarejestrowany w `stages.js` jako `ALL_STAGES` z flagą `"wip": true`: nie ma go w podróży, książeczce ani zakończeniu, uruchamia się z menu deweloperskiego bossów albo przez `?stage=9`. Fale są zastępcze (po trochu każdego typu), prawdziwe pisze faza 10
+- [x] Tło o 14 kaflach ładuje się i przewija (na razie makieta: `tools/art/tokyo/mid.mjs`)
+- [ ] Pamięć i czas ładowania 14 kafli zmierzone na telefonie (około 81 MB tekstur zamiast 46 MB; do sprawdzenia, gdy kafle będą miały prawdziwą grafikę)
+- [x] Dwie fale `heavy` w jednym etapie, każda z własną kartą; pole `look` wybiera wpis skórki (`kasa`, `taiyaki`), pole `music` własny motyw
+- [x] Zatrzymanie przewijania i zegara na czas walki na arenie (`"hold": true`)
+- [x] Zestawy skórek według odcinka trasy (`sets`); zastępczo grafiki Kioto i Okinawy na zmianę
+- [x] Tokio zawsze ostatnie w kolejności podróży (`"last": true`, `src/data/journeyOrder.js`, test `journeyOrder.test.mjs`); zadziała po zdjęciu flagi `wip` w fazie 16
+- [x] Deszcz jako wariant pogody (`"near": "rain"` plus harmonogram `weather`)
+- [x] `npm test` i `npx vite build` przechodzą
 
 ### Faza 1: szkielet trasy
 Wymaga: faza 0. Pliki: `tools/art/tokyo/route.mjs`, `tools/art/tokyo/mid.mjs`, `src/data/landmarks.js`.
@@ -233,4 +241,4 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
-| | | | | |
+| 2026-11-16 | Claude | 0 | Szkielet etapu: `stage9.json` (wip), makieta tła 14 kafli z dzielnicami i trzema arenami, zestawy skórek, zatrzymanie na arenie, deszcz, kolejność podróży. Sprawdzone w przeglądarce: obaj zastępczy minibossowie, boss na końcu taśmy, rzeka prześwitująca do dalekiej warstwy. | Minibossowie i boss to podstawieni Tanuki, Manta i Kyūbi, muzyka pożyczona z Osaki. Nowi minibossowie z `hold` nie mogą opierać swoich czasów na `scene.t` (zegar stoi), tylko na własnym `e.age`. Granice dzielnic w `tools/art/tokyo/route.mjs` i `landmarks.js` są wstępne, faza 1 je ustala. Pomiar na telefonie nie zrobiony. |

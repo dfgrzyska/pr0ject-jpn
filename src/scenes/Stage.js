@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { NagasakiView } from '../game/NagasakiView.js';
 import { getMusic } from '../audio/Music.js';
 import { DEPTH, ENCOUNTER, GRAZE, PLAYER, RENDER_SCALE, SCORE, TURRETS, VIEW, WEAPONS } from '../config.js';
-import { STAGES } from '../data/stages.js';
+import { ALL_STAGES as STAGES } from '../data/stages.js';
+import { journeyOrder } from '../data/journeyOrder.js';
 import { encounterById, rollEncounter } from '../data/encounters.js';
 import { Bullets } from '../game/Bullets.js';
 import { Enemies } from '../game/Enemies.js';
@@ -64,11 +65,9 @@ function saveLoadout(state) {
   }
 }
 
-/** All stage indices shuffled; `first` (debug ?stage=) goes to the front. */
+/** The journey's cities shuffled (journeyOrder.js); `first` (the menu's pick, debug ?stage=) goes to the front. */
 function randomOrder(first) {
-  const order = Phaser.Utils.Array.Shuffle(STAGES.map((_, i) => i));
-  if (first !== null) order.unshift(...order.splice(order.indexOf(first), 1));
-  return order;
+  return journeyOrder(STAGES, first, (list) => Phaser.Utils.Array.Shuffle(list));
 }
 
 function hiKey() {
@@ -394,7 +393,7 @@ export class Stage extends Phaser.Scene {
     } else if (this.ship.startWeapon && this.player.weapon === 'basic') this.player.weapon = this.ship.startWeapon; // (a gun part)
     this.player.turrets = Math.max(this.player.turrets, this.ship.startTurrets ?? 0); // (a core: a turret to start every city with)
     this.state = 'play';
-    this.stampEligible = !this.encounter && !this.player.god && !(this.debugStart && !this.carry); // (an encounter has no stamp)
+    this.stampEligible = !this.encounter && !this.stage.wip && !this.player.god && !(this.debugStart && !this.carry); // (an encounter has no stamp)
     this.stampChance = this.stampEligible; // lost with a life or a bomb (Player)
     if (this.debugStart && !this.carry) {
       this.t = this.debugStart;
@@ -406,7 +405,8 @@ export class Stage extends Phaser.Scene {
     this.player.spawn();
     this.music.play(this.stageSong(), true);
     // (an encounter: its boss's card says it all, see the boss warning in update)
-    if (!this.encounter) this.hud.cityCard(`seal_${this.stage.id}`, this.stampInk, this.stageTitle, this.stage.subtitle);
+    if (this.stage.wip) this.hud.show(this.stageTitle, this.stage.subtitle, 2.8); // (no seal drawn for it yet)
+    else if (!this.encounter) this.hud.cityCard(`seal_${this.stage.id}`, this.stampInk, this.stageTitle, this.stage.subtitle);
   }
 
   /** After game over: return to the menu for a fresh journey. */
@@ -433,7 +433,7 @@ export class Stage extends Phaser.Scene {
         boot.fetch([id]);
       }
     }
-    this.map = new JapanMap(this, STAGES, this.order, this.pos, false, { encounter: Boolean(this.pendingEncounter), resume: Boolean(this.encounter) });
+    this.map = new JapanMap(this, this.order.some((i) => STAGES[i].wip) ? STAGES : STAGES.filter((st) => !st.wip), this.order, this.pos, false, { encounter: Boolean(this.pendingEncounter), resume: Boolean(this.encounter) });
     this.music.play('title', true);
   }
 
@@ -865,7 +865,11 @@ export class Stage extends Phaser.Scene {
     this.gacha?.update(dt);
     this.hangar?.update(dt);
     if (playing) {
-      this.t += dt;
+      // an arena fight (a miniboss whose wave says "hold"): the city stops under it, and so does the stage's clock
+      // (its waves, weather and music wait), until the miniboss is down or flies off
+      const arena = this.enemies.heavy;
+      this.parallax.hold = Boolean(arena?.hold && arena.state !== 'leave');
+      if (!this.parallax.hold) this.t += dt;
       this.waves.update(this.t, (w) => this.enemies.spawn(w));
       this.interlude?.update(dt, this.t);
       for (const type of ['heavy', 'boss']) {

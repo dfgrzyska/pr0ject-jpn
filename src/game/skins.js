@@ -70,6 +70,37 @@ export const SKINS = {
     geyser: { frame: 'boil_0', anim: 'boil', mud: 'mudboil_0', mudAnim: 'mudboil' },
     steam: { frame: 'steamf_0' },
   },
+  // Tokyo (docs/plan-tokyo.md): the longest city, its enemies in five sets, one per stretch of the flight (the
+  // stage file's "sets"). Stand-ins until its own are drawn (phase 9): Kyoto's and Okinawa's, turn about.
+  tokyo: {
+    popcorn: { frame: 'popcorn_0', anim: 'popcorn' },
+    shooter: { frame: 'shooter_0', anim: 'shooter' },
+    diver: { frame: 'diver_0', anim: 'diver' },
+    carrier: { frame: 'carrier_{c}_0', anim: 'carrier_{c}' },
+    heavy: { frame: 'manta_0', anim: 'manta' },
+    kasa: { frame: 'tanuki_0', anim: 'tanuki', kind: 'tanuki' }, // (the first miniboss's place: KASA-OBAKE)
+    taiyaki: { frame: 'manta_0', anim: 'manta' }, // (the second's: TAIYAKI)
+    turret: { base: 'turret_base', head: 'turret_head_', wreck: 'turret_wreck' },
+    sets: {
+      west: {},
+      centre: {
+        popcorn: { frame: 'tobiuo_0', anim: 'tobiuo' },
+        shooter: { frame: 'hari_0', anim: 'hari' },
+        diver: { frame: 'habu_0', anim: 'habu' },
+        carrier: { frame: 'glass_{c}_0', anim: 'glass_{c}' },
+        turret: { base: 'coral_base', head: 'coral_head_', wreck: 'coral_wreck' },
+      },
+      akiba: {},
+      asakusa: {
+        popcorn: { frame: 'tobiuo_0', anim: 'tobiuo' },
+        shooter: { frame: 'hari_0', anim: 'hari' },
+        diver: { frame: 'habu_0', anim: 'habu' },
+        carrier: { frame: 'glass_{c}_0', anim: 'glass_{c}' },
+        turret: { base: 'coral_base', head: 'coral_head_', wreck: 'coral_wreck' },
+      },
+      bay: {},
+    },
+  },
   // Hiroshima & Miyajima: maple-leaf spirit flocks, armored Seto oysters with pearl crits, scooping shamoji paddles,
   // tidal stone lanterns, Heike-gani samurai crab, and Sankibō the Great Tengu of Mount Misen
   hiroshima: {

@@ -8,5 +8,9 @@ import stage5 from './stage5.json';
 import stage6 from './stage6.json';
 import stage8 from './stage8.json';
 import stage7 from './stage7.json';
+import stage9 from './stage9.json';
 
+// (the cities of the journey: the stamp book, the ending and the menu's map count these)
 export const STAGES = [stage1, stage2, stage3, stage4, stage5, stage6, stage7, stage8];
+/** Every stage file, those in the works too ("wip": reached only from the developer's menu or ?stage=n). */
+export const ALL_STAGES = [...STAGES, stage9];

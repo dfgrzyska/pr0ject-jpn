@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { keepForOffline } from '../pwa.js';
 import { installLegacyPixelGrid } from '../rendering.js';
-import { STAGES } from '../data/stages.js';
+import { ALL_STAGES as STAGES } from '../data/stages.js';
 import { ENCOUNTERS } from '../data/encounters.js';
 import { setFontScale } from '../game/fontScale.js';
 import { CITY_ANIMS, registerEnemyAtlas, registerSharedHi, spriteAnimTexture, unregisterEnemyAtlas } from '../game/enemyArt.js';

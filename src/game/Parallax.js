@@ -42,6 +42,8 @@ export class Parallax {
     // the scroll stops at the end of the strip, or where the stage says (Kyoto: with the 大 on the screen)
     this.maxTime = ((stage.scroll.stop ?? meta.length) - this.anchor) / this.speed.mid;
     this.time = 0;
+    this.hold = false; // an arena fight (set by the stage): the scroll eases to a stop, and off again after
+    this.holdK = 1;
     this.scrollClock = 0;
     this.farTime = 0;
     this.uTop = this.anchor;
@@ -151,11 +153,12 @@ export class Parallax {
   }
 
   update(dt, scrolling, H) {
+    this.holdK += ((this.hold ? 0 : 1) - this.holdK) * Math.min(1, dt * 2.5);
     if (scrolling) {
       if (this.speed.fast) this.setTime(this.scrollClock + dt);
       else {
         // (Nagasaki: the climb eases off over the last stretch, cresting the summit of Inasa)
-        this.time = Math.min(this.time + dt * this.rate(), this.maxTime);
+        this.time = Math.min(this.time + dt * this.rate() * this.holdK, this.maxTime);
         this.farTime += dt;
       }
     }
@@ -238,6 +241,7 @@ export class Parallax {
     if (this.nearKind === 'tropic') this.spawnTropic(dt, fall, scrolling);
     else if (this.nearKind === 'snow') this.spawnSnow(dt, fall);
     else if (this.nearKind === 'ash') this.spawnAsh(dt, fall, H);
+    else if (this.nearKind === 'rain') this.spawnRain(dt);
     else if (this.nearKind === 'steam') this.spawnSteam(dt, fall);
     else if (this.nearKind === 'momiji') this.spawnMomiji(dt, fall, scrolling);
     else if (this.nearKind === 'none') { /* (an encounter's arena brings its own moving parts) */ }
@@ -396,6 +400,20 @@ export class Parallax {
         flipT: 0,
       });
       g.setFlipX(!left).setAlpha(0.85).play('gull');
+    }
+  }
+
+  /** Tokyo: rain by the stage's weather schedule (nothing while it is 0): slanted streaks, thicker as it pours. */
+  spawnRain(dt) {
+    const s = this.snow;
+    this.wind += (-(10 + 14 * s) - this.wind) * Math.min(1, dt * 1.5);
+    if (s <= 0.02) return;
+    this.petalTimer -= dt;
+    while (this.petalTimer <= 0) {
+      this.petalTimer += 1 / (24 + 150 * s);
+      const vy = 230 + Math.random() * 90;
+      const p = this.near.spawn('streak', Math.random() * 250 - 20, -8, { vy, vx: 0, wf: 2.2, sway: 0, age: 0, flipT: 0 });
+      p.setAlpha(0.2 + Math.random() * 0.22).setTint(0xa8c8ec).setRotation(-Math.atan2(this.wind * 2.2, vy));
     }
   }
 
