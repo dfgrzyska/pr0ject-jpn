@@ -8,7 +8,7 @@ miast nie byli oglądani.
 
 1. Spotkanie 7: zamiast mównicy duża postać człowieka przy stole. **Zrobione 15.11** (opis w `random-encounters.md`).
 2. Spotkanie 6 (babcia): tło, ruchy i grafika od nowa. **Zrobione 15.11** (opis w `random-encounters.md`).
-3. Miasta: szczegóły, animacje i nowe ważne miejsca tam, gdzie jest pustka. Kagoshima i Okinawa zrobione 15.11, Sapporo 16.11.
+3. Miasta: szczegóły, animacje i nowe ważne miejsca tam, gdzie jest pustka. Kagoshima i Okinawa zrobione 15.11, Sapporo i Hiroszima 16.11.
 
 ## Spotkania
 
@@ -135,11 +135,20 @@ Dodane:
 
 Nie zrobione: tramwaj (już jeździ w centrum, na przedmieściu nie ma torów, którymi mógłby dokądś dojechać).
 
-### Hiroszima
+### Hiroszima — zrobione 16.11
 
-- Odcinek z morzem i tratwami ostryg jest pusty.
-- Dodać: promy na Miyajimę, jelenie na wyspie, tramwaje.
-- Stadion baseballowy jest narysowany, ale bez nazwy.
+Przegląd w grze: promy JR i Matsudai, łódź Aqua Net, łodzie robocze przy tratwach, rybacy, boje, mewy, jelenie
+i tramwaje już były. Zatoka nużyła, bo przez 55 sekund powtarzały się tylko tratwy i wysepki.
+
+Dodane:
+
+- Procesja Kangen-sai w cieśninie przed Miyajimą: gozabune (trzy łodzie pod jednym pokładem, kurtyna, hōren pod
+  złoconym dachem, muzycy, wielki bęben, lampiony) holowana przez dwie łodzie wioślarskie z Agi i Eby. Płynie po
+  pętli, holowniki zawsze z przodu.
+- Trzy kutry wioślarskie szkoły morskiej z Etajimy ścigające się między tratwami.
+- Morświny bezpłetwe (sunameri) wynurzające się w trzech spokojnych miejscach poza torami promów.
+- Nazwy miejsc: było 5, jest 22 (m.in. Mazda Stadium, Okonomimura / Hondori, Miyajimaguchi, Ono Seto, Kaki Ikada,
+  Kangen-sai, Omotesando, O-Torii, Itsukushima Jinja, Gojunoto / Senjokaku, Daisho-in, Momijidani, Misen).
 
 ### Kioto, Osaka, Beppu, Nagasaki
 

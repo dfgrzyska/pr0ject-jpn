@@ -4353,6 +4353,211 @@ export function buildMid() {
         }
     });
     kit.path([[W + 20, 3100], [120, 3600], [64, 4200], [44, 4392]], [aqua], { sp: 20, mode: 'pp', hold: 6, turn: 'rot', d: 0.25, s0: 0.25, wake: { f: wakeF0(3800), every: 4, life: 1.6 } });
+    /** A pointed hull inside a frame: bow to the right, from X0 to X1 about the row cy, hw to each side. */
+    const hullAt = (r, X0, X1, cy, hw, hullC, deck) => {
+      for (let X = X0; X <= X1; X++) {
+        const t = X1 - X;
+        const w = Math.min(hw, 0.6 + Math.pow(t, 0.72) * (hw / Math.pow((X1 - X0) * 0.3, 0.72)));
+        for (let Yy = Math.ceil(cy - w); Yy <= cy + w; Yy++) {
+          const e = w - Math.abs(Yy - cy);
+          let c = e < 1.1 ? (Yy > cy ? scaleColor(hullC, 0.66) : scaleColor(hullC, 1.2)) : deck;
+          if (X < X0 + 2) c = scaleColor(hullC, 0.66);
+          r.px(X, Yy, c);
+        }
+      }
+    };
+    // Kangen-sai: the gozabune carrying the shrine's deity across the strait to music. Three boats lashed side by
+    // side under one deck, a curtain round it, the hōren under its gilded roof, the musicians in two rows, the great
+    // drum, lanterns on every post; two rowing boats from Aga and Eba towing it on their ropes (live)
+    {
+      const ROBES = [0xf4f0e8, 0xa8d0a0, 0xf0a860, 0xf4f0e8, 0xb8a8e0];
+      const BANNERS = [0x3a6ad0, 0xe8c040, 0xd04040, 0xffffff, 0x6aaa5a];
+      const goza = [0, 1].map((f) =>
+        sprite(52, 21, 4400, (r) => {
+          // the towing ropes, away forward from the outer bows
+          r.linePx(129, 13, 155, 10, 0xc8b890);
+          r.linePx(129, 49, 155, 52, 0xc8b890);
+          for (const cy of [13, 31, 49]) hullAt(r, 27, 129, cy, 7, 0x7a4a2a, 0xb88a58);
+          for (const cy of [13, 31, 49]) for (let X = 34; X < 120; X += 9) for (let j = -5; j <= 5; j++) r.px(X, cy + j, 0x8a6238);
+          // the deck across the three, pale boards with a red felt down its middle
+          for (let Yy = 5; Yy <= 57; Yy++)
+            for (let X = 45; X <= 113; X++) {
+              const edge = X === 45 || X === 113 || Yy === 5 || Yy === 57;
+              let c = (X + (Yy >> 3)) % 7 === 0 ? 0xc0a878 : 0xdcc494;
+              if (Yy > 20 && Yy < 42 && X > 50 && X < 108) c = (X + Yy) % 9 === 0 ? 0xa02820 : 0xc03a2c;
+              if (edge) c = 0xd83a2a;
+              r.px(X, Yy, c);
+            }
+          // the curtain hung round the rail: purple and white
+          for (let X = 46; X < 113; X++) {
+            const c = ((X - 46) >> 2) % 2 ? 0x6a3a9a : 0xf4f0f4;
+            r.px(X, 6, c);
+            r.px(X, 7, scaleColor(c, 0.8));
+            r.px(X, 55, c);
+            r.px(X, 56, scaleColor(c, 0.8));
+          }
+          for (let Yy = 8; Yy < 55; Yy++) r.px(46, Yy, ((Yy - 8) >> 2) % 2 ? 0x6a3a9a : 0xf4f0f4);
+          // the hōren under its roof: gilded, hipped, a phoenix on the ridge
+          for (let Yy = 22; Yy <= 40; Yy++)
+            for (let X = 70; X <= 92; X++) {
+              const e = Math.min(X - 70, 92 - X, Yy - 22, 40 - Yy);
+              let c = e === 0 ? 0x6a4a18 : Yy < 31 ? 0xe8c050 : 0xb88a28;
+              if (Math.abs(X - 81) === Math.abs(Yy - 31) && e > 0) c = 0xfff0a0;
+              r.px(X, Yy, c);
+            }
+          r.rectPx(80, 30, 3, 3, 0xfff8d0);
+          r.px(81, 31, 0xd04040);
+          // the musicians in two rows, in court robes and black caps: flutes, shō and a small drum between them
+          for (let k = 0; k < 5; k++)
+            for (const [Yy, s] of [[13, 1], [46, -1]]) {
+              const X = 49 + k * 5;
+              r.rectPx(X, Yy, 3, 4, ROBES[(k + (s > 0 ? 0 : 2)) % ROBES.length]);
+              r.rectPx(X + 1, Yy + 1, 2, 2, 0x2a2024);
+              r.px(X + 3, Yy + 1 + ((k + f) % 2), 0xc8a878);
+            }
+          for (let k = 0; k < 3; k++)
+            for (const Yy of [13, 46]) {
+              const X = 96 + k * 5;
+              r.rectPx(X, Yy, 3, 4, ROBES[(k + 1) % ROBES.length]);
+              r.rectPx(X + 1, Yy + 1, 2, 2, 0x2a2024);
+            }
+          // the great drum forward, its drummer's sticks up and down
+          r.discPx(101, 31, 5, 0x8a2a20);
+          r.discPx(101, 31, 3.6, 0xeee2c4);
+          r.px(101, 31, 0x2a2024);
+          r.rectPx(107, 30, 3, 4, 0xf4f0e8);
+          r.px(108, 31, 0x2a2024);
+          r.px(105, f ? 29 : 33, 0xc8a878);
+          r.px(106, f ? 30 : 32, 0xc8a878);
+          // lanterns on the posts round the deck, a banner and a sakaki branch at each bow
+          for (let X = 48; X <= 112; X += 8)
+            for (const Yy of [3, 58]) {
+              r.rectPx(X, Yy, 2, 2, f ? 0xffa040 : 0xff8a30);
+              r.px(X, Yy, f ? 0xfff0c0 : 0xffd890);
+            }
+          for (const [n, cy] of [[0, 13], [1, 31], [2, 49]]) {
+            r.rectPx(116, cy - 2, 5, 3, BANNERS[n]);
+            r.px(116, cy - 2, 0x4a3a20);
+            r.rectPx(122, cy, 3, 2, 0x3a7a3a);
+            r.rectPx(30, cy - 1, 4, 2, BANNERS[n + 2]);
+          }
+        }),
+      );
+      // the two towing boats abreast, one frame: Aga's in red, Eba's in blue
+      const tows = [0, 1].map((f) =>
+        sprite(18, 23, 4400, (r) => {
+          for (const [oy, hullC, happi] of [[0, 0xc8302a, 0x2a4a8a], [42, 0x2a5a9a, 0xc8402a]]) {
+              // six oars a side, swung forward and back
+              for (let k = 0; k < 6; k++) {
+                const X = 13 + k * 5;
+                const dx = f ? -3 : 3;
+                r.linePx(X, oy + 9, X + dx, oy + 2, 0xd8c090);
+                r.linePx(X, oy + 17, X + dx, oy + 24, 0xd8c090);
+                r.px(X + dx, oy + 1, 0xf4f8f8, f ? 0.7 : 0.3);
+                r.px(X + dx, oy + 25, 0xf4f8f8, f ? 0.7 : 0.3);
+              }
+              hullAt(r, 3, 51, oy + 13, 5, hullC, 0xe4d8b8);
+              for (let k = 0; k < 6; k++)
+                for (const Yy of [10, 15]) {
+                  const X = 12 + k * 5;
+                  r.rectPx(X, oy + Yy, 3, 2, happi);
+                  r.px(X + 1, oy + Yy + (Yy < 13 ? 1 : 0), 0x2a2024);
+                  r.px(X + 1, oy + Yy + (Yy < 13 ? 0 : 1), 0xf4f4f4);
+                }
+              // the helmsman at his long oar in the stern, the drummer and the boat's flag forward
+              r.rectPx(6, oy + 12, 3, 3, 0xf4f0e8);
+              r.px(7, oy + 13, 0x2a2024);
+              r.linePx(6, oy + 13, 0, oy + 13 + (f ? 1 : -1), 0xc8a878);
+              r.discPx(44, oy + 13, 2, 0xeee2c4);
+              r.rectPx(46, oy + 11, 3, 2, 0xd04040);
+          }
+        }),
+      );
+      // one train round a long loop in the strait, the towing boats always ahead (out to Jigozen and home again)
+      kit.path(
+        [[95, 4300], [95, 4470], [101, 4492], [109, 4500], [117, 4492], [123, 4470], [123, 4310], [117, 4288], [109, 4280], [101, 4288], [95, 4300]],
+        [tows, goza],
+        { sp: 3, n: 2, gap: 34, cars: 1, s0: 0.1, turn: 'rot', fps: 1.6, d: 0.05, wake: { f: wakeF0(4400), every: 7, life: 2 } },
+      );
+    }
+    // cutters from the naval school at Etajima out at practice: twelve oars and a coxswain each, white hulls with a
+    // blue strake, racing one another along the same reach and back (live)
+    {
+      const cutter = [0, 1, 2].map((f) =>
+        sprite(14, 9, 3820, (r) => {
+          const dx = [4, 0, -4][f];
+          for (let k = 0; k < 6; k++) {
+            const X = 11 + k * 4;
+            r.linePx(X, 10, X + dx, 2, 0xe0c898);
+            r.linePx(X, 16, X + dx, 24, 0xe0c898);
+            if (f === 2) {
+              r.px(X + dx, 1, 0xf4fcff, 0.8);
+              r.px(X + dx, 25, 0xf4fcff, 0.8);
+            }
+          }
+          hullAt(r, 3, 39, 13, 4, 0xf2f2ee, 0xc8b890);
+          for (let X = 5; X < 34; X++) {
+            r.px(X, 9, 0x1e3c7a);
+            r.px(X, 17, 0x16306a);
+          }
+          for (let k = 0; k < 6; k++)
+            for (const Yy of [11, 14]) {
+              const X = 10 + k * 4 - (f === 1 ? 1 : 0);
+              r.rectPx(X, Yy, 2, 2, 0xffffff);
+              r.px(X, Yy + (Yy < 13 ? 1 : 0), 0x2a2a34);
+            }
+          r.rectPx(5, 12, 2, 3, 0x1e2a4a);
+          r.px(5, 13, 0xf0d0b0);
+          r.rectPx(1, 11, 3, 3, 0xffffff);
+          r.px(2, 12, 0xd83a2a);
+        }),
+      );
+      for (const [u, sp, s0] of [[3802, 6.4, 0.02], [3819, 6.9, 0.05], [3836, 6.1, 0]])
+        kit.path([[122, u], [166, u]], cutter, { sp, mode: 'pp', hold: 5, s0, turn: 'flip', fps: 3, d: 0.03, wake: { f: wakeF0(3820), every: 9, life: 1.2 } });
+    }
+    // sunameri, the Inland Sea's finless porpoises: a pale back or two rolling up through the surface and gone again,
+    // in the quiet water off the ferries' lanes
+    {
+      const back = (r, cx, cy, len, hgt) => {
+        for (let i = -len; i <= len; i++) {
+          const h = Math.round(hgt * Math.sqrt(1 - (i * i) / (len * len + 0.01)));
+          for (let j = 0; j <= h; j++) r.px(cx + i, cy - j, j === h ? 0xe4ecf0 : j === 0 ? 0x6a7880 : 0xaab6be);
+        }
+        for (let i = -len - 2; i <= len + 2; i++) r.px(cx + i, cy + 1, 0xe8f8fc, 0.55);
+      };
+      const ring = (r, cx, cy, rad, a) => {
+        for (let t = 0; t < Math.PI * 2; t += 0.08) r.px(Math.round(cx + Math.cos(t) * rad), Math.round(cy + Math.sin(t) * rad * 0.45), 0xe0f6fa, a);
+      };
+      const porpoise = [0, 1, 2, 3, 4, 5, 6, 7].map((k) =>
+        sprite(16, 8, 3600, (r) => {
+          if (k === 0) ring(r, 16, 14, 3, 0.4);
+          if (k === 1) back(r, 15, 14, 3, 1);
+          if (k === 2) back(r, 17, 14, 5, 2);
+          if (k === 3) {
+            back(r, 20, 14, 6, 3);
+            back(r, 32, 18, 3, 1);
+          }
+          if (k === 4) {
+            back(r, 23, 14, 5, 2);
+            back(r, 34, 18, 5, 2);
+          }
+          if (k === 5) {
+            back(r, 25, 14, 3, 1);
+            back(r, 37, 18, 4, 2);
+            ring(r, 18, 14, 6, 0.4);
+          }
+          if (k === 6) {
+            ring(r, 20, 14, 9, 0.32);
+            back(r, 39, 18, 2, 1);
+          }
+          if (k === 7) {
+            ring(r, 20, 14, 12, 0.18);
+            ring(r, 36, 18, 6, 0.22);
+          }
+        }),
+      );
+      kit.spot([[14, 3440, 40, 96], [138, 3700, 34, 68], [6, 3952, 38, 60]], porpoise, { rate: 0.22, fps: 4, a: 0.95, d: 0.01 });
+    }
     // gulls wheeling over the rafts, glints across the bay
     const gullF = [0, 1].map((f) => sprite(5, 3, 3600, (r) => {
       for (let i = 0; i < 15; i++) {
