@@ -66,6 +66,20 @@ export const ITEMS = [
     ship: { id: 'houou', name: 'HOUOU', role: 'PREMIUM', color: 0xffd040, frame: 'ship_houou', life: 'icon_life_houou', lives: 3, damage: 1.1, hit: 1.3, graze: 9, pickup: 13, flameY: 8.5 },
     slots: { engine: 1, gun: 2, bomb: 1, core: 2, omamori: 3 },
   },
+  // the hull that moves: a paper crane (tools/art/shared540/orizuru540.mjs). `anim`: its wings beat `rate` frames
+  // a second (<frame>_f1, _f2 and back), and it folds out of a sheet as it flies in (<frame>_o0.._o2); `frames`:
+  // all of them, for the paint jobs; `decalAt`: where its stickers go (see shipSkin.js); the talismans built in
+  {
+    id: 'hull_orizuru', kind: 'hull', rarity: 'UR', name: 'ORIZURU', info: 'ORIGAMI: MACHA SKRZYDŁAMI',
+    ship: {
+      id: 'orizuru', name: 'ORIZURU', role: 'ORIGAMI', color: 0xf0ecff, frame: 'ship_orizuru', life: 'icon_life_orizuru', lives: 3, damage: 1, hit: 1.2, graze: 10, pickup: 13, flameY: 5.5, wing: 22,
+      anim: { rate: 9 },
+      frames: ['', '_l', '_r', '_f1', '_f1_l', '_f1_r', '_f2', '_f2_l', '_f2_r', '_o0', '_o1', '_o2'].map((s) => `ship_orizuru${s}`),
+      decalAt: [[0.5, 0.42], [0.3, 0.53], [0.7, 0.53], [0.5, 0.64]],
+    },
+    slots: { engine: 1, gun: 1, bomb: 1, core: 1, omamori: 2 },
+    fixed: { core: 'core_ofuda' },
+  },
 
   // ---- engines: keyboard speed, px of travel per px of finger, how fast the ship chases the finger
   { id: 'engine_standard', kind: 'engine', starter: true, name: 'SILNIK STANDARDOWY', info: 'PEWNY I PRZEWIDYWALNY', fx: { set: { speed: 112, touchGain: 1.15, dragSpeed: 650 } } },

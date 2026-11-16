@@ -266,8 +266,19 @@ export class Player {
       if (firing && this.entering <= 0 && this.jam <= 0) this.fire(dt);
     }
     const f = this.ship.frame;
-    this.shipFrame(this.bank < -0.35 ? `${f}_l` : this.bank > 0.35 ? `${f}_r` : f);
-    this.sprite.setPosition(this.x, this.y).setRotation(this.bank * 0.065);
+    const an = this.ship.anim; // (a hull that moves: ORIZURU)
+    const folding = an && this.alive && this.entering > 0 ? 1 - this.entering / 0.7 : 1;
+    if (folding < 0.8) {
+      // flying in, it folds itself out of a sheet, turning as it does
+      this.shipFrame(`${f}_o${folding < 0.3 ? 0 : folding < 0.55 ? 1 : 2}`);
+      this.sprite.setPosition(this.x, this.y).setRotation((0.8 - folding) ** 2 * 9);
+    } else {
+      // its wings beat (faster as it climbs): spread, half raised, raised, and back
+      const beat = an ? [0, 1, 2, 1][Math.floor(this.scene.t * an.rate * (1 + Math.max(0, this.thrust) * 0.5)) % 4] : 0;
+      const fb = beat ? `${f}_f${beat}` : f;
+      this.shipFrame(this.bank < -0.35 ? `${fb}_l` : this.bank > 0.35 ? `${fb}_r` : fb);
+      this.sprite.setPosition(this.x, this.y).setRotation(this.bank * 0.065);
+    }
     this.flame.setPosition(this.x, this.y + this.ship.flameY).setScale(1 - this.thrust * 0.12, (1 + this.thrust * 0.45) * flameLook(this.flame, this.ship));
     this.dot.setPosition(this.x, this.y);
     // the companion: behind the left wing, catching up with the ship, bobbing as it flies
@@ -836,6 +847,11 @@ export class Player {
     s.fx.debris(this.x, this.y, 12, this.ship.color, 1.6);
     s.fx.debris(this.x, this.y, 6, 0xffffff, 1.3);
     s.fx.flash(0.35, 0.3);
+    if (this.ship.anim) {
+      // (the paper crane comes apart into the sheet it was folded from, drifting down)
+      const sheet = s.fx.part(s.fx.parts, `${this.ship.frame}_o0`, this.x, this.y, { vy: 26, drag: 0.3, g: 14, spin: 2.5, life: 1.6, a0: 0.95 });
+      sheet.setScale(0.8 * sheet.base);
+    }
     if (this.ship.look?.death) this.burst(this.ship.look.death, this.x, this.y); // (a last flourish out of the gachapon)
     s.score.death();
     this.beanT = 0;
