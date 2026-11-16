@@ -624,9 +624,9 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
       return [p[0] - ((b[1] - a[1]) / len) * d, p[1] + ((b[0] - a[0]) / len) * d];
     });
   /** A train running the whole of a track that bends (pts, the way it runs), round and round; graded for the hour at u. */
-  const trainOn = (pts, band, { n = 6, sp = 38, s0 = rand(), u = pts[0][1] } = {}) => {
+  const trainOn = (pts, band, { n = 6, sp = 38, s0 = rand(), u = pts[0][1], mode = 'wrap', hold = 0 } = {}) => {
     const mid = Array(n - 2).fill(coachFrame(band, 0, u));
-    props.path(pts, [coachFrame(band, 1, u), ...mid, coachFrame(band, -1, u)], { sp, n, gap: 23, mode: 'wrap', turn: 'rot', cars: 1, s0 });
+    props.path(pts, [coachFrame(band, 1, u), ...mid, coachFrame(band, -1, u)], { sp, n, gap: 23, mode, hold, turn: 'rot', cars: 1, s0 });
   };
   /** Cars along a lane that bends (pts, the way they drive), a gap apart; graded for the hour at u. */
   const trafficOn = (pts, { sp = 22, gap = 200, s0 = rand(), u = pts[0][1] } = {}) => {
