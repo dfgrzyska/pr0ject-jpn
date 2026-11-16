@@ -294,31 +294,458 @@ export function buildFar() {
 
 export function buildMid() {
   const img = new Raster(FW, L * S); // transparent, but for the start
-  // Nihonbashi: the arched wooden bridge across the bottom of the first screen, the canal under it, the
-  // procession setting out over it (banners, spears, the palanquin), the gate posts at its end
+  // Nihonbashi, where the road begins: the canal across the bottom of the first screen between its stone
+  // embankments, the arched wooden bridge carrying the road over it (planks across, rails with bronze giboshi on
+  // their posts, the piles of its piers standing in the water), a daimyō's procession setting out over it as in the
+  // first print of the series; on the far quay the fish market and the storehouses, on the near one the notice
+  // board and the landing steps; boats on the water.
   const by = L * S - 300; // the bridge's middle
-  for (let y = by - 120; y < by + 120; y++)
+  const WOOD = [0x4a3420, 0x6e4e2c, 0x94703e, 0xb89258, 0xd4b47c];
+  const STONE = [0x4e4c48, 0x6a6862, 0x86837a, 0xa29e92, 0xbcb8aa];
+  const BX0 = ROAD0 - 16;
+  const BX1 = ROAD1 + 16; // the deck's edges
+  const pr = rng(1603);
+  const shadow = (x, y, w, h, f = 0.72) => {
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) img.tint(Math.round(x + i), Math.round(y + j), f);
+  };
+  // ---- the quays and the water
+  for (let y = by - 172; y < by + 172; y++)
     for (let x = 0; x < FW; x++) {
       const d = Math.abs(y - by);
-      const canal = d > 60;
-      const w = fbm(x * 0.4, y * 1.5, { seed: 23, scale: 9 });
-      let c = canal ? rampColor(SKYWATER, 0.3 + w * 0.5 + (w > 0.7 ? 0.3 : 0), x, y) : (y - by + 66) % 10 < 1 ? 0x3a2a1a : rampColor(EARTH, 0.4 + (60 - d) / 300 + (w - 0.5) * 0.2, x, y);
-      if (!canal && d > 52) c = (x % 22 < 4) ? 0x3a2a1a : 0x8a5a30; // the rails, their posts
-      img.set(x, y, c);
+      const n = fbm(x, y, { seed: 23, scale: 14 });
+      if (d >= 110) {
+        // packed earth, worn pale along the middle of the quay; its outer edge ragged, grass growing into it
+        const edge = 172 - d;
+        if (edge < 12 && fbm(x, y, { seed: 29, scale: 5 }) > edge / 12) continue;
+        let c = ramp(ROAD, 0.34 + n * 0.4 + (d - 110) / 300);
+        if (edge < 16 && fbm(x * 2, y * 2, { seed: 31, scale: 3 }) > 0.56) c = ramp(RICE, 0.2 + n * 0.5);
+        if (fbm(x * 3, y * 3, { seed: 37, scale: 2 }) > 0.8) c = mix(c, 0x4a3a24, 0.3);
+        img.set(x, y, c);
+      } else if (d >= 98) {
+        // the embankment: dressed stone in courses, the joints dark, moss low by the water
+        const row = Math.floor((d - 98) / 4);
+        const col = Math.floor((x + row * 5) / 9);
+        const joint = (d - 98) % 4 === 0 || (x + row * 5) % 9 === 0;
+        let c = ramp(STONE, 0.3 + ((col * 37 + row * 11) % 7) / 12 + (n - 0.5) * 0.2);
+        if (joint) c = mix(c, 0x24221e, 0.6);
+        if (d < 102 && fbm(x, y, { seed: 41, scale: 4 }) > 0.5) c = mix(c, 0x3a5a2e, 0.55);
+        if (d === 109) c = ramp(STONE, 0.95);
+        img.set(x, y, c);
+      } else {
+        // the canal: deep blue, long ripples of light, darker under the walls
+        const w = fbm(x * 0.35, y * 1.6, { seed: 23, scale: 9 });
+        let c = ramp(SKYWATER, 0.22 + w * 0.5 + (w > 0.68 ? 0.26 : 0));
+        if (d > 84) c = mix(c, 0x0c1c34, ((d - 84) / 14) * 0.6);
+        if (y < by && d > 78 && (x + Math.floor(w * 30)) % 23 < 9) c = mix(c, ramp(STONE, 0.6), 0.14); // the wall mirrored
+        img.set(x, y, c);
+      }
     }
-  // the procession: a line of little figures over the bridge, banners on poles, the palanquin in the middle
-  const pr = rng(1603);
-  for (let k = 0; k < 30; k++) {
-    const x = 30 + k * 16 + pr() * 4;
-    const y = by - 20 + (k % 3) * 14 + pr() * 4;
-    for (let j = -4; j <= 4; j++) for (let i = -3; i <= 3; i++) if (i * i / 9 + j * j / 16 < 1) img.set(x + i, y + j, k % 5 === 0 ? 0x7a1a14 : 0x2a2a3a);
-    for (let j = -2; j <= 2; j++) for (let i = -2; i <= 2; i++) if (i * i + j * j < 5) img.set(x + i, y - 6 + j, 0x1a1414);
-    if (k % 4 === 1) {
-      for (let j = 0; j < 22; j++) img.set(x + 4, y - 4 - j, 0x3a2a1a);
-      for (let j = 0; j < 9; j++) for (let i = 0; i < 6; i++) img.set(x + 5 + i, y - 24 + j, j === 0 ? INK : 0xf0ece0);
+  // ---- people, seen from above: shoulders, a head or a hat, a shadow thrown down and to the right
+  const person = (x, y, body, hat = 'head', o = {}) => {
+    shadow(x - 1, y + 2, 7, 4, 0.78);
+    img.ellipse(x, y, 3.6, 2.6, body);
+    img.set(x - 3, y, mix(body, 0xffffff, 0.25));
+    img.set(x + 3, y + 1, mix(body, 0x000000, 0.3));
+    if (o.swords) {
+      img.line(x - 4, y + 1, x - 7, y + 4, 0x1a1420);
+      img.set(x - 4, y + 1, 0xc8a040);
+    }
+    if (hat === 'jingasa') {
+      img.disc(x, y - 1, 3, 0x16141c);
+      img.set(x, y - 1, 0xd8b048);
+      img.set(x - 1, y - 2, 0x4a4858);
+    } else if (hat === 'kasa') {
+      img.disc(x, y - 1, 3.4, 0xc8a868);
+      img.disc(x, y - 1, 2, 0xe0c488);
+      img.set(x, y - 1, 0x7a5a30);
+    } else {
+      img.disc(x, y - 1, 2, 0x1a1414);
+      img.set(x, y - 2, 0xe8c8a0);
+      img.set(x, y, 0x0a0a0a);
+    }
+  };
+  const bale = (x, y, across) => {
+    // a straw rice bale, roped
+    const [w, h] = across ? [9, 5] : [5, 9];
+    shadow(x + 1, y + 1, w, h, 0.76);
+    for (let j = 0; j < h; j++)
+      for (let i = 0; i < w; i++) {
+        const along = across ? i : j;
+        const side = across ? j : i;
+        let c = ramp(THATCH, 0.5 + (side === 0 ? 0.3 : side === 4 ? -0.25 : 0) + ((along * 7) % 3) * 0.04);
+        if (along === 2 || along === 6) c = 0x5a4424;
+        img.set(x + i, y + j, c);
+      }
+  };
+  const keg = (x, y) => {
+    // a sake keg in its straw wrapping, the brewer's mark on its head
+    shadow(x - 3, y - 2, 9, 9, 0.76);
+    img.disc(x, y, 4.2, 0xa88850);
+    img.disc(x, y, 3.2, 0xe8dcc0);
+    img.set(x, y, 0xa82a20);
+    img.set(x - 1, y, 0x2a2420);
+    img.set(x + 1, y, 0x2a2420);
+  };
+  const tub = (x, y, fish) => {
+    // a cooper's tub of the morning's catch
+    shadow(x - 3, y - 2, 9, 9, 0.78);
+    img.disc(x, y, 4.2, 0x6a4a28);
+    img.disc(x, y, 3.2, fish ? 0x5a88b0 : 0x3a5a7a);
+    if (fish) for (const [i, j, c] of [[-1, -1, 0xdce8f0], [1, 0, 0xb8c8d8], [0, 1, 0xe8f0f4], [-2, 1, 0x9ab0c4], [1, -2, 0xe86a50]]) img.set(x + i, y + j, c);
+  };
+  // ---- the far quay, left of the road: the fish market. Stalls under plank awnings weighted with stones, tubs and
+  // baskets out in front, fish laid on boards, the buyers; a barge unloading at the wall
+  for (const [sx, sw] of [[14, 44], [66, 40], [112, 46]]) {
+    const sy = by - 164;
+    shadow(sx + 4, sy + 6, sw, 24, 0.7);
+    for (let j = 0; j < 22; j++)
+      for (let i = 0; i < sw; i++) {
+        let c = ramp(WOOD, 0.55 + ((i >> 2) % 3) * 0.08 - j / 90);
+        if (i % 4 === 0) c = ramp(WOOD, 0.22);
+        if (j === 0 || j === 21) c = ramp(WOOD, 0.12);
+        if (j === 1) c = ramp(WOOD, 0.9);
+        img.set(sx + i, sy + j, c);
+      }
+    for (let k = 0; k < 4; k++) {
+      const [i, j] = [5 + Math.floor(pr() * (sw - 10)), 4 + Math.floor(pr() * 14)];
+      img.disc(sx + i, sy + j, 1.8, ramp(STONE, 0.5 + pr() * 0.4));
+      img.set(sx + i + 1, sy + j + 1, 0x2a2824);
+    }
+    // the boards of fish in front of it
+    for (let k = 0; k < Math.floor(sw / 14); k++) {
+      const bx = sx + 3 + k * 14;
+      img.rect(bx, sy + 24, 10, 6, 0xc8b088);
+      img.rect(bx, sy + 29, 10, 1, 0x6a5230);
+      for (let q = 0; q < 4; q++) {
+        img.rect(bx + 1 + q * 2, sy + 25, 1, 4, q % 2 ? 0xdce8f0 : 0x8aa8c0);
+        img.set(bx + 1 + q * 2, sy + 25, k === 1 ? 0xe86a50 : 0x4a6a8a);
+      }
     }
   }
-  for (let y = by - 12; y < by + 12; y++) for (let x = 250; x < 290; x++) img.set(x, y, Math.abs(y - by) > 9 || Math.abs(x - 270) > 17 ? INK : 0x1a1a24); // the palanquin
+  for (const [x, y, f] of [[22, -126, 1], [34, -124, 1], [52, -128, 0], [78, -124, 1], [96, -126, 1], [128, -126, 1], [142, -124, 0], [156, -128, 1]]) tub(x, by + y, f);
+  for (const [x, y, c, h] of [[28, -134, 0x3a4a6a, 'head'], [46, -122, 0x7a4a2a, 'kasa'], [62, -132, 0x2a3a4a, 'head'], [88, -134, 0x5a3a5a, 'head'], [106, -122, 0x4a5a3a, 'kasa'], [120, -134, 0x8a6a40, 'head'], [136, -134, 0x3a3a4a, 'head'], [150, -120, 0x6a3028, 'head'], [164, -136, 0x4a4a5a, 'kasa']])
+    person(x, by + y, c, h);
+  // a fishmonger off with his two baskets on a pole
+  person(58, by - 118, 0x2a4a6a, 'kasa');
+  img.line(48, by - 118, 68, by - 118, 0x5a4424);
+  for (const x of [47, 69]) {
+    img.disc(x, by - 117, 3, 0x8a6a3a);
+    img.disc(x, by - 117, 2, 0xb8c8d8);
+  }
+  // ---- the far quay, right of the road: storehouses (white plaster, tiled roofs, the ridge down each), rice bales
+  // and sake kegs stacked on the quay, the men carrying them in
+  for (const [sx, sw] of [[384, 62], [454, 78]]) {
+    const sy = by - 170;
+    shadow(sx + 5, sy + 6, sw, 36, 0.66);
+    for (let j = 0; j < 34; j++)
+      for (let i = 0; i < sw; i++) {
+        const up = j < 17;
+        let c = ramp(TILE, (up ? 0.62 : 0.36) + ((i % 6) < 1 ? -0.14 : 0) + ((j % 4) === 0 ? -0.08 : 0.04));
+        if (j === 16 || j === 17) c = ramp(TILE, 0.88);
+        if (i < 2 || i >= sw - 2) c = 0xe8e4d8;
+        if (j === 33) c = ramp(TILE, 0.1);
+        img.set(sx + i, sy + j, c);
+      }
+    // the plaster wall's foot showing below the eaves, its doorway and iron-bound shutters
+    img.rect(sx, sy + 34, sw, 5, 0xe8e4d8);
+    img.rect(sx, sy + 38, sw, 1, 0x8a887e);
+    for (let i = 10; i < sw - 8; i += 18) {
+      img.rect(sx + i, sy + 34, 7, 5, 0x24222a);
+      img.rect(sx + i + 3, sy + 34, 1, 5, 0x6a6a74);
+    }
+  }
+  for (let k = 0; k < 5; k++) bale(392 + k * 11, by - 124, false);
+  for (let k = 0; k < 4; k++) bale(398 + k * 11, by - 127, false);
+  for (let k = 0; k < 3; k++) for (let q = 0; q < 2; q++) keg(470 + k * 10, by - 126 + q * 9);
+  for (let k = 0; k < 3; k++) bale(506 + k * 2, by - 128 + k * 6, true);
+  for (const [x, y, c, h] of [[446, -124, 0x4a3a2a, 'head'], [458, -130, 0x2a3a4a, 'head'], [528, -122, 0x6a5a3a, 'kasa']]) person(x, by + y, c, h);
+  bale(441, by - 131, true); // (the one on his shoulder)
+  // ---- the near quay, left of the road: the kōsatsuba, the shogunate's notice boards under their own roof inside a
+  // fence on a stone footing; readers before it. A well; a lantern on its post.
+  {
+    const [x0, y0] = [40, by + 124];
+    img.rect(x0 - 4, y0 - 2, 92, 30, ramp(STONE, 0.62));
+    for (let i = 0; i < 92; i += 8) img.rect(x0 - 4 + i, y0 - 2, 1, 30, ramp(STONE, 0.36));
+    img.rect(x0 - 4, y0 + 27, 92, 1, ramp(STONE, 0.2));
+    shadow(x0 + 4, y0 + 6, 80, 14, 0.68);
+    for (let j = 0; j < 12; j++)
+      for (let i = 0; i < 80; i++) {
+        let c = ramp(TILE, (j < 6 ? 0.6 : 0.34) + (i % 5 === 0 ? -0.12 : 0));
+        if (j === 5 || j === 6) c = ramp(TILE, 0.86);
+        img.set(x0 + i, y0 + j, c);
+      }
+    // the boards themselves, showing under the eaves: pale wood, lines of writing
+    for (let k = 0; k < 6; k++) {
+      img.rect(x0 + 3 + k * 13, y0 + 12, 10, 5, 0xe0cc9c);
+      for (let q = 0; q < 4; q++) img.rect(x0 + 4 + k * 13 + q * 2, y0 + 13, 1, 3, 0x2a2420);
+    }
+    for (let i = -4; i < 88; i += 6) {
+      img.rect(x0 + i, y0 + 22, 2, 4, ramp(WOOD, 0.3));
+      img.set(x0 + i, y0 + 22, ramp(WOOD, 0.8));
+    }
+    img.rect(x0 - 4, y0 + 23, 92, 1, ramp(WOOD, 0.5));
+    for (const [x, c, h] of [[54, 0x3a4a6a, 'head'], [66, 0x6a3a3a, 'kasa'], [84, 0x4a4a3a, 'head'], [100, 0x2a3a4a, 'head']]) person(x, y0 + 33, c, h);
+    // the well: a square curb of timber, the dark water, its bucket and rope
+    shadow(152, y0 + 8, 14, 14, 0.72);
+    img.rect(148, y0 + 4, 14, 14, ramp(WOOD, 0.5));
+    img.rect(148, y0 + 4, 14, 1, ramp(WOOD, 0.9));
+    img.rect(151, y0 + 7, 8, 8, 0x0e1a2a);
+    img.set(153, y0 + 9, 0x5a8ac0);
+    img.disc(166, y0 + 14, 2.4, ramp(WOOD, 0.36));
+    img.disc(166, y0 + 14, 1.4, 0x2a4a6a);
+    person(142, y0 + 14, 0x8a4a5a, 'head');
+  }
+  // ---- the near quay, right of the road: stone steps down to the water with boats tied at their foot, mooring
+  // posts along the wall, a teahouse's reed awning and benches, travellers waiting for the procession to pass
+  {
+    const sx = 418;
+    for (let j = 0; j < 22; j++)
+      for (let i = 0; i < 40; i++) {
+        const c = j % 4 === 0 ? ramp(STONE, 0.28) : ramp(STONE, 0.5 + (j >> 2) * 0.08 + ((i * 13 + j) % 5) * 0.02);
+        img.set(sx + i, by + 92 + j, c);
+      }
+    for (let j = 0; j < 10; j++) for (let i = 0; i < 40; i++) if ((i + j) % 2) img.set(sx + i, by + 88 + j, 0x9ac0e0, 0.25 - j * 0.02); // (the lowest steps under water)
+    const [tx, ty] = [470, by + 132];
+    shadow(tx + 5, ty + 6, 58, 24, 0.7);
+    for (let j = 0; j < 22; j++)
+      for (let i = 0; i < 58; i++) {
+        let c = ramp(THATCH, 0.5 + ((j * 3 + i) % 4) * 0.05 + (j < 11 ? 0.12 : -0.1));
+        if (i % 12 === 0) c = ramp(WOOD, 0.3);
+        if (j === 0 || j === 21) c = ramp(WOOD, 0.2);
+        img.set(tx + i, ty + j, c);
+      }
+    for (let k = 0; k < 3; k++) {
+      img.rect(tx + 4 + k * 18, ty + 26, 13, 5, 0xa82a20);
+      img.rect(tx + 4 + k * 18, ty + 30, 13, 1, 0x5a1410);
+    }
+    for (const [x, y, c, h] of [[478, 27, 0x3a5a4a, 'kasa'], [498, 28, 0x6a4a3a, 'head'], [516, 27, 0x4a4a6a, 'head'], [436, 30, 0x5a3a2a, 'kasa'], [452, 26, 0x2a3a5a, 'head']]) person(x, ty + y, c, h);
+    // the teahouse's banner on its pole
+    img.rect(466, ty - 2, 1, 24, ramp(WOOD, 0.25));
+    img.rect(460, ty, 6, 14, 0xf0ece0);
+    for (let q = 0; q < 3; q++) img.rect(462, ty + 2 + q * 4, 2, 2, 0x1a3a6a);
+  }
+  for (const s of [-1, 1])
+    for (let x = 10; x < FW; x += 44) {
+      if (x > BX0 - 12 && x < BX1 + 12) continue;
+      if (s > 0 && x > 410 && x < 464) continue;
+      // mooring posts on the quay's edge
+      const y = by + s * 113;
+      shadow(x, y + 1, 5, 4, 0.74);
+      img.rect(x - 1, y - 2, 4, 4, ramp(WOOD, 0.3));
+      img.rect(x - 1, y - 2, 3, 1, ramp(WOOD, 0.75));
+    }
+  // ---- boats lying at the walls: a flat barge with a hull of planks, its cargo, a man or a pole aboard
+  const barge = (x, y, len, wid, cargo) => {
+    for (let j = 0; j < wid + 3; j++) for (let i = 0; i < len; i++) img.tint(x + i + 3, y + j + 3, 0.8);
+    for (let i = 0; i < len; i++) {
+      const t = Math.min(i, len - 1 - i);
+      const hw = Math.min(wid / 2, 1 + t * 0.55);
+      for (let j = Math.ceil(wid / 2 - hw); j < wid / 2 + hw; j++) {
+        const e = Math.min(j - (wid / 2 - hw), wid / 2 + hw - 1 - j);
+        img.set(x + i, y + j, e < 1 ? ramp(WOOD, j < wid / 2 ? 0.84 : 0.16) : ramp(WOOD, 0.5 + ((i >> 2) % 2) * 0.07));
+      }
+    }
+    for (let i = 8; i < len - 6; i += 10) img.rect(x + i, y + 2, 1, wid - 4, ramp(WOOD, 0.26));
+    cargo(x, y);
+    // the ripple along its water side
+    for (let i = 2; i < len - 2; i++) if ((i + y) % 3) img.set(x + i, y + wid + 1, 0xdcecf8, 0.4);
+  };
+  barge(20, by - 97, 62, 14, (x, y) => {
+    for (let k = 0; k < 4; k++) tub(x + 14 + k * 10, y + 7, k !== 2);
+    person(x + 54, y + 7, 0x2a4a6a, 'kasa');
+  });
+  barge(100, by - 96, 50, 12, (x, y) => {
+    for (let k = 0; k < 3; k++) {
+      img.disc(x + 14 + k * 9, y + 6, 3.4, 0x8a6a3a);
+      img.disc(x + 14 + k * 9, y + 6, 2.2, k % 2 ? 0xc8d4dc : 0xe8a070);
+    }
+    person(x + 42, y + 6, 0x6a4a2a, 'head');
+  });
+  barge(396, by - 96, 70, 15, (x, y) => {
+    for (let k = 0; k < 5; k++) bale(x + 10 + k * 9, y + 3, false);
+    for (let k = 0; k < 4; k++) bale(x + 14 + k * 9, y + 1, false);
+    person(x + 62, y + 7, 0x4a3a2a, 'kasa');
+  });
+  barge(474, by - 95, 52, 12, (x, y) => {
+    for (let k = 0; k < 3; k++) keg(x + 14 + k * 10, y + 6);
+  });
+  barge(424, by + 78, 30, 9, (x, y) => {
+    img.line(x + 4, y + 4, x + 26, y + 4, 0xd8c090);
+    person(x + 22, y + 4, 0x3a4a5a, 'kasa');
+  });
+  barge(48, by + 84, 56, 13, (x, y) => {
+    // timber for the builders, lashed in a stack
+    for (let k = 0; k < 5; k++) {
+      img.rect(x + 9, y + 2 + k * 2, 38, 1, ramp(WOOD, 0.6 + (k % 2) * 0.2));
+      img.set(x + 9, y + 2 + k * 2, 0xe8d0a0);
+    }
+    for (const i of [16, 38]) img.rect(x + i, y + 2, 1, 9, 0x3a2a1a);
+    person(x + 51, y + 6, 0x5a4a3a, 'head');
+  });
+  // ---- the bridge's shadow on the water, and its piers: rows of piles under the deck, their tops and the cross
+  // beams showing at its sides, the water parting round them
+  for (let y = by - 98; y < by + 98; y++) for (let x = BX1; x < BX1 + 20; x++) img.tint(x, y + 6, 0.58 + ((x - BX1) / 20) * 0.3);
+  for (const py of [-66, -22, 22, 66])
+    for (const [x0, s] of [[BX0, -1], [BX1 - 1, 1]]) {
+      for (let k = 1; k <= 9; k++) img.set(x0 + s * k, by + py, ramp(WOOD, s < 0 ? 0.6 : 0.2));
+      for (let k = 1; k <= 9; k++) img.set(x0 + s * k, by + py + 1, ramp(WOOD, 0.1));
+      for (const k of [3, 8]) {
+        img.rect(x0 + s * k - 1, by + py - 2, 3, 5, ramp(WOOD, s < 0 ? 0.42 : 0.14));
+        img.set(x0 + s * k - 1, by + py - 2, ramp(WOOD, 0.8));
+      }
+      for (let k = 0; k < 16; k++) {
+        const a = k / 16;
+        img.set(x0 + s * (11 - a * 3), by + py + 3 + k, 0xdcecf8, 0.5 * (1 - a));
+        img.set(x0 + s * (2 + a * 2), by + py + 3 + k, 0xdcecf8, 0.4 * (1 - a));
+      }
+    }
+  // ---- the deck: boards laid across, brightest over the crown of the arch, nailed along three beams; worn pale
+  // down the middle where everyone walks
+  for (let y = by - 130; y <= by + 130; y++) {
+    const arch = Math.cos(((y - by) / 130) * (Math.PI / 2));
+    const board = Math.floor((y - by + 130) / 5);
+    const tone = ((board * 53) % 7) / 28;
+    for (let x = BX0; x < BX1; x++) {
+      const n = fbm(x * 0.5, y * 2, { seed: 47, scale: 6 });
+      const worn = Math.max(0, 1 - Math.abs(x - CX) / 60) * 0.08;
+      let c = ramp(WOOD, 0.3 + arch * 0.34 + tone + worn + (n - 0.5) * 0.12);
+      if ((y - by + 130) % 5 === 0) c = ramp(WOOD, 0.08 + arch * 0.14);
+      else if ((y - by + 130) % 5 === 1) c = mix(c, 0xf0dcb0, 0.14);
+      if ((x === BX0 + 30 || x === CX || x === BX1 - 30) && (y - by + 130) % 5 === 3) c = 0x2a2018;
+      img.set(x, y, c);
+    }
+  }
+  // the steps of earth and stone at each end, where the road comes up onto the deck
+  for (const s of [-1, 1])
+    for (let k = 0; k < 3; k++)
+      for (let x = BX0 + 6; x < BX1 - 6; x++) {
+        const y = by + s * (131 + k * 3);
+        for (let j = 0; j < 3; j++) img.set(x, y + (s > 0 ? j : -j), j === (s > 0 ? 0 : 2) ? ramp(STONE, 0.3) : ramp(STONE, 0.6 + ((x * 7 + k) % 5) * 0.03));
+      }
+  // the rails: a beam down each side on posts; on every post a bronze giboshi, the four end posts taller, theirs
+  // bigger and gone green
+  for (const x0 of [BX0, BX1 - 8]) {
+    shadow(x0 + 3, by - 126, 9, 256, 0.74);
+    for (let y = by - 130; y <= by + 130; y++)
+      for (let i = 0; i < 8; i++) {
+        const arch = Math.cos(((y - by) / 130) * (Math.PI / 2));
+        img.set(x0 + i, y, i === 0 ? ramp(WOOD, 0.9) : i === 7 ? ramp(WOOD, 0.08) : i < 3 ? ramp(WOOD, 0.52 + arch * 0.22) : i < 5 ? ramp(WOOD, 0.14) : ramp(WOOD, 0.4 + arch * 0.2));
+      }
+    for (let y = by - 130; y <= by + 130; y += 26) {
+      const end = Math.abs(y - by) === 130;
+      const hw = end ? 6 : 5;
+      shadow(x0 + 4 - hw + 3, y - hw + 3, hw * 2, hw * 2, 0.7);
+      img.rect(x0 + 4 - hw, y - hw, hw * 2, hw * 2, ramp(WOOD, 0.3));
+      img.rect(x0 + 4 - hw, y - hw, hw * 2, 1, ramp(WOOD, 0.86));
+      img.rect(x0 + 4 - hw, y - hw, 1, hw * 2, ramp(WOOD, 0.7));
+      img.disc(x0 + 4, y, end ? 4.2 : 3.2, end ? 0x4a7a62 : 0x8a6a2a);
+      img.disc(x0 + 3.4, y - 0.6, end ? 2.8 : 2, end ? 0x6aa88a : 0xc8a040);
+      img.set(x0 + 3, y - 1, end ? 0xc8ecd8 : 0xfff0b0);
+      img.set(x0 + 4, y, end ? 0x2a4a3a : 0x5a4418);
+    }
+  }
+  // ---- the procession, on its way up the bridge in two files with the lord's palanquin between them
+  const LIV = [0x3a558c, 0x54547a, 0x4a6aa0, 0x2e4a78]; // the house's dark blues
+  const spear = (x, y, lean) => {
+    // a keyari carried upright and tipped forward: the shaft, the black tuft of feathers at its head
+    img.line(x + 3, y, x + 3 + lean, y - 22, 0x3a2a1a);
+    img.disc(x + 3 + lean, y - 24, 3, 0x14121a);
+    img.disc(x + 3 + lean, y - 25, 1.4, 0x3a3848);
+    img.set(x + 3 + lean, y - 28, 0xd8b048);
+  };
+  const banner = (x, y) => {
+    img.line(x + 3, y, x + 3, y - 26, 0x3a2a1a);
+    shadow(x + 6, y - 22, 8, 16, 0.8);
+    img.rect(x + 4, y - 26, 7, 16, 0xf0ece0);
+    img.rect(x + 4, y - 26, 7, 1, 0x1a1420);
+    img.disc(x + 7, y - 19, 2, 0x1a1420);
+    img.set(x + 7, y - 19, 0xf0ece0);
+    img.rect(x + 4, y - 13, 7, 2, 0x7a1a14);
+  };
+  const box = (x, y) => {
+    // a hasami-bako on its pole over the shoulder: black lacquer, the crest in gold
+    img.line(x, y - 2, x, y + 9, 0x3a2a1a);
+    shadow(x - 2, y + 7, 7, 6, 0.76);
+    img.rect(x - 3, y + 5, 6, 6, 0x16141c);
+    img.rect(x - 3, y + 5, 6, 1, 0x4a4858);
+    img.set(x, y + 8, 0xd8b048);
+  };
+  const files = [CX - 34, CX + 34];
+  // the head of the column
+  for (const [n, x] of files.entries()) {
+    person(x, by - 112, LIV[0], 'head');
+    spear(x, by - 112, n ? 4 : -4);
+    person(x, by - 96, LIV[1], 'head');
+    box(x, by - 96);
+    person(x, by - 76, LIV[2], 'head');
+    banner(x, by - 76);
+    for (let k = 0; k < 3; k++) person(x + (k % 2 ? 2 : -1), by - 58 + k * 14, LIV[(k + n) % 4], 'jingasa', { swords: true });
+  }
+  for (const y of [-104, -66, -40]) person(CX, by + y, LIV[3], 'jingasa', { swords: true }); // the officers down the middle
+  // the norimono: black lacquer and gold, its roof ridged, the long pole through it on the bearers' shoulders
+  {
+    const y0 = by - 14;
+    img.rect(CX - 1, y0 - 18, 3, 68, ramp(WOOD, 0.24));
+    img.rect(CX - 1, y0 - 18, 1, 68, ramp(WOOD, 0.7));
+    shadow(CX - 9 + 5, y0 + 5, 20, 32, 0.66);
+    for (let j = 0; j < 32; j++)
+      for (let i = 0; i < 20; i++) {
+        const e = Math.min(i, 19 - i, j, 31 - j);
+        let c = i < 10 ? 0x2c2a38 : 0x16141e;
+        if (e === 0) c = 0xc8a040;
+        else if (e === 1) c = 0x0e0c14;
+        if (i === 9 || i === 10) c = 0x4a4858;
+        if ((j === 8 || j === 23) && e > 1) c = 0x8a6a2a;
+        img.set(CX - 10 + i, y0 + j, c);
+      }
+    img.disc(CX, y0 + 16, 2.4, 0xc8a040);
+    img.set(CX, y0 + 16, 0x16141e);
+    for (const y of [y0 - 12, y0 - 4, y0 + 36, y0 + 44]) for (const dx of [-7, 7]) person(CX + dx, y, 0x9a7650, 'head');
+    // the great red umbrella carried beside it, its ribs and its knob
+    shadow(CX + 20, y0 + 10, 22, 22, 0.76);
+    img.disc(CX + 26, y0 + 14, 11, 0x8a1c14);
+    img.disc(CX + 25, y0 + 13, 9.4, 0xc03424);
+    for (let a = 0; a < 12; a++) img.line(CX + 25, y0 + 13, CX + 25 + Math.cos((a * Math.PI) / 6) * 9, y0 + 13 + Math.sin((a * Math.PI) / 6) * 9, 0x8a1c14);
+    img.disc(CX + 25, y0 + 13, 1.6, 0xd8b048);
+    person(CX - 22, y0 + 14, LIV[0], 'jingasa', { swords: true });
+  }
+  // the rear: guards, a led pack horse, porters with their loads on poles
+  for (const [n, x] of files.entries()) {
+    for (let k = 0; k < 2; k++) person(x, by + 44 + k * 14, LIV[(k + n + 1) % 4], 'jingasa', { swords: true });
+    person(x, by + 78, 0x4a3a2a, 'kasa');
+    img.line(x, by + 70, x, by + 88, 0x5a4424);
+    for (const dy of [-10, 10]) {
+      shadow(x - 2, by + 78 + dy, 7, 6, 0.78);
+      img.rect(x - 3, by + 76 + dy, 6, 5, n ? 0x7a5a30 : 0x2a4a3a);
+      img.rect(x - 3, by + 76 + dy, 6, 1, n ? 0xc4a064 : 0x4a7a5a);
+    }
+    person(x + (n ? -3 : 3), by + 104, 0x3a3a3a, 'kasa');
+    box(x + (n ? -3 : 3), by + 104);
+  }
+  {
+    // the horse: its back and quarters, mane and head forward, the two packs across its saddle, the groom at its head
+    const [hx, hy] = [CX, by + 84];
+    shadow(hx - 5, hy - 8, 14, 30, 0.72);
+    img.ellipse(hx, hy, 4.6, 12, 0x6a4426);
+    img.ellipse(hx - 1, hy - 1, 3, 10, 0x8a5c34);
+    img.ellipse(hx, hy - 15, 2.6, 5, 0x6a4426);
+    img.rect(hx, hy - 14, 1, 9, 0x1a1414);
+    img.rect(hx - 1, hy + 11, 2, 6, 0x1a1414);
+    for (const dx of [-8, 3]) {
+      img.rect(hx + dx, hy - 5, 6, 11, 0xa07c48);
+      img.rect(hx + dx, hy - 5, 6, 1, 0xe0c890);
+      img.rect(hx + dx, hy, 6, 1, 0x5a4424);
+    }
+    img.rect(hx - 2, hy - 4, 5, 9, 0x8a1c14);
+    person(hx - 9, hy - 20, 0x4a4a3a, 'kasa');
+    img.line(hx - 7, hy - 19, hx - 1, hy - 18, 0x2a2018);
+  }
+  // townsfolk gone down on their knees along the rails as it passes
+  for (const [x, y, c] of [[BX0 + 15, -84, 0x6a4a3a], [BX0 + 16, -30, 0x3a5a4a], [BX0 + 15, 26, 0x5a3a5a], [BX1 - 15, -58, 0x4a4a6a], [BX1 - 16, 4, 0x7a5a30], [BX1 - 15, 62, 0x3a4a3a]]) {
+    shadow(x - 2, by + y + 1, 8, 6, 0.8);
+    img.ellipse(x, by + y, 3.4, 4.2, c);
+    img.disc(x + (x < CX ? 4 : -4), by + y, 2, 0x1a1414);
+  }
   // The fields race by as one looping picture, so nothing can be animated on the ground; what moves besides the
   // fight's own cars, cones and skid marks is in the air and keeps up with the chase: swallows in loose lines and
   // white egrets, crossing over the road.
@@ -338,6 +765,34 @@ export function buildMid() {
   for (const [f, u0, u1, n, sp, dir] of [[swallow, 520, 610, 5, 34, 1], [swallow, 760, 690, 4, 30, -1], [egret, 640, 700, 3, 20, 1], [swallow, 850, 880, 6, 38, -1], [egret, 820, 770, 2, 18, -1], [swallow, 560, 500, 4, 32, -1]]) {
     const xs = dir > 0 ? [-16, 60, 120, 196] : [196, 120, 60, -16];
     kit.path(xs.map((x, i) => [x, u0 + ((u1 - u0) * i) / 3 + (i % 2 ? 9 : -5)]), f, { sp, n, gap: 13, mode: 'wrap', turn: 'rot', fps: 6, a: 0.95, d: 0.8 });
+  }
+  // two boats under way on the canal, each keeping to its own side of the bridge: a sculled skiff, its boatman
+  // standing aft at the long oar (two frames), a load of baskets forward
+  {
+    const skiff = (f, load) => {
+      const r = new Raster(40, 15);
+      for (let i = 0; i < 40; i++) {
+        const hw = Math.min(5, 0.8 + (39 - i) * 0.5, 2.5 + i * 0.6);
+        for (let j = -Math.floor(hw); j <= hw; j++) {
+          const e = hw - Math.abs(j);
+          r.set(i, 7 + j, e < 1 ? ramp(WOOD, j < 0 ? 0.84 : 0.16) : ramp(WOOD, 0.52 + ((i >> 2) % 2) * 0.07));
+        }
+      }
+      for (const i of [10, 20, 29]) for (let j = -3; j <= 3; j++) r.set(i, 7 + j, ramp(WOOD, 0.24));
+      for (let k = 0; k < 3; k++) {
+        r.disc(15 + k * 5, 7, 2.2, 0x8a6a3a);
+        r.disc(15 + k * 5, 7, 1.3, load[k % load.length]);
+      }
+      r.line(6, 7, 0, f ? 3 : 11, 0xd8c090);
+      r.ellipse(7, 7, 2.4, 3.2, 0x2a4a6a);
+      r.disc(7, 7, 2.6, 0xc8a868);
+      r.disc(7, 7, 1.4, 0xe0c488);
+      grade(r, { sat: 0.82, bright: 0.86, tint: 0x182030, tintAmt: 0.05 });
+      return kit.frame(r);
+    };
+    const uBy = 300 / S;
+    kit.path([[-8, uBy + 17], [44, uBy + 17]], [0, 1].map((f) => skiff(f, [0xc8d4dc, 0xe8a070])), { sp: 5, mode: 'pp', hold: 3, turn: 'flip', fps: 1.5, d: 0.02 });
+    kit.path([[140, uBy - 6], [188, uBy - 6]], [0, 1].map((f) => skiff(f, [0x7aac4e, 0xd0aa40])), { sp: 4, mode: 'pp', hold: 4, s0: 0.4, turn: 'flip', fps: 1.5, d: 0.02 });
   }
   grade(img, { sat: 0.82, bright: 0.86, tint: 0x182030, tintAmt: 0.05 });
   return {
