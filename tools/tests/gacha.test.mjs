@@ -23,7 +23,7 @@ test('the catalogue is sound', () => {
     assert.ok(it.name.length <= 24 && it.info.length <= 26, `${it.id}: its name and line fit the screen`);
     if (it.kind === 'hull') for (const id of Object.values(it.fixed ?? {})) assert.ok(ITEM[id], `${it.id}: built-in ${id} exists`);
   }
-  assert.ok(ITEMS.length <= 500, 'the machine holds 500 at most');
+  assert.ok(ITEMS.length <= 800, 'the machine holds 800 at most');
 });
 
 test('the three old ships come out of their parts as they were', () => {
@@ -155,7 +155,7 @@ test('looks are worn one of a kind, and only owned ones', () => {
   assert.ok(wear(s, 'flame', 'flame_lava'));
   assert.ok(wear(s, 'dye', 'dye_blue'));
   const ship = buildShip(s);
-  assert.deepEqual(ship.look, { paint: ITEM.paint_urushi.colors, flame: ITEM.flame_lava.flame, dye: ITEM.dye_blue.tint, wake: null, shots: {}, marker: null, ebColor: null, ebShape: null, blast: null, bombLook: null, title: null, sound: null, graze: null, hud: null, pal: null, shield: null, decals: null, paintFx: null, aura: null, trail: null, entry: null, victory: null, death: null });
+  assert.deepEqual(ship.look, { paint: ITEM.paint_urushi.colors, flame: ITEM.flame_lava.flame, dye: ITEM.dye_blue.tint, wake: null, shots: {}, marker: null, ebColor: null, ebShape: null, blast: null, bombLook: null, title: null, sound: null, graze: null, hud: null, pal: null, shield: null, decals: null, paintFx: null, aura: null, trail: null, entry: null, victory: null, death: null, palMove: null, shotMove: {} });
   s.owned.push('decal_sym_star');
   assert.ok(wear(s, 'decal_nose', 'decal_sym_star') && wear(s, 'decal_tail', 'decal_sym_star'), 'a sticker goes in any of the four places');
   assert.deepEqual(buildShip(s).look.decals, ['decal_sym_star', null, null, 'decal_sym_star']);

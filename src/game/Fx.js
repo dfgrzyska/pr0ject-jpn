@@ -4,6 +4,7 @@ import { tr } from '../i18n.js';
 import { pixelText } from './Hud.js';
 import { Pool } from './Pool.js';
 import { blastSkinned } from './shipSkin.js';
+import { sharedArt } from './enemyArt.js';
 
 // What an explosion of each size throws out besides its fireball: puffs of smoke rolling off it, pieces of
 // debris, the city's own bits (below), the light it casts on the ground (how far, in glow sprites) and, on
@@ -52,6 +53,7 @@ export class Fx {
     this.flashA = 0;
     this.ring = scene.add.graphics().setDepth(DEPTH.fx);
     this.rings = [];
+    this.scenes = []; // a bomb's scene out of the gachapon, playing (see bombScene)
   }
 
   /**
@@ -343,7 +345,107 @@ export class Fx {
     this.texts.push({ t, life, max: life, fy: t.y });
   }
 
+  /**
+   * A bomb's scene out of the gachapon, across the whole screen for a second or so: a dragon flying up through
+   * it, the great wave rolling over it, a parade of lanterns rising, a great fan opening from the ship, a flight
+   * of cranes. Only for show: the bomb itself has done its work already.
+   */
+  bombScene(kind, x, y) {
+    const s = this.scene;
+    const H = s.H;
+    const W = VIEW.width;
+    const d = DEPTH.fx - 0.05;
+    const img = (frame, scale = 1) => sharedArt(s.add.image(-99, -99, 'sprites', 'dot_2')).setFrame(frame).setScale(scale).setDepth(d);
+    const fade = (t, dur, tail = 0.25) => Math.min(1, t / 0.12, (dur - t) / tail);
+    let sc;
+    if (kind === 'dragon') {
+      // its head, a long body, the tail: each a little behind the one before along an S through the screen
+      const parts = [img('ship_ryu_f1', 2.4), ...Array.from({ length: 11 }, (_, i) => img('ship_ryu_seg', 2.3 - i * 0.07)), img('ship_ryu_tail', 1.6)];
+      parts.forEach((p, i) => p.setDepth(d - i * 0.001));
+      const at = (u) => ({ x: W / 2 + Math.sin(u * 5.2) * 58, y: H + 50 - u * (H + 330) });
+      sc = { dur: 1.7, items: parts, step: (t) => parts.forEach((p, i) => {
+        const u = (t / 1.7) * 1.2 - i * 0.042;
+        const a = at(u);
+        const b = at(u + 0.01);
+        p.setPosition(a.x, a.y).setRotation(Math.atan2(b.y - a.y, b.x - a.x) + Math.PI / 2).setAlpha(fade(t, 1.7));
+      }) };
+    } else if (kind === 'lanterns') {
+      const frames = ['ship_chochin', 'ship_chochin_f1', 'ship_chochin_f2', 'ship_chochin_t', 'ship_chochin_b'];
+      const ls = Array.from({ length: 13 }, (_, i) => ({ o: img(frames[i % frames.length], 0.7 + (i % 3) * 0.15), x: 12 + ((i * 53) % (W - 24)), wait: i * 0.055, ph: i * 1.7 }));
+      sc = { dur: 1.6, items: ls.map((l) => l.o), step: (t) => ls.forEach((l) => {
+        const k = Math.max(0, t - l.wait);
+        l.o.setPosition(l.x + Math.sin(k * 5 + l.ph) * 6, H + 24 - k * (H + 60) * 0.9).setRotation(Math.sin(k * 5 + l.ph) * 0.18).setAlpha(fade(t, 1.6));
+      }) };
+    } else if (kind === 'flock') {
+      // a wedge of paper cranes, their wings beating, out of the bottom and away over the top
+      const cs = Array.from({ length: 21 }, (_, i) => ({ o: img('ship_orizuru', i ? 0.9 : 1.3), row: Math.ceil(i / 2), side: i % 2 ? -1 : 1 }));
+      sc = { dur: 1.5, items: cs.map((c) => c.o), step: (t) => cs.forEach((c, i) => {
+        const beat = [0, 1, 2, 1][Math.floor(t * 12 + i) % 4];
+        c.o.setFrame(beat ? `ship_orizuru_f${beat}` : 'ship_orizuru').setPosition(x + c.side * c.row * 15 + Math.sin(t * 4 + i) * 2, H + 30 + c.row * 13 - t * (H + 200) / 1.3).setAlpha(fade(t, 1.5));
+      }) };
+    } else {
+      const g = s.add.graphics().setDepth(d);
+      if (kind === 'wave') {
+        // four rolling bands of blue, the first one's crest white with foam, up the screen
+        const BLUES = [0xe8f6ff, 0x7ac0ff, 0x3a82f0, 0x1c3f9a];
+        sc = { dur: 1.3, items: [g], step: (t) => {
+          g.clear();
+          const k = t / 1.3;
+          const a = fade(t, 1.3, 0.4);
+          const crest = H + 30 - k * (H + 150);
+          BLUES.forEach((c, j) => {
+            const top = (px) => crest + j * 13 + Math.sin(px * 0.085 + t * 7 + j * 1.3) * 7 - Math.max(0, Math.sin(px * 0.045 - t * 3)) * 10 * (j === 0 ? 1 : 0.4);
+            g.fillStyle(c, a * (j === 0 ? 0.9 : 0.6));
+            g.beginPath();
+            g.moveTo(0, top(0));
+            for (let px = 6; px <= W; px += 6) g.lineTo(px, top(px));
+            g.lineTo(W, crest + 110);
+            g.lineTo(0, crest + 110);
+            g.closePath();
+            g.fillPath();
+            if (j === 0) for (let px = 4; px < W; px += 11) g.fillStyle(0xffffff, a).fillCircle(px + Math.sin(t * 9 + px) * 2, top(px) - 2, 2.5 + Math.sin(px) * 1);
+          });
+        } };
+      } else {
+        // a great folding fan opening upwards out of the ship: paper in cream and red, gold ribs, a red sun on it
+        sc = { dur: 1.25, items: [g], step: (t) => {
+          g.clear();
+          const open = 1 - (1 - Math.min(1, t / 0.32)) ** 3;
+          const a = fade(t, 1.25, 0.4) * 0.88;
+          const R = 150 * (0.6 + 0.4 * open);
+          const half = 1.2 * open;
+          const n = 11;
+          for (let i = 0; i < n; i++) {
+            const a0 = -Math.PI / 2 - half + (i / n) * half * 2;
+            const a1 = -Math.PI / 2 - half + ((i + 1) / n) * half * 2;
+            g.fillStyle(i % 2 ? 0xfff4e0 : 0xf0e2c4, a);
+            g.slice(x, y, R, a0, a1, false).fillPath();
+            g.fillStyle(0xd2361f, a);
+            g.slice(x, y, R, a0, a1, false).fillPath();
+            g.fillStyle(i % 2 ? 0xfff4e0 : 0xf0e2c4, a);
+            g.slice(x, y, R * 0.9, a0, a1, false).fillPath();
+            g.lineStyle(1.5, 0xe2aa32, a).lineBetween(x, y, x + Math.cos(a0) * R, y + Math.sin(a0) * R);
+          }
+          g.lineStyle(1.5, 0xe2aa32, a).lineBetween(x, y, x + Math.cos(-Math.PI / 2 + half) * R, y + Math.sin(-Math.PI / 2 + half) * R);
+          g.fillStyle(0xd2361f, a).fillCircle(x, y - R * 0.58, 20 * open);
+          g.fillStyle(0x0a1024, a);
+          g.slice(x, y, R * 0.22, -Math.PI / 2 - half, -Math.PI / 2 + half, false).fillPath();
+        } };
+      }
+    }
+    sc.t = 0;
+    sc.step(0);
+    this.scenes.push(sc);
+  }
+
   update(dt, parallax) {
+    // (the bombs' scenes: each played to its end, then cleared away)
+    for (const sc of this.scenes) {
+      sc.t += dt;
+      if (sc.t < sc.dur) sc.step(sc.t);
+      else for (const o of sc.items) o.destroy();
+    }
+    if (this.scenes.length) this.scenes = this.scenes.filter((sc) => sc.t < sc.dur);
     for (const pool of [this.air, this.sparks]) pool.sweep();
     for (const e of this.ground.live) e.y = parallax.screenY(e.u);
     this.ground.sweep();

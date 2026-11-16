@@ -196,12 +196,18 @@ export function buildShip(state) {
   }
   // the looks (see shipSkin.js): the paint's colours, the flame, the shots' tint
   const look = state.look ?? {};
-  ship.look = { paint: ITEM[look.paint]?.colors ?? null, flame: ITEM[look.flame]?.flame ?? null, dye: ITEM[look.dye]?.tint ?? null, wake: ITEM[look.wake]?.wake ?? null, shots: {}, marker: ITEM[look.marker]?.pic ?? null, ebColor: ITEM[look.eb_color]?.body ?? null, ebShape: ITEM[look.eb_shape]?.shape ?? null, blast: ITEM[look.blast]?.blast ?? null, bombLook: ITEM[look.bomb_look]?.bomb ?? null, title: ITEM[look.title]?.title ?? null, sound: ITEM[look.sound]?.sound ?? null, graze: ITEM[look.graze]?.graze ?? null, hud: ITEM[look.hud_color]?.hud ?? null, pal: ITEM[look.companion]?.pic ?? null, shield: ITEM[look.shield]?.shield ?? null, decals: null, paintFx: ITEM[look.paint_fx]?.anim ?? null, aura: ITEM[look.aura]?.aura ?? null, trail: ITEM[look.trail]?.trail ?? null, entry: ITEM[look.entry]?.burst ?? null, victory: ITEM[look.victory]?.burst ?? null, death: ITEM[look.death]?.burst ?? null };
+  ship.look = { paint: ITEM[look.paint]?.colors ?? null, flame: ITEM[look.flame]?.flame ?? null, dye: ITEM[look.dye]?.tint ?? null, wake: ITEM[look.wake]?.wake ?? null, shots: {}, marker: ITEM[look.marker]?.pic ?? null, ebColor: ITEM[look.eb_color]?.body ?? null, ebShape: ITEM[look.eb_shape]?.shape ?? null, blast: ITEM[look.blast]?.blast ?? null, bombLook: ITEM[look.bomb_look]?.bomb ?? null, title: ITEM[look.title]?.title ?? null, sound: ITEM[look.sound]?.sound ?? null, graze: ITEM[look.graze]?.graze ?? null, hud: ITEM[look.hud_color]?.hud ?? null, pal: ITEM[look.companion]?.pic ?? null, shield: ITEM[look.shield]?.shield ?? null, decals: null, paintFx: ITEM[look.paint_fx]?.anim ?? null, aura: ITEM[look.aura]?.aura ?? null, trail: ITEM[look.trail]?.trail ?? null, entry: ITEM[look.entry]?.burst ?? null, victory: ITEM[look.victory]?.burst ?? null, death: ITEM[look.death]?.burst ?? null, palMove: ITEM[look.companion]?.move ?? null, shotMove: {} };
   // (the stickers: a picture for each of the four places, where one is put)
   if (DECAL_SLOTS.some((k) => ITEM[look[k]])) ship.look.decals = DECAL_SLOTS.map((k) => ITEM[look[k]]?.pic ?? null);
   if (ITEM[look.life_icon]) ship.life = ITEM[look.life_icon].pic; // (the HUD's icon of a life)
   // (the shots' skins: the frame a shot is fired with -> the frame it is shown with)
-  for (const [kind, frames] of Object.entries(SHOT_FRAMES)) if (ITEM[look[kind]]) for (const f of frames) ship.look.shots[f] = `${f}_${ITEM[look[kind]].skin}`;
+  for (const [kind, frames] of Object.entries(SHOT_FRAMES)) {
+    if (!ITEM[look[kind]]) continue;
+    for (const f of frames) {
+      ship.look.shots[f] = `${f}_${ITEM[look[kind]].skin}`;
+      if (ITEM[look[kind]].move) ship.look.shotMove[f] = ITEM[look[kind]].move; // (how the skin stirs as it flies)
+    }
+  }
   ship.perk = fitted.filter((it) => it.kind === 'core').map((it) => it.name).join(' + ');
   // pips out of 3 for the summary: speed, firepower
   ship.stats = [ship.speed < 95 ? 1 : ship.speed < 130 ? 2 : 3, ship.damage < 1 ? 1 : ship.damage < 1.2 ? 2 : 3];

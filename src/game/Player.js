@@ -329,7 +329,23 @@ export class Player {
       const k = Math.min(1, dt * 7);
       this.palAt.x += (tx - this.palAt.x) * k;
       this.palAt.y += (ty - this.palAt.y) * k;
-      this.pal.setPosition(this.palAt.x, this.palAt.y + Math.sin(this.scene.t * 5) * 1.2).setFlipX(tx - this.palAt.x > 1.5);
+      // (each in its own manner: trotting, hopping, rocking, swinging, flickering, fluttering, swimming)
+      const t = this.scene.t;
+      const mv = this.ship.look.palMove;
+      let ox = 0;
+      let oy = Math.sin(t * 5) * 1.2;
+      let rot = 0;
+      let sx = 1;
+      let sy = 1;
+      let alpha = 1;
+      if (mv === 'trot') { oy = -Math.abs(Math.sin(t * 9)) * 1.6; rot = Math.sin(t * 9) * 0.09; }
+      else if (mv === 'hop') { const h = Math.abs(Math.sin(t * 4.5)); oy = -h * 4.5; sy = 0.86 + h * 0.2; sx = 1.1 - h * 0.12; }
+      else if (mv === 'rock') rot = Math.sin(t * 4) * 0.32;
+      else if (mv === 'swing') { rot = Math.sin(t * 3) * 0.45; ox = Math.sin(t * 3) * 1.5; }
+      else if (mv === 'flicker') { oy = Math.sin(t * 3) * 2.6; sx = sy = 1 + Math.sin(t * 11) * 0.1; alpha = 0.78 + Math.sin(t * 7) * 0.22; }
+      else if (mv === 'flutter') { sx = 0.62 + Math.abs(Math.sin(t * 10)) * 0.38; oy = Math.sin(t * 5) * 2; }
+      else if (mv === 'swim') { rot = Math.sin(t * 6) * 0.26; ox = Math.sin(t * 6 + 1) * 1.6; }
+      this.pal.setPosition(this.palAt.x + ox, this.palAt.y + oy).setFlipX(tx - this.palAt.x > 1.5).setRotation(rot).setScale(sx, sy).setAlpha(alpha * this.sprite.alpha);
     }
     // an aura out of the gachapon: its sprites circling the ship, behind it on the far half of the turn
     const au = this.ship.look?.aura;
@@ -528,6 +544,8 @@ export class Player {
   shot(frame, x, y, vx, vy, damage, radius, extra) {
     const hot = this.heat >= HEAT.boostAt;
     const s = this.shots.spawn(this.ship.look?.shots?.[frame] ?? frame, x, y); // (in its skin out of the gachapon)
+    s.move = this.ship.look?.shotMove?.[frame] ?? null; // (and stirring as that skin does)
+    s.rot0 = null;
     s.vx = vx;
     s.vy = vy;
     const surge = this.surge > 0;
@@ -737,6 +755,17 @@ export class Player {
         }
       }
       if (s.bean) s.setFrame(Math.floor(s.life * 14) % 2 ? 'ps_bean_1' : 'ps_bean_0'); // spinning
+      // a skin out of the gachapon that stirs as it flies: spinning, turning like a coin, beating its wings,
+      // wagging round the way it was fired, breathing
+      const m = s.move;
+      if (m) {
+        const t = this.scene.t;
+        if (m.spin) s.rotation += m.spin * dt;
+        else if (m.flip) s.scaleX = s.base * Math.cos(t * m.flip + s.x * 0.2);
+        else if (m.flap) s.scaleX = s.base * (0.5 + 0.5 * Math.abs(Math.sin(t * m.flap + s.x * 0.3)));
+        else if (m.wag) s.rotation = (s.rot0 ??= s.rotation) + Math.sin(t * m.rate + s.y * 0.12) * m.wag;
+        else if (m.pulse) s.setScale(s.base * (0.85 + 0.3 * Math.abs(Math.sin(t * m.pulse + s.x * 0.3))));
+      }
       s.x += s.vx * dt;
       s.y += s.vy * dt;
       if (s.life <= 0 || s.y < -16 || s.y > this.scene.H + 16 || s.x < -16 || s.x > VIEW.width + 16) this.shots.kill(s);
@@ -814,6 +843,7 @@ export class Player {
     s.fx.shockwave(this.x, this.y, bl?.ring);
     if (bm.kind === 'shock') s.fx.shockwave(this.x, this.y - 30, bl?.ring);
     s.fx.petalBurst(this.x, this.y, bm.kind === 'cut' ? 20 : 48, bl);
+    if (bl?.scene) s.fx.bombScene(bl.scene, this.x, this.y); // (a scene of its own across the screen)
     s.enemies.damageAll(bm.damage);
     for (const [cx, cy] of cranes) {
       const o = this.shot('orizuru_0', cx, cy, (Math.random() - 0.5) * 60, -90, 2, 4, { homing: true, life: 1.8, arm: 0.12 });
