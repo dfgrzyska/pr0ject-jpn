@@ -162,7 +162,18 @@ Druga tura 16.11 (mapa była najmniej lubiana; kłopotem był kolor, nie brak rz
 - Nowe miejsca: diabelski młyn Noria na dachu w Susukino (gondole krążą i zmieniają kolory), kryty pasaż Tanukikoji
   przez cały rząd kwartałów, przerwany na alejach jak prawdziwy.
 - Tramwaj iskrzy pantografem.
-- Pomysły niezrobione: pług wirnikowy z ciężarówką, narciarze biegowi w parku Nakajima, lisy, lodowisko na Odori.
+
+Trzecia tura 16.11 (wszystkie pozostałe pomysły):
+
+- Dworzec Sapporo: wiadukt kolejowy przez całe miasto (nad alejami jako osobne części ponad ruchem), peron pod
+  wiatą, dwa pociągi jeżdżące w obie strony, JR Tower z zegarem, dworzec autobusowy i postój taksówek.
+- Uniwersytet Hokkaido: aleja topoli, Modelowa Obora z czerwonym dachem, popiersie Clarka, a przy bramie pług
+  wirnikowy sypiący śnieg na ciężarówkę (pióropusz i kogut animowane).
+- Lodowisko na Odori (kwartał 7): lód w bandach z reklamami, maszty z girlandami żarówek, budka z łyżwami,
+  dziesięcioro łyżwiarzy. Drzewa spod lodowiska są losowane jak dawniej i cofane.
+- Park Nakajima: trzech narciarzy na trasie biegowej, świece Yukiakari przed Hōheikanem (dwa rzędy i serce).
+- Dwa lisy na lodzie Toyohiry.
+- Nazwy: Hokkaido Daigaku, Sapporo-eki (razem 19).
 
 ### Hiroszima — zrobione 16.11
 

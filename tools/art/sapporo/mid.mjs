@@ -2022,6 +2022,314 @@ export function buildMid() {
       }
     kit.orbit(cx + 0.3, U(cy) - 0.3, R - 1, [kit.frame(cabin)], { n: 12, w: 0.16, tc: [0xffffff, 0xff9ad0, 0x9af0ff, 0xfff0a0, 0xa8ffc0, 0xffc090], tw: 0.6, d: 0.3 });
   };
+  // ---- Sapporo Station: the line on its viaduct right across the city, an island platform under its canopy,
+  // trains through it both ways (live); under it the JR Tower with the star clock on its front, the bus terminal
+  // and the taxi rank on the station square. One row of blocks, each painted in place of its buildings.
+  const EKI = [2249, 2325];
+  const VIA_Y = Y(EKI[1]) + 10; // the viaduct's top edge
+  const VIA_H = 36; // fine px
+  /** The viaduct at fine column X, row j of it: parapets, ballast under snow, two tracks, the platform between. */
+  const viaCol = (X, j, station) => {
+    if (j === 0) return 0xd8dce6;
+    if (j === VIA_H - 1) return 0x2e323c;
+    if (j < 3 || j > VIA_H - 4) return j === 2 || j === VIA_H - 4 ? 0x6a6e7a : 0x9a9eaa;
+    if (X % 66 < 2) return X % 66 ? 0x4a4e5a : 0x2a2e38; // (a portal of the overhead line)
+    if (station && j >= 13 && j <= 22) {
+      // the platform's canopy: snow on its ribbed roof, a strip of skylights down its middle, lit
+      if (j === 13 || j === 22) return j === 13 ? 0x5a5e6a : 0x2e323c;
+      if (j === 17 || j === 18) return X % 9 < 7 ? 0xffe0a0 : 0x5a5e6a;
+      return X % 12 === 6 ? 0xb8c0d0 : j === 14 ? 0xffffff : hashPx(X >> 1, j >> 1, 97) < 0.85 ? 0xeef2f8 : 0xd4dae6;
+    }
+    const tj = j < 18 ? j - 5 : j - 22; // 0..8 across a track
+    if (tj === 2 || tj === 6) return X % 7 === 0 ? 0x9aa0b0 : 0x34383f; // the rails, swept by the trains
+    if (tj > 2 && tj < 6) return X % 4 === 0 ? 0x5e5a56 : 0x8a8884; // sleepers in the ballast between them
+    if (tj === 1 || tj === 7) return 0xaab2c2;
+    return hashPx(X >> 1, j >> 1, 98) < 0.3 ? 0xc4ccda : 0xd6dce8; // snow lying on the rest of the bed
+  };
+  const paintEki = (x0, x1) => () => {
+    const yT = Y(EKI[1]);
+    const yB = Y(EKI[0]);
+    reserveRect(x0, yT, x1 - x0, yB - yT);
+    const er = rng(2249 + x0);
+    const station = x0 === 41 || x0 === 105;
+    // the square's paving, cleared, snow heaped along its edges
+    img.fine(x0, yT, x1 - x0, yB - yT, (FXr, FYr, xx, yy) => {
+      const n = fbm(FXr / S, FYr / S, { seed: 91, scale: 6, octaves: 2 });
+      const e = Math.min(xx - x0, x1 - xx, yy - yT, yB - yy);
+      if (e < 1.3) return snowPx(FXr, FYr, 0.7, 0.3, 7);
+      if (n > 0.64) return snowPx(FXr, FYr, 0.45, 0.35, 7);
+      const c = rampColor([0x5e6068, 0x6c6e76, 0x7c7e86], n * 1.3, FXr, FYr);
+      return FXr % 9 === 0 || FYr % 9 === 0 ? scaleColor(c, 0.8) : c;
+    });
+    objects.push({
+      y: VIA_Y + 12.4,
+      shadow: () => shadowPx(x0 * S + 9, VIA_Y * S + VIA_H, (x1 - x0) * S, 12, 0.6),
+      draw: () => {
+        for (let j = 0; j < VIA_H; j++) for (let X = x0 * S; X < x1 * S; X++) img.px(X, VIA_Y * S + j, viaCol(X, j, station));
+        // its piers showing under the south side
+        for (let X = x0 * S + 9; X < x1 * S - 6; X += 30) for (let j = 0; j < 6; j++) for (let i = 0; i < 6; i++) img.px(X + i, VIA_Y * S + VIA_H + j, i === 0 ? 0x9a9eaa : i === 5 ? 0x4a4e5a : 0x747884);
+        if (station) {
+          for (let X = x0 * S + 4; X < x1 * S; X += 14) glowPx(X, VIA_Y * S + VIA_H + 2, 0xfff0c0, 0.8);
+          for (let X = x0 * S; X < x1 * S; X++) if (X % 9 < 7) for (const j of [17, 18]) glowPx(X, VIA_Y * S + j, 0xffe0a0, 0.85);
+          // (those waiting at the platform's ends, out from under the canopy)
+        }
+      },
+    });
+    if (x0 === 105) {
+      // the JR Tower: its roof, the tall front in glass with every floor lit, the star clock, JR in green
+      const [bx, by, bw, bh, fh] = [x0 + 2, VIA_Y + 15, 30, 20, 26];
+      objects.push({
+        y: by + bh + fh,
+        shadow: () => shadowRect(bx + 9, by + 9, bw, bh + fh, 0.62),
+        draw: () => {
+          for (let Yy = by * S; Yy < (by + bh) * S; Yy++)
+            for (let X = bx * S; X < (bx + bw) * S; X++) {
+              const e = Math.min(X - bx * S, (bx + bw) * S - 1 - X, Yy - by * S, (by + bh) * S - 1 - Yy);
+              img.px(X, Yy, e === 0 ? 0x4a4e5a : e === 1 ? 0x9c9ea4 : e < 3 ? C.snow[3] : snowPx(X, Yy, 0.55, 0.4, 9));
+            }
+          for (let j = 0; j < 12; j++) for (let i = 0; i < 18; i++) img.px((bx + 5) * S + i, (by + 5) * S + j, j < 2 ? C.snow[3] : i === 0 ? 0x9a9ca4 : i === 17 ? 0x5a5c64 : (i + j) % 3 === 0 ? 0x5a5c64 : 0x7a7c84);
+          glow(bx + 1, by + 1, 0xff3a2a);
+          glow(bx + bw - 2, by + 1, 0xff3a2a);
+          const FY0 = (by + bh) * S;
+          const FY1 = (by + bh + fh) * S;
+          for (let Yy = FY0; Yy < FY1; Yy++) for (let X = bx * S; X < (bx + bw) * S; X++) img.px(X, Yy, Yy === FY0 ? 0x0e1420 : (Yy - FY0) % 6 === 0 ? 0x44546e : X === bx * S ? 0x3a4a64 : X === (bx + bw) * S - 1 ? 0x141c2a : 0x202a3e);
+          for (let r = 0; r < Math.floor((fh * S - 14) / 6); r++)
+            for (let X = bx * S + 3; X < (bx + bw) * S - 3; X += 4) {
+              if (er() < 0.22) continue;
+              const c = er() < 0.35 ? C.cool : C.warm;
+              for (let j = 1; j < 5; j++) for (let i = 0; i < 3; i++) glowPx(X + i, FY0 + r * 6 + j, j === 4 ? scaleColor(c, 0.8) : c, 0.92);
+            }
+          // the concourse's glass along the square, the doors
+          for (let Yy = FY1 - 12; Yy < FY1 - 1; Yy++) for (let X = bx * S + 3; X < (bx + bw) * S - 3; X++) glowPx(X, Yy, (X - bx * S) % 15 < 2 ? 0x6a7080 : (X * 7 + Yy * 3) % 23 === 0 ? 0x2a2026 : 0xfff4dc, 0.95);
+          // the clock: a white face in a dark ring, the star's points round it, its hands
+          const [CXc, CYc] = [(bx + bw / 2) * S, FY0 + 22];
+          for (let j = -9; j <= 9; j++) for (let i = -9; i <= 9; i++) {
+            const d = Math.hypot(i, j);
+            if (d <= 9) img.px(CXc + i, CYc + j, d > 7 ? 0x14182a : 0x1a2034);
+            if (d <= 6.5) glowPx(CXc + i, CYc + j, d > 5.5 ? 0xc8d0e0 : 0xfff8e8);
+          }
+          for (let k = 0; k < 8; k++) glowPx(CXc + Math.round(Math.cos((k * Math.PI) / 4) * 8), CYc + Math.round(Math.sin((k * Math.PI) / 4) * 8), 0xffd860);
+          for (let k = 0; k < 5; k++) glowPx(CXc, CYc - k, 0x14182a);
+          for (let k = 0; k < 4; k++) glowPx(CXc + k, CYc + Math.round(k * 0.5), 0x14182a);
+          ['.###.###.', '..#..#..#', '..#..###.', '..#..#.#.', '#.#..#..#', '.#...#..#'].forEach((row, j) => {
+            for (let i = 0; i < row.length; i++) if (row[i] === '#') for (const [di, dj] of [[0, 0], [1, 0], [0, 1], [1, 1]]) glowPx(bx * S + 5 + i * 2 + di, FY0 + 4 + j * 2 + dj, 0x40e070);
+          });
+          pool(bx + bw / 2, by + bh + fh + 2, 18, C.warm, 0.34);
+        },
+      });
+    } else if (x0 === 41) {
+      // the square: the bus terminal's bays under one long roof, coaches standing in them; the taxi rank, a
+      // great lit tree, people crossing to the doors
+      const [bx, by] = [x0 + 2, VIA_Y + 17];
+      objects.push({
+        y: by + 14,
+        shadow: () => shadowRect(bx + 4, by + 5, 30, 12, 0.66),
+        draw: () => {
+          for (let j = 0; j < 12 * S; j++) for (let i = 0; i < 30 * S; i++) img.px(bx * S + i, by * S + j, j === 0 || j === 12 * S - 1 || i === 0 || i === 30 * S - 1 ? 0x4a4e5a : i % 30 === 15 ? 0x8a8e9a : j < 3 ? C.snow[3] : snowPx(bx * S + i, by * S + j, 0.6, 0.35, 9));
+          for (let i = 6; i < 30 * S; i += 12) glowPx(bx * S + i, (by + 12) * S, 0xfff0c0, 0.9);
+        },
+      });
+      for (let k = 0; k < 3; k++) {
+        // a coach nosing out of its bay: white, a stripe, snow on its roof, headlights
+        const [cxk, cyk] = [(bx + 3 + k * 10) * S, (by + 13) * S];
+        objects.push({
+          y: by + 22 + k * 0.01,
+          draw: () => {
+            const col = [0x2a9a5a, 0xd83a2a, 0x2a6ad0][k];
+            for (let j = 0; j < 27; j++)
+              for (let i = 0; i < 12; i++) {
+                if ((i === 0 || i === 11) && (j === 0 || j === 26)) continue;
+                let c = i === 0 ? 0xf4f6fa : i === 11 ? 0x9aa0ae : 0xd8dce4;
+                if (i === 2 || i === 9) c = col;
+                if (j > 3 && j < 20 && i > 2 && i < 9 && hashPx(cxk + i, j, 93) < 0.8) c = snowPx(cxk + i, cyk + j, 0.6, 0.35, 9);
+                if (j > 7 && j < 11 && i > 3 && i < 8) c = 0x7a7e8a; // (the cooler on its roof)
+                if (j > 21 && j < 25 && i > 0 && i < 11) c = i < 3 ? 0x4a6a8a : 0x26405c; // the windscreen
+                if (j === 25 || j === 26) c = col;
+                if (j < 2) c = scaleColor(col, 0.7);
+                img.px(cxk + i, cyk + j, c);
+              }
+            glowPx(cxk + 1, cyk + 27, 0xfff4d0);
+            glowPx(cxk + 10, cyk + 27, 0xfff4d0);
+          },
+        });
+      }
+      for (let k = 0; k < 4; k++) car(x0 + 4 + k * 7, VIA_Y + 46, true);
+      crowd(x0 + 3, VIA_Y + 36, 28, 8, 14);
+      bare(x0 + 28, VIA_Y + 52, 6, 0xffd890);
+      streetLamp(x0 + 6, VIA_Y + 34, true);
+      streetLamp(x0 + 30, VIA_Y + 34, true);
+    } else office(x0 + 1, VIA_Y + 15, x1 - x0 - 2, 20, 18, { lit: 0.6, cool: x0 > 90 });
+    if (x0 !== 0) return;
+    // (once) the lengths of viaduct over the avenues, as parts of their own above the traffic, and the trains
+    for (const [ax0, ax1] of [[19, 41], [75, 105], [139, 161]]) {
+      const r = new HiCanvas(ax1 - ax0, 13, S, ax0, VIA_Y);
+      for (let j = 0; j < VIA_H + 3; j++) for (let X = ax0 * S; X < ax1 * S; X++) r.px(X, VIA_Y * S + j, j < VIA_H ? viaCol(X, j, ax0 === 75) : 0x101420, 0.45 - (j - VIA_H) * 0.12);
+      const lit = [];
+      if (ax0 === 75) for (let x = 0; x < ax1 - ax0; x++) lit.push([x, 5, 0xffe0a0, 0.55]);
+      kit.loop(ax0, U(VIA_Y), [frameAt(r, 2300, lit)], { d: 0.55 });
+    }
+    const train = (body, stripe, nose) => {
+      // three cars from above: the roofs with their units under snow, the stripe along the sides, the lit windows
+      const r = new HiCanvas(62, 4);
+      for (let j = 0; j < 12; j++)
+        for (let i = 0; i < 186; i++) {
+          const car = Math.floor(i / 62);
+          const li = i % 62;
+          if (li > 59 && car < 2) {
+            if (j > 3 && j < 8) r.px(i, j, 0x2a2e38);
+            continue;
+          }
+          if ((i < 3 || i > 182) && (j < 2 || j > 9)) continue;
+          let c = j === 0 || j === 11 ? stripe : j === 1 || j === 10 ? 0x2a3444 : body;
+          if (j > 2 && j < 9 && (li % 20 < 12 ? hashPx(i, j, 99) < 0.7 : false)) c = 0xf0f2f8;
+          if (j > 3 && j < 8 && li % 20 > 13 && li % 20 < 19) c = 0x7a7e8a;
+          if (i < 5 || i > 180) c = nose;
+          r.px(i, j, c);
+        }
+      const lit = [];
+      for (let x = 2; x < 60; x += 2) lit.push([x, 0, C.warm, 0.5], [x, 3, C.warm, 0.5]);
+      lit.push([61, 1, 0xfff4d0, 1], [61, 2, 0xfff4d0, 1], [0, 1, 0xff4030, 0.9], [0, 2, 0xff4030, 0.9]);
+      return frameAt(r, 2300, lit);
+    };
+    kit.path([[-70, U(VIA_Y + 3)], [250, U(VIA_Y + 3)]], [train(0xc8ccd6, 0x7ac84a, 0x5a6070)], { sp: 22, mode: 'wrap', turn: 'none', d: 0.6, s0: 0.2 });
+    kit.path([[250, U(VIA_Y + 8.7)], [-70, U(VIA_Y + 8.7)]], [train(0xe8e4dc, 0xc8302a, 0x8a2a2a)], { sp: 17, mode: 'wrap', turn: 'flip', d: 0.6, s0: 0.65 });
+  };
+  // ---- Hokkaido University: the poplar avenue, bare and upright, their long shadows over the snow; at its head
+  // the Model Barn of the old farm (white boards, a red roof with its ventilators) and a smaller barn; Dr Clark's
+  // bust on its plinth; at the gate a rotary snow blower clearing the drive, throwing its plume into a lorry (live)
+  const paintHokudai = () => {
+    const [bx0, bx1] = [101, 139];
+    const [u0, u1] = [2019, 2131];
+    const yT = Y(u1);
+    const yB = Y(u0);
+    reserveRect(bx0, yT, bx1 - bx0, yB - yT);
+    const hr = rng(2019);
+    const px = bx0 + 19; // the drive's middle
+    // the drive, ploughed, between its banks; the rest deep snow, ski tracks across it
+    img.fine(bx0, yT, bx1 - bx0, yB - yT, (FXr, FYr, xx, yy) => {
+      const d = Math.abs(xx - px);
+      if (yy > yT + 34 && d < 3) return rampColor(C.packed, 0.45 + fbm(xx, yy, { seed: 71, scale: 4 }) * 0.5, FXr, FYr);
+      if (yy > yT + 34 && d < 4.4) return C.bank;
+      if (yy > yT + 98) return rampColor(C.packed, 0.4 + fbm(xx, yy, { seed: 72, scale: 4 }) * 0.5, FXr, FYr);
+      const c = snowPx(FXr, FYr, 0.5, 0.42, 74);
+      return Math.abs(((xx - bx0) * 0.6 + (yy - yT)) % 27) < 0.4 && d > 8 ? scaleColor(c, 0.9) : c;
+    });
+    // the poplars: a trunk and a broom of upright twigs, snow in the forks
+    const poplar = (x, y, h) => {
+      const X = x * S;
+      const Yb = y * S;
+      objects.push({
+        y,
+        shadow: () => {
+          for (let k = 0; k < h * 2.4; k++) for (let i = 0; i < 4 - Math.floor((k / (h * 2.4)) * 3); i++) img.tintPx(X + 2 + Math.floor(k * 0.9) + i, Yb + 1 + Math.floor(k * 0.55), 0.7);
+        },
+        draw: () => {
+          const top = h * S;
+          for (let t = 5; t < top; t++) {
+            const q = (t - 5) / (top - 5);
+            const w = Math.round(1 + 5.2 * Math.sin(Math.PI * q ** 0.62) * (1 - q * 0.35));
+            for (let i = -w; i <= w; i++) {
+              const hsh = hashPx(X + i, t, 61 + Math.round(x));
+              if (hsh > 0.82 || (Math.abs(i) === w && hsh > 0.5)) continue; // (open between the twigs)
+              const up = (t + Math.abs(i) * 2) % 5 < 3;
+              img.px(X + i, Yb - t, hsh < 0.09 && i <= 0 ? C.snow[3] : i < -w * 0.3 ? (up ? C.twigTip : 0x8a7c86) : i > w * 0.4 ? 0x3a2e36 : up ? C.twig : 0x463a44);
+            }
+          }
+          for (let t = 0; t < 8; t++) for (let i = -1; i <= 1; i++) img.px(X + i, Yb - t, i > 0 ? 0x2a2026 : 0x4a3c42);
+        },
+      });
+    };
+    for (let y = yT + 46; y < yT + 97; y += 12) for (const s of [-1, 1]) poplar(px + s * 8, y + (s > 0 ? 4 : 0), 10 + Math.floor(hr() * 3));
+    // the barns
+    const RED = 0xa8382a;
+    objects.push({
+      y: yT + 34,
+      shadow: () => {
+        shadowRect(bx0 + 6 + 5, yT + 6 + 4, 26, 24, 0.6);
+        shadowRect(bx0 + 2 + 4, yT + 40 + 3, 9, 14, 0.62);
+      },
+      draw: () => {
+        pitched(bx0 + 6, yT + 6, 26, 16, RED, 81, 0.5);
+        // (the ventilators along its ridge, each with its little pointed cap)
+        for (const vx of [bx0 + 11, bx0 + 19, bx0 + 27]) {
+          for (let j = -4; j < 3; j++) for (let i = -3; i <= 3; i++) if (Math.abs(i) <= 3 + j) img.px(vx * S + i, (yT + 14) * S + j, j < -2 ? C.snow[3] : i < 0 ? 0xe8e4dc : 0xb0aca4);
+          img.px(vx * S, (yT + 14) * S - 5, 0x3a3a44);
+        }
+        wallFace(bx0 + 6, yT + 22, 26, 8, [0xb8b4aa, 0xd8d4ca, 0xf0ece2], 82, 0.3);
+        for (let j = 0; j < 14; j++) for (let i = 0; i < 12; i++) img.px((bx0 + 15) * S + i, (yT + 25) * S + 1 + j, i === 0 || i === 11 || i === 5 || i === 6 ? 0x4a2a20 : (i + j) % 6 === 0 ? 0x6a3a2c : RED);
+        pitched(bx0 + 2, yT + 40, 9, 9, RED, 83, 0.5);
+        wallFace(bx0 + 2, yT + 49, 9, 5, [0xb8b4aa, 0xd8d4ca, 0xf0ece2], 84, 0.4);
+      },
+    });
+    // the bust on its plinth where the drive opens out before the barn, a ring of trodden snow round it
+    {
+      const [X, Yy] = [px * S, (yT + 38) * S];
+      objects.push({
+        y: yT + 40,
+        shadow: () => shadowPx(X + 3, Yy + 2, 9, 12, 0.66),
+        draw: () => {
+          for (let a = 0; a < 6.3; a += 0.1) img.px(X + Math.round(Math.cos(a) * 13), Yy + 5 + Math.round(Math.sin(a) * 7), 0x9aa4bc);
+          for (let j = 0; j < 12; j++) for (let i = -4; i <= 4; i++) img.px(X + i, Yy - 2 + j, j === 0 ? 0xe8ecf4 : i === -4 ? 0xb8bcc8 : i === 4 ? 0x5a5e6a : 0x8a8e9a);
+          for (let j = 0; j < 8; j++) for (let i = -3; i <= 3; i++) if (Math.abs(i) < 4 - (j < 4 ? 3 - j : 0) * 0.6) img.px(X + i, Yy - 10 + j, j === 0 ? C.snow[3] : i < 0 ? 0x6a7a5a : 0x3a4a34);
+        },
+      });
+      for (let k = 0; k < 5; k++) personPx(X - 18 + k * 9 + Math.floor(hr() * 3), Yy + 12 + (k % 2) * 4, hr);
+    }
+    for (const [x, y] of [[bx0 + 4, yT + 66], [bx0 + 33, yT + 60], [bx0 + 5, yT + 86], [bx0 + 34, yT + 84]]) fir(x, y, 4);
+    streetLamp(px - 5, yT + 100, true);
+    streetLamp(px + 5, yT + 100, true);
+    // the blower and the lorry on the forecourt: the machine in orange, its red auger at the bank of snow, the
+    // chute turned over the lorry's body, already heaped
+    const [mx, my] = [bx0 + 5, yT + 103];
+    objects.push({
+      y: my + 7,
+      shadow: () => {
+        shadowRect(mx + 2, my + 3, 9, 6, 0.62);
+        shadowRect(mx + 15, my + 2, 15, 7, 0.62);
+      },
+      draw: () => {
+        const X = mx * S;
+        const Yy = my * S;
+        for (let j = 0; j < 15; j++) for (let i = 0; i < 6; i++) img.px(X - 4 + i, Yy + j, (i + j) % 3 === 0 ? 0xf4f6fa : 0xd83a2a); // the auger, in the snow
+        for (let j = -2; j < 17; j++) for (let i = 0; i < 4; i++) img.px(X - 8 + i, Yy + j, C.bank);
+        for (let j = 0; j < 15; j++) for (let i = 0; i < 24; i++) img.px(X + 2 + i, Yy + j, j === 0 ? 0xffb050 : j === 14 ? 0x8a4a10 : i > 12 && i < 22 && j > 2 && j < 12 ? (j < 5 ? C.snow[3] : 0x26405c) : 0xe88a20);
+        glowPx(X + 18, Yy + 3, 0xffd040);
+        glowPx(X + 19, Yy + 3, 0xffd040);
+        for (let j = 0; j < 6; j++) for (let i = 0; i < 4; i++) img.px(X + 6 + i, Yy - 5 + j, i === 0 ? 0xffb050 : 0xc86a10); // the chute
+        const TX = (mx + 15) * S;
+        for (let j = 0; j < 18; j++) for (let i = 0; i < 44; i++) {
+          const cab = i > 33;
+          let c = cab ? (j < 2 || j > 15 ? 0x1e4a8a : i > 39 ? 0x26405c : 0x2a6ad0) : j === 0 || j === 17 || i === 0 ? 0x5a5e6a : 0x8a8e9a;
+          if (!cab && i > 1 && i < 32 && j > 1 && j < 16) c = Math.hypot(i - 12, j - 9) < 9 + hashPx(i, j, 63) * 4 ? snowPx(TX + i, Yy + j, 0.75, 0.25, 9) : 0x4a4e5a;
+          img.px(TX + i, Yy - 1 + j, c);
+        }
+        glowPx(TX + 44, Yy + 1, 0xfff4d0);
+        glowPx(TX + 44, Yy + 14, 0xfff4d0);
+        glow(mx + 6, my - 1, 0xffb030, 0.9);
+      },
+    });
+    // the plume from the chute over into the lorry (live)
+    const plume = [0, 1, 2].map((f) => {
+      const r = new HiCanvas(13, 6);
+      for (let t = 0; t <= 1; t += 0.02) {
+        const X = 2 + t * 32;
+        const Yy = 14 - Math.sin(t * Math.PI) * 11 + t * 2;
+        for (let k = 0; k < 3; k++) if (hashPx(Math.round(t * 50), k, 64 + f) < 0.7) r.px(Math.round(X), Math.round(Yy + (k - 1) * (1 + t * 2)), k === 1 ? 0xffffff : 0xdce4f0, 0.9 - t * 0.3);
+      }
+      for (let k = 0; k < 6; k++) r.px(31 + Math.floor(hashPx(k, f, 65) * 6), 12 + Math.floor(hashPx(f, k, 66) * 5), 0xffffff, 0.7);
+      return kit.frame(r);
+    });
+    kit.loop(mx + 2, U(my - 5), plume, { fps: 7, d: 0.3 });
+    // (the beacon on the machine's cab turning)
+    const beacon = [0, 1].map((f) => {
+      const r = new HiCanvas(2, 2);
+      r.px(2, 2, f ? 0xffe060 : 0xc87a10);
+      r.px(3, 2, f ? 0xfff4b0 : 0xc87a10);
+      if (f) for (const [i, j] of [[1, 2], [4, 2], [2, 1], [3, 3]]) r.px(i, j, 0xffc040, 0.6);
+      return kit.frame(r);
+    });
+    kit.loop(mx + 6, U(my), beacon, { fps: 3, d: 0.32 });
+  };
   // blocks
   const ghosts = []; // the blocks given over to a place: where their houses would have stood
   const ghostAt = (x, y) => ghosts.find((g) => y >= g.yT && y < g.yB && x >= g.x0 && x < g.x1);
@@ -2037,7 +2345,7 @@ export function buildMid() {
     const kind = u0 < CENTER[0] - 40 ? 'suburb' : u0 < SUSUKINO[0] ? 'city' : 'neon';
     for (const [x0, x1] of blocksX(u0)) {
       // [the street under the block, the block's left edge]: the places that stand where a block of houses would
-      const place = [[1466, 41, paintJingu], [1740, 101, paintBeer], [1880, 41, paintSchool], [3350, 105, paintNoria]].find(([s, bx]) => s === allStreets[i] && bx === x0);
+      const place = [[1466, 41, paintJingu], [1740, 101, paintBeer], [1880, 41, paintSchool], [3350, 105, paintNoria], [2240, 0, paintEki(0, 19)], [2240, 41, paintEki(41, 75)], [2240, 105, paintEki(105, 139)], [2240, 161, paintEki(161, W)], [2010, 101, paintHokudai]].find(([s, bx]) => s === allStreets[i] && bx === x0);
       if (!place) {
         fillBlock(x0, x1, u0, u1, kind);
         continue;
@@ -2435,6 +2743,7 @@ export function buildMid() {
         for (let w = 3; w < 36; w += 3) rand();
       }
     const blockAt = (i) => [ODORI_CROSS[i] + 10, ODORI_CROSS[i + 1] - 10];
+    const RINK = [90, 6276, 30, 42]; // the skating rink: its middle (x, u), its half-width and half-length
 
     // 1: the ice sculpture garden: a dragon, a pair of swans, a fish owl, a fox, an orca and a crab, and a row
     // of blocks with fish frozen inside, every one lit from below
@@ -2514,8 +2823,123 @@ export function buildMid() {
       for (let u = b0 + 10; u < b1; u += 22) for (const x of [36, 70, 110, 144]) {
           const tx = x + rand() * 6;
           const ty = Y(u + rand() * 6);
-          if (!anyRes(tx - 6, ty - 6, 12, 12)) bare(tx, ty, 6, rand.pick([0xffd890, 0x9ad0ff, 0xff9ad0]));
+          if (anyRes(tx - 6, ty - 6, 12, 12)) continue;
+          // (a tree where the rink is now: grown as ever, for the random numbers after it, and taken out again)
+          const lists = [objects, lights, lightsFine, pools, kit.props];
+          const keep = lists.map((l) => l.length);
+          bare(tx, ty, 6, rand.pick([0xffd890, 0x9ad0ff, 0xff9ad0]));
+          if (Math.abs(tx - RINK[0]) < RINK[2] + 9 && Math.abs(ty - Y(RINK[1])) < RINK[3] + 16) lists.forEach((l, n) => (l.length = keep[n]));
         }
+      // the skating rink in the middle of the block: flooded ice inside white boards, scored by blades, lit from
+      // masts round it with bulbs strung across between them; the hire hut and its benches at the south end; the
+      // skaters going round (live)
+      {
+        const [rcx, rcy, rx, ry] = [RINK[0], Y(RINK[1]), RINK[2], RINK[3]];
+        reserveRect(rcx - rx - 4, rcy - ry - 4, rx * 2 + 8, ry * 2 + 20);
+        const kr = rng(6270);
+        const scratch = [];
+        for (let k = 0; k < 46; k++) scratch.push([rcx + (kr() - 0.5) * rx * 1.5, rcy + (kr() - 0.5) * ry * 1.6, 4 + kr() * 14, kr() * 6.3]);
+        img.fine(rcx - rx - 4, rcy - ry - 4, rx * 2 + 8, ry * 2 + 8, (FXr, FYr, xx, yy) => {
+          const e = Math.hypot((xx - rcx) / rx, (yy - rcy) / ry);
+          if (e > 1.1) return null;
+          if (e > 1.045) return snowPx(FXr, FYr, 0.8, 0.25, 7); // (the snow thrown up behind the boards)
+          if (e > 1) {
+            // the boards: a white top rail, panels of advertising below it, a kick strip
+            const a = Math.atan2(yy - rcy, xx - rcx);
+            const p = Math.floor(((a + Math.PI) / (Math.PI * 2)) * 44);
+            return e > 1.03 ? 0xf4f6fa : e > 1.012 ? [0xd83a2a, 0xf4f0e6, 0x2a6ad0, 0xf4f0e6, 0xe8c040, 0xf4f0e6][p % 6] : 0x3a4a6a;
+          }
+          // the ice: pale where the lamps fall on it, grey-blue under the sky, the worn track round it duller
+          const n = fbm(FXr / S, FYr / S, { seed: 67, scale: 9, octaves: 2 });
+          let c = rampColor([0x8aa6c8, 0xa4c0de, 0xc0d8ee, 0xdcecf8], 0.25 + n * 0.5 + (1 - e) * 0.25 - (e > 0.6 && e < 0.9 ? 0.12 : 0), FXr, FYr);
+          for (const [sx, sy, sr, sa] of scratch) {
+            const d = Math.hypot(xx - sx, yy - sy);
+            if (Math.abs(d - sr) < 0.17 && Math.abs((((Math.atan2(yy - sy, xx - sx) - sa) % 6.283) + 6.283) % 6.283) < 2.2) c = mix(c, 0xffffff, 0.55);
+          }
+          if (Math.abs(e - 0.32) < 0.012) c = mix(c, 0xd83a2a, 0.5); // (a ring painted under the ice)
+          if (e < 0.05) c = mix(c, 0x2a6ad0, 0.5);
+          return c;
+        });
+        // the masts and the strings of bulbs from each to the one across
+        const masts = [];
+        for (let k = 0; k < 8; k++) {
+          const a = (k / 8) * Math.PI * 2 + 0.39;
+          masts.push([rcx + Math.cos(a) * (rx + 2.5), rcy + Math.sin(a) * (ry + 2.5)]);
+        }
+        for (const [mx, my] of masts)
+          objects.push({
+            y: my + 1,
+            shadow: () => shadowPx(mx * S + 2, my * S + 1, 9, 2, 0.7),
+            draw: () => {
+              for (let j = 0; j < 12; j++) for (let i = 0; i < 2; i++) img.px(mx * S + i, my * S - j, i ? 0x4a4e5a : 0xb0b6c4);
+              for (let i = -1; i < 3; i++) glowPx(mx * S + i, my * S - 12, 0xf4faff);
+              glow(mx, my - 4, 0xd8ecff, 0.9);
+              pool(mx + (rcx - mx) * 0.22, my + (rcy - my) * 0.22, 15, C.cool, 0.36);
+            },
+          });
+        objects.push({
+          y: rcy + ry + 3,
+          draw: () => {
+            for (let k = 0; k < 4; k++) {
+              const [ax, ay] = masts[k];
+              const [bx, by] = masts[k + 4];
+              for (let t = 0.03; t < 1; t += 0.035) {
+                const X = (ax + (bx - ax) * t) * S;
+                const Yy = (ay + (by - ay) * t) * S - 12 + Math.sin(t * Math.PI) * 7;
+                glowPx(X, Yy, [0xffd890, 0xff9ad0, 0x9ad0ff, 0xa8ffc0][Math.round(t * 28 + k) % 4], 0.85);
+              }
+            }
+          },
+        });
+        // the hut: a lit hatch with skates hung in rows behind it, a queue, benches where they are laced on
+        const [hx, hyy] = [rcx - 11, rcy + ry + 5];
+        objects.push({
+          y: hyy + 10,
+          shadow: () => shadowRect(hx + 3, hyy + 3, 22, 9, 0.64),
+          draw: () => {
+            pitched(hx, hyy, 22, 5, 0x2a6a8a, 68, 0.5);
+            wallFace(hx, hyy + 5, 22, 4, [0x6a4a34, 0x8a6444, 0xa87c54], 69, 0.4);
+            for (let j = 2; j < 10; j++) for (let i = 9; i < 57; i++) glowPx(hx * S + i, (hyy + 5) * S + j, i % 6 === 0 ? 0x4a3020 : j < 5 && i % 3 === 1 ? 0xf4f6fa : j < 5 ? 0xc87a30 : 0xffe0a0, 0.95);
+            for (const i of [3, 60]) for (let j = 0; j < 6; j++) glowPx(hx * S + i, (hyy + 5) * S + 1 + j, j % 2 ? 0xff5a40 : 0xffb080);
+            pool(rcx, hyy + 12, 12, C.warm, 0.36);
+          },
+        });
+        for (const s of [-1, 1])
+          for (let k = 0; k < 2; k++) {
+            const [X, Yy] = [(rcx + s * (17 + k * 9)) * S, (hyy + 5 + k) * S];
+            for (let j = 0; j < 4; j++) for (let i = 0; i < 18; i++) img.px(X + i, Yy + j, j === 0 ? C.snow[3] : j === 3 ? 0x3a2a20 : i % 6 === 0 ? 0x5a4030 : 0x8a6444);
+            for (let i = 2; i < 16; i += 5) personPx(X + i, Yy - 4, kr);
+          }
+        for (let k = 0; k < 6; k++) personPx((rcx - 6 + k * 2.4) * S, (hyy + 10 + (k % 2) * 0.7) * S, kr);
+        for (let k = 0; k < 22; k++) {
+          // (those watching over the boards)
+          const a = kr() * Math.PI * 2;
+          const [x, y] = [rcx + Math.cos(a) * (rx + 4.4), rcy + Math.sin(a) * (ry + 4.4)];
+          if (!isRes(x, y) || Math.hypot((x - rcx) / rx, (y - rcy) / ry) > 1.08) personPx(x * S, y * S, kr);
+        }
+        // the skaters
+        const skater = (coat, hat, f) => {
+          const r = new HiCanvas(4, 5);
+          for (const i of [4, 5, 6]) {
+            r.px(i, 0, hat);
+            r.px(i, 1, i === 6 ? 0xd8a888 : 0xf0c8a8);
+          }
+          for (let j = 2; j < 8; j++) for (let i = 3; i < 8; i++) if (!(j > 5 && (i === 3 || i === 7))) r.px(i, j, i === 7 ? scaleColor(coat, 0.7) : coat);
+          r.px(f ? 2 : 8, f ? 4 : 3, coat); // an arm swung out
+          r.px(f ? 1 : 9, f ? 5 : 3, 0xf4f0e6);
+          for (let j = 8; j < 11; j++) {
+            r.px(f ? 3 : 4, j, 0x2a2a3a);
+            r.px(f ? 6 : 7, j - (f ? 0 : 1), 0x2a2a3a);
+          }
+          r.px(f ? 2 : 4, 11, 0xe8ecf4); // the blades
+          r.px(f ? 3 : 5, 11, 0xe8ecf4);
+          r.px(f ? 6 : 8, f ? 11 : 10, 0xe8ecf4);
+          for (let i = 3; i < 9; i++) r.px(i, 13, 0x101018, 0.3);
+          return frameAt(r, RINK[1]);
+        };
+        for (const [coat, hat, n, sp] of [[0xd83a2a, 0xf4f0e6, 2, 11], [0x3a6ad0, 0xe8c040, 2, 9], [0xe8c040, 0x2a2a3a, 2, 13], [0x5aaa6a, 0xd83a2a, 1, 8], [0xe86aa8, 0xf4f0e6, 2, 10], [0xf4f0e6, 0x3a6ad0, 1, 14]])
+          kit.wander(rcx, RINK[1] - 2, rx - 5, ry - 6, [skater(coat, hat, 0), skater(coat, hat, 1)], { n, sp, idle: 0.06, turn: 'flip', fps: 3, d: 0.02 });
+      }
       const [c0, c1] = blockAt(7);
       iceStatue(70, Y(c0 + 66), 30, 34, CRAB, 0xff8a5a);
       iceStatue(116, Y(c0 + 140), 26, 30, LOTUS, 0xff7ad8);
@@ -4964,6 +5388,66 @@ export function buildMid() {
         }
       }
     }
+  }
+
+  // ---- Nakajima park by night: skiers out on the cross-country track (live); Yukiakari at the Hōheikan, candles
+  // burning in hollowed snow along its front and laid out in a heart; a pair of foxes about on the river's ice (live)
+  {
+    const skier = (coat, f) => {
+      // (from above, heading up the frame: the hat, the shoulders, the skis long and parallel, a pole planted)
+      const r = new HiCanvas(4, 6);
+      for (let j = 3; j < 17; j++) {
+        r.px(3, j + (f ? 1 : 0), 0xd83a2a);
+        r.px(8, j + (f ? 0 : 1), 0xd83a2a);
+      }
+      for (let j = 6; j < 12; j++) for (let i = 4; i < 8; i++) r.px(i, j, i === 7 ? scaleColor(coat, 0.75) : coat);
+      for (const i of [5, 6]) r.px(i, 5, 0xf4f0e6);
+      r.px(5, 4, 0xf4f0e6);
+      for (let k = 0; k < 5; k++) r.px(f ? 1 : 10, 5 + k + (f ? 0 : 3), 0x4a4a54);
+      r.px(f ? 2 : 9, f ? 7 : 9, coat);
+      for (let i = 4; i < 10; i++) r.px(i, 17, 0x101018, 0.25);
+      return frameAt(r, 4660);
+    };
+    const pts = [];
+    for (let u = 4526; u <= 4796; u += 18) pts.push([30 + 10 * Math.sin(u / 40) + 1.5, u]);
+    for (const [coat, s0] of [[0x3a6ad0, 0.05], [0xe8c040, 0.4], [0x5aaa6a, 0.72]])
+      kit.path(pts, [skier(coat, 0), skier(coat, 1)], { sp: 7, mode: 'pp', hold: 1.5, turn: 'vertical', fps: 3, s0, d: 0.02 });
+    // the candles
+    const hy = Y(4640) + 30;
+    const candle = (x, y) => {
+      const X = Math.round(x * S);
+      const Yy = Math.round(y * S);
+      objects.push({
+        y: y + 1,
+        draw: () => {
+          for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) img.px(X + i, Yy + j, j === 0 ? 0xffffff : i === 3 ? 0xb8c0d4 : C.snow[3]);
+          glowPx(X + 1, Yy + 1, 0xffe090);
+          glowPx(X + 2, Yy + 1, 0xffb040);
+          glowPx(X + 1, Yy + 2, 0xff9030, 0.9);
+          pool(x + 0.6, y + 0.6, 2.6, C.lamp, 0.4);
+        },
+      });
+    };
+    for (let x = 104; x < 152; x += 4) for (const dy of [0, 5]) if (!isRes(x, hy + dy)) candle(x + (dy ? 2 : 0), hy + dy);
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 9) {
+      // (a heart of them on the snow before it)
+      const hxp = 16 * Math.sin(a) ** 3;
+      const hyp = -(13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a));
+      const [x, y] = [100 + hxp * 0.55, hy + 20 + hyp * 0.55];
+      if (!isRes(x, y)) candle(x, y);
+    }
+    reserveRect(86, hy - 1, 68, 34);
+    // the foxes
+    const fox = (f) => {
+      const r = new HiCanvas(7, 3);
+      for (let i = 6; i < 15; i++) for (let j = 2; j < 5; j++) r.px(i, j, j === 4 ? 0xb85a1a : 0xe8842a);
+      for (let i = 0; i < 6; i++) r.px(i, 3 - (i < 2 ? 1 : 0) + (f && i < 3 ? 1 : 0), i < 2 ? 0xf4f0e6 : 0xd8741e); // the brush, white at its tip
+      for (const [i, j, c] of [[15, 1, 0xe8842a], [16, 1, 0xe8842a], [15, 2, 0xe8842a], [16, 2, 0xe8842a], [17, 2, 0xf4f0e6], [18, 3, 0x2a2026], [15, 0, 0x2a2026], [16, 3, 0xf4f0e6]]) r.px(i, j, c);
+      for (const i of f ? [7, 13] : [8, 12]) for (let j = 5; j < 7; j++) r.px(i + (f && j === 6 ? 1 : 0), j, 0x2a2026);
+      for (let i = 6; i < 16; i++) r.px(i, 8, 0x101018, 0.25);
+      return frameAt(r, 3690);
+    };
+    for (const [x, u] of [[52, 3692], [150, 3690]]) kit.wander(x, u, 9, 6, [fox(0), fox(1)], { n: 1, sp: 5, idle: 0.45, turn: 'flip', fps: 5, d: 0.02 });
   }
 
   // ------------------------------------------------------------ vegetation
