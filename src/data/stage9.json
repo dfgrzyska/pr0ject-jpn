@@ -333,6 +333,6 @@
     {"t":388,"type":"shooter","x":40,"pattern":"fan"},
     {"t":388.6,"type":"shooter","x":140,"pattern":"fan"},
     {"t":390,"type":"popcorn","x":90,"path":"row","count":8},
-    {"t":400,"type":"boss","x":90,"boss":"kyubi","card":["KUROGANE","MECH Z ZATOKI TOKIJSKIEJ"]}
+    {"t":400,"type":"boss","x":90,"boss":"kurogane","card":["KUROGANE","MECH Z ZATOKI TOKIJSKIEJ"]}
   ]
 }

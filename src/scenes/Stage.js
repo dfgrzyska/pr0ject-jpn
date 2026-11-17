@@ -505,7 +505,7 @@ export class Stage extends Phaser.Scene {
     this.freeze(0.45);
     this.player.celebrate();
     this.bossDown = true;
-    this.bossClearT = 3;
+    this.bossClearT = this.enemies.bossGroup?.outro ?? 3; // (a boss with a longer end of its own: Kurogane's fall into the bay)
     if (this.scenicView) {
       this.ceasefire = true;
       for (const e of this.enemies.live) if (!e.dead && e.type !== 'boss') this.enemies.remove(e);

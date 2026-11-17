@@ -24,7 +24,7 @@ try {
   });
   console.log(JSON.stringify(menu));
   assert.equal(menu.state, 'dev');
-  assert.equal(menu.cities, 16, 'a miniboss and a boss for each of the eight cities');
+  assert.equal(menu.cities, 19, "a miniboss and a boss for each of the eight cities, Tokyo's two minibosses and its boss");
   assert.equal(menu.encounters, 7, 'every random encounter');
   await page.screenshot({ path: 'tools/preview/dev-bosses.png' });
   // a random encounter, invulnerable

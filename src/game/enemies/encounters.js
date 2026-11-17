@@ -168,6 +168,7 @@ export const encounters = {
     const g = this.bossGroup;
     if (g?.kind === 'nagai' && this.nagaiBlock(shot)) return true; // the endless cat's body (nagai.js)
     if (g?.kind === 'kaiken' && this.kaikenDeaf(shot)) return true; // the hush while the man's hand is at his ear (kaiken.js)
+    if (g?.kind === 'kurogane' && this.kuroShot(shot)) return true; // the mech's fists, drones, armour and reactor (tokyo-kurogane.js)
     if (!g || g.defeated || g.kind !== 'jaodori' || !g.launchers || g.parts[0].state !== 'fight') return false;
     for (const pad of g.launchers) {
       if (pad.cool > 0 || pad.rocket || g.lock > 0) continue;

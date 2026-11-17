@@ -8,7 +8,7 @@ const server = await startServer(5177);
 let browser;
 try {
   browser = await launchBrowser();
-  for (const H of (process.env.BOSS_HEIGHT ? [Number(process.env.BOSS_HEIGHT)] : [320, 420])) for (const city of (process.env.BOSS_CITY ? [Number(process.env.BOSS_CITY)] : [3, 5, 8])) {
+  for (const H of (process.env.BOSS_HEIGHT ? [Number(process.env.BOSS_HEIGHT)] : [320, 420])) for (const city of (process.env.BOSS_CITY ? [Number(process.env.BOSS_CITY)] : [3, 5, 8, 9])) {
     const stage = JSON.parse(readFileSync(`src/data/stage${city}.json`, 'utf8'));
     const at = stage.waves.find(w => w.type === 'boss').t;
     const page = await browser.newPage({ viewport: { width: 540, height: H * 3 }, hasTouch: H === 420 });
@@ -21,7 +21,7 @@ try {
     await page.waitForFunction(() => window.game?.scene.getScene('Stage')?.state === 'title');
     await page.evaluate(city => {
       const s = game.scene.getScene('Stage'); s.startGame(); game.loop.stop(); s.music.play = () => {};
-      window.audit = { phases: [], opens: 0, lastOpen: false, failures: 0, city, frames: 0, maxMelts: 0, captured: [] };
+      window.audit = { phases: [], opens: 0, lastOpen: false, failures: 0, city, frames: 0, maxMelts: 0, captured: [], stuns: 0, lastStun: false, torn: 0 };
       window.drive = (frames, fail = false) => {
         const p = s.player;
         p.drag = true;
@@ -53,11 +53,22 @@ try {
                 }
                 p.tx = pad?.x ?? alive[0]?.x ?? 90;
               }
+            } else if (city === 9) {
+              // Kurogane: the fist being reeled back, then the drones, then the open reactor; in the beam's safe lanes
+              const fists = Object.values(g.fists ?? {});
+              const reel = fists.find(f => f.state === 'reel');
+              const drone = (g.drones ?? []).filter(d => !d.gone && d.out >= 1).sort((a, b) => Math.abs(a.x - p.x) - Math.abs(b.x - p.x))[0];
+              const lanes = g.act?.kind === 'beam' ? g.act.lanes : null;
+              p.tx = lanes ? lanes.reduce((a, b) => (Math.abs(a - p.x) < Math.abs(b - p.x) ? a : b)) : reel ? reel.x : g.stage === 2 && drone && !(g.stun > 0) ? drone.x : g.x;
+              audit.torn = fists.filter(f => f.state === 'gone').length;
+              if (g.stun > 0 && !audit.lastStun) audit.stuns++;
+              audit.lastStun = g.stun > 0;
             }
             if (fail) { p.tx = 15; p.ty = s.H - 30; }
             p.tx = Math.max(10, Math.min(170, p.tx));
             p.ty = Math.max(160, Math.min(s.H - 20, p.ty));
             if (!audit.phases.includes(g.stage)) audit.phases.push(g.stage);
+            (audit.when ??= {})[g.stage] ??= Math.round(g.t ?? 0);
             if (g.open > 0 && !audit.lastOpen) audit.opens++;
             audit.lastOpen = g.open > 0;
           }
@@ -66,7 +77,7 @@ try {
         const g = s.enemies.bossGroup;
         return { won: s.bossDown, phase: g?.stage, phases: audit.phases, opens: audit.opens, melts: audit.maxMelts,
           hp: g?.parts.filter(e => !e.dead && e.group === g).map(e => Math.round(e.hp)), t: g?.t,
-          charge: g?.charge?.t, slams: g?.slams?.map(a => [a.t, a.pinned]), fireworks: g?.fireworkHits ?? 0,
+          charge: g?.charge?.t, slams: g?.slams?.map(a => [a.t, a.pinned]), fireworks: g?.fireworkHits ?? 0, stuns: audit.stuns, torn: audit.torn, when: audit.when,
           ...(s.bossDown || !g ? {} : { debug: { state: s.state, parts: g.parts.map(e => [e.role, e.hp, e.dead, e.group === g]), errors: [] } }) };
       };
     }, city);
@@ -135,6 +146,7 @@ try {
     assert.deepEqual(state.phases.filter(Boolean).sort(), [1, 2, 3]);
     if (city === 3) assert.equal(state.melts, 3);
     else if (city === 8) assert(state.fireworks > 0);
+    else if (city === 9) assert(state.torn === 2 && state.stuns > 0 && state.opens > 0, 'Kurogane: both arms off, the drones downed, the reactor open');
     else assert.equal(state.opens, 0, 'Tako has no pin/open mechanic');
     const cleared = await page.evaluate(() => {
       const s = game.scene.getScene('Stage');

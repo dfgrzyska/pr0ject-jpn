@@ -52,3 +52,39 @@ test('the change from the crane to flight', () => {
   assert.equal(st.blade, 1);
   assert.ok(KURO_TRANSFORM.length >= 9, 'at least eight key frames');
 });
+
+// ---- the fight (src/game/enemies/tokyo-kurogane.js, phase 14)
+const fight = readFileSync(new URL('../../src/game/enemies/tokyo-kurogane.js', import.meta.url), 'utf8');
+const literal = (name, open, close) => {
+  const at = fight.indexOf(`export const ${name} = ${open}`);
+  assert.ok(at >= 0, name);
+  let depth = 0;
+  for (let i = fight.indexOf(open, at); i < fight.length; i++) {
+    if (fight[i] === open) depth++;
+    else if (fight[i] === close && --depth === 0) return new Function(`return ${fight.slice(fight.indexOf(open, at), i + 1)}`)();
+  }
+  throw new Error(name);
+};
+
+test("the fight's copy of the parts' places and of the change is the art's", () => {
+  kuroganeEnemies(() => {});
+  assert.deepEqual(literal('KG', '{', '}'), KURO_LAYOUT);
+  assert.deepEqual(literal('KG_CHANGE', '[', ']'), KURO_TRANSFORM);
+});
+
+test('every frame the fight names outright is in the atlas', () => {
+  const named = new Set(fight.match(/'kg_[a-z_0-9]+'/g).map((s) => s.slice(1, -1)));
+  for (const f of named) assert.ok(frames[f], f);
+  // and the ones it builds: kg_<part>_${...}
+  for (const m of fight.matchAll(/`(kg_[a-z_]+)\$\{/g)) assert.ok(Object.keys(frames).some((f) => f.startsWith(m[1])), m[1]);
+});
+
+test('it comes in at the end of the strip with its card, and the game knows it', () => {
+  const stage = JSON.parse(readFileSync(new URL('../../src/data/stage9.json', import.meta.url)));
+  const w = stage.waves.find((v) => v.type === 'boss');
+  assert.equal(w.boss, 'kurogane');
+  assert.equal(w.card[0], 'KUROGANE');
+  const enemies = readFileSync(new URL('../../src/game/Enemies.js', import.meta.url), 'utf8');
+  for (const hook of ['spawnKurogane', 'updateKurogane', 'kuroDown', 'kuroEnd', 'kuroCleanup', 'kuroMarks', "g.kind === 'kurogane' ? g.awake"]) assert.ok(enemies.includes(hook), hook);
+  assert.ok(readFileSync(new URL('../../src/game/enemies/encounters.js', import.meta.url), 'utf8').includes('this.kuroShot(shot)'));
+});
