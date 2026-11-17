@@ -16,6 +16,7 @@
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
 import { kasaEnemies } from './kasa.mjs';
 import { taiyakiEnemies } from './taiyaki.mjs';
+import { kuroganeEnemies } from './kurogane.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -804,5 +805,6 @@ export function tokyoEnemies(add) {
   }
   kasaEnemies(add); // the first miniboss (kasa.mjs)
   taiyakiEnemies(add); // the second (taiyaki.mjs)
+  kuroganeEnemies(add); // the mech, in parts (kurogane.mjs)
 }
-export const TOKYO_PORTRAITS = ['t_komainu_0', 't_karasu_0'];
+export const TOKYO_PORTRAITS = ['t_komainu_0', 't_karasu_0', 'kg_portrait'];

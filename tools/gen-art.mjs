@@ -179,7 +179,7 @@ if (!only || only === 'enemies') {
   const portraits = [];
   for (const { id, build, portraits: names } of ENEMY_ART) {
     const list = [];
-    build((name, raster) => list.push({ name, raster }));
+    build((name, raster, o = {}) => list.push({ name, raster, ...o })); // (o.trim: packed without its empty margins)
     addCracks((name, raster) => list.push({ name, raster })); // boss wounds drawn at this atlas's detail
     // skyline-packed, 1024 wide; a city that would go over 2048 tall goes 2048 wide instead (WebGL-safe sizes)
     let packed = packAtlasTight(list, 1024, 2, 'enemies.png');

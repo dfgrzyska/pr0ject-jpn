@@ -210,7 +210,17 @@ export function packAtlas(entries, width = 512, padding = 2, imageName = 'sprite
  * shelves above when the frames vary a lot in size (the city enemy atlases). Same output format.
  */
 export function packAtlasTight(entries, width = 1024, padding = 2, imageName = 'enemies.png') {
+  // (an entry with `trim` is packed without its empty margins; the atlas keeps its full size and where the rest sits,
+  // so the game shows it exactly where the whole frame would be: parts of a big boss sharing one middle)
+  const trimmed = (e) => {
+    const r = e.raster;
+    let [x0, y0, x1, y1] = [r.w, r.h, -1, -1];
+    for (let y = 0; y < r.h; y++) for (let x = 0; x < r.w; x++) if (r.alpha(x, y) > 0) [x0, y0, x1, y1] = [Math.min(x0, x), Math.min(y0, y), Math.max(x1, x), Math.max(y1, y)];
+    if (x1 < 0) [x0, y0, x1, y1] = [0, 0, 0, 0];
+    return { ...e, raster: r.crop(x0, y0, x1 - x0 + 1, y1 - y0 + 1), src: { x: x0, y: y0, w: r.w, h: r.h } };
+  };
   const items = entries
+    .map((e) => (e.trim ? trimmed(e) : e))
     .map((e, i) => ({ ...e, i }))
     .sort((a, b) => b.raster.h - a.raster.h || b.raster.w - a.raster.w);
   let sky = [{ x: 0, w: width, y: 0 }]; // segments of the top edge of what is packed so far
@@ -259,7 +269,9 @@ export function packAtlasTight(entries, width = 1024, padding = 2, imageName = '
   for (const it of items) {
     atlas.blit(it.raster, it.x, it.y);
     const { w, h } = it.raster;
-    frames[it.name] = { frame: { x: it.x, y: it.y, w, h }, rotated: false, trimmed: false, spriteSourceSize: { x: 0, y: 0, w, h }, sourceSize: { w, h } };
+    frames[it.name] = it.src
+      ? { frame: { x: it.x, y: it.y, w, h }, rotated: false, trimmed: true, spriteSourceSize: { x: it.src.x, y: it.src.y, w, h }, sourceSize: { w: it.src.w, h: it.src.h } }
+      : { frame: { x: it.x, y: it.y, w, h }, rotated: false, trimmed: false, spriteSourceSize: { x: 0, y: 0, w, h }, sourceSize: { w, h } };
   }
   const json = { frames, meta: { image: imageName, format: 'RGBA8888', size: { w: width, h: height }, scale: '1' } };
   return { raster: atlas, json };
