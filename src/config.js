@@ -111,6 +111,8 @@ export const ENEMIES = {
   steam: { hp: 1, weight: 0, score: 0, radius: 17, explosion: 's' },
   // every city's indestructible traps set into its map (enemies/traps.js): no score, shots pass them by
   trap: { hp: 1, weight: 0, score: 0, radius: 8, explosion: 's', ground: true },
+  // every city's ambusher, hiding in its map until it jumps out to shoot (enemies/ambush.js)
+  ambush: { hp: 26, weight: 2, score: 400, radius: 7, explosion: 's', ground: true },
 };
 
 // Minibosses' HP (the wave's own `hp` wins); below `phase2` of its life each one breaks into its second phase
@@ -193,6 +195,6 @@ export const EASY = {
   warn: 1.3, // warning time of beams and scalding zones
   bossHp: 0.8, // bosses, heavies and their parts
   heatJam: 1.0, // s (HEAT.jam)
-  enemyHp: { popcorn: 3, shooter: 22, turret: 26, diver: 5, carrier: 12 }, // small fry as tough as they used to be
+  enemyHp: { popcorn: 3, shooter: 22, turret: 26, diver: 5, carrier: 12, ambush: 18 }, // small fry as tough as they used to be
   carrierShare: 1, // every power-up carrier comes (normal: a quarter fewer)
 };

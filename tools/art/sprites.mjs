@@ -17,6 +17,7 @@ import { fxSprites } from './fx.mjs';
 import { logoSprites } from './logo.mjs';
 import { foodSprites } from './foods.mjs';
 import { trapSprites540 } from './traps.mjs';
+import { ambushSprites540 } from './ambush.mjs';
 import { downsample } from './icon.mjs';
 import { pickupToken, TOKEN_FRAMES } from './token.mjs';
 import { turretShot, wingTurret } from './turret.mjs';
@@ -306,6 +307,7 @@ for (const { name, raster } of fxSprites()) add(name, raster); // smoke, debris,
 for (const { name, raster } of logoSprites()) add(name, raster); // the logo, the cities' seals
 for (const { name, raster } of foodSprites()) add(name, raster);
 trapSprites540((name, raster) => add(name, downsample(raster, 20))); // the cities' traps, the 540 px drawings area-filtered down
+ambushSprites540((name, raster) => add(name, downsample(raster, 20))); // the cities' ambushers, the same way
 
 // ---------------------------------------------------------------- pickups
 const PICKUP = [

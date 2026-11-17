@@ -6,10 +6,14 @@
 // a city's indestructible trap (enemies/traps.js): its four frames (at rest, glowing, bursting x2) drawn at 540 px
 // in the shared atlas (tools/art/traps.mjs), the ground ring's colours, its size, its volley, how often it goes off
 const trap = (city, zone, r, volley, every) => ({ frames: [0, 1, 2, 3].map((k) => `trap_${city}_${k}`), zone, r, volley, every });
+// a city's ambusher (enemies/ambush.js): its five frames (hidden, stirring, half out, out, shooting) drawn at 540 px in
+// the shared atlas (tools/art/ambush.mjs), and what bursts out with it
+const ambush = (city, pop) => ({ frames: [0, 1, 2, 3, 4].map((k) => `amb_${city}_${k}`), pop });
 
 export const SKINS = {
   nagasaki: {
     trap: trap('nagasaki', 'spark', 12, { kind: 'ring', n: 10 }, 4), // a fireworks mortar on the quay (enemies/traps.js)
+    ambush: ambush('nagasaki', 'dust'), // a hook-tailed cat in a crate on the quay (enemies/ambush.js)
     nagasaki: true,
     popcorn: { frame: 'n_lantern_0', anim: 'n_lantern', scale: 0.75 },
     shooter: { frame: 'n_biidoro_0', anim: 'n_biidoro', scale: 0.8 },
@@ -20,6 +24,7 @@ export const SKINS = {
   },
   kyoto: {
     trap: trap('kyoto', 'foxfire', 10, { kind: 'ring', n: 6 }, 3.6), // a stone lantern breathing fox fire (enemies/traps.js)
+    ambush: ambush('kyoto', 'leaves'), // a white Inari fox in an azalea bush (enemies/ambush.js)
     popcorn: { frame: 'popcorn_0', anim: 'popcorn' },
     shooter: { frame: 'shooter_0', anim: 'shooter' },
     diver: { frame: 'diver_0', anim: 'diver' },
@@ -30,6 +35,7 @@ export const SKINS = {
   },
   okinawa: {
     trap: trap('okinawa', 'water', 13, { kind: 'ring', n: 8 }, 3.4), // a blowhole in the reef (enemies/traps.js)
+    ambush: ambush('okinawa', 'splash'), // a hermit crab under the sand (enemies/ambush.js)
     popcorn: { frame: 'tobiuo_0', anim: 'tobiuo' },
     shooter: { frame: 'hari_0', anim: 'hari' },
     diver: { frame: 'habu_0', anim: 'habu' },
@@ -39,6 +45,7 @@ export const SKINS = {
   },
   sapporo: {
     trap: trap('sapporo', 'snow', 10, { kind: 'fan', n: 5, speed: 'normal', arc: 0.8 }, 3.8), // a snow cannon (enemies/traps.js)
+    ambush: ambush('sapporo', 'snow'), // a mountain hare in a snowdrift (enemies/ambush.js)
     popcorn: { frame: 'enaga_0', anim: 'enaga', flock: true },
     shooter: { frame: 'tourou_0_0', armor: 16, hp: 8 },
     diver: { frame: 'momonga_2', anim: 'momonga', path: 'glide' },
@@ -60,6 +67,7 @@ export const SKINS = {
   // Osaka: every regular enemy comes as a manzai duo (see Enemies.duoDown)
   osaka: {
     trap: trap('osaka', 'fire', 11, { kind: 'ring', n: 8, k: 0.9 }, 3.6), // a takoyaki griddle on a stall (enemies/traps.js)
+    ambush: ambush('osaka', 'dust'), // a little octopus under a manhole (enemies/ambush.js)
     duos: true,
     popcorn: { frame: 'takoyaki_0', anim: 'takoyaki' },
     shooter: { frame: 'fugu_0', anim: 'fugu' },
@@ -78,12 +86,14 @@ export const SKINS = {
     heavy: { frame: 'wani_0', kind: 'wani' },
     turret: { base: 'yuzutsu_base', head: 'nozzle_', wreck: 'yuzutsu_wreck', pattern: 'puff' },
     geyser: { frame: 'boil_0', anim: 'boil', mud: 'mudboil_0', mudAnim: 'mudboil' },
+    ambush: ambush('beppu', 'steam'), // a mud bozu in a boiling pool (enemies/ambush.js)
     steam: { frame: 'steamf_0' },
   },
   // Tokyo (docs/plan-tokyo.md): the longest city, its enemies in five sets, one per stretch of the flight (the
   // stage file's "sets"), drawn at 540 px (tools/art/tokyo/enemies.mjs). bits: what each set breaks into.
   tokyo: {
     trap: trap('tokyo', 'spark', 10, { kind: 'ring', n: 6, speed: 'normal', k: 0.85 }, 3.4), // a transformer on a pole (enemies/traps.js)
+    ambush: ambush('tokyo', 'dust'), // a rat in a storm drain (enemies/ambush.js)
     popcorn: { frame: 't_karasu_0', anim: 't_karasu', flock: true },
     shooter: { frame: 't_kanban_0', anim: 't_kanban' },
     diver: { frame: 't_koma_0', anim: 't_koma' },
@@ -133,6 +143,7 @@ export const SKINS = {
   // tidal stone lanterns, Heike-gani samurai crab, and Sankibō the Great Tengu of Mount Misen
   hiroshima: {
     trap: trap('hiroshima', 'fire', 10, { kind: 'fan', n: 3, speed: 'normal', arc: 0.5 }, 3.4), // a fire basket on the shore (enemies/traps.js)
+    ambush: ambush('hiroshima', 'splash'), // an anago eel in its hole in the flats (enemies/ambush.js)
     popcorn: { frame: 'tsuru_0', anim: 'tsuru', flock: true, crane: true },
     shooter: { frame: 'kaki_0', oyster: true, hp: 9 },
     diver: { frame: 'shamoji_0', anim: 'shamoji', scoop: true },

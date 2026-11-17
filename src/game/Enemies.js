@@ -26,6 +26,7 @@ import { tokyoKasa } from './enemies/tokyo-kasa.js';
 import { tokyoTaiyaki } from './enemies/tokyo-taiyaki.js';
 import { tokyoKurogane } from './enemies/tokyo-kurogane.js';
 import { traps } from './enemies/traps.js';
+import { ambush } from './enemies/ambush.js';
 // the second phases of the minibosses (Yuki-onna and the Oranda-bune have theirs; the bunraku puppet's go by
 // its puppeteers): its name on the banner
 const HEAVY_P2 = { tanuki: 'TANUKI PIJE SAKE', manta: 'KORALOWA SPIRALA', raiju: 'PRZEŁADOWANIE PIORUNA', wani: 'FAŁSZYWE CIENIE', heikegani: 'PĘKNIĘTY PANCERZ' };
@@ -236,6 +237,9 @@ export class Enemies {
         break;
       case 'trap':
         e = this.spawnTrap(w, base, look); // (a city's indestructible trap on its map: traps.js)
+        break;
+      case 'ambush':
+        e = this.spawnAmbush(w, base, look); // (a city's ambusher, hiding in its map: ambush.js)
         break;
       case 'steam':
         // a cloud of hot-spring steam drifting down the screen: hides what is under it, heats the guns
@@ -921,6 +925,9 @@ export class Enemies {
         case 'trap':
           this.trap(e, dt, b);
           break;
+        case 'ambush':
+          this.ambusher(e, dt, b);
+          break;
         case 'steam': {
           e.y += (22 + (e.vy || 0)) * dt;
           e.x += (Math.sin(e.age * 0.7 + e.x0) * 7 + (e.vx || 0)) * dt;
@@ -1358,4 +1365,4 @@ export class Enemies {
 }
 
 // each city's enemies and bosses live in its own module (src/game/enemies/): their methods join the class here
-Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, kaiken, tokyoKasa, tokyoTaiyaki, tokyoKurogane, traps);
+Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, kaiken, tokyoKasa, tokyoTaiyaki, tokyoKurogane, traps, ambush);

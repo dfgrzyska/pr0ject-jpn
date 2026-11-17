@@ -9,6 +9,7 @@ import { pickupToken, TOKEN_FRAMES } from '../token.mjs';
 import { turretShot, wingTurret } from '../turret.mjs';
 import { foodSprites540 } from '../foods.mjs';
 import { trapSprites540 } from '../traps.mjs';
+import { ambushSprites540 } from '../ambush.mjs';
 
 export function shared540(add) {
   fx540(add); // A: explosions and effects
@@ -25,4 +26,5 @@ export function shared540(add) {
   add('ps_turret', turretShot(3));
   for (const { name, raster } of foodSprites540()) add(name, raster); // the local dishes (foods540.mjs)
   trapSprites540(add); // every city's indestructible trap (traps.mjs)
+  ambushSprites540(add); // every city's ambusher, hiding in its map (ambush.mjs)
 }
