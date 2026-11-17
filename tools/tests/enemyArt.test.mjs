@@ -10,7 +10,7 @@ import { YOKAI } from '../../src/data/discoveries.js';
 const read = (p) => JSON.parse(readFileSync(new URL(`../../${p}`, import.meta.url)));
 const legacy = read('public/assets/sprites.json').frames;
 const portraits = read('public/assets/portraits.json').frames;
-const cities = Array.from({ length: 8 }, (_, i) => read(`src/data/stage${i + 1}.json`)).filter((st) => st.enemyArt);
+const cities = Array.from({ length: 9 }, (_, i) => read(`src/data/stage${i + 1}.json`)).filter((st) => st.enemyArt); // (Tokyo included)
 
 test('some city has its enemies at 540 px', () => assert(cities.length > 0));
 

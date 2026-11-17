@@ -134,6 +134,13 @@ export const CITY_ANIMS = {
   n_ja: [four('n_ja'), 6], n_oranda: [['n_oranda_0', 'n_oranda_1'], 5],
   n_cannon_smoke: [four('n_cannon_smoke'), 10, 0], // (once: gun smoke out of a port)
   ...Object.fromEntries(['red', 'blue', 'green', 'purple'].map((c) => [`n_castella_${c}`, [four(`n_castella_${c}`), 5]])),
+  // Tokyo: five sets (docs/plan-tokyo.md)
+  t_karasu: [four('t_karasu'), 10], t_koma: [four('t_koma'), 14], t_kanban: [four('t_kanban'), 4],
+  t_kasa: [four('t_kasa'), 10], t_kkasa: [four('t_kkasa'), 8], t_camera: [four('t_camera'), 12],
+  t_pix: [four('t_pix'), 5], t_cart: [four('t_cart'), 12], t_capsule: [four('t_capsule'), 4],
+  t_chochin: [four('t_chochin'), 4], t_uchiwa: [four('t_uchiwa'), 8], t_komainu: [four('t_komainu'), 3],
+  t_kamome: [four('t_kamome'), 9], t_parcel: [four('t_parcel'), 12], t_buoy: [four('t_buoy'), 4],
+  ...Object.fromEntries(['truck', 'rickshaw', 'van', 'mikoshi', 'barge'].flatMap((n) => ['red', 'blue', 'green', 'purple'].map((c) => [`t_${n}_${c}`, [four(`t_${n}_${c}`), n === 'mikoshi' ? 4 : 6]]))),
 };
 
 /** Kyūbi's tails: how many swaying frames each one has in the atlas it comes from. */

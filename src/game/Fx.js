@@ -61,7 +61,7 @@ export class Fx {
    * rolling off it, debris, the city's bits, its light on the ground and (on the ground) a scorch mark; light:
    * without the smoke and debris (one blast of a long chain).
    */
-  explode(x, y, size, u = null, light = false) {
+  explode(x, y, size, u = null, light = false, bits = null) {
     const pool = u === null ? this.air : this.ground;
     const e = pool.spawn(`expl_${size}_0`, x, y);
     e.u = u;
@@ -78,7 +78,7 @@ export class Fx {
       this.smoke(x, y, k.smoke, k.speed * 4, onGround);
       this.debris(x, y, k.debris, null, k.speed, onGround);
     }
-    this.cityBits(x, y, (light ? 2 : k.bits) * (look?.bits?.more ?? 1), k.speed, onGround, look?.bits ?? this.bits);
+    this.cityBits(x, y, (light ? 2 : k.bits) * (look?.bits?.more ?? 1), k.speed, onGround, look?.bits ?? bits ?? this.bits); // (bits: an enemy's own, e.g. Tokyo's sets)
     if (onGround && k.scorch >= 0) {
       const s = this.scorch.spawn(`scorch_${k.scorch}`, x, y);
       s.setFlipX(Math.random() < 0.5).setFlipY(Math.random() < 0.5);

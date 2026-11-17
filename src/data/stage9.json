@@ -6,6 +6,7 @@
   "subtitle": "TOKIO - STOLICA",
   "map": [139.7, 35.68, 8, -6],
   "skin": "tokyo",
+  "enemyArt": true,
   "near": "rain",
   "dark": [
     [0, 0.05],

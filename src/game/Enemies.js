@@ -112,6 +112,7 @@ export class Enemies {
     base.maxHp = base.hp;
     const look = this.lookOf(w);
     if (!look && w.type !== 'boss') return; // e.g. snowploughs exist only in Sapporo
+    base.bits = this.lookOf({ ...w, look: 'bits' }) ?? null; // (what it breaks into: Tokyo's sets each have their own)
     if (w.type === 'turret' && !w.pattern && look.pattern) base.pattern = look.pattern;
     let e;
     switch (w.type) {
@@ -436,10 +437,10 @@ export class Enemies {
     }
     const big = e.type === 'heavy' || e.type === 'boss';
     if (e.ground) {
-      s.fx.explode(e.x, e.y, e.def.explosion, e.u);
+      s.fx.explode(e.x, e.y, e.def.explosion, e.u, false, e.bits);
       const wr = this.wrecks.spawn(e.wreck ?? this.skin.turret.wreck, e.x, e.y, { u: e.u });
       if (e.horiz) wr.setRotation(-e.dir * Math.PI / 2);
-    } else s.fx.explode(e.x, e.y, big ? 'm' : e.def.explosion); // (a boss's body stays a moment: goDown)
+    } else s.fx.explode(e.x, e.y, big ? 'm' : e.def.explosion, null, false, e.bits); // (a boss's body stays a moment: goDown)
     if (e.type === 'carrier') s.spawnPickup(e.color, e.x, e.y, -40);
     if (e.type === 'masu') {
       s.spawnPickup('mame', e.x, e.y, -40);
