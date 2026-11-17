@@ -13,13 +13,16 @@ import { makeKit } from '../tokyo/kit.mjs';
 import { fujiyoshida } from './fujiyoshida.mjs';
 import { shore } from './shore.mjs';
 import { lake } from './lake.mjs';
+import { fujiGround, fujiSlopes, FUJI_DRAWN } from './fuji.mjs';
 import { W, S, L, SECTIONS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, PLOTS } from './route.mjs';
 import { near, inShape, bbox, railHalf } from '../tokyo/geom.mjs';
 
 // the stretches' painters, in the order they are called: (ctx) => void. (Phases 2-5 add theirs here.)
-const PAINTERS = [fujiyoshida, shore, lake];
+const PAINTERS = [fujiyoshida, shore, lake, fujiSlopes];
+// what paints the ground itself, before the roads and paths go over it: (ctx) => void
+const UNDER = [fujiGround];
 const DRAWN_TO = 3900;
-const ARENA_DRAWN = new Set(['KACHI-KACHI USAGI']); // (arenas whose own ground is drawn: no ring; the lake is the miniboss's) // (the stretches drawn so far reach this far up the strip: their plots are not hatched, the painter lays them out)
+const ARENA_DRAWN = new Set(['KACHI-KACHI USAGI', 'DAIDARABOTCHI']); // (arenas whose own ground is drawn: no ring; the lake is the miniboss's) // (the stretches drawn so far reach this far up the strip: their plots are not hatched, the painter lays them out)
 
 const smooth = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -104,6 +107,7 @@ export function buildMid() {
   });
   for (const w of WATER) water(w);
   for (const g of GROUNDS) if (g.over) ground(g);
+  for (const p of UNDER) p({ paint, fill, wet, img, W, S, L, GROUNDS, inShape, bbox });
   // the edges: pebbles along the lake and the ponds, a dark drop where the ground falls away into the clouds
   {
     const edge = [];
@@ -145,7 +149,7 @@ export function buildMid() {
     else if (r.cls === 'deck')
       along(r.pts, half, (n, x, u, X, Yy) => shade(0x9a7a52, (Math.floor(n.along * S) % 3 === 0 ? 0.84 : 1) + hashPx(X, Yy, 13) * 0.06));
     else if (r.cls === 'trail')
-      along(r.pts, half, (n, x, u, X, Yy) => shade(0x8a7464, 0.9 + hashPx(X, Yy, 23) * 0.16)); // packed scoria
+      along(r.pts, half, (n, x, u, X, Yy) => shade(0xb09a84, 0.9 + hashPx(X, Yy, 23) * 0.16)); // packed scoria, pale with the feet on it
     else if (r.cls === 'descent')
       along(r.pts, half, (n, x, u, X, Yy) => {
         if (Math.abs(Math.abs(n.side) - half * 0.5) < 0.5 && Math.floor(n.along * S) % 2 === 0) return 0x4a3a32; // the bulldozer's tracks
@@ -191,7 +195,7 @@ export function buildMid() {
   }
 
   // ---- the plots the landmarks will stand on: hatched, edged (a low one paler)
-  for (const [, x, u, w, h, , low] of PLOTS.filter((q) => q[2] >= DRAWN_TO))
+  for (const [, x, u, w, h, , low] of PLOTS.filter((q) => q[2] >= DRAWN_TO && !FUJI_DRAWN.has(q[0])))
     paint(x, u, x + w, u + h, (px, pu, X, Yy) => {
       const rim = px - x < 0.67 || x + w - px < 0.67 || pu - u < 0.67 || u + h - pu < 0.67;
       if (rim) return 0x34303a;
@@ -296,7 +300,7 @@ export function buildMid() {
   const claim = (x, u, w, h) => {
     for (let j = Math.max(0, Math.floor(u)); j < Math.min(L, u + h); j++) occ.fill(1, j * W + Math.max(0, Math.floor(x)), j * W + Math.min(W, Math.ceil(x + w)));
   };
-  const ctx = { near, ROADS, RAILS, GROUND, img, wet, paint, fill, along, ramp, shade, W, S, L, kit, props, tod, blocks, pave, plot, ground: ground_, claim, cover: (x, u, w, h, d = 0.1) => covers.push([x, u, w, h, d]) };
+  const ctx = { near, inShape, GROUNDS, ROADS, RAILS, GROUND, img, wet, paint, fill, along, ramp, shade, W, S, L, kit, props, tod, blocks, pave, plot, ground: ground_, claim, cover: (x, u, w, h, d = 0.1) => covers.push([x, u, w, h, d]) };
   for (const p of PAINTERS) p(ctx);
   kit.flush();
   kit.beforeGrade();
