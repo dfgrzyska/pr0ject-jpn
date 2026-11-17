@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Fazy 0–2 gotowe. Decyzje z sekcji 2 przyjęte według rekomendacji. Wymóg autora: **Fuji ma robić wrażenie i być pełna detali** (sekcja 4.1). Fazy z sekcji 8 idą po kolei. Postęp odznacza się checkboxami w sekcji 8.
+Stan: **w budowie**. Fazy 0–3 gotowe. Decyzje z sekcji 2 przyjęte według rekomendacji. Wymóg autora: **Fuji ma robić wrażenie i być pełna detali** (sekcja 4.1). Fazy z sekcji 8 idą po kolei. Postęp odznacza się checkboxami w sekcji 8.
 
 ## 1. W skrócie
 
@@ -171,9 +171,11 @@ Wymaga: faza 1. Plik: `tools/art/kawaguchiko/fujiyoshida.mjs`.
 
 ### Faza 3: brzeg i jezioro (u 1300–3900)
 Wymaga: faza 1. Pliki: `tools/art/kawaguchiko/shore.mjs`, `tools/art/kawaguchiko/lake.mjs`.
-- [ ] Dworzec, ryokany, park Ōishi z lawendą i kochią, promenada, kolejka linowa, most
-- [ ] Jezioro: przystań, pomosty, wyspa Unoshima z kapliczką, arena minibossa
-- [ ] Animacje: gondole w górę i w dół, łódki wędkarzy, rowerki-łabędzie, statek z kilwaterem, falująca lawenda
+- [x] Stacja Kawaguchiko (drewniany budynek z lukarnami, peron końcowy z wiatą, kozioł oporowy), plac z autobusami na piątą stację; ryokany ze skrzydłami wokół ogrodu ze stawem i sosną, łaźnie pod gołym niebem z parą, hotel tarasami, sklepy z pamiątkami i wypożyczalnia rowerów z chorągwiami, parkingi, domy, słupy przy drodze nad wodą
+- [x] Góra Tenjō: gęsty las, przecinka pod liną, słup w połowie, stacje dolna i górna, kapliczka zająca z dwoma białymi zającami i torii, taras z dzwonem i ludźmi
+- [x] Park Ōishi: rzędy lawendy z rabatami innych kwiatów wzdłuż rzędów, okrągłe krzewy kochii z cieniami, pawilon z lodami lawendowymi i parasolami, ławki, drzewa nad brzegiem półwyspu
+- [x] Jezioro: most Ōhashi z dźwigarem, filarami i cieniem na wodzie, przystań z wypożyczalnią, kołami ratunkowymi i rowerkami-łabędziami i łódkami przy pomostach, przystań statku wycieczkowego, wyspa Unoshima z drzewami, kamieniami i torii w płyciźnie, trzciny przy brzegach, boje kąpieliska, plaża z łódkami, kajakami, parasolami i ludźmi; arena minibossa to samo jezioro (bez pierścienia)
+- [x] Animacje: gondole mijające się na linie, łódki wędkarzy, łabędzie i łódki wiosłowe, dwie motorówki i statek wycieczkowy wokół wyspy z kilwaterem, perkozy, krążące kanie, kręgi po rybach, ruch na moście, falująca lawenda
 
 ### Faza 4: las na lawie, droga Subaru, piąta stacja (u 3900–5600)
 Wymaga: faza 1. Plik: `tools/art/kawaguchiko/slopes.mjs`.
@@ -250,6 +252,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-17 | Claude | 3 | Brzeg i jezioro (`shore.mjs`, `lake.mjs`), łodzie w `boats.mjs`, wspólne części (dach, torii, latarnia, słupy, chorągwie, rowery) w `parts.mjs`; z Tokio wzięte też fale za łodziami i boje (`tools/art/tokyo/umi.mjs`). `DRAWN_TO` = 3900, arena jeziora bez pierścienia (`ARENA_DRAWN`). | Jezioro na statycznym obrazie to woda: żyje ruchomymi częściami, a odbicie Fuji dojdzie w fazie 6. Następna: faza 4, zaczyna się od trzech zbliżeń Fuji do akceptacji. |
 | 2026-11-17 | Claude | 2 | Fujiyoshida (`tools/art/kawaguchiko/fujiyoshida.mjs`) rysowana tokijskim zestawem (`tools/art/tokyo/kit.mjs`, `blocks.mjs`), który `mid.mjs` podpina tak jak w Tokio (kwartały, działki, ruchome części, światła). Działki odcinków już narysowanych nie są kreskowane (`DRAWN_TO` w `mid.mjs`). | Następne: faza 3 (brzeg i jezioro). Po każdej fazie przesunąć `DRAWN_TO`. |
 | 2026-11-17 | Claude | 1 | Trasa jako dane w `tools/art/kawaguchiko/route.mjs` (odcinki, areny, krater, pora dnia, woda, grunty, drogi, tory, 64 działki), szkielet malowany z danych w `mid.mjs` (geometria wspólna z Tokio: `tools/art/tokyo/geom.mjs`), test topologii, arkusz podglądu, nazwy miejsc. Miniboss przesunięty na 105,5 s, żeby stanął nad środkiem areny. | Następne: fazy 2–5 (odcinki tła) w dowolnej kolejności, ale faza 4 zaczyna się od trzech zbliżeń Fuji do akceptacji. Uwaga na fazę 6: daleka warstwa jest jedna na etap, a pod jeziorem ma być woda z odbiciem, pod szczytem morze chmur; trzeba będzie przełączać ją według odcinka, nie według ciemności. |
 | 2026-11-17 | Claude | 0 | Etap 10 w budowie: `stage10.json` (flaga `wip`, fale zastępcze, miniboss z `"hold"` w 104 s, boss w 220 s), makieta tła 8 kafli z jeziorem i stożkiem Fuji (`tools/art/kawaguchiko/route.mjs`, `mid.mjs`, `far.mjs`), skórka `kawaguchiko` z przeciwnikami Kioto na zastępstwo, nazwy odcinków w `landmarks.js`, napisy PL/EN. Podpis menu liczy miasta słownie; testy biorą miasta z listy plików (`tools/tests/cities.mjs`). | Następna: faza 1 (szkielet trasy). Las na lawie podpisany jako FUNATSU, nigdy własną nazwą. Muzyka na razie z Kioto. |

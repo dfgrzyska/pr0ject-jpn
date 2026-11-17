@@ -11,12 +11,15 @@ import { HiCanvas, hashPx } from '../hires.mjs';
 import { todGrade, tintTable, PropKit } from '../props.mjs';
 import { makeKit } from '../tokyo/kit.mjs';
 import { fujiyoshida } from './fujiyoshida.mjs';
+import { shore } from './shore.mjs';
+import { lake } from './lake.mjs';
 import { W, S, L, SECTIONS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, PLOTS } from './route.mjs';
 import { near, inShape, bbox, railHalf } from '../tokyo/geom.mjs';
 
 // the stretches' painters, in the order they are called: (ctx) => void. (Phases 2-5 add theirs here.)
-const PAINTERS = [fujiyoshida];
-const DRAWN_TO = 1300; // (the stretches drawn so far reach this far up the strip: their plots are not hatched, the painter lays them out)
+const PAINTERS = [fujiyoshida, shore, lake];
+const DRAWN_TO = 3900;
+const ARENA_DRAWN = new Set(['KACHI-KACHI USAGI']); // (arenas whose own ground is drawn: no ring; the lake is the miniboss's) // (the stretches drawn so far reach this far up the strip: their plots are not hatched, the painter lays them out)
 
 const smooth = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -196,8 +199,8 @@ export function buildMid() {
     });
 
   // ---- the arenas: a dashed ring until their own ground is drawn
-  for (const [ax, au, , r] of ARENAS)
-    paint(ax - r - 1, au - r - 1, ax + r + 1, au + r + 1, (x, u) => {
+  for (const [ax, au, name, r] of ARENAS)
+    if (!ARENA_DRAWN.has(name)) paint(ax - r - 1, au - r - 1, ax + r + 1, au + r + 1, (x, u) => {
       const d = Math.hypot(x - ax, u - au);
       return Math.abs(d - r) < 0.5 && Math.floor(((Math.atan2(u - au, x - ax) + Math.PI) / (Math.PI * 2)) * 72) % 2 === 0 ? 0xffd040 : null;
     });
