@@ -695,7 +695,9 @@ export class Stage extends Phaser.Scene {
       }
       return;
     }
-    if (this.hud.hitSound(p)) {
+    // (the sound button is under the full-screen pages: there its spot belongs to them, e.g. the hangar's pilot card)
+    const covered = ['book', 'gacha', 'hangar', 'dev'].includes(this.state);
+    if (!covered && this.hud.hitSound(p)) {
       this.music.unlock();
       this.music.toggle();
       return;
