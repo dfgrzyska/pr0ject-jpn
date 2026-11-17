@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **plan przyjęty**, nic jeszcze nie zbudowane. Decyzje z sekcji 2 przyjęte według rekomendacji. Wymóg autora: **Fuji ma robić wrażenie i być pełna detali** (sekcja 4.1). Fazy z sekcji 8 idą po kolei. Postęp odznacza się checkboxami w sekcji 8.
+Stan: **w budowie**. Faza 0 gotowa. Decyzje z sekcji 2 przyjęte według rekomendacji. Wymóg autora: **Fuji ma robić wrażenie i być pełna detali** (sekcja 4.1). Fazy z sekcji 8 idą po kolei. Postęp odznacza się checkboxami w sekcji 8.
 
 ## 1. W skrócie
 
@@ -144,11 +144,11 @@ Każda faza ma: zakres, pliki, które wolno ruszać, warunek ukończenia. „Wym
 
 ### Faza 0: dziesiąte miasto i szkielet etapu
 Wymaga: decyzje D1–D6. Pliki: `src/data/stage10.json`, `src/data/stages.js`, `src/data/journeyOrder.js`, `src/game/skins.js`, `src/game/Stamps.js`, `src/game/Ending.js`, `tools/gen-art.mjs`, `tools/art/kawaguchiko/index.mjs`, testy z wpisaną liczbą miast.
-- [ ] `stage10.json` w `stages.js` z flagą `"wip": true` (uruchamia się przez `?stage=10`), fale zastępcze
-- [ ] Makieta tła 8 kafli ładuje się i przewija
-- [ ] Gra gotowa na dziesięć miast: losowa kolejność z Tokio na końcu, druga strona książeczki pieczątek, dziesięć pieczęci w zakończeniu, napisy „dziesięć miast”; testy, które dziś zakładają dziewięć etapów (`traps`, `ambush`, `discoveries`, `tokyoJourney`, przejście renderingu), liczą je z listy
-- [ ] Pora dnia, która przy końcu etapu jaśnieje (świt): światła gasną z powrotem
-- [ ] `npm test` i `npx vite build` przechodzą
+- [x] `stage10.json` w `stages.js` z flagą `"wip": true` (uruchamia się przez `?stage=10` i z menu bossów), fale zastępcze, przeciwnicy, miniboss (tanuki) i boss (Kyūbi) z Kioto na zastępstwo
+- [x] Makieta tła 8 kafli ładuje się i przewija (`tools/art/kawaguchiko/`: odcinki, jezioro otwarte do dalekiej warstwy z wyspą, ulice Fujiyoshidy, stoki Fuji w strefach wysokości ze żlebami i śniegiem, zakosy szlaku, krater, areny, linijka)
+- [x] Gra gotowa na dziesięć miast: kolejność losowa z Tokio na końcu (sprawdzone na dziesięciu), książeczka pieczątek i pieczęcie zakończenia liczą miasta z listy, podpis w menu liczy je słownie („DZIESIĘĆ MIAST”, EN „TEN CITIES”); testy biorą miasta z listy plików (`tools/tests/cities.mjs`), więc Kawaguchiko wejdzie do nich samo po zdjęciu flagi
+- [x] Pora dnia, która przy końcu etapu jaśnieje (świt): `darkness()` interpoluje w obie strony, a za nią idą cienie, poświaty i bliska warstwa (sprawdzone w grze: 0,81 na szlaku, 0,3 na szczycie). Światła rysowane w samej grafice tła przyjdą w fazach 2–5
+- [x] `npm test` i `npx vite build` przechodzą; w grze: miniboss zatrzymuje przewijanie i zegar na arenie jeziora, boss wchodzi w 220 s nad kraterem
 
 ### Faza 1: szkielet trasy
 Wymaga: faza 0. Pliki: `tools/art/kawaguchiko/route.mjs`, `tools/art/kawaguchiko/mid.mjs`, `tools/art/kawaguchiko/overview.mjs`, `src/data/landmarks.js`, `tools/tests/kawaguchikoRoute.test.mjs`.
@@ -244,5 +244,6 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-17 | Claude | 0 | Etap 10 w budowie: `stage10.json` (flaga `wip`, fale zastępcze, miniboss z `"hold"` w 104 s, boss w 220 s), makieta tła 8 kafli z jeziorem i stożkiem Fuji (`tools/art/kawaguchiko/route.mjs`, `mid.mjs`, `far.mjs`), skórka `kawaguchiko` z przeciwnikami Kioto na zastępstwo, nazwy odcinków w `landmarks.js`, napisy PL/EN. Podpis menu liczy miasta słownie; testy biorą miasta z listy plików (`tools/tests/cities.mjs`). | Następna: faza 1 (szkielet trasy). Las na lawie podpisany jako FUNATSU, nigdy własną nazwą. Muzyka na razie z Kioto. |
 | 2026-11-17 | Claude | plan | Autor przyjął plan i decyzje D1–D6. Dopisana sekcja 4.1: Fuji jako najważniejszy element etapu (strefy wysokości, szlak i ludzie, szczyt, światło, cień Fuji, odbicie) i kontrola jakości z trzema zbliżeniami do akceptacji przed rysowaniem stoków. | Następna: faza 0. |
 | 2026-11-17 | Claude | plan | Plan etapu napisany: trasa, przeciwnicy, dwie walki, fazy. | Czeka na decyzje D1–D6. |

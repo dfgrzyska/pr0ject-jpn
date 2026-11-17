@@ -5,10 +5,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { SKINS } from '../../src/game/skins.js';
+import { cities } from './cities.mjs';
 
 const json = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url)));
 const atlas = json('../../public/assets/sprites540.json').frames;
-const stages = Array.from({ length: 9 }, (_, i) => json(`../../src/data/stage${i + 1}.json`));
+const stages = cities();
 
 test('every city but Beppu has a trap, drawn in four frames', () => {
   for (const st of stages) {

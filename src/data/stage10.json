@@ -1,0 +1,117 @@
+{
+  "id": "stage10",
+  "wip": true,
+  "name": "KAWAGUCHIKO",
+  "subtitle": "KAWAGUCHIKO - JEZIORO I FUJI",
+  "map": [
+    138.76,
+    35.51,
+    -10,
+    10
+  ],
+  "skin": "kawaguchiko",
+  "near": "none",
+  "dark": [
+    [
+      0,
+      0.0
+    ],
+    [
+      1300,
+      0.05
+    ],
+    [
+      2100,
+      0.12
+    ],
+    [
+      3900,
+      0.3
+    ],
+    [
+      4700,
+      0.6
+    ],
+    [
+      5600,
+      0.9
+    ],
+    [
+      6300,
+      0.85
+    ],
+    [
+      6800,
+      0.45
+    ],
+    [
+      7168,
+      0.15
+    ]
+  ],
+  "scroll": {
+    "far": 12,
+    "mid": 30,
+    "near": 64,
+    "anchor": 420
+  },
+  "boss": true,
+  "end": 232,
+  "music": {
+    "schedule": [
+      [
+        0,
+        "intro"
+      ],
+      [
+        24,
+        "build"
+      ],
+      [
+        47,
+        "full"
+      ],
+      [
+        196,
+        "final"
+      ]
+    ],
+    "heavy": "tanuki",
+    "boss": "boss"
+  },
+  "warnings": {
+    "heavy": "ZAJĄC NA JEZIORZE",
+    "boss": "OLBRZYM WSTAJE Z CHMUR",
+    "bossDown": "DAIDARABOTCHI POKONANY!"
+  },
+  "waves": [
+    {"t":3,"type":"popcorn","x":40,"path":"sine","count":6},
+    {"t":12,"type":"shooter","x":60},
+    {"t":12.6,"type":"shooter","x":120},
+    {"t":21,"type":"turret","x":72},
+    {"t":30,"type":"diver","x":50,"count":3},
+    {"t":39,"type":"carrier","x":90},
+    {"t":48,"type":"popcorn","x":40,"path":"sine","count":6},
+    {"t":57,"type":"shooter","x":60},
+    {"t":57.6,"type":"shooter","x":120},
+    {"t":66,"type":"turret","x":72},
+    {"t":75,"type":"diver","x":50,"count":3},
+    {"t":84,"type":"carrier","x":90},
+    {"t":93,"type":"popcorn","x":40,"path":"sine","count":6},
+    {"t":104,"type":"heavy","look":"heavy","hold":true,"x":90,"card":["KACHI-KACHI USAGI","ZAJĄC Z KRZESIWEM"]},
+    {"t":118,"type":"popcorn","x":40,"path":"sine","count":6},
+    {"t":127,"type":"shooter","x":60},
+    {"t":127.6,"type":"shooter","x":120},
+    {"t":136,"type":"turret","x":72},
+    {"t":145,"type":"diver","x":50,"count":3},
+    {"t":154,"type":"carrier","x":90},
+    {"t":163,"type":"popcorn","x":40,"path":"sine","count":6},
+    {"t":172,"type":"shooter","x":60},
+    {"t":172.6,"type":"shooter","x":120},
+    {"t":181,"type":"turret","x":72},
+    {"t":190,"type":"diver","x":50,"count":3},
+    {"t":199,"type":"carrier","x":90},
+    {"t":208,"type":"popcorn","x":40,"path":"sine","count":6},
+    {"t":220,"type":"boss","x":90,"boss":"kyubi","card":["DAIDARABOTCHI","OLBRZYM, KTÓRY USYPAŁ GÓRĘ"]}
+  ]
+}

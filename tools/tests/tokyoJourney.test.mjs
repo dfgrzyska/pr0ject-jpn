@@ -7,22 +7,23 @@ import { readFileSync } from 'node:fs';
 import { journeyOrder } from '../../src/data/journeyOrder.js';
 import { FOODS, YOKAI } from '../../src/data/discoveries.js';
 import { ITEMS } from '../../src/data/gacha.js';
+import { cities } from './cities.mjs';
 
 const json = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url)));
 const src = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 // (stages.js and i18n.js need the browser: their files are read here)
-const STAGES = Array.from({ length: 9 }, (_, i) => json(`../../src/data/stage${i + 1}.json`));
-const tokyo = STAGES[8];
+const STAGES = cities();
+const tokyo = STAGES.find((s) => s.id === 'stage9');
 const i18n = src('../../src/i18n.js');
 const english = (s) => i18n.includes(`  '${s}': '`) || i18n.includes(`\n  ${s}: '`); // (a phrase in the phrasebook)
 
 test('Tokyo is the ninth city of the journey and always its last', () => {
   assert.match(src('../../src/data/stages.js'), /export const STAGES = \[stage1, stage2, stage3, stage4, stage5, stage6, stage7, stage8, stage9\];/);
-  assert.ok(tokyo.last && !STAGES.some((s) => s.wip), 'Tokyo marked last, no city left in the works');
+  assert.ok(tokyo.last && !tokyo.wip, 'Tokyo marked last, out of the works');
   for (let k = 0; k < 20; k++) {
     const order = journeyOrder(STAGES, null, (list) => [...list].sort(() => Math.random() - 0.5));
-    assert.equal(order.length, 9);
-    assert.equal(order.at(-1), 8);
+    assert.equal(order.length, STAGES.length);
+    assert.equal(order.at(-1), STAGES.indexOf(tokyo));
   }
 });
 

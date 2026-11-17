@@ -15,6 +15,8 @@ import { fxTint } from './premiumFx.js';
 
 const FINE = 1 / RENDER_SCALE; // the menu's art and the map are drawn at 540 px
 const CITY_KEY = 'shmupjp.startCity';
+// the caption counts the journey's cities (in words: each has its English in the phrasebook)
+const CITIES = { 9: 'DZIEWIĘĆ', 10: 'DZIESIĘĆ' };
 const NORTH_TO_SOUTH = STAGES.map((_, i) => i).sort((a, b) => STAGES[b].map[1] - STAGES[a].map[1]);
 export function lastCity() {
   try {
@@ -50,7 +52,7 @@ export class JourneyMenu {
     this.segs = Array.from({ length: body?.n ?? 0 }, (_, i) => add(sharedArt(scene.add.image(0, 0, 'sprites', scene.ship.frame)).setFrame(`${scene.ship.frame}_${i === body.n - 1 ? 'tail' : 'seg'}`).setScale(1 - i * 0.045), DEPTH.overlay + 0.48 - i * 0.001));
     this.logo = add(scene.add.image(90, 0, 'menu', 'logo').setScale(FINE));
     this.tagline = add(pixelText(scene, 90, 0, 'LEĆ PRZEZ JAPONIĘ').setTint(0xffdba8));
-    this.caption = add(pixelText(scene, 90, 0, 'DZIEWIĘĆ MIAST. JEDNA PODRÓŻ.').setTint(0xc8ac85));
+    this.caption = add(pixelText(scene, 90, 0, `${CITIES[STAGES.length] ?? STAGES.length} MIAST. JEDNA PODRÓŻ.`).setTint(0xc8ac85));
     this.heading = add(pixelText(scene, 90, 50, 'WYBIERZ MIASTO'));
     this.newGame = add(pixelText(scene, 85, 0, 'WYRUSZ W PODRÓŻ'), DEPTH.overlay + 2);
     // the collection: the stamp book, the yōkai album and the food journal, a tab each

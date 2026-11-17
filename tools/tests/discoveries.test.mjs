@@ -10,13 +10,14 @@ import { ITEMS, RARITY } from '../../src/data/gacha.js';
 import { buildSprites } from '../art/sprites.mjs';
 import { buildFont, FONT } from '../art/font.mjs';
 import { Raster, rgb } from '../lib/raster.mjs';
+import { cities } from './cities.mjs';
 
 const art = new Map(buildSprites().map(({ name, raster }) => [name, raster]));
 // (the album shows a city's 540 px portraits where there are any: Tokyo's are only there)
 // (their sizes from the atlas; drawn in the previews as a plain box)
 const portraitSize = Object.fromEntries(Object.entries(JSON.parse(readFileSync(new URL('../../public/assets/portraits.json', import.meta.url))).frames).map(([k, f]) => [k, f.sourceSize]));
 const portraits = new Set(Object.keys(portraitSize));
-const stages = Array.from({ length: 9 }, (_, i) => JSON.parse(readFileSync(new URL(`../../src/data/stage${i + 1}.json`, import.meta.url))));
+const stages = cities();
 let language = 'pl';
 class Item {
   constructor(scene, kind, x = 0, y = 0, frame = '') {
