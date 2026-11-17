@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Faza 0 gotowa. Decyzje z sekcji 2 przyjęte według rekomendacji. Wymóg autora: **Fuji ma robić wrażenie i być pełna detali** (sekcja 4.1). Fazy z sekcji 8 idą po kolei. Postęp odznacza się checkboxami w sekcji 8.
+Stan: **w budowie**. Fazy 0–1 gotowe. Decyzje z sekcji 2 przyjęte według rekomendacji. Wymóg autora: **Fuji ma robić wrażenie i być pełna detali** (sekcja 4.1). Fazy z sekcji 8 idą po kolei. Postęp odznacza się checkboxami w sekcji 8.
 
 ## 1. W skrócie
 
@@ -152,11 +152,13 @@ Wymaga: decyzje D1–D6. Pliki: `src/data/stage10.json`, `src/data/stages.js`, `
 
 ### Faza 1: szkielet trasy
 Wymaga: faza 0. Pliki: `tools/art/kawaguchiko/route.mjs`, `tools/art/kawaguchiko/mid.mjs`, `tools/art/kawaguchiko/overview.mjs`, `src/data/landmarks.js`, `tools/tests/kawaguchikoRoute.test.mjs`.
-- [ ] Linia brzegu jeziora, wyspa, przewężenie z mostem; ulice Fujiyoshidy, tory, droga wzdłuż brzegu; serpentyny drogi Subaru; zakosy szlaku; krawędź krateru
-- [ ] Granice odcinków i nazwy miejsc w `landmarks.js`
-- [ ] Działki pod obiekty z opisami; dwie areny zaznaczone, wolne od wysokich obiektów
-- [ ] Harmonogram pory dnia
-- [ ] Test topologii: drogi, tory i szlak kończą się na krawędzi, na innej drodze, przy działce albo na placu
+- [x] Linia brzegu jeziora z ramieniem i półwyspem Ōishi, wyspa, most Ōhashi nad przewężeniem, pomosty z pontonami; ulice Fujiyoshidy (Honchō-dōri prosto na górę), tor lokalnej kolejki od stacji Fujisan do Kawaguchiko, kolejka linowa na Tenjō, droga wzdłuż brzegu; płatna droga serpentynami do piątej stacji; szlak Yoshida zakosami, osobna droga zejściowa z torem buldożera, ścieżka wokół krateru; po bokach szczytu ziemia opada w morze chmur
+- [x] Granice odcinków i 18 nazw miejsc w `landmarks.js` (las na lawie bez nazwy: FUNATSU)
+- [x] 64 działki pod obiekty z opisami; dwie areny zaznaczone, wolne od wysokich obiektów, arena minibossa cała na otwartej wodzie
+- [x] Strefy wysokości Fuji jako grunty: las na lawie, granica lasu, czarny żwir, czerwony żwir, płaty śniegu, krater
+- [x] Harmonogram pory dnia (`TOD` w `route.mjs`, zgodny z `dark` w `stage10.json`)
+- [x] Test topologii (`kawaguchikoRoute.test.mjs`): drogi, tory i ścieżki kończą się na krawędzi, na innej drodze, przy działce albo na gruncie; działki nie stoją na drogach, torach ani w jeziorze; szlak idzie stale w górę od placu piątej stacji do torii na szczycie
+- [x] Podgląd: `node tools/art/kawaguchiko/overview.mjs` (cała taśma w czterech kolumnach z numerami działek; z `--from= --to=` wybrany odcinek w pełnej rozdzielczości)
 
 ### Faza 2: Fujiyoshida (u 0–1300)
 Wymaga: faza 1. Plik: `tools/art/kawaguchiko/fujiyoshida.mjs`.
@@ -244,6 +246,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-17 | Claude | 1 | Trasa jako dane w `tools/art/kawaguchiko/route.mjs` (odcinki, areny, krater, pora dnia, woda, grunty, drogi, tory, 64 działki), szkielet malowany z danych w `mid.mjs` (geometria wspólna z Tokio: `tools/art/tokyo/geom.mjs`), test topologii, arkusz podglądu, nazwy miejsc. Miniboss przesunięty na 105,5 s, żeby stanął nad środkiem areny. | Następne: fazy 2–5 (odcinki tła) w dowolnej kolejności, ale faza 4 zaczyna się od trzech zbliżeń Fuji do akceptacji. Uwaga na fazę 6: daleka warstwa jest jedna na etap, a pod jeziorem ma być woda z odbiciem, pod szczytem morze chmur; trzeba będzie przełączać ją według odcinka, nie według ciemności. |
 | 2026-11-17 | Claude | 0 | Etap 10 w budowie: `stage10.json` (flaga `wip`, fale zastępcze, miniboss z `"hold"` w 104 s, boss w 220 s), makieta tła 8 kafli z jeziorem i stożkiem Fuji (`tools/art/kawaguchiko/route.mjs`, `mid.mjs`, `far.mjs`), skórka `kawaguchiko` z przeciwnikami Kioto na zastępstwo, nazwy odcinków w `landmarks.js`, napisy PL/EN. Podpis menu liczy miasta słownie; testy biorą miasta z listy plików (`tools/tests/cities.mjs`). | Następna: faza 1 (szkielet trasy). Las na lawie podpisany jako FUNATSU, nigdy własną nazwą. Muzyka na razie z Kioto. |
 | 2026-11-17 | Claude | plan | Autor przyjął plan i decyzje D1–D6. Dopisana sekcja 4.1: Fuji jako najważniejszy element etapu (strefy wysokości, szlak i ludzie, szczyt, światło, cień Fuji, odbicie) i kontrola jakości z trzema zbliżeniami do akceptacji przed rysowaniem stoków. | Następna: faza 0. |
 | 2026-11-17 | Claude | plan | Plan etapu napisany: trasa, przeciwnicy, dwie walki, fazy. | Czeka na decyzje D1–D6. |

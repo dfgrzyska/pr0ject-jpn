@@ -98,7 +98,7 @@
     {"t":75,"type":"diver","x":50,"count":3},
     {"t":84,"type":"carrier","x":90},
     {"t":93,"type":"popcorn","x":40,"path":"sine","count":6},
-    {"t":104,"type":"heavy","look":"heavy","hold":true,"x":90,"card":["KACHI-KACHI USAGI","ZAJĄC Z KRZESIWEM"]},
+    {"t":105.5,"type":"heavy","look":"heavy","hold":true,"x":90,"card":["KACHI-KACHI USAGI","ZAJĄC Z KRZESIWEM"]},
     {"t":118,"type":"popcorn","x":40,"path":"sine","count":6},
     {"t":127,"type":"shooter","x":60},
     {"t":127.6,"type":"shooter","x":120},

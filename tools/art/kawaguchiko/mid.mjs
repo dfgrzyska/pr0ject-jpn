@@ -1,84 +1,204 @@
-// Kawaguchiko's middle layer. For now a block-out only (phase 0 of docs/plan-kawaguchiko.md): the stretches as plain
-// ground, the lake left open to the far layer with Unoshima in it, the town's streets, Fuji's slopes in its zones of
-// height (forest, scoria black then red, snow in the gullies) running up to the crater, the two arenas ringed, a
-// ruler up the left edge (a tick every 100 u, a long one every 500). The route proper comes in phase 1.
-import { Raster, mix, scaleColor } from '../../lib/raster.mjs';
-import { W, S, L, SECTIONS, LAKE, ISLAND, ARENAS, CRATER } from './route.mjs';
+// Kawaguchiko's middle layer. Phase 1 of docs/plan-kawaguchiko.md: the skeleton of the whole route, painted from
+// route.mjs - the ground of each stretch and its own grounds (the shrine's gravel, Oishi's lavender, the lava, Fuji's
+// zones of height up to the crater), the lake cut out to the far layer with a pebbly shore, the sea of clouds at the
+// summit's sides, the roads, the paths, the trail and the descent, the railway and the ropeway, and the plots the
+// landmarks will stand on (hatched until their stretch is drawn). Then the strip is graded for the time of day. The
+// stretches' own files (phases 2-5) come in through PAINTERS, each given the context this file builds.
+//
+// Coordinates: x across, u up from the strip's bottom; a fine pixel is a third of a logical one.
+import { fbm } from '../../lib/raster.mjs';
+import { HiCanvas, hashPx } from '../hires.mjs';
+import { todGrade, tintTable } from '../props.mjs';
+import { W, S, L, SECTIONS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, PLOTS } from './route.mjs';
+import { near, inShape, bbox, railHalf } from '../tokyo/geom.mjs';
 
-const hash = (a, b) => {
-  let h = (a * 374761393 + b * 668265263) | 0;
-  h = (h ^ (h >>> 13)) * 1274126177;
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+// the stretches' painters, in the order they are called: (ctx) => void. (Phases 2-5 add theirs here.)
+const PAINTERS = [];
+
+const smooth = (a, b, x) => {
+  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+const shade = (c, f) => {
+  const k = (v) => Math.max(0, Math.min(255, Math.round(v * f)));
+  return (k((c >> 16) & 255) << 16) | (k((c >> 8) & 255) << 8) | k(c & 255);
 };
 
-// Fuji's ground by height (u): forest, the tree line, black scoria, red scoria, the summit's rim
-const ZONES = [[3900, 0x3c5a34], [4900, 0x4a5a3c], [5500, 0x5a5a46], [5800, 0x2e2a2c], [6300, 0x5a3426], [6800, 0x6a3c2c]];
-const zone = (u) => {
-  let c = ZONES[0][1];
-  for (const [from, col] of ZONES) if (u >= from) c = col;
-  return c;
+const GROUND = {
+  park: [0x4f7c40, 0x5a8a48, 0x66964e],
+  forest: [0x24462a, 0x2e5432, 0x3a643a],
+  gravel: [0xb0a690, 0xbcb29c, 0xc6bca6],
+  plaza: [0x9c988f, 0xa8a49a, 0xb2aea4],
+  sand: [0xcdbb8c, 0xd8c89a, 0xe2d4a8],
+  flowers: [0x6a5a9a, 0x7a68b0, 0x8c7cc4, 0x5a7a44], // lavender in rows, the green between
+  kochia: [0x5a8a3c, 0x6a9c44, 0x7aac4c],
+  lava: [0x2a2622, 0x34302a, 0x3e3a30, 0x4a5a34], // old flows, moss on them
+  treeline: [0x4a5a3c, 0x56664a, 0x6a6a52, 0x7a7058], // sparse larch, bare ground between
+  scoria: [0x26222a, 0x2e2a30, 0x383238],
+  scoria_red: [0x5a3024, 0x6a3a2a, 0x7a4632],
+  snow: [0xd8e0ea, 0xe6ecf4, 0xf4f8fc],
+  crater: [0x3a2420, 0x4a2c24, 0x5a362a],
 };
+const PAINTED = [0x24505c, 0x2c5c68, 0x366a74, 0x447a82];
+const PEBBLES = [0x9a9282, 0xa8a090, 0xb6ae9c];
+const SIDEWALK = 0xa9a59c;
+const KERB = 0x7e7a72;
+const SURFACE = { avenue: 0x45474f, street: 0x4a4c54, lane: 0x5c5c62, road: 0x4c4e54, bridge: 0x56585e };
 
 export function buildMid() {
-  const img = new Raster(W * S, L * S);
-  const Y = (u) => (L - u) * S; // strip row of a height u
-  const rect = (x, u0, w, h, c) => img.rect(x * S, Y(u0 + h), w * S, h * S, c);
-  for (const [from, to, id, , ground] of SECTIONS) {
-    if (id === 'lake') continue;
-    for (let u = from; u < to; u += 16)
-      for (let x = 0; x < W; x += 20) {
-        const k = hash(Math.floor(x / 20), Math.floor(u / 16) + 11);
-        const base = from >= 3900 ? zone(u) : ground;
-        rect(x, u, 20, Math.min(16, to - u), scaleColor(mix(base, 0x202028, k * 0.18), 0.92 + k * 0.16));
+  const img = new HiCanvas(W, L, S);
+  const FW = W * S;
+  const FH = L * S;
+  const wet = new Uint8Array(FW * FH); // 1: the lake (cut out), 2: painted water, 3: the sea of clouds (cut out)
+  /** Paint the box (x0, u0)-(x1, u1) a fine pixel at a time: fn(x, u, X, Y) -> a colour, or null to leave it. */
+  const paint = (x0, u0, x1, u1, fn) => {
+    const XA = Math.max(0, Math.floor(x0 * S));
+    const XB = Math.min(FW, Math.ceil(x1 * S));
+    const YA = Math.max(0, Math.floor((L - u1) * S));
+    const YB = Math.min(FH, Math.ceil((L - u0) * S));
+    for (let Yy = YA; Yy < YB; Yy++)
+      for (let X = XA; X < XB; X++) {
+        const c = fn((X + 0.5) / S, L - (Yy + 0.5) / S, X, Yy);
+        if (c !== null && c !== undefined) img.hi.set(X, Yy, c);
       }
-    if (id === 'fujiyoshida') {
-      rect(84, from, 12, to - from, 0x3a3c44); // Honcho-dori, aimed at the mountain
-      for (let u = from + 80; u < to; u += 160) rect(0, u, W, 6, 0x3a3c44);
-      rect(20, 900, 30, 40, 0x8a2a20); // the pagoda's hill
+  };
+  const fill = (shape, fn) => paint(...bbox(shape), (x, u, X, Yy) => (inShape(shape, x, u) ? fn(x, u, X, Yy) : null));
+  const ramp = (cols, x, u, seed, scale = 9) => cols[Math.min(cols.length - 1, Math.floor(fbm(x, u, { seed, scale, octaves: 2 }) * cols.length + (hashPx(x * S, u * S, seed) - 0.5) * 0.9))] ?? cols[0];
+
+  // ---- the ground of each stretch: what is left between everything else
+  for (const [from, to, , , ground] of SECTIONS) paint(0, from, W, to, (x, u, X, Yy) => shade(ground, 0.95 + fbm(x, u, { seed: 31, scale: 22, octaves: 2 }) * 0.1 + (hashPx(X, Yy, 3) - 0.5) * 0.03));
+
+  const ground = (g) => fill(g, (x, u, X, Yy) => {
+    wet[Yy * FW + X] = 0;
+    if (g.kind === 'flowers') return Math.floor(x * 0.75 + u * 0.12) % 3 === 0 ? GROUND.flowers[3] : ramp(GROUND.flowers.slice(0, 3), x, u, 43, 4); // lavender rows
+    if (g.kind === 'kochia') return (Math.floor(x / 4) + Math.floor(u / 4)) % 2 ? ramp(GROUND.kochia, x, u, 45, 3) : 0x8a7a5a; // round shrubs in a grid
+    return ramp(GROUND[g.kind], x, u, 41);
+  });
+  for (const g of GROUNDS) if (!g.over) ground(g);
+
+  // ---- the water: the lake and the sea of clouds open to the far layer; ponds painted
+  const water = (w) => fill(w, (x, u, X, Yy) => {
+    if (w.open) {
+      wet[Yy * FW + X] = w.clouds ? 3 : 1;
+      img.hi.clear(X, Yy);
+      return null;
     }
-    rect(0, from, W, 2, 0xf0e8d0); // the stretch's edge
+    wet[Yy * FW + X] = 2;
+    return ramp(PAINTED, x * 0.6, u, 57, 7);
+  });
+  for (const w of WATER) water(w);
+  for (const g of GROUNDS) if (g.over) ground(g);
+  // the edges: pebbles along the lake and the ponds, a dark drop where the ground falls away into the clouds
+  {
+    const edge = [];
+    for (let Yy = 0; Yy < FH; Yy++)
+      for (let X = 0; X < FW; X++) {
+        if (wet[Yy * FW + X]) continue;
+        let by = 0;
+        for (let k = 1; k <= 3 && !by; k++) by = (X >= k && wet[Yy * FW + X - k]) || (X + k < FW && wet[Yy * FW + X + k]) || (Yy >= k && wet[(Yy - k) * FW + X]) || (Yy + k < FH && wet[(Yy + k) * FW + X]);
+        if (by) edge.push([Yy * FW + X, by]);
+      }
+    for (const [i, kind] of edge) {
+      const X = i % FW;
+      const Yy = Math.floor(i / FW);
+      img.hi.set(X, Yy, kind === 3 ? shade(0x2a1a16, 0.9 + hashPx(X, Yy, 9) * 0.2) : PEBBLES[Math.floor(hashPx(X, Yy, 9) * 3)]);
+    }
   }
-  // the lake: open between its shores, a beach along them, the island
-  for (let x = 0; x < W; x++) {
-    const n = Math.round(LAKE.north(x));
-    const s = Math.round(LAKE.south(x));
-    for (let u = 2060; u < 3940; u++) {
-      if (u >= n && u < s) {
-        for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) img.clear(x * S + i, Y(u + 1) + j);
-      } else if (u >= n - 4 && u < s + 4) img.rect(x * S, Y(u + 1), S, S, 0xc8b890);
-      else if (u < 2100 || u >= 3900) continue;
-      else img.rect(x * S, Y(u + 1), S, S, 0x6c7c58);
+
+  /** Paint along a line: fn(n, x, u, X, Y) gets the nearest point of the line (geom.mjs: near) within `reach`. */
+  const along = (pts, reach, fn) => {
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const [a, b] = [pts[i], pts[i + 1]];
+      paint(Math.min(a[0], b[0]) - reach, Math.min(a[1], b[1]) - reach, Math.max(a[0], b[0]) + reach, Math.max(a[1], b[1]) + reach, (x, u, X, Yy) => {
+        const n = near(pts, x, u);
+        return n.d <= reach ? fn(n, x, u, X, Yy) : null;
+      });
     }
+  };
+
+  // ---- the roads and paths: every edge first, then every surface, then the lines, so that crossings join cleanly
+  const edgeOf = (r) => {
+    const walk = r.cls === 'avenue' ? 2 : r.cls === 'street' ? 1.34 : 0;
+    if (walk) along(r.pts, r.w / 2 + walk, (n, x, u, X, Yy) => (n.d > r.w / 2 + walk - 0.34 ? KERB : shade(SIDEWALK, 0.96 + hashPx(X, Yy, 5) * 0.08)));
+    if (r.cls === 'trail') along(r.pts, r.w / 2 + 1, (n, x, u, X, Yy) => (n.d > r.w / 2 ? shade(0x5a524c, 0.85 + hashPx(X, Yy, 21) * 0.3) : null)); // its stone walls
+  };
+  const surface = (r) => {
+    const half = r.w / 2;
+    if (r.cls === 'walk')
+      along(r.pts, half, (n, x, u, X, Yy) => shade(0xb9b1a0, (Math.floor(n.along * S) % 6 === 0 ? 0.86 : 0.97) + hashPx(X, Yy, 7) * 0.06));
+    else if (r.cls === 'deck')
+      along(r.pts, half, (n, x, u, X, Yy) => shade(0x9a7a52, (Math.floor(n.along * S) % 3 === 0 ? 0.84 : 1) + hashPx(X, Yy, 13) * 0.06));
+    else if (r.cls === 'trail')
+      along(r.pts, half, (n, x, u, X, Yy) => shade(0x8a7464, 0.9 + hashPx(X, Yy, 23) * 0.16)); // packed scoria
+    else if (r.cls === 'descent')
+      along(r.pts, half, (n, x, u, X, Yy) => {
+        if (Math.abs(Math.abs(n.side) - half * 0.5) < 0.5 && Math.floor(n.along * S) % 2 === 0) return 0x4a3a32; // the bulldozer's tracks
+        return shade(0x7a5a48, 0.88 + hashPx(X, Yy, 25) * 0.2); // loose scoria
+      });
+    else
+      along(r.pts, half, (n, x, u, X, Yy) => {
+        if (r.cls === 'bridge' && n.d > half - 0.67) return 0xd0ccc4; // its parapets
+        return shade(SURFACE[r.cls], 0.96 + hashPx(X, Yy, 15) * 0.08);
+      });
+  };
+  const lines = (r) => {
+    if (r.cls === 'road') return along(r.pts, r.w / 2 - 0.5, (n) => (Math.abs(n.d - (r.w / 2 - 0.67)) < 0.17 ? 0xdedad0 : Math.abs(n.side) < 0.17 && Math.floor(n.along * S) % 18 < 10 ? 0xe0c466 : null));
+    if (r.cls !== 'avenue' && r.cls !== 'street' && r.cls !== 'bridge') return;
+    along(r.pts, r.w / 2 - 1, (n) => {
+      const dash = Math.floor(n.along * S) % 18 < 10;
+      if (Math.abs(n.side) < 0.17) return r.cls === 'street' ? (dash ? 0xd8d4c4 : null) : 0xe0c466; // the centre line
+      return null;
+    });
+  };
+  for (const r of ROADS) edgeOf(r);
+  for (const r of ROADS) surface(r);
+  for (const r of ROADS) lines(r);
+
+  // ---- the railway (ballast, sleepers, rails) and the ropeway (its two cables, a shadow under them)
+  for (const r of RAILS) {
+    if (r.style === 'rope') {
+      along(r.pts.map(([x, u]) => [x + 3, u - 3]), 1.2, (n, x, u, X, Yy) => {
+        if (img.hi.alpha(X, Yy) && Math.abs(Math.abs(n.side) - 0.9) < 0.2) img.hi.tint(X, Yy, 0.8);
+        return null;
+      });
+      along(r.pts, 1.2, (n) => (Math.abs(Math.abs(n.side) - 0.9) < 0.2 ? 0x2a2a30 : null));
+      continue;
+    }
+    const half = railHalf(r);
+    along(r.pts, half, (n, x, u, X, Yy) => {
+      const s = n.side + (r.tracks - 1) * 2.5;
+      const t = Math.abs(s - Math.round(s / 5) * 5);
+      if (Math.round(t * S) === 3) return 0xd0d4d8; // a rail
+      if (t <= 1.7 && Math.floor(n.along * S) % 4 === 0) return 0x4c4238; // a sleeper
+      return [0x7a7068, 0x6c645c, 0x857b72][Math.floor(hashPx(X, Yy, 19) * 3)]; // ballast
+    });
   }
-  const [ix, iu, ir] = ISLAND;
-  for (let u = iu - ir; u <= iu + ir; u++)
-    for (let x = ix - ir; x <= ix + ir; x++) if ((x - ix) ** 2 + (u - iu) ** 2 <= ir * ir) rect(x, u, 1, 1, (x - ix) ** 2 + (u - iu) ** 2 > (ir - 2) ** 2 ? 0xc8b890 : 0x3c5a34);
-  // Fuji: ridges and gullies running out from the crater, snow lying in the gullies near the top
-  const [cx, cu, cr] = CRATER;
-  for (let u = 5600; u < L; u += 1)
-    for (let x = 0; x < W; x += 1) {
-      const a = Math.atan2(u - cu, x - cx);
-      const d = Math.hypot(x - cx, u - cu);
-      const ridge = Math.sin(a * 22 + Math.sin(d / 40) * 0.6);
-      if (ridge > 0.82) rect(x, u, 1, 1, scaleColor(zone(u), 1.25));
-      else if (ridge < -0.85) rect(x, u, 1, 1, d < 700 && u > 6200 ? 0xe8eef4 : scaleColor(zone(u), 0.7));
-    }
-  for (let u = cu - cr - 6; u <= cu + cr + 6; u++)
-    for (let x = 0; x < W; x++) {
-      const d = Math.hypot(x - cx, u - cu);
-      if (d < cr) rect(x, u, 1, 1, d < cr * 0.35 ? 0xe8eef4 : scaleColor(0x5a3426, 0.55 + (d / cr) * 0.4)); // the crater's floor and walls
-      else if (d < cr + 6) rect(x, u, 1, 1, 0x8a5a44); // its rim
-    }
-  // the trail's zigzags up from the fifth station
-  for (let k = 0, u = 5650; u < 6880; k++, u += 60) {
-    const [x0, x1] = k % 2 ? [70, 120] : [120, 70];
-    for (let i = 0; i <= 60; i++) rect(Math.round(x0 + ((x1 - x0) * i) / 60), u + i, 2, 1, 0xb0a090);
+
+  // ---- the plots the landmarks will stand on: hatched, edged (a low one paler)
+  for (const [, x, u, w, h, , low] of PLOTS)
+    paint(x, u, x + w, u + h, (px, pu, X, Yy) => {
+      const rim = px - x < 0.67 || x + w - px < 0.67 || pu - u < 0.67 || u + h - pu < 0.67;
+      if (rim) return 0x34303a;
+      return (X + Yy) % 9 < 2 ? (low ? 0xa49e92 : 0x9a9488) : low ? 0xd2ccc0 : 0xc2bcb0;
+    });
+
+  // ---- the arenas: a dashed ring until their own ground is drawn
+  for (const [ax, au, , r] of ARENAS)
+    paint(ax - r - 1, au - r - 1, ax + r + 1, au + r + 1, (x, u) => {
+      const d = Math.hypot(x - ax, u - au);
+      return Math.abs(d - r) < 0.5 && Math.floor(((Math.atan2(u - au, x - ax) + Math.PI) / (Math.PI * 2)) * 72) % 2 === 0 ? 0xffd040 : null;
+    });
+
+  const ctx = { img, wet, paint, fill, along, ramp, shade, W, S, L };
+  for (const p of PAINTERS) p(ctx);
+
+  // ---- the time of day, a band of the strip at a time
+  const tod = todGrade(TOD, smooth);
+  const BAND = 16 * S;
+  for (let Y0 = 0; Y0 < FH; Y0 += BAND) {
+    const band = img.hi.crop(0, Y0, FW, Math.min(BAND, FH - Y0));
+    tod.frame(band, L - (Y0 + BAND / 2) / S);
+    img.hi.data.set(band.data, Y0 * FW * 4);
   }
-  for (const [u] of ARENAS)
-    for (let a = 0; a < 720; a++) {
-      const t = (a / 720) * Math.PI * 2;
-      img.rect(Math.round((90 + Math.cos(t) * 62) * S), Math.round(Y(u) + Math.sin(t) * 62 * S), 2, 2, 0xffd040);
-    }
-  for (let u = 0; u < L; u += 100) rect(0, u, u % 500 ? 4 : 10, 1, 0xffffff);
-  return { strip: img, meta: { width: W, artScale: S, length: L } };
+  return { strip: img.hi, meta: { width: W, artScale: S, length: L, tint: tintTable(L, tod.white) } };
 }
