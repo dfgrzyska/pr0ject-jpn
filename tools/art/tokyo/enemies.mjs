@@ -15,6 +15,7 @@
 // No marks, no characters of anyone's: the writing on signs and fans is strokes, the sprite is our own.
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
 import { kasaEnemies } from './kasa.mjs';
+import { taiyakiEnemies } from './taiyaki.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -802,5 +803,6 @@ export function tokyoEnemies(add) {
     for (let i = 0; i < 16; i++) add(`t_${name}_${i}`, head(i));
   }
   kasaEnemies(add); // the first miniboss (kasa.mjs)
+  taiyakiEnemies(add); // the second (taiyaki.mjs)
 }
 export const TOKYO_PORTRAITS = ['t_komainu_0', 't_karasu_0'];

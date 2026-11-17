@@ -72,7 +72,6 @@ export const SKINS = {
   },
   // Tokyo (docs/plan-tokyo.md): the longest city, its enemies in five sets, one per stretch of the flight (the
   // stage file's "sets"), drawn at 540 px (tools/art/tokyo/enemies.mjs). bits: what each set breaks into.
-  // The second miniboss's place is a stand-in until phase 12 draws it.
   tokyo: {
     popcorn: { frame: 't_karasu_0', anim: 't_karasu', flock: true },
     shooter: { frame: 't_kanban_0', anim: 't_kanban' },
@@ -80,7 +79,7 @@ export const SKINS = {
     carrier: { frame: 't_truck_{c}_0', anim: 't_truck_{c}' },
     heavy: { frame: 'manta_0', anim: 'manta' },
     kasa: { frame: 'ko_open_0', kind: 'kasa' }, // the first miniboss: KASA-OBAKE (tokyo-kasa.js)
-    taiyaki: { frame: 'manta_0', anim: 'manta' }, // (the second's: TAIYAKI)
+    taiyaki: { frame: 'ty_kata_shut', kind: 'taiyaki' }, // the second miniboss: TAIYAKI (tokyo-taiyaki.js)
     turret: { base: 't_ac_base', head: 't_ac_', wreck: 't_ac_wreck' },
     bits: { frames: ['t_feather_0', 't_feather_1', 'dot_2'], tints: [0x2a2a34, 0x3a3e4c, 0x5a6070], speed: 60, life: 0.9, drag: 1.9, g: 14 },
     sets: {
