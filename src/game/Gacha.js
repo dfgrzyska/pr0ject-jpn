@@ -17,9 +17,11 @@ const SHOWN = 30; // capsules under the glass at most
 const BALL = (BALL_FRAME * FINE) / 2 - 0.4; // their radius, in game units (they overlap a touch: no gaps between them)
 const RAINBOW = [0xff5a5a, 0xffb040, 0xfff060, 0x6ae486, 0x5cacf2, 0xb070f0];
 const KIND = { hull: 'KADŁUB', engine: 'SILNIK', gun: 'DZIAŁO', bomb: 'BOMBA', core: 'RDZEŃ', omamori: 'OMAMORI', paint: 'MALOWANIE', flame: 'PŁOMIEŃ', dye: 'BARWNIK', wake: 'ŚLAD', shot_basic: 'POCISKI', shot_spread: 'POCISKI', shot_laser: 'POCISKI', shot_homing: 'POCISKI', eb_color: 'WROGIE POCISKI', eb_shape: 'WROGIE POCISKI', marker: 'ZNACZNIK', blast: 'WYBUCHY', bomb_look: 'WYGLĄD BOMBY', title: 'TYTUŁ PILOTA', sound: 'DŹWIĘK', graze: 'ISKRA', hud_color: 'LICZNIK', life_icon: 'IKONA ŻYCIA', companion: 'TOWARZYSZ', shot_turret: 'POCISKI', shield: 'BAŃKA TARCZY', decal: 'NAKLEJKA', card: 'KARTA', paint_fx: 'ANIMACJA', aura: 'AURA', trail: 'SMUGA', entry: 'WEJŚCIE', victory: 'TRIUMF', death: 'UPADEK', seal: 'PIECZĘĆ', shield_shape: 'BAŃKA TARCZY', pod: 'WIEŻYCZKA' };
-// how long each step of a draw takes, s (a draw of ten runs them at half the time)
+// how long each step of a draw takes, s (drawing them all runs them at half the time)
 const TIME = { ticket: 0.55, crank: 1.0, shake: 0.85, open: 0.4 };
 const ease = (k) => k * k * (3 - 2 * k);
+// the two buttons, [centre x, width]: one draw; all of them (wider, for "WSZYSTKIE ×12")
+const BUTTONS = [[41, 62], [125, 90]];
 
 // (the texts here change as the player looks around: each new one goes through the phrasebook too)
 const pixelText = (...args) => {
@@ -39,7 +41,7 @@ export class Gacha {
     this.t = 0;
     this.phase = 'idle';
     this.pt = 0; // s into the phase
-    this.queue = 0; // draws still to come (a draw of ten)
+    this.queue = 0; // draws still to come (drawing them all)
     this.fast = false;
     this.items = [];
     const d = DEPTH.overlay + 1;
@@ -64,7 +66,7 @@ export class Gacha {
     this.count = add(pixelText(scene, 176, 12, '', 1).setOrigin(1, 0.5).setTint(0xffe080), d + 5);
     // the two buttons, what is left in the machine, a hint
     this.btn = add(scene.add.graphics(), d + 5);
-    this.btnText = ['LOSUJ', 'LOSUJ ×10'].map((s) => add(pixelText(scene, 0, 0, s), d + 5.1));
+    this.btnText = ['LOSUJ', 'WSZYSTKIE'].map((s) => add(pixelText(scene, 0, 0, s), d + 5.1));
     this.left = add(pixelText(scene, W / 2, 0, '').setTint(0x9aaec2), d + 5);
     this.hint = add(pixelText(scene, W / 2, 0, '').setTint(0x6a7a92), d + 5);
     this.focus = 0;
@@ -107,7 +109,7 @@ export class Gacha {
     this.box = { x0: MX + MACHINE.window.x0 * FINE, y0: my + MACHINE.window.y0 * FINE, x1: MX + MACHINE.window.x1 * FINE, y1: my + MACHINE.window.y1 * FINE };
     for (const b of this.balls) b.y += dy;
     this.btnY = H - 58;
-    this.btnText.forEach((t, i) => t.setPosition(i ? 131 : 49, this.btnY));
+    this.btnText.forEach((t, i) => t.setPosition(BUTTONS[i][0], this.btnY));
     this.left.y = H - 30;
     this.hint.y = H - 12;
     this.cy = Math.round(H * 0.4); // the prize's centre
@@ -205,6 +207,9 @@ export class Gacha {
     this.left.setText(left ? `W AUTOMACIE: ${left}` : 'AUTOMAT JEST PUSTY');
     const touch = this.scene.sys.game.device.input.touch;
     this.hint.setText(!left ? 'MASZ JUŻ WSZYSTKO!' : this.loadout.tickets ? (touch ? 'DOTKNIJ, ABY LOSOWAĆ' : 'STRZAŁKI / ENTER / ESC') : 'KUPONY DAJĄ BOSSOWIE');
+    // the second button opens every ticket in hand (as far as the machine goes), and says how many
+    const all = this.all();
+    this.btnText[1].setText(all > 1 ? `WSZYSTKIE ×${all}` : 'WSZYSTKIE');
   }
 
   /** Can a capsule be drawn now? */
@@ -212,10 +217,15 @@ export class Gacha {
     return this.loadout.tickets > 0 && pool(this.loadout).length > 0;
   }
 
-  /** A draw (or ten, as far as the tickets and the machine go). */
+  /** How many capsules "all" would draw. */
+  all() {
+    return Math.min(this.loadout.tickets, pool(this.loadout).length);
+  }
+
+  /** A draw, or all of them (n = Infinity), as far as the tickets and the machine go; "all" needs two at least. */
   start(n = 1) {
     if (this.phase !== 'idle') return;
-    if (!this.ready()) {
+    if (!this.ready() || (n > 1 && this.all() < 2)) {
       this.scene.sfx.denied();
       this.denied = 0.4;
       return;
@@ -273,11 +283,12 @@ export class Gacha {
   drawButtons() {
     const g = this.btn.clear();
     const idle = this.phase === 'idle';
-    [[49, 76], [131, 76]].forEach(([x, w], i) => {
-      const on = idle && this.focus === i && this.ready();
+    BUTTONS.forEach(([x, w], i) => {
+      const can = i ? this.all() > 1 : this.ready();
+      const on = idle && this.focus === i && can;
       g.fillStyle(on ? 0xa8201c : 0x3a1418, idle ? 1 : 0.5).fillRoundedRect(x - w / 2, this.btnY - 12, w, 24, 4);
       g.lineStyle(1, on ? 0xffe080 : 0x8a6a30, idle ? 1 : 0.5).strokeRoundedRect(x - w / 2 + 0.5, this.btnY - 11.5, w - 1, 23, 4);
-      this.btnText[i].setTint(on ? 0xfff1c9 : 0xc8a878).setAlpha(idle ? 1 : 0.5);
+      this.btnText[i].setTint(on ? 0xfff1c9 : 0xc8a878).setAlpha(idle && can ? 1 : 0.5);
     });
   }
 
@@ -522,7 +533,7 @@ export class Gacha {
 
   // ---------------------------------------------------------------- input
   /** A tap or Enter: on the prize, put it away; mid-draw, skip to the capsule opening; else as asked. */
-  confirm(n = this.focus ? 10 : 1) {
+  confirm(n = this.focus ? Infinity : 1) {
     if (this.phase === 'reveal') return this.pt > 0.8 && this.dismiss();
     if (this.phase === 'open') return;
     if (this.phase !== 'idle') return this.skip();
@@ -544,8 +555,8 @@ export class Gacha {
     if (this.phase === 'idle') {
       if (p.y < 26 && p.x < 60) return 'close';
       if (Math.abs(p.y - this.btnY) <= 14) {
-        this.focus = p.x < W / 2 ? 0 : 1;
-        return this.start(this.focus ? 10 : 1);
+        this.focus = p.x < (BUTTONS[0][0] + BUTTONS[0][1] / 2 + BUTTONS[1][0] - BUTTONS[1][1] / 2) / 2 ? 0 : 1;
+        return this.start(this.focus ? Infinity : 1);
       }
       // a tap on the crank turns it too
       if (Math.hypot(p.x - this.crank.x, p.y - this.crank.y) < 18) return this.start(1);
