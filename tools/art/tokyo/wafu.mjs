@@ -9,6 +9,32 @@ export const COPPER = 0x4a8a70;
 export const GOLD = 0xe8c040;
 export const WARM = 0xffe8b0;
 
+const boatRoof = (put, x0, y0, len, c) => {
+  for (let j = 0; j < 9; j++)
+    for (let i = 0; i < len; i++) {
+      let col = shade(c, j < 4 ? 0.8 : 1.1);
+      if (j === 4) col = shade(c, 1.4);
+      if (i % 4 === 0) col = shade(col, 0.85);
+      if (j === 0 || j === 8) col = i % 3 === 0 ? 0xff5038 : i % 3 === 1 ? 0xffe0a0 : shade(c, 0.5); // the lanterns along its eaves
+      put(x0 + i, y0 + j, col);
+    }
+};
+/** A pleasure boat under its lanterns, 44 x 14 fine pixels, its bow to the right: put(i, j, colour). */
+export const yakata = (put, c, lit = 1) => {
+  // (bow to the right) the hull, the long roof with lanterns down both eaves, a lamp at the bow
+  for (let j = 0; j < 13; j++)
+    for (let i = 0; i < 44; i++) {
+      const taper = i > 34 ? (i - 34) * 0.62 : i < 3 ? (3 - i) * 0.8 : 0;
+      if (Math.abs(j - 6) > 6 - taper) continue;
+      put(i, j + 1, Math.abs(j - 6) > 5 - taper ? 0x2a2018 : (i + j) % 5 === 0 ? 0x5a4028 : 0x6a4c30);
+    }
+  boatRoof(put, 6, 3, 26, c);
+  put(40, 7, lit ? 0xfff0a0 : 0x8a8478);
+  put(41, 7, lit ? 0xffd060 : 0x6a6458);
+  put(2, 6, PAL.cloth[c % 7]);
+  put(2, 7, 0x2a2228);
+};
+
 export function makeWafu(ctx) {
   const { kit, props, S } = ctx;
   const { crowd, mark, rand, P, R, E, ER, halo, FX, FY, queue } = kit;

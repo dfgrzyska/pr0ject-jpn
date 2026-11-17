@@ -13,7 +13,7 @@
 // trains on the bridge, cars, petals, the stalls' steam.
 import { lots } from './blocks.mjs';
 import { PAL, shade, blend } from './kit.mjs';
-import { makeWafu, RED, TILE, COPPER, GOLD, WARM } from './wafu.mjs';
+import { makeWafu, yakata as boat, RED, TILE, COPPER, GOLD, WARM } from './wafu.mjs';
 import { hashPx } from '../hires.mjs';
 import { inShape } from './geom.mjs';
 import { GROUNDS, WATER } from './route.mjs';
@@ -42,26 +42,7 @@ export function sumida(ctx) {
     const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
     for (let k = 0; k <= n; k++) fn(Math.round(x0 + ((x1 - x0) * k) / n), Math.round(y0 + ((y1 - y0) * k) / n));
   };
-  // lights lying on the open water (the strip is clear there: painted after the grade, part see-through)
-  const glints = [];
-  const glint = (X, Y, len, c, a = 0.8) => glints.push([X, Y, len, c, a]);
-  kit.after(({ d, FW: fw, FH }) => {
-    for (const [X, Y, len, c, a] of glints)
-      for (let j = 0; j < len; j++) {
-        if (j % 4 === 3) continue;
-        const x = X + Math.round(Math.sin(j * 0.7 + X) * 0.8);
-        const y = Y + j;
-        if (x < 0 || x >= fw || y < 0 || y >= FH) continue;
-        for (const q of [0, 1]) {
-          const o = (y * fw + x + q) * 4;
-          if (d[o + 3]) continue;
-          d[o] = (c >> 16) & 255;
-          d[o + 1] = (c >> 8) & 255;
-          d[o + 2] = c & 255;
-          d[o + 3] = Math.round(255 * a * 0.6 * (1 - j / len) ** 1.5 * (q ? 0.5 : 1));
-        }
-      }
-  });
+  const glint = kit.glint;
 
   // ---- the terraces along both banks: a paved walk at the water's edge, a rail, lamps, people out for the air
   const CROSS = [[9860, 9], [10020, 7.4], [10190, 8], [10240, 7.4], [10420, 7.4], [10590, 9]];
@@ -631,30 +612,6 @@ export function sumida(ctx) {
   }
 
   // ---- pleasure boats moored at their jetties north of Ryōgoku's bridge, a boat house
-  const boatRoof = (put, x0, y0, len, c) => {
-    for (let j = 0; j < 9; j++)
-      for (let i = 0; i < len; i++) {
-        let col = shade(c, j < 4 ? 0.8 : 1.1);
-        if (j === 4) col = shade(c, 1.4);
-        if (i % 4 === 0) col = shade(col, 0.85);
-        if (j === 0 || j === 8) col = i % 3 === 0 ? 0xff5038 : i % 3 === 1 ? 0xffe0a0 : shade(c, 0.5); // the lanterns along its eaves
-        put(x0 + i, y0 + j, col);
-      }
-  };
-  const boat = (put, c, lit = 1) => {
-    // (bow to the right) the hull, the long roof with lanterns down both eaves, a lamp at the bow
-    for (let j = 0; j < 13; j++)
-      for (let i = 0; i < 44; i++) {
-        const taper = i > 34 ? (i - 34) * 0.62 : i < 3 ? (3 - i) * 0.8 : 0;
-        if (Math.abs(j - 6) > 6 - taper) continue;
-        put(i, j + 1, Math.abs(j - 6) > 5 - taper ? 0x2a2018 : (i + j) % 5 === 0 ? 0x5a4028 : 0x6a4c30);
-      }
-    boatRoof(put, 6, 3, 26, c);
-    put(40, 7, lit ? 0xfff0a0 : 0x8a8478);
-    put(41, 7, lit ? 0xffd060 : 0x6a6458);
-    put(2, 6, PAL.cloth[c % 7]);
-    put(2, 7, 0x2a2228);
-  };
   {
     const u0 = 10262;
     const bx = bankW(u0);

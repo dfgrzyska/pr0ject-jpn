@@ -20,12 +20,15 @@ import { akihabara } from './akihabara.mjs';
 import { ueno } from './ueno.mjs';
 import { asakusa } from './asakusa.mjs';
 import { sumida } from './sumida.mjs';
+import { bay } from './bay.mjs';
+import { odaiba } from './odaiba.mjs';
+import { aomi } from './aomi.mjs';
 import { W, S, L, DISTRICTS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, PLOTS } from './route.mjs';
 import { near, inShape, bbox, railHalf } from './geom.mjs';
 
 // the districts' painters, in the order they are called: (ctx) => void. (Phases 2-7 add theirs here.)
-const PAINTERS = [nakano, shinjuku, harajuku, shibuya, minato, chiyoda, akihabara, ueno, asakusa, sumida];
-const ARENA_DRAWN = new Set(['KASA-OBAKE', 'TAIYAKI']); // (arenas whose own ground is drawn: no ring)
+const PAINTERS = [nakano, shinjuku, harajuku, shibuya, minato, chiyoda, akihabara, ueno, asakusa, sumida, bay, odaiba, aomi];
+const ARENA_DRAWN = new Set(['KASA-OBAKE', 'TAIYAKI', 'KUROGANE']); // (arenas whose own ground is drawn: no ring)
 
 const smooth = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));

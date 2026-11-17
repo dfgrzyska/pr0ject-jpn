@@ -114,6 +114,28 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
     }
     for (const fn of afters) fn({ d, FW, FH, raised, glowing });
   };
+  // lights lying on open water (the strip is clear there): streaks painted after the grade, part see-through,
+  // over the far layer's water
+  const glints = [];
+  /** A light's reflection on open water: a broken streak len fine pixels down from (X, Y). */
+  const glint = (X, Y, len, c, a = 0.8) => glints.push([X, Y, len, c, a]);
+  afters.push(({ d }) => {
+    for (const [X, Y, len, c, a] of glints)
+      for (let j = 0; j < len; j++) {
+        if (j % 4 === 3) continue;
+        const x = X + Math.round(Math.sin(j * 0.7 + X) * 0.8);
+        const y = Y + j;
+        if (x < 0 || x >= FW - 1 || y < 0 || y >= FH) continue;
+        for (const q of [0, 1]) {
+          const o = (y * FW + x + q) * 4;
+          if (d[o + 3]) continue;
+          d[o] = (c >> 16) & 255;
+          d[o + 1] = (c >> 8) & 255;
+          d[o + 2] = c & 255;
+          d[o + 3] = Math.round(255 * a * 0.6 * (1 - j / len) ** 1.5 * (q ? 0.5 : 1));
+        }
+      }
+  });
   let sun = 0.6; // how long the shadows are (a district sets it for its hour)
 
   /** The shadow of what stands on the fine box (X, Y, w, h), d fine pixels long, to the lower right. */
@@ -629,12 +651,12 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
     props.path(pts, [coachFrame(band, 1, u), ...mid, coachFrame(band, -1, u)], { sp, n, gap: 23, mode, hold, turn: 'rot', cars: 1, s0 });
   };
   /** Cars along a lane that bends (pts, the way they drive), a gap apart; graded for the hour at u. */
-  const trafficOn = (pts, { sp = 22, gap = 200, s0 = rand(), u = pts[0][1] } = {}) => {
+  const trafficOn = (pts, { sp = 22, gap = 200, s0 = rand(), u = pts[0][1], d = -0.2 } = {}) => {
     const fs = PAL.cars.map((c) => frame(4.34, 2.34, u, (put) => carAt(0, 0, false, c, (X, Y, col) => put(12 - X, Y, col))));
     let len = 0;
     for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
     const n = Math.max(1, Math.floor(len / gap));
-    props.path(pts, Array.from({ length: n }, (_, k) => fs[(k * 5 + Math.floor(s0 * 9)) % fs.length]), { sp, n, gap, mode: 'wrap', turn: 'rot', cars: 1, s0, d: -0.2 });
+    props.path(pts, Array.from({ length: n }, (_, k) => fs[(k * 5 + Math.floor(s0 * 9)) % fs.length]), { sp, n, gap, mode: 'wrap', turn: 'rot', cars: 1, s0, d });
   };
 
   // smoke off a grill or a chimney: three sizes of puff, shared by every emitter
@@ -647,7 +669,7 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
   return {
     train, trainOn, traffic, trafficOn, offset, smoke, canopy, rand, pick, FX, FY, P, R, queue, flush, shadowBox, building, house, tree, mark, ground, zebra, car, carAt, crowd, frame, strokes, shopfront,
     ac, tank, hut, helipad, solar, parasol, greenery, mast, lantern, person, umbrella, lamp, props, WALLS,
-    E, ER, halo, after, night, nightAt, beforeGrade, afterGrade, LIT, raised, hi, FW, FH,
+    E, ER, halo, glint, after, night, nightAt, beforeGrade, afterGrade, LIT, raised, hi, FW, FH,
     setSun: (v) => { sun = v; },
   };
 }

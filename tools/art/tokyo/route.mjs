@@ -101,9 +101,11 @@ export const GROUNDS = [
   { id: 'sumida_koen', kind: 'park', poly: [[0, 9510], [180, 9510], [180, 9566], [146, 9596], [108, 9666], [58, 9800], [0, 9800]] },
   { id: 'hamarikyu', kind: 'park', over: true, rect: [0, 10660, 40, 180] },
   { id: 'takeshiba', kind: 'apron', over: true, rect: [0, 10880, 30, 50] },
-  { id: 'shibaura', kind: 'apron', over: true, rect: [0, 10966, 38, 78] },
+  { id: 'shibaura', kind: 'apron', over: true, rect: [0, 10966, 38, 100] }, // (the bridge's west anchorage on its north end)
   { id: 'daiba3', kind: 'park', over: true, ell: [56, 11270, 22, 18] },
   { id: 'daiba6', kind: 'forest', over: true, ell: [136, 11200, 16, 13] },
+  { id: 'daiba_michi', kind: 'park', over: true, rect: [51, 11284, 10, 184] }, // (the causeway from the beach out to the fort)
+  { id: 'odaiba_pontoon', kind: 'apron', over: true, rect: [113, 11410, 14, 9] }, // (the water bus's landing)
   { id: 'odaiba_hama', kind: 'sand', poly: [[0, 11500], [30, 11470], [90, 11456], [150, 11470], [180, 11490], [180, 11522], [0, 11522]] },
   { id: 'shiokaze_koen', kind: 'park', rect: [8, 11880, 72, 170] },
   { id: 'aomi_futo', kind: 'apron', rect: [36, 12100, 144, 400] },
@@ -253,6 +255,8 @@ export const ROADS = [
   // the bay and Odaiba
   { id: 'rainbow_bridge', cls: 'express', w: 12, pts: [[0, 11050], [180, 11050]] },
   { id: 'odaiba_deck', cls: 'deck', w: 6, pts: [[0, 11526], [180, 11526]] },
+  { id: 'daiba_michi', cls: 'walk', w: 4, pts: [[56, 11286], [56, 11466]] },
+  { id: 'odaiba_sanbashi', cls: 'deck', w: 4, pts: [[120, 11466], [120, 11414]] },
   { id: 'odaiba_dori', cls: 'avenue', w: 12, pts: [[0, 11580], [180, 11580]] },
   { id: 'wangan_doro', cls: 'express', w: 14, pts: [[0, 11750], [180, 11750]] },
   { id: 'center_promenade_1', cls: 'walk', w: 10, pts: [[90, 11529], [90, 11574]] },
