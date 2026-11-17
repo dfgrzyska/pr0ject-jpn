@@ -225,8 +225,9 @@ export class DiscoveryBook {
     for (let slot = 0; slot < PER_PAGE && first + slot < this.entries.length; slot++) {
       const { x, y } = this.tileXY(slot);
       if (Math.abs(p.x - x) <= TILE / 2 && Math.abs(p.y - y) <= TILE / 2) {
-        if (first + slot === this.index) return this.show('page');
-        return this.focus(first + slot);
+        // a tap opens the card it lands on (the focus is the keys' way round the grid; a touch has none to see)
+        this.index = first + slot;
+        return this.show('page');
       }
     }
     return true;
@@ -256,7 +257,7 @@ export class DiscoveryBook {
       this.gridName.setText(known ? e.name : '???').setPosition(90, 72 + GRID * PITCH - 6);
       this.gridCity.setText(`${city.name}${food ? ` / ${e.place}` : ''}`).setPosition(90, 72 + GRID * PITCH + 8);
       if (this.gridCity.width > 152) this.gridCity.setText(city.name);
-      this.open.setText(words('ENTER: OTWÓRZ', 'ENTER: OPEN')).setPosition(90, H - 63);
+      this.open.setText(this.scene.sys?.game.device.input.touch ? words('DOTKNIJ, ABY OTWORZYĆ', 'TAP TO OPEN') : words('ENTER: OTWÓRZ', 'ENTER: OPEN')).setPosition(90, H - 63);
       const pages = this.pages;
       const page = Math.floor(this.index / PER_PAGE);
       this.page.setText(`${page + 1} / ${pages}`).setPosition(90, H - 44).setVisible(pages > 1);

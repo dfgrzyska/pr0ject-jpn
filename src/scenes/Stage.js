@@ -686,6 +686,15 @@ export class Stage extends Phaser.Scene {
   onPointerDown(p) {
     if (this.paused) return this.pauseMenu?.pointer(p);
     if (this.state === 'select' && p.x < 60 && p.y < 28) return this.openCities();
+    // the collection's tabs first: the sound button's spot (hidden under the page) is where the last tab is printed
+    const tab = this.state === 'book' && this.tabs?.hit(p);
+    if (tab) {
+      if (tab !== this.bookTab) {
+        this.sfx.tick?.();
+        this.openBook(tab);
+      }
+      return;
+    }
     if (this.hud.hitSound(p)) {
       this.music.unlock();
       this.music.toggle();
@@ -702,10 +711,10 @@ export class Stage extends Phaser.Scene {
       return this.journey.pointerDown(p);
     }
     if (this.state === 'book') {
-      const tab = this.tabs.hit(p);
-      if (tab) { if (tab !== this.bookTab) { this.sfx.tick?.(); this.openBook(tab); } return; }
       if (this.book.pointer) return this.book.pointer(p);
-      return this.book.hitTurn(p) || this.closeBook();
+      // the stamp book: its page turners, else back to the title only from its foot (as the other books), so a tap
+      // on a stamp after changing tabs does not throw the whole collection shut
+      return this.book.hitTurn(p) || (p.y >= this.H - 20 && this.closeBook());
     }
     if (this.state === 'select') {
       if (this.select.hitMode(p)) return this.select.toggleMode();

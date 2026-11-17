@@ -168,9 +168,8 @@ test('journal grid and pages: locking, keys, wrap, touch navigation, destruction
   assert.equal(locked.name.text, '???'); assert(!locked.art.visible); assert(!locked.story.text.includes('LISY'));
   locked.key('left'); assert.equal(locked.index, YOKAI.length - 1); locked.key('right'); assert.equal(locked.index, 0);
   locked.key('back'); assert.equal(locked.mode, 'grid'); assert.equal(locked.key('back'), 'close');
-  // touch: a tile focuses, the focused one opens, the bottom goes back to the grid and then closes
-  const { x, y } = locked.tileXY(5); locked.pointer({ x, y }); assert.equal(locked.index, 5); assert.equal(locked.mode, 'grid');
-  locked.pointer({ x, y }); assert.equal(locked.mode, 'page');
+  // touch: a tap opens the tile it lands on (focused or not), the bottom goes back to the grid and then closes
+  const { x, y } = locked.tileXY(5); locked.pointer({ x, y }); assert.equal(locked.index, 5); assert.equal(locked.mode, 'page');
   locked.pointer({ x: 150, y: 276 }); assert.equal(locked.index, 6);
   locked.pointer({ x: 90, y: 307 }); assert.equal(locked.mode, 'grid'); assert(!lockedScene.closed);
   locked.pointer({ x: 90, y: 307 }); assert(lockedScene.closed);
