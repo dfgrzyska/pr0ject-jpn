@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Fazy 0–3 gotowe, faza 4 w toku (zbliżenia Fuji czekają na akceptację). Decyzje z sekcji 2 przyjęte według rekomendacji. Wymóg autora: **Fuji ma robić wrażenie i być pełna detali** (sekcja 4.1). Fazy z sekcji 8 idą po kolei. Postęp odznacza się checkboxami w sekcji 8.
+Stan: **w budowie**. Fazy 0–3 gotowe, faza 4 w toku (styl Fuji zaakceptowany). Decyzje z sekcji 2 przyjęte według rekomendacji. Wymóg autora: **Fuji ma robić wrażenie i być pełna detali** (sekcja 4.1). Fazy z sekcji 8 idą po kolei. Postęp odznacza się checkboxami w sekcji 8.
 
 ## 1. W skrócie
 
@@ -179,7 +179,7 @@ Wymaga: faza 1. Pliki: `tools/art/kawaguchiko/shore.mjs`, `tools/art/kawaguchiko
 
 ### Faza 4: las na lawie, droga Subaru, piąta stacja (u 3900–5600)
 Wymaga: faza 1. Plik: `tools/art/kawaguchiko/slopes.mjs`.
-- [ ] Trzy zbliżenia 1:1 z sekcji 4.1 (granica lasu, chatka ze szlakiem, krater o świcie) zaakceptowane przez autora; dopiero potem całe stoki w fazach 4 i 5
+- [x] Trzy zbliżenia 1:1 z sekcji 4.1 (granica lasu, chatka ze szlakiem, krater o świcie) zaakceptowane przez autora (2026-11-17: „na ten moment jest ok”); dopiero potem całe stoki w fazach 4 i 5
 - [ ] Kemping, lawa z mchem i korzeniami, wejścia do jaskiń wiatru i lodu, bramka drogi
 - [ ] Serpentyny przez rzednący las, piąta stacja z placem, sklepami, kapliczką i końmi
 - [ ] Animacje: autobusy na serpentynach, konie, światła zmierzchu
@@ -252,7 +252,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
-| 2026-11-17 | Claude | 4 (część) | Sposób rysowania Fuji (`tools/art/kawaguchiko/fuji.mjs`): rzeźba terenu z mapy wysokości (stożek, żleby i grzbiety prosto w dół zbocza, wachlarzem przy szczycie, misa krateru i krawędź), oświetlona z lewej góry, malowana przed drogami (`UNDER` w `mid.mjs`); strefy wysokości z postrzępionymi granicami, stare potoki lawy z mchem, śnieg w żlebach przy szczycie, warstwy ścian krateru z piargiem; las na lawie przerzedzający się w granicę lasu; mury i liny szlaku, stopnie przy chatkach, chatki (kamienne ściany, blaszane dachy z kamieniami, ławki, szyldy, zapasy, światła nocą), zadaszenia, punkt pierwszej pomocy, wały drogi zejściowej z buldożerem, czołówki wspinaczy nocą, szczyt (torii z lwami, kapliczka, domki, stacja pogodowa, studnia, kopczyki, ludzie na krawędzi). Noc na szlaku jaśniejsza, księżycowa. Trzy zbliżenia wysłane autorowi. | Czeka na akceptację zbliżeń. Potem reszta fazy 4: plac piątej stacji, Okuniwa, bramka, jaskinie, kemping. |
+| 2026-11-17 | Claude | 4 (część) | Sposób rysowania Fuji (`tools/art/kawaguchiko/fuji.mjs`): rzeźba terenu z mapy wysokości (stożek, żleby i grzbiety prosto w dół zbocza, wachlarzem przy szczycie, misa krateru i krawędź), oświetlona z lewej góry, malowana przed drogami (`UNDER` w `mid.mjs`); strefy wysokości z postrzępionymi granicami, stare potoki lawy z mchem, śnieg w żlebach przy szczycie, warstwy ścian krateru z piargiem; las na lawie przerzedzający się w granicę lasu; mury i liny szlaku, stopnie przy chatkach, chatki (kamienne ściany, blaszane dachy z kamieniami, ławki, szyldy, zapasy, światła nocą), zadaszenia, punkt pierwszej pomocy, wały drogi zejściowej z buldożerem, czołówki wspinaczy nocą, szczyt (torii z lwami, kapliczka, domki, stacja pogodowa, studnia, kopczyki, ludzie na krawędzi). Noc na szlaku jaśniejsza, księżycowa. Trzy zbliżenia wysłane autorowi. | Autor zaakceptował zbliżenia. Reszta fazy 4: plac piątej stacji, Okuniwa, bramka, jaskinie, kemping. |
 | 2026-11-17 | Claude | 3 | Brzeg i jezioro (`shore.mjs`, `lake.mjs`), łodzie w `boats.mjs`, wspólne części (dach, torii, latarnia, słupy, chorągwie, rowery) w `parts.mjs`; z Tokio wzięte też fale za łodziami i boje (`tools/art/tokyo/umi.mjs`). `DRAWN_TO` = 3900, arena jeziora bez pierścienia (`ARENA_DRAWN`). | Jezioro na statycznym obrazie to woda: żyje ruchomymi częściami, a odbicie Fuji dojdzie w fazie 6. Następna: faza 4, zaczyna się od trzech zbliżeń Fuji do akceptacji. |
 | 2026-11-17 | Claude | 2 | Fujiyoshida (`tools/art/kawaguchiko/fujiyoshida.mjs`) rysowana tokijskim zestawem (`tools/art/tokyo/kit.mjs`, `blocks.mjs`), który `mid.mjs` podpina tak jak w Tokio (kwartały, działki, ruchome części, światła). Działki odcinków już narysowanych nie są kreskowane (`DRAWN_TO` w `mid.mjs`). | Następne: faza 3 (brzeg i jezioro). Po każdej fazie przesunąć `DRAWN_TO`. |
 | 2026-11-17 | Claude | 1 | Trasa jako dane w `tools/art/kawaguchiko/route.mjs` (odcinki, areny, krater, pora dnia, woda, grunty, drogi, tory, 64 działki), szkielet malowany z danych w `mid.mjs` (geometria wspólna z Tokio: `tools/art/tokyo/geom.mjs`), test topologii, arkusz podglądu, nazwy miejsc. Miniboss przesunięty na 105,5 s, żeby stanął nad środkiem areny. | Następne: fazy 2–5 (odcinki tła) w dowolnej kolejności, ale faza 4 zaczyna się od trzech zbliżeń Fuji do akceptacji. Uwaga na fazę 6: daleka warstwa jest jedna na etap, a pod jeziorem ma być woda z odbiciem, pod szczytem morze chmur; trzeba będzie przełączać ją według odcinka, nie według ciemności. |
