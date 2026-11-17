@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **plan**. Nic jeszcze nie zbudowane. Najpierw decyzje z sekcji 2 (rekomendacje są zaznaczone), potem fazy z sekcji 8 po kolei. Postęp odznacza się checkboxami w sekcji 8.
+Stan: **plan przyjęty**, nic jeszcze nie zbudowane. Decyzje z sekcji 2 przyjęte według rekomendacji. Wymóg autora: **Fuji ma robić wrażenie i być pełna detali** (sekcja 4.1). Fazy z sekcji 8 idą po kolei. Postęp odznacza się checkboxami w sekcji 8.
 
 ## 1. W skrócie
 
@@ -11,7 +11,7 @@ Stan: **plan**. Nic jeszcze nie zbudowane. Najpierw decyzje z sekcji 2 (rekomend
 - Jeden miniboss i jeden boss, każdy z trzema fazami: **Kachi-kachi Usagi** (zając z ludowej opowieści, na łodzi na jeziorze) i **Daidarabotchi** (olbrzym z legend, który usypał górę, walka na kraterze o świcie).
 - Poziom detalu jak w poprzednich miastach. Finał (szczyt o świcie) dostaje dodatki, ale nie kosztem miasta i jeziora.
 
-## 2. Decyzje do podjęcia przed startem
+## 2. Decyzje (przyjęte według rekomendacji)
 
 | # | Pytanie | Moja rekomendacja |
 |---|---|---|
@@ -46,6 +46,37 @@ Współrzędna `u` liczona od dołu taśmy. Góra ekranu jest w `u = 420 + 30 ×
 | 4700–5600 | 143–173 s | **DROGA SUBARU I PIĄTA STACJA** | zmierzch | Serpentyny drogi przez coraz rzadszy las, autobusy z zapalonymi światłami; **piąta stacja**: plac, sklepy z laskami wspinaczkowymi, mała kapliczka Komitake, konie juczne, punkt widokowy nad jeziorem w dole |
 | 5600–6700 | 173–210 s | **SZLAK YOSHIDA** | noc | Zakosy szlaku po czerwono-czarnym żwirze, kamienne murki i liny wzdłuż ścieżki, **chatki górskie** z ciepłym światłem i flagami, łańcuch **czołówek wspinaczy** pełznący zakosami (animacja), małe torii na szlaku, płaty śniegu w żlebach, morze chmur zaczyna się pod nami |
 | 6700–7168 | 210–232 s | **SZCZYT** | świt | Torii na szczycie, kapliczka, kamienne domki na krawędzi, **krater** (arena bossa, u ≈ 6950), za krawędzią morze chmur i wschodzące słońce (goraikō) |
+
+### 4.1 Fuji: najważniejszy element etapu
+
+Fuji to główna postać tego miasta. Każdy jej element ma swoje miejsce na mapie i powód, żeby tam być; nic nie jest kolorową plamą. Lista poniżej jest wymaganiem dla faz 4–6, nie propozycją.
+
+**Bryła widziana z góry**
+- Grzbiety i żleby rozchodzą się promieniście od krateru. Strona odsłoneczna w głębokim cieniu, długość cieni według pory dnia (zachód, noc, świt z drugiej strony).
+- Barwy zmieniają się z wysokością i każda strefa ma własną fakturę: las na lawie → granica lasu z karłowatymi modrzewiami i krzewami pochylonymi od wiatru → goły czarny żwir → czerwono-brązowy żwir wulkaniczny wyżej → płaty śniegu w żlebach przy szczycie.
+- Dawne potoki lawy jako języki z wyniesionym obrzeżem i spękaną powierzchnią; luźne bloki i rumowiska pod skałkami.
+- Wielki żleb Ōsawa schodzący spod krateru po zachodniej stronie, widoczny przy szczycie.
+
+**Szlak Yoshida i ludzie**
+- Zakosy wejściowe z murkami z kamienia wulkanicznego, liny na palikach, kamienne schodki na stromiznach.
+- Osobna droga zejściowa szerokimi zakosami w żwirze, a po niej **buldożer zaopatrzeniowy** jadący swoim torem (jedyne, co tam jeździ).
+- Chatki na kolejnych stacjach: kamienne ściany, blaszane dachy przyciśnięte kamieniami, ławki, flagi, palety z zapasami, ciepłe okna nocą. Każda chatka inna.
+- Zadaszenia chroniące przed spadającymi kamieniami, punkt pierwszej pomocy, małe torii i kamienne stele pielgrzymów.
+- Wspinacze: nocą łańcuch czołówek pełznący zakosami; o świcie postacie z laskami i plecakami, grupy odpoczywające przy chatkach, ludzie na krawędzi krateru czekający na słońce.
+
+**Szczyt**
+- Torii na wejściu na szczyt, kapliczka, kamienne domki szczytowe, ścieżka wokół krateru.
+- Krater: czerwono-brązowe ściany warstwami, rumowisko na zboczach, płat śniegu na dnie, cień krawędzi przesuwający się ze wschodem słońca.
+- Najwyższy punkt z budynkiem stacji pogodowej (bez napisów), źródlana studnia, kamienne kopczyki.
+
+**Światło i odbicie**
+- Świt: słońce wstaje z morza chmur na wschodzie, krawędź krateru zapala się złotem, cienie długie i wyraźne.
+- **Cień Fuji (kage-Fuji)**: o świcie trójkątny cień góry pada na morze chmur po zachodniej stronie. Finałowy dodatek w dalekiej warstwie.
+- Odbicie w jeziorze: pełna bryła z grzbietami i płatami śniegu, czerwieniejąca w złotej godzinie, rozbijana zmarszczkami i kilwaterem łodzi.
+
+**Kontrola jakości**
+- Przed rysowaniem całych stoków: trzy zbliżenia 1:1 do akceptacji autora (granica lasu z lawą, chatka ze szlakiem i zejściem, krater o świcie).
+- Po narysowaniu: przegląd na zbliżeniach całej taśmy od 3 900 px w górę, żeby żaden odcinek stoku nie był pusty ani powtarzalny.
 
 ### Jak czas ma się do trasy
 
@@ -140,20 +171,23 @@ Wymaga: faza 1. Pliki: `tools/art/kawaguchiko/shore.mjs`, `tools/art/kawaguchiko
 
 ### Faza 4: las na lawie, droga Subaru, piąta stacja (u 3900–5600)
 Wymaga: faza 1. Plik: `tools/art/kawaguchiko/slopes.mjs`.
+- [ ] Trzy zbliżenia 1:1 z sekcji 4.1 (granica lasu, chatka ze szlakiem, krater o świcie) zaakceptowane przez autora; dopiero potem całe stoki w fazach 4 i 5
 - [ ] Kemping, lawa z mchem i korzeniami, wejścia do jaskiń wiatru i lodu, bramka drogi
 - [ ] Serpentyny przez rzednący las, piąta stacja z placem, sklepami, kapliczką i końmi
 - [ ] Animacje: autobusy na serpentynach, konie, światła zmierzchu
 
 ### Faza 5: szlak i szczyt (u 5600–7168)
 Wymaga: faza 1. Plik: `tools/art/kawaguchiko/summit.mjs`.
-- [ ] Zakosy po czerwono-czarnym żwirze, murki i liny, chatki ze światłem, małe torii, płaty śniegu
-- [ ] Szczyt: torii, kapliczka, kamienne domki, krater (arena bossa)
-- [ ] Animacje: łańcuch czołówek idących szlakiem, migające okna chatek, flagi na wietrze
+- [ ] Strefy wysokości z sekcji 4.1, grzbiety i żleby, potoki lawy, rumowiska, płaty śniegu, żleb Ōsawa
+- [ ] Zakosy wejściowe z murkami i linami, droga zejściowa, zadaszenia, punkt pierwszej pomocy, małe torii i stele, chatki (każda inna)
+- [ ] Szczyt: torii, kapliczka, domki, ścieżka wokół krateru, krater warstwami, stacja pogodowa, studnia (arena bossa)
+- [ ] Animacje: łańcuch czołówek, buldożer na drodze zejściowej, okna chatek, flagi na wietrze, wspinacze na krawędzi krateru o świcie
+- [ ] Przegląd na zbliżeniach całego stoku: żaden odcinek pusty ani powtarzalny
 
 ### Faza 6: warstwy daleka i bliska
 Wymaga: fazy 2–5. Pliki: `tools/art/kawaguchiko/far.mjs`, `src/game/Parallax.js` (tylko jeśli trzeba).
 - [ ] Daleka warstwa pod jeziorem: **odbicie Fuji**, czerwieniejące w złotej godzinie, rozbijane zmarszczkami
-- [ ] Daleka warstwa pod szczytem: morze chmur i wschód słońca
+- [ ] Daleka warstwa pod szczytem: morze chmur, wschód słońca i **cień Fuji** na chmurach
 - [ ] Bliska warstwa: tylko to, co lata (ważki, chmury, paralotnia bez napisów)
 - [ ] Przejścia pory dnia sprawdzone na całej trasie
 
@@ -210,4 +244,5 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-17 | Claude | plan | Autor przyjął plan i decyzje D1–D6. Dopisana sekcja 4.1: Fuji jako najważniejszy element etapu (strefy wysokości, szlak i ludzie, szczyt, światło, cień Fuji, odbicie) i kontrola jakości z trzema zbliżeniami do akceptacji przed rysowaniem stoków. | Następna: faza 0. |
 | 2026-11-17 | Claude | plan | Plan etapu napisany: trasa, przeciwnicy, dwie walki, fazy. | Czeka na decyzje D1–D6. |
