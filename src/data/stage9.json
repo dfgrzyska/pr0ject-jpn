@@ -40,12 +40,16 @@
   ],
   "music": {
     "schedule": [
-      [0, "s5_intro"],
-      [34, "s5_build"],
-      [64, "s5_full"]
+      [0, "s9_intro"],
+      [23, "s9_build"],
+      [70, "s9_full"],
+      [188, "s9_akiba"],
+      [256, "s9_asakusa"],
+      [340, "s9_full"]
     ],
-    "heavy": "s5_heavy",
-    "boss": "s5_boss"
+    "heavy": "s9_kasa",
+    "boss": "s9_boss",
+    "night": "s9_night"
   },
   "warnings": {
     "heavy": "COŚ NADCHODZI",
@@ -118,7 +122,7 @@
     {"t":88.5,"type":"diver","x":140,"count":2},
     {"t":91.5,"type":"popcorn","x":90,"path":"row","count":8},
     {"t":93.5,"type":"shooter","x":90,"pattern":"fan"},
-    {"t":100.8,"type":"heavy","look":"kasa","hold":true,"x":90,"card":["KASA-OBAKE","PARASOL ZE SKRZYŻOWANIA"]},
+    {"t":100.8,"type":"heavy","look":"kasa","music":"s9_kasa","hold":true,"x":90,"card":["KASA-OBAKE","PARASOL ZE SKRZYŻOWANIA"]},
     {"t":102,"type":"carrier","x":50,"path":"zigzag"},
     {"t":104.5,"type":"carrier","x":130,"path":"zigzag"},
     {"t":107.5,"type":"popcorn","x":40,"path":"sine","count":6},
@@ -263,7 +267,7 @@
     {"t":279,"type":"popcorn","x":140,"path":"sine","count":6},
     {"t":281,"type":"diver","x":40,"count":2},
     {"t":281.5,"type":"diver","x":140,"count":2},
-    {"t":295,"type":"heavy","look":"taiyaki","hold":true,"x":90,"card":["TAIYAKI","ŁAWICA Z ŻELAZNEJ FORMY"]},
+    {"t":295,"type":"heavy","look":"taiyaki","music":"s9_taiyaki","hold":true,"x":90,"card":["TAIYAKI","ŁAWICA Z ŻELAZNEJ FORMY"]},
     {"t":296,"type":"carrier","x":50,"path":"zigzag"},
     {"t":298.5,"type":"carrier","x":130,"path":"zigzag"},
     {"t":301,"type":"popcorn","x":40,"path":"sine","count":6},

@@ -226,6 +226,7 @@ export class Stage extends Phaser.Scene {
     this.game.events.on('hidden', this.onHidden, this);
     this.events.once('shutdown', () => {
       this.game.events.off('hidden', this.onHidden, this);
+      this.sfx.rain?.(0);
     });
 
     this.loadAhead();
@@ -834,6 +835,8 @@ export class Stage extends Phaser.Scene {
     this.handleKeys();
     this.hud.update(dt);
     this.discoveryNotice.update(dt);
+    // Tokyo: the rain heard as well as seen (quiet while paused, between stages, after it)
+    if (this.stage.near === 'rain') this.sfx.rain?.(this.state === 'play' && !this.paused ? this.parallax.snow : 0);
     if (this.paused) return;
     if (this.freezeT > 0) {
       if ((this.freezeT -= dt) <= 0) {

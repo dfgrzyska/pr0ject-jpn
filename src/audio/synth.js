@@ -385,6 +385,125 @@ export class Synth {
     this.noiseBurst(t, 0.02, 'bandpass', 1200, 2, 0.1 * v);
   }
 
+  // ---- Tokyo: 80s city pop on synthesizers
+
+  /** Electric piano: a two-operator FM tine, bell-like at the attack, mellow as it rings. */
+  ep(t, m, dur, v = 1) {
+    const f = mtof(m);
+    const len = Math.min(1.6, 0.45 + dur);
+    const end = t + len + 0.05;
+    const car = this.osc('sine', f, t, end);
+    const mod = this.osc('sine', f * 14, t, end);
+    const idx = this.gain();
+    idx.gain.setValueAtTime(f * 1.4, t);
+    idx.gain.exponentialRampToValueAtTime(f * 0.08, t + 0.25);
+    mod.connect(idx).connect(car.frequency);
+    const body = this.osc('sine', f * 2, t, end);
+    const gb = this.gain(0.18);
+    const g = this.gain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.075 * v, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.03 * v, t + 0.3);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    car.connect(g);
+    body.connect(gb).connect(g);
+    g.connect(this.out);
+  }
+
+  /** Synth brass: two detuned saws, the filter swelling open on the attack ("bwaa"). */
+  brass(t, m, dur, v = 1) {
+    const f = mtof(m);
+    const end = t + dur + 0.15;
+    const a = this.osc('sawtooth', f * 1.005, t, end);
+    const b = this.osc('sawtooth', f * 0.995, t, end);
+    const lp = this.filter('lowpass', 500, 1.5);
+    lp.frequency.setValueAtTime(500, t);
+    lp.frequency.exponentialRampToValueAtTime(3600, t + 0.06);
+    lp.frequency.exponentialRampToValueAtTime(1500, t + 0.3);
+    const g = this.gain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.05 * v, t + 0.025);
+    g.gain.setValueAtTime(0.045 * v, t + Math.max(0.03, dur - 0.03));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.12);
+    a.connect(lp);
+    b.connect(lp);
+    lp.connect(g).connect(this.out);
+  }
+
+  /** Slap synth bass: a plucked square, the filter snapping shut, a little click on top. */
+  slap(t, m, dur, v = 1) {
+    const f = mtof(m);
+    const end = t + dur + 0.1;
+    const o = this.osc('square', f, t, end);
+    const sub = this.osc('sine', f, t, end);
+    const lp = this.filter('lowpass', 2600, 7);
+    lp.frequency.setValueAtTime(2600, t);
+    lp.frequency.exponentialRampToValueAtTime(320, t + 0.09);
+    const g = this.gain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.11 * v, t + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.05 * v, t + Math.max(0.02, dur * 0.7));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.07);
+    const gs = this.gain(0.6);
+    o.connect(lp).connect(g);
+    sub.connect(gs).connect(g);
+    g.connect(this.out);
+    this.noiseBurst(t, 0.012, 'bandpass', 2400, 2, 0.05 * v);
+  }
+
+  /** 8-bit pulse wave of the arcades and handhelds of Akihabara: no filter, a hard square. */
+  chip(t, m, dur, v = 1) {
+    const f = mtof(m);
+    const end = t + dur + 0.03;
+    const o = this.osc('square', f, t, end);
+    const g = this.gain();
+    g.gain.setValueAtTime(0.034 * v, t);
+    g.gain.setValueAtTime(0.026 * v, t + Math.min(0.05, dur * 0.5));
+    g.gain.setValueAtTime(0.026 * v, t + Math.max(0.01, dur - 0.01));
+    g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.02);
+    o.connect(g).connect(this.out);
+  }
+
+  /** Drum machine kick: a sine dropping fast. */
+  kick(t, v = 1) {
+    const o = this.osc('sine', 150, t, t + 0.3);
+    o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+    const g = this.gain();
+    g.gain.setValueAtTime(0.55 * v, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+    o.connect(g).connect(this.out);
+    this.noiseBurst(t, 0.008, 'highpass', 3000, 0.7, 0.06 * v);
+  }
+
+  /** Gated snare of the 80s: a tone, a burst of noise cut off short. */
+  snare(t, v = 1) {
+    const o = this.osc('triangle', 210, t, t + 0.1);
+    o.frequency.exponentialRampToValueAtTime(160, t + 0.08);
+    const g = this.gain();
+    g.gain.setValueAtTime(0.16 * v, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    o.connect(g).connect(this.out);
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noise;
+    const bp = this.filter('highpass', 1200, 0.7);
+    const ng = this.gain();
+    ng.gain.setValueAtTime(0.2 * v, t);
+    ng.gain.setValueAtTime(0.14 * v, t + 0.15);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    src.connect(bp).connect(ng).connect(this.out);
+    src.start(t, Math.random() * 0.5, 0.2);
+  }
+
+  /** Hi-hat, closed or open. */
+  hat(t, open, v = 1) {
+    this.noiseBurst(t, open ? 0.22 : 0.035, 'highpass', 8000, 0.8, (open ? 0.06 : 0.05) * v);
+  }
+
+  /** Hand clap: three quick bursts and a tail. */
+  clap(t, v = 1) {
+    for (const dt of [0, 0.011, 0.022]) this.noiseBurst(t + dt, dt === 0.022 ? 0.12 : 0.012, 'bandpass', 1400, 1.4, 0.2 * v);
+  }
+
   /** Shō: bamboo mouth-organ of Gagaku court music at Itsukushima; breathy swelling fifth/ninth cluster. */
   sho(t, m, dur, v = 1) {
     const f = mtof(m);

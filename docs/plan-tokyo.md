@@ -1,6 +1,6 @@
 # Plan: etap 9, TOKIO
 
-Stan: **w budowie**. Fazy 0–14 gotowe; decyzje z sekcji 2 przyjęte według rekomendacji (do potwierdzenia przez autora). Postęp odznacza się checkboxami w sekcji 8.
+Stan: **w budowie**. Fazy 0–15 gotowe; decyzje z sekcji 2 przyjęte według rekomendacji (do potwierdzenia przez autora). Postęp odznacza się checkboxami w sekcji 8.
 
 ## 1. W skrócie
 
@@ -36,6 +36,7 @@ Współrzędna `u` liczona od dołu taśmy, jak w `src/data/landmarks.js`. Czas 
 
 | u | Czas | Dzielnica | Pora | Co widać |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 15 | Muzyka (`src/audio/score9.js`, własne melodie i aranżacje): miejski pop lat 80. w D na jednym 8-taktowym przebiegu (Gmaj7 F#m7 Em7 A7, Dmaj7 Bm7 Em7-A7 F#7), 116 BPM, więc dzielnice zmieniają się na kreskach taktowych bez gubienia harmonii. Nowe instrumenty w `synth.js`: elektryczne pianino FM, syntezatorowy brass, slap bass, 8-bitowa fala prostokątna, automat perkusyjny (stopa, bramkowany werbel, hi-hat zamknięty/otwarty, klaśnięcie; tokeny b r i o q, ścieżka perkusyjna `kit`). Części tematu: `s9_intro` (pianino, pad, bas, hi-haty; Nakano), `s9_build` (perkusja i melodia; wieżowce Shinjuku od 23 s), `s9_full` (16 taktów: melodia z odpowiedzią, brass, shamisen tnący na słabe części taktu jak gitara; od 70 s i znowu nad zatoką od 340 s); warianty dzielnic: `s9_akiba` (arpeggia i bas 8-bitowe, klaśnięcia; od 188 s), `s9_asakusa` (melodię przejmuje flet, taiko; od 256 s). Minibossy: `s9_kasa` (e-moll, 132 BPM, skaczący shamisen, krople z żeber parasola, szum deszczu w shakerze), `s9_taiyaki` (festiwal w skali yo, 144 BPM, flet, taiko, kane). Boss `s9_boss` (h-moll, 156 BPM, riff brassu, slap w szesnastkach, shamisen w tremolo, automat z taiko). Po walce `s9_night` (temat zwolniony nad zatoką z fajerwerkami; ponad plan, jak noce innych etapów). Dźwięki (`Sfx.js`): deszcz (ciągły szum z kapiącymi kroplami, idzie za natężeniem pogody, cichnie w pauzie i poza grą), sygnalizator na skrzyżowaniu Kasa-obake (tyknięcie przy mruganiu, dwutonowe ćwierknięcie przy każdym kroku zielonego ludzika, piknięcie na czerwonym; ogólne dźwięki, nie melodie prawdziwych sygnalizatorów), skwierczenie formy Taiyaki w czasie pieczenia, siłowniki Kurogane (syk pary, serwo przy wyrzucie pięści, przemianie i chwycie), katana (wyciągnięcie przy „SHAKIN!”, świst przy każdym cięciu). Test `tokyoMusic.test.mjs`. | Sprawdzone: wszystkie utwory się parsują, wyrenderowane offline przez syntezator gry z jego łańcuchem miksu (szczyty 0,46–0,86, bez przesterowania), w grze grają właściwe utwory w każdej dzielnicy i walce, nowe dźwięki odpalają się w walkach (Playwright, ręczny krok gry). Brzmienia nie były słuchane przez człowieka: proporcje miksu i głośność deszczu/syku do oceny na słuchawkach i telefonie (faza 17). Syk pary ograniczony do jednego na sekundę, bo para leci z Kurogane prawie ciągle. |
 | 0–700 | 0–23 s | **NAKANO** | popołudnie | Szklany dach pasażu Sun Mall, bryła Nakano Broadway z mieszkaniami na dachu, stare sklepiki: gabloty z figurkami bez twarzy znanych postaci, zegarki, blaszane zabawki, automaty z kapsułkami, szyldy malowane ręcznie |
 | 700–2100 | 23–70 s | **SHINJUKU** | złota godzina | Wieżowce zachodniej strony z bliźniaczą wieżą ratusza; dworzec z wiązką torów; domy towarowe z markizami, wystawami i tarasami na dachach; brama neonów Kabukichō; wąskie zaułki barów Golden Gai i Omoide Yokochō z dymem z rusztów; ogród Shinjuku Gyoen ze szklarnią i herbaciarnią |
 | 2100–2900 | 70–97 s | **HARAJUKU** | późne popołudnie | Las Meiji Jingū z wielką drewnianą torii i beczkami sake; uliczka Takeshita (naleśniki, wata cukrowa, kolorowe markizy); aleja Omotesandō pod zelkowami; wiszący dach hali Yoyogi |
@@ -241,9 +242,9 @@ Wymaga: faza 13. Plik: `src/game/enemies/tokyo-kurogane.js`.
 
 ### Faza 15: muzyka i dźwięk
 Wymaga: faza 0. Plik: `src/audio/score9.js`.
-- [ ] Trzy części tematu etapu
-- [ ] Dwa motywy minibossów i temat bossa
-- [ ] Dźwięki: deszcz, sygnalizator, skwierczenie, siłowniki, katana
+- [x] Trzy części tematu etapu
+- [x] Dwa motywy minibossów i temat bossa
+- [x] Dźwięki: deszcz, sygnalizator, skwierczenie, siłowniki, katana
 
 ### Faza 16: wpięcie w grę
 Wymaga: fazy 10–14.

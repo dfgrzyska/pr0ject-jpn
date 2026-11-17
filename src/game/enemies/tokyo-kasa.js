@@ -400,7 +400,14 @@ export const tokyoKasa = {
       }
     } else if (g.act === 'merge') this.kasaMerge(e, g, dt);
     if (g.sig) {
-      if (g.sig.frame.name !== `ko_sig_${g.sigState}`) g.sig.setFrame(`ko_sig_${g.sigState}`);
+      const was = g.sig.frame.name.slice(7);
+      if (was !== g.sigState) {
+        g.sig.setFrame(`ko_sig_${g.sigState}`);
+        // the crossing's sounds: a tick as the green man blinks, a chirp with each of his steps, a beep at the red one
+        if (g.sigState === 'red') s.sfx.signal?.('red');
+        else if (g.sigState === 'go1') s.sfx.signal?.('go');
+        else if (g.sigState === 'go0' && was === 'off') s.sfx.signal?.('tick');
+      }
       g.sig.setPosition(SIGNAL[0] + Math.sin(g.t * 2.2) * 0.4, s.parallax.screenY(SIGNAL[1]) + g.sigY);
       this.kasaCountdown(g);
     }

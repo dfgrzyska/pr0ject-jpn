@@ -243,6 +243,7 @@ export const tokyoKurogane = {
     // (it slams down a little past where the player was, not at the screen's edge)
     let len = Math.min(KURO.fist.reach, (s.H - 14 - fy) / sn, Math.hypot(tx - fx, ty - fy) + 18);
     if (Math.abs(c) > 0.01) len = Math.min(len, ((c > 0 ? VIEW.width - 8 : 8) - fx) / c);
+    s.sfx.actuator?.('servo');
     Object.assign(f, { state: 'aim', at: 0, d: 0, warn: KURO.fist.aim * rules().warn, lane: { x0: fx, y0: fy, ang, len: Math.max(40, len) } });
   },
 
@@ -462,7 +463,11 @@ export const tokyoKurogane = {
     const c = changeAt(g.ct);
     // the clamps let go in a hiss of steam, the crane's legs topple outward and crash at the screen's edges
     if (at(0.05)) for (const sx of [-1, 1]) for (let i = 0; i < 4; i++) this.kuroSteam(g.gx + sx * (30 + i * 9), g.gy - 20);
-    if (at(0.3)) for (const sx of [-1, 1]) s.fx.spark(g.gx + sx * 60, g.gy - 20, GOLD);
+    if (at(0.3)) {
+      for (const sx of [-1, 1]) s.fx.spark(g.gx + sx * 60, g.gy - 20, GOLD);
+      s.sfx.actuator?.('servo');
+    }
+    if (at(1.05)) s.sfx.actuator?.('servo'); // (the legs folding into nozzles)
     if (at(0.75)) {
       s.cameras.main.shake(380, 0.011);
       s.sfx.explode('l');
@@ -475,7 +480,10 @@ export const tokyoKurogane = {
       s.fx.flash(0.25, 0.25, HEAT);
       s.sfx.explode('m');
     }
-    if (at(1.35)) s.fx.text(g.x + 40, g.gy - 40, 'SHAKIN!', 0.9, BLADE);
+    if (at(1.35)) {
+      s.fx.text(g.x + 40, g.gy - 40, 'SHAKIN!', 0.9, BLADE);
+      s.sfx.katana?.('draw');
+    }
     // the thrust kicks up dust off the apron and lifts it out
     if (c.jet > 0 && Math.random() < dt * 30) s.fx.smoke(g.x + (Math.random() < 0.5 ? -10 : 10), g.y + 50, 1, 6);
     const lift = Phaser.Math.Clamp((g.ct - 0.75) / 0.75, 0, 1);
@@ -547,6 +555,12 @@ export const tokyoKurogane = {
     }
     const before = g.swing;
     g.swing = q;
+    // the blade through the air, once for each cut
+    const cut = t < 0 ? 0 : a.cuts === 2 && t >= swing + 0.22 ? 2 : 1;
+    if (cut > (a.sw ?? 0) && cut <= a.cuts) {
+      a.sw = cut;
+      s.sfx.katana?.('swing');
+    }
     if (t >= 0 && t < (a.cuts === 2 ? swing * 2 + 0.22 : swing)) {
       const b = this.kuroBlade(g);
       const d = b.rot - DOWN;
@@ -894,7 +908,10 @@ export const tokyoKurogane = {
       const k = Math.min(1, a.t / 0.2);
       ink.lineStyle(1.5, WARN, 0.8 * k).lineBetween(sx, sy, a.tx, a.ty);
       ink.lineStyle(2, WARN, 0.9 * k).strokeCircle(a.tx, a.ty, 12 + Math.sin(a.t * 20) * 1.5);
-      if (a.t > warn) Object.assign(a, { step: 2, t: 0 });
+      if (a.t > warn) {
+        Object.assign(a, { step: 2, t: 0 });
+        s.sfx.actuator?.('servo');
+      }
     } else if (a.step === 2) {
       c.dir = dir;
       c.len = 18 + (reach - 18) * Math.min(1, a.t / G.out);
@@ -950,6 +967,7 @@ export const tokyoKurogane = {
   },
 
   kuroSteam(x, y) {
+    this.scene.sfx.actuator?.('hiss');
     this.scene.fx.puff('wisp_s_1', x + (Math.random() - 0.5) * 6, y + (Math.random() - 0.5) * 4, 0.5);
   },
 

@@ -166,6 +166,10 @@ export class Music {
         else if (e.hit === 'g') s.kane(t, v);
         else if (e.hit === 'h') s.hyoshigi(t, v);
         else if (e.hit === 'z' || e.hit === 'Z') s.tsuzumi(t, e.hit === 'Z', v);
+        else if (e.hit === 'b') s.kick(t, v);
+        else if (e.hit === 'r') s.snare(t, v);
+        else if (e.hit === 'i' || e.hit === 'o') s.hat(t, e.hit === 'o', v);
+        else if (e.hit === 'q') s.clap(t, v);
       } else for (const m of e.notes) s[e.track](t, m, e.len * stepDur, v);
     }
   }

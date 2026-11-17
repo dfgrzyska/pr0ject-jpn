@@ -288,6 +288,109 @@ export class Sfx {
     this.blip('square', 180, 150, 0.12, 0.09, t + 0.11);
   }
 
+  // ---- Tokyo
+  // noise through a band-pass that swells in and dies away (steam, fat, a blade through the air)
+  hiss(t, len, level, f0, f1 = f0, q = 0.8, attack = 0.02) {
+    const s = this.s;
+    const src = this.ctx.createBufferSource();
+    src.buffer = s.noise;
+    const bp = s.filter('bandpass', f0, q);
+    bp.frequency.setValueAtTime(f0, t);
+    bp.frequency.exponentialRampToValueAtTime(f1, t + len);
+    const g = s.gain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(level, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    src.connect(bp).connect(g).connect(this.out);
+    src.start(t, Math.random() * 0.4, len + 0.05);
+  }
+
+  /**
+   * Rain on the city, `level` 0..1 — call it every frame: a steady hiss under the music with drops ticking off the
+   * umbrellas and roofs, easing up and down with the shower; 0 (paused, off the stage) fades it out and lets it go.
+   */
+  rain(level) {
+    const want = this.muted || this.ctx.state !== 'running' ? 0 : Math.max(0, Math.min(1, level));
+    let r = this.rainBed;
+    if (!r) {
+      if (want <= 0) return;
+      const s = this.s;
+      const src = this.ctx.createBufferSource();
+      src.buffer = s.noise;
+      src.loop = true;
+      const hp = s.filter('highpass', 900, 0.5);
+      const lp = s.filter('lowpass', 6500, 0.5);
+      const g = s.gain(0);
+      src.connect(hp).connect(lp).connect(g).connect(this.out);
+      src.start();
+      r = this.rainBed = { src, g, level: 0, quiet: 0 };
+    }
+    const now = this.ctx.currentTime;
+    if (Math.abs(want - r.level) > 0.02 || (want === 0 && r.level !== 0)) {
+      r.g.gain.setTargetAtTime(want * 0.045, now, 0.5);
+      r.level = want;
+    }
+    if (want > 0) {
+      r.quiet = now;
+      // drops: a little pitched tick now and then, more of them the harder it rains
+      if (Math.random() < want * 0.3 && this.ready('raindrop', 0.03)) {
+        const f = 1800 + Math.random() * 2600;
+        this.blip('sine', f, f * 0.55, 0.03, 0.012 + 0.02 * want * Math.random(), this.now());
+      }
+    } else if (now - r.quiet > 3) {
+      r.src.stop();
+      r.g.disconnect();
+      this.rainBed = null;
+    }
+  }
+
+  /** The pedestrian crossing's signal: 'tick' (about to go), 'go' (a two-note chirp while the green man walks), 'red'. */
+  signal(kind) {
+    if (!this.ready(`signal_${kind}`, 0.1)) return;
+    const t = this.now();
+    if (kind === 'go') {
+      this.blip('sine', 2300, 3300, 0.05, 0.045, t);
+      this.blip('sine', 2100, 3100, 0.06, 0.04, t + 0.1);
+    } else if (kind === 'red') {
+      this.blip('square', 880, 878, 0.18, 0.03, t, this.s.filter('lowpass', 2200));
+    } else this.blip('square', 1180, 1170, 0.025, 0.03, t, this.s.filter('lowpass', 3000));
+  }
+
+  /** Batter in a hot iron mould: fat crackling, now and then a breath of steam. Call it every frame while it bakes. */
+  sizzle() {
+    if (!this.ready('sizzle', 0.045)) return;
+    const t = this.now();
+    for (let i = 0; i < 2; i++) this.s.noiseBurst(t + Math.random() * 0.04, 0.012 + Math.random() * 0.015, 'bandpass', 2500 + Math.random() * 5000, 4, 0.03 + Math.random() * 0.04);
+    if (this.ready('sizzle_bed', 0.4)) this.hiss(t, 0.5, 0.025, 6000, 4500, 0.7, 0.08);
+  }
+
+  /** Kurogane's machinery: 'hiss' (steam out of a valve), 'servo' (a motor whining up and a joint locking). */
+  actuator(kind) {
+    if (kind === 'hiss') {
+      if (!this.ready('hiss', 1)) return;
+      this.hiss(this.now(), 0.45, 0.07, 4800, 3200, 0.6);
+      return;
+    }
+    if (!this.ready('servo', 0.12)) return;
+    const t = this.now();
+    this.blip('sawtooth', 180, 520, 0.2, 0.045, t, this.s.filter('lowpass', 1600));
+    this.blip('sine', 160, 60, 0.09, 0.25, t + 0.21);
+    this.s.noiseBurst(t + 0.21, 0.05, 'lowpass', 900, 1, 0.18);
+  }
+
+  /** The blade: 'draw' (steel scraping out and ringing), 'swing' (a cut through the air). */
+  katana(kind) {
+    if (!this.ready(`katana_${kind}`, 0.08)) return;
+    const t = this.now();
+    if (kind === 'draw') {
+      this.hiss(t, 0.28, 0.08, 2000, 7000, 3, 0.05);
+      for (const [f, a] of [[2950, 0.03], [4420, 0.022], [6130, 0.014]]) this.blip('sine', f, f * 0.998, 0.9, a, t + 0.2);
+      return;
+    }
+    this.hiss(t, 0.24, 0.16, 700, 2600, 1.2, 0.09);
+    this.blip('sine', 3800, 3700, 0.2, 0.012, t + 0.06);
+  }
+
   explode(size) {
     if (!this.ready(`boom_${size}`, BOOM_GAP[size] ?? 0.05)) return;
     const t = this.now();

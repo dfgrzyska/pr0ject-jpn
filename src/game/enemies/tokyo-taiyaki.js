@@ -106,6 +106,7 @@ export const tokyoTaiyaki = {
       // shut, sizzling: steam from the seam, a hiss of fat
       g.lid = 'shut';
       g.shake = 0.5;
+      s.sfx.sizzle?.();
       if (Math.random() < dt * 9) s.fx.puff(STEAM, kx + (Math.random() - 0.5) * 36, ky - 6, 0.5);
       if (Math.random() < dt * 14) s.fx.part(s.fx.parts, 'dot_1', kx + (Math.random() - 0.5) * 40, ky + 4, { vx: (Math.random() - 0.5) * 40, vy: -30 - Math.random() * 30, drag: 1, life: 0.3 }).setTint(0xffd080);
       if (g.at > TAIYAKI.bake) this.tyAct(g, 'open');
