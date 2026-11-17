@@ -3,8 +3,13 @@
 // (Nagasaki's lanterns, kites, glass and castella came out bigger than the other cities' enemies).
 // Sapporo adds mechanics on top: flocks with a bonus, ice armour, gliding divers, lobbing turrets,
 // snowploughs and its own miniboss patterns (kind).
+// a city's indestructible trap (enemies/traps.js): its four frames (at rest, glowing, bursting x2) drawn at 540 px
+// in the shared atlas (tools/art/traps.mjs), the ground ring's colours, its size, its volley, how often it goes off
+const trap = (city, zone, r, volley, every) => ({ frames: [0, 1, 2, 3].map((k) => `trap_${city}_${k}`), zone, r, volley, every });
+
 export const SKINS = {
   nagasaki: {
+    trap: trap('nagasaki', 'spark', 12, { kind: 'ring', n: 10 }, 4), // a fireworks mortar on the quay (enemies/traps.js)
     nagasaki: true,
     popcorn: { frame: 'n_lantern_0', anim: 'n_lantern', scale: 0.75 },
     shooter: { frame: 'n_biidoro_0', anim: 'n_biidoro', scale: 0.8 },
@@ -14,6 +19,7 @@ export const SKINS = {
     turret: { base: 'n_winch_base', head: 'n_winch_', wreck: 'n_winch_wreck', pattern: 'tide' },
   },
   kyoto: {
+    trap: trap('kyoto', 'foxfire', 10, { kind: 'ring', n: 6 }, 3.6), // a stone lantern breathing fox fire (enemies/traps.js)
     popcorn: { frame: 'popcorn_0', anim: 'popcorn' },
     shooter: { frame: 'shooter_0', anim: 'shooter' },
     diver: { frame: 'diver_0', anim: 'diver' },
@@ -23,6 +29,7 @@ export const SKINS = {
     turret: { base: 'turret_base', head: 'turret_head_', wreck: 'turret_wreck' },
   },
   okinawa: {
+    trap: trap('okinawa', 'water', 13, { kind: 'ring', n: 8 }, 3.4), // a blowhole in the reef (enemies/traps.js)
     popcorn: { frame: 'tobiuo_0', anim: 'tobiuo' },
     shooter: { frame: 'hari_0', anim: 'hari' },
     diver: { frame: 'habu_0', anim: 'habu' },
@@ -31,6 +38,7 @@ export const SKINS = {
     turret: { base: 'coral_base', head: 'coral_head_', wreck: 'coral_wreck' },
   },
   sapporo: {
+    trap: trap('sapporo', 'snow', 10, { kind: 'fan', n: 5, speed: 'normal', arc: 0.8 }, 3.8), // a snow cannon (enemies/traps.js)
     popcorn: { frame: 'enaga_0', anim: 'enaga', flock: true },
     shooter: { frame: 'tourou_0_0', armor: 16, hp: 8 },
     diver: { frame: 'momonga_2', anim: 'momonga', path: 'glide' },
@@ -41,6 +49,7 @@ export const SKINS = {
   },
   // Kagoshima: bombs that split, aim-line snipers, lidded jars, surfacing kappa, melting shirokuma
   kagoshima: {
+    trap: trap('kagoshima', 'ash', 14, { kind: 'ring', n: 5, big: true }, 3.4), // a fumarole breathing ash (enemies/traps.js)
     popcorn: { frame: 'kazan_0', anim: 'kazan', split: true },
     shooter: { frame: 'teppo_0', anim: 'teppo', sniper: true },
     diver: { frame: 'kappa_0', anim: 'kappa', path: 'submerge' },
@@ -50,6 +59,7 @@ export const SKINS = {
   },
   // Osaka: every regular enemy comes as a manzai duo (see Enemies.duoDown)
   osaka: {
+    trap: trap('osaka', 'fire', 11, { kind: 'ring', n: 8, k: 0.9 }, 3.6), // a takoyaki griddle on a stall (enemies/traps.js)
     duos: true,
     popcorn: { frame: 'takoyaki_0', anim: 'takoyaki' },
     shooter: { frame: 'fugu_0', anim: 'fugu' },
@@ -73,6 +83,7 @@ export const SKINS = {
   // Tokyo (docs/plan-tokyo.md): the longest city, its enemies in five sets, one per stretch of the flight (the
   // stage file's "sets"), drawn at 540 px (tools/art/tokyo/enemies.mjs). bits: what each set breaks into.
   tokyo: {
+    trap: trap('tokyo', 'spark', 10, { kind: 'ring', n: 6, speed: 'normal', k: 0.85 }, 3.4), // a transformer on a pole (enemies/traps.js)
     popcorn: { frame: 't_karasu_0', anim: 't_karasu', flock: true },
     shooter: { frame: 't_kanban_0', anim: 't_kanban' },
     diver: { frame: 't_koma_0', anim: 't_koma' },
@@ -121,6 +132,7 @@ export const SKINS = {
   // Hiroshima & Miyajima: maple-leaf spirit flocks, armored Seto oysters with pearl crits, scooping shamoji paddles,
   // tidal stone lanterns, Heike-gani samurai crab, and Sankibō the Great Tengu of Mount Misen
   hiroshima: {
+    trap: trap('hiroshima', 'fire', 10, { kind: 'fan', n: 3, speed: 'normal', arc: 0.5 }, 3.4), // a fire basket on the shore (enemies/traps.js)
     popcorn: { frame: 'tsuru_0', anim: 'tsuru', flock: true, crane: true },
     shooter: { frame: 'kaki_0', oyster: true, hp: 9 },
     diver: { frame: 'shamoji_0', anim: 'shamoji', scoop: true },

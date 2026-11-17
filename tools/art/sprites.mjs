@@ -16,6 +16,8 @@ import { stampSprites } from './stamps.mjs';
 import { fxSprites } from './fx.mjs';
 import { logoSprites } from './logo.mjs';
 import { foodSprites } from './foods.mjs';
+import { trapSprites540 } from './traps.mjs';
+import { downsample } from './icon.mjs';
 import { pickupToken, TOKEN_FRAMES } from './token.mjs';
 import { turretShot, wingTurret } from './turret.mjs';
 import { SHIP_V1, SHIP_V2 } from './shared540/shipmasks.mjs';
@@ -303,6 +305,7 @@ for (const { name, raster } of stampSprites()) add(name, raster); // the stamp b
 for (const { name, raster } of fxSprites()) add(name, raster); // smoke, debris, scorch, glow, cracks, cloud shadows
 for (const { name, raster } of logoSprites()) add(name, raster); // the logo, the cities' seals
 for (const { name, raster } of foodSprites()) add(name, raster);
+trapSprites540((name, raster) => add(name, downsample(raster, 20))); // the cities' traps, the 540 px drawings area-filtered down
 
 // ---------------------------------------------------------------- pickups
 const PICKUP = [

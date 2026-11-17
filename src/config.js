@@ -109,6 +109,8 @@ export const ENEMIES = {
   // Beppu environment (no score, no multiplier): a hot-spring vent that erupts, a drifting steam cloud
   geyser: { hp: 1, weight: 0, score: 0, radius: 8, explosion: 's', ground: true },
   steam: { hp: 1, weight: 0, score: 0, radius: 17, explosion: 's' },
+  // every city's indestructible traps set into its map (enemies/traps.js): no score, shots pass them by
+  trap: { hp: 1, weight: 0, score: 0, radius: 8, explosion: 's', ground: true },
 };
 
 // Minibosses' HP (the wave's own `hp` wins); below `phase2` of its life each one breaks into its second phase

@@ -582,6 +582,14 @@ export const tokyoTaiyaki = {
       }
     }
     if (e.flash > 0 && e.stage < 3) e.clearTint(); // (shots ring off the iron: it does not flash)
+    // what shots glance off: a pale shield shimmering round it a moment (tyShrug)
+    if (g.shrug && (g.shrug.t -= dt) > 0) {
+      const k = g.shrug.t / 0.18;
+      const [cx, cy, rx, ry] = g.shrug.what === 'big' && b ? [b.x, b.y, 62, 30] : [kx, ky, 60, 32];
+      const ink = this.tele;
+      ink.lineStyle(2, 0xd8e4f4, 0.75 * k).strokeEllipse(cx, cy, rx, ry);
+      ink.lineStyle(1, 0xffffff, 0.4 * k).strokeEllipse(cx, cy, rx + 5, ry + 4);
+    } else g.shrug = null;
   },
 
   /**
@@ -618,6 +626,7 @@ export const tokyoTaiyaki = {
       } else {
         if (Math.random() < 0.3) s.fx.part(s.fx.parts, 'ty_crumb_0', shot.x, shot.y, { vx: (Math.random() - 0.5) * 60, vy: 20, g: 150, life: 0.3 });
         this.tyClang(0.6);
+        this.tyShrug(g, shot, 'big');
       }
       return true;
     }
@@ -625,9 +634,24 @@ export const tokyoTaiyaki = {
     if (((shot.x - kx) / (24 + shot.radius)) ** 2 + ((shot.y - ky) / (12 + shot.radius)) ** 2 < 1) {
       s.fx.spark(shot.x, shot.y - 1, g.heat > 0.4 ? 0xffa040 : 0xd8d8e0);
       this.tyClang(1);
+      this.tyShrug(g, shot, 'kata');
       return true;
     }
     return false;
+  },
+
+  /**
+   * A shot that does nothing (the iron mould; the great fish but while it lies spent): it glances off back down the
+   * screen, a pale shield shimmers round what it struck, and now and then a „KIN!” says so.
+   */
+  tyShrug(g, shot, what) {
+    const s = this.scene;
+    g.shrug = { what, t: 0.18 };
+    if (Math.random() < 0.35) s.fx.part(s.fx.parts, 'dot_1', shot.x, shot.y, { vx: (Math.random() - 0.5) * 120, vy: 60 + Math.random() * 60, drag: 1.5, life: 0.25 }).setTint(0xe8eef8);
+    if (s.t > (g.kinAt ?? 0)) {
+      g.kinAt = s.t + 0.8;
+      s.fx.text(shot.x + (Math.random() - 0.5) * 16, shot.y - 10, 'KIN!', 0.5, 0xd8e4f4);
+    }
   },
 
   tyClang(k) {

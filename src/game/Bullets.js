@@ -33,7 +33,12 @@ const ZONES = {
   water: { warn: 0xbfe8ff, fill: 0xd8f0ff, core: 0xffffff },
   mud: { warn: 0xd8a870, fill: 0x7a5232, core: 0xb08458 },
   blood: { warn: 0xff6a58, fill: 0xa8141e, core: 0xf04a3a },
-  fire: { warn: 0xffb050, fill: 0xd8461a, core: 0xffe08a }, // the Daimonji fire beds
+  fire: { warn: 0xffb050, fill: 0xd8461a, core: 0xffe08a }, // the Daimonji fire beds, braziers, griddles
+  // the cities' traps (enemies/traps.js)
+  foxfire: { warn: 0x9ad8ff, fill: 0x3a7ae0, core: 0xe0f4ff }, // Kyoto's stone lanterns
+  ash: { warn: 0xc8b8a8, fill: 0x5a524c, core: 0xe08a4a }, // Kagoshima's fumaroles
+  snow: { warn: 0xe0f0ff, fill: 0xb8d8f4, core: 0xffffff }, // Sapporo's snow cannons
+  spark: { warn: 0xfff08a, fill: 0x6a8aff, core: 0xffffff }, // Tokyo's transformers, Nagasaki's mortars
 };
 
 // the standard bullets are fine-pixel art, shown at a third of their size: a flash as they are fired, then their

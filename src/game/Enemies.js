@@ -25,6 +25,7 @@ import { kaiken } from './enemies/kaiken.js';
 import { tokyoKasa } from './enemies/tokyo-kasa.js';
 import { tokyoTaiyaki } from './enemies/tokyo-taiyaki.js';
 import { tokyoKurogane } from './enemies/tokyo-kurogane.js';
+import { traps } from './enemies/traps.js';
 // the second phases of the minibosses (Yuki-onna and the Oranda-bune have theirs; the bunraku puppet's go by
 // its puppeteers): its name on the banner
 const HEAVY_P2 = { tanuki: 'TANUKI PIJE SAKE', manta: 'KORALOWA SPIRALA', raiju: 'PRZEŁADOWANIE PIORUNA', wani: 'FAŁSZYWE CIENIE', heikegani: 'PĘKNIĘTY PANCERZ' };
@@ -232,6 +233,9 @@ export class Enemies {
         e = this.pool.spawn(w.kind === 'mud' ? look.mud : look.frame, w.x, -10, { ...base, ghost: true, mud: w.kind === 'mud', every: w.every ?? 3, timer: w.delay ?? 1, erupt: 0, showT: 0 });
         e.u = s.parallax.stripU(-10);
         e.setAlpha(0);
+        break;
+      case 'trap':
+        e = this.spawnTrap(w, base, look); // (a city's indestructible trap on its map: traps.js)
         break;
       case 'steam':
         // a cloud of hot-spring steam drifting down the screen: hides what is under it, heats the guns
@@ -914,6 +918,9 @@ export class Enemies {
         case 'geyser':
           this.geyser(e, dt, b);
           break;
+        case 'trap':
+          this.trap(e, dt, b);
+          break;
         case 'steam': {
           e.y += (22 + (e.vy || 0)) * dt;
           e.x += (Math.sin(e.age * 0.7 + e.x0) * 7 + (e.vx || 0)) * dt;
@@ -1351,4 +1358,4 @@ export class Enemies {
 }
 
 // each city's enemies and bosses live in its own module (src/game/enemies/): their methods join the class here
-Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, kaiken, tokyoKasa, tokyoTaiyaki, tokyoKurogane);
+Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, kaiken, tokyoKasa, tokyoTaiyaki, tokyoKurogane, traps);
