@@ -10,7 +10,8 @@ import { slow, normal, DOWN, TAU } from './shared.js';
  * Its life, the phases' thresholds, how long it stays; the mould (how high over the stall, how long it bakes); the
  * little fish (how many, their life in each phase, the figure of eight they swim, how often each one shoots, how
  * often the school forms one big fish and charges, and how fast); the great fish (its hover, the warning, the
- * charge's speed and reach, how long it lies spent, open to hits).
+ * charge's speed and reach, how long it lies spent, open to hits; how many runs in a row, bouncing off the screen's
+ * edges, before and after it is half gone, the warning before each bounce, how far from the edge it turns).
  */
 export const TAIYAKI = {
   hp: 980,
@@ -19,7 +20,7 @@ export const TAIYAKI = {
   hover: 40,
   bake: 1.3,
   school: { n: 6, hp: [34, 46], loop: [58, 20], gap: 64, speed: 1.05, fire: [1.5, 2.3], rebake: 9, charge: 9.5, rush: 175 },
-  big: { swim: 1.9, aim: 0.8, rush: 230, reach: 0.72, tired: 1.6, back: 0.9 },
+  big: { swim: 1.4, aim: 0.8, rush: 230, reach: 0.72, tired: 2.4, back: 0.9, bounces: [2, 3], rebound: 0.55, wall: 30, under: 48 },
 };
 
 const STALL = [98, 9176]; // the stall that bakes fish of batter (tools/art/tokyo/asakusa.mjs: yatai(86, 9176, ..., true))
@@ -40,7 +41,8 @@ export const tokyoTaiyaki = {
    *    (dark balls at the player), custard (yellow blobs that stop and hang in the air), green tea (a fan of leaves);
    *    now and then the school forms one big fish and charges;
    * 3. Ō-TAIYAKI: the mould heats from grey to red and out jumps one great golden fish with wings of crisp batter. It
-   *    charges across the screen, leaving crumbs; spent, it lies with its belly open to hits (mint).
+   *    charges two or three times in a row, bouncing off the screen's edges along announced red lines, leaving
+   *    crumbs; spent after the last, it lies with its belly open to hits (mint).
    * Beaten, the great fish breaks in half in a gust of steam and the mould drops on to the stall.
    */
   spawnTaiyaki(e) {
@@ -405,22 +407,32 @@ export const tokyoTaiyaki = {
         b.act = 'aim';
         b.at = 0;
         b.to = null;
+        b.chain = frac > 0.165 ? B.bounces[0] : B.bounces[1]; // (runs in a row: one more once it is half gone)
       }
-    } else if (b.act === 'aim') {
-      // it turns on the player, its eye wide: the way it will charge, red
+    } else if (b.act === 'aim' || b.act === 'rebound') {
+      // it turns on the player, its eye wide: the way it will charge, red. A charge but the last runs on to the
+      // screen's edge and it bounces off there: a moment, a new red line at the player, and off again
       const a = Math.atan2(p.y - b.y, p.x - b.x);
-      if (b.at < B.aim * 0.7 || !b.to) {
-        const reach = Math.min(Math.hypot(p.x - b.x, p.y - b.y) + 36, (s.H * B.reach - b.y) / Math.max(0.2, Math.sin(a)));
-        b.to = [b.x + Math.cos(a) * reach, b.y + Math.sin(a) * reach];
-        b.aimA = a;
+      const warn = b.act === 'aim' ? B.aim : B.rebound;
+      if (b.at < warn * 0.7 || !b.to) {
+        if (b.act === 'aim') {
+          b.to = this.tyWall(b.x, b.y, a, s.H * B.reach, ky + B.under);
+          b.aimA = a;
+        } else [b.to, b.aimA] = this.tyBounce(b, p, s.H * B.reach, ky + B.under);
+        // the last run ends by the player (or at the edge, if that comes first)
+        if (b.chain <= 1) {
+          const len = Math.hypot(b.to[0] - b.x, b.to[1] - b.y);
+          const want = Math.hypot(p.x - b.x, p.y - b.y) + 36;
+          if (want < len) b.to = [b.x + Math.cos(b.aimA) * want, b.y + Math.sin(b.aimA) * want];
+        }
       }
       b.face = Math.cos(b.aimA) >= 0 ? 1 : -1;
       b.ang = b.face > 0 ? b.aimA : b.aimA - Math.PI;
-      const k = b.at / B.aim;
+      const k = b.at / warn;
       const ink = this.tele;
       ink.lineStyle(26, WARN, 0.1 + 0.16 * k).lineBetween(b.x, b.y, b.to[0], b.to[1]);
       ink.lineStyle(2, WARN, 0.5 + 0.4 * k).lineBetween(b.x, b.y, b.to[0], b.to[1]);
-      if (b.at > B.aim) {
+      if (b.at > warn) {
         b.act = 'charge';
         b.at = 0;
         b.from = [b.x, b.y];
@@ -437,7 +449,19 @@ export const tokyoTaiyaki = {
         s.bullets.shot(Math.random() < 0.5 ? 'ty_crumb_0' : 'ty_crumb_1', b.x + (Math.random() - 0.5) * 16, b.y + (Math.random() - 0.5) * 10, DOWN + (Math.random() - 0.5), 8, 1.5, { frz: { at: 0.2, hold: 0.7, turn: 0, speed: 40, frame: 'ty_crumb_1' } });
       }
       if (Math.random() < dt * 20) s.fx.puff(STEAM, b.x - Math.cos(b.aimA) * 20, b.y - Math.sin(b.aimA) * 20, 0.35);
-      if (k >= 1) {
+      if (k >= 1 && b.chain > 1) {
+        // off the edge of the screen: a bump, a puff of flour and crumbs, and it turns for the next run
+        b.chain--;
+        b.inA = b.aimA; // (the way it came in, to bounce off)
+        b.act = 'rebound';
+        b.at = 0;
+        b.to = null;
+        s.cameras.main.shake(120, 0.004);
+        s.sfx.explode('s');
+        s.fx.text(b.x, b.y - 24, 'BOYON!', 0.7, 0xfff0a0);
+        for (let i = 0; i < 8; i++) s.fx.part(s.fx.parts, Math.random() < 0.5 ? 'ty_crumb_0' : 'ty_crumb_1', b.x, b.y, { vx: (Math.random() - 0.5) * 140, vy: (Math.random() - 0.5) * 140, g: 160, spin: 6, life: 0.5 });
+        for (let i = 0; i < 3; i++) s.fx.puff(STEAM, b.x + (Math.random() - 0.5) * 20, b.y + (Math.random() - 0.5) * 10, 0.45);
+      } else if (k >= 1) {
         b.act = 'tired';
         b.at = 0;
         s.cameras.main.shake(180, 0.005);
@@ -464,6 +488,39 @@ export const tokyoTaiyaki = {
     }
     // touching it hurts, except while it lies spent
     if (b.act !== 'tired' && p.alive && !p.god && p.invulnerable <= 0 && p.entering <= 0 && ((p.x - b.x) / 26) ** 2 + ((p.y - b.y) / 11) ** 2 < 1) p.hit();
+  },
+
+  /**
+   * The next run off the edge it has just met: its way in mirrored off that edge, then turned a little (at most
+   * 25 degrees) towards the player. Returns [where it meets the next edge, the angle].
+   */
+  tyBounce(b, p, floor, top) {
+    const W = TAIYAKI.big.wall;
+    let dx = Math.cos(b.inA);
+    let dy = Math.sin(b.inA);
+    if (b.x <= W + 1 || b.x >= VIEW.width - W - 1) dx = -dx;
+    if (b.y >= floor - 1 || b.y <= top + 1) dy = -dy;
+    const r = Math.atan2(dy, dx);
+    const turn = Phaser.Math.Angle.Wrap(Math.atan2(p.y - b.y, p.x - b.x) - r);
+    // (a run that would only graze the edge goes plainly mirrored, or else out to the middle of the screen)
+    const long = (a) => Math.hypot(...this.tyWall(b.x, b.y, a, floor, top).map((v, i) => v - (i ? b.y : b.x))) >= 50;
+    let a = r + Phaser.Math.Clamp(turn, -0.45, 0.45);
+    if (!long(a)) a = long(r) ? r : Math.atan2(floor * 0.5 - b.y, VIEW.width / 2 - b.x);
+    return [this.tyWall(b.x, b.y, a, floor, top), a];
+  },
+
+  /** Where a charge from (x, y) along angle a meets the edge of the screen (its sides, `floor` below), or `top`: a
+   * little under the mould, as the iron in front of it would take the shots meant for its belly. */
+  tyWall(x, y, a, floor, top) {
+    const W = TAIYAKI.big.wall;
+    const [c, sn] = [Math.cos(a), Math.sin(a)];
+    let t = Infinity;
+    if (c > 1e-3) t = Math.min(t, (VIEW.width - W - x) / c);
+    if (c < -1e-3) t = Math.min(t, (W - x) / c);
+    if (sn > 1e-3) t = Math.min(t, (floor - y) / sn);
+    if (sn < -1e-3) t = Math.min(t, (top - y) / sn);
+    t = Math.max(30, t);
+    return [x + c * t, y + sn * t];
   },
 
   // ---------------------------------------------------------------- the end of the fight, either way

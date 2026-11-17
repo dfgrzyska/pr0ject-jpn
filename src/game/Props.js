@@ -236,14 +236,32 @@ export class Props {
     for (let i = 0; i < p.n; i++) {
       let s = p.s - i * p.gap;
       if (p.mode !== 'pp') s = ((s % p.total) + p.total) % p.total;
+      const o = p.objs[i];
       const pt = this.at(p, s);
-      const x = pt[0];
-      const u = pt[1];
+      let x = pt[0];
+      let u = pt[1];
       const dx0 = pt[2];
       const du0 = pt[3];
-      const dx = dx0 * p.dir;
-      const du = du0 * p.dir;
-      const o = p.objs[i];
+      let dx = dx0 * p.dir;
+      let du = du0 * p.dir;
+      if (p.turn === 'rot') {
+        // (a coach or a car rides on two points of its way, as on its bogies: it sits between them, turned along
+        // the line from one to the other, so it bends round a curve smoothly instead of snapping at each corner)
+        const h = o.displayWidth * 0.4;
+        const wrap = (v) => (p.mode === 'pp' ? v : ((v % p.total) + p.total) % p.total);
+        const f = this.at(p, wrap(s + h * p.dir));
+        const [fx, fu] = [f[0], f[1]];
+        const b = this.at(p, wrap(s - h * p.dir));
+        const ex = fx - b[0];
+        const eu = fu - b[1];
+        // (not across the seam of a loop, where front and back sit at its two ends)
+        if (Math.hypot(ex, eu) < h * 2.5 && Math.hypot(ex, eu) > 0.01) {
+          x = (fx + b[0]) / 2;
+          u = (fu + b[1]) / 2;
+          dx = ex;
+          du = eu;
+        }
+      }
       let frames = p.f;
       if (p.turn === 'rot') o.setRotation(Math.atan2(-du, dx));
       else if (Math.abs(du) > Math.abs(dx) && (p.fu || p.fd)) frames = du > 0 ? p.fu ?? p.f : p.fd ?? p.f;
