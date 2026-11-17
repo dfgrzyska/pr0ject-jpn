@@ -13,7 +13,7 @@ import { slow, normal, DOWN, TAU } from './shared.js';
  * charge's speed and reach, how long it lies spent, open to hits).
  */
 export const TAIYAKI = {
-  hp: 1100,
+  hp: 980,
   phase: [0.66, 0.33],
   time: 95,
   hover: 40,

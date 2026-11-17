@@ -112,7 +112,7 @@ export const ENEMIES = {
 };
 
 // Minibosses' HP (the wave's own `hp` wins); below `phase2` of its life each one breaks into its second phase
-export const HEAVY = { hp: { tanuki: 750, manta: 780, raiju: 800, wani: 820, heikegani: 820, kasa: 1050, taiyaki: 1100 }, phase2: 0.5 };
+export const HEAVY = { hp: { tanuki: 750, manta: 780, raiju: 800, wani: 820, heikegani: 820, kasa: 820, taiyaki: 980 }, phase2: 0.5 };
 
 // The journey gets harder city by city: from the second city on, small fry have `hp` more HP for each city
 // already flown (at most `hpMax`), and shooters and turrets reload up to `react` faster by the last one

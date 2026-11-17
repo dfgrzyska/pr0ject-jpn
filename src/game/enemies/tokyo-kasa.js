@@ -14,14 +14,14 @@ import { slow, normal, DOWN, TAU } from './shared.js';
  * out, the sweep, the pull back, how far it reaches, how much more a hit on the eye takes then).
  */
 export const KASA = {
-  hp: 1050,
+  hp: 820,
   phase: [0.66, 0.33],
-  time: 85,
+  time: 95,
   hop: { crouch: 0.3, air: 0.58, h: 22, land: 0.3 },
   drizzle: 0.17,
   spin: { close: 0.3, dur: 1.7, ring: 12, every: 0.42, open: 0.32 },
-  signal: { warn: 0.95, cross: 1.3, stop: 2.5 },
-  mini: { r: 8 },
+  signal: { warn: 0.95, cross: 1.3, stop: 3.2 },
+  mini: { r: 8, take: 1.3 }, // (small targets: each hit at the red man counts a little more)
   top: { dur: 2.6, every: 0.15, turn: 0.55 },
   lash: { settle: 0.35, warn: 0.6, out: 0.18, sweep: 1.0, back: 0.3, reach: 82, take: 1.4 },
 };
@@ -55,7 +55,7 @@ const LEG_TOP = -13.33; // the leg frame's top (where the handle meets the canop
 const MINI_FOOT = 10.8; // a little one's sole below its frame's middle
 // how big the eye is on each shape of canopy, and the box its canopy takes (rx, ry, dy) for shots
 const EYE_K = { shut: 0.55, spin: 0.55, half: 0.78, air: 0.78, wide: 0.92, top: 0.88, open: 1, squash: 1, split: 1, bow: 0.55 };
-const BODY = { shut: [7, 19, 0], spin: [7, 19, 0], half: [15, 15, 2], air: [15, 15, 2], wide: [21, 13, 0], top: [21, 13, 0], open: [25, 13, -1], squash: [26, 12, -1], split: [24, 14, 0], bow: [7, 14, 0] };
+const BODY = { shut: [10, 19, 0], spin: [10, 19, 0], half: [15, 15, 2], air: [15, 15, 2], wide: [21, 13, 0], top: [21, 13, 0], open: [25, 13, -1], squash: [26, 12, -1], split: [24, 14, 0], bow: [7, 14, 0] };
 const GOLD = 0xffd06a;
 const SAFE = 0x81f3cc;
 const WARN = 0xff735e;
@@ -243,7 +243,7 @@ export const tokyoKasa = {
           this.kasaHop(g, SPOTS[pick]);
         }
         g.guard = !(g.hop.t > g.hop.crouch && g.hop.t < g.hop.crouch + g.hop.air); // (in the air: open to hits)
-        if (this.kasaHopStep(e, g, dt)) this.kasaNext(e, g, ++g.hops % 3 === 0 ? 'spin' : 'look');
+        if (this.kasaHopStep(e, g, dt)) this.kasaNext(e, g, ++g.hops % 2 === 0 ? 'spin' : 'look');
         break;
       case 'spin': {
         const { close, dur, every, ring, open } = KASA.spin;
@@ -806,7 +806,7 @@ export const tokyoKasa = {
         const my = this.kasaMiniY(m);
         if (Math.hypot(shot.x - m.x, shot.y - my) > KASA.mini.r + shot.radius) continue;
         if (g.act === 'stop') {
-          this.damage(e, shot.damage);
+          this.damage(e, shot.damage * KASA.mini.take);
           m.hurt = 0.1;
           if (Math.random() < 0.5) s.fx.spark(shot.x, shot.y - 2);
         } else this.kasaPlink(shot.x, shot.y, 0.4);
@@ -820,11 +820,14 @@ export const tokyoKasa = {
     if (((shot.x - e.x) / (rx + shot.radius)) ** 2 + ((shot.y - e.y - dy) / (ry + shot.radius)) ** 2 > 1) return false;
     if (e.stage === 3) {
       const an = anchorOf(g.frame);
-      if (g.exposed && Math.hypot(shot.x - (e.x + an[0]), shot.y - (e.y + an[1])) < 8 + shot.radius) {
+      const [ex, ey] = [e.x + an[0], e.y + an[1]];
+      if (g.exposed && Math.hypot(shot.x - ex, shot.y - ey) < 8 + shot.radius) {
         this.damage(e, shot.damage * KASA.lash.take);
         s.fx.spark(shot.x, shot.y - 2, SAFE);
         return true;
       }
+      // (the eye open: a shot coming up under it flies on to it, not stopped by the canopy's rim on the way)
+      if (g.exposed && shot.y > ey && Math.abs(shot.x - ex) < 8 + shot.radius) return false;
       this.kasaPlink(shot.x, shot.y, 0.25);
       return true;
     }
