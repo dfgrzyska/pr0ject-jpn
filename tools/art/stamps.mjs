@@ -309,6 +309,65 @@ function hiroshima(name = 'HIROSZIMA') {
   return inkUp(r, 71);
 }
 
+/** Tokyo: Tokyo Tower's lattice over the low roofs, fireworks either side, in a frame with rounded corners (TOKIO, or TOKYO). */
+function tokyo(name = 'TOKIO') {
+  const r = new Raster(S, S);
+  // the frame: a square with rounded corners, a thick rule and a thin one inside it
+  const sq = (x, y, k, rad) => {
+    const dx = Math.abs(x + 0.5 - MID);
+    const dy = Math.abs(y + 0.5 - MID);
+    if (dx > k || dy > k) return false;
+    return !(dx > k - rad && dy > k - rad && Math.hypot(dx - (k - rad), dy - (k - rad)) > rad);
+  };
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if ((sq(x, y, 27, 7) && !sq(x, y, 25, 5)) || (sq(x, y, 23.5, 4) && !sq(x, y, 22.5, 3.5))) on(r, x, y);
+  nameBand(r, name, 41, 48, (x, y) => sq(x, y, 22, 3));
+  // the tower: flaring legs, the lattice crossing between them, two decks, the mast
+  const hw = (y) => 0.8 + 10.5 * Math.pow(Math.max(0, y - 9) / 27, 1.7);
+  for (let y = 9; y <= 37; y++) {
+    const w = hw(y);
+    for (const s of [-1, 1]) {
+      on(r, MID + s * w, y);
+      if (y > 24) on(r, MID + s * (w - 1), y);
+    }
+  }
+  for (let y0 = 11; y0 < 34; y0 += 4) { // the lattice: an X in every section
+    for (let k = 0; k <= 4; k++) {
+      const y = y0 + k;
+      const w0 = hw(y0);
+      const w1 = hw(y0 + 4);
+      const w = w0 + ((w1 - w0) * k) / 4;
+      on(r, MID - w + (2 * w * k) / 4, y);
+      on(r, MID + w - (2 * w * k) / 4, y);
+    }
+  }
+  for (let y = 31; y <= 37; y++) { // the arch between the feet
+    const a = Math.sqrt(Math.max(0, 1 - ((37 - y) / 6.5) ** 2)) * hw(y) * 0.62;
+    for (let x = Math.round(MID - a); x <= MID + a; x++) off(r, x, y);
+  }
+  for (const [y, w, h] of [[23, hw(23) + 2.5, 3], [15, hw(15) + 1.5, 2]]) { // the decks, their windows lit (left pale)
+    for (let yy = y; yy < y + h; yy++) for (let x = Math.round(MID - w); x <= MID + w; x++) on(r, x, yy);
+    for (let x = Math.round(MID - w) + 1; x < MID + w - 1; x += 2) off(r, x, y + 1);
+  }
+  for (let y = 3; y < 9; y++) on(r, MID, y);
+  on(r, MID, 2);
+  // the low roofs of Minato at the tower's feet, windows knocked out
+  for (const [x0, w, h] of [[6, 6, 4], [12, 4, 6], [40, 5, 5], [45, 5, 3]]) {
+    for (let y = 38 - h; y < 38; y++) for (let x = x0; x < x0 + w; x++) if (sq(x, y, 22.5, 3.5)) on(r, x, y);
+    for (let x = x0 + 1; x < x0 + w - 1; x += 2) off(r, x, 39 - h);
+  }
+  for (let x = 6; x <= 49; x++) if (sq(x, 38, 22.5, 3.5)) on(r, x, 38);
+  // fireworks over the bay
+  for (const [fx, fy, n, rad] of [[12, 13, 10, 5], [44, 11, 8, 4]]) {
+    on(r, fx, fy);
+    for (let k = 0; k < n; k++) {
+      const a = (k / n) * Math.PI * 2;
+      on(r, fx + Math.cos(a) * rad, fy + Math.sin(a) * rad);
+      on(r, fx + Math.cos(a) * (rad - 2), fy + Math.sin(a) * (rad - 2));
+    }
+  }
+  return inkUp(r, 97);
+}
+
 export function stampSprites() {
   const nagasaki = new Raster(S, S);
   ring(nagasaki, MID, MID, 26, 2);
@@ -333,6 +392,8 @@ export function stampSprites() {
     { name: 'stamp_stage6', raster: beppu() },
     { name: 'stamp_stage7', raster: hiroshima() },
     { name: 'stamp_stage7_en', raster: hiroshima('HIROSHIMA') },
+    { name: 'stamp_stage9', raster: tokyo() },
+    { name: 'stamp_stage9_en', raster: tokyo('TOKYO') },
   ];
   // the HUD's little stamp: a round seal (tinted with the city's ink)
   const icon = new Raster(9, 9);

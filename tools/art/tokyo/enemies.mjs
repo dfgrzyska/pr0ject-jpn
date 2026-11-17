@@ -807,4 +807,4 @@ export function tokyoEnemies(add) {
   taiyakiEnemies(add); // the second (taiyaki.mjs)
   kuroganeEnemies(add); // the mech, in parts (kurogane.mjs)
 }
-export const TOKYO_PORTRAITS = ['t_komainu_0', 't_karasu_0', 'kg_portrait'];
+export const TOKYO_PORTRAITS = ['t_komainu_0', 't_karasu_0', 'kg_portrait', 'ko_portrait', 'ty_big_0_0'];

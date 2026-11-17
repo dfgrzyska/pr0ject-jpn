@@ -50,7 +50,7 @@ export class JourneyMenu {
     this.segs = Array.from({ length: body?.n ?? 0 }, (_, i) => add(sharedArt(scene.add.image(0, 0, 'sprites', scene.ship.frame)).setFrame(`${scene.ship.frame}_${i === body.n - 1 ? 'tail' : 'seg'}`).setScale(1 - i * 0.045), DEPTH.overlay + 0.48 - i * 0.001));
     this.logo = add(scene.add.image(90, 0, 'menu', 'logo').setScale(FINE));
     this.tagline = add(pixelText(scene, 90, 0, 'LEĆ PRZEZ JAPONIĘ').setTint(0xffdba8));
-    this.caption = add(pixelText(scene, 90, 0, 'OSIEM MIAST. JEDNA PODRÓŻ.').setTint(0xc8ac85));
+    this.caption = add(pixelText(scene, 90, 0, 'DZIEWIĘĆ MIAST. JEDNA PODRÓŻ.').setTint(0xc8ac85));
     this.heading = add(pixelText(scene, 90, 50, 'WYBIERZ MIASTO'));
     this.newGame = add(pixelText(scene, 85, 0, 'WYRUSZ W PODRÓŻ'), DEPTH.overlay + 2);
     // the collection: the stamp book, the yōkai album and the food journal, a tab each
@@ -151,7 +151,7 @@ export class JourneyMenu {
     this.scene.tweens.killTweensOf(this.map);
     const scale = cities ? 0.8 : 1;
     this.scene.tweens.add({ targets: this.map, scaleX: scale * FINE, scaleY: scale * FINE, y: Math.round((this.H - MAP.h * scale) / 2), alpha: title ? 0.58 : 1, duration: 450, ease: 'Sine.easeInOut' });
-    this.name.setText(ALL_STAGES[this.index].name).setTint(0xffe080);
+    this.name.setText(tr(ALL_STAGES[this.index].name)).setTint(0xffe080);
     this.subtitle.setText(tr(ALL_STAGES[this.index].subtitle));
     this.next.setTint(0xffe080);
   }
@@ -165,7 +165,7 @@ export class JourneyMenu {
     this.flight = { from, to, cx: (from.x + to.x) / 2 + (to.y - from.y) / distance * bend,
       cy: (from.y + to.y) / 2 - (to.x - from.x) / distance * bend, t: 0, duration: Math.min(0.7, 0.4 + distance / 500) };
     this.index = index;
-    this.name.setText(ALL_STAGES[index].name);
+    this.name.setText(tr(ALL_STAGES[index].name));
     this.subtitle.setText(tr(ALL_STAGES[index].subtitle));
   }
 

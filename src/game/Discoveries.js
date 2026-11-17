@@ -2,7 +2,7 @@ import { DEPTH, PLAYER, VIEW } from '../config.js';
 import { YOKAI, FOODS, createDiscoveryStore } from '../data/discoveries.js';
 import { STAGES } from '../data/stages.js';
 import { ITEMS, RARITY } from '../data/gacha.js';
-import { getLang } from '../i18n.js';
+import { getLang, tr } from '../i18n.js';
 import { pixelText } from './Hud.js';
 import { INK_FONT } from '../scenes/Boot.js';
 import { portrait, sharedArt } from './enemyArt.js';
@@ -307,9 +307,9 @@ export class DiscoveryBook {
     if (e.rarity && known) g.fillStyle(RARITY[e.rarity].color).fillRect(52, 115, 76, 2);
     this.secret.setPosition(90, 87).setVisible(!known);
     this.name.setText(known ? e.name : '???').setPosition(90, 128);
-    this.city.setText(`${city.name}${food ? ` / ${e.place}` : ''}`).setPosition(90, 143);
+    this.city.setText(`${tr(city.name)}${food ? ` / ${e.place}` : ''}`).setPosition(90, 143);
     // Long location names get their own wrapped hint below; the city header stays compact.
-    if (this.city.width > 152) this.city.setText(city.name);
+    if (this.city.width > 152) this.city.setText(tr(city.name));
     const target = e.type === 'boss' ? words('BOSSA', 'THE BOSS') : e.type === 'heavy' ? words('MINIBOSSA', 'THE MINIBOSS')
       : e.id === 'kitsune' ? words('DRONA Z LISIĄ MASKĄ', 'A FOX-MASK DRONE') : e.id === 'chochin' ? words('CZERWONY LAMPION', 'A RED LANTERN')
         : e.id === 'kappa' ? words('WODNĄ KAPPĘ', 'A WATER KAPPA') : words('KOCIĄ WIEŻYCZKĘ', 'A CAT TURRET');

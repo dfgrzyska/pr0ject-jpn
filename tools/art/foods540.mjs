@@ -40,6 +40,12 @@ const RAMPS = {
   cb: tones([0xc4bca4, 0xeeeadc, 0xfffff4]), // milky champon broth
   cg: tones([0x5e8e38, 0xa4cc6a, 0xdef2ac]), // cabbage
   wd: tones([0x6a4424, 0xa47448, 0xd8ac78]), // pale wood
+  cp: tones([0xb07a2e, 0xe8b860, 0xfff0c0]), // crêpe, thin and golden
+  pk: tones([0xc0607e, 0xf2a0b8, 0xffe0ea]), // pink paper sleeve
+  sb: tones([0x8a1020, 0xd8303a, 0xff8a80]), // strawberry
+  mc: tones([0xb8902a, 0xeed27a, 0xfff6c8]), // melonpan's cookie crust
+  ny: tones([0x7a3e10, 0xc07a34, 0xf0b868]), // ningyō-yaki, baked brown
+  mj: tones([0x5a3a1c, 0x9a6a34, 0xd0a060]), // monja batter, browning
 };
 const sprite = () => new HiSprite(60, 60, RAMPS);
 const crumb = (seed) => mix2(speckle({ amt: 0.28, dark: 0.12, light: 0.1, seed }), mottle({ amt: 0.12, scale: 3, seed: seed + 1 }));
@@ -317,7 +323,100 @@ function champon() {
   return s;
 }
 
-const DRAW = { yatsuhashi, inari, goya, andagi, ramen, corn, shirokuma, karukan, kushi, takoyaki, toriten, pudding, okonomiyaki, momiji, castella, champon };
+/** Harajuku: a crêpe rolled into a cone in a pink paper sleeve, whipped cream, strawberries, chocolate drizzle. */
+function crepe() {
+  const s = sprite();
+  // the cone: wide at the top, to a point at the bottom, the crêpe's folds showing above the sleeve
+  s.poly([[14, 20], [46, 20], [32, 56], [28, 56]], 'cp', { flat: 0.62, pat: mottle({ amt: 0.14, scale: 3, seed: 2 }) });
+  for (const [x0, x1] of [[16, 26], [27, 38], [37, 45]]) s.line(x0, 21, (x0 + x1) / 2 + 1, 34, 0xb07a2e, 1, 0.5); // folds
+  s.poly([[17, 32], [43, 32], [32, 56], [28, 56]], 'pk', { flat: 0.68 });
+  for (let k = 0; k < 4; k++) s.line(21 + k * 6, 33, 29 + k * 1.2, 54, 0xffffff, 1, 0.55); // the sleeve's stripes
+  s.line(17, 32, 43, 32, 0xc0607e, 1, 0.9);
+  // cream piled up in swirls, strawberry halves round it
+  for (const [x, y, r] of [[22, 18, 6], [30, 14, 7], [38, 18, 6], [30, 21, 6]]) s.ellipse(x, y, r, r * 0.8, 'mw', { bias: 0.06 });
+  s.paint([20, 6, 40, 24], (x, y) => Math.abs(Math.hypot(x - 30, (y - 15) * 1.3) - 4.5) < 0.6, 'mw', () => 0.35); // the swirl's line
+  for (const [x, y, a] of [[17, 22, -0.5], [43, 21, 0.5], [34, 9, 0.2]]) {
+    s.paint([x - 5, y - 5, x + 5, y + 5], (px, py) => {
+      const u = (px - x) * Math.cos(a) + (py - y) * Math.sin(a);
+      const v = -(px - x) * Math.sin(a) + (py - y) * Math.cos(a);
+      return (u / 3.6) ** 2 + ((v + 0.5) / 4.4) ** 2 < 1 && v < 3.4 - Math.abs(u) * 0.4; // a heart-ish half
+    }, 'sb', (px, py) => 0.6 - (py - y) * 0.03, { pat: speckle({ amt: 0.2, seed: x }) });
+    s.dot(x, y - 0.5, 1.4, 0xffe0e0, 0.75); // its pale middle
+  }
+  for (let k = 0; k < 5; k++) s.line(20 + k * 5, 12 + (k % 2) * 3, 23 + k * 5, 20 - (k % 2) * 2, 0x3a1608, 1, 0.9); // chocolate
+  return s;
+}
+
+/** Akihabara: melonpan, a round bun under a crisp sugar-cookie crust scored in a lattice, on a sheet of paper. */
+function melonpan() {
+  const s = sprite();
+  s.poly([[4, 36], [52, 30], [58, 48], [8, 54]], 'W', { flat: 0.72 });
+  s.line(8, 40, 54, 34, 0xd8d0c0, 1, 0.7);
+  // the bun's soft side peeping out under the crust, then the dome of crust
+  s.ellipse(30, 36, 22, 13, 'mw', { bias: 0.04 });
+  s.ellipse(30, 30, 21, 15, 'mc', { bias: 0.08, pat: crumb(9) });
+  // the lattice pressed into it: two sets of curved grooves over the dome
+  s.paint([8, 14, 52, 46], (x, y) => {
+    const dx = (x - 30) / 21;
+    const dy = (y - 30) / 15;
+    if (dx * dx + dy * dy > 0.92) return false;
+    const u = x + y * 0.9;
+    const v = x - y * 0.9;
+    return u % 7 < 1.1 || ((v % 7) + 7) % 7 < 1.1;
+  }, 'mc', () => 0.25);
+  for (let k = 0; k < 30; k++) s.dot(12 + ((k * 37) % 36), 18 + ((k * 23) % 22), 0.5, 0xffffff, 0.85); // sugar
+  s.dot(22, 22, 3, 0xffffff, 0.3); // the light on the dome
+  return s;
+}
+
+/** Asakusa: ningyō-yaki, little bean-filled cakes baked in iron moulds: a lantern, a pigeon, a five-storey pagoda. */
+function ningyoyaki() {
+  const s = sprite();
+  s.poly([[4, 40], [56, 36], [58, 50], [6, 54]], 'W', { flat: 0.7 }); // a paper tray
+  s.poly([[4, 40], [56, 36], [57, 39], [5, 43]], 'R', { flat: 0.6 }); // its red edge
+  // the lantern: a rounded barrel with bands round it
+  s.ellipse(15, 30, 8, 11, 'ny', { bias: 0.08, pat: crumb(3) });
+  for (const y of [22, 38]) s.line(9, y, 21, y, 0x5a2a08, 2, 0.8);
+  for (const y of [27, 31, 35]) s.line(8, y, 22, y, 0x7a3e10, 1, 0.6);
+  // the pigeon: body, head, a wing pressed in
+  s.ellipse(32, 34, 9, 6.5, 'ny', { bias: 0.08, pat: crumb(4) });
+  s.ellipse(39, 28, 4, 4, 'ny', { bias: 0.08 });
+  s.poly([[42, 28], [46, 29], [42, 30]], 'ny', { flat: 0.35 });
+  s.paint([24, 30, 36, 38], (x, y) => Math.abs(Math.hypot(x - 34, y - 38) - 6) < 0.7 && y < 37, 'ny', () => 0.3);
+  s.dot(40, 27, 0.8, 0x2a1004);
+  // the pagoda: five tiers narrowing upward, a spire
+  for (let k = 0; k < 5; k++) {
+    const y = 42 - k * 6;
+    const hw = 8 - k * 1.2;
+    s.poly([[48 - hw, y], [48 + hw, y], [48 + hw - 1.5, y - 4], [48 - hw + 1.5, y - 4]], 'ny', { flat: 0.55 - k * 0.02, pat: crumb(k + 10) });
+    s.line(48 - hw - 1, y - 4, 48 + hw + 1, y - 4, 0x7a3e10, 1, 0.8); // each roof
+  }
+  s.line(48, 18, 48, 11, 0x7a3e10, 1);
+  s.dot(15, 30, 2, 0x461a1c, 0.6); // a bit of bean paste showing through a crack
+  return s;
+}
+
+/** Tsukishima, at the Sumida's mouth: monjayaki on the hot iron, the batter pooled in a ring of cabbage, a tiny spatula. */
+function monjayaki() {
+  const s = sprite();
+  s.poly([[2, 22], [58, 22], [58, 56], [2, 56]], 'ir', { flat: 0.45, pat: speckle({ amt: 0.15, seed: 7 }) });
+  // the bank of chopped cabbage and toppings, and the runny batter inside it, browning at the edge
+  s.paint([6, 24, 54, 54], (x, y) => {
+    const d = Math.hypot((x - 30) / 22, (y - 39) / 13);
+    return d < 1 && d > 0.62;
+  }, 'cg', (x, y) => 0.6 - (y - 39) * 0.01, { pat: mottle({ amt: 0.25, scale: 2, seed: 3 }) });
+  s.ellipse(30, 39, 14, 8, 'mj', { flat: 0.55, pat: mottle({ amt: 0.12, scale: 4, seed: 5 }) });
+  for (const [x, y] of [[25, 37], [33, 41], [29, 43], [36, 36]]) s.dot(x, y, 1.1, 0xfff0d0, 0.55); // bubbles
+  for (const [x, y] of [[14, 36], [44, 42], [20, 46], [40, 32]]) s.dot(x, y, 1.6, 0xe86a5a, 0.9); // mentaiko
+  for (const [x, y] of [[18, 42], [42, 36]]) s.poly([[x - 2, y - 2], [x + 2, y - 2], [x + 2, y + 2], [x - 2, y + 2]], 'mw', { flat: 0.8 }); // mochi
+  // the hagashi, the little spatula monja is eaten off the plate with
+  s.poly([[40, 10], [50, 6], [52, 9], [42, 13]], 'S', { flat: 0.7 });
+  s.tube(51, 7, 58, 3, 1, 'wd');
+  for (let y = 4; y < 20; y++) s.px(20 + Math.sin(y * 0.6) * 2, y, 0xffffff, 0.3 + (y / 20) * 0.25); // steam
+  return s;
+}
+
+const DRAW = { yatsuhashi, inari, goya, andagi, ramen, corn, shirokuma, karukan, kushi, takoyaki, toriten, pudding, okonomiyaki, momiji, castella, champon, crepe, melonpan, ningyoyaki, monjayaki };
 
 /** The dish `id` at 540 px: a 60 x 60 Raster. */
 export function food540(id) {

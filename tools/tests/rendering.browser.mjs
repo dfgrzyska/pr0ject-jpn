@@ -79,12 +79,12 @@ try {
   }
   assert.equal(samples.at(-1).left - samples[0].left, 3);
 
-  await page.evaluate(() => { game.scene.getScene('Stage').scene.restart({ order: [0,1,2,3,4,5,6,7] }); game.loop.start(game.step.bind(game)); });
-  for (let pos = 0; pos < 8; pos++) {
+  await page.evaluate(() => { game.scene.getScene('Stage').scene.restart({ order: [0,1,2,3,4,5,6,7,8] }); game.loop.start(game.step.bind(game)); });
+  for (let pos = 0; pos < 9; pos++) {
     await page.waitForFunction(pos => { const s = game.scene.getScene('Stage'); return s.pos === pos && s.state === 'title' && !s.scene.get('Boot').load.isLoading(); }, pos);
     const cities = await page.evaluate(() => [...new Set(game.textures.getTextureKeys().map(k => /^(?:far|mid|props|view)_(stage\d+)(?:_|$)/.exec(k)?.[1]).filter(Boolean))].sort());
-    assert.deepEqual(cities, [`stage${pos + 1}`, ...(pos < 7 ? [`stage${pos + 2}`] : [])]);
-    if (pos < 7) await page.evaluate(pos => game.scene.getScene('Stage').scene.restart({ order: [0,1,2,3,4,5,6,7], pos: pos + 1 }), pos);
+    assert.deepEqual(cities, [`stage${pos + 1}`, ...(pos < 8 ? [`stage${pos + 2}`] : [])]);
+    if (pos < 8) await page.evaluate(pos => game.scene.getScene('Stage').scene.restart({ order: [0,1,2,3,4,5,6,7,8], pos: pos + 1 }), pos);
   }
   // A released city must load again.
   await page.evaluate(() => game.scene.getScene('Stage').scene.restart({ order: [0,1,2,3,4,5,6,7] }));
@@ -98,7 +98,7 @@ try {
   await page.waitForFunction(() => { const s = game.scene.getScene('Stage'); return s.stage.id === 'stage6' && s.state === 'title' && !s.scene.get('Boot').load.isLoading(); });
   assert(await page.evaluate(() => !game.textures.exists('far_stage1') && game.textures.exists('far_stage6')));
   assert.deepEqual(errors, []);
-  console.log('540px: pointer menus, drag gain, pause, resize, half-pixel raster stability, eight city transitions and texture reload passed.');
+  console.log('540px: pointer menus, drag gain, pause, resize, half-pixel raster stability, nine city transitions and texture reload passed.');
 } finally {
   await browser?.close();
   server.kill();

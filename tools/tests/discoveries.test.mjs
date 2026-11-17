@@ -12,15 +12,19 @@ import { buildFont, FONT } from '../art/font.mjs';
 import { Raster, rgb } from '../lib/raster.mjs';
 
 const art = new Map(buildSprites().map(({ name, raster }) => [name, raster]));
-const stages = Array.from({ length: 8 }, (_, i) => JSON.parse(readFileSync(new URL(`../../src/data/stage${i + 1}.json`, import.meta.url))));
+// (the album shows a city's 540 px portraits where there are any: Tokyo's are only there)
+// (their sizes from the atlas; drawn in the previews as a plain box)
+const portraitSize = Object.fromEntries(Object.entries(JSON.parse(readFileSync(new URL('../../public/assets/portraits.json', import.meta.url))).frames).map(([k, f]) => [k, f.sourceSize]));
+const portraits = new Set(Object.keys(portraitSize));
+const stages = Array.from({ length: 9 }, (_, i) => JSON.parse(readFileSync(new URL(`../../src/data/stage${i + 1}.json`, import.meta.url))));
 let language = 'pl';
 class Item {
   constructor(scene, kind, x = 0, y = 0, frame = '') {
     Object.assign(this, { kind, x, y, frame, visible: true, scaleX: 1, scaleY: 1, originX: 0.5, originY: 0.5, depth: 0, text: '', commands: [] });
     scene.items.push(this);
   }
-  get width() { return this.kind === 'text' ? Math.max(...this.text.split('\n').map((s) => s.length * 6 + 1)) : art.get(this.frame)?.w ?? this.w; }
-  get height() { return this.kind === 'text' ? this.text.split('\n').length * 14 - 1 : art.get(this.frame)?.h ?? this.h; }
+  get width() { return this.kind === 'text' ? Math.max(...this.text.split('\n').map((s) => s.length * 6 + 1)) : art.get(this.frame)?.w ?? portraitSize[this.frame]?.w ?? this.w; }
+  get height() { return this.kind === 'text' ? this.text.split('\n').length * 14 - 1 : art.get(this.frame)?.h ?? portraitSize[this.frame]?.h ?? this.h; }
   setDepth(d) { this.depth = d; return this; }
   setVisible(v) { this.visible = v; return this; }
   setTint(c) { this.tint = c; return this; }
@@ -30,7 +34,7 @@ class Item {
   setSize(w, h) { this.w = w; this.h = h; return this; }
   setTileScale() { return this; }
   setText(t) { this.text = t; return this; }
-  setFrame(f) { assert(art.has(f), `missing atlas frame ${f}`); this.frame = f; return this; }
+  setFrame(f) { assert(art.has(f) || portraits.has(f), `missing atlas frame ${f}`); this.frame = f; return this; }
   setLineSpacing() { return this; }
   clear() { this.commands = []; return this; }
   fillStyle(c, a = 1) { this.fill = c; this.alpha = a; return this; }
@@ -56,8 +60,8 @@ const pixelText = (s, x, y, text, origin = 0.5, font = 'pixel') => Object.assign
 const mod = new SourceTextModule(readFileSync(new URL('../../src/game/Discoveries.js', import.meta.url), 'utf8'));
 await mod.link(async (path) => {
   const exports = path.includes('config') ? config : path.includes('data/discoveries') ? { YOKAI, FOODS, createDiscoveryStore }
-    : path.includes('data/gacha') ? { ITEMS, RARITY } : path.includes('stages') ? { STAGES: stages } : path.includes('i18n') ? { getLang: () => language }
-      : path.includes('Hud') ? { pixelText } : path.includes('enemyArt') ? { portrait: (scene, img, frame) => (img.setFrame(frame), 1), sharedArt: (o) => o } : { INK_FONT: 'ink' };
+    : path.includes('data/gacha') ? { ITEMS, RARITY } : path.includes('stages') ? { STAGES: stages } : path.includes('i18n') ? { getLang: () => language, tr: (s) => (language === 'en' ? ({ KIOTO: 'KYOTO', HIROSZIMA: 'HIROSHIMA', TOKIO: 'TOKYO' })[s] ?? s : s) }
+      : path.includes('Hud') ? { pixelText } : path.includes('enemyArt') ? { portrait: (scene, img, frame) => (img.setFrame(frame), art.has(frame) ? 1 : 1 / 3), sharedArt: (o) => o } : { INK_FONT: 'ink' };
   return new SyntheticModule(Object.keys(exports), function () { for (const [k, v] of Object.entries(exports)) this.setExport(k, v); });
 });
 await mod.evaluate();
@@ -76,25 +80,30 @@ test('save immediately, deduplicate, reload, tolerate blocked storage and corrup
 });
 
 test('only real defeated folklore types unlock; bosses require complete victory', () => {
-  for (const entry of YOKAI) assert.equal(yokaiForEnemy(entry.stage, { type: entry.type }, true), entry);
+  for (const entry of YOKAI) assert.equal(yokaiForEnemy(entry.stage, { type: entry.type, kind: entry.match, art: entry.match }, true), entry);
+  // Tokyo: two minibosses told apart by their kind, the komainu by its look (the other shooters are no entry)
+  assert.equal(yokaiForEnemy('stage9', { type: 'heavy', kind: 'taiyaki' }).id, 'taiyakifish');
+  assert.equal(yokaiForEnemy('stage9', { type: 'heavy', kind: 'kasa' }).id, 'kasaobake');
+  assert.equal(yokaiForEnemy('stage9', { type: 'shooter', art: 't_komainu_0' }).id, 'komainu');
+  assert.equal(yokaiForEnemy('stage9', { type: 'shooter', art: 't_kanban_0' }), null);
   assert.equal(yokaiForEnemy('stage2', { type: 'boss', role: 'body' }), null);
   assert.equal(yokaiForEnemy('stage1', { type: 'decoy' }), null);
   assert.equal(yokaiForEnemy('stage5', { type: 'kuroko' }), null);
   assert.equal(yokaiForEnemy('stage3', { type: 'popcorn' }), null);
 });
 
-test('all cities have two distinct reachable food stops and existing illustrations', () => {
+test('all cities have two distinct reachable food stops (Tokyo, the finale, four) and existing illustrations', () => {
   assert.equal(new Set([...YOKAI, ...FOODS].map((e) => e.id)).size, YOKAI.length + FOODS.length);
   for (const stage of stages) {
     const foods = FOODS.filter((e) => e.stage === stage.id);
-    assert.equal(foods.length, 2);
+    assert.equal(foods.length, stage.id === 'stage9' ? 4 : 2);
     for (const food of foods) {
       assert(food.x >= 20 && food.x <= 160);
       assert((food.u + 36 - stage.scroll.anchor) / stage.scroll.mid < stage.end - 10);
       assert(art.has(food.frame));
     }
   }
-  for (const e of YOKAI) assert(art.has(e.frame));
+  for (const e of YOKAI) assert(art.has(e.frame) || portraits.has(e.frame), e.frame);
 });
 
 test('food releases once, pauses, collects immediately, awards repeat points and misses cleanly', () => {
@@ -141,13 +150,19 @@ test('journal grid and pages: locking, keys, wrap, touch navigation, destruction
   const lockedScene = scene(); const locked = new DiscoveryBook(lockedScene, 'yokai');
   // the grid: a question mark on every tile not found yet, nothing on the tiles past the last entry
   assert.equal(locked.mode, 'grid'); assert.equal(locked.gridName.text, '???');
-  locked.tiles.forEach((t, i) => { assert.equal(t.mark.visible, i < YOKAI.length); assert(!t.art.visible); });
-  assert(!locked.page.visible, 'one page of the grid holds them all');
+  // (with Tokyo there are 18: a full first page of 16 and two on the second)
+  assert.equal(YOKAI.length, 18);
+  locked.tiles.forEach((t, i) => { assert.equal(t.mark.visible, i < 16); assert(!t.art.visible); });
+  assert(locked.page.visible, 'the grid runs on to a second page');
   locked.key('right'); assert.equal(locked.index, 1); locked.key('left'); assert.equal(locked.index, 0);
   locked.key('left'); assert.equal(locked.index, 3, 'left wraps round the row');
-  locked.key('down'); assert.equal(locked.index, 7); locked.key('down'); locked.key('down'); assert.equal(locked.index, 3, 'down wraps to the top');
-  locked.key('up'); assert.equal(locked.index, 11, 'up wraps to the lowest tile of the column');
-  locked.key('up'); locked.key('up'); locked.key('up'); assert.equal(locked.index, 11);
+  locked.key('down'); assert.equal(locked.index, 7); locked.key('down'); locked.key('down'); assert.equal(locked.index, 15);
+  locked.key('down'); assert.equal(locked.index, 3, 'down wraps to the top (column 3 has nothing on the second page)');
+  locked.key('up'); assert.equal(locked.index, 15, 'up wraps to the lowest tile of the column');
+  locked.key('up'); locked.key('up'); locked.key('up'); assert.equal(locked.index, 3);
+  locked.key('down'); locked.key('down'); locked.key('down'); locked.key('left'); locked.key('left'); locked.key('left'); assert.equal(locked.index, 12);
+  locked.key('down'); assert.equal(locked.index, 16, 'down runs on to the next page'); assert.equal(locked.tiles[0].mark.visible, true); assert.equal(locked.tiles[2].mark.visible, false);
+  locked.key('up'); assert.equal(locked.index, 12);
   // an entry's page, locked: no art, no story; left and right turn through all of them
   locked.index = 0; locked.key('confirm'); assert.equal(locked.mode, 'page');
   assert.equal(locked.name.text, '???'); assert(!locked.art.visible); assert(!locked.story.text.includes('LISY'));
@@ -170,7 +185,7 @@ test('journal grid and pages: locking, keys, wrap, touch navigation, destruction
       book.tiles.forEach((t, i) => {
         if (i >= book.entries.length) return;
         assert(t.art.visible && !t.mark.visible, `${kind}/${i} tile shows its art once found`);
-        assert(t.art.width * t.art.scaleX <= 30 && t.art.height * t.art.scaleY <= 30, `${kind}/${i} tile art too big`);
+        assert(t.art.width * t.art.scaleX <= 30 + 1e-9 && t.art.height * t.art.scaleY <= 30 + 1e-9, `${kind}/${i} tile art too big`);
       });
       for (const o of [book.gridName, book.gridCity, book.title, book.open]) assert(o.width <= 160);
       assert(book.gridCity.y + 7 < book.open.y - 4, `${kind}/${lang}/${H} grid caption overlaps the controls`);
@@ -178,8 +193,8 @@ test('journal grid and pages: locking, keys, wrap, touch navigation, destruction
       for (let i = 0; i < book.entries.length; i++) {
         book.index = i; book.layout(H);
         assert(book.art.visible);
-        assert(book.art.width * book.art.scaleX <= 70, `${kind}/${i} illustration too wide`);
-        assert(book.art.height * book.art.scaleY <= 55, `${kind}/${i} illustration too tall`);
+        assert(book.art.width * book.art.scaleX <= 70 + 1e-9, `${kind}/${i} illustration too wide`);
+        assert(book.art.height * book.art.scaleY <= 55 + 1e-9, `${kind}/${i} illustration too tall`);
         assert.equal(book.art.scaleX, book.art.scaleY, 'illustrations retain their proportions');
         assert(book.story.y + book.story.height <= book.hint.y - 4, `${kind}/${i}/${lang} story overlaps controls`);
         for (const line of book.story.text.split('\n')) assert(line.length <= 25);
@@ -203,7 +218,8 @@ function render(s, H) {
       if (type === 'fill') out.rect(x, y, w, h, c);
       else { out.line(x, y, x + w, y, c); out.line(x, y, x, y + h, c); out.line(x + w, y, x + w, y + h, c); out.line(x, y + h, x + w, y + h, c); }
     }
-    if (o.kind === 'image') out.blit(art.get(o.frame).scaled(o.scaleX), o.x - Math.floor(o.width * o.originX) * o.scaleX, o.y - Math.floor(o.height * o.originY) * o.scaleY);
+    if (o.kind === 'image' && art.has(o.frame)) out.blit(art.get(o.frame).scaled(o.scaleX), o.x - Math.floor(o.width * o.originX) * o.scaleX, o.y - Math.floor(o.height * o.originY) * o.scaleY);
+    else if (o.kind === 'image') out.rect(Math.round(o.x - o.width * o.scaleX * o.originX), Math.round(o.y - o.height * o.scaleY * o.originY), Math.round(o.width * o.scaleX), Math.round(o.height * o.scaleY), 0x8a7a60); // (a 540 px portrait)
     if (o.kind === 'text') {
       const font = buildFont(o.font !== 'ink');
       const bitmap = new Raster(o.width, o.height);
@@ -227,7 +243,7 @@ test('write deterministic album and food layout previews', () => {
     book.show('page');
     writeFileSync(`tools/preview/${kind}-journal.png`, render(s, 320).scaled(3).toPNG());
   }
-  const sheet = new Raster(140, 40);
+  const sheet = new Raster(140, 60);
   FOODS.forEach((e, i) => sheet.blit(art.get(e.frame), i % 7 * 20, Math.floor(i / 7) * 20));
   writeFileSync('tools/preview/foods.png', sheet.scaled(4, 0x182432).toPNG());
 });

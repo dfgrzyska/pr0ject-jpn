@@ -28,11 +28,12 @@ export const INK = {
   stage5: 0x8a2a8a,
   stage6: 0xd8582a,
   stage7: 0xc83228,
+  stage9: 0x2e2a36, // (sumi, the black of Kurogane's iron)
 };
 
-/** The stamp's frame in the atlas (Kyoto's and Hiroshima's bands have English variants). */
+/** The stamp's frame in the atlas (Kyoto's, Hiroshima's and Tokyo's bands have English variants). */
 export function stampFrame(id) {
-  return getLang() === 'en' && (id === 'stage1' || id === 'stage7') ? `stamp_${id}_en` : `stamp_${id}`;
+  return getLang() === 'en' && (id === 'stage1' || id === 'stage7' || id === 'stage9') ? `stamp_${id}_en` : `stamp_${id}`;
 }
 
 /** { stageId: 'YYYY.MM.DD' }: the stamps won on normal, or (easy) the pale ones won on easy. */

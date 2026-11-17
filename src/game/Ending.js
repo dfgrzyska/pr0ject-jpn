@@ -24,6 +24,7 @@ const BOSSES = {
   stage5: [['tako_0', 0, 0]],
   stage6: [['oni_0', 0, 0]],
   stage7: [['brazier_0', -30, 4], ['brazier_0', 30, 4], ['sankibo_0', 0, 0]],
+  stage9: [['kg_portrait', 0, 0]],
 };
 
 /**
@@ -169,7 +170,7 @@ export class Ending {
       const card = st.waves.find((w) => w.type === 'boss')?.card ?? [st.name, ''];
       // (their portraits drawn at 540 px where there are any)
       const kids = (BOSSES[st.id] ?? []).map(([f, dx, dy, flip]) => {
-        const img = s.add.image(dx, dy, 'sprites', f).setFlipX(!!flip);
+        const img = s.add.image(dx, dy, 'sprites').setFlipX(!!flip); // (portrait() picks the atlas the frame is in)
         return img.setScale(portrait(s, img, f));
       });
       const c = this.add(s.add.container(W / 2, H + 60 + k * 128, kids).setDepth(D + 2));

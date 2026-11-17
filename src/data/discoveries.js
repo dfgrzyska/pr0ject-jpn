@@ -1,6 +1,8 @@
 // Folklore entries describe their inspiration, not a claim that every game enemy is a yokai.
-const spirit = (id, stage, frame, name, pl, en, type, category = 'YOKAI') =>
-  ({ id, stage, frame, name, pl, en, type, category });
+// match: in a city with more than one of a type (Tokyo's two minibosses, its sets of enemies), which one it is:
+// the enemy's kind, or the frame its look starts from
+const spirit = (id, stage, frame, name, pl, en, type, category = 'YOKAI', match = null) =>
+  ({ id, stage, frame, name, pl, en, type, category, match });
 export const YOKAI = [
   spirit('kitsune', 'stage1', 'popcorn_0', 'KITSUNE', 'Za lisią maską kryje się mistrz przemian. W chramach Inari lis służy jako posłaniec bóstwa; tutaj jego oblicze nosi dron.', 'Behind the fox mask lurks a shapeshifter. At Inari shrines, foxes serve as divine messengers; here a drone wears their face.', 'popcorn'),
   spirit('chochin', 'stage1', 'diver_0', 'CHOCHIN-OBAKE', 'Jeden błysk oka, długi język i lampion przestaje być lampionem. Chochin-obake przypomina, że nawet przedmioty mają swoje sekrety.', 'One eye opens, a long tongue slips out: this is no ordinary lantern. Chochin-obake gives a familiar object a mischievous life.', 'diver'),
@@ -16,6 +18,10 @@ export const YOKAI = [
   spirit('sankibo', 'stage7', 'sankibo_0', 'SANKIBO / TENGU', 'Na górze Misen czeka Sankibo. Ten tengu należy do miejscowych opowieści Miyajimy, w których góry są domeną niezwykłych mocy.', 'Sankibo awaits on Mount Misen. This tengu belongs to Miyajima\'s local lore, where the mountains are a realm of mysterious powers.', 'boss'),
   spirit('oranda', 'stage8', 'n_oranda_0', 'ORANDA-BUNE', 'Statek tańczy na lądzie! Podczas Nagasaki Kunchi tragarze obracają holenderski okręt. Ten festiwalowy wir stał się atakiem w grze.', 'A ship dances on land! At Nagasaki Kunchi, bearers spin a Dutch ship float. That festival whirl inspired its spinning attack.', 'heavy', 'FESTIWAL / FESTIVAL'),
   spirit('jaodori', 'stage8', 'n_ja_0', 'JA-ODORI', 'Złota kula prowadzi, długi smok podąża za nią. Tancerze Kunchi ożywiają go wspólnym ruchem; stąd pomysł na finałowy taniec bossa.', 'A golden ball leads and a long dragon follows. Kunchi dancers bring it to life together, inspiring our boss\'s final dance.', 'boss', 'FESTIWAL / FESTIVAL'),
+  spirit('kasaobake', 'stage9', 'ko_portrait', 'KASA-OBAKE', 'Stary parasol po stu latach otwiera oko, wystawia język i skacze na jednej nodze: tsukumogami, przedmiot, który ożył.', 'After a hundred years an old umbrella opens an eye, sticks out its tongue and hops on one leg: a tsukumogami, an object come alive.', 'heavy', 'YOKAI', 'kasa'),
+  spirit('taiyakifish', 'stage9', 'ty_big_0_0', 'TAIYAKI', 'Ryba z ciasta z żeliwnej formy, ze słodką fasolą albo kremem. Ma kształt tai, ryby szczęścia; w grze z formy wypływa cała ławica.', 'A batter fish from an iron mould, filled with sweet beans or custard. It has the shape of the tai, a lucky fish; here a school swims out.', 'heavy', 'PRZYSMAK / TREAT', 'taiyaki'),
+  spirit('komainu', 'stage9', 't_komainu_0', 'KOMAINU', 'Lwie psy strzegą wejść do chramów i świątyń: jeden z otwartym pyskiem, drugi z zamkniętym. W Asakusie odpowiadają ogniem.', 'Lion-dogs guard the way into shrines and temples, one mouth open, one shut. In Asakusa they shoot back.', 'shooter', 'STRAŻNIK / GUARDIAN', 't_komainu_0'),
+  spirit('kurogane', 'stage9', 'kg_portrait', 'KUROGANE', 'Mech z portowego żelaza w zbroi samuraja, z półksiężycem na hełmie i oczami jak lampiony. Wymyślony z maszyn terminalu nad zatoką.', 'A mech of harbour iron in samurai armour, a crescent on its helmet, eyes like lanterns. Made up from the machines of the terminal on the bay.', 'boss', 'MECH'),
 ];
 
 const dish = (id, stage, name, u, x, place, pl, en) => ({ id, stage, name, u, x, place, pl, en, frame: `food_${id}` });
@@ -36,12 +42,17 @@ export const FOODS = [
   dish('momiji', 'stage7', 'MOMIJI MANJU', 5600, 142, 'MIYAJIMA', 'Ciastko w kształcie liścia klonu, kojarzone z Miyajimą. Klasyczne nadzienie to słodka pasta z fasoli.', 'A maple-leaf-shaped cake associated with Miyajima. The classic filling is sweet bean paste.'),
   dish('champon', 'stage8', 'CHAMPON', 3240, 92, 'SHINCHI', 'Makaron w sycącym bulionie z warzywami, mięsem i owocami morza. Specjał Nagasaki opowiada o chińskich wpływach w portowym mieście.', 'Noodles in a hearty broth with vegetables, meat and seafood. This Nagasaki speciality reflects the port city and its Chinese influences.'),
   dish('castella', 'stage8', 'CASTELLA', 2716, 136, 'DEJIMA', 'Miękkie ciasto z jaj, cukru i mąki z brązową skórką. Przybyło wraz z Portugalczykami i stało się słynną słodyczą Nagasaki.', 'Soft egg, sugar and flour cake with a brown crust. Introduced by Portuguese traders, it became a celebrated Nagasaki sweet.'),
+  dish('crepe', 'stage9', 'KUREPU', 2560, 128, 'TAKESHITA-DORI', 'Cienki naleśnik zwinięty w rożek z bitą śmietaną i owocami, jedzony w marszu. Słynie z niego uliczka Takeshita.', 'A thin pancake rolled into a cone with whipped cream and fruit, eaten on the go. Takeshita Street is famous for them.'),
+  dish('melonpan', 'stage9', 'MELONPAN', 6700, 62, 'AKIHABARA', 'Słodka bułka pod chrupiącą skorupką z ciasta kruchego, nacinaną w kratkę. Nazwę zawdzięcza wyglądowi melona, nie smakowi.', 'A sweet bun under a crisp cookie crust scored in a lattice. It is named for looking like a melon, not for tasting like one.'),
+  dish('ningyoyaki', 'stage9', 'NINGYO-YAKI', 8480, 102, 'NAKAMISE-DORI', 'Ciastka z nadzieniem ze słodkiej fasoli pieczone w żeliwnych formach. W Asakusie mają kształt lampionu, gołębia albo pagody.', 'Little cakes filled with sweet bean paste, baked in iron moulds. In Asakusa they come shaped as a lantern, a pigeon or a pagoda.'),
+  dish('monjayaki', 'stage9', 'MONJAYAKI', 10420, 48, 'SUMIDA-GAWA', 'Rzadkie ciasto smażone na płycie w wale z kapusty, jedzone małymi łopatkami. Słynie z niego Tsukishima u ujścia Sumidy.', 'Runny batter cooked on the griddle in a ring of cabbage, eaten with tiny spatulas. Tsukishima by the Sumida is famous for it.'),
 
 ];
 
 export function yokaiForEnemy(stage, enemy, bossDefeated = false) {
   if (enemy.type === 'boss' && !bossDefeated) return null;
-  return YOKAI.find((entry) => entry.stage === stage && entry.type === enemy.type) ?? null;
+  const all = YOKAI.filter((entry) => entry.stage === stage && entry.type === enemy.type);
+  return all.find((e) => e.match && (e.match === enemy.kind || e.match === enemy.art)) ?? all.find((e) => !e.match) ?? null;
 }
 
 // Shared by the game and tests; no Phaser or browser dependency here.

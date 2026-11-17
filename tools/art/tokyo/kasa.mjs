@@ -693,4 +693,20 @@ export function kasaEnemies(add) {
   for (let f = 0; f < 3; f++) add(`ko_ripple_${f}`, ripple(f));
   add('ko_clear_0', clear(0));
   add('ko_clear_1', clear(1));
+  add('ko_portrait', portrait());
+}
+
+/** For the album and the ending: the umbrella open, standing on its leg, looking at us (the parts as the game sets them). */
+function portrait() {
+  const can = bigFrame('ko_open_0', { state: 'open', wear: 0 });
+  const at = KASA_ANCHORS.ko_open_0;
+  const [cx, cy] = [CW / 2, CH / 2];
+  const legR = leg('stand');
+  const eyeR = eye('c');
+  const top = Math.round(cy + at.foot[1] * 3) - 2; // (the handle's top row in the leg's frame)
+  const r = new Raster(CW, top + LH);
+  r.blit(legR, Math.round(cx + at.foot[0] * 3 - legR.w / 2), top);
+  r.blit(can, 0, 0);
+  r.blit(eyeR, Math.round(cx + at.eye[0] * 3 - eyeR.w / 2), Math.round(cy + at.eye[1] * 3 - eyeR.h / 2));
+  return r;
 }

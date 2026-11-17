@@ -116,6 +116,7 @@ export class Enemies {
     const look = this.lookOf(w);
     if (!look && w.type !== 'boss') return; // e.g. snowploughs exist only in Sapporo
     base.bits = this.lookOf({ ...w, look: 'bits' }) ?? null; // (what it breaks into: Tokyo's sets each have their own)
+    base.art = look?.frame ?? null; // (which of a city's looks it wears: the album tells Tokyo's komainu by it)
     if (w.type === 'turret' && !w.pattern && look.pattern) base.pattern = look.pattern;
     let e;
     switch (w.type) {
