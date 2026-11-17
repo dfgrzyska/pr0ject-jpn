@@ -36,7 +36,8 @@ test('each set of looks comes on as the screen reaches its stretch of the city',
 
 test('the fights come over their arenas, the boss once the strip has stopped', () => {
   const [kasa, taiyaki] = stage.waves.filter((w) => w.hold);
-  for (const [w, [, u]] of [[kasa, ARENAS[0]], [taiyaki, ARENAS[1]]]) assert.ok(Math.abs(top(w.t) - 185 - u) < 30, `${w.look} at ${w.t}: the screen's middle at ${top(w.t) - 185}, the arena at ${u}`);
+  // (the arena on the screen, in its upper half: room for the player under the fight)
+  for (const [w, [, u]] of [[kasa, ARENAS[0]], [taiyaki, ARENAS[1]]]) assert.ok(top(w.t) - u >= 80 && top(w.t) - u <= 190, `${w.look} at ${w.t}: the arena ${top(w.t) - u} px under the screen's top`);
   const boss = stage.waves.find((w) => w.type === 'boss');
   assert.ok(top(boss.t) >= ARENAS[2][1] + 60, 'the mech comes when the terminal is on the screen');
   assert.ok(stage.waves.every((w) => w.t <= boss.t));

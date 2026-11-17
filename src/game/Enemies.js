@@ -22,6 +22,7 @@ import { nagai } from './enemies/nagai.js';
 import { heya } from './enemies/heya.js';
 import { obachan } from './enemies/obachan.js';
 import { kaiken } from './enemies/kaiken.js';
+import { tokyoKasa } from './enemies/tokyo-kasa.js';
 // the second phases of the minibosses (Yuki-onna and the Oranda-bune have theirs; the bunraku puppet's go by
 // its puppeteers): its name on the banner
 const HEAVY_P2 = { tanuki: 'TANUKI PIJE SAKE', manta: 'KORALOWA SPIRALA', raiju: 'PRZEŁADOWANIE PIORUNA', wani: 'FAŁSZYWE CIENIE', heikegani: 'PĘKNIĘTY PANCERZ' };
@@ -194,6 +195,7 @@ export class Enemies {
         if (look.kind === 'oranda') this.spawnOranda(e, base);
         if (look.kind === 'wani') Object.assign(e, { y: -40, radius: 11, segs: [{ x: 0, y: 0, r: 9 }, { x: 0, y: 0, r: 8 }] });
         if (look.kind === 'yukionna') Object.assign(e, { hp: YUKI.hp, maxHp: YUKI.hp, kuroko: [], mists: [], seeds: [] });
+        if (look.kind === 'kasa') this.spawnKasa(e); // (Tokyo's umbrella: its parts, tokyo-kasa.js)
         break;
       case 'turret': {
         // spawns just above the screen and stays glued to the mid layer
@@ -573,13 +575,16 @@ export class Enemies {
                     ? 'foxfire'
                     : kind === 'kaiken'
                       ? 'weep'
+                      : kind === 'kasa'
+                        ? 'bow'
                       : kind === 'obachan'
                         ? 'sit'
                       : 'burst';
     const color = kind === 'bunraku' ? WOOD : CLAY;
     // what goes down with the body (the fox's last tail), kept where it was on it
-    const extra = kind === 'kyubi' ? e.group.tails.filter((tl) => !tl.lost && !tl.dead).map((tl) => ({ s: copy(tl), ox: tl.x - e.x, oy: tl.y - e.y })) : [];
-    this.dying.push({ body, extra, t: 0, x: e.x, y: e.y, r: Math.max(10, e.radius), end, color, oni: !!e.oni, liquid: e.oni ? 'bloodball_1' : 'splash', next: 0, ended: false });
+    const kd = kind === 'kasa' ? this.kasaDown(e) : null; // (the umbrella's leg and eye go down with it: tokyo-kasa.js)
+    const extra = kind === 'kyubi' ? e.group.tails.filter((tl) => !tl.lost && !tl.dead).map((tl) => ({ s: copy(tl), ox: tl.x - e.x, oy: tl.y - e.y })) : kd ? kd.extra : [];
+    this.dying.push({ body, extra, t: 0, x: e.x, y: e.y, r: Math.max(10, e.radius), end, color, oni: !!e.oni, liquid: e.oni ? 'bloodball_1' : 'splash', next: 0, ended: false, kasa: kd });
   }
 
   /** The bodies going down: the chain of blasts (1.1 s), then each one's own end. */
@@ -591,7 +596,8 @@ export class Enemies {
       d.t += dt;
       const b = d.body;
       let done = false;
-      if (d.t < 1.1) {
+      if (d.end === 'bow') done = this.kasaEnd(d, dt); // (the umbrella folds, bows and hops off: all of it on the map)
+      else if (d.t < 1.1) {
         b.setPosition(d.x + Math.round((Math.random() - 0.5) * 3), d.y + Math.round((Math.random() - 0.5) * 3));
         b.setTint(Math.floor(d.t * 14) % 2 ? 0x707070 : 0x000000).setTintMode(Phaser.TintModes.ADD);
         for (const x of d.extra) x.s.setPosition(b.x + x.ox, b.y + x.oy).setTint(Math.floor(d.t * 14) % 2 ? 0x707070 : 0x000000).setTintMode(Phaser.TintModes.ADD);
@@ -711,6 +717,7 @@ export class Enemies {
    */
   wounds(e, dt) {
     const s = this.scene;
+    if (e.kind === 'kasa') return; // (the umbrella shows its wounds in its own frames, and stands on its own leg)
     const breathe = Math.floor(e.age * 1.25) % 2 ? 1 : 0;
     const rec = e.recoil || 0;
     if (e.group?.kind !== 'volcano' && !e.oni) e.setOrigin(0.5, 0.5 + (rec - breathe) / e.displayHeight);
@@ -794,6 +801,7 @@ export class Enemies {
     if (e.group?.kind === 'heya' && e.role === 'body') this.heyaCleanup(e.group); // what it threw, the dark
     if (e.group?.kind === 'obachan' && e.role === 'body') this.obachanCleanup(e.group); // her sweets, trolleys, the tiger
     if (e.group?.kind === 'kaiken' && e.role === 'body') this.kaikenCleanup(e.group); // his tickets, the table
+    if (e.kind === 'kasa') this.kasaCleanup(e); // the umbrella's leg, eye, tongue, little ones, the signal
     if (e.puppets) for (const p of e.puppets) if (!p.dead && p.master === e) this.pool.kill(p);
     if (e.burnt) for (const bt of e.burnt) if (bt) this.woundPool.kill(bt);
     e.burnt = null;
@@ -854,6 +862,7 @@ export class Enemies {
           else if (e.kind === 'wani') this.wani(e, dt, b);
           else if (e.kind === 'oranda') this.oranda(e, dt, b);
           else if (e.kind === 'heikegani') this.updateHeike(e, dt, b);
+          else if (e.kind === 'kasa') this.kasa(e, dt, b);
           else this.heavyUpdate(e, dt, b);
           break;
         case 'turret':
@@ -1314,4 +1323,4 @@ export class Enemies {
 }
 
 // each city's enemies and bosses live in its own module (src/game/enemies/): their methods join the class here
-Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, kaiken);
+Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, kaiken, tokyoKasa);
