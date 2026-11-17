@@ -56,6 +56,10 @@ export class Parallax {
       .setTileScale(invScale, invScale)
       .setDepth(DEPTH.far);
     this.farH = scene.textures.get(farKey).getSourceImage().height;
+    // Tokyo: a second far loop, the water at night, faded in over the first as the city darkens (stage.dark)
+    this.farNight = scene.textures.exists(`${farKey}_night`)
+      ? scene.add.tileSprite(0, 0, VIEW.width, VIEW.maxHeight, `${farKey}_night`).setOrigin(0, 0).setTileScale(invScale, invScale).setDepth(DEPTH.far + 0.01).setAlpha(0)
+      : null;
     this.chunks = [];
     this.sway = meta.sway ? new TreeSway(scene, stage.id, meta, DEPTH.mid, VIEW.width) : null;
     if (this.sway) this.chunks = this.sway.chunks;
@@ -101,6 +105,12 @@ export class Parallax {
     this.camX = VIEW.width / 2;
     this.camY = VIEW.maxHeight * CAMERA_ROW;
     this.props = new Props(scene, stage.id, meta, this);
+    // Tokyo: what flies over the city (crows, balloons, an airship), by the schedule the art wrote (meta.sky)
+    this.sky = meta.sky && scene.textures.exists(propsKey) ? meta.sky : null;
+    if (this.sky) {
+      this.skyPool = new Pool(scene, DEPTH.near - 0.02, () => propsKey);
+      this.skyT = this.sky.map((e) => e[4] ?? e[3] * 0.3);
+    }
     // Okinawa: the caverns of Gyokusendō. Under the ground the clouds and gulls are gone, the rock closes in at the
     // sides, and going in (and coming out into the day) the eyes take a moment (all under the enemies and bullets)
     this.cave = stage.cave ?? null;
@@ -173,6 +183,11 @@ export class Parallax {
       if (vis) img.y = y;
     }
     this.far.tilePositionY = -(Math.round(this.farTime * this.speed.far * this.artScale) % this.farH);
+    if (this.farNight) {
+      const d = this.darkness(H);
+      this.farNight.tilePositionY = this.far.tilePositionY;
+      this.farNight.setAlpha(d * d * (3 - 2 * d));
+    }
     this.sway?.update(dt);
 
     const ship = this.scene.player;
@@ -182,6 +197,7 @@ export class Parallax {
     this.props.update(dt, H);
     if (this.cave) this.updateCave(dt, H);
     this.updateNear(dt, scrolling, H);
+    if (this.sky) this.updateSky(dt, scrolling, H);
     this.updateClouds(dt, H);
   }
 
@@ -205,6 +221,59 @@ export class Parallax {
       this.caveFlash = Math.max(0, this.caveFlash - dt / (this.flashIn ? 0.9 : 0.6));
       this.caveRect.setAlpha((this.flashIn ? 0.45 : 0.35) * this.caveFlash ** 1.5);
     }
+  }
+
+  /**
+   * Tokyo's sky: crows crossing in a ragged line, balloons trailing banners drifting down past, now and then an
+   * airship at night - all in the near layer, so they run faster than the city under them, as what flies should.
+   * Nothing new comes while a boss is on the field.
+   */
+  updateSky(dt, scrolling, H) {
+    const fall = scrolling ? this.speed.near : 18;
+    const u = this.stripU(H / 2);
+    const dark = this.darkness(H);
+    const boss = this.scene.enemies?.live.some((e) => e.type === 'boss' && !e.dead);
+    const shade = (k) => {
+      const v = Math.round(255 * (1 - 0.55 * dark * k));
+      const b = Math.round(255 * (1 - 0.35 * dark * k));
+      return (v << 16) | (v << 8) | b;
+    };
+    this.sky.forEach(([u0, u1, kind, every], i) => {
+      if (!scrolling || boss || u < u0 || u >= u1) return;
+      this.skyT[i] -= dt;
+      if (this.skyT[i] > 0) return;
+      this.skyT[i] = every * (0.7 + Math.random() * 0.6);
+      const left = Math.random() < 0.5;
+      if (kind === 'crows') {
+        const n = 3 + Math.floor(Math.random() * 5);
+        const [y0, vx] = [10 + Math.random() * (H * 0.45), (left ? 1 : -1) * (34 + Math.random() * 12)];
+        for (let k = 0; k < n; k++) {
+          const c = this.skyPool.spawn('tcrow_0', (left ? -10 : VIEW.width + 10) - Math.sign(vx) * (k * 9 + Math.random() * 8), y0 + (k % 2 ? 6 : -4) * Math.ceil(k / 2) + Math.random() * 5, {
+            vx, vy: fall * 0.62, sway: 0, age: Math.random(), flap: ['tcrow_0', 'tcrow_1', 'tcrow_2', 'tcrow_1'], fps: 7 + Math.random() * 3, kind,
+          });
+          c.setFlipX(!left).setAlpha(0.92).setTint(shade(0.6)).setScale(c.base * 1.3);
+        }
+      } else if (kind === 'balloon') {
+        const b = this.skyPool.spawn(`tballoon_${Math.floor(Math.random() * 3)}`, 24 + Math.random() * (VIEW.width - 48), -40, {
+          vx: -3 + Math.random() * 6, vy: fall * 0.78, sway: 5, age: Math.random() * 6, kind,
+        });
+        b.setAlpha(0.88).setTint(shade(1)).setScale(b.base * 1.3);
+      } else if (kind === 'blimp') {
+        const b = this.skyPool.spawn('tblimp_0', left ? -40 : VIEW.width + 40, 30 + Math.random() * (H * 0.3), {
+          vx: (left ? 1 : -1) * (9 + Math.random() * 4), vy: fall * 0.4, sway: 0, age: 0, flap: ['tblimp_0', 'tblimp_1'], fps: 1.3, kind,
+        });
+        b.setFlipX(!left).setAlpha(0.8).setTint(shade(0.55));
+      }
+    });
+    for (const p of this.skyPool.live) {
+      p.age += dt;
+      p.x += (p.vx + Math.sin(p.age * 0.9) * p.sway) * dt;
+      p.y += p.vy * dt;
+      if (p.flap) this.skyPool.reframe(p, p.flap[Math.floor(p.age * p.fps) % p.flap.length]);
+      if (p.kind === 'balloon') p.setRotation(Math.sin(p.age * 0.9) * 0.08);
+      if (p.y > H + 60 || p.x < -70 || p.x > VIEW.width + 70) this.skyPool.kill(p);
+    }
+    this.skyPool.sweep();
   }
 
   /** How dark the city is where the screen is now (0 by day .. 1 at night). */

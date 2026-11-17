@@ -27,6 +27,7 @@ function queueStage(scene, id) {
   if (enemyArt(id) && !tex.exists(`enemies_${id}`)) load.atlas(`enemies_${id}`, `bg/${id}/enemies.png`, `bg/${id}/enemies.json`);
   const rest = (meta) => {
     for (const name of meta.panorama ?? []) if (!tex.exists(`view_${id}_${name}`)) load.image(`view_${id}_${name}`, `bg/${id}/view_${name}.png`);
+    if (meta.farNight && !tex.exists(`far_${id}_night`)) load.image(`far_${id}_night`, `bg/${id}/far_night.png`);
     for (let i = 0; i < meta.chunks; i++) if (!tex.exists(`mid_${id}_${i}`)) load.image(`mid_${id}_${i}`, `bg/${id}/mid_${String(i).padStart(2, '0')}.png`);
     if (meta.props && !tex.exists(`props_${id}`)) load.atlas(`props_${id}`, `bg/${id}/props.png`, `bg/${id}/props.json`);
   };
@@ -42,7 +43,7 @@ function queueStage(scene, id) {
 export function stageReady(scene, id) {
   const meta = scene.cache.json.get(`bg_${id}`);
   const tex = scene.textures;
-  return Boolean(meta) && (meta.panorama ?? []).every(name => tex.exists(`view_${id}_${name}`)) && tex.exists(`far_${id}`) && (!meta.props || tex.exists(`props_${id}`)) && (!enemyArt(id) || tex.exists(`enemies_${id}`)) && [...Array(meta.chunks).keys()].every((i) => tex.exists(`mid_${id}_${i}`));
+  return Boolean(meta) && (meta.panorama ?? []).every(name => tex.exists(`view_${id}_${name}`)) && tex.exists(`far_${id}`) && (!meta.farNight || tex.exists(`far_${id}_night`)) && (!meta.props || tex.exists(`props_${id}`)) && (!enemyArt(id) || tex.exists(`enemies_${id}`)) && [...Array(meta.chunks).keys()].every((i) => tex.exists(`mid_${id}_${i}`));
 }
 
 export class Boot extends Phaser.Scene {

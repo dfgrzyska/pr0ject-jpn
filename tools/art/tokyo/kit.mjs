@@ -595,7 +595,7 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
 
   /** A frame for a moving part: draw(canvas, P) on a canvas w x h (logical), graded for the hour at u. */
   const frame = (w, h, u, draw, raw = false) => {
-    const c = new HiCanvas(w, h, S);
+    const c = new HiCanvas(Math.max(1, Math.round(w * S)) / S, Math.max(1, Math.round(h * S)) / S, S); // (a whole number of fine pixels)
     draw((X, Y, col, a = 1) => c.hi.set(X, Y, col, a), c);
     return props.frame(raw ? c.hi : tod.frame(c.hi, u)); // (raw: a light, shown at its own colours)
   };

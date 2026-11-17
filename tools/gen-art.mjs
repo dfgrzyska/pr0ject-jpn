@@ -202,6 +202,11 @@ for (const { id, art } of STAGES) {
   write(`bg/${id}/far.png`, far.toPNG());
   const mid = art.buildMid();
   const artScale = mid.meta.artScale ?? 1;
+  if (art.buildFarNight) {
+    // (a second far loop the game fades to as the strip darkens: Tokyo's water holding the night sky)
+    write(`bg/${id}/far_night.png`, art.buildFarNight().toPNG());
+    mid.meta.farNight = true;
+  }
   // 1x stages go out in four 1792px pieces; 3x stages use eight 896-unit (2688px) pieces to stay well under 4096px WebGL limits
   const chunkHeight = artScale > 1 ? 896 : MID_PIECE;
   const chunkPx = chunkHeight * artScale;

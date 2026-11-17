@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Raster } from '../../lib/raster.mjs';
 import { buildMid } from './mid.mjs';
-import { buildFar } from './far.mjs';
+import { buildFar, buildFarNight } from './far.mjs';
 import { W, S, L, PLOTS, DISTRICTS, ARENAS } from './route.mjs';
 
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'preview');
@@ -16,12 +16,13 @@ mkdirSync(dir, { recursive: true });
 const arg = (k) => Number(process.argv.find((a) => a.startsWith(`--${k}=`))?.split('=')[1] ?? NaN);
 
 const { strip } = buildMid();
-const far = buildFar();
+const [day, night] = [buildFar(), buildFarNight()];
 // the strip over the far layer's water
 const full = new Raster(strip.w, strip.h);
 for (let y = 0; y < strip.h; y++)
   for (let x = 0; x < strip.w; x++) {
     const i = (y * strip.w + x) * 4;
+    const far = L - y / S < 2900 ? day : night; // (the water by day, and from dusk on at night)
     const j = ((y % far.h) * far.w + x) * 4;
     const a = strip.data[i + 3];
     const d = a ? strip.data : far.data;

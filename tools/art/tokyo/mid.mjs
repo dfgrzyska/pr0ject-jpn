@@ -23,11 +23,12 @@ import { sumida } from './sumida.mjs';
 import { bay } from './bay.mjs';
 import { odaiba } from './odaiba.mjs';
 import { aomi } from './aomi.mjs';
+import { sky } from './sky.mjs';
 import { W, S, L, DISTRICTS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, PLOTS } from './route.mjs';
 import { near, inShape, bbox, railHalf } from './geom.mjs';
 
 // the districts' painters, in the order they are called: (ctx) => void. (Phases 2-7 add theirs here.)
-const PAINTERS = [nakano, shinjuku, harajuku, shibuya, minato, chiyoda, akihabara, ueno, asakusa, sumida, bay, odaiba, aomi];
+const PAINTERS = [nakano, shinjuku, harajuku, shibuya, minato, chiyoda, akihabara, ueno, asakusa, sumida, bay, odaiba, aomi, sky];
 const ARENA_DRAWN = new Set(['KASA-OBAKE', 'TAIYAKI', 'KUROGANE']); // (arenas whose own ground is drawn: no ring)
 
 const smooth = (a, b, x) => {
@@ -76,7 +77,17 @@ export function buildMid() {
   const ramp = (cols, x, u, seed, scale = 9) => cols[Math.min(cols.length - 1, Math.floor(fbm(x, u, { seed, scale, octaves: 2 }) * cols.length + (hashPx(x * S, u * S, seed) - 0.5) * 0.9))] ?? cols[0];
 
   // ---- the ground of each district: what is left between everything else (the blocks the districts will fill)
-  for (const [from, to, , , ground] of DISTRICTS) paint(0, from, W, to, (x, u, X, Yy) => shade(ground, 0.95 + fbm(x, u, { seed: 31, scale: 22, octaves: 2 }) * 0.1 + (hashPx(X, Yy, 3) - 0.5) * 0.03));
+  // (across a district's border its ground turns into the next one's over BLEND units, so no line shows between the blocks)
+  const BLEND = 60;
+  const mixC = (a, b, t) => {
+    const k = (sh) => Math.round(((a >> sh) & 255) + (((b >> sh) & 255) - ((a >> sh) & 255)) * t);
+    return (k(16) << 16) | (k(8) << 8) | k(0);
+  };
+  DISTRICTS.forEach(([from, to, , , ground], i) => {
+    const [prev, next] = [DISTRICTS[i - 1]?.[4], DISTRICTS[i + 1]?.[4]];
+    const at = (u) => (prev !== undefined && u - from < BLEND ? mixC(ground, prev, 0.5 - (u - from) / (2 * BLEND)) : next !== undefined && to - u < BLEND ? mixC(ground, next, 0.5 - (to - u) / (2 * BLEND)) : ground);
+    paint(0, from, W, to, (x, u, X, Yy) => shade(at(u), 0.95 + fbm(x, u, { seed: 31, scale: 22, octaves: 2 }) * 0.1 + (hashPx(X, Yy, 3) - 0.5) * 0.03));
+  });
 
   const ground = (g) => fill(g, (x, u, X, Yy) => {
     wet[Yy * FW + X] = 0;
@@ -326,6 +337,6 @@ export function buildMid() {
     img.hi.data.set(band.data, Y0 * FW * 4);
   }
   kit.afterGrade(); // (the lights: windows, signs, lamps, their glow)
-  for (const [x, u, w, h, d] of covers) props.loop(x, u + h, [props.frame(img.hi.crop(x * S, (L - u - h) * S, w * S, h * S))], { fps: 1, d });
-  return { strip: img.hi, props: props.pack(), meta: { width: W, artScale: S, length: L, tint: tintTable(L, tod.white) } };
+  for (const [x, u, w, h, d] of covers) props.loop(x, u + h, [props.frame(img.hi.crop(Math.round(x * S), Math.round((L - u - h) * S), Math.round(w * S), Math.round(h * S)))], { fps: 1, d }); // (whole fine pixels)
+  return { strip: img.hi, props: props.pack(), meta: { width: W, artScale: S, length: L, tint: tintTable(L, tod.white), ...(ctx.sky ? { sky: ctx.sky } : {}) } };
 }
