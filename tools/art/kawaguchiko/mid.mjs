@@ -8,12 +8,15 @@
 // Coordinates: x across, u up from the strip's bottom; a fine pixel is a third of a logical one.
 import { fbm } from '../../lib/raster.mjs';
 import { HiCanvas, hashPx } from '../hires.mjs';
-import { todGrade, tintTable } from '../props.mjs';
+import { todGrade, tintTable, PropKit } from '../props.mjs';
+import { makeKit } from '../tokyo/kit.mjs';
+import { fujiyoshida } from './fujiyoshida.mjs';
 import { W, S, L, SECTIONS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, PLOTS } from './route.mjs';
 import { near, inShape, bbox, railHalf } from '../tokyo/geom.mjs';
 
 // the stretches' painters, in the order they are called: (ctx) => void. (Phases 2-5 add theirs here.)
-const PAINTERS = [];
+const PAINTERS = [fujiyoshida];
+const DRAWN_TO = 1300; // (the stretches drawn so far reach this far up the strip: their plots are not hatched, the painter lays them out)
 
 const smooth = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -65,8 +68,18 @@ export function buildMid() {
   const fill = (shape, fn) => paint(...bbox(shape), (x, u, X, Yy) => (inShape(shape, x, u) ? fn(x, u, X, Yy) : null));
   const ramp = (cols, x, u, seed, scale = 9) => cols[Math.min(cols.length - 1, Math.floor(fbm(x, u, { seed, scale, octaves: 2 }) * cols.length + (hashPx(x * S, u * S, seed) - 0.5) * 0.9))] ?? cols[0];
 
-  // ---- the ground of each stretch: what is left between everything else
-  for (const [from, to, , , ground] of SECTIONS) paint(0, from, W, to, (x, u, X, Yy) => shade(ground, 0.95 + fbm(x, u, { seed: 31, scale: 22, octaves: 2 }) * 0.1 + (hashPx(X, Yy, 3) - 0.5) * 0.03));
+  // ---- the ground of each stretch: what is left between everything else (across a border it turns into the next
+  // one's over BLEND units, so no line shows between the blocks)
+  const BLEND = 60;
+  const mixC = (a, b, t) => {
+    const k = (sh) => Math.round(((a >> sh) & 255) + (((b >> sh) & 255) - ((a >> sh) & 255)) * t);
+    return (k(16) << 16) | (k(8) << 8) | k(0);
+  };
+  SECTIONS.forEach(([from, to, , , ground], i) => {
+    const [prev, next] = [SECTIONS[i - 1]?.[4], SECTIONS[i + 1]?.[4]];
+    const at = (u) => (prev !== undefined && u - from < BLEND ? mixC(ground, prev, 0.5 - (u - from) / (2 * BLEND)) : next !== undefined && to - u < BLEND ? mixC(ground, next, 0.5 - (to - u) / (2 * BLEND)) : ground);
+    paint(0, from, W, to, (x, u, X, Yy) => shade(at(u), 0.95 + fbm(x, u, { seed: 31, scale: 22, octaves: 2 }) * 0.1 + (hashPx(X, Yy, 3) - 0.5) * 0.03));
+  });
 
   const ground = (g) => fill(g, (x, u, X, Yy) => {
     wet[Yy * FW + X] = 0;
@@ -175,7 +188,7 @@ export function buildMid() {
   }
 
   // ---- the plots the landmarks will stand on: hatched, edged (a low one paler)
-  for (const [, x, u, w, h, , low] of PLOTS)
+  for (const [, x, u, w, h, , low] of PLOTS.filter((q) => q[2] >= DRAWN_TO))
     paint(x, u, x + w, u + h, (px, pu, X, Yy) => {
       const rim = px - x < 0.67 || x + w - px < 0.67 || pu - u < 0.67 || u + h - pu < 0.67;
       if (rim) return 0x34303a;
@@ -189,16 +202,110 @@ export function buildMid() {
       return Math.abs(d - r) < 0.5 && Math.floor(((Math.atan2(u - au, x - ax) + Math.PI) / (Math.PI * 2)) * 72) % 2 === 0 ? 0xffd040 : null;
     });
 
-  const ctx = { img, wet, paint, fill, along, ramp, shade, W, S, L };
+  // ---- the stretches. What they may build on: the ground that nothing of the route takes (occ: a logical pixel is
+  // 1 where there is water, a road with its pavements, tracks, a ground of its own kind or a plot).
+  const occ = new Uint8Array(W * L);
+  const take = (x0, u0, x1, u1, test) => {
+    for (let u = Math.max(0, Math.floor(u0)); u < Math.min(L, Math.ceil(u1)); u++) for (let x = Math.max(0, Math.floor(x0)); x < Math.min(W, Math.ceil(x1)); x++) if (!occ[u * W + x] && test(x + 0.5, u + 0.5)) occ[u * W + x] = 1;
+  };
+  for (let u = 0; u < L; u++) for (let x = 0; x < W; x++) if (wet[((L - 1 - u) * S + 1) * FW + x * S + 1]) occ[u * W + x] = 1;
+  for (const r of ROADS) {
+    const reach = r.w / 2 + (r.cls === 'avenue' ? 2.6 : r.cls === 'street' ? 2 : 0.8);
+    for (let i = 0; i + 1 < r.pts.length; i++) {
+      const [a, b] = [r.pts[i], r.pts[i + 1]];
+      take(Math.min(a[0], b[0]) - reach, Math.min(a[1], b[1]) - reach, Math.max(a[0], b[0]) + reach, Math.max(a[1], b[1]) + reach, (x, u) => near(r.pts, x, u).d <= reach);
+    }
+  }
+  for (const r of RAILS) {
+    if (r.style === 'rope') continue; // (the cables pass over what is under them)
+    const reach = railHalf(r) + 1;
+    for (let i = 0; i + 1 < r.pts.length; i++) {
+      const [a, b] = [r.pts[i], r.pts[i + 1]];
+      take(Math.min(a[0], b[0]) - reach, Math.min(a[1], b[1]) - reach, Math.max(a[0], b[0]) + reach, Math.max(a[1], b[1]) + reach, (x, u) => near(r.pts, x, u).d <= reach);
+    }
+  }
+  for (const g of GROUNDS) take(...bbox(g), (x, u) => inShape(g, x, u));
+  for (const [, x, u, w, h] of PLOTS) take(x - 1, u - 1, x + w + 1, u + h + 1, () => true);
+  /** The free ground between u0 and u1 as boxes [x, u, w, h], each at least minW x minH (taken once given out);
+   * skew: beside a road or track that runs aslant (tools/art/tokyo/mid.mjs). */
+  const blocks = (u0, u1, minW = 8, minH = 8, skew = false) => {
+    const out = [];
+    if (skew) {
+      // (beside streets that run aslant: from each free run the largest box up from it, narrowing as the ground does)
+      for (let u = u0; u < u1; u++)
+        for (let x = 0; x < W; x++) {
+          if (occ[u * W + x]) continue;
+          let w = 0;
+          while (x + w < W && !occ[u * W + x + w]) w++;
+          let [a, b] = [x, x + w];
+          let best = null;
+          for (let h = 1; u + h - 1 < u1; h++) {
+            const row = (u + h - 1) * W;
+            if (h > 1) {
+              let [ba, bb] = [0, 0];
+              for (let i = a; i < b; i++) {
+                if (occ[row + i]) continue;
+                let j = i;
+                while (j < b && !occ[row + j]) j++;
+                if (j - i > bb - ba) [ba, bb] = [i, j];
+                i = j;
+              }
+              if (bb - ba < minW) break;
+              [a, b] = [ba, bb];
+            }
+            // (the squarest wins, then the larger: never a sliver the whole length of the street)
+            const [sq, bq] = [Math.min(b - a, h), best ? Math.min(best[2], best[3]) : 0];
+            if (!best || sq > bq || (sq === bq && (b - a) * h >= best[2] * best[3] && h <= 2.2 * (b - a))) best = [a, u, b - a, h];
+          }
+          occ.fill(1, u * W + x, u * W + x + w);
+          if (best && best[2] >= minW && best[3] >= minH) {
+            for (let j = 0; j < best[3]; j++) occ.fill(1, (u + j) * W + best[0], (u + j) * W + best[0] + best[2]);
+            out.push(best);
+          }
+          x += w - 1;
+        }
+      return out;
+    }
+    for (let u = u0; u < u1; u++)
+      for (let x = 0; x < W; x++) {
+        if (occ[u * W + x]) continue;
+        let w = 0;
+        while (x + w < W && !occ[u * W + x + w]) w++;
+        let h = 1;
+        grow: for (; u + h < u1; h++) for (let i = 0; i < w; i++) if (occ[(u + h) * W + x + i]) break grow;
+        for (let j = 0; j < h; j++) occ.fill(1, (u + j) * W + x, (u + j) * W + x + w);
+        if (w >= minW && h >= minH) out.push([x, u, w, h]);
+        x += w - 1;
+      }
+    return out;
+  };
+  /** Paint the ground box (x, u, w, h) as a ground of a kind. */
+  const pave = (x, u, w, h, kind, seed = 41) => paint(x, u, x + w, u + h, (px, pu) => ramp(GROUND[kind], px, pu, seed));
+  const plot = (id) => {
+    const p = PLOTS.find((q) => q[0] === id);
+    return { x: p[1], u: p[2], w: p[3], h: p[4] };
+  };
+  const ground_ = (id) => GROUNDS.find((g) => g.id === id);
+  const tod = todGrade(TOD, smooth);
+  const props = new PropKit(10109, { artScale: S });
+  const kit = makeKit({ img, W, L, S, seed: 10009, props, tod });
+  const covers = []; // boxes of the strip shown again over the moving parts (a station's roof over its train)
+  const claim = (x, u, w, h) => {
+    for (let j = Math.max(0, Math.floor(u)); j < Math.min(L, u + h); j++) occ.fill(1, j * W + Math.max(0, Math.floor(x)), j * W + Math.min(W, Math.ceil(x + w)));
+  };
+  const ctx = { near, ROADS, RAILS, GROUND, img, wet, paint, fill, along, ramp, shade, W, S, L, kit, props, tod, blocks, pave, plot, ground: ground_, claim, cover: (x, u, w, h, d = 0.1) => covers.push([x, u, w, h, d]) };
   for (const p of PAINTERS) p(ctx);
+  kit.flush();
+  kit.beforeGrade();
 
   // ---- the time of day, a band of the strip at a time
-  const tod = todGrade(TOD, smooth);
   const BAND = 16 * S;
   for (let Y0 = 0; Y0 < FH; Y0 += BAND) {
     const band = img.hi.crop(0, Y0, FW, Math.min(BAND, FH - Y0));
     tod.frame(band, L - (Y0 + BAND / 2) / S);
     img.hi.data.set(band.data, Y0 * FW * 4);
   }
-  return { strip: img.hi, meta: { width: W, artScale: S, length: L, tint: tintTable(L, tod.white) } };
+  kit.afterGrade(); // (the lights: windows, lanterns, lamps, their glow)
+  for (const [x, u, w, h, d] of covers) props.loop(x, u + h, [props.frame(img.hi.crop(Math.round(x * S), Math.round((L - u - h) * S), Math.round(w * S), Math.round(h * S)))], { fps: 1, d });
+  return { strip: img.hi, props: props.pack(), meta: { width: W, artScale: S, length: L, tint: tintTable(L, tod.white) } };
 }
