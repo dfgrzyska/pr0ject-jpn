@@ -20,6 +20,11 @@
   },
   "boss": true,
   "end": 232,
+  "panorama": {
+    "ridge": 6748,
+    "hold": 9,
+    "view": "fuji"
+  },
   "music": {
     "schedule": [
       [

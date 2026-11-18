@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { NagasakiView } from '../game/NagasakiView.js';
+import { FujiView } from '../game/FujiView.js';
 import { getMusic } from '../audio/Music.js';
 import { DEPTH, ENCOUNTER, GRAZE, PLAYER, RENDER_SCALE, SCORE, TURRETS, VIEW, WEAPONS } from '../config.js';
 import { ALL_STAGES as STAGES } from '../data/stages.js';
@@ -179,7 +180,7 @@ export class Stage extends Phaser.Scene {
     // Hiroshima: the moment of silence over the Peace Park (no shooting, the paper cranes dance)
     this.ceasefire = false;
     this.calm = false; // (the enemies hold their fire: the moments just before and after the silence)
-    this.scenicView = this.stage.panorama ? new NagasakiView(this) : null;
+    this.scenicView = this.stage.panorama ? new (this.stage.panorama.view === 'fuji' ? FujiView : NagasakiView)(this) : null;
     this.interlude = this.stage.interlude ? new Interlude(this, this.stage.interlude) : null;
     this.music.duck?.(1);
     // the sprite pools made ahead (the most the busiest stages need, with some to spare), so a fight never has

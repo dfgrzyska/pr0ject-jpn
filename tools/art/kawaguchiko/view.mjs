@@ -118,8 +118,15 @@ function relief(phi, t) {
 const rough = (phi, t, seed) => fbm(phi * 70, t * 55, { seed, scale: 1, octaves: 2 }) - 0.5;
 
 const SUN = norm([0.86, 0.22, -0.32]); // low in the west (right), a little behind the mountain
-const SUNLIGHT = [255, 168, 128];
-const SKYLIGHT = [118, 104, 168]; // the violet sky's light in the shade
+// The light: the sun going down, or the dusk after it has gone (the same picture painted twice, crossfaded in the
+// game when the boss falls). dusk: 0 sunset, 1 dusk.
+let dusk = 0;
+const sunlight = () => [255, 168, 128].map((v) => v * (1 - dusk));
+const skylight = () => mixV([118, 104, 168], [84, 84, 150], dusk); // the violet sky's light in the shade
+/** What the dusk does to the sky (the game tints the sky layer the same way). */
+export const SKY_DUSK = [0.5, 0.52, 0.78];
+export const HILLS_DUSK = [0.44, 0.42, 0.64]; // (and the hills, nearer, darker)
+const air = (x) => mixV(mixV([200, 140, 170], [240, 170, 150], smooth(0, 216, x)), [104, 96, 150], dusk);
 
 /** The mountain's colour at (x, y) (game pixels), or null off it. */
 function fujiAt(x, y) {
@@ -158,12 +165,13 @@ function fujiAt(x, y) {
     else if (t < tree + 0.07) base = fleck < 0.18 + (t - tree) * 3 ? [150, 108, 54] : [70, 62, 56]; // larches gold, thickening down
     else base = fleck < 0.08 ? [96, 70, 46] : fleck < 0.3 ? [42, 58, 54] : [30, 42, 44]; // the forest: evergreens, a little rust
   }
+  const [SUNLIGHT, SKYLIGHT] = [sunlight(), skylight()];
   let c = [0, 1, 2].map((k) => (base[k] / 255) * (SUNLIGHT[k] * sun * 1.15 * shine + SKYLIGHT[k] * sky * 0.85));
   // the evening air: the further down, the more of it between us and the mountain; a mist lies along its foot
   const haze = 0.08 + 0.42 * smooth(0.35, 1, t);
-  c = mixV(c, mixV([200, 140, 170], [240, 170, 150], smooth(0, 216, x)), haze);
+  c = mixV(c, air(x), haze);
   const mist = smooth(0.82, 0.98, t) * (0.25 + 0.5 * fbm(x * 0.2, y * 0.8, { seed: 88, scale: 6, octaves: 2 }));
-  return mixV(c, [226, 176, 190], mist);
+  return mixV(c, mixV([226, 176, 190], [118, 110, 156], dusk), mist);
 }
 
 // ---------------------------------------------------------------------------------- the hills before it, the far shore
@@ -200,28 +208,43 @@ function hillAt(x, y) {
   const head = gap * (1.08 - ux * 0.35 - uy * 0.45); // each crown lit on its upper right
   const slope = hillTop(x + 3) - hillTop(x - 3); // >0: the ground falls to the right, facing the sun
   const lit = Math.max(0, Math.min(1, 0.35 + slope * 0.1)) * (1 - smooth(2, 30, depth)) * 0.9;
+  const [SUNLIGHT, SKYLIGHT] = [sunlight(), skylight()];
   let c = [0, 1, 2].map((k) => (base[k] / 255) * (SUNLIGHT[k] * lit + SKYLIGHT[k] * 0.62) * head);
   c = mixV(c, [196, 136, 160], 0.14 + 0.16 * smooth(205, 248, top));
   return c;
 }
-/** The far shore along the water: houses, inns and a hotel among trees, the road on the embankment. */
-function shoreAt(x, y) {
-  if (y < WATERLINE - 6 || y >= WATERLINE) return null;
-  if (y >= WATERLINE - 1) return (Math.floor(x * 3) % 7 === 0 ? [70, 62, 74] : [104, 92, 100]).map((v) => v * 0.9); // the embankment
-  // a building every so often between the trees (which are the hills' own crowns, coming down to the water)
+/** The building of the far shore over (x, y), or null: { first (its column), roofY }. A building every so often
+ * between the trees (which are the hills' own crowns, coming down to the water). */
+function building(x, y) {
+  if (y < WATERLINE - 6 || y >= WATERLINE - 1) return null;
   const col = Math.floor(x / 2.6);
   if (hashPx(col, 9, 98) < 0.42) return null;
   const w = 1 + Math.floor(hashPx(col, 7, 96) * 2); // (a building one or two columns wide)
   const first = hashPx(col - 1, 9, 98) < 0.42 || w === 1 ? col : col - 1;
   const h = 1.6 + hashPx(first, 12, 96) * 2.2 + (hashPx(first >> 3, 8, 97) > 0.8 ? 1.6 : 0);
   const roofY = WATERLINE - 1 - h;
-  if (y < roofY) return null;
-  const wall = [[176, 164, 158], [150, 146, 152], [168, 150, 136], [136, 132, 142]][Math.floor(hashPx(first, 11, 100) * 4)];
-  if (y < roofY + 0.7) return [58, 56, 72]; // its roof, tiled dark
-  const sunSide = x - first * 2.6 > 1.8; // (the end turned to the sun)
-  let c = wall.map((v) => v * (sunSide ? 0.92 : 0.66));
+  return y < roofY ? null : { first, roofY };
+}
+/** Is (x, y) a window of the far shore? (lit: one of the few lit already at sunset) */
+function windowAt(x, y) {
+  const b = building(x, y);
+  if (!b || y < b.roofY + 0.7) return null;
   const [wx, wy] = [Math.floor(x * 3), Math.floor(y * 3)];
-  if (wx % 3 === 1 && wy % 3 === 1) c = hashPx(wx, wy, 101) < 0.25 ? [250, 200, 120] : c.map((v) => v * 0.7); // windows, a few lit
+  if (wx % 3 !== 1 || wy % 3 !== 1) return null;
+  return { lit: hashPx(wx, wy, 101) < 0.25 };
+}
+/** The far shore along the water: houses, inns and a hotel among trees, the road on the embankment. */
+function shoreAt(x, y) {
+  if (y < WATERLINE - 6 || y >= WATERLINE) return null;
+  if (y >= WATERLINE - 1) return (Math.floor(x * 3) % 7 === 0 ? [70, 62, 74] : [104, 92, 100]).map((v) => v * (0.9 - dusk * 0.3)); // the embankment
+  const b = building(x, y);
+  if (!b) return null;
+  const wall = [[176, 164, 158], [150, 146, 152], [168, 150, 136], [136, 132, 142]][Math.floor(hashPx(b.first, 11, 100) * 4)];
+  if (y < b.roofY + 0.7) return [58, 56, 72]; // its roof, tiled dark
+  const sunSide = x - b.first * 2.6 > 1.8 && !dusk; // (the end turned to the sun)
+  let c = wall.map((v) => v * (sunSide ? 0.92 : 0.66) * (1 - dusk * 0.35));
+  const win = windowAt(x, y);
+  if (win) c = win.lit && !dusk ? [250, 200, 120] : c.map((v) => v * 0.7); // windows, a few lit (at dusk: the lights layer)
   return c;
 }
 
@@ -237,6 +260,7 @@ function waterAt(x, y) {
   const wob = (fbm(x * 0.08, band * 0.7, { seed: 101, scale: 1.6, octaves: 2 }) - 0.5) * (0.6 + dist * 7) + Math.sin(band * 1.7) * dist * 1.4;
   const my = 2 * WATERLINE - y + (fbm(x * 0.1, band, { seed: 102, scale: 2, octaves: 1 }) - 0.5) * dist * 4;
   let c = above(x + wob, Math.max(0, my));
+  if (my < WATERLINE && !shoreAt(x + wob, my) && !hillAt(x + wob, my) && !fujiAt(x + wob, my)) c = c.map((v, k) => v * (1 - dusk + dusk * SKY_DUSK[k])); // (the sky in it darkens with the sky)
   c = c.map((v, k) => v * 0.72 + [30, 40, 70][k] * 0.18);
   // the ripples' faces: troughs dark, crests catching the sky's light
   const r = fbm(x * (0.35 - dist * 0.2), y * 2.4, { seed: 103, scale: 1.2, octaves: 2 });
@@ -246,24 +270,96 @@ function waterAt(x, y) {
   return c;
 }
 
-/** The panorama as layers: sky (the sky and its clouds), land (the mountain, the hills and the far shore), water. */
+/** The panorama as layers, each 648 x 1260 (the game crops their empty rows):
+ *   sky                    the sky and its clouds (dusk: tinted by SKY_DUSK in the game)
+ *   fuji, fujiSun          the mountain at dusk, and lit by the sun going down over it (crossfaded when the boss falls)
+ *   hills                  the wooded hills and the far shore
+ *   water, waterSun        the lake at dusk and at sunset, reflecting the picture above as it is then
+ *   lights                 the far shore's windows at dusk and their streaks on the water (faded in after the fight) */
 export function buildPanorama() {
-  const layers = { sky: new Raster(W, H), land: new Raster(W, H), water: new Raster(W, H) };
-  const put = (r, X, Y, c) => {
+  const L = (n) => new Raster(W, H);
+  const layers = { sky: L(), fuji: L(), fujiSun: L(), hills: L(), water: L(), waterSun: L(), lights: L() };
+  const put = (r, X, Y, c, a = 255) => {
     const th = (BAYER[(Y & 3) * 4 + (X & 3)] / 16 - 0.47) * 6;
     const q = c.map((v) => Math.max(0, Math.min(255, Math.round((v + th) / 6) * 6)));
-    r.setRGBA(X, Y, q[0], q[1], q[2], 255);
+    r.setRGBA(X, Y, q[0], q[1], q[2], a);
   };
+  for (const [d, fujiL, waterL] of [[0, layers.fujiSun, layers.waterSun], [1, layers.fuji, layers.water]]) {
+    dusk = d;
+    for (let Y = 0; Y < H; Y++)
+      for (let X = 0; X < W; X++) {
+        const [x, y] = [(X + 0.5) / S, (Y + 0.5) / S];
+        if (y >= WATERLINE) {
+          put(waterL, X, Y, waterAt(x, y));
+          continue;
+        }
+        const near = shoreAt(x, y) ?? hillAt(x, y);
+        if (near && d === 0) put(layers.hills, X, Y, near);
+        const far = fujiAt(x, y);
+        if (far && !near) put(fujiL, X, Y, far);
+        if (d === 0) put(layers.sky, X, Y, skyAt(x, y));
+      }
+  }
+  dusk = 0;
+  // the lights of the far shore at dusk: every window, and below each a broken streak on the water
   for (let Y = 0; Y < H; Y++)
     for (let X = 0; X < W; X++) {
       const [x, y] = [(X + 0.5) / S, (Y + 0.5) / S];
-      if (y >= WATERLINE) {
-        put(layers.water, X, Y, waterAt(x, y));
+      if (y < WATERLINE) {
+        if (windowAt(x, y)) put(layers.lights, X, Y, hashPx(X, Y, 102) < 0.3 ? [255, 236, 190] : [255, 196, 112]);
         continue;
       }
-      const land = shoreAt(x, y) ?? hillAt(x, y) ?? fujiAt(x, y);
-      if (land) put(layers.land, X, Y, land);
-      put(layers.sky, X, Y, skyAt(x, y));
+      const my = 2 * WATERLINE - y;
+      const dy = y - WATERLINE;
+      if (dy > 14) continue;
+      const src = windowAt(x, my) ?? windowAt(x, my - 0.34) ?? windowAt(x, my + 0.34);
+      if (!src && !(dy > 1 && windowAt(x, WATERLINE - 2.5 + (Y % 2) * 0.34))) continue;
+      const band = Math.floor(Y / 2);
+      if (hashPx(X >> 1, band, 103) < 0.25 + dy * 0.04) continue; // (broken by the ripples)
+      put(layers.lights, X, Y, [255, 186, 104], Math.round(200 * (1 - dy / 15)));
     }
   return layers;
+}
+
+/** What moves on the panorama, registered on the stage's props (fine pixels): a fishing boat rocking on the water
+ * with its wake, a skein of geese flying over in a V, two strokes of the wings. */
+export function viewFrames(props) {
+  for (let f = 0; f < 2; f++) {
+    const r = new Raster(24, 12);
+    const px = (x, y, c, a = 255) => r.setRGBA(x, y, ...rgb(c), a);
+    const tilt = f ? 1 : 0;
+    for (let x = 2; x < 22; x++) {
+      const lift = x < 5 ? 5 - x : x > 18 ? (x - 18) * 0.7 : 0;
+      const y0 = 7 - Math.round(lift * 0.5) + (x > 12 ? tilt : 0) - (x <= 12 ? tilt : 0) * 0;
+      px(x, y0, 0xe8e0d0);
+      px(x, y0 + 1, 0x6a5040);
+      px(x, y0 + 2, 0x3a2a24);
+    }
+    // the angler hunched in the stern under his hat, the rod out over the water, the lamp at the bow
+    for (const [x, y, c] of [[7, 4, 0x2a2a34], [7, 5, 0x3a4a6a], [8, 5, 0x3a4a6a], [7, 6, 0x3a4a6a], [8, 6, 0x2a3a5a], [6, 3, 0x6a5a4a], [7, 3, 0x7a6a50], [8, 3, 0x6a5a4a]]) px(x, y, c);
+    for (let k = 0; k < 10; k++) px(9 + k, 4 - Math.round(k * 0.35) + (f && k > 6 ? 1 : 0), 0x2a2a30, 200);
+    px(20, 5, 0xffd890);
+    px(20, 4, 0x8a8070);
+    props.frame(r, `view_boat_${f}`);
+  }
+  const w = new Raster(42, 8);
+  for (let q = 0; q < 40; q++) {
+    const a = Math.round(90 * (1 - q / 40));
+    w.setRGBA(41 - q, 3 - Math.round(q / 14), 220, 200, 230, a);
+    w.setRGBA(41 - q, 4 + Math.round(q / 14), 220, 200, 230, a);
+  }
+  props.frame(w, 'view_wake');
+  for (let f = 0; f < 2; f++) {
+    const r = new Raster(60, 30);
+    const bird = (x, y) => {
+      const up = f ? -1 : 1;
+      for (const [dx, dy] of [[0, 0], [1, 0], [-1, up], [-2, up], [2, up], [3, up], [-1, 0], [2, 0]]) r.setRGBA(x + dx, y + dy, 46, 40, 58, 255);
+    };
+    bird(6, 4);
+    for (let k = 1; k <= 4; k++) {
+      bird(6 + k * 6, 4 + k * 3);
+      if (k < 4) bird(6 + k * 5, 4 + k * 5);
+    }
+    props.frame(r, `view_geese_${f}`);
+  }
 }

@@ -13,6 +13,7 @@ import { makeKit } from '../tokyo/kit.mjs';
 import { fujiyoshida } from './fujiyoshida.mjs';
 import { shore } from './shore.mjs';
 import { lake } from './lake.mjs';
+import { viewFrames } from './view.mjs';
 import { W, S, L, SECTIONS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, PLOTS } from './route.mjs';
 import { near, inShape, bbox, railHalf } from '../tokyo/geom.mjs';
 
@@ -287,6 +288,7 @@ export function buildMid() {
   };
   const ctx = { near, inShape, GROUNDS, ROADS, RAILS, GROUND, img, wet, paint, fill, along, ramp, shade, W, S, L, kit, props, tod, blocks, pave, plot, ground: ground_, claim, cover: (x, u, w, h, d = 0.1) => covers.push([x, u, w, h, d]) };
   for (const p of PAINTERS) p(ctx);
+  viewFrames(props); // (what moves on Fuji's panorama: FujiView.js)
   kit.flush();
   kit.beforeGrade();
 

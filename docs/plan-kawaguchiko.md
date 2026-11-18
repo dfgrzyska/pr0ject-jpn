@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Fazy 0–4 gotowe, faza 5 w toku (zbliżenie panoramy czeka na akceptację). 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Fazy 0–5 gotowe (panorama Fuji zaakceptowana i w grze). 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -165,11 +165,11 @@ Wymaga: fazy 1–3. Pliki: `tools/art/kawaguchiko/route.mjs`, `mid.mjs`, `overvi
 
 ### Faza 5: panorama Fuji
 Wymaga: faza 4. Pliki: `tools/art/kawaguchiko/view.mjs`, `src/game/FujiView.js`, `src/data/fujiView.js`, `src/scenes/Stage.js` (tylko wybór widoku), `tools/gen-art.mjs` (tylko wpięcie).
-- [ ] **Zbliżenie 1:1 do akceptacji autora**: niebo, Fuji z czapą w świetle zachodu, las u stóp, drugi brzeg, woda z odbiciem
-- [ ] Warstwy widoku (niebo, chmury, góra, wzgórza, drugi brzeg, woda z odbiciem) i światła drugiego brzegu jako osobne maski
-- [ ] Ruch: wysuwanie warstw zza nabrzeża, lekkie przesunięcie za statkiem, chmury, zmarszczki na odbiciu, łódki z kilwaterem, klucz gęsi
-- [ ] Światło: róż na czapie przechodzi w fiolet po walce, zapalają się okna na drugim brzegu
-- [ ] Zrzuty z gry w trzech momentach i na ekranie telefonu
+- [x] **Zbliżenie 1:1 do akceptacji autora** (2026-11-18: „akceptuję, rób dalej”)
+- [x] Warstwy widoku: niebo, góra o zmierzchu i w słońcu, wzgórza z drugim brzegiem, woda o zmierzchu i w słońcu, światła drugiego brzegu z ich smugami na wodzie
+- [x] Ruch: wysuwanie warstw zza nabrzeża każda swoim tempem, lekkie przesunięcie za statkiem, łódki wędkarzy z kilwaterem, klucz gęsi co jakiś czas. Chmury stoją (bez przewijania nieba, żeby nie przekombinować)
+- [x] Światło: po upadku bossa róż schodzi z czapy (warstwy w słońcu gasną w wersje zmierzchowe), niebo i wzgórza ciemnieją, zapalają się okna; napis „FUJI-SAN · 3776 M”, „KAWAGUCHIKO O ZMIERZCHU”
+- [x] Zrzuty z gry: wysuwanie, walka, zmierzch po walce, na ekranie 380 i 420 px wysokości
 
 ### Faza 6: jesień na gotowych odcinkach (u 0–3900)
 Wymaga: faza 4. Pliki: `fujiyoshida.mjs`, `shore.mjs`, `lake.mjs`, `mid.mjs` (tylko paleta drzew i gruntów).
@@ -244,6 +244,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 5 | Panorama w grze: `src/game/FujiView.js` (wybierany polem `"view": "fuji"` w `panorama` w `stage10.json`), siedem warstw z `view.mjs` (góra i woda malowane dwa razy: w słońcu i o zmierzchu, przenikane po walce), klatki łódki, kilwateru i gęsi w rekwizytach etapu (`viewFrames` w `mid.mjs`), test warstw. | Boss Kioto na zastępstwo zasłania szczyt: właściwy Daidarabotchi (fazy 12–13) ma stać niżej. Następne: faza 6 (jesień na gotowych odcinkach). |
 | 2026-11-18 | Claude | 5 (część) | Zbliżenie panoramy (`tools/art/kawaguchiko/view.mjs`, podgląd: `node tools/art/kawaguchiko/viewPreview.mjs` → `tools/preview/stage10_view.png`): Fuji jako stożek widziany z boku, każdy punkt zbocza z głębokości pod szczytem i azymutu, oświetlony nachyleniem z grzbietami i żlebami; czapa śniegu z językami w żlebach, żwir, modrzewie, las, mgła u stóp; jesienne wzgórza z koronami drzew, domy drugiego brzegu, niebo o zachodzie z chmurami, odbicie w wodzie porwane zmarszczkami. Trzy warstwy: niebo, ląd, woda. | Czeka na akceptację autora. Potem: ruch, wpięcie w grę (`FujiView.js`, pole `panorama`), światła po walce. |
 | 2026-11-18 | Claude | 4 | Nowa trasa za jeziorem w `route.mjs`: północny brzeg z wsią Kawaguchi (domy oshi, sad persymon, pola, zagroda, jizō, chram Asama z cedrami), tunel klonów wzdłuż strumienia Nashi z jarmarkiem, promenada i nabrzeże; nad `VIEW_FROM` = 6748 taśma wycięta pod panoramę (woda typu `view`, krawędź jako mur nabrzeża). Grunty `field` i `momiji`. Fuji z góry usunięta (`fuji.mjs`, klasa drogi `road`, szlak, zejście). Nazwy miejsc, `dark`, test topologii. | Następna: faza 5, zaczyna się od zbliżenia panoramy do akceptacji. Działki od 3 900 są kreskowane do fazy 7. |
 | 2026-11-18 | Claude | plan | Zmiana kierunku na prośbę autora: Fuji jako klasyczna dominanta (z boku, ze śnieżną czapą) w panoramie na końcu etapu, mechanizmem z Nagasaki; wspinaczka po stokach wypada. Pora roku: późna jesień. Nowa trasa za jeziorem (północny brzeg, tunel klonów, nabrzeże), boss przed panoramą o zachodzie, nowy nośnik (persymony) i pułapka (ognisko z liści). Fazy przenumerowane od 4. | Czeka na akceptację planu. Fuji z góry (`fuji.mjs`, commit 11cec4e) zostaje w historii; faza 4 usuwa ją z kodu. |

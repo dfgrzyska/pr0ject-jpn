@@ -98,3 +98,15 @@ test('above the quay the strip is clear: nothing stands there, roads end on the 
   const promenade = ROADS.find((r) => r.id === 'kohan_nishi');
   assert.ok(promenade.pts.every(([, u]) => u >= VIEW_FROM - 30), 'the promenade runs along the quay');
 });
+
+test('the panorama rises from the quay: the stage file, the strip and the painted layers agree', async () => {
+  const { readFileSync, statSync } = await import('node:fs');
+  const stage = JSON.parse(readFileSync(new URL('../../src/data/stage10.json', import.meta.url)));
+  assert.equal(stage.panorama.ridge, VIEW_FROM);
+  assert.equal(stage.panorama.view, 'fuji');
+  const meta = JSON.parse(readFileSync(new URL('../../public/assets/bg/stage10/meta.json', import.meta.url)));
+  assert.deepEqual(meta.panorama, ['sky', 'fuji', 'fujiSun', 'hills', 'water', 'waterSun', 'lights']);
+  for (const n of meta.panorama) assert.ok(statSync(new URL(`../../public/assets/bg/stage10/view_${n}.png`, import.meta.url)).size > 0, n);
+  const props = JSON.parse(readFileSync(new URL('../../public/assets/bg/stage10/props.json', import.meta.url)));
+  for (const f of ['view_boat_0', 'view_boat_1', 'view_wake', 'view_geese_0', 'view_geese_1']) assert.ok(JSON.stringify(props).includes(`"${f}"`), f);
+});
