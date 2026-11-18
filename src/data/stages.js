@@ -10,8 +10,9 @@ import stage8 from './stage8.json';
 import stage7 from './stage7.json';
 import stage9 from './stage9.json';
 import stage10 from './stage10.json';
+import stage11 from './stage11.json';
 
 // (the cities of the journey: the stamp book, the ending and the menu's map count these; Tokyo is always the last)
 export const STAGES = [stage1, stage2, stage3, stage4, stage5, stage6, stage7, stage8, stage9, stage10];
-/** Every stage file, those in the works too ("wip": reached only from the developer's menu or ?stage=n; none now). */
-export const ALL_STAGES = [...STAGES];
+/** Every stage file, those in the works too ("wip": reached only from the developer's menu or ?stage=n: Onomichi). */
+export const ALL_STAGES = [...STAGES, stage11];

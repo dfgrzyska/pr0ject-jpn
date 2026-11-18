@@ -152,6 +152,15 @@ export const SKINS = {
     heavy: { frame: 'k_usagi_rest_0', kind: 'usagi' }, // the miniboss: KACHI-KACHI USAGI (kawaguchiko-usagi.js)
     turret: { base: 'k_hokora_base', head: 'k_hokora_head_', wreck: 'k_hokora_wreck', heat: true }, // (its mirror glows red before it fires)
   },
+  // Onomichi (docs/plan-onomichi.md): stand-ins until its own are drawn (phase 8), Kyoto's
+  onomichi: {
+    popcorn: { frame: 'popcorn_0', anim: 'popcorn' },
+    shooter: { frame: 'shooter_0', anim: 'shooter' },
+    diver: { frame: 'diver_0', anim: 'diver' },
+    carrier: { frame: 'carrier_{c}_0', anim: 'carrier_{c}' },
+    heavy: { frame: 'tanuki_0', anim: 'tanuki', kind: 'tanuki' }, // (the miniboss's place: NEKOMATA, phase 10)
+    turret: { base: 'turret_base', head: 'turret_head_', wreck: 'turret_wreck' },
+  },
   // Hiroshima & Miyajima: maple-leaf spirit flocks, armored Seto oysters with pearl crits, scooping shamoji paddles,
   // tidal stone lanterns, Heike-gani samurai crab, and Sankibō the Great Tengu of Mount Misen
   hiroshima: {

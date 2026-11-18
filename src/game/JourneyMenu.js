@@ -16,7 +16,7 @@ import { fxTint } from './premiumFx.js';
 const FINE = 1 / RENDER_SCALE; // the menu's art and the map are drawn at 540 px
 const CITY_KEY = 'shmupjp.startCity';
 // the caption counts the journey's cities (in words: each has its English in the phrasebook)
-const CITIES = { 9: 'DZIEWIĘĆ', 10: 'DZIESIĘĆ' };
+const CITIES = { 9: 'DZIEWIĘĆ', 10: 'DZIESIĘĆ', 11: 'JEDENAŚCIE' };
 const NORTH_TO_SOUTH = STAGES.map((_, i) => i).sort((a, b) => STAGES[b].map[1] - STAGES[a].map[1]);
 export function lastCity() {
   try {

@@ -1,6 +1,6 @@
 # Plan: etap 11, ONOMICHI
 
-Stan: **plan, czeka na akceptację autora** (decyzje D1–D7 w sekcji 2 mają rekomendacje). Po akceptacji fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Faza 0 gotowa. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -10,9 +10,11 @@ Stan: **plan, czeka na akceptację autora** (decyzje D1–D7 w sekcji 2 mają re
 - Jeden miniboss i jeden boss, każdy z trzema fazami: **Nekomata** (dwuogoniasty kot-zjawa na dachach i schodach „miasta kotów”) i **Funa-yūrei** (widmowy okręt morskich władców z rękami trzymającymi czerpaki, wynurza się z cieśniny w noc fajerwerków).
 - Poziom detalu jak w poprzednich miastach. Finał dostaje dodatki (fajerwerki), ale nie kosztem wysp i stoku.
 
-## 2. Decyzje do podjęcia przed startem
+## 2. Decyzje
 
-| # | Pytanie | Moja rekomendacja |
+Przyjęte 2026-11-18 według rekomendacji; mogą się zmienić później.
+
+| # | Pytanie | Decyzja |
 |---|---|---|
 | D1 | Kierunek trasy | **Innoshima → Mukaishima → Onomichi.** Tak etap kończy się w nocy w mieście, nad cieśniną, gdzie naprawdę odpala się fajerwerki (przy chramie Sumiyoshi). Odwrotny kierunek (z miasta na wyspy) kończy się na moście Innoshima, a fajerwerki tam nie pasują. |
 | D2 | Pora roku | **Lato, koniec lipca**, wieczór festiwalu fajerwerków Sumiyoshi. Wiosna (sakury w parku Senkō-ji) powtarzałaby Kioto, a jesień jest już w Hiroszimie i Kawaguchiko. Lato w innych miastach ma tylko Okinawa, i to tropikalne. |
@@ -137,10 +139,10 @@ Każda faza ma zakres, pliki, które wolno ruszać, i warunek ukończenia. „Wy
 
 ### Faza 0: jedenaste miasto i szkielet etapu
 Wymaga: decyzje D1–D7. Pliki: `src/data/stage11.json`, `src/data/stages.js`, `src/data/journeyOrder.js`, `src/game/JourneyMenu.js`, `src/i18n.js`, `src/game/skins.js`, `src/game/Stamps.js`, `src/game/Ending.js`, `tools/gen-art.mjs`, `tools/art/onomichi/index.mjs`.
-- [ ] `stage11.json` w `stages.js` z flagą `"wip": true`, fale zastępcze, miniboss i boss z innego miasta na zastępstwo
-- [ ] Makieta tła 8 kafli ładuje się i przewija
-- [ ] Gra gotowa na jedenaście miast: licznik słownie („JEDENAŚCIE MIAST”, EN „ELEVEN CITIES”), miejsce w książeczce pieczątek i w pieczęciach zakończenia
-- [ ] `npm test` i `npx vite build` przechodzą
+- [x] `stage11.json` w `stages.js` z flagą `"wip": true` (uruchamia się przez `?stage=11` i z menu bossów), fale zastępcze, miniboss (tanuki) i boss (Kyūbi) z Kioto na zastępstwo; miniboss w 135 s z `"hold"`, boss w 220 s
+- [x] Makieta tła 8 kafli ładuje się i przewija: wyspy, cieśnina Innoshima z mostem, cieśnina Onomichi z parą mostów, za zakrętem cieśnina wzdłuż lewej krawędzi (szersza przed dworcem), tor i pasaż, tarasy stoku, kolejka linowa, obie areny, linijka (`tools/art/onomichi/`)
+- [x] Gra gotowa na jedenaście miast: licznik słownie („JEDENAŚCIE MIAST”, EN „ELEVEN CITIES”); książeczka pieczątek, zakończenie i kolejność podróży liczą miasta z listy (bez zmian), testy biorą miasta z plików etapów (`tools/tests/cities.mjs`), więc Onomichi dołączy po zdjęciu flagi
+- [x] `npm test` i `npx vite build` przechodzą
 
 ### Faza 1: szkielet trasy
 Wymaga: faza 0. Pliki: `tools/art/onomichi/route.mjs`, `mid.mjs`, `overview.mjs`, `src/data/landmarks.js`, `tools/tests/onomichiRoute.test.mjs`.
@@ -226,4 +228,5 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
-| 2026-11-18 | Claude | plan | Plan etapu napisany: trasa Innoshima → Mukaishima → Onomichi, lato i noc fajerwerków, Nekomata i Funa-yūrei, sekcja 4.1 o stoku. | Czeka na akceptację decyzji D1–D7. |
+| 2026-11-18 | Claude | 0 | Etap 11 w budowie: `stage11.json` (flaga `wip`, fale zastępcze, napisy PL/EN kart i zapowiedzi), makieta tła (`tools/art/onomichi/route.mjs`, `mid.mjs`, `far.mjs`), skórka `onomichi` z przeciwnikami Kioto na zastępstwo, nazwy odcinków w `landmarks.js`, licznik „JEDENAŚCIE”. Sprawdzone w przeglądarce: etap startuje z `?stage=11`, pasek INNOSHIMA, bez błędów w konsoli. | Etykieta Onomichi na mapie wyboru (tuż obok Hiroszimy) do ustawienia w fazie 15. Muzyka na razie z Kioto. Następna: faza 1 (szkielet trasy). |
+| 2026-11-18 | Claude | plan | Plan przyjęty przez autora według rekomendacji. Plan etapu napisany: trasa Innoshima → Mukaishima → Onomichi, lato i noc fajerwerków, Nekomata i Funa-yūrei, sekcja 4.1 o stoku. | Czeka na akceptację decyzji D1–D7. |
