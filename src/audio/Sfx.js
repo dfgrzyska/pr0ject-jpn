@@ -454,6 +454,95 @@ export class Sfx {
     this.hiss(t + 0.02, 0.16, 0.04, 2000, 900, 1, 0.01);
   }
 
+  /** A glass wind bell (fūrin) on the eaves: a thin, high ring with a clink of its clapper, dying away. */
+  furin() {
+    if (!this.ready('furin', 0.35)) return;
+    const t = this.now();
+    const s = this.s;
+    const f = 2300 + Math.random() * 300;
+    for (const [k, a, len] of [[1, 0.035, 1.1], [1.503, 0.018, 0.8], [2.76, 0.01, 0.5]]) {
+      const o = s.osc('sine', f * k, t, t + len + 0.05);
+      const g = s.gain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(a, t + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      o.connect(g).connect(this.out);
+    }
+    s.noiseBurst(t, 0.006, 'highpass', 6000, 1, 0.05);
+  }
+
+  /** A cat's "nyaa": a nasal tone rising and falling through a vowel's formant. */
+  meow() {
+    if (!this.ready('meow', 0.3)) return;
+    const t = this.now();
+    const s = this.s;
+    const r = 0.9 + Math.random() * 0.25;
+    const o = s.osc('sawtooth', 520 * r, t, t + 0.45);
+    o.frequency.setValueAtTime(520 * r, t);
+    o.frequency.linearRampToValueAtTime(860 * r, t + 0.12);
+    o.frequency.exponentialRampToValueAtTime(430 * r, t + 0.4);
+    const bp = s.filter('bandpass', 1300, 3);
+    bp.frequency.setValueAtTime(900, t);
+    bp.frequency.linearRampToValueAtTime(1600, t + 0.14);
+    bp.frequency.linearRampToValueAtTime(800, t + 0.4);
+    const g = s.gain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.06, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
+    o.connect(bp).connect(g).connect(this.out);
+  }
+
+  /** Water flung out of a ladle: a slap of water and its spray. */
+  splash() {
+    if (!this.ready('splash', 0.12)) return;
+    const t = this.now();
+    this.hiss(t, 0.3, 0.06, 1800, 600, 0.7, 0.01);
+    this.blip('sine', 420, 180, 0.07, 0.03, t);
+    for (let i = 0; i < 3; i++) this.s.noiseBurst(t + 0.05 + Math.random() * 0.15, 0.01, 'bandpass', 3000 + Math.random() * 2000, 4, 0.03);
+  }
+
+  /** A conch (horagai) blown: a hoarse, low horn swelling and breaking off. */
+  conch() {
+    if (!this.ready('conch', 1)) return;
+    const t = this.now();
+    const s = this.s;
+    for (const [f, a] of [[146.8, 0.07], [147.6, 0.05], [293.6, 0.025]]) {
+      const o = s.osc('sawtooth', f, t, t + 1.5);
+      o.frequency.setValueAtTime(f * 0.94, t);
+      o.frequency.linearRampToValueAtTime(f, t + 0.18);
+      const lp = s.filter('lowpass', 400, 1.2);
+      lp.frequency.setValueAtTime(300, t);
+      lp.frequency.linearRampToValueAtTime(1100, t + 0.3);
+      lp.frequency.linearRampToValueAtTime(600, t + 1.3);
+      const g = s.gain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(a, t + 0.15);
+      g.gain.setValueAtTime(a, t + 1.1);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.45);
+      o.connect(lp).connect(g).connect(this.out);
+    }
+    this.hiss(t, 1.3, 0.02, 900, 700, 0.6, 0.1); // (the breath in it)
+  }
+
+  /** A firework shell going up: its whistle rising; `open`: the boom and the crackle of it opening. */
+  hanabi(open = false) {
+    if (!this.ready(open ? 'hanabi_open' : 'hanabi_up', open ? 0.18 : 0.3)) return;
+    const t = this.now();
+    if (!open) {
+      const o = this.s.osc('sine', 900, t, t + 0.65);
+      o.frequency.exponentialRampToValueAtTime(1900, t + 0.6);
+      const g = this.s.gain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.012, t + 0.1);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.62);
+      o.connect(g).connect(this.out);
+      return;
+    }
+    this.blip('sine', 110, 38, 0.5, 0.12, t);
+    this.sweep(1600, 160, 0.5, 0.06, t);
+    for (let i = 0; i < 6; i++) this.s.noiseBurst(t + 0.25 + Math.random() * 0.6, 0.006, 'bandpass', 2500 + Math.random() * 3000, 4, 0.025);
+  }
+
   explode(size) {
     if (!this.ready(`boom_${size}`, BOOM_GAP[size] ?? 0.05)) return;
     const t = this.now();

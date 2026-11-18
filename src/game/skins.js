@@ -156,9 +156,9 @@ export const SKINS = {
   // an eye, firework shells with their fuses lit, the demon tile on a temple's ridge, and NEKOMATA on the roofs
   onomichi: {
     trap: { ...trap('onomichi', 'ash', 10, { kind: 'ring', n: 8 }, 3.6) }, // a mosquito-coil pig on a veranda, puffing rings of smoke (enemies/traps.js)
-    ambush: ambush('onomichi', 'splash'), // an octopus out of its clay pot on the harbour (enemies/ambush.js)
+    ambush: { ...ambush('onomichi', 'splash'), sound: ['splash'] }, // the octopus out of its pot on the quay // an octopus out of its clay pot on the harbour (enemies/ambush.js)
     popcorn: { frame: 'o_tsubame_0', anim: 'o_tsubame', flock: true },
-    shooter: { frame: 'o_furin_0', anim: 'o_furin' },
+    shooter: { frame: 'o_furin_0', anim: 'o_furin', sound: 'furin' }, // (it rings as it fires)
     diver: { frame: 'o_debera_0', anim: 'o_debera' },
     carrier: { frame: 'o_hanabi_{c}_0', anim: 'o_hanabi_{c}' },
     heavy: { frame: 'o_neko_sit_0', kind: 'nekomata' }, // the miniboss: NEKOMATA (onomichi-nekomata.js)

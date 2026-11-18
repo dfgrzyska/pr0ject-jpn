@@ -1,6 +1,6 @@
 # Plan: etap 11, ONOMICHI
 
-Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–13 gotowe (zbliżenie stoku i projekt okrętu przyjęte przez autora 2026-11-18): całe tło, przeciwnicy, fale, walki z Nekomatą i Funa-yūrei, woda w dzień i w nocy, fajerwerki. Zostały: muzyka, włączenie etapu i balans. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–14 gotowe (zbliżenie stoku i projekt okrętu przyjęte przez autora 2026-11-18): całe tło, przeciwnicy, fale, walki z Nekomatą i Funa-yūrei, woda w dzień i w nocy, fajerwerki, muzyka i dźwięki. Zostały: włączenie etapu i balans. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -43,6 +43,7 @@ Kierunek lotu obraca się z mapą, jak spirala w Tokio. Nad wyspami lecimy na p�
 
 | u | Czas | Odcinek | Pora | Co widać |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 14 | Muzyka w `score11.js` (9 piosenek), dźwięki w `Sfx.js` (fūrin, miau, chlust, róg, fajerwerki), podpięte w walkach, fajerwerkach i skórce. Sprawdzone w przeglądarce: grają właściwe piosenki, bez błędów. | Następne: faza 15. |
 | 2026-11-18 | Claude | 13 | Fajerwerki nad cieśniną (`Hanabi.js`, `hanabi.mjs`), barki i arena bossa przeniesione, łagodniejsze światło wybuchów bossa. Sprawdzone zrzutami w walce i po niej. | Następne: faza 14 (muzyka). |
 | 2026-11-18 | Claude | 7 | Dzienna woda z prądami, zawirowaniami i błyskami słońca w `far.mjs`; daleka warstwa barwiona porą dnia mapy (`farTint` w `mid.mjs` i `Parallax.js`). | Następne: faza 13 (fajerwerki w tle). |
 | 2026-11-18 | Claude | 11 i 12 | Projekt okrętu przyjęty; części `fy_*` w atlasie Onomichi, podgląd składa okręt z części. Walka w `onomichi-funayurei.js` (FUNA, FY): wynurzenie z cieśniny po zatrzymaniu taśmy, czerpaki i wiosła, ogniste garnki, róg z muszli i złote kule ogłuszające okręt, wir z obrotami, spiralami i rzędami rąk, latarnia jako słaby punkt; koniec z tonięciem, światełkami i ostatnim fajerwerkiem. Wpięta w `Enemies.js`, `encounters.js`; strefa `ghost` w `Bullets.js`; napisy EN. Sprawdzone zrzutami w grze we wszystkich fazach i w zakończeniu, test `onomichiFunayurei`. | Autor zgodził się, by kolejne fazy szły bez akceptacji. Następne: faza 7 (dzienna woda), 13 (fajerwerki w tle), 14, 15, 16. |
@@ -215,7 +216,7 @@ Wymaga: fazy 6 i 12. Pliki: `src/game/Hanabi.js`, `tools/art/onomichi/hanabi.mjs
 
 ### Faza 14: muzyka i dźwięk
 Wymaga: faza 0. Plik: `src/audio/score11.js`.
-- [ ] Trzy części tematu, motyw minibossa, temat bossa, dźwięki z sekcji 7
+- [x] Trzy części tematu, motyw minibossa, temat bossa, dźwięki z sekcji 7. Własna melodia w stylu min'yō w skali yo na D, jeden 8-taktowy ciąg (D Bm G A | D Em G A) i tempo 116 dla wszystkich piosenek etapu: wstęp na Innoshimie (koto, flet, dzwoneczki fūrin), rozwinięcie od wielkiego mostu (shamisen, bębny), cały temat z odpowiedzią nad cieśniną, zmierzch na stoku (koto prowadzi, flet długimi nutami), festiwal na Hondōri (gong i kołatki), cisza nad wodą przed dworcem. Kot: zadziorny shamisen w skali in na A, flet „miauczy”; okręt: skala in na D, biwa, taiko, róg z muszli; po nim radosny temat festiwalu (`night`). Dźwięki: dzwonek fūrin (gra, gdy fūrin strzela; `sound` strzelca w skórce), miauczenie, chlust czerpaka, róg z muszli, gwizd i wybuch fajerwerku, pęknięcie garnka (istniejący `crock`), plusk ośmiornicy. Test `onomichiMusic`
 
 ### Faza 15: wpięcie w grę
 Wymaga: fazy 9–13.

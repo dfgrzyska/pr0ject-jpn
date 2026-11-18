@@ -68,6 +68,7 @@ export class Hanabi {
     if (y0 < s.H + 8) {
       this.spark('hb_flash', x0, y0, { life: 0.22, c0: 0xfff0c0, scale: 0.9 });
       s.fx.smoke(x0, y0, 1, 2);
+      s.sfx.hanabi?.();
     }
   }
 
@@ -91,6 +92,7 @@ export class Hanabi {
   burst(kind, x, y) {
     const s = this.scene;
     const cols = COLS[kind][Math.floor(Math.random() * COLS[kind].length)];
+    s.sfx.hanabi?.(true);
     if (kind === 'kiku') this.ring(x, y, 34, 42, 1.3, cols, { trail: 0.05 });
     else if (kind === 'botan') {
       this.ring(x, y, 28, 40, 1.2, cols, { scale: 1.15 });

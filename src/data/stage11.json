@@ -53,25 +53,16 @@
   "end": 232,
   "music": {
     "schedule": [
-      [
-        0,
-        "intro"
-      ],
-      [
-        24,
-        "build"
-      ],
-      [
-        47,
-        "full"
-      ],
-      [
-        196,
-        "final"
-      ]
+      [0, "s11_intro"],
+      [22, "s11_build"],
+      [47, "s11_full"],
+      [112, "s11_yugure"],
+      [156, "s11_matsuri"],
+      [196, "s11_minato"]
     ],
-    "heavy": "tanuki",
-    "boss": "boss"
+    "heavy": "s11_neko",
+    "boss": "s11_boss",
+    "night": "s11_hanabi"
   },
   "warnings": {
     "heavy": "KOT NA DACHACH",
@@ -160,7 +151,7 @@
     {"t":117.5,"type":"diver","x":60,"count":3},
     {"t":118,"type":"diver","x":120,"count":3},
     {"t":120.5,"type":"shooter","x":90,"pattern":"fan"},
-    {"t":135,"type":"heavy","look":"heavy","hold":true,"x":90,"card":["NEKOMATA","KOT O DWÓCH OGONACH"]},
+    {"t":135,"type":"heavy","look":"heavy","music":"s11_neko","hold":true,"x":90,"card":["NEKOMATA","KOT O DWÓCH OGONACH"]},
     {"t":137,"type":"carrier","x":60,"path":"zigzag","color":"red"},
     {"t":139,"type":"carrier","x":120,"path":"zigzag","color":"green"},
     {"t":140,"type":"diver","x":120,"count":2},

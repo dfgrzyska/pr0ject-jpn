@@ -139,6 +139,7 @@ export class Enemies {
         break;
       case 'shooter':
         e = this.pool.spawn(look.frame, w.x, -12, base);
+        e.sound = look.sound ?? null; // (a city's own, as it fires: Onomichi's wind bell rings)
         if (look.armor) {
           // ice lantern: the shell soaks up damage first, the flame inside is weak
           e.lantern = true;
@@ -1153,6 +1154,7 @@ export class Enemies {
           const a = this.aimAt(e, 0, 8);
           for (let i = 0; i < n; i++) b.shot('eb_s', e.x, e.y + 8, a + (i / (n - 1) - 0.5) * arc, normal * 0.9, 1.8, { bounce: 1 });
         } else if (this.canFire(e)) {
+          if (e.sound) this.scene.sfx[e.sound]?.();
           if (e.pattern === 'fan') b.fan(e.x, e.y + 8, this.aimAt(e, 0, 8), 5, 0.9, slow);
           else b.fan(e.x, e.y + 8, this.aimAt(e, 0, 8), 3, 0.42, normal);
         }

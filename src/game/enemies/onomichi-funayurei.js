@@ -320,6 +320,7 @@ export const onomichiFunayurei = {
     for (let i = 0; i < n; i++) s.bullets.shot('eb_bubble_0', x, y, ang + (n > 1 ? (i / (n - 1) - 0.5) * L.arc : 0), normal * (0.85 + (i % 2) * 0.15), 2.2, { grow: { r0: 2, r1: 3, t: 0.5, drag: 0, frames: ['eb_bubble_0', 'eb_bubble_1'] } });
     for (let i = 0; i < 6; i++) s.fx.part(s.fx.parts, 'drop_0', x, y, { vx: Math.cos(ang) * 70 + (Math.random() - 0.5) * 50, vy: Math.sin(ang) * 70, g: 120, life: 0.4 }).setTint(0xbfe8ff);
     if (Math.random() < 0.35) SAY(s, x, y - 8, 'ZABA!', 0.6, 0xbfe8ff);
+    s.sfx.splash?.();
   },
 
   /** A ladle shot: its bottom knocked out at the last hit. */
@@ -397,6 +398,7 @@ export const onomichiFunayurei = {
       k.sp.setRotation(0);
       this.segPool.kill(k.sp);
       SAY(s, k.tx, k.ty - 14, 'BAAN!', 0.6, 0xffa040);
+      s.sfx.crock?.();
       s.sfx.explode('s');
       s.fx.light(k.tx, k.ty, 1, false, 0xff8a3a);
       for (let i = 0; i < 8; i++) s.fx.part(s.fx.parts, 'dot_1', k.tx, k.ty, { vx: (Math.random() - 0.5) * 90, vy: -30 - Math.random() * 40, g: 160, life: 0.5 }).setTint(i % 2 ? 0x86583a : 0xffa040);
@@ -416,7 +418,7 @@ export const onomichiFunayurei = {
     const [cx, cy] = this.fyAt(g, FY.conch);
     if (once('blow', 0)) {
       SAY(s, cx, cy - 10, 'BUOOOO~', 1.4, 0xfff4ea);
-      s.sfx.explode('m');
+      s.sfx.conch?.();
     }
     if (a.t < C.rings * C.gap + 0.2 && Math.random() < 0.5) s.fx.part(s.fx.parts, 'dot_1', cx, cy, { vx: (Math.random() - 0.5) * 30, vy: (Math.random() - 0.5) * 30, life: 0.4 }).setTint(0xfff4ea);
     for (let r = 0; r < C.rings; r++) {
@@ -444,6 +446,7 @@ export const onomichiFunayurei = {
       const sp = this.segPool.spawn('fy_shell_0', x0, g.y + 70).setDepth(DEPTH.air + 0.05);
       g.shells.push({ sp, x0, x1, y0: g.y + 74, y1: g.y - 30, t: 0, hp: S.hp });
       SAY(s, dir > 0 ? 24 : VIEW.width - 24, g.y + 92, 'HYURURU...', 1, GOLD);
+      s.sfx.hanabi?.();
     }
     for (const sh of g.shells) {
       sh.t += dt;
@@ -503,7 +506,8 @@ export const onomichiFunayurei = {
       fx.part(fx.parts, 'dot_1', x, y, { vx: Math.cos(an) * 14 * size, vy: Math.sin(an) * 14 * size, g: 20, drag: 1.1, life: 0.8 }).setTint(0xffffff).setBlendMode(Phaser.BlendModes.ADD);
     }
     fx.light(x, y, Math.min(1.4, 0.7 * size), false, cols[0]);
-    s.sfx.explode(size > 1 ? 'm' : 's');
+    s.sfx.hanabi?.(true);
+    if (size > 1) s.sfx.explode('m');
   },
 
   // ---------------------------------------------------------------- phase 3: the whirl

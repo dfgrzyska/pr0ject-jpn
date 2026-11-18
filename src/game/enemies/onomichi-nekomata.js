@@ -85,6 +85,7 @@ export const onomichiNekomata = {
         e.state = 'fight';
         this.nkAct(g, 'sit');
         SAY(this.scene, g.x, g.y + 30, 'NYAAA~', 0xffe8b0, 1);
+        this.scene.sfx.meow?.();
       }
     } else {
       g.fight = (g.fight ?? 0) + dt;
@@ -204,6 +205,7 @@ export const onomichiNekomata = {
       s.fx.smoke(x, y, 2, 4, true);
     }
     SAY(s, 90, 60, 'NYA NYA NYA!', 0xffe8b0, 1);
+    s.sfx.meow?.();
     g.swapAt = g.t + NEKO.chorus.swap;
     g.glintAt = g.t + 1;
     this.nkAct(g, 'sit');
@@ -269,7 +271,10 @@ export const onomichiNekomata = {
           c.cry = NEKO.chorus.every * (0.8 + Math.random() * 0.4);
           c.meow = 0.5;
           if (this.canFire({ type: 'heavy', seen: e.seen, y: c.y })) s.bullets.fan(c.x, c.y + 8, Math.atan2(s.player.y - c.y, s.player.x - c.x), volley(NEKO.chorus.notes), NEKO.chorus.arc, slow * 0.95);
-          if (Math.random() < 0.35) SAY(s, c.x, c.y - 26, 'NYA~', 0xd8e4f4, 0.55);
+          if (Math.random() < 0.35) {
+            SAY(s, c.x, c.y - 26, 'NYA~', 0xd8e4f4, 0.55);
+            s.sfx.meow?.();
+          }
         }
       }
       c.meow -= dt;
@@ -369,6 +374,7 @@ export const onomichiNekomata = {
     for (const c of g.copies) if (c.gone <= 0) this.nkPoof(g, c);
     this.nkAct(g, 'leave');
     SAY(this.scene, g.x, g.y - 24, 'NYAN~', 0xffffff, 0.9);
+    this.scene.sfx.meow?.();
   },
 
   nkLeave(e, g, dt) {
