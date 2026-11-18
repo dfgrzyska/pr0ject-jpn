@@ -1,6 +1,6 @@
 # Plan: etap 11, ONOMICHI
 
-Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–6 i 8–10 gotowe (zbliżenie stoku przyjęte przez autora 2026-11-18): całe tło, przeciwnicy, fale, walka z Nekomatą; z fazy 7 nocna woda. Boss dalej na zastępstwo (Kyūbi z Kioto). Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–6 i 8–10 gotowe (zbliżenie stoku przyjęte przez autora 2026-11-18): całe tło, przeciwnicy, fale, walka z Nekomatą; z fazy 7 nocna woda. Projekt bossa (Funa-yūrei) czeka na akceptację autora; w grze boss dalej na zastępstwo (Kyūbi z Kioto). Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -197,7 +197,8 @@ Wymaga: faza 0. Pliki: `src/game/enemies/onomichi-nekomata.js`, `tools/art/onomi
 
 ### Faza 11: Funa-yūrei, grafika
 Wymaga: faza 6. Plik: `tools/art/onomichi/funayurei.mjs`.
-- [ ] Projekt w trzech postaciach (z czerpakami, z ogniem, w wirze) na tle cieśniny, do akceptacji autora
+- [x] Projekt w trzech postaciach (z czerpakami, z ogniem, w wirze) na tle cieśniny przed dworcem nocą, wysłany autorowi 2026-11-18 (`tools/art/onomichi/funayurei.mjs`, podgląd: `node tools/art/onomichi/funayurei.mjs` → `tools/preview/stage11_funayurei.png`): sekibune z góry, dziobem w dół ekranu (do statku), kadłub z wyblakłego szarozielonego drewna z wodorostami i zimną zielonkawą poświatą wzdłuż obrysu i szwów, wiosła przez otwory w burtach, pokład z linami, beczkami, włóczniami i kałużami morza, dwupiętrowa nadbudówka pod czterospadowym dachem z oknami w zimnym świetle i ognikami u okapów, maszt z żaglem z mat, dwa podarte proporce z własnym znakiem (trzy fale w kole, żaden herb), wielka latarnia z ognikiem na dziobie (słaby punkt); faza 1: blade ręce topielców wynurzone wzdłuż burt z drewnianymi czerpakami, złote obręcze to cele, czerpak bez dna przelewa wodę; faza 2: otwarty luk z ogniem w nadbudówce, garnki z prochem przy niej, muszla na dachu; faza 3: maszt złamany, żagiel płonie na pokładzie, dziury w burtach, połamane wiosła, wir dookoła
+- [ ] Akceptacja autora
 - [ ] Części w atlasie miasta: kadłub w trzech stopniach zniszczenia, nadbudówka, maszt i żagiel, ręce z czerpakami (z dnem i bez), latarnia, garnki, wir
 
 ### Faza 12: Funa-yūrei, walka
@@ -231,6 +232,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 11 (część) | Projekt Funa-yūrei w trzech postaciach w `funayurei.mjs` (rysunek całości: kadłub, nadbudówka, olinowanie, proporce, latarnia, ręce z czerpakami), podgląd na tle nocnej cieśniny. | Czeka na akceptację projektu; potem części w atlasie i walka (faza 12). |
 | 2026-11-18 | Claude | 10 | Nekomata: `src/game/enemies/onomichi-nekomata.js` (`NEKO`, wmiksowany w `Enemies`, strzały przez `nekoShot` w `bossDeviceHit`, koniec `neko` w `updateDying`), grafika w `nekomata.mjs`, `HEAVY.hp.nekomata` = 960, skórka `heavy` z `kind: 'nekomata'`, portret `o_neko_sit_0`. Sprawdzone w grze (zrzuty każdej fazy i końca, bez błędów w konsoli). | Muzyka minibossa dalej z Kioto (faza 14). Wpis w albumie w fazie 15. Następne: Funa-yūrei (fazy 11–12, projekt do akceptacji). |
 | 2026-11-18 | Claude | 8 i 9 | Przeciwnicy, pułapka i zasadzka w 540 px, skórka `onomichi` (z `heat` dla onigawary), `"enemyArt": true`, animacje `o_*` w `enemyArt.js`, małe wersje pułapki i zasadzki w `sprites.png`; fale ze skryptu. Sprawdzone zrzutami w grze w 15, 56, 86 i 166 s. | Portrety do albumu dojdą z walkami (fazy 10–12). Następne: walki (Nekomata, Funa-yūrei). |
 | 2026-11-18 | Claude | 2 i 3 | Wyspy i mosty (`islands.mjs`), Ozaki i Jōdo-ji (`jodoji.mjs`); stok, miasteczko i nabrzeże z `senkoji.mjs` sięgają w dół do zakrętu (`HILL_FROM` = 2890). Całe tło narysowane, żadna działka nie jest kreskowana. Sprawdzone zrzutami w grze w 11, 43, 73 i 98 s. | Arkusz całej trasy: `node tools/art/onomichi/overview.mjs`. Następne: faza 7 (dzienna woda z prądami), faza 8 (przeciwnicy), potem walki. |
