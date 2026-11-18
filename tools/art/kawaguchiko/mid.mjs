@@ -14,13 +14,14 @@ import { RAMPS } from '../nature.mjs';
 import { fujiyoshida } from './fujiyoshida.mjs';
 import { shore } from './shore.mjs';
 import { lake } from './lake.mjs';
+import { north } from './north.mjs';
 import { viewFrames } from './view.mjs';
 import { W, S, L, SECTIONS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, PLOTS } from './route.mjs';
 import { near, inShape, bbox, railHalf } from '../tokyo/geom.mjs';
 
 // the stretches' painters, in the order they are called: (ctx) => void
-const PAINTERS = [fujiyoshida, shore, lake];
-const DRAWN_TO = 3900; // (the stretches drawn so far reach this far up the strip: their plots are not hatched)
+const PAINTERS = [fujiyoshida, shore, lake, north];
+const DRAWN_TO = 6748; // (the stretches drawn so far reach this far up the strip: their plots are not hatched)
 // arenas with no ring: the lake is the miniboss's, the panorama the boss's
 const ARENA_DRAWN = new Set(['KACHI-KACHI USAGI', 'DAIDARABOTCHI']);
 
@@ -41,7 +42,7 @@ const GROUND = {
   sand: [0xcdbb8c, 0xd8c89a, 0xe2d4a8],
   flowers: [0x748070, 0x84907c, 0x929c88, 0x5a4a34], // lavender cut back to grey-green mounds in rows, the earth between
   field: [0x8a7a4a, 0x9a8854, 0xa8945c, 0x6a5c38], // rice stubble, the furrows between
-  momiji: [0x8a3a22, 0xa04a26, 0xb8662a, 0x6a4a2a], // fallen maple leaves, the earth under them
+  momiji: [0x4a3020, 0x5a3a24, 0x6a4026, 0x7a3a22], // fallen maple leaves, the dark earth under them
 };
 const PAINTED = [0x24505c, 0x2c5c68, 0x366a74, 0x447a82];
 const PEBBLES = [0x9a9282, 0xa8a090, 0xb6ae9c];
@@ -285,11 +286,12 @@ export function buildMid() {
   // shrine's ginkgos yellow, elsewhere zelkova, maples, ginkgo and larch by turns, a few evergreens still green -
   // and under a maple or a ginkgo its leaves lie on the ground.
   const autumn = (kind, x, u, r) => {
-    if (kind !== 'broadleaf' && kind !== 'tiny') return kind;
+    if (kind !== 'broadleaf' && kind !== 'tiny' && kind !== 'kaki') return kind;
     const h = hashPx(Math.round(x * 7), Math.round(u * 7), 302);
     const zone = fbm(x * 0.05, u * 0.05, { seed: 301, scale: 1, octaves: 2 }) + (h - 0.5) * 0.16;
     let k;
-    if (kind === 'tiny') k = h < 0.35 ? 'momiji' : h < 0.55 ? 'kaki' : 'tiny';
+    if (kind === 'kaki') k = 'kaki';
+    else if (kind === 'tiny') k = h < 0.35 ? 'momiji' : h < 0.55 ? 'kaki' : 'tiny';
     else if (u > 700 && u < 1016) k = h < 0.62 ? 'momiji' : h < 0.86 ? 'kaede' : 'keyaki'; // (Arakurayama)
     else if (u >= 1016 && u < 1300) k = h < 0.42 ? 'icho' : h < 0.7 ? 'keyaki' : 'broadleaf'; // (the Sengen shrine)
     else k = zone < 0.36 ? 'keyaki' : zone < 0.47 ? 'kaede' : zone < 0.58 ? 'momiji' : zone < 0.66 ? 'icho' : zone < 0.74 ? 'karamatsu' : 'broadleaf';

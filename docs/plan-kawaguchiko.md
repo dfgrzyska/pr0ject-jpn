@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Fazy 0–6 gotowe (panorama Fuji zaakceptowana i w grze, gotowe odcinki przemalowane na jesień). 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Fazy 0–7 gotowe: cała taśma narysowana (miasto, brzeg i jezioro w jesieni, północny brzeg, tunel klonów), panorama Fuji w grze. 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -180,10 +180,10 @@ Wymaga: faza 4. Pliki: `fujiyoshida.mjs`, `shore.mjs`, `lake.mjs`, `mid.mjs` (ty
 
 ### Faza 7: północny brzeg i tunel klonów (u 3900–6748)
 Wymaga: faza 4. Plik: `tools/art/kawaguchiko/north.mjs`.
-- [ ] Wieś Kawaguchi: domy pielgrzymów oshi (bramy, mury, chorągwie), kurtyny persymon pod okapami, pola ze snopkami na żerdziach, ogrody z kapustą, ogniska z liści z dymem
-- [ ] Chram Asama: torii, wiekowe cedry w sznurach, pawilony, scena
-- [ ] Tunel klonów: strumień z mostkami, klony nad wodą, latarnie, stragany jarmarku, tłum; promenada nad wodą; nabrzeże z fotografami i statywami
-- [ ] Animacje: spadające liście, dym z ognisk, auta, latarnie zapalające się o zachodzie
+- [x] Wieś Kawaguchi: domy pielgrzymów oshi (kamienne mury, brama w budynku, wielki dach, biały spichlerz, ogród z sosną, latarnią i persymoną, chorągwie), kurtyny persymon pod okapami, sad persymon z drabiną, chata kryta strzechą, świetlica, zagroda z traktorkiem, jizō w czerwonych śliniakach, pola ze snopkami na żerdziach i stogami, ogrody z kapustą, ogniska z liści z dymem, słupy z drutami
+- [x] Chram Asama: kamienna torii nad ścieżką, siedem wiekowych cedrów w sznurach z papierami, dwa miłorzęby, pawilony pod korą cyprysową, scena kagura, pawilon do obmyć, latarnie wzdłuż drogi, stojak z tabliczkami
+- [x] Tunel klonów: korony schodzą się nad ścieżką, strumień zostaje odkryty, cynobrowe mostki, liście na ścieżce, latarnie wzdłuż niej, stragany jarmarku z parą, dom herbaciany i herbaciarnia z czerwonymi parasolami, ryokan i pensjonat z łaźniami, galeria z kamiennym ogrodem, parking, taras nad wodą, promenada z latarniami, fotografowie ze statywami na nabrzeżu
+- [x] Animacje: liście wirujące w tunelu klonów i nad wsią, dym z ognisk, kuchni i straganów, para z łaźni, czapla na ściernisku, auta na drogach, chorągwie; latarnie zapalają się o zachodzie
 
 ### Faza 8: warstwy daleka i bliska
 Wymaga: fazy 4 i 5. Pliki: `tools/art/kawaguchiko/far.mjs`, `src/game/Parallax.js` (tylko jeśli trzeba).
@@ -244,6 +244,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 7 | Północny brzeg w `tools/art/kawaguchiko/north.mjs`; `DRAWN_TO` = 6748 (żadna działka nie jest już kreskowana). Kawałek za zakrętem drogi wypełniany osobno wyszukiwarką skośną (inaczej klin zjadały wąskie paski). Persymony z owocami także dla drzew zamówionych wprost (`kaki`). | Następne: faza 8 (daleka warstwa pod jeziorem z odbiciem Fuji, bliska z liśćmi i gęsiami). |
 | 2026-11-18 | Claude | 6 | Jesień na odcinkach 0–3900: nowe barwy koron w `tools/art/nature.mjs` (momiji, kaede, icho, karamatsu, keyaki, kaki), a zestaw miejski (`tools/art/tokyo/kit.mjs`) przyjmuje od etapu `kinds` (zamiana gatunków drzew) i `cloth` (barwy ubrań); dla Tokio bez zmian. W `mid.mjs` funkcja `autumn` wybiera gatunek kępami według miejsca i sypie liście pod klony i miłorzęby; grunty parku, lasu, lawendy i kochii jesienne. | Następna: faza 7 (północny brzeg i tunel klonów). |
 | 2026-11-18 | Claude | 5 | Panorama w grze: `src/game/FujiView.js` (wybierany polem `"view": "fuji"` w `panorama` w `stage10.json`), siedem warstw z `view.mjs` (góra i woda malowane dwa razy: w słońcu i o zmierzchu, przenikane po walce), klatki łódki, kilwateru i gęsi w rekwizytach etapu (`viewFrames` w `mid.mjs`), test warstw. | Boss Kioto na zastępstwo zasłania szczyt: właściwy Daidarabotchi (fazy 12–13) ma stać niżej. Następne: faza 6 (jesień na gotowych odcinkach). |
 | 2026-11-18 | Claude | 5 (część) | Zbliżenie panoramy (`tools/art/kawaguchiko/view.mjs`, podgląd: `node tools/art/kawaguchiko/viewPreview.mjs` → `tools/preview/stage10_view.png`): Fuji jako stożek widziany z boku, każdy punkt zbocza z głębokości pod szczytem i azymutu, oświetlony nachyleniem z grzbietami i żlebami; czapa śniegu z językami w żlebach, żwir, modrzewie, las, mgła u stóp; jesienne wzgórza z koronami drzew, domy drugiego brzegu, niebo o zachodzie z chmurami, odbicie w wodzie porwane zmarszczkami. Trzy warstwy: niebo, ląd, woda. | Czeka na akceptację autora. Potem: ruch, wpięcie w grę (`FujiView.js`, pole `panorama`), światła po walce. |
