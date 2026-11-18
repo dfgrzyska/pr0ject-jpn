@@ -233,9 +233,9 @@ Wymaga: fazy 10–13.
 
 ### Faza 16: balans i szlif
 Wymaga: wszystko powyżej.
-- [ ] Bot przechodzi etap na obu poziomach trudności; czasy walk w widełkach innych miast
-- [ ] Przegląd równego detalu: żaden odcinek nie odstaje
-- [ ] Wydajność na telefonie nad jeziorem i w walce z bossem przed panoramą
+- [x] Bot przechodzi etap na obu poziomach trudności; czasy walk w widełkach innych miast. Bot bez nieśmiertelności (trafienie liczone zamiast śmierci), moc 4, każda broń: normalny 0–1 trafienie (fale 0), Kachi-kachi Usagi 24–67 s, Daidarabotchi 55–65 s; łatwy 0–1 trafienie, 15–17 s i 46–51 s. Dla porównania tym samym botem Hiroszima 28 i 55 s, Kurogane 60–112 s. Średnio pocisków na ekranie: fale 12, miniboss 12, boss 12 (Hiroszima 13 / 24 / 36, Beppu 18 / 13 / 11)
+- [x] Przegląd równego detalu: żaden odcinek nie odstaje. Arkusz całej trasy (`overview.mjs`): Fujiyoshida, brzeg, wieś i tunel klonów równie gęste; otwarte jezioro (2400–3880) to sama woda z odbiciem Fuji, wysepką i ruchomymi łodziami, łabędziami i statkiem (z założenia, faza 3); pola ryżowe we wsi mają rzędy ściernisk, kozły hazakake i stogi
+- [ ] Wydajność na telefonie nad jeziorem i w walce z bossem przed panoramą. Zmierzone na komputerze z procesorem spowolnionym 4× (Playwright, GPU): aktualizacja klatki 0,55–0,6 ms na całej trasie i w walce, rysowanie 1,0–1,2 ms (95. percentyl ≤ 2,2), w walce z olbrzymem przed panoramą 3,6 ms (95. percentyl 5,3); Kioto 1,1 / 2,1 ms, Akihabara 0,7 / 1,3, walka z Kurogane 1,7 / 8,9. Tekstury 152–166 MB (inne miasta 155–160, Tokio 210–225). Na telefonie nie mierzone
 - [ ] Przejście testowe przez człowieka i poprawki po nim
 
 ## 9. Dziennik przekazań
@@ -244,6 +244,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 16 (część) | Balans botem każdą bronią na obu poziomach, porównanie gęstości pocisków i czasów walk z Hiroszimą, Beppu i Tokio, przegląd detalu całej trasy, pomiar klatki przy spowolnionym procesorze i pamięci tekstur. Nic nie trzeba było zmieniać. | Do zrobienia przez człowieka: przejście bez nieśmiertelności, telefon (wydajność, pamięć), uwagi po przejściu. Bot nie czyta zapowiedzi tak jak człowiek, więc 0–1 trafienia nie mówi, czy etap nie jest za łatwy. Portret zająca w albumie zostaje mały (klatka 22 × 34; ×2 nie mieści się w ramce). |
 | 2026-11-18 | Claude | 15 | Kawaguchiko w podróży: `STAGES` ma dziesięć miast, flaga `wip` zdjęta. Pieczątka, pieczęć 富士, tusz, dwa dania, dwa wpisy z portretem olbrzyma, pocztówka i barwy w gachaponie, parada, angielskie napisy. Sprawdzone w przeglądarce po polsku i angielsku: menu, mapa wyboru, karta miasta z pieczęcią, książeczka (strona 2), album, dziennik smaków, pieczęcie i parada w zakończeniu; bez błędów w konsoli. | Zając ma mały portret w albumie (jego klatka 66 × 102). Mapa w scenie zakończenia nie była oglądana osobno. Następna: faza 16 (balans, przejście przez człowieka). |
 | 2026-11-18 | Claude | 14 | Muzyka w `src/audio/score10.js` (`SONGS10`, 10 utworów), rozkład w `stage10.json` dopasowany do odcinków (zmierzone w grze: brzeg ~36 s, jezioro ~63 s, wieś ~123 s, klony ~170 s, nabrzeże ~218 s); dźwięki w `Sfx.js`. Poziomy sprawdzone renderem offline (szczyt < 0,6, RMS jak w innych miastach). | Utwory nie były odsłuchane przez człowieka. Następna: faza 15 (wpięcie w grę). |
 | 2026-11-18 | Claude | 13 | Walka z Daidarabotchim w `src/game/enemies/kawaguchiko-daidara.js` (`DAIDARA`, `DD`), podpięta w `Enemies.js` i `encounters.js`; `FujiView` podaje linię wody (`waterY`); `stage10.json` z `"boss": "daidara"`. | Headless Chromium na SwiftShaderze obcina obrócone sprite'y z atlasu miasta w niektórych partiach (`outTexDatum ==` w shaderze Phasera 4); na prawdziwym GPU wszystko się rysuje. Zrzuty walki robić z `--use-angle=d3d11`. Następna: faza 14 (muzyka). |
