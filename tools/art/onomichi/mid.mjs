@@ -334,5 +334,5 @@ export function buildMid() {
   }
   kit.afterGrade(); // (the lights: windows, lanterns, lamps, their glow)
   for (const [x, u, w, h, d] of covers) props.loop(x, u + h, [props.frame(img.hi.crop(Math.round(x * S), Math.round((L - u - h) * S), Math.round(w * S), Math.round(h * S)))], { fps: 1, d });
-  return { strip: img.hi, props: props.pack(), meta: { width: W, artScale: S, length: L, tint: tintTable(L, tod.white) } };
+  return { strip: img.hi, props: props.pack(), meta: { width: W, artScale: S, length: L, tint: tintTable(L, tod.white), farTint: true } }; // (farTint: the far water takes the time of day too)
 }

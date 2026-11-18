@@ -1,6 +1,6 @@
 # Plan: etap 11, ONOMICHI
 
-Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–6 i 8–12 gotowe (zbliżenie stoku i projekt okrętu przyjęte przez autora 2026-11-18): całe tło, przeciwnicy, fale, walki z Nekomatą i Funa-yūrei; z fazy 7 nocna woda. Zostały: dzienna woda z prądami, fajerwerki w tle, muzyka, włączenie etapu i balans. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–12 gotowe (zbliżenie stoku i projekt okrętu przyjęte przez autora 2026-11-18): całe tło, przeciwnicy, fale, walki z Nekomatą i Funa-yūrei, woda w dzień i w nocy. Zostały: fajerwerki w tle, muzyka, włączenie etapu i balans. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -43,6 +43,7 @@ Kierunek lotu obraca się z mapą, jak spirala w Tokio. Nad wyspami lecimy na p�
 
 | u | Czas | Odcinek | Pora | Co widać |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 7 | Dzienna woda z prądami, zawirowaniami i błyskami słońca w `far.mjs`; daleka warstwa barwiona porą dnia mapy (`farTint` w `mid.mjs` i `Parallax.js`). | Następne: faza 13 (fajerwerki w tle). |
 | 2026-11-18 | Claude | 11 i 12 | Projekt okrętu przyjęty; części `fy_*` w atlasie Onomichi, podgląd składa okręt z części. Walka w `onomichi-funayurei.js` (FUNA, FY): wynurzenie z cieśniny po zatrzymaniu taśmy, czerpaki i wiosła, ogniste garnki, róg z muszli i złote kule ogłuszające okręt, wir z obrotami, spiralami i rzędami rąk, latarnia jako słaby punkt; koniec z tonięciem, światełkami i ostatnim fajerwerkiem. Wpięta w `Enemies.js`, `encounters.js`; strefa `ghost` w `Bullets.js`; napisy EN. Sprawdzone zrzutami w grze we wszystkich fazach i w zakończeniu, test `onomichiFunayurei`. | Autor zgodził się, by kolejne fazy szły bez akceptacji. Następne: faza 7 (dzienna woda), 13 (fajerwerki w tle), 14, 15, 16. |
 | 0–700 | 0–23 s | **INNOSHIMA** | jasne popołudnie | Zamek morskich władców na wzgórzu (odtworzony, z wieżą, palisadą i flagami), muzeum łodzi z łodziami kobaya na brzegu, sady hassaku na tarasach z kolejką wózków, mała stocznia, rybacka przystań, droga z niebieską linią do podjazdu na most |
 | 700–1500 | 23–50 s | **INNOSHIMA-OHASHI** | popołudnie | Most wiszący nad cieśniną (dwa poziomy: na górze jezdnia z autami, pod nią pas rowerzystów i pieszych, widoczny przy pylonach i zjazdach), dwa pylony, liny nośne z wieszakami, zakotwienia na obu brzegach, pętla podjazdu dla rowerów; w wodzie prądy pływowe z wirami, statki i barki płynące cieśniną |
@@ -177,9 +178,9 @@ Wymaga: faza 1. Pliki: `tools/art/onomichi/hondori.mjs`, `minato.mjs`.
 
 ### Faza 7: warstwy daleka i bliska
 Wymaga: faza 1. Pliki: `tools/art/onomichi/far.mjs`, `src/game/Parallax.js` (tylko jeśli trzeba).
-- [ ] Daleka warstwa pod morzem: woda Morza Wewnętrznego z pasmami prądu i światłem pory dnia, pętla bez szwu
+- [x] Daleka warstwa pod morzem: woda Morza Wewnętrznego, pętla bez szwu: pasma prądu pływowego wzdłuż cieśniny (gładkie lustra na przemian z drobną falą), płatki piany na granicach prądów, cztery zawirowania, błyski słońca na grzbietach fal. Światło pory dnia: gra mnoży wodę przez biel z oceny pory dnia mapy w połowie ekranu (`farTint` w meta, tabela `tint`; tylko Onomichi)
 - [x] Nocna wersja wody (`buildFarNight` → `far_night.png`, jak w Tokio): granat pod nocnym niebem, ciepła łuna miasta, światła brzegu w krótkich smugach; `dark` w `stage11.json` dochodzi do 0,9 przy dworcu
-- [ ] Bliska warstwa: istniejący rodzaj albo żaden; przejścia pory dnia sprawdzone w grze
+- [x] Bliska warstwa: żadna (`"near": "none"`); przejścia pory dnia sprawdzone zrzutami w grze w 26, 80, 110 i 146 s
 
 ### Faza 8: grafika przeciwników, pułapki i zasadzki
 Wymaga: faza 0. Pliki: `tools/art/onomichi/enemies.mjs`, `tools/art/traps.mjs`, `tools/art/ambush.mjs`, `src/game/skins.js`.

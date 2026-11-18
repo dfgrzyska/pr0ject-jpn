@@ -60,6 +60,8 @@ export class Parallax {
     this.farNight = scene.textures.exists(`${farKey}_night`)
       ? scene.add.tileSprite(0, 0, VIEW.width, VIEW.maxHeight, `${farKey}_night`).setOrigin(0, 0).setTileScale(invScale, invScale).setDepth(DEPTH.far + 0.01).setAlpha(0)
       : null;
+    // Onomichi: the far water takes the strip's time of day (the white of its grade where the screen's middle is)
+    this.farGrade = meta.farTint && meta.tint ? meta.tint : null;
     this.chunks = [];
     this.sway = meta.sway ? new TreeSway(scene, stage.id, meta, DEPTH.mid, VIEW.width) : null;
     if (this.sway) this.chunks = this.sway.chunks;
@@ -183,6 +185,16 @@ export class Parallax {
       if (vis) img.y = y;
     }
     this.far.tilePositionY = -(Math.round(this.farTime * this.speed.far * this.artScale) % this.farH);
+    if (this.farGrade) {
+      // (what white turns into at the screen's middle on the strip: the water warms to the sunset, then dims)
+      const t = this.farGrade;
+      const u = this.uTop - H / 2;
+      let i = 0;
+      while (i < t.length - 2 && u >= t[i + 1][0]) i++;
+      const k = Math.max(0, Math.min(1, (u - t[i][0]) / (t[i + 1][0] - t[i][0])));
+      const ch = (sh) => Math.round(((t[i][1] >> sh) & 255) + (((t[i + 1][1] >> sh) & 255) - ((t[i][1] >> sh) & 255)) * k);
+      this.far.setTint((ch(16) << 16) | (ch(8) << 8) | ch(0));
+    }
     if (this.farNight) {
       const d = this.darkness(H);
       this.farNight.tilePositionY = this.far.tilePositionY;
