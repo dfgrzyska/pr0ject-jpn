@@ -139,14 +139,18 @@ export const SKINS = {
       },
     },
   },
-  // Kawaguchiko (docs/plan-kawaguchiko.md): stand-ins until its own are drawn (phase 7), Kyoto's
+  // Kawaguchiko (docs/plan-kawaguchiko.md): swarms of red dragonflies, the lake's bass leaping, the cap cloud off
+  // Fuji spitting drops, strings of persimmons drying, the pilgrims' shrine with its mirror; the miniboss Kyoto's
+  // stand-in until KACHI-KACHI USAGI is drawn (phase 11)
   kawaguchiko: {
-    popcorn: { frame: 'popcorn_0', anim: 'popcorn' },
-    shooter: { frame: 'shooter_0', anim: 'shooter' },
-    diver: { frame: 'diver_0', anim: 'diver' },
-    carrier: { frame: 'carrier_{c}_0', anim: 'carrier_{c}' },
+    trap: trap('kawaguchiko', 'fire', 10, { kind: 'ring', n: 7 }, 3.8), // a bonfire of fallen leaves (enemies/traps.js)
+    ambush: ambush('kawaguchiko', 'dust'), // a mole out of its hill in a garden (enemies/ambush.js)
+    popcorn: { frame: 'k_tombo_0', anim: 'k_tombo', flock: true },
+    shooter: { frame: 'k_kasagumo_0', anim: 'k_kasagumo' },
+    diver: { frame: 'k_bass_0', anim: 'k_bass' },
+    carrier: { frame: 'k_hoshigaki_{c}_0', anim: 'k_hoshigaki_{c}' },
     heavy: { frame: 'tanuki_0', anim: 'tanuki', kind: 'tanuki' }, // (the miniboss's place: KACHI-KACHI USAGI, phase 9)
-    turret: { base: 'turret_base', head: 'turret_head_', wreck: 'turret_wreck' },
+    turret: { base: 'k_hokora_base', head: 'k_hokora_head_', wreck: 'k_hokora_wreck' },
   },
   // Hiroshima & Miyajima: maple-leaf spirit flocks, armored Seto oysters with pearl crits, scooping shamoji paddles,
   // tidal stone lanterns, Heike-gani samurai crab, and Sankibō the Great Tengu of Mount Misen

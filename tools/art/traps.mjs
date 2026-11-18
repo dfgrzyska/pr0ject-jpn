@@ -24,6 +24,9 @@ const RAMPS = {
   pp: tones([0x8a1a1e, 0xd2361f, 0xff8a6a]), // the mortars' red paper
   co: tones([0x3a3e46, 0x6e7480, 0xa8b0bc]), // concrete pole, grey cans
   sk: tones([0x3a5ad8, 0x9ad0ff, 0xffffff]), // the electric arc
+  lv2: tones([0x5a1a0c, 0xb83a1c, 0xe8803a]), // fallen maple leaves, red and rust
+  lg: tones([0x6a4a10, 0xc8902a, 0xf0c860]), // fallen ginkgo and larch, gold
+  sm: tones([0x6a666a, 0xa8a4a4, 0xdcd8d4]), // leaf smoke
 };
 const sprite = () => new HiSprite(60, 60, RAMPS);
 const shadow = (s, cx, cy, rx, ry) => {
@@ -192,7 +195,31 @@ function tokyo(f) {
   return s;
 }
 
-const DRAW = { kyoto, okinawa, sapporo, kagoshima, osaka, hiroshima, nagasaki, tokyo };
+/** Kawaguchiko: a bonfire of fallen leaves raked into a heap in a garden, a bamboo rake against it; smouldering, then
+ * it catches and throws up a burst of sparks. */
+function kawaguchiko(f) {
+  const s = sprite();
+  shadow(s, 34, 42, 17, 7);
+  // the heap: leaves of every colour, red maples on top, gold ginkgo and larch, brown oak, a stick or two
+  for (let k = 0; k < 26; k++) {
+    const a = k * 2.399;
+    const r = Math.sqrt(k / 26) * 13;
+    const [x, y] = [30 + Math.cos(a) * r, 34 + Math.sin(a) * r * 0.62];
+    s.ellipse(x, y, 3.6, 2.4, k % 3 === 0 ? 'lg' : 'lv2', { bias: 0.05 + (k % 2) * 0.05 });
+  }
+  for (const [x0, y0, x1, y1] of [[20, 30, 30, 36], [33, 28, 40, 38]]) s.tube(x0, y0, x1, y1, 0.9, 'wd');
+  // the bamboo rake left leaning on it, its fan of tines
+  s.tube(52, 18, 40, 34, 0.9, 'wd', { bias: 0.15 });
+  for (let i = -3; i <= 3; i++) s.line(52, 18, 56 + i * 1.6, 10 + Math.abs(i) * 0.6, 0xd8c890, 1, 0.9);
+  const k = f === 0 ? 0.35 : f === 1 ? 0.75 : 1;
+  for (let i = 0; i < 6; i++) s.dot(25 + i * 2, 34 + (i % 2), 1.1, f ? 0xffa030 : 0xc04010, k); // embers under the leaves
+  if (f === 0) for (let i = 0; i < 4; i++) s.ellipse(30 + Math.sin(i * 1.7) * 3, 26 - i * 4, 1.8 - i * 0.25, 1.6 - i * 0.2, 'sm', { flat: 0.6, glow: true }); // a wisp of smoke
+  if (f >= 1) flame(s, 30, 32, f === 1 ? 9 : f === 2 ? 16 : 20, f === 1 ? 4 : 7, f);
+  if (f >= 2) for (let i = 0; i < 9; i++) s.ellipse(30 + Math.sin(i * 2.3 + f) * 13, 6 + i * 2.4, 0.9, 0.9, 'fl', { flat: i % 3 ? 0.95 : 0.7, glow: true }); // sparks
+  return s;
+}
+
+const DRAW = { kyoto, okinawa, sapporo, kagoshima, osaka, hiroshima, nagasaki, tokyo, kawaguchiko };
 export const TRAP_CITIES = Object.keys(DRAW);
 
 /** Every trap's four frames, for the shared 540 px atlas. */

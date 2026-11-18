@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Fazy 0–8 gotowe: całe tło etapu (taśma, daleka i bliska warstwa, panorama Fuji). Dalej przeciwnicy, fale i walki. 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Fazy 0–9 gotowe: całe tło etapu (taśma, daleka i bliska warstwa, panorama Fuji) i grafika przeciwników. Dalej fale i walki. 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -193,9 +193,9 @@ Wymaga: fazy 4 i 5. Pliki: `tools/art/kawaguchiko/far.mjs`, `src/game/Parallax.j
 
 ### Faza 9: grafika przeciwników, pułapki i zasadzki
 Wymaga: faza 0. Pliki: `tools/art/kawaguchiko/enemies.mjs`, `sprites.mjs`, `tools/art/traps.mjs`, `tools/art/ambush.mjs`, `src/game/skins.js`.
-- [ ] Pięć skórek z sekcji 5 z klatkami lotu, trafienia i efektem zniszczenia
-- [ ] Ognisko z liści (4 klatki), kret z kopczyka (5 klatek)
-- [ ] Testy `enemyArt`, `sprites540`, `traps`, `ambush` przechodzą
+- [x] Pięć skórek z sekcji 5 w 540 px (`tools/art/kawaguchiko/enemies.mjs`, atlas `bg/stage10/enemies.*`): akatombo (4 klatki skrzydeł, stado z premią), okoń (machnięcia ogonem, szeroka paszcza), kasagumo (puchnie, mruga, wypluwa kroplę), sznur persymon z amuletem w kolorze wzmocnienia (kołysze się), kapliczka pielgrzymów z lustrem w 16 kierunkach i wrak z rozbitym lustrem. Zniszczenie sypie liśćmi klonu (`near: momiji`)
+- [x] Ognisko z liści z grabiami (4 klatki: tli się, łapie, bucha iskrami) i kret z kopczyka (5 klatek) we wspólnym atlasie
+- [x] Testy przechodzą; `enemyArt`, `traps` i `ambush` obejmą Kawaguchiko po zdjęciu flagi `wip`
 
 ### Faza 10: fale
 Wymaga: fazy 4 i 9. Plik: `src/data/stage10.json`.
@@ -244,6 +244,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 9 | Przeciwnicy z prefiksem `k_` (animacje w `CITY_ANIMS`), `"enemyArt": true` w `stage10.json`, skórka `kawaguchiko` z pułapką (pierścień 7 pocisków co 3,8 s) i zasadzką. Miniboss i boss dalej na zastępstwo (tanuki i Kyūbi ze wspólnego atlasu). | Następna: faza 10 (fale, pułapki, zasadzki). |
 | 2026-11-18 | Claude | 8 | `far.mjs`: jezioro z odbiciem Fuji (okresy szumów dobrane do pętli 384 px); `stage10.json`: `"near": "momiji"`. | Następne: faza 9 (grafika przeciwników, pułapki i zasadzki). |
 | 2026-11-18 | Claude | 7 | Północny brzeg w `tools/art/kawaguchiko/north.mjs`; `DRAWN_TO` = 6748 (żadna działka nie jest już kreskowana). Kawałek za zakrętem drogi wypełniany osobno wyszukiwarką skośną (inaczej klin zjadały wąskie paski). Persymony z owocami także dla drzew zamówionych wprost (`kaki`). | Następne: faza 8 (daleka warstwa pod jeziorem z odbiciem Fuji, bliska z liśćmi i gęsiami). |
 | 2026-11-18 | Claude | 6 | Jesień na odcinkach 0–3900: nowe barwy koron w `tools/art/nature.mjs` (momiji, kaede, icho, karamatsu, keyaki, kaki), a zestaw miejski (`tools/art/tokyo/kit.mjs`) przyjmuje od etapu `kinds` (zamiana gatunków drzew) i `cloth` (barwy ubrań); dla Tokio bez zmian. W `mid.mjs` funkcja `autumn` wybiera gatunek kępami według miejsca i sypie liście pod klony i miłorzęby; grunty parku, lasu, lawendy i kochii jesienne. | Następna: faza 7 (północny brzeg i tunel klonów). |

@@ -140,6 +140,9 @@ export const CITY_ANIMS = {
   t_pix: [four('t_pix'), 5], t_cart: [four('t_cart'), 12], t_capsule: [four('t_capsule'), 4],
   t_chochin: [four('t_chochin'), 4], t_uchiwa: [four('t_uchiwa'), 8], t_komainu: [four('t_komainu'), 3],
   t_kamome: [four('t_kamome'), 9], t_parcel: [four('t_parcel'), 12], t_buoy: [four('t_buoy'), 4],
+  // Kawaguchiko
+  k_tombo: [four('k_tombo'), 14], k_bass: [four('k_bass'), 8], k_kasagumo: [four('k_kasagumo'), 3],
+  ...Object.fromEntries(['red', 'blue', 'green', 'purple'].map((c) => [`k_hoshigaki_${c}`, [four(`k_hoshigaki_${c}`), 4]])),
   ...Object.fromEntries(['truck', 'rickshaw', 'van', 'mikoshi', 'barge'].flatMap((n) => ['red', 'blue', 'green', 'purple'].map((c) => [`t_${n}_${c}`, [four(`t_${n}_${c}`), n === 'mikoshi' ? 4 : 6]]))),
 };
 

@@ -38,6 +38,9 @@ const RAMPS = {
   rt: tones([0x2e2a2a, 0x5e5650, 0x948a80]), // a rat's grey-brown
   pk: tones([0x9a4a5a, 0xe08a9a, 0xffc8d0]), // pink: ears, paws, tail, noses
   gm: [0x6a0820, 0xc0204a, 0xff6a8a, 0xffc0d0, 0xffffff], // a glow of red (a mouth about to shoot)
+  ea: tones([0x2a1c14, 0x4e3626, 0x7e5e44]), // fresh dark earth
+  ml: tones([0x16141a, 0x2e2a34, 0x5a5466]), // a mole's velvet
+  lv: tones([0x5a1a0c, 0xb83a1c, 0xe8803a]), // a fallen maple leaf
 };
 const sprite = () => new HiSprite(60, 60, RAMPS);
 const shadow = (s, cx, cy, rx, ry, a = 0.32) => {
@@ -387,7 +390,41 @@ function tokyo(f) {
   return s;
 }
 
-const DRAW = { kyoto, okinawa, sapporo, osaka, beppu, hiroshima, nagasaki, tokyo };
+// ---------------------------------------------------------------- Kawaguchiko: a mole out of its hill in a garden
+function kawaguchiko(f) {
+  const s = sprite();
+  shadow(s, 33, 40, 15, 6);
+  // the molehill: a mound of fresh dark earth, crumbs round it, fallen leaves on it; heaving as it stirs
+  const heave = f === 1 ? 1.6 : 0;
+  s.ellipse(30, 36 - heave, 15 + heave, 10 + heave, 'ea', { bias: 0.02, pat: speckle({ amt: 0.3, dark: 0.12, light: 0.06, seed: 4 }) });
+  for (const [x, y] of [[20, 40], [40, 39], [24, 31], [37, 31]]) s.dot(x, y, 1.2, 0x7e5e44); // crumbs on it
+  for (const [x, y, a] of [[22, 30, 0.4], [38, 38, 2.2]]) s.poly([[x, y], [x + 4 * Math.cos(a), y + 3 * Math.sin(a)], [x + 2, y + 3]], 'lv', { flat: 0.6 });
+  if (f === 1) for (const [x0, y0, x1, y1] of [[24, 30, 30, 34], [30, 34, 37, 30]]) s.line(x0, y0, x1, y1, 0x1a120c, 1);
+  if (f < 2) return s;
+  s.ellipse(30, 32, 6, 3, 'ho', { flat: 0.2 }); // the hole it came up by
+  const head = (y, open) => {
+    s.ellipse(30, y, 7.5, 6.5, 'ml', { bias: 0.06, pat: fur(Math.PI / 2, { amt: 0.1, len: 3, seed: 6 }) });
+    s.poly([[27, y + 4], [33, y + 4], [31, y + 9], [29, y + 9]], 'pk', { flat: 0.6 }); // the long pink snout
+    s.dot(30, y + 9, 1, 0xe08a9a);
+    for (const sx of [-1, 1]) s.dot(30 + sx * 3, y + 1, 0.7, 0x05040a); // its eyes, mere pinpricks in the fur
+    if (open) charge(s, 30, y + 13, 2.6, 'gm', 0xffe080);
+  };
+  if (f === 2) {
+    head(33, false);
+    for (const sx of [-1, 1]) s.ellipse(30 + sx * 8, 36, 3.6, 2.6, 'pk', { bias: 0.1 }); // the great digging paws on the rim
+    return s;
+  }
+  // out: the velvet body risen from the hill, its spade paws spread
+  s.ellipse(30, 26, 9, 9, 'ml', { bias: 0.04, pat: fur(-Math.PI / 2, { amt: 0.1, len: 4, seed: 9 }) });
+  for (const sx of [-1, 1]) {
+    s.ellipse(30 + sx * 10, 32, 4.4, 3, 'pk', { bias: 0.1 });
+    for (let k = -2; k <= 2; k++) s.line(30 + sx * 12, 32 + k * 0.9, 30 + sx * 15, 32 + k * 1.3, 0xf0e0d0, 1, 0.8); // its claws
+  }
+  head(35, f === 4);
+  return s;
+}
+
+const DRAW = { kyoto, okinawa, sapporo, osaka, beppu, hiroshima, nagasaki, tokyo, kawaguchiko };
 export const AMBUSH_CITIES = Object.keys(DRAW);
 
 /** Every ambusher's five frames, for the shared 540 px atlas. */
