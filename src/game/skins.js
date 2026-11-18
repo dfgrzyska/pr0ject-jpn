@@ -153,8 +153,7 @@ export const SKINS = {
     turret: { base: 'k_hokora_base', head: 'k_hokora_head_', wreck: 'k_hokora_wreck', heat: true }, // (its mirror glows red before it fires)
   },
   // Onomichi (docs/plan-onomichi.md): swallows of summer in flocks, a dried flatfish come alive, a glass wind bell with
-  // an eye, firework shells with their fuses lit, the demon tile on a temple's ridge; the miniboss Kyoto's stand-in
-  // until NEKOMATA is drawn (phase 10)
+  // an eye, firework shells with their fuses lit, the demon tile on a temple's ridge, and NEKOMATA on the roofs
   onomichi: {
     trap: { ...trap('onomichi', 'ash', 10, { kind: 'ring', n: 8 }, 3.6) }, // a mosquito-coil pig on a veranda, puffing rings of smoke (enemies/traps.js)
     ambush: ambush('onomichi', 'splash'), // an octopus out of its clay pot on the harbour (enemies/ambush.js)
@@ -162,7 +161,7 @@ export const SKINS = {
     shooter: { frame: 'o_furin_0', anim: 'o_furin' },
     diver: { frame: 'o_debera_0', anim: 'o_debera' },
     carrier: { frame: 'o_hanabi_{c}_0', anim: 'o_hanabi_{c}' },
-    heavy: { frame: 'tanuki_0', anim: 'tanuki', kind: 'tanuki' }, // (the miniboss's place: NEKOMATA, phase 10)
+    heavy: { frame: 'o_neko_sit_0', kind: 'nekomata' }, // the miniboss: NEKOMATA (onomichi-nekomata.js)
     turret: { base: 'o_ridge_base', head: 'o_oni_head_', wreck: 'o_ridge_wreck', heat: true }, // (its mouth glows red before it fires)
   },
   // Hiroshima & Miyajima: maple-leaf spirit flocks, armored Seto oysters with pearl crits, scooping shamoji paddles,

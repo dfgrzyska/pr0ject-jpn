@@ -5,6 +5,7 @@
 // lit, a band in the colour of its power. Each reads at a glance as something that will hurt (eyes, a scowl, a
 // burning fuse), never as a pickup. Seen from above like every city's, drawn with HiSprite (tools/lib/hisprite.mjs).
 import { HiSprite, tones, speckle, mottle, mix2, fur } from '../../lib/hisprite.mjs';
+import { nekomataFrames } from './nekomata.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -230,5 +231,6 @@ export function onomichiEnemies(add) {
   add('o_ridge_base', ridgeBase(false));
   add('o_ridge_wreck', ridgeBase(true));
   for (let i = 0; i < 16; i++) add(`o_oni_head_${i}`, onigawara(i));
+  nekomataFrames(add); // the miniboss, NEKOMATA (nekomata.mjs)
 }
-export const ONOMICHI_PORTRAITS = [];
+export const ONOMICHI_PORTRAITS = ['o_neko_sit_0'];

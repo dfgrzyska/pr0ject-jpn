@@ -1,6 +1,6 @@
 # Plan: etap 11, ONOMICHI
 
-Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–6, 8 i 9 gotowe (zbliżenie stoku przyjęte przez autora 2026-11-18): całe tło narysowane, przeciwnicy i fale; z fazy 7 nocna woda. Miniboss i boss dalej na zastępstwo (z Kioto). Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–6 i 8–10 gotowe (zbliżenie stoku przyjęte przez autora 2026-11-18): całe tło, przeciwnicy, fale, walka z Nekomatą; z fazy 7 nocna woda. Boss dalej na zastępstwo (Kyūbi z Kioto). Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -191,8 +191,9 @@ Wymaga: fazy 1 i 8. Plik: `src/data/stage11.json`.
 
 ### Faza 10: Nekomata
 Wymaga: faza 0. Pliki: `src/game/enemies/onomichi-nekomata.js`, `tools/art/onomichi/nekomata.mjs`.
-- [ ] Grafika (sekcja 6.1) · [ ] Faza 1 · [ ] Faza 2 · [ ] Faza 3
-- [ ] Wejście z kartą, zakończenie, bot na obu poziomach trudności
+- [x] Grafika (`tools/art/onomichi/nekomata.mjs`, w atlasie miasta, 72 × 72): czarno-biały kot siedzący od przodu, dwa ogony z niebieskimi ognikami na bokach (4 klatki kołysania), przyczajony, w skoku, przy lądowaniu z pazurami, miauczący, tańczący na tylnych łapach z ręcznikiem na głowie (4 klatki), myjący łapę zdyszany, kopia z jednym ogonem w dymie, śpiący w kłębku z jednym ogonem; ognik osobno, cień
+- [x] Faza 1 OGNIKI (skoki z dachu na dach z czerwonym kręgiem lądowania, wachlarz odłamków dachówek przy lądowaniu, trzy ogniki krążą i lecą w statek) · [x] Faza 2 KOCI CHÓR (trzy kopie z jednym ogonem miauczą wachlarzami nut, wszystkie cztery co jakiś czas zmieniają dachy, zestrzelona kopia znika w dymie i wraca po 5 s, ogony prawdziwego błyskają złotem) · [x] Faza 3 TANIEC (na środku dachów tańczy, spirala ogników i pierścień na koniec figury, skok po czerwonej linii w statek, potem zdyszany myje łapę: wtedy miętowy). W fazach 1 i 3 poza oknami przyjmuje 20% obrażeń (`NEKO.guard`, „FUN!”), im mniej życia, tym szybciej działa. Siedzi tylko na dachach (z lewej jest woda)
+- [x] Wejście z kartą (zeskakuje na dachy, „NYAAA~”), zakończenie: ziewa („FUWAAA~”), zwija się w kłębek i zasypia na dachu, drugi ogon znika; śpi dalej na mapie, gdy miasto rusza; po 95 s odchodzi („NYAN~”). Napisy faz PL/EN. Test `onomichiNekomata`. Bez bota w grze: statek z nieśmiertelnością podążający pod kotem pokonuje go w 32,8 s przy mocy 4 i w 79,5 s przy mocy 1 (każda faza się odbywa); Kachi-kachi Usagi botem 24–67 s
 
 ### Faza 11: Funa-yūrei, grafika
 Wymaga: faza 6. Plik: `tools/art/onomichi/funayurei.mjs`.
@@ -230,6 +231,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 10 | Nekomata: `src/game/enemies/onomichi-nekomata.js` (`NEKO`, wmiksowany w `Enemies`, strzały przez `nekoShot` w `bossDeviceHit`, koniec `neko` w `updateDying`), grafika w `nekomata.mjs`, `HEAVY.hp.nekomata` = 960, skórka `heavy` z `kind: 'nekomata'`, portret `o_neko_sit_0`. Sprawdzone w grze (zrzuty każdej fazy i końca, bez błędów w konsoli). | Muzyka minibossa dalej z Kioto (faza 14). Wpis w albumie w fazie 15. Następne: Funa-yūrei (fazy 11–12, projekt do akceptacji). |
 | 2026-11-18 | Claude | 8 i 9 | Przeciwnicy, pułapka i zasadzka w 540 px, skórka `onomichi` (z `heat` dla onigawary), `"enemyArt": true`, animacje `o_*` w `enemyArt.js`, małe wersje pułapki i zasadzki w `sprites.png`; fale ze skryptu. Sprawdzone zrzutami w grze w 15, 56, 86 i 166 s. | Portrety do albumu dojdą z walkami (fazy 10–12). Następne: walki (Nekomata, Funa-yūrei). |
 | 2026-11-18 | Claude | 2 i 3 | Wyspy i mosty (`islands.mjs`), Ozaki i Jōdo-ji (`jodoji.mjs`); stok, miasteczko i nabrzeże z `senkoji.mjs` sięgają w dół do zakrętu (`HILL_FROM` = 2890). Całe tło narysowane, żadna działka nie jest kreskowana. Sprawdzone zrzutami w grze w 11, 43, 73 i 98 s. | Arkusz całej trasy: `node tools/art/onomichi/overview.mjs`. Następne: faza 7 (dzienna woda z prądami), faza 8 (przeciwnicy), potem walki. |
 | 2026-11-18 | Claude | 6 (+7 część) | Hondōri (`hondori.mjs`) i nabrzeże przy dworcu (`minato.mjs`) narysowane, tarasy stoku za Hondōri do dworca, nocna woda (`far_night`), `dark` do 0,9. Sprawdzone zrzutami w grze w 153, 181, 203 i 231 s. | Działki od 3800 w górę nie są już kreskowane (`DRAWN` w `mid.mjs`). Odcinki 0–3800 dalej w szkicu: fazy 2 i 3. Fajerwerki w fazie 13. |

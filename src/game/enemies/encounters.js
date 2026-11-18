@@ -166,6 +166,7 @@ export const encounters = {
     if (this.heavy?.kind === 'kasa' && this.kasaShot(shot)) return true; // the umbrella's canopy, its little ones, its eye (tokyo-kasa.js)
     if (this.heavy?.kind === 'taiyaki' && this.taiyakiShot(shot)) return true; // the iron, its fish, the great fish's belly (tokyo-taiyaki.js)
     if (this.heavy?.kind === 'usagi' && this.usagiShot(shot)) return true; // the boats of mud, the hare shrugging off (kawaguchiko-usagi.js)
+    if (this.heavy?.kind === 'nekomata' && this.nekoShot(shot)) return true; // the cat's copies, the cat shrugging off (onomichi-nekomata.js)
     const g = this.bossGroup;
     if (g?.kind === 'nagai' && this.nagaiBlock(shot)) return true; // the endless cat's body (nagai.js)
     if (g?.kind === 'kaiken' && this.kaikenDeaf(shot)) return true; // the hush while the man's hand is at his ear (kaiken.js)
