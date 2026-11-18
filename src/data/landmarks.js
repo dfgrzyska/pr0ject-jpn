@@ -1,8 +1,8 @@
 // Ranges use the background generators' u coordinates, measured from the strip's bottom.
 // Names fit the game's bitmap font (romanized Japanese, without macrons).
 export const LANDMARKS = {
-  // (Onomichi: the stretches of the plan, docs/plan-onomichi.md; the places within them come with the route, phase 1)
-  stage11: [[0, 700, 'INNOSHIMA'], [700, 1500, 'INNOSHIMA-OHASHI'], [1500, 2300, 'MUKAISHIMA'], [2300, 2900, 'ONOMICHI-SUIDO'], [2900, 3800, 'JODOJI'], [3800, 5100, 'SENKOJI'], [5100, 6200, 'HONDORI'], [6200, 7168, 'ONOMICHI']],
+  // (Onomichi: tools/art/onomichi/route.mjs has the route these follow; checked by tools/tests/onomichiRoute.test.mjs)
+  stage11: [[0, 330, 'INNOSHIMA'], [330, 600, 'INNOSHIMA SUIGUN-JO'], [600, 790, 'INNOSHIMA'], [790, 1410, 'INNOSHIMA-OHASHI'], [1410, 1660, 'MUKAISHIMA ZOSENJO'], [1660, 2040, 'MUKAISHIMA'], [2040, 2210, 'IWASHIYAMA'], [2210, 2352, 'MUKAISHIMA'], [2352, 2712, 'ONOMICHI-SUIDO'], [2712, 3280, 'OZAKI'], [3280, 3640, 'JODO-JI'], [3640, 4100, 'KOJI-MEGURI'], [4100, 4200, 'TENNEI-JI'], [4200, 4420, 'NEKO NO HOSOMICHI'], [4420, 4700, 'SENKO-JI'], [4700, 5100, 'SENKOJI KOEN'], [5100, 5660, 'HONDORI'], [5660, 5810, 'SUMIYOSHI JINJA'], [5810, 6250, 'HONDORI'], [6250, 6700, 'ONOMICHI-KO'], [6700, 7168, 'ONOMICHI-EKI']],
   // (Kawaguchiko, docs/plan-kawaguchiko.md: tools/art/kawaguchiko/route.mjs; the lava forest is never named)
   stage10: [[0, 240, 'FUJIYOSHIDA'], [240, 700, 'HONCHO-DORI'], [700, 1000, 'CHUREITO'], [1000, 1300, 'FUJI SENGEN JINJA'], [1300, 1460, 'KAWAGUCHIKO-EKI'], [1460, 1960, 'TENJO-YAMA'], [1960, 2400, 'OISHI KOEN'], [2400, 3040, 'KAWAGUCHI-KO'], [3040, 3120, 'UNOSHIMA'], [3120, 3880, 'KAWAGUCHI-KO'], [3880, 4960, 'KAWAGUCHI'], [4960, 5300, 'KAWAGUCHI ASAMA JINJA'], [5300, 6720, 'MOMIJI KAIRO'], [6720, 7168, 'FUJI-SAN']],
   // (Tokyo: tools/art/tokyo/route.mjs has the route these follow; checked by tools/tests/tokyoRoute.test.mjs)

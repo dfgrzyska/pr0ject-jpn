@@ -1,6 +1,6 @@
 # Plan: etap 11, ONOMICHI
 
-Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Faza 0 gotowa. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–1 gotowe. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -146,8 +146,8 @@ Wymaga: decyzje D1–D7. Pliki: `src/data/stage11.json`, `src/data/stages.js`, `
 
 ### Faza 1: szkielet trasy
 Wymaga: faza 0. Pliki: `tools/art/onomichi/route.mjs`, `mid.mjs`, `overview.mjs`, `src/data/landmarks.js`, `tools/tests/onomichiRoute.test.mjs`.
-- [ ] Morze i cieśniny, linia brzegów wysp i miasta, zakręt cieśniny za mostami; drogi z niebieską linią, mosty (wiszący i para podwieszanych), tor kolejki wzdłuż brzegu, wiązka torów przy dworcu, kolejka linowa, kursy trzech promów, schody i ścieżki stoku, pasaż
-- [ ] Nazwy miejsc, działki pod obiekty, areny, harmonogram pory dnia, test topologii (promy od przystani do przystani, schody łączą się z drogami, nic wysokiego w arenach), arkusz podglądu
+- [x] Morze i cieśniny (`isSea`: cieśnina Innoshima, cieśnina Onomichi w poprzek, za zakrętem wzdłuż lewej krawędzi, przed dworcem szersza), skalisty brzeg wysp i mur nabrzeża miasta; autostrada Shimanami na filarach (to, co krzyżuje, przechodzi pod nią), trasa rowerowa z niebieską linią (podjazd pod dolny pokład mostu Innoshima, na Mukaishimie do promu), mosty (wiszący Innoshima, para podwieszanych), stara droga z pierwszego mostu na drogę nadbrzeżną, tor wzdłuż stóp stoku od prawej krawędzi do dworca, kolejki wózków w dwóch sadach, kolejka linowa, cztery promy od pomostu do pomostu (jeden przy Ozaki, trzy za zakrętem), schody i ścieżki na stok (każde przez tor), pasaż Hondōri z wyjściami na drogę
+- [x] Grunty (sady na tarasach, stocznia, stok z tarasami, dziedzińce i lasy świątyń, park Senkō-ji, nabrzeże Sumiyoshi wysunięte nad wodę, plac przed dworcem), 52 działki z opisami, obie areny (kot na stoku, okręt nad wodą przed dworcem), pora dnia od letniego popołudnia do nocy, 21 nazw miejsc; test topologii `onomichiRoute` (działki z dala od dróg, torów i morza, drogi i tory na lądzie poza mostami, pomostami i autostradą, mosty nad wodą, każdy koniec drogi i toru dokądś prowadzi, promy od pomostu do pomostu po otwartej wodzie, arena bossa cała na wodzie); arkusz podglądu `node tools/art/onomichi/overview.mjs`
 
 ### Faza 2: wyspy (u 0–2300)
 Wymaga: faza 1. Pliki: `tools/art/onomichi/islands.mjs`, `bridges.mjs`.
@@ -175,7 +175,7 @@ Wymaga: faza 1. Pliki: `tools/art/onomichi/hondori.mjs`, `minato.mjs`.
 
 ### Faza 7: warstwy daleka i bliska
 Wymaga: faza 1. Pliki: `tools/art/onomichi/far.mjs`, `src/game/Parallax.js` (tylko jeśli trzeba).
-- [ ] Daleka warstwa pod morzem: woda Morza Wewnętrznego z pasmami prądu i światłem pory dnia, pętla bez szwu
+- [ ] Daleka warstwa pod morzem: woda Morza Wewnętrznego z pasmami prądu i światłem pory dnia, pętla bez szwu; nocna wersja wody (`far_night`, jak w Tokio), która przenika się z dzienną, gdy miasto ciemnieje (dziś woda zostaje jasna w nocy)
 - [ ] Bliska warstwa: istniejący rodzaj albo żaden; przejścia pory dnia sprawdzone w grze
 
 ### Faza 8: grafika przeciwników, pułapki i zasadzki
@@ -228,5 +228,6 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 1 | Trasa jako dane w `tools/art/onomichi/route.mjs`, szkielet malowany z danych w `mid.mjs` (na bazie Kawaguchiko; nowe klasy dróg: `express` na filarach, `cycle` z niebieską linią, `arcade` z dachem; tory `mono` w sadach; promy `FERRIES` z pomostami), test `onomichiRoute`, arkusz podglądu, nazwy miejsc w `landmarks.js`. Sprawdzone w grze zrzutami w 20, 75, 120, 165 i 225 s. | Stok to na razie tarasy wzorem; domy, świątynie i schody z detalem w fazach 3–6. Szerokość między drogą nadbrzeżną a torem jest mała (18 jednostek przy Ozaki, pasaż w Hondōri), więc domy tam będą wąskie. Następne: faza 2 (wyspy) albo 4 (zbliżenie stoku do akceptacji). |
 | 2026-11-18 | Claude | 0 | Etap 11 w budowie: `stage11.json` (flaga `wip`, fale zastępcze, napisy PL/EN kart i zapowiedzi), makieta tła (`tools/art/onomichi/route.mjs`, `mid.mjs`, `far.mjs`), skórka `onomichi` z przeciwnikami Kioto na zastępstwo, nazwy odcinków w `landmarks.js`, licznik „JEDENAŚCIE”. Sprawdzone w przeglądarce: etap startuje z `?stage=11`, pasek INNOSHIMA, bez błędów w konsoli. | Etykieta Onomichi na mapie wyboru (tuż obok Hiroszimy) do ustawienia w fazie 15. Muzyka na razie z Kioto. Następna: faza 1 (szkielet trasy). |
 | 2026-11-18 | Claude | plan | Plan przyjęty przez autora według rekomendacji. Plan etapu napisany: trasa Innoshima → Mukaishima → Onomichi, lato i noc fajerwerków, Nekomata i Funa-yūrei, sekcja 4.1 o stoku. | Czeka na akceptację decyzji D1–D7. |

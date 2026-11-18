@@ -1,60 +1,332 @@
-// Onomichi's middle layer. For now a block-out only (phase 0 of docs/plan-onomichi.md): the stretches as plain
-// ground, the sea left open to the far layer (Innoshima's strait, the Onomichi strait across and then up the left
-// edge), the bridges, the railway along the foot of the hillside, the arcade, the hillside's terraces, the ropeway,
-// the two arenas ringed, a ruler up the left edge (a tick every 100 u, a long one every 500). The route proper comes
-// in phase 1.
-import { Raster, mix, scaleColor } from '../../lib/raster.mjs';
-import { W, S, L, SECTIONS, isSea, OHASHI, TWINS, RAIL, ARCADE, ROPEWAY, ARENAS, suidoShores } from './route.mjs';
+// Onomichi's middle layer (docs/plan-onomichi.md): the skeleton of the whole route, painted from route.mjs - the
+// ground of each stretch and its own grounds (orchards on terraces, the shipyard's concrete, the hillside's terraces,
+// the temples' gravel and woods, Senko-ji's park, the quays), the sea cut out to the far layer (a rocky shore on the
+// islands, a quay wall along the town), the roads, steps and paths, the expressway on its piers over what it
+// crosses, the cycle route's blue line, the arcade's roof, the railway, the orchards' monorails and the ropeway, and
+// the plots the landmarks will stand on (hatched until their stretch is drawn). Then the strip is graded for the
+// time of day. The stretches' own files come in through PAINTERS, each given the context this file builds.
+//
+// Coordinates: x across, u up from the strip's bottom; a fine pixel is a third of a logical one.
+import { fbm } from '../../lib/raster.mjs';
+import { HiCanvas, hashPx } from '../hires.mjs';
+import { todGrade, tintTable, PropKit } from '../props.mjs';
+import { makeKit } from '../tokyo/kit.mjs';
+import { W, S, L, SECTIONS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, FERRIES, PLOTS, isSea } from './route.mjs';
+import { near, inShape, bbox, railHalf } from '../tokyo/geom.mjs';
 
-const hash = (a, b) => {
-  let h = (a * 374761393 + b * 668265263) | 0;
-  h = (h ^ (h >>> 13)) * 1274126177;
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+// the stretches' painters, in the order they are called: (ctx) => void
+const PAINTERS = [];
+const DRAWN_TO = 0; // (the stretches drawn so far reach this far up the strip: their plots are not hatched)
+// arenas with no ring (once their own ground is drawn)
+const ARENA_DRAWN = new Set([]);
+
+const smooth = (a, b, x) => {
+  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+const shade = (c, f) => {
+  const k = (v) => Math.max(0, Math.min(255, Math.round(v * f)));
+  return (k((c >> 16) & 255) << 16) | (k((c >> 8) & 255) << 8) | k(c & 255);
 };
 
+const GROUND = {
+  park: [0x5a7a3a, 0x668842, 0x72944a], // summer lawns
+  forest: [0x2a3a1e, 0x324422, 0x3a4c26], // the wood's floor in deep shade
+  gravel: [0xb0a690, 0xbcb29c, 0xc6bca6],
+  plaza: [0x9c988f, 0xa8a49a, 0xb2aea4],
+  sand: [0xcdbb8c, 0xd8c89a, 0xe2d4a8],
+  orchard: [0x5a5236, 0x665c3c, 0x6e6442, 0x4a4230], // the terraces' earth between the rows (the trees come with the stretch)
+  yard: [0x8a8a86, 0x949490, 0x9e9e9a], // a shipyard's concrete
+  slope: [0x7a7468, 0x847e72, 0x8e887c, 0x4a4640], // the hillside: terraces, a wall's shadow at each step
+};
+const PAINTED = [0x24505c, 0x2c5c68, 0x366a74, 0x447a82];
+const PEBBLES = [0x8a8274, 0x9a9282, 0xa8a090]; // the islands' rocky shore
+const SIDEWALK = 0xa9a59c;
+const KERB = 0x7e7a72;
+const SURFACE = { avenue: 0x45474f, street: 0x4a4c54, lane: 0x5c5c62, bridge: 0x56585e, express: 0x4c4e56, cycle: 0x55575e, arcade: 0x8c8a86 };
+
 export function buildMid() {
-  const img = new Raster(W * S, L * S);
-  const Y = (u) => (L - u) * S; // strip row of a height u
-  const rect = (x, u0, w, h, c) => img.rect(Math.round(x * S), Y(u0 + h), Math.round(w * S), h * S, c);
-  for (const [from, to, , , ground] of SECTIONS) {
-    for (let u = from; u < to; u += 16)
-      for (let x = 0; x < W; x += 20) {
-        const k = hash(Math.floor(x / 20), Math.floor(u / 16) + 11);
-        rect(x, u, 20, Math.min(16, to - u), scaleColor(mix(ground, 0x202028, k * 0.18), 0.92 + k * 0.16));
+  const img = new HiCanvas(W, L, S);
+  const FW = W * S;
+  const FH = L * S;
+  const wet = new Uint8Array(FW * FH); // 1: the sea (cut out), 2: painted water, 4: the sea along the town (a quay wall)
+  /** Paint the box (x0, u0)-(x1, u1) a fine pixel at a time: fn(x, u, X, Y) -> a colour, or null to leave it. */
+  const paint = (x0, u0, x1, u1, fn) => {
+    const XA = Math.max(0, Math.floor(x0 * S));
+    const XB = Math.min(FW, Math.ceil(x1 * S));
+    const YA = Math.max(0, Math.floor((L - u1) * S));
+    const YB = Math.min(FH, Math.ceil((L - u0) * S));
+    for (let Yy = YA; Yy < YB; Yy++)
+      for (let X = XA; X < XB; X++) {
+        const c = fn((X + 0.5) / S, L - (Yy + 0.5) / S, X, Yy);
+        if (c !== null && c !== undefined) img.hi.set(X, Yy, c);
       }
-    rect(0, from, W, 2, 0xf0e8d0); // the stretch's edge
-  }
-  // the hillside past the bend: terraces stepping up to the right of the railway, each wall a dark line
-  for (let u = 2900; u < 6600; u += 12)
-    for (let x = RAIL.x(u) + 6; x < W; x += 1) if (Math.sin(x / 7 + u / 40) > 0.94) rect(x, u, 1, 12, 0x3e3a34);
-  for (let u = 2900; u < 6600; u += 12) rect(RAIL.x(u) + 6, u, W - RAIL.x(u) - 6, 1, 0x4a443c);
-  // the sea: open, a beach and a quay wall round it
-  for (let u = 0; u < L; u++)
-    for (let x = 0; x < W; x++) {
-      if (isSea(x, u)) {
-        for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) img.clear(x * S + i, Y(u + 1) + j);
-      } else if (isSea(x - 2, u) || isSea(x + 2, u) || isSea(x, u - 2) || isSea(x, u + 2)) rect(x, u, 1, 1, u > 2700 ? 0x9a968a : 0xc8b890);
+  };
+  const fill = (shape, fn) => paint(...bbox(shape), (x, u, X, Yy) => (inShape(shape, x, u) ? fn(x, u, X, Yy) : null));
+  const ramp = (cols, x, u, seed, scale = 9) => cols[Math.min(cols.length - 1, Math.floor(fbm(x, u, { seed, scale, octaves: 2 }) * cols.length + (hashPx(x * S, u * S, seed) - 0.5) * 0.9))] ?? cols[0];
+
+  // ---- the ground of each stretch: what is left between everything else (across a border it turns into the next
+  // one's over BLEND units, so no line shows between the blocks)
+  const BLEND = 60;
+  const mixC = (a, b, t) => {
+    const k = (sh) => Math.round(((a >> sh) & 255) + (((b >> sh) & 255) - ((a >> sh) & 255)) * t);
+    return (k(16) << 16) | (k(8) << 8) | k(0);
+  };
+  SECTIONS.forEach(([from, to, , , ground], i) => {
+    const [prev, next] = [SECTIONS[i - 1]?.[4], SECTIONS[i + 1]?.[4]];
+    const at = (u) => (prev !== undefined && u - from < BLEND ? mixC(ground, prev, 0.5 - (u - from) / (2 * BLEND)) : next !== undefined && to - u < BLEND ? mixC(ground, next, 0.5 - (to - u) / (2 * BLEND)) : ground);
+    paint(0, from, W, to, (x, u, X, Yy) => shade(at(u), 0.95 + fbm(x, u, { seed: 31, scale: 22, octaves: 2 }) * 0.1 + (hashPx(X, Yy, 3) - 0.5) * 0.03));
+  });
+
+  const ground = (g) => fill(g, (x, u, X, Yy) => {
+    wet[Yy * FW + X] = 0;
+    if (g.kind === 'orchard') return Math.floor(u / 4) % 3 === 0 && Math.floor(u * S) % 12 < 2 ? GROUND.orchard[3] : ramp(GROUND.orchard.slice(0, 3), x, u, 47, 5); // a terrace wall every few rows
+    if (g.kind === 'slope') {
+      // terraces stepping up the hill: each a band of its own height, a wall's shadow along its upper edge
+      const band = 7 + Math.floor(hashPx(Math.floor(x / 14), 0, 49) * 4);
+      const k = (u + hashPx(Math.floor(x / 14), 1, 49) * band) % band;
+      return k > band - 0.7 ? GROUND.slope[3] : ramp(GROUND.slope.slice(0, 3), x, u, 48, 6);
     }
-  // the railway from the bend to the station, the arcade beside it
-  for (let u = RAIL.from; u < L; u++) rect(RAIL.x(u), u, 4, 1, u % 4 ? 0x3a3634 : 0x6a5a48);
-  rect(ARCADE.x, ARCADE.from, 12, ARCADE.to - ARCADE.from, 0xa8b0b8);
-  // the bridges: their decks, and the towers
-  rect(OHASHI.x - 4, OHASHI.from, 8, OHASHI.to - OHASHI.from, 0x8a8c90);
-  for (const t of OHASHI.towers) rect(OHASHI.x - 7, t - 3, 14, 6, 0xd0d4d8);
-  for (const b of TWINS) rect(b.x - 3, b.from, 6, b.to - b.from, 0x8a8c90);
-  // the ferries' crossings over the strait past the bend
-  for (const u of [3300, 5600, 6500]) {
-    const [w, e] = suidoShores(u);
-    for (let x = Math.ceil(w); x < e; x += 4) rect(x, u, 2, 1, 0xf0e8d0);
-  }
-  // the ropeway
-  const [[x0, u0], [x1, u1]] = ROPEWAY;
-  for (let i = 0; i <= 200; i++) rect(x0 + ((x1 - x0) * i) / 200, Math.round(u0 + ((u1 - u0) * i) / 200), 1, 1, 0x202020);
-  for (const [u] of ARENAS)
-    for (let a = 0; a < 720; a++) {
-      const t = (a / 720) * Math.PI * 2;
-      img.rect(Math.round((90 + Math.cos(t) * 62) * S), Math.round(Y(u) + Math.sin(t) * 62 * S), 2, 2, 0xffd040);
+    return ramp(GROUND[g.kind], x, u, 41);
+  });
+  for (const g of GROUNDS) if (!g.over) ground(g);
+
+  // ---- the water: the sea open to the far layer; ponds painted
+  paint(0, 0, W, L, (x, u, X, Yy) => {
+    if (!isSea(x, u)) return null;
+    wet[Yy * FW + X] = u > 2660 && !(u < 2730 && x > 64) ? 4 : 1; // (along the town: a quay wall)
+    img.hi.clear(X, Yy);
+    return null;
+  });
+  const water = (w) => fill(w, (x, u, X, Yy) => {
+    wet[Yy * FW + X] = 2;
+    return ramp(PAINTED, x * 0.6, u, 57, 7);
+  });
+  for (const w of WATER) water(w);
+  for (const g of GROUNDS) if (g.over) ground(g);
+  // the edges: rocks along the islands' shores and the ponds, the town's quay wall of dressed stone
+  {
+    const edge = [];
+    for (let Yy = 0; Yy < FH; Yy++)
+      for (let X = 0; X < FW; X++) {
+        if (wet[Yy * FW + X]) continue;
+        let by = 0;
+        for (let k = 1; k <= 3 && !by; k++) by = (X >= k && wet[Yy * FW + X - k]) || (X + k < FW && wet[Yy * FW + X + k]) || (Yy >= k && wet[(Yy - k) * FW + X]) || (Yy + k < FH && wet[(Yy + k) * FW + X]);
+        if (by) edge.push([Yy * FW + X, by]);
+      }
+    for (const [i, kind] of edge) {
+      const X = i % FW;
+      const Yy = Math.floor(i / FW);
+      img.hi.set(X, Yy, kind === 4 ? (X % 10 === 0 ? 0x4a4640 : shade(0x9a948a, 0.88 + hashPx(X >> 1, Yy, 9) * 0.2)) : PEBBLES[Math.floor(hashPx(X, Yy, 9) * 3)]);
     }
-  for (let u = 0; u < L; u += 100) rect(0, u, u % 500 ? 4 : 10, 1, 0xffffff);
-  return { strip: img, meta: { width: W, artScale: S, length: L } };
+  }
+
+  /** Paint along a line: fn(n, x, u, X, Y) gets the nearest point of the line (geom.mjs: near) within `reach`. */
+  const along = (pts, reach, fn) => {
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const [a, b] = [pts[i], pts[i + 1]];
+      paint(Math.min(a[0], b[0]) - reach, Math.min(a[1], b[1]) - reach, Math.max(a[0], b[0]) + reach, Math.max(a[1], b[1]) + reach, (x, u, X, Yy) => {
+        const n = near(pts, x, u);
+        return n.d <= reach ? fn(n, x, u, X, Yy) : null;
+      });
+    }
+  };
+
+  // ---- the roads and paths: every edge first, then every surface, then the lines, so that crossings join cleanly
+  const edgeOf = (r) => {
+    const walk = r.cls === 'avenue' ? 2 : r.cls === 'street' ? 1.34 : 0;
+    if (walk) along(r.pts, r.w / 2 + walk, (n, x, u, X, Yy) => (n.d > r.w / 2 + walk - 0.34 ? KERB : shade(SIDEWALK, 0.96 + hashPx(X, Yy, 5) * 0.08)));
+  };
+  const surface = (r) => {
+    const half = r.w / 2;
+    if (r.cls === 'walk')
+      along(r.pts, half, (n, x, u, X, Yy) => shade(0xb9b1a0, (Math.floor(n.along * S) % 6 === 0 ? 0.86 : 0.97) + hashPx(X, Yy, 7) * 0.06));
+    else if (r.cls === 'deck')
+      along(r.pts, half, (n, x, u, X, Yy) => shade(0x9a7a52, (Math.floor(n.along * S) % 3 === 0 ? 0.84 : 1) + hashPx(X, Yy, 13) * 0.06));
+    else if (r.cls === 'arcade')
+      // its roof of clear panels on a steel frame, a ridge down the middle
+      along(r.pts, half, (n, x, u, X, Yy) => (Math.abs(n.side) < 0.34 ? 0x6a6c70 : Math.floor(n.along * S) % 9 === 0 || n.d > half - 0.5 ? 0x7a7c80 : shade(0xb8c0c4, 0.96 + hashPx(X, Yy, 17) * 0.06)));
+    else if (r.cls === 'express') {
+      // raised on piers: its shadow on what is under it, the deck, parapets
+      along(r.pts.map(([x, u]) => [x + 4, u - 4]), half, (n, x, u, X, Yy) => {
+        if (img.hi.alpha(X, Yy) && !wet[Yy * FW + X]) img.hi.tint(X, Yy, 0.72);
+        return null;
+      });
+      along(r.pts, half, (n, x, u, X, Yy) => (n.d > half - 0.67 ? 0xd0ccc4 : shade(SURFACE.express, 0.96 + hashPx(X, Yy, 15) * 0.08)));
+    } else
+      along(r.pts, half, (n, x, u, X, Yy) => {
+        if (r.cls === 'bridge' && n.d > half - 0.67) return 0xd0ccc4; // its parapets
+        return shade(SURFACE[r.cls], 0.96 + hashPx(X, Yy, 15) * 0.08);
+      });
+  };
+  const lines = (r) => {
+    if (r.cls === 'cycle') return along(r.pts, r.w / 2, (n) => (Math.abs(n.side) < 0.5 ? 0x3a8ae0 : null)); // the blue line
+    if (r.cls !== 'avenue' && r.cls !== 'street' && r.cls !== 'bridge' && r.cls !== 'express') return;
+    along(r.pts, r.w / 2 - 1, (n) => {
+      const dash = Math.floor(n.along * S) % 18 < 10;
+      if (Math.abs(n.side) < 0.17) return r.cls === 'street' ? (dash ? 0xd8d4c4 : null) : 0xe0c466; // the centre line
+      return null;
+    });
+  };
+  const low = ROADS.filter((r) => r.cls !== 'express');
+  for (const r of low) edgeOf(r);
+  for (const r of low) surface(r);
+  for (const r of low) lines(r);
+
+  // ---- the railway (ballast, sleepers, rails), the orchards' monorails (one rail on posts) and the ropeway (its two
+  // cables, a shadow under them)
+  for (const r of RAILS) {
+    if (r.style === 'mono') {
+      along(r.pts, 0.9, (n, x, u, X, Yy) => (Math.floor(n.along * S) % 9 < 2 ? 0x5a5a5e : Math.abs(n.side) < 0.4 ? 0xb0b4b8 : null));
+      continue;
+    }
+    if (r.style === 'rope') {
+      along(r.pts.map(([x, u]) => [x + 3, u - 3]), 1.2, (n, x, u, X, Yy) => {
+        if (img.hi.alpha(X, Yy) && Math.abs(Math.abs(n.side) - 0.9) < 0.2) img.hi.tint(X, Yy, 0.8);
+        return null;
+      });
+      along(r.pts, 1.2, (n) => (Math.abs(Math.abs(n.side) - 0.9) < 0.2 ? 0x2a2a30 : null));
+      continue;
+    }
+    const half = railHalf(r);
+    along(r.pts, half, (n, x, u, X, Yy) => {
+      const s = n.side + (r.tracks - 1) * 2.5;
+      const t = Math.abs(s - Math.round(s / 5) * 5);
+      if (Math.round(t * S) === 3) return 0xd0d4d8; // a rail
+      if (t <= 1.7 && Math.floor(n.along * S) % 4 === 0) return 0x4c4238; // a sleeper
+      return [0x7a7068, 0x6c645c, 0x857b72][Math.floor(hashPx(X, Yy, 19) * 3)]; // ballast
+    });
+  }
+
+  // ---- the expressway over everything it crosses
+  for (const r of ROADS.filter((q) => q.cls === 'express')) {
+    surface(r);
+    lines(r);
+  }
+
+  // ---- the ferries' crossings (a faint dashed line on the water until the boats come)
+  for (const f of FERRIES) along(f.pts, 0.4, (n) => (Math.floor(n.along) % 4 ? null : 0xe8e4d8));
+
+  // ---- the plots the landmarks will stand on: hatched, edged (a low one paler)
+  for (const [, x, u, w, h, , low] of PLOTS.filter((q) => q[2] >= DRAWN_TO))
+    paint(x, u, x + w, u + h, (px, pu, X, Yy) => {
+      const rim = px - x < 0.67 || x + w - px < 0.67 || pu - u < 0.67 || u + h - pu < 0.67;
+      if (rim) return 0x34303a;
+      return (X + Yy) % 9 < 2 ? (low ? 0xa49e92 : 0x9a9488) : low ? 0xd2ccc0 : 0xc2bcb0;
+    });
+
+  // ---- the arenas: a dashed ring until their own ground is drawn
+  for (const [ax, au, name, r] of ARENAS)
+    if (!ARENA_DRAWN.has(name)) paint(ax - r - 1, au - r - 1, ax + r + 1, au + r + 1, (x, u) => {
+      const d = Math.hypot(x - ax, u - au);
+      return Math.abs(d - r) < 0.5 && Math.floor(((Math.atan2(u - au, x - ax) + Math.PI) / (Math.PI * 2)) * 72) % 2 === 0 ? 0xffd040 : null;
+    });
+
+  // ---- the stretches. What they may build on: the ground that nothing of the route takes (occ: a logical pixel is
+  // 1 where there is water, a road with its pavements, tracks, a ground of its own kind or a plot).
+  const occ = new Uint8Array(W * L);
+  const take = (x0, u0, x1, u1, test) => {
+    for (let u = Math.max(0, Math.floor(u0)); u < Math.min(L, Math.ceil(u1)); u++) for (let x = Math.max(0, Math.floor(x0)); x < Math.min(W, Math.ceil(x1)); x++) if (!occ[u * W + x] && test(x + 0.5, u + 0.5)) occ[u * W + x] = 1;
+  };
+  for (let u = 0; u < L; u++) for (let x = 0; x < W; x++) if (wet[((L - 1 - u) * S + 1) * FW + x * S + 1]) occ[u * W + x] = 1;
+  for (const r of ROADS) {
+    const reach = r.w / 2 + (r.cls === 'avenue' ? 2.6 : r.cls === 'street' ? 2 : 0.8);
+    for (let i = 0; i + 1 < r.pts.length; i++) {
+      const [a, b] = [r.pts[i], r.pts[i + 1]];
+      take(Math.min(a[0], b[0]) - reach, Math.min(a[1], b[1]) - reach, Math.max(a[0], b[0]) + reach, Math.max(a[1], b[1]) + reach, (x, u) => near(r.pts, x, u).d <= reach);
+    }
+  }
+  for (const r of RAILS) {
+    if (r.style === 'rope') continue; // (the cables pass over what is under them)
+    const reach = railHalf(r) + 1;
+    for (let i = 0; i + 1 < r.pts.length; i++) {
+      const [a, b] = [r.pts[i], r.pts[i + 1]];
+      take(Math.min(a[0], b[0]) - reach, Math.min(a[1], b[1]) - reach, Math.max(a[0], b[0]) + reach, Math.max(a[1], b[1]) + reach, (x, u) => near(r.pts, x, u).d <= reach);
+    }
+  }
+  for (const g of GROUNDS) take(...bbox(g), (x, u) => inShape(g, x, u));
+  for (const [, x, u, w, h] of PLOTS) take(x - 1, u - 1, x + w + 1, u + h + 1, () => true);
+  /** The free ground between u0 and u1 as boxes [x, u, w, h], each at least minW x minH (taken once given out);
+   * skew: beside a road or track that runs aslant (tools/art/tokyo/mid.mjs). */
+  const blocks = (u0, u1, minW = 8, minH = 8, skew = false) => {
+    const out = [];
+    if (skew) {
+      // (beside streets that run aslant: from each free run the largest box up from it, narrowing as the ground does)
+      for (let u = u0; u < u1; u++)
+        for (let x = 0; x < W; x++) {
+          if (occ[u * W + x]) continue;
+          let w = 0;
+          while (x + w < W && !occ[u * W + x + w]) w++;
+          let [a, b] = [x, x + w];
+          let best = null;
+          for (let h = 1; u + h - 1 < u1; h++) {
+            const row = (u + h - 1) * W;
+            if (h > 1) {
+              let [ba, bb] = [0, 0];
+              for (let i = a; i < b; i++) {
+                if (occ[row + i]) continue;
+                let j = i;
+                while (j < b && !occ[row + j]) j++;
+                if (j - i > bb - ba) [ba, bb] = [i, j];
+                i = j;
+              }
+              if (bb - ba < minW) break;
+              [a, b] = [ba, bb];
+            }
+            // (the squarest wins, then the larger: never a sliver the whole length of the street)
+            const [sq, bq] = [Math.min(b - a, h), best ? Math.min(best[2], best[3]) : 0];
+            if (!best || sq > bq || (sq === bq && (b - a) * h >= best[2] * best[3] && h <= 2.2 * (b - a))) best = [a, u, b - a, h];
+          }
+          occ.fill(1, u * W + x, u * W + x + w);
+          if (best && best[2] >= minW && best[3] >= minH) {
+            for (let j = 0; j < best[3]; j++) occ.fill(1, (u + j) * W + best[0], (u + j) * W + best[0] + best[2]);
+            out.push(best);
+          }
+          x += w - 1;
+        }
+      return out;
+    }
+    for (let u = u0; u < u1; u++)
+      for (let x = 0; x < W; x++) {
+        if (occ[u * W + x]) continue;
+        let w = 0;
+        while (x + w < W && !occ[u * W + x + w]) w++;
+        let h = 1;
+        grow: for (; u + h < u1; h++) for (let i = 0; i < w; i++) if (occ[(u + h) * W + x + i]) break grow;
+        for (let j = 0; j < h; j++) occ.fill(1, (u + j) * W + x, (u + j) * W + x + w);
+        if (w >= minW && h >= minH) out.push([x, u, w, h]);
+        x += w - 1;
+      }
+    return out;
+  };
+  /** Paint the ground box (x, u, w, h) as a ground of a kind. */
+  const pave = (x, u, w, h, kind, seed = 41) => paint(x, u, x + w, u + h, (px, pu) => ramp(GROUND[kind], px, pu, seed));
+  const plot = (id) => {
+    const p = PLOTS.find((q) => q[0] === id);
+    return { x: p[1], u: p[2], w: p[3], h: p[4] };
+  };
+  const ground_ = (id) => GROUNDS.find((g) => g.id === id);
+  const tod = todGrade(TOD, smooth);
+  const props = new PropKit(11109, { artScale: S });
+  const CLOTH = [0xf0ece0, 0x3a6aa8, 0xe8a0b0, 0x2a2a30, 0xd8c060, 0x5a8a5a, 0xc84a3a, 0x8ab0d8, 0xf4d0a0, 0x6a4a8a]; // summer clothes, yukata
+  const kit = makeKit({ img, W, L, S, seed: 11009, props, tod, cloth: CLOTH });
+  const covers = []; // boxes of the strip shown again over the moving parts (a station's roof over its train)
+  const claim = (x, u, w, h) => {
+    for (let j = Math.max(0, Math.floor(u)); j < Math.min(L, u + h); j++) occ.fill(1, j * W + Math.max(0, Math.floor(x)), j * W + Math.min(W, Math.ceil(x + w)));
+  };
+  const ctx = { near, inShape, isSea, GROUNDS, ROADS, RAILS, FERRIES, GROUND, img, wet, paint, fill, along, ramp, shade, W, S, L, kit, props, tod, blocks, pave, plot, ground: ground_, claim, cover: (x, u, w, h, d = 0.1) => covers.push([x, u, w, h, d]) };
+  for (const p of PAINTERS) p(ctx);
+  kit.flush();
+  kit.beforeGrade();
+
+  // ---- the time of day, a band of the strip at a time
+  const BAND = 16 * S;
+  for (let Y0 = 0; Y0 < FH; Y0 += BAND) {
+    const band = img.hi.crop(0, Y0, FW, Math.min(BAND, FH - Y0));
+    tod.frame(band, L - (Y0 + BAND / 2) / S);
+    img.hi.data.set(band.data, Y0 * FW * 4);
+  }
+  kit.afterGrade(); // (the lights: windows, lanterns, lamps, their glow)
+  for (const [x, u, w, h, d] of covers) props.loop(x, u + h, [props.frame(img.hi.crop(Math.round(x * S), Math.round((L - u - h) * S), Math.round(w * S), Math.round(h * S)))], { fps: 1, d });
+  return { strip: img.hi, props: props.pack(), meta: { width: W, artScale: S, length: L, tint: tintTable(L, tod.white) } };
 }
