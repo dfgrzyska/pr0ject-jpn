@@ -45,6 +45,7 @@ export const ambush = {
         e.state = 'rise';
         e.timer = AMBUSH.rise;
         this.ambushPop(e);
+        if (e.look.sound) for (const k of e.look.sound) s.sfx[k]?.(); // (a city's own: the mole through the leaves)
       }
     } else if (e.state === 'rise') {
       f = 2;

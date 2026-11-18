@@ -391,6 +391,59 @@ export class Sfx {
     this.blip('sine', 3800, 3700, 0.2, 0.012, t + 0.06);
   }
 
+  // ---- Kawaguchiko
+  /** The hare's striker on the flint: a hard click and a spit of sparks. */
+  flint() {
+    if (!this.ready('flint', 0.1)) return;
+    const t = this.now();
+    this.s.noiseBurst(t, 0.012, 'highpass', 5000, 1, 0.14);
+    this.blip('square', 3400, 2500, 0.022, 0.03, t, this.s.filter('bandpass', 3000, 2));
+    for (let i = 0; i < 4; i++) this.s.noiseBurst(t + 0.02 + Math.random() * 0.09, 0.008, 'bandpass', 6000 + Math.random() * 3000, 6, 0.05);
+  }
+
+  /** An oar dipping into the lake (or a hand scooping it): a short splash and the gulp of the water. */
+  oar() {
+    if (!this.ready('oar', 0.18)) return;
+    const t = this.now();
+    this.hiss(t, 0.28, 0.05, 1300, 500, 0.8, 0.025);
+    this.blip('sine', 340, 170, 0.08, 0.035, t + 0.03);
+  }
+
+  /** A bonfire of leaves: pops and crackles. Call it every frame while it burns. */
+  crackle() {
+    if (!this.ready('crackle', 0.07)) return;
+    const t = this.now();
+    for (let i = 0; i < 2; i++) this.s.noiseBurst(t + Math.random() * 0.05, 0.006 + Math.random() * 0.012, 'bandpass', 1400 + Math.random() * 2600, 3, 0.04 + Math.random() * 0.06);
+    if (this.ready('crackle_bed', 0.5)) this.hiss(t, 0.45, 0.02, 900, 700, 0.6, 0.1);
+  }
+
+  /** Dry leaves stirred: a rustle swelling in and dying away. */
+  rustle() {
+    if (!this.ready('rustle', 0.25)) return;
+    const t = this.now();
+    this.hiss(t, 0.4, 0.05, 3800, 2600, 0.9, 0.08);
+    for (let i = 0; i < 5; i++) this.s.noiseBurst(t + Math.random() * 0.3, 0.01, 'highpass', 4500, 1, 0.025);
+  }
+
+  /** Earth giving way: a low slide of soil, clods thudding down. */
+  earth(big = false) {
+    if (!this.ready(big ? 'earth_big' : 'earth', big ? 0.4 : 0.12)) return;
+    const t = this.now();
+    const k = big ? 1.6 : 1;
+    this.sweep(900, 110, 0.55 * k, 0.16 * k, t);
+    for (let i = 0; i < (big ? 7 : 4); i++) this.s.noiseBurst(t + 0.04 + Math.random() * 0.4 * k, 0.04, 'lowpass', 380, 1, 0.1 + Math.random() * 0.06);
+    if (big) this.blip('sine', 90, 36, 0.6, 0.22, t);
+  }
+
+  /** A rope parting: the crack of the fibres and the slack end whipping off. */
+  rope() {
+    if (!this.ready('rope', 0.08)) return;
+    const t = this.now();
+    this.s.noiseBurst(t, 0.02, 'highpass', 2800, 1, 0.2);
+    this.blip('triangle', 560, 130, 0.18, 0.06, t + 0.01);
+    this.hiss(t + 0.02, 0.16, 0.04, 2000, 900, 1, 0.01);
+  }
+
   explode(size) {
     if (!this.ready(`boom_${size}`, BOOM_GAP[size] ?? 0.05)) return;
     const t = this.now();

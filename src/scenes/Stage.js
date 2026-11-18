@@ -965,6 +965,7 @@ export class Stage extends Phaser.Scene {
     const m = this.stage.music;
     if (this.bossDown && m.night) return m.night;
     const g = this.enemies.bossGroup;
+    if (g && !g.defeated && g.song) return g.song; // (a boss's theme may change with it: Daidarabotchi at sunset)
     if ((g && !g.defeated) || this.waves.upcoming('boss', this.t, 3)) return m.boss ?? m.heavy;
     // a heavy may bring its own theme (wave field music), otherwise the stage's heavy theme
     const h = this.enemies.heavy;

@@ -138,7 +138,10 @@ export const kawaguchikoDaidara = {
       const x = g.x + (Math.random() - 0.5) * 120;
       s.fx.part(s.fx.parts, 'drop_0', x, g.W, { vx: (Math.random() - 0.5) * 40, vy: -30 - Math.random() * 60, g: 200, life: 0.6 }).setTint(0xd8f0ff);
     }
-    if (was < 0.05 && g.rise >= 0.05) SAY(s, g.x, g.W + 26, 'GOGOGOGO...', 1.4, 0xd8f0ff);
+    if (was < 0.05 && g.rise >= 0.05) {
+      SAY(s, g.x, g.W + 26, 'GOGOGOGO...', 1.4, 0xd8f0ff);
+      s.sfx.earth?.(true);
+    }
     if (Math.random() < dt * 4) s.cameras.main.shake(200, 0.003);
     if (was < 1 && g.rise >= 1) {
       this.ddFace(g, 'roar', 1.1);
@@ -204,6 +207,7 @@ export const kawaguchikoDaidara = {
       const [hx] = this.ddHand(g, side);
       for (let i = 0; i < 8; i++) s.fx.puff('splash', hx + (Math.random() - 0.5) * 20, g.W + 2, 0.4);
       SAY(s, hx, g.W + 18, 'ZABU!', 0.7, 0xd8f0ff);
+      s.sfx.oar?.();
     }
     if (a.t > 0.45 && a.t < 1.75 && Math.random() < 0.3) {
       const [hx, hy] = this.ddHand(g, side);
@@ -294,6 +298,7 @@ export const kawaguchikoDaidara = {
       k.gone = true;
       this.segPool.kill(k.sp);
       SAY(s, k.tx, k.ty - 14, 'DOSU!', 0.6, 0xd8b080);
+      s.sfx.earth?.();
       for (let i = 0; i < 8; i++) s.fx.part(s.fx.parts, 'dot_1', k.tx, k.ty, { vx: (Math.random() - 0.5) * 90, vy: -30 - Math.random() * 40, g: 160, life: 0.5 }).setTint(i % 2 ? 0x8a6a44 : 0xd8f0ff);
       if (g.state === 'fight' && !g.defeated && s.bombClear <= 0) {
         const n = volley(C.n);
@@ -443,6 +448,7 @@ export const kawaguchikoDaidara = {
       this.ddRock(g, bx, by, ang, (d / fly) * 1.15, { frz: { at: fly, hold: 0.25, turn: DOWN - ang, speed: B.roll, frame: `dd_rock_${i % 2}` } });
     }
     SAY(s, bx, by + 18, 'GARA GARA!', 0.7, 0xd8c8b0);
+    s.sfx.earth?.();
     for (let i = 0; i < 8; i++) s.fx.part(s.fx.parts, 'dot_1', bx, by + 6, { vx: (Math.random() - 0.5) * 50, vy: 20 + Math.random() * 40, g: 200, life: 0.5 }).setTint(0x8a6a44);
   },
 
@@ -469,7 +475,7 @@ export const kawaguchikoDaidara = {
     if (Math.random() < 0.4) s.fx.spark(rings[i][0], rings[i][1] - 6, GOLD);
     if (P.ropes[i] > 0) return;
     s.fx.text(rings[i][0], rings[i][1] - 12, 'PURIT!', 0.6, GOLD);
-    s.sfx.bossHit(true);
+    s.sfx.rope?.();
     if (P.ropes.some((r) => r > 0)) {
       P.dpsi += i ? -2.5 : 2.5; // (hanging by one rope it lurches)
       return;
@@ -486,6 +492,7 @@ export const kawaguchikoDaidara = {
     const s = this.scene;
     this.phaseBreak(g, g.x, g.by, 3, 'ZACHÓD SŁOŃCA');
     g.wear = 2;
+    g.song = 's10_dusk'; // (his theme brightens into the stage's tune as the sun sets: Stage.stageSong)
     g.act = null;
     g.timer = 1.6;
     g.plan = 0;
@@ -508,6 +515,7 @@ export const kawaguchikoDaidara = {
     this.arm(g, 'r', 0, 4, 'open');
     this.ddFace(g, 'roar', 1.4);
     SAY(s, g.x - 40, g.by + 4, 'GARAGARA...', 0.9, 0xd8c8b0);
+    s.sfx.earth?.(true);
     s.cameras.main.shake(600, 0.01);
   },
 
@@ -883,10 +891,12 @@ export const kawaguchikoDaidara = {
     my += ease(q) * 104;
     if (q > 0 && q < 1) {
       if (Math.random() < dt * 24) fx.puff('splash', D.x + (Math.random() - 0.5) * 110, W + 3, 0.5);
+      if (Math.random() < dt * 2) s.sfx.earth?.();
       if (Math.random() < dt * 10) fx.smoke(D.x + (Math.random() - 0.5) * 80, W - 6, 1, 4);
       if (!D.said) {
         D.said = true;
         fx.text(D.x, W + 24, 'ZUZUZUZU...', 1.6, 0xd8c8b0);
+        s.sfx.earth?.(true);
         s.cameras.main.shake(1800, 0.005);
       }
     }

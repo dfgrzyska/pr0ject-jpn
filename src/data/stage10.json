@@ -57,25 +57,16 @@
   },
   "music": {
     "schedule": [
-      [
-        0,
-        "intro"
-      ],
-      [
-        24,
-        "build"
-      ],
-      [
-        47,
-        "full"
-      ],
-      [
-        196,
-        "final"
-      ]
+      [0, "s10_intro"],
+      [24, "s10_build"],
+      [47, "s10_full"],
+      [122, "s10_mura"],
+      [167, "s10_momiji"],
+      [205, "s10_view"]
     ],
-    "heavy": "tanuki",
-    "boss": "boss"
+    "heavy": "s10_usagi",
+    "boss": "s10_boss",
+    "night": "s10_night"
   },
   "warnings": {
     "heavy": "ZAJĄC NA JEZIORZE",
@@ -146,7 +137,7 @@
     {"t": 89, "type": "shooter", "x": 70},
     {"t": 89.6, "type": "shooter", "x": 110},
     {"t": 92, "type": "popcorn", "x": 90, "path": "sine", "count": 6},
-    {"t": 105.5, "type": "heavy", "look": "heavy", "hold": true, "x": 90, "card": ["KACHI-KACHI USAGI", "ZAJĄC Z KRZESIWEM"]},
+    {"t": 105.5, "type": "heavy", "look": "heavy", "music": "s10_usagi", "hold": true, "x": 90, "card": ["KACHI-KACHI USAGI", "ZAJĄC Z KRZESIWEM"]},
     {"t": 107, "type": "carrier", "x": 60, "path": "zigzag", "color": "red"},
     {"t": 109, "type": "carrier", "x": 120, "path": "zigzag", "color": "green"},
     {"t": 112, "type": "popcorn", "x": 24, "path": "arc", "count": 6},

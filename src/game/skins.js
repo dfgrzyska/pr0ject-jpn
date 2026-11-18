@@ -143,8 +143,8 @@ export const SKINS = {
   // Fuji spitting drops, strings of persimmons drying, the pilgrims' shrine with its mirror; the miniboss Kyoto's
   // stand-in until KACHI-KACHI USAGI is drawn (phase 11)
   kawaguchiko: {
-    trap: trap('kawaguchiko', 'fire', 10, { kind: 'ring', n: 7 }, 3.8), // a bonfire of fallen leaves (enemies/traps.js)
-    ambush: ambush('kawaguchiko', 'dust'), // a mole out of its hill in a garden (enemies/ambush.js)
+    trap: { ...trap('kawaguchiko', 'fire', 10, { kind: 'ring', n: 7 }, 3.8), sound: 'crackle' }, // a bonfire of fallen leaves (enemies/traps.js)
+    ambush: { ...ambush('kawaguchiko', 'dust'), sound: ['rustle', 'earth'] }, // a mole out of its hill in a garden (enemies/ambush.js)
     popcorn: { frame: 'k_tombo_0', anim: 'k_tombo', flock: true },
     shooter: { frame: 'k_kasagumo_0', anim: 'k_kasagumo' },
     diver: { frame: 'k_bass_0', anim: 'k_bass' },

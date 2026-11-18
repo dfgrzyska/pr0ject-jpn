@@ -16,6 +16,7 @@ import { SONGS6 } from './score6.js';
 import { SONGS8 } from './score8.js';
 import { SONGS7 } from './score7.js';
 import { SONGS9 } from './score9.js';
+import { SONGS10 } from './score10.js';
 
 const bar = (s) => s;
 
@@ -243,7 +244,7 @@ export const SONGS = {
 };
 
 // stage 2 (Okinawa) songs live in score2.js
-Object.assign(SONGS, SONGS2, SONGS3, SONGS4, SONGS5, SONGS6, SONGS7, SONGS8, SONGS9);
+Object.assign(SONGS, SONGS2, SONGS3, SONGS4, SONGS5, SONGS6, SONGS7, SONGS8, SONGS9, SONGS10);
 
 // ---------------------------------------------------------------- parsing
 const SEMI = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };

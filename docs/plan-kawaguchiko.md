@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Fazy 0–13 gotowe: całe tło etapu, przeciwnicy, fale, miniboss Kachi-kachi Usagi i boss Daidarabotchi. Dalej muzyka i dźwięk. 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Fazy 0–14 gotowe: całe tło etapu, przeciwnicy, fale, miniboss Kachi-kachi Usagi, boss Daidarabotchi, muzyka i dźwięki. Dalej wpięcie w grę (odkrycia, pieczątka, gachapon, zdjęcie flagi `wip`). 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -222,8 +222,8 @@ Wymaga: faza 12. Plik: `src/game/enemies/kawaguchiko-daidara.js`.
 
 ### Faza 14: muzyka i dźwięk
 Wymaga: faza 0. Plik: `src/audio/score10.js`.
-- [ ] Trzy części tematu, motyw minibossa, temat bossa
-- [ ] Dźwięki z sekcji 7
+- [x] Trzy części tematu, motyw minibossa, temat bossa. Własny temat w duchu min'yō w skali yo na G (G A C D E), shakuhachi nad koto i shamisenem, taiko; wszystkie utwory etapu w jednym 8-taktowym przebiegu (G Em C D | G Am C D) i tempie 112, więc zmieniają się na kresce taktowej: wstęp (Fujiyoshida), rozwinięcie (chram i miasto), pełny temat z odpowiedzią (brzeg i jezioro), matsuri z hyōshigi i gongiem chanchiki (wieś na północnym brzegu), tunel klonów (melodię bierze koto), cisza przy wschodzącym widoku Fuji. Zając: skoczna melodia na shamisenie, klekot hyōshigi „kachi kachi”, 150. Daidarabotchi: ciężki, taiko i biwa w skali in na E, 132; przy zachodzie słońca rozjaśnia się w temat etapu nad bębnami (`g.song`, `Stage.stageSong`). Po nim temat zwolniony nad jeziorem o zmierzchu
+- [x] Dźwięki z sekcji 7 (`Sfx.js`): krzesiwo (`flint`, przy „KACHI!”), plusk wioseł (`oar`, co drugie pociągnięcie wioseł i przy nabieraniu wody przez olbrzyma), trzask ogniska (`crackle`, płonące wiązki na wodzie i ogniska liści), szelest liści (`rustle`, kret wyskakujący spod liści), osypywanie się ziemi (`earth`, grudy, kamienie z kosza, wynurzanie się, utrata ramienia i zapadanie się olbrzyma), pękanie sznura (`rope`). Pułapki i zasadzki miast mogą mieć własny dźwięk (`sound` w skórce). Test `kawaguchikoMusic`
 
 ### Faza 15: wpięcie w grę
 Wymaga: fazy 10–13.
@@ -244,6 +244,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 14 | Muzyka w `src/audio/score10.js` (`SONGS10`, 10 utworów), rozkład w `stage10.json` dopasowany do odcinków (zmierzone w grze: brzeg ~36 s, jezioro ~63 s, wieś ~123 s, klony ~170 s, nabrzeże ~218 s); dźwięki w `Sfx.js`. Poziomy sprawdzone renderem offline (szczyt < 0,6, RMS jak w innych miastach). | Utwory nie były odsłuchane przez człowieka. Następna: faza 15 (wpięcie w grę). |
 | 2026-11-18 | Claude | 13 | Walka z Daidarabotchim w `src/game/enemies/kawaguchiko-daidara.js` (`DAIDARA`, `DD`), podpięta w `Enemies.js` i `encounters.js`; `FujiView` podaje linię wody (`waterY`); `stage10.json` z `"boss": "daidara"`. | Headless Chromium na SwiftShaderze obcina obrócone sprite'y z atlasu miasta w niektórych partiach (`outTexDatum ==` w shaderze Phasera 4); na prawdziwym GPU wszystko się rysuje. Zrzuty walki robić z `--use-angle=d3d11`. Następna: faza 14 (muzyka). |
 | 2026-11-18 | Claude | 12 | Części olbrzyma w `daidara.mjs` (`daidaraFrames`, stałe `SHOULDER` i `CORE` do składania w grze); części dzielące kadr ciała pakowane z `trim`, żeby stały na swoich miejscach. | Następna: faza 13 (walka). |
 | 2026-11-18 | Claude | 12 (część) | Projekt Daidarabotchiego w trzech postaciach (`tools/art/kawaguchiko/daidara.mjs`): olbrzym z ziemi i kamienia po pas w jeziorze, rdzawa trawa, mech i kamienie na nim, klony i sosna na barkach, oczy jak jeziorka z niebem, usta jak jaskinia, kamienne dłonie, w piersi szczelina (słaby punkt); kopiący (garście ziemi, z których cieknie woda), z drążkiem i koszem na złotych sznurach, sylwetka pod zachodzące słońce z płonącym obrysem. Makiety na tle panoramy wysłane autorowi. | Czeka na akceptację projektu; potem klatki, części i stopnie zniszczenia. |

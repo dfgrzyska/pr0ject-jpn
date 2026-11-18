@@ -38,6 +38,7 @@ export const traps = {
     if (e.erupt > 0 && (e.erupt -= dt) <= 0) {
       e.burstT = TRAP.live;
       if (L.puff) s.fx.puff(L.puff, e.x, e.y - 6, 0.6);
+      if (L.sound && e.y > 0 && e.y < s.H) s.sfx[L.sound]?.(); // (a city's own: Kawaguchiko's bonfire crackles)
       if (e.y > 4 && e.y < s.H * 0.75 && s.bombClear <= 0 && !s.ceasefire && !s.calm) this.trapVolley(e, b, L);
     }
     e.timer -= dt;

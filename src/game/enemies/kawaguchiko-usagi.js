@@ -73,6 +73,12 @@ export const kawaguchikoUsagi = {
       else this.usOar(e, g, dt);
     }
     this.usBundles(e, g, dt);
+    // a splash at every other stroke of the oars
+    const stroke = Math.floor(g.row / 2);
+    if (stroke !== g.oarStroke) {
+      g.oarStroke = stroke;
+      this.scene.sfx.oar?.();
+    }
     this.usMuds(e, g, dt);
     this.usPlace(e, g, dt);
   },
@@ -112,6 +118,7 @@ export const kawaguchikoUsagi = {
           for (let i = 0; i < 6; i++) s.fx.part(s.fx.parts, 'dot_1', g.x, g.y + 22, { vx: (Math.random() - 0.5) * 120, vy: Math.random() * 90, drag: 2, life: 0.35 }).setTint(0xffd060);
         }
         SAY(s, g.x + (Math.random() - 0.5) * 20, g.y + 34, 'KACHI!', 0xffd080, 0.6);
+        s.sfx.flint?.();
         g.strikeAt = g.t + USAGI.strike.every * (0.8 + Math.random() * 0.4);
         this.usAct(g, 'rest');
       }
@@ -156,6 +163,7 @@ export const kawaguchikoUsagi = {
       } else {
         // burning on the water, then gone out in a puff of steam
         k.sp.setFrame(`k_shiba_${Math.floor(k.t * 6) % 2}`).setPosition(k.tx + Math.sin(k.t * 2) * 0.6, k.ty);
+        s.sfx.crackle?.();
         if (k.t > B.fly + B.live) {
           s.fx.puff('wisp_s_1', k.tx, k.ty - 4, 0.6);
           this.segPool.kill(k.sp);
