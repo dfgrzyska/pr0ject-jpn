@@ -24,6 +24,7 @@ import { obachan } from './enemies/obachan.js';
 import { kaiken } from './enemies/kaiken.js';
 import { tokyoKasa } from './enemies/tokyo-kasa.js';
 import { tokyoTaiyaki } from './enemies/tokyo-taiyaki.js';
+import { kawaguchikoUsagi } from './enemies/kawaguchiko-usagi.js';
 import { tokyoKurogane } from './enemies/tokyo-kurogane.js';
 import { traps } from './enemies/traps.js';
 import { ambush } from './enemies/ambush.js';
@@ -202,6 +203,7 @@ export class Enemies {
         if (look.kind === 'yukionna') Object.assign(e, { hp: YUKI.hp, maxHp: YUKI.hp, kuroko: [], mists: [], seeds: [] });
         if (look.kind === 'kasa') this.spawnKasa(e); // (Tokyo's umbrella: its parts, tokyo-kasa.js)
         if (look.kind === 'taiyaki') this.spawnTaiyaki(e); // (Tokyo's iron mould and its school: tokyo-taiyaki.js)
+        if (look.kind === 'usagi') this.spawnUsagi(e); // (Kawaguchiko's hare in his boat: kawaguchiko-usagi.js)
         break;
       case 'turret': {
         // spawns just above the screen and stays glued to the mid layer
@@ -604,6 +606,8 @@ export class Enemies {
                         ? 'bow'
                         : kind === 'taiyaki'
                           ? 'taiyaki'
+                        : kind === 'usagi'
+                          ? 'usagi'
                         : kind === 'kurogane'
                           ? 'bay'
                       : kind === 'obachan'
@@ -613,9 +617,10 @@ export class Enemies {
     // what goes down with the body (the fox's last tail), kept where it was on it
     const kd = kind === 'kasa' ? this.kasaDown(e) : null; // (the umbrella's leg and eye go down with it: tokyo-kasa.js)
     const td = kind === 'taiyaki' ? this.taiyakiDown(e) : null; // (the great fish and the fish left: tokyo-taiyaki.js)
+    const ud = kind === 'usagi' ? this.usagiDown(e) : null; // (where the hare's boat is: kawaguchiko-usagi.js)
     const kg = kind === 'kurogane' ? this.kuroDown(e) : null; // (the mech's parts, for its fall into the bay: tokyo-kurogane.js)
     const extra = kind === 'kyubi' ? e.group.tails.filter((tl) => !tl.lost && !tl.dead).map((tl) => ({ s: copy(tl), ox: tl.x - e.x, oy: tl.y - e.y })) : kd ? kd.extra : [];
-    this.dying.push({ body, extra, t: 0, x: e.x, y: e.y, r: Math.max(10, e.radius), end, color, oni: !!e.oni, liquid: e.oni ? 'bloodball_1' : 'splash', next: 0, ended: false, kasa: kd, ty: td, kg });
+    this.dying.push({ body, extra, t: 0, x: e.x, y: e.y, r: Math.max(10, e.radius), end, color, oni: !!e.oni, liquid: e.oni ? 'bloodball_1' : 'splash', next: 0, ended: false, kasa: kd, ty: td, kg, us: ud });
   }
 
   /** The bodies going down: the chain of blasts (1.1 s), then each one's own end. */
@@ -629,6 +634,7 @@ export class Enemies {
       let done = false;
       if (d.end === 'bow') done = this.kasaEnd(d, dt); // (the umbrella folds, bows and hops off: all of it on the map)
       else if (d.end === 'taiyaki') done = this.taiyakiEnd(d, dt); // (the great fish breaks in half, the mould drops on to the stall)
+      else if (d.end === 'usagi') done = this.usagiEnd(d, dt); // (the hare leaps into the ropeway's gondola and is carried off)
       else if (d.end === 'bay') done = this.kuroEnd(d, dt); // (the mech's lights go out, it falls into the bay, fireworks)
       else if (d.t < 1.1) {
         b.setPosition(d.x + Math.round((Math.random() - 0.5) * 3), d.y + Math.round((Math.random() - 0.5) * 3));
@@ -750,7 +756,7 @@ export class Enemies {
    */
   wounds(e, dt) {
     const s = this.scene;
-    if (e.kind === 'kasa' || e.kind === 'taiyaki' || e.group?.kind === 'kurogane') return; // (the umbrella, the mould and the mech show their wounds in their own frames)
+    if (e.kind === 'kasa' || e.kind === 'taiyaki' || e.kind === 'usagi' || e.group?.kind === 'kurogane') return; // (the umbrella, the mould and the mech show their wounds in their own frames)
     const breathe = Math.floor(e.age * 1.25) % 2 ? 1 : 0;
     const rec = e.recoil || 0;
     if (e.group?.kind !== 'volcano' && !e.oni) e.setOrigin(0.5, 0.5 + (rec - breathe) / e.displayHeight);
@@ -837,6 +843,7 @@ export class Enemies {
     if (e.group?.kind === 'kurogane' && e.role === 'body') this.kuroCleanup(e.group); // the mech's parts, rockets, drones
     if (e.kind === 'kasa') this.kasaCleanup(e); // the umbrella's leg, eye, tongue, little ones, the signal
     if (e.kind === 'taiyaki') this.tyCleanup(e); // the mould's glow and shadow, its fish
+    if (e.kind === 'usagi') this.usCleanup(e); // the hare's bundles and boats of mud
     if (e.puppets) for (const p of e.puppets) if (!p.dead && p.master === e) this.pool.kill(p);
     if (e.burnt) for (const bt of e.burnt) if (bt) this.woundPool.kill(bt);
     e.burnt = null;
@@ -899,6 +906,7 @@ export class Enemies {
           else if (e.kind === 'heikegani') this.updateHeike(e, dt, b);
           else if (e.kind === 'kasa') this.kasa(e, dt, b);
           else if (e.kind === 'taiyaki') this.taiyaki(e, dt, b);
+          else if (e.kind === 'usagi') this.usagi(e, dt, b);
           else this.heavyUpdate(e, dt, b);
           break;
         case 'turret':
@@ -1365,4 +1373,4 @@ export class Enemies {
 }
 
 // each city's enemies and bosses live in its own module (src/game/enemies/): their methods join the class here
-Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, kaiken, tokyoKasa, tokyoTaiyaki, tokyoKurogane, traps, ambush);
+Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, kaiken, tokyoKasa, tokyoTaiyaki, kawaguchikoUsagi, tokyoKurogane, traps, ambush);

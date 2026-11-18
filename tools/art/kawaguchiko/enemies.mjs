@@ -4,6 +4,7 @@
 // round bronze mirror turns to the ship and flashes; strings of persimmons drying (hoshigaki), carrying a charm in
 // the colour of their power. Seen from above like every city's, drawn with HiSprite (tools/lib/hisprite.mjs).
 import { HiSprite, tones, speckle, mottle, mix2, fur } from '../../lib/hisprite.mjs';
+import { usagiFrames } from './usagi.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -187,5 +188,6 @@ export function kawaguchikoEnemies(add) {
   add('k_hokora_base', hokoraBase(false));
   add('k_hokora_wreck', hokoraBase(true));
   for (let i = 0; i < 16; i++) add(`k_hokora_head_${i}`, hokoraHead(i));
+  usagiFrames(add); // the miniboss, KACHI-KACHI USAGI (usagi.mjs)
 }
-export const KAWAGUCHIKO_PORTRAITS = [];
+export const KAWAGUCHIKO_PORTRAITS = ['k_usagi_rest_0'];

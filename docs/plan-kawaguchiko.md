@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Fazy 0–10 gotowe: całe tło etapu (taśma, daleka i bliska warstwa, panorama Fuji), przeciwnicy i fale. Dalej walki (miniboss i boss są jeszcze na zastępstwo). 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Fazy 0–11 gotowe: całe tło etapu, przeciwnicy, fale i miniboss Kachi-kachi Usagi. Dalej boss (jeszcze Kyūbi na zastępstwo). 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -205,9 +205,9 @@ Wymaga: fazy 4 i 9. Plik: `src/data/stage10.json`.
 
 ### Faza 11: Kachi-kachi Usagi
 Wymaga: faza 0. Pliki: `src/game/enemies/kawaguchiko-usagi.js`, `tools/art/kawaguchiko/usagi.mjs`.
-- [ ] Grafika i animacje z sekcji 6.1
-- [ ] Faza 1 · [ ] Faza 2 z łodziami z błota · [ ] Faza 3
-- [ ] Wejście z kartą, zakończenie z gondolą, kupon, wpis w menu deweloperskim bossów
+- [x] Grafika (`tools/art/kawaguchiko/usagi.mjs`, w atlasie miasta): zając w łodzi w pozach odpoczynek (strzyże uchem), krzesanie (iskry), rzut płonącą wiązką, wiosłowanie (4 klatki), zmęczenie (uszy opadłe, język, pot); pusta łódź; skok; gondola z machającym zającem; łódź z błota z glinianą kukłą w 3 stopniach rozmakania; płonąca wiązka na wodzie
+- [x] Faza 1 (krzesiwo: wachlarze iskier, wiązki lecące łukiem i płonące na wodzie w kręgu) · [x] Faza 2 (trzy łodzie z błota tasują się z prawdziwą, błoto leci w statek, prawdziwa błyska złotem przy każdym pociągnięciu wioseł, trafione rozmakają i toną, zatopione wracają po 5 s) · [x] Faza 3 (szarża przez całe jezioro po czerwonym pasie z kilwaterem pocisków, potem odpoczynek z miętowym kręgiem: tylko wtedy da się go trafić)
+- [x] Wejście z kartą (wiosłuje z góry jeziora), zakończenie: wyskakuje z łodzi do gondoli kolejki, która przejeżdża nad jeziorem, i odjeżdża, machając („MATA NE~!”); po 95 s odpływa. Kupon i wpis w menu deweloperskim działają same (wspólny kod). Bot: normalny 37 s bez trafień, łatwy 27 s (na łatwym błotne łodzie mają 60% życia, a odpoczynek trwa 1,5 raza dłużej)
 
 ### Faza 12: Daidarabotchi, grafika
 Wymaga: faza 5. Plik: `tools/art/kawaguchiko/daidara.mjs`.
@@ -244,6 +244,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 11 | `src/game/enemies/kawaguchiko-usagi.js` (wmiksowany w `Enemies`, strzały przez `bossDeviceHit`, koniec `usagi` w `updateDying`), `HEAVY.hp.usagi` = 860, skórka `heavy` z `kind: 'usagi'`. | Muzyka minibossa dalej z Kioto (faza 14). Następne: fazy 12–13 (Daidarabotchi). |
 | 2026-11-18 | Claude | 10 | Fale w `stage10.json` (generowane skryptem, jeden wpis w wierszu), pułapki i zasadzki ze współrzędnych mapy. | Testy `traps` i `ambush` obejmą etap po zdjęciu `wip`; reguły sprawdzone już przy pisaniu. Następna: faza 11 (Kachi-kachi Usagi). |
 | 2026-11-18 | Claude | 9 | Przeciwnicy z prefiksem `k_` (animacje w `CITY_ANIMS`), `"enemyArt": true` w `stage10.json`, skórka `kawaguchiko` z pułapką (pierścień 7 pocisków co 3,8 s) i zasadzką. Miniboss i boss dalej na zastępstwo (tanuki i Kyūbi ze wspólnego atlasu). | Następna: faza 10 (fale, pułapki, zasadzki). |
 | 2026-11-18 | Claude | 8 | `far.mjs`: jezioro z odbiciem Fuji (okresy szumów dobrane do pętli 384 px); `stage10.json`: `"near": "momiji"`. | Następne: faza 9 (grafika przeciwników, pułapki i zasadzki). |

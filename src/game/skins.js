@@ -149,7 +149,7 @@ export const SKINS = {
     shooter: { frame: 'k_kasagumo_0', anim: 'k_kasagumo' },
     diver: { frame: 'k_bass_0', anim: 'k_bass' },
     carrier: { frame: 'k_hoshigaki_{c}_0', anim: 'k_hoshigaki_{c}' },
-    heavy: { frame: 'tanuki_0', anim: 'tanuki', kind: 'tanuki' }, // (the miniboss's place: KACHI-KACHI USAGI, phase 9)
+    heavy: { frame: 'k_usagi_rest_0', kind: 'usagi' }, // the miniboss: KACHI-KACHI USAGI (kawaguchiko-usagi.js)
     turret: { base: 'k_hokora_base', head: 'k_hokora_head_', wreck: 'k_hokora_wreck' },
   },
   // Hiroshima & Miyajima: maple-leaf spirit flocks, armored Seto oysters with pearl crits, scooping shamoji paddles,
