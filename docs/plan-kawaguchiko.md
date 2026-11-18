@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Fazy 0–12 gotowe: całe tło etapu, przeciwnicy, fale, miniboss Kachi-kachi Usagi i grafika bossa. Dalej walka z Daidarabotchim (w grze jeszcze Kyūbi na zastępstwo). 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Fazy 0–13 gotowe: całe tło etapu, przeciwnicy, fale, miniboss Kachi-kachi Usagi i boss Daidarabotchi. Dalej muzyka i dźwięk. 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -112,9 +112,9 @@ Własny projekt: olbrzym z ziemi i kamienia, porośnięty mchem i rdzawą jesien
 
 | Faza | Co robi | Mechanika |
 |---|---|---|
-| 1. Kopanie (100–65%) | Wielkie dłonie nabierają ziemię i wodę z jeziora. Grudy lecą łukiem i pękają w pierścienie, a fale od dłoni idą po wodzie krótkimi strefami. | Dłoń przy nabieraniu jest odsłonięta (miętowa) |
-| 2. Kosz (65–30%) | Niesie kosz na drążku. Kosz kołysze się nad ekranem i sypie toczące się kamienie rzędami z przerwami, a jego sznury świecą złotem. | Przestrzelenie obu sznurów zrzuca mu kosz na stopę: jest ogłuszony, a pęknięcie w piersi zostaje odsłonięte |
-| 3. Zachód (30–0%) | Słońce schodzi za nim, olbrzym staje się sylwetką z płonącym obrysem, a Fuji za nim płonie różem. Zgarnia mgłę znad wody i rzuca jej ściany z wąskimi przejściami; na koniec uderza obiema dłońmi w wodę i fale idą pierścieniami. | Po każdym uderzeniu pęknięcie w piersi świeci światłem zachodu (miętowe) |
+| 1. Kopanie (100–68%) | Wielkie dłonie nabierają ziemię i wodę z jeziora. Grudy lecą łukiem i pękają w pierścienie, a fale od dłoni idą po wodzie krótkimi strefami. | Dłoń przy nabieraniu jest odsłonięta (miętowa) |
+| 2. Kosz (68–38%) | Niesie kosz na drążku. Kosz kołysze się nad ekranem i sypie toczące się kamienie rzędami z przerwami, a jego sznury świecą złotem. | Przestrzelenie obu sznurów zrzuca mu kosz na stopę: jest ogłuszony, a pęknięcie w piersi zostaje odsłonięte |
+| 3. Zachód (38–0%) | Słońce schodzi za nim, olbrzym staje się sylwetką z płonącym obrysem, a Fuji za nim płonie różem. Zgarnia mgłę znad wody i rzuca jej ściany z wąskimi przejściami; na koniec uderza obiema dłońmi w wodę i fale idą pierścieniami. | Po każdym uderzeniu pęknięcie w piersi świeci światłem zachodu (miętowe) |
 
 Animacje: oddech (osypująca się ziemia), mruganie oczu-jezior, nabieranie i rzut, kołysanie kosza, pękanie sznurów, ogłuszenie, trzy stopnie zniszczenia (odpadające płaty mchu, pęknięcia, odłamane ramię), sylwetka pod słońce. Koniec: siada w wodzie i rozsypuje się w małą wysepkę z jednym czerwonym klonem. Zapada zmierzch, róż na czapie Fuji gaśnie w fiolet, a na drugim brzegu zapalają się światła.
 
@@ -216,9 +216,9 @@ Wymaga: faza 5. Plik: `tools/art/kawaguchiko/daidara.mjs`.
 
 ### Faza 13: Daidarabotchi, walka
 Wymaga: faza 12. Plik: `src/game/enemies/kawaguchiko-daidara.js`.
-- [ ] Faza 1 z dłońmi · [ ] Faza 2 z koszem · [ ] Faza 3 z zachodem
-- [ ] Wejście z kartą, zakończenie z wysepką i zmierzchem
-- [ ] Wpis w `docs/boss-encounters.md` i w teście walk bossów
+- [x] Faza 1 z dłońmi · [x] Faza 2 z koszem · [x] Faza 3 z zachodem. Olbrzym składany w grze z części `dd_*`: ciało z nakładkami twarzy, ramiona obracane na osiach w barkach (prawe to lewe odbite), drąg na karku, kosz wahający się na dwóch sznurach jak wahadło. Stoi po pas w jeziorze przed panoramą: talia na linii wody widoku (`FujiView.waterY`), to, co pod wodą, przycięte i poza zasięgiem strzałów. Faza 1 (KOPANIE): dłoń nabiera wody (miętowa, ×2), fale biegną z niej po wodzie strefami, chlust wody wachlarzem, druga ręka ciska grudy łukiem, które pękają w pierścień; co piąty raz obie naraz. Faza 2 (KOSZ NA DRĄGU): kosz na końcu drąga z boku, wysypuje rzędy toczących się kamieni z luką; drąg przenoszony nad głową na drugi bark, kosz rozhuśtany sypie wtedy kilka kamieni w gracza; złote sznury po 40 obrażeń, oba przestrzelone = kosz spada na stopę („ITAAA!”), 3,6 s ogłuszenia, szczelina ×2,6, potem kosz wraca zawiązany. Faza 3 (ZACHÓD SŁOŃCA): drąg, kosz i lewe ramię wpadają do jeziora, wszystko jako sylwetka z płonącym obrysem, słońce zachodzi za nim tym niżej, im mniej ma życia; zgarnia mgłę i rzuca jej ściany z wąską luką, unosi dłoń i kikut i uderza w wodę (czerwone zapowiedzi), pierścienie fal; po każdym uderzeniu szczelina otwarta 2,4 s (×2,2). Pancerz z ziemi przepuszcza 55%, życie 2200, progi faz 68% i 38%; przed początkiem kolejnej fazy żaden strzał ani bomba nie zbija życia poniżej jej progu, więc każda faza się odbywa (`DAIDARA`, `ddCap`)
+- [x] Wejście z kartą: czeka, aż widok stanie, woda się kotłuje („GOGOGOGO...”) i olbrzym wynurza się z jeziora z rykiem. Zakończenie: wybuchy ziemi, ramiona opadają, siada w wodzie i znika pod nią („ZUZUZUZU...”), na jego miejscu wynurza się wysepka z czerwonym klonem i zostaje przez cały zmierzch (FujiView). Bot: normalny 104 s i 2 trafienia, łatwy 67 s bez trafień (Kurogane tym samym botem 111,5 s); test walk bossów: 50 s przy 320 i 94 s przy 420, każda faza się odbywa
+- [x] Wpis w `docs/boss-encounters.md` i w teście walk bossów (`boss-encounters.browser.mjs`: miasto 10, kosz zrzucony i szczelina otwarta po uderzeniu), test `kawaguchikoDaidara` (miejsca części zgodne z grafiką, klatki w atlasie, haki w grze)
 
 ### Faza 14: muzyka i dźwięk
 Wymaga: faza 0. Plik: `src/audio/score10.js`.
@@ -244,6 +244,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 13 | Walka z Daidarabotchim w `src/game/enemies/kawaguchiko-daidara.js` (`DAIDARA`, `DD`), podpięta w `Enemies.js` i `encounters.js`; `FujiView` podaje linię wody (`waterY`); `stage10.json` z `"boss": "daidara"`. | Headless Chromium na SwiftShaderze obcina obrócone sprite'y z atlasu miasta w niektórych partiach (`outTexDatum ==` w shaderze Phasera 4); na prawdziwym GPU wszystko się rysuje. Zrzuty walki robić z `--use-angle=d3d11`. Następna: faza 14 (muzyka). |
 | 2026-11-18 | Claude | 12 | Części olbrzyma w `daidara.mjs` (`daidaraFrames`, stałe `SHOULDER` i `CORE` do składania w grze); części dzielące kadr ciała pakowane z `trim`, żeby stały na swoich miejscach. | Następna: faza 13 (walka). |
 | 2026-11-18 | Claude | 12 (część) | Projekt Daidarabotchiego w trzech postaciach (`tools/art/kawaguchiko/daidara.mjs`): olbrzym z ziemi i kamienia po pas w jeziorze, rdzawa trawa, mech i kamienie na nim, klony i sosna na barkach, oczy jak jeziorka z niebem, usta jak jaskinia, kamienne dłonie, w piersi szczelina (słaby punkt); kopiący (garście ziemi, z których cieknie woda), z drążkiem i koszem na złotych sznurach, sylwetka pod zachodzące słońce z płonącym obrysem. Makiety na tle panoramy wysłane autorowi. | Czeka na akceptację projektu; potem klatki, części i stopnie zniszczenia. |
 | 2026-11-18 | Claude | 11 | `src/game/enemies/kawaguchiko-usagi.js` (wmiksowany w `Enemies`, strzały przez `bossDeviceHit`, koniec `usagi` w `updateDying`), `HEAVY.hp.usagi` = 860, skórka `heavy` z `kind: 'usagi'`. | Muzyka minibossa dalej z Kioto (faza 14). Następne: fazy 12–13 (Daidarabotchi). |

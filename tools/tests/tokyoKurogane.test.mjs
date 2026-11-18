@@ -85,6 +85,7 @@ test('it comes in at the end of the strip with its card, and the game knows it',
   assert.equal(w.boss, 'kurogane');
   assert.equal(w.card[0], 'KUROGANE');
   const enemies = readFileSync(new URL('../../src/game/Enemies.js', import.meta.url), 'utf8');
-  for (const hook of ['spawnKurogane', 'updateKurogane', 'kuroDown', 'kuroEnd', 'kuroCleanup', 'kuroMarks', "g.kind === 'kurogane' ? g.awake"]) assert.ok(enemies.includes(hook), hook);
+  for (const hook of ['spawnKurogane', 'updateKurogane', 'kuroDown', 'kuroEnd', 'kuroCleanup', 'kuroMarks']) assert.ok(enemies.includes(hook), hook);
+  assert.match(enemies, /g\.kind === 'kurogane'[^\n]*\? g\.awake/, 'the boss bar waits for it to wake');
   assert.ok(readFileSync(new URL('../../src/game/enemies/encounters.js', import.meta.url), 'utf8').includes('this.kuroShot(shot)'));
 });

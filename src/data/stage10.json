@@ -214,6 +214,6 @@
     {"t": 200.5, "type": "popcorn", "x": 90, "path": "row", "count": 7},
     {"t": 203, "type": "shooter", "x": 64, "pattern": "fan"},
     {"t": 203.6, "type": "shooter", "x": 116, "pattern": "fan"},
-    {"t": 220, "type": "boss", "x": 90, "boss": "kyubi", "card": ["DAIDARABOTCHI", "OLBRZYM, KTÓRY USYPAŁ GÓRĘ"]}
+    {"t": 220, "type": "boss", "x": 90, "boss": "daidara", "card": ["DAIDARABOTCHI", "OLBRZYM, KTÓRY USYPAŁ GÓRĘ"]}
   ]
 }

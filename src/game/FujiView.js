@@ -81,6 +81,7 @@ export class FujiView {
       const [x, y] = at(n);
       this.layers[n].setPosition(x, y + this.tops[n]);
     }
+    this.waterY = at('water')[1] + WATERLINE; // (where the giant's waist is: kawaguchiko-daidara.js)
     this.layers.fujiSun.setAlpha(1 - dusk);
     this.layers.waterSun.setAlpha(1 - dusk);
     this.layers.sky.setTint(tintOf(SKY_DUSK, dusk));

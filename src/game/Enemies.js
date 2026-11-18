@@ -26,6 +26,7 @@ import { tokyoKasa } from './enemies/tokyo-kasa.js';
 import { tokyoTaiyaki } from './enemies/tokyo-taiyaki.js';
 import { kawaguchikoUsagi } from './enemies/kawaguchiko-usagi.js';
 import { tokyoKurogane } from './enemies/tokyo-kurogane.js';
+import { kawaguchikoDaidara } from './enemies/kawaguchiko-daidara.js';
 import { traps } from './enemies/traps.js';
 import { ambush } from './enemies/ambush.js';
 // the second phases of the minibosses (Yuki-onna and the Oranda-bune have theirs; the bunraku puppet's go by
@@ -263,6 +264,7 @@ export class Enemies {
         if (w.boss === 'obachan') return this.spawnObachan(w, base);
         if (w.boss === 'kaiken') return this.spawnKaiken(w, base);
         if (w.boss === 'kurogane') return this.spawnKurogane(w, base); // (Tokyo's mech: tokyo-kurogane.js)
+        if (w.boss === 'daidara') return this.spawnDaidara(w, base); // (Kawaguchiko's giant: kawaguchiko-daidara.js)
         return w.boss === 'kuma' ? this.spawnKuma(w, base) : this.spawnBoss(w, base);
       default:
         return;
@@ -293,8 +295,8 @@ export class Enemies {
     }
     // what a boss lays open (Kurogane's fist coming back, its drones, its open reactor) draws the orbs first
     const g = this.bossGroup;
-    if (g?.kind === 'kurogane' && !g.defeated) {
-      for (const t of this.kuroMarks(g)) {
+    if ((g?.kind === 'kurogane' || g?.kind === 'daidara') && !g.defeated) {
+      for (const t of g.kind === 'kurogane' ? this.kuroMarks(g) : this.ddMarks(g)) {
         const d = (t.x - x) ** 2 + (t.y - y) ** 2 - 6400;
         if (d < bd) {
           bd = d;
@@ -332,6 +334,7 @@ export class Enemies {
       const gt = e.group ?? (e.type === 'heavy' ? e : e.master);
       if (gt?.gate > 0) amount *= PHASE.take;
       if (e.group?.take && e.role in e.group.take) amount *= e.group.take[e.role]; // guarded parts (the octopus's head)
+      if (e.group?.kind === 'daidara') amount = this.ddCap(e, amount); // the giant goes through all his phases (kawaguchiko-daidara.js)
     }
     // The furnace must melt all three layers; neither bombs nor high DPS skip it.
     if (e.group?.kind === 'kuma' && e.group.stage === 1) {
@@ -507,7 +510,7 @@ export class Enemies {
   /** HP shown in the top bar: the mid-stage heavy or the whole boss pair. */
   bossBar() {
     const g = this.bossGroup;
-    if (g && !g.defeated && (g.kind === 'kuma' || g.kind === 'volcano' || g.kind === 'tako' || g.kind === 'oni' || g.kind === 'kyubi' || g.kind === 'sankibo' || g.kind === 'jihanki' || g.kind === 'keicar' || g.kind === 'genba' || g.kind === 'nagai' || g.kind === 'heya' || g.kind === 'obachan' || g.kind === 'kaiken' || g.kind === 'kurogane' ? g.awake : g.parts.some((p) => !p.dead && p.group === g && p.y > 0))) {
+    if (g && !g.defeated && (g.kind === 'kuma' || g.kind === 'volcano' || g.kind === 'tako' || g.kind === 'oni' || g.kind === 'kyubi' || g.kind === 'sankibo' || g.kind === 'jihanki' || g.kind === 'keicar' || g.kind === 'genba' || g.kind === 'nagai' || g.kind === 'heya' || g.kind === 'obachan' || g.kind === 'kaiken' || g.kind === 'kurogane' || g.kind === 'daidara' ? g.awake : g.parts.some((p) => !p.dead && p.group === g && p.y > 0))) {
       // parts are pooled sprites: once dead they may come back as other enemies, so check the group
       let hp = 0;
       for (const p of g.parts) if (!p.dead && p.group === g) hp += Math.max(0, p.hp);
@@ -567,6 +570,7 @@ export class Enemies {
     if (g.kind === 'obachan') return this.updateObachan(g, dt);
     if (g.kind === 'kaiken') return this.updateKaiken(g, dt);
     if (g.kind === 'kurogane') return this.updateKurogane(g, dt);
+    if (g.kind === 'daidara') return this.updateDaidara(g, dt);
     this.updateShisa(g, dt);
   }
 
@@ -610,6 +614,8 @@ export class Enemies {
                           ? 'usagi'
                         : kind === 'kurogane'
                           ? 'bay'
+                        : kind === 'daidara'
+                          ? 'islet'
                       : kind === 'obachan'
                         ? 'sit'
                       : 'burst';
@@ -619,8 +625,9 @@ export class Enemies {
     const td = kind === 'taiyaki' ? this.taiyakiDown(e) : null; // (the great fish and the fish left: tokyo-taiyaki.js)
     const ud = kind === 'usagi' ? this.usagiDown(e) : null; // (where the hare's boat is: kawaguchiko-usagi.js)
     const kg = kind === 'kurogane' ? this.kuroDown(e) : null; // (the mech's parts, for its fall into the bay: tokyo-kurogane.js)
+    const dd = kind === 'daidara' ? this.ddDown(e) : null; // (the giant's parts, for his sinking into the lake: kawaguchiko-daidara.js)
     const extra = kind === 'kyubi' ? e.group.tails.filter((tl) => !tl.lost && !tl.dead).map((tl) => ({ s: copy(tl), ox: tl.x - e.x, oy: tl.y - e.y })) : kd ? kd.extra : [];
-    this.dying.push({ body, extra, t: 0, x: e.x, y: e.y, r: Math.max(10, e.radius), end, color, oni: !!e.oni, liquid: e.oni ? 'bloodball_1' : 'splash', next: 0, ended: false, kasa: kd, ty: td, kg, us: ud });
+    this.dying.push({ body, extra, t: 0, x: e.x, y: e.y, r: Math.max(10, e.radius), end, color, oni: !!e.oni, liquid: e.oni ? 'bloodball_1' : 'splash', next: 0, ended: false, kasa: kd, ty: td, kg, us: ud, dd });
   }
 
   /** The bodies going down: the chain of blasts (1.1 s), then each one's own end. */
@@ -636,6 +643,7 @@ export class Enemies {
       else if (d.end === 'taiyaki') done = this.taiyakiEnd(d, dt); // (the great fish breaks in half, the mould drops on to the stall)
       else if (d.end === 'usagi') done = this.usagiEnd(d, dt); // (the hare leaps into the ropeway's gondola and is carried off)
       else if (d.end === 'bay') done = this.kuroEnd(d, dt); // (the mech's lights go out, it falls into the bay, fireworks)
+      else if (d.end === 'islet') done = this.ddEnd(d, dt); // (the giant sits down in the lake and crumbles into an islet)
       else if (d.t < 1.1) {
         b.setPosition(d.x + Math.round((Math.random() - 0.5) * 3), d.y + Math.round((Math.random() - 0.5) * 3));
         b.setTint(Math.floor(d.t * 14) % 2 ? 0x707070 : 0x000000).setTintMode(Phaser.TintModes.ADD);
@@ -756,7 +764,7 @@ export class Enemies {
    */
   wounds(e, dt) {
     const s = this.scene;
-    if (e.kind === 'kasa' || e.kind === 'taiyaki' || e.kind === 'usagi' || e.group?.kind === 'kurogane') return; // (the umbrella, the mould and the mech show their wounds in their own frames)
+    if (e.kind === 'kasa' || e.kind === 'taiyaki' || e.kind === 'usagi' || e.group?.kind === 'kurogane' || e.group?.kind === 'daidara') return; // (the umbrella, the mould, the mech and the giant show their wounds in their own frames)
     const breathe = Math.floor(e.age * 1.25) % 2 ? 1 : 0;
     const rec = e.recoil || 0;
     if (e.group?.kind !== 'volcano' && !e.oni) e.setOrigin(0.5, 0.5 + (rec - breathe) / e.displayHeight);
@@ -841,6 +849,7 @@ export class Enemies {
     if (e.group?.kind === 'obachan' && e.role === 'body') this.obachanCleanup(e.group); // her sweets, trolleys, the tiger
     if (e.group?.kind === 'kaiken' && e.role === 'body') this.kaikenCleanup(e.group); // his tickets, the table
     if (e.group?.kind === 'kurogane' && e.role === 'body') this.kuroCleanup(e.group); // the mech's parts, rockets, drones
+    if (e.group?.kind === 'daidara' && e.role === 'body') this.ddCleanup(e.group); // the giant's parts, clods, the pole
     if (e.kind === 'kasa') this.kasaCleanup(e); // the umbrella's leg, eye, tongue, little ones, the signal
     if (e.kind === 'taiyaki') this.tyCleanup(e); // the mould's glow and shadow, its fish
     if (e.kind === 'usagi') this.usCleanup(e); // the hare's bundles and boats of mud
@@ -1373,4 +1382,4 @@ export class Enemies {
 }
 
 // each city's enemies and bosses live in its own module (src/game/enemies/): their methods join the class here
-Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, kaiken, tokyoKasa, tokyoTaiyaki, kawaguchikoUsagi, tokyoKurogane, traps, ambush);
+Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, kaiken, tokyoKasa, tokyoTaiyaki, kawaguchikoUsagi, tokyoKurogane, kawaguchikoDaidara, traps, ambush);
