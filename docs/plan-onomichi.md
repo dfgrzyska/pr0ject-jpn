@@ -1,6 +1,6 @@
 # Plan: etap 11, ONOMICHI
 
-Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–6 gotowe (zbliżenie stoku przyjęte przez autora 2026-11-18): całe tło narysowane; z fazy 7 nocna woda. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–6, 8 i 9 gotowe (zbliżenie stoku przyjęte przez autora 2026-11-18): całe tło narysowane, przeciwnicy i fale; z fazy 7 nocna woda. Miniboss i boss dalej na zastępstwo (z Kioto). Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -182,12 +182,12 @@ Wymaga: faza 1. Pliki: `tools/art/onomichi/far.mjs`, `src/game/Parallax.js` (tyl
 
 ### Faza 8: grafika przeciwników, pułapki i zasadzki
 Wymaga: faza 0. Pliki: `tools/art/onomichi/enemies.mjs`, `tools/art/traps.mjs`, `tools/art/ambush.mjs`, `src/game/skins.js`.
-- [ ] Pięć skórek z sekcji 5 w 540 px, katori-buta (pułapka) i ośmiornica z garnka (zasadzka); każda czytelna jako przeciwnik, nie znajdźka
-- [ ] Testy przechodzą
+- [x] Pięć skórek z sekcji 5 w 540 px (`tools/art/onomichi/enemies.mjs`, atlas `bg/stage11/enemies.*`, prefiks `o_`): jaskółka (4 klatki skrzydeł, stado), debera (suszona płastuga z obudzonymi żółtymi oczami, falujące płetwy, zerwany sznurek), fūrin (niebieskie szkło z malowanymi złotymi rybkami, jedno wielkie oko ze zmarszczoną brwią, mruga, dzwoni łukami dźwięku, papierowy pasek), kula fajerwerku z płonącym lontem, zmrużonymi oczami i pasem w kolorze wzmocnienia (cztery kolory), onigawara na kalenicy (dachówka z rogami, wiankiem chmur wokół, zmarszczoną brwią, okrągłymi oczami i paszczą z kłami, w 16 kierunkach; żarzy się przed strzałem) i wrak z rozbitą dachówką
+- [x] Katori-buta (terakotowa świnka, w ryjku żarzy się spirala, wypuszcza kółka dymu; strefa `ash`, pierścień 8 pocisków co 3,6 s) i ośmiornica z glinianego garnka w rzędzie garnków (5 klatek) we wspólnym atlasie; testy przechodzą. Rogi onigawary przerysowane, żeby nie przypominała kociej głowy (miniboss to kot)
 
 ### Faza 9: fale
 Wymaga: fazy 1 i 8. Plik: `src/data/stage11.json`.
-- [ ] Fale do minibossa i od minibossa do bossa; nad wodą płastugi i jaskółki, bez dachówek na wodzie; pułapki i zasadzki z miejsca na mapie (werandy, stragany, przystanie), z dala od walk; oddech przed areną i cisza przed bossem
+- [x] 131 fal (skrypt `tools/preview/scratch/ono_waves.mjs` na rytmie Kawaguchiko sprawdzonym botem): do minibossa (135 s, z oddechem od 122 s), dwie kule fajerwerków zaraz po nim, dalej do 205 s, cisza do bossa (220 s); onigawary tylko na lądzie (te nad wodą przesunięte na brzeg albo zamienione w płastugi tam, gdzie woda jest w poprzek); 12 świnek w ogrodach, przy straganach i domach, 6 ośmiornic na przystaniach i nabrzeżach, wszystkie na lądzie, z dala od walk (sprawdzone regułami testów `traps` i `ambush`, które obejmą etap po zdjęciu `wip`). Bot nie był puszczony (balans w fazie 16)
 
 ### Faza 10: Nekomata
 Wymaga: faza 0. Pliki: `src/game/enemies/onomichi-nekomata.js`, `tools/art/onomichi/nekomata.mjs`.
@@ -230,6 +230,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 8 i 9 | Przeciwnicy, pułapka i zasadzka w 540 px, skórka `onomichi` (z `heat` dla onigawary), `"enemyArt": true`, animacje `o_*` w `enemyArt.js`, małe wersje pułapki i zasadzki w `sprites.png`; fale ze skryptu. Sprawdzone zrzutami w grze w 15, 56, 86 i 166 s. | Portrety do albumu dojdą z walkami (fazy 10–12). Następne: walki (Nekomata, Funa-yūrei). |
 | 2026-11-18 | Claude | 2 i 3 | Wyspy i mosty (`islands.mjs`), Ozaki i Jōdo-ji (`jodoji.mjs`); stok, miasteczko i nabrzeże z `senkoji.mjs` sięgają w dół do zakrętu (`HILL_FROM` = 2890). Całe tło narysowane, żadna działka nie jest kreskowana. Sprawdzone zrzutami w grze w 11, 43, 73 i 98 s. | Arkusz całej trasy: `node tools/art/onomichi/overview.mjs`. Następne: faza 7 (dzienna woda z prądami), faza 8 (przeciwnicy), potem walki. |
 | 2026-11-18 | Claude | 6 (+7 część) | Hondōri (`hondori.mjs`) i nabrzeże przy dworcu (`minato.mjs`) narysowane, tarasy stoku za Hondōri do dworca, nocna woda (`far_night`), `dark` do 0,9. Sprawdzone zrzutami w grze w 153, 181, 203 i 231 s. | Działki od 3800 w górę nie są już kreskowane (`DRAWN` w `mid.mjs`). Odcinki 0–3800 dalej w szkicu: fazy 2 i 3. Fajerwerki w fazie 13. |
 | 2026-11-18 | Claude | 5 | `senkoji.mjs` rysuje cały odcinek 3800–5100: dodane świątynie przy schodach (`temple`: dziedziniec z grabionym żwirem, sala pod wielkim dachem, brama, latarnie, sosna, dzwonnica), pociągi na torze `sanyo`, 24 koty animowane w miejscu; arena kota bez znacznika. Sprawdzone zrzutami w grze w 115 i 143 s. | Pociągi jadą po całym torze, więc widać je też na odcinkach jeszcze w szkicu. Następne: fazy 2, 3 i 6 (wyspy, cieśnina z Jōdo-ji, Hondōri z dworcem). |

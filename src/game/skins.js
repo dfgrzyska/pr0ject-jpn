@@ -152,14 +152,18 @@ export const SKINS = {
     heavy: { frame: 'k_usagi_rest_0', kind: 'usagi' }, // the miniboss: KACHI-KACHI USAGI (kawaguchiko-usagi.js)
     turret: { base: 'k_hokora_base', head: 'k_hokora_head_', wreck: 'k_hokora_wreck', heat: true }, // (its mirror glows red before it fires)
   },
-  // Onomichi (docs/plan-onomichi.md): stand-ins until its own are drawn (phase 8), Kyoto's
+  // Onomichi (docs/plan-onomichi.md): swallows of summer in flocks, a dried flatfish come alive, a glass wind bell with
+  // an eye, firework shells with their fuses lit, the demon tile on a temple's ridge; the miniboss Kyoto's stand-in
+  // until NEKOMATA is drawn (phase 10)
   onomichi: {
-    popcorn: { frame: 'popcorn_0', anim: 'popcorn' },
-    shooter: { frame: 'shooter_0', anim: 'shooter' },
-    diver: { frame: 'diver_0', anim: 'diver' },
-    carrier: { frame: 'carrier_{c}_0', anim: 'carrier_{c}' },
+    trap: { ...trap('onomichi', 'ash', 10, { kind: 'ring', n: 8 }, 3.6) }, // a mosquito-coil pig on a veranda, puffing rings of smoke (enemies/traps.js)
+    ambush: ambush('onomichi', 'splash'), // an octopus out of its clay pot on the harbour (enemies/ambush.js)
+    popcorn: { frame: 'o_tsubame_0', anim: 'o_tsubame', flock: true },
+    shooter: { frame: 'o_furin_0', anim: 'o_furin' },
+    diver: { frame: 'o_debera_0', anim: 'o_debera' },
+    carrier: { frame: 'o_hanabi_{c}_0', anim: 'o_hanabi_{c}' },
     heavy: { frame: 'tanuki_0', anim: 'tanuki', kind: 'tanuki' }, // (the miniboss's place: NEKOMATA, phase 10)
-    turret: { base: 'turret_base', head: 'turret_head_', wreck: 'turret_wreck' },
+    turret: { base: 'o_ridge_base', head: 'o_oni_head_', wreck: 'o_ridge_wreck', heat: true }, // (its mouth glows red before it fires)
   },
   // Hiroshima & Miyajima: maple-leaf spirit flocks, armored Seto oysters with pearl crits, scooping shamoji paddles,
   // tidal stone lanterns, Heike-gani samurai crab, and Sankibō the Great Tengu of Mount Misen

@@ -36,6 +36,7 @@ import { hiroshimaEnemies, HIROSHIMA_PORTRAITS } from './art/hiroshima/enemies.m
 import { nagasakiEnemies, NAGASAKI_PORTRAITS } from './art/nagasaki/enemies.mjs';
 import { tokyoEnemies, TOKYO_PORTRAITS } from './art/tokyo/enemies.mjs';
 import { kawaguchikoEnemies, KAWAGUCHIKO_PORTRAITS } from './art/kawaguchiko/enemies.mjs';
+import { onomichiEnemies, ONOMICHI_PORTRAITS } from './art/onomichi/enemies.mjs';
 import { jihankiEnemies } from './art/encounters/jihanki.mjs';
 import * as greatwave from './art/encounters/greatwave.mjs';
 import { keicarEnemies } from './art/encounters/keicar.mjs';
@@ -68,6 +69,7 @@ const ENEMY_ART = [
   { id: 'stage8', build: nagasakiEnemies, portraits: NAGASAKI_PORTRAITS },
   { id: 'stage9', build: tokyoEnemies, portraits: TOKYO_PORTRAITS }, // (Tokyo: five sets, docs/plan-tokyo.md)
   { id: 'stage10', build: kawaguchikoEnemies, portraits: KAWAGUCHIKO_PORTRAITS }, // (docs/plan-kawaguchiko.md)
+  { id: 'stage11', build: onomichiEnemies, portraits: ONOMICHI_PORTRAITS }, // (in the works: docs/plan-onomichi.md)
   // the random encounters (src/data/encounters.js): an arena and a boss each, no album portraits (yet)
   { id: 'ex1', build: jihankiEnemies, portraits: [] },
   { id: 'ex2', build: keicarEnemies, portraits: [] },

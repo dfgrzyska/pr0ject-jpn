@@ -27,6 +27,7 @@ const RAMPS = {
   lv2: tones([0x5a1a0c, 0xb83a1c, 0xe8803a]), // fallen maple leaves, red and rust
   lg: tones([0x6a4a10, 0xc8902a, 0xf0c860]), // fallen ginkgo and larch, gold
   sm: tones([0x6a666a, 0xa8a4a4, 0xdcd8d4]), // leaf smoke
+  pg: tones([0x6a2e14, 0xb0602e, 0xe89a64]), // a terracotta pig
 };
 const sprite = () => new HiSprite(60, 60, RAMPS);
 const shadow = (s, cx, cy, rx, ry) => {
@@ -224,7 +225,34 @@ function kawaguchiko(f) {
   return s;
 }
 
-const DRAW = { kyoto, okinawa, sapporo, kagoshima, osaka, hiroshima, nagasaki, tokyo, kawaguchiko };
+/** Onomichi: a mosquito-coil pig (katori-buta), the terracotta pot a coil smoulders in on summer verandas: its snout
+ * a round mouth breathing smoke, its ears, its curly tail; the coil glows red inside it, then it puffs out rings. */
+function onomichi(f) {
+  const s = sprite();
+  shadow(s, 33, 40, 15, 7);
+  // the pig lying on its side (seen from above): its round body, the hollow of its open snout at the bottom
+  s.ellipse(30, 31, 14, 12, 'pg', { bias: 0.04, tex: 0.25 });
+  for (const sx of [-1, 1]) s.poly([[30 + sx * 6, 20], [30 + sx * 11, 17], [30 + sx * 10, 23]], 'pg', { flat: 0.55 }); // its ears
+  for (const sx of [-1, 1]) s.ellipse(30 + sx * 9, 41, 2.6, 2, 'pg', { bias: 0.1 }); // its trotters
+  s.ellipse(30, 43, 6.4, 4.4, 'pg', { bias: 0.08 });
+  s.ellipse(30, 43, 4.4, 2.8, 'ir', { flat: 0.2 }); // the dark mouth of the snout
+  for (const sx of [-1, 1]) s.dot(30 + sx * 4.6, 33, 1.2, 0x2a1408); // its eyes
+  s.tube(41, 26, 45, 23, 0.8, 'pg'); // the curly tail
+  s.dot(45.5, 22, 1, 0xb0602e);
+  // the coil inside, seen through the snout: a red ember, brighter as it wakes
+  s.dot(30, 43, f === 0 ? 1.2 : 2, f === 0 ? 0x8a2a10 : 0xff7020);
+  if (f > 0) s.ellipse(30, 43, 2.2, 1.4, 'lv', { flat: 0.9, glow: true });
+  // its smoke: a thin thread at rest, rings puffing out of the snout and rising up the screen as it bursts
+  if (f < 2) for (let i = 0; i < 4; i++) s.dot(30 + Math.sin(i * 1.3 + f) * 1.6, 38 - i * 5, 1.4 - i * 0.2, 0xc8c4c0, 0.7 - i * 0.12);
+  else
+    for (let k = 0; k < (f === 2 ? 2 : 3); k++) {
+      const [ry, y] = [3 + k * 2.4, 36 - k * 8];
+      for (let a = 0; a < TAU; a += 0.35) s.ellipse(30 + Math.cos(a) * (ry + 2), y + Math.sin(a) * ry * 0.6, 1.4, 1.2, 'sm', { flat: 0.8 });
+    }
+  return s;
+}
+
+const DRAW = { kyoto, okinawa, sapporo, kagoshima, osaka, hiroshima, nagasaki, tokyo, kawaguchiko, onomichi };
 export const TRAP_CITIES = Object.keys(DRAW);
 
 /** Every trap's four frames, for the shared 540 px atlas. */

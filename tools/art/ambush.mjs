@@ -41,6 +41,7 @@ const RAMPS = {
   ea: tones([0x2a1c14, 0x4e3626, 0x7e5e44]), // fresh dark earth
   ml: tones([0x16141a, 0x2e2a34, 0x5a5466]), // a mole's velvet
   lv: tones([0x5a1a0c, 0xb83a1c, 0xe8803a]), // a fallen maple leaf
+  tp: tones([0x4a2412, 0x8a4e2c, 0xc8865a]), // an octopus pot's fired clay
 };
 const sprite = () => new HiSprite(60, 60, RAMPS);
 const shadow = (s, cx, cy, rx, ry, a = 0.32) => {
@@ -424,7 +425,51 @@ function kawaguchiko(f) {
   return s;
 }
 
-const DRAW = { kyoto, okinawa, sapporo, osaka, beppu, hiroshima, nagasaki, tokyo, kawaguchiko };
+// ---------------------------------------------------------------- Onomichi: an octopus out of its clay pot on the harbour
+function onomichi(f) {
+  const s = sprite();
+  shadow(s, 33, 40, 16, 7);
+  // the pots: three lying in a row on the quay, mouths to the bottom of the screen, this one in the middle
+  for (const [x, y] of [[13, 30], [47, 30]]) {
+    s.ellipse(x, y, 7, 9, 'tp', { bias: 0.04, tex: 0.25 });
+    s.ellipse(x, y + 6, 4, 2.6, 'ho', { flat: 0.2 });
+  }
+  s.ellipse(30, 30, 9, 11, 'tp', { bias: 0.04, tex: 0.25 });
+  s.line(21.5, 27, 38.5, 27, 0x3a1a0c, 1, 0.6); // the cord round its neck
+  s.ellipse(30, 38, 5.4, 3.4, 'ho', { flat: 0.2 }); // its mouth, dark
+  if (f === 0) return s;
+  // stirring: the tips of its arms feeling out of the mouth
+  const arm = (x0, y0, x1, y1, w = 1.3) => {
+    s.tube(x0, y0, x1, y1, w, 'oc', { rb: 0.6 });
+    s.dot(x1, y1, 0.6, 0xffd0c8);
+  };
+  if (f === 1) {
+    arm(27, 39, 24, 43);
+    arm(33, 39, 36, 44);
+    return s;
+  }
+  if (f === 2) {
+    // half out: the head over the rim, the eyes on it, more arms
+    s.ellipse(30, 40, 5.4, 4.4, 'oc', { bias: 0.08, pat: speckle({ amt: 0.2, seed: 7 }) });
+    for (const sx of [-1, 1]) s.dot(30 + sx * 2.6, 41.4, 1, 0xf0d040);
+    for (const [x, y] of [[22, 44], [38, 45], [26, 47]]) arm(30, 41, x, y);
+    return s;
+  }
+  // out: on top of its pot, its arms spread over the quay, its siphon turned at the ship (glowing when it shoots)
+  for (let k = 0; k < 8; k++) {
+    const a = (k / 8) * TAU + 0.2;
+    arm(30 + Math.cos(a) * 4, 38 + Math.sin(a) * 3, 30 + Math.cos(a) * 15, 40 + Math.sin(a) * 9, 1.6);
+  }
+  s.ellipse(30, 33, 7.6, 8.6, 'oc', { bias: 0.06, pat: speckle({ amt: 0.2, seed: 8 }) });
+  for (const sx of [-1, 1]) {
+    s.ellipse(30 + sx * 3.4, 38, 1.8, 1.6, 'W', { flat: 0.9 });
+    s.dot(30 + sx * 3.4, 38.6, 0.9, 0x14101c);
+  }
+  if (f === 4) charge(s, 30, 46, 2.6, 'gm', 0xffe080);
+  return s;
+}
+
+const DRAW = { kyoto, okinawa, sapporo, osaka, beppu, hiroshima, nagasaki, tokyo, kawaguchiko, onomichi };
 export const AMBUSH_CITIES = Object.keys(DRAW);
 
 /** Every ambusher's five frames, for the shared 540 px atlas. */
