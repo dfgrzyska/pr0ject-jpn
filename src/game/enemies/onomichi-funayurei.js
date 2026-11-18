@@ -17,7 +17,7 @@ import { slow, normal, DOWN, TAU } from './shared.js';
  * how long its end takes.
  */
 export const FUNA = {
-  hp: 1300,
+  hp: 1000,
   phase: [0.66, 0.33],
   armour: 0.4,
   open: { time: 3.6, take: 3 },

@@ -1,6 +1,6 @@
 # Plan: etap 11, ONOMICHI
 
-Stan: **w podróży** (od 2026-11-18, faza 15). Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–15 gotowe (zbliżenie stoku i projekt okrętu przyjęte przez autora 2026-11-18): całe tło, przeciwnicy, fale, walki z Nekomatą i Funa-yūrei, woda w dzień i w nocy, fajerwerki, muzyka i dźwięki; Onomichi jest jedenastym miastem podróży. Został balans i przejście testowe przez człowieka. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w podróży** (od 2026-11-18, faza 15). Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–15 i 16 (poza przejściem przez człowieka) gotowe (zbliżenie stoku i projekt okrętu przyjęte przez autora 2026-11-18): całe tło, przeciwnicy, fale, walki z Nekomatą i Funa-yūrei, woda w dzień i w nocy, fajerwerki, muzyka i dźwięki; Onomichi jest jedenastym miastem podróży. Balans sprawdzony botem; zostało przejście testowe przez człowieka (bez nieśmiertelności, także na telefonie). Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -43,6 +43,7 @@ Kierunek lotu obraca się z mapą, jak spirala w Tokio. Nad wyspami lecimy na p�
 
 | u | Czas | Odcinek | Pora | Co widać |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 16 (część) | Bot przez cały etap bez nieśmiertelności na obu poziomach i każdą bronią; życie okrętu 1300 → 1000; wydajność przy spowolnionym procesorze; arkusz trasy przejrzany. | Zostało dla człowieka: przejście bez nieśmiertelności i telefon. |
 | 2026-11-18 | Claude | 15 | Onomichi w podróży: bez `wip`, w `STAGES`; dania, album, gachapon, pieczątka, pieczęć 尾道, parada, etykieta na mapie, podpis menu w dwóch liniach. Okręt w teście walk bossów w przeglądarce. | Następne: faza 16 (balans botem bez nieśmiertelności, przegląd detalu, wydajność; przejście człowieka zostaje autorowi). |
 | 2026-11-18 | Claude | 14 | Muzyka w `score11.js` (9 piosenek), dźwięki w `Sfx.js` (fūrin, miau, chlust, róg, fajerwerki), podpięte w walkach, fajerwerkach i skórce. Sprawdzone w przeglądarce: grają właściwe piosenki, bez błędów. | Następne: faza 15. |
 | 2026-11-18 | Claude | 13 | Fajerwerki nad cieśniną (`Hanabi.js`, `hanabi.mjs`), barki i arena bossa przeniesione, łagodniejsze światło wybuchów bossa. Sprawdzone zrzutami w walce i po niej. | Następne: faza 14 (muzyka). |
@@ -209,7 +210,7 @@ Wymaga: faza 6. Plik: `tools/art/onomichi/funayurei.mjs`.
 ### Faza 12: Funa-yūrei, walka
 Wymaga: faza 11. Plik: `src/game/enemies/onomichi-funayurei.js`.
 - [x] Faza 1 z czerpakami · [x] Faza 2 z fajerwerkami · [x] Faza 3 z wirem
-- [x] Wejście z kartą (czeka, aż miasto dojedzie do końca, wynurza się z cieśniny: „HISHAKU O KASE...”), zakończenie: latarnia gaśnie, okręt tonie, ręce puszczają czerpaki, z wody wznoszą się światełka, nad cieśniną otwiera się ostatni wielki fajerwerk („TAMAYA~!”); wpis w `docs/boss-encounters.md`, test `onomichiFunayurei` (części w atlasie, położenie części zgodne z grafiką, okręt i ręce na wodzie, haki w grze). Napisy faz i komunikaty PL/EN; rzędy rąk w fazie 3 mają własny wygląd strefy (`ghost`). Bez bota w grze: statek z nieśmiertelnością idący pod to, co odsłonięte (z wyprzedzeniem pod złote kule), pokonuje okręt w 60 s przy mocy 4 (fazy po 23, 19 i 19 s) i w 133 s przy mocy 1 (42, 46, 46 s); Daidarabotchi botem 55–65 s przy mocy 4
+- [x] Wejście z kartą (czeka, aż miasto dojedzie do końca, wynurza się z cieśniny: „HISHAKU O KASE...”), zakończenie: latarnia gaśnie, okręt tonie, ręce puszczają czerpaki, z wody wznoszą się światełka, nad cieśniną otwiera się ostatni wielki fajerwerk („TAMAYA~!”); wpis w `docs/boss-encounters.md`, test `onomichiFunayurei` (części w atlasie, położenie części zgodne z grafiką, okręt i ręce na wodzie, haki w grze). Napisy faz i komunikaty PL/EN; rzędy rąk w fazie 3 mają własny wygląd strefy (`ghost`). Statek z nieśmiertelnością idący pod to, co odsłonięte, pokonywał okręt (przy życiu 1300) w 60 s przy mocy 4 i w 133 s przy mocy 1; w fazie 16 życie zmniejszone do 1000
 
 ### Faza 13: fajerwerki
 Wymaga: fazy 6 i 12. Pliki: `src/game/Hanabi.js`, `tools/art/onomichi/hanabi.mjs`.
@@ -226,9 +227,9 @@ Wymaga: fazy 9–13.
 
 ### Faza 16: balans i szlif
 Wymaga: wszystko powyżej.
-- [ ] Bot przechodzi etap na obu poziomach trudności; czasy walk w widełkach innych miast
-- [ ] Przegląd równego detalu: żaden odcinek nie odstaje
-- [ ] Wydajność na telefonie, zwłaszcza w finale z fajerwerkami
+- [x] Bot przechodzi etap na obu poziomach trudności; czasy walk w widełkach innych miast. Bot bez nieśmiertelności (trafienie liczone zamiast śmierci), moc 4, każda broń: normalny 4–8 trafień, łatwy 3–6 (Kawaguchiko tym samym botem 5–10 i 4–7); okręt po zmniejszeniu życia z 1300 do 1000 pada w 27–71 s na normalnym i 53–64 s na łatwym (Daidarabotchi tym botem 48–65 s); średnio 11–14 pocisków na ekranie (Kawaguchiko 8–14). Test walk w przeglądarce: 45 s laserem i 83 s pociskami naprowadzanymi
+- [x] Przegląd równego detalu: żaden odcinek nie odstaje (arkusz całej trasy `node tools/art/onomichi/overview.mjs`: wyspy, mosty, Ozaki, stok, Hondōri i nabrzeże równie gęste, cieśnina z prądami)
+- [x] Wydajność, zwłaszcza w finale z fajerwerkami: z procesorem spowolnionym 4× aktualizacja klatki trwa 1,0–1,4 ms, rysowanie 1,4–2,2 ms (95. percentyl do 3,8 ms), najwięcej po walce, gdy fajerwerki dochodzą do limitu 260 gwiazd; Kawaguchiko 0,9–1,2 i 1,3–1,6 ms. Na prawdziwym telefonie niesprawdzone
 - [ ] Przejście testowe przez człowieka i poprawki po nim
 
 ## 9. Dziennik przekazań
