@@ -1,5 +1,5 @@
 // Kawaguchiko's far layer: the water of the lake, seen where the middle layer is open. A seamless vertical loop at
-// 540 px. (A stand-in for now: Fuji's reflection on it, and the sea of clouds under the summit, come in phase 6.)
+// 540 px. (A stand-in for now: Fuji's reflection on it comes in phase 8.)
 import { Raster, fbm } from '../../lib/raster.mjs';
 import { rampColor } from '../nature.mjs';
 import { S } from './route.mjs';

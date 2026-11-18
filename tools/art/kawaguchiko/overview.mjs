@@ -17,7 +17,7 @@ const arg = (k) => Number(process.argv.find((a) => a.startsWith(`--${k}=`))?.spl
 
 const { strip } = buildMid();
 const far = buildFar();
-// the strip over the far layer (the lake's water; the clouds come in phase 6)
+// the strip over the far layer (the lake's water; above the quay the panorama's place, shown as the far layer)
 const full = new Raster(strip.w, strip.h);
 for (let y = 0; y < strip.h; y++)
   for (let x = 0; x < strip.w; x++) {

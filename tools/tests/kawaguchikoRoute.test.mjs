@@ -1,9 +1,9 @@
 // Kawaguchiko's route (tools/art/kawaguchiko/route.mjs) keeps its promises: the stretches cover the strip, the plots
 // stay clear of each other, of the roads, the tracks and the arenas, every road, track and path leads somewhere, the
-// trail climbs unbroken from the fifth station to the summit, and the lake leaves the miniboss open water.
+// lake leaves the miniboss open water, and above the quay the strip is clear for Fuji's panorama.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { W, L, SECTIONS, ARENAS, ROADS, RAILS, PLOTS, GROUNDS, WATER, CRATER } from '../art/kawaguchiko/route.mjs';
+import { W, L, SECTIONS, ARENAS, ROADS, RAILS, PLOTS, GROUNDS, WATER, VIEW_FROM } from '../art/kawaguchiko/route.mjs';
 import { near, inShape, railHalf } from '../art/tokyo/geom.mjs';
 import { LANDMARKS } from '../../src/data/landmarks.js';
 
@@ -71,7 +71,7 @@ test('nothing tall stands in an arena, and the miniboss has open water', () => {
     const u = au + Math.sin((a / 64) * Math.PI * 2) * r * 0.9;
     assert.ok(inShape(lake, x, u) && !GROUNDS.some((g) => g.over && inShape(g, x, u)), `the lake's arena is not all water at (${x | 0}, ${u | 0})`);
   }
-  assert.deepEqual([ARENAS[1][0], ARENAS[1][1]], [CRATER[0], CRATER[1]], 'the boss fights over the crater');
+  assert.ok(ARENAS[1][1] - ARENAS[1][3] >= VIEW_FROM, 'the boss fights over the panorama');
 });
 
 test('every road and path leads somewhere: its ends are on the edge, on another road, at a plot or on a ground', () => {
@@ -87,11 +87,14 @@ test('every track leads somewhere: its ends are on the edge or under a station',
   for (const r of RAILS) for (const end of [r.pts[0], r.pts.at(-1)]) assert.ok(onEdge(end) || inPlot(end, 2), `${r.id} ends nowhere at (${end})`);
 });
 
-test('the trail climbs from the fifth station to the summit, always up, never into the lake or the clouds', () => {
-  const trail = ROADS.find((r) => r.id === 'yoshida_trail').pts;
-  const square = GROUNDS.find((g) => g.id === 'gogome_hiroba');
-  assert.ok(inShape(square, ...trail[0]), 'it starts on the fifth station\'s square');
-  assert.ok(inPlot(trail.at(-1), 2), 'it ends at the summit\'s torii');
-  for (let i = 1; i < trail.length; i++) assert.ok(trail[i][1] > trail[i - 1][1], `it goes down at ${trail[i]}`);
-  for (const w of WATER.filter((w) => w.open)) for (const p of trail) assert.ok(!inShape(w, ...p), `${p} in ${w.id}`);
+test('above the quay the strip is clear: nothing stands there, roads end on the promenade along it', () => {
+  const view = WATER.find((w) => w.view);
+  assert.deepEqual(view.rect, [0, VIEW_FROM, W, L - VIEW_FROM]);
+  assert.equal(SECTIONS.at(-1)[0], VIEW_FROM);
+  for (const [id, , u, , h] of PLOTS) assert.ok(u + h <= VIEW_FROM, `${id} past the quay`);
+  for (const r of ROADS) for (const [x, u] of r.pts) assert.ok(u <= VIEW_FROM - 20, `${r.id} past the quay at (${x}, ${u})`);
+  const quay = GROUNDS.find((g) => g.id === 'gampeki');
+  assert.equal(quay.rect[1] + quay.rect[3], VIEW_FROM, 'the quay runs right up to the view');
+  const promenade = ROADS.find((r) => r.id === 'kohan_nishi');
+  assert.ok(promenade.pts.every(([, u]) => u >= VIEW_FROM - 30), 'the promenade runs along the quay');
 });

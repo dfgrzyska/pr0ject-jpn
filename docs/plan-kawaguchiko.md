@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Fazy 0–3 gotowe. 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Fazy 0–4 gotowe. 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -157,11 +157,11 @@ Wymaga: faza 1. Pliki: `tools/art/kawaguchiko/shore.mjs`, `lake.mjs`, `boats.mjs
 
 ### Faza 4: nowa trasa po jeziorze
 Wymaga: fazy 1–3. Pliki: `tools/art/kawaguchiko/route.mjs`, `mid.mjs`, `overview.mjs`, `src/data/landmarks.js`, `src/data/stage10.json`, `tools/tests/kawaguchikoRoute.test.mjs`; usunięcie `tools/art/kawaguchiko/fuji.mjs` (Fuji z góry; zostaje w historii gita).
-- [ ] Odcinki od 3 900 w górę: północny brzeg (wieś Kawaguchi, chram Asama), tunel klonów i promenada, nabrzeże na `u = 6748`, za nim taśma przezroczysta do końca
-- [ ] Drogi, strumień, ścieżki i działki nowych odcinków; drogi dochodzą do nabrzeża
-- [ ] Arena bossa nad panoramą (bez wysokich obiektów na ostatnim ekranie taśmy), pora dnia do zachodu, nowe nazwy miejsc
-- [ ] `stage10.json`: `panorama` (linia brzegu, czas po walce), `dark` do zachodu, karta bossa
-- [ ] Test topologii przepisany (bez szlaku), arkusz podglądu
+- [x] Odcinki od 3 900 w górę: północny brzeg (wieś Kawaguchi, chram Asama), tunel klonów i promenada, nabrzeże na `u = 6748` (`VIEW_FROM`), za nim taśma przezroczysta do końca
+- [x] Drogi, strumień, ścieżki i działki nowych odcinków (27 nowych); drogi dochodzą do promenady na nabrzeżu
+- [x] Arena bossa nad panoramą (bez wysokich obiektów na ostatnim ekranie taśmy), pora dnia do zachodu, nowe nazwy miejsc
+- [x] `stage10.json`: `dark` do zachodu, zapowiedź bossa „OLBRZYM WSTAJE Z JEZIORA”. Pole `panorama` dochodzi w fazie 5 razem z widokiem (dziś `Stage.js` dla każdej panoramy tworzy widok Nagasaki)
+- [x] Test topologii przepisany (bez szlaku, za to: nad nabrzeżem nic nie stoi i żadna droga nie wychodzi), arkusz podglądu
 
 ### Faza 5: panorama Fuji
 Wymaga: faza 4. Pliki: `tools/art/kawaguchiko/view.mjs`, `src/game/FujiView.js`, `src/data/fujiView.js`, `src/scenes/Stage.js` (tylko wybór widoku), `tools/gen-art.mjs` (tylko wpięcie).
@@ -244,6 +244,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 4 | Nowa trasa za jeziorem w `route.mjs`: północny brzeg z wsią Kawaguchi (domy oshi, sad persymon, pola, zagroda, jizō, chram Asama z cedrami), tunel klonów wzdłuż strumienia Nashi z jarmarkiem, promenada i nabrzeże; nad `VIEW_FROM` = 6748 taśma wycięta pod panoramę (woda typu `view`, krawędź jako mur nabrzeża). Grunty `field` i `momiji`. Fuji z góry usunięta (`fuji.mjs`, klasa drogi `road`, szlak, zejście). Nazwy miejsc, `dark`, test topologii. | Następna: faza 5, zaczyna się od zbliżenia panoramy do akceptacji. Działki od 3 900 są kreskowane do fazy 7. |
 | 2026-11-18 | Claude | plan | Zmiana kierunku na prośbę autora: Fuji jako klasyczna dominanta (z boku, ze śnieżną czapą) w panoramie na końcu etapu, mechanizmem z Nagasaki; wspinaczka po stokach wypada. Pora roku: późna jesień. Nowa trasa za jeziorem (północny brzeg, tunel klonów, nabrzeże), boss przed panoramą o zachodzie, nowy nośnik (persymony) i pułapka (ognisko z liści). Fazy przenumerowane od 4. | Czeka na akceptację planu. Fuji z góry (`fuji.mjs`, commit 11cec4e) zostaje w historii; faza 4 usuwa ją z kodu. |
 | 2026-11-17 | Claude | 4 (stara) | Fuji z góry jako rzeźba terenu ze stokami, szlakiem, chatkami i szczytem (`fuji.mjs`); zbliżenia zaakceptowane. | Zastąpione 2026-11-18 panoramą. |
 | 2026-11-17 | Claude | 3 | Brzeg i jezioro (`shore.mjs`, `lake.mjs`), łodzie w `boats.mjs`, wspólne części w `parts.mjs`; z Tokio wzięte fale za łodziami i boje (`tools/art/tokyo/umi.mjs`). `DRAWN_TO` = 3900, arena jeziora bez pierścienia (`ARENA_DRAWN`). | Odbicie Fuji pod jeziorem dojdzie w fazie 8. |

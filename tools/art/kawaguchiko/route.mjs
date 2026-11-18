@@ -5,11 +5,10 @@
 //
 // The flight: Fujiyoshida (Fujisan station, Honcho-dori aimed at the mountain, the Chureito pagoda on its hill, the
 // cedar avenue to the Sengen shrine) - Kawaguchiko station, the hotels on the shore, Mt Tenjo and its ropeway, Oishi
-// park's lavender on the peninsula, the Ohashi bridge over the narrows - the lake with Unoshima (the miniboss's
-// arena on open water) - the south shore's beach and camp, the lava forest with its caves - the toll road winding up
-// through the thinning forest to the fifth station - the Yoshida trail zigzagging up the black then red scoria past
-// the huts of the sixth to ninth stations, the descent road beside it - the summit: its torii, shrine and huts, the
-// path round the crater, the weather station on the far rim; the sea of clouds where the ground falls away.
+// park on the peninsula, the Ohashi bridge over the narrows - the lake with Unoshima (the miniboss's arena on open
+// water) - the north shore's beach, the old pilgrims' village of Kawaguchi with its fields and the Asama shrine's
+// cedars - the maple corridor along its stream to the quay over the lake's western water. There the strip ends: above
+// the quay it is clear, and Fuji's panorama rises behind it (as Nagasaki's view does).
 export const W = 180;
 export const S = 3; // fine pixels per logical one
 export const CHUNK = 896; // (the height of the pieces the game loads)
@@ -21,57 +20,53 @@ export const SECTIONS = [
   [0, 1300, 'fujiyoshida', 'FUJIYOSHIDA', 0x8a8274],
   [1300, 2100, 'shore', 'OISHI', 0x7a7c64],
   [2100, 3900, 'lake', 'KAWAGUCHI-KO', 0x6c7c58],
-  [3900, 4700, 'lava', 'FUNATSU', 0x3c5232], // (the lava forest is never named: docs/plan-kawaguchiko.md, rule 2)
-  [4700, 5600, 'road', 'OKUNIWA', 0x4c5a3e],
-  [5600, 6700, 'trail', 'YOSHIDA-GUCHI', 0x2e2a2c],
-  [6700, L, 'summit', 'FUJI-SAN', 0x5a3426],
+  [3900, 5300, 'kawaguchi', 'KAWAGUCHI', 0x76704e],
+  [5300, 6748, 'momiji', 'MOMIJI KAIRO', 0x66563e],
+  [6748, L, 'view', 'FUJI-SAN', 0x3a4a5a], // (cut out: the panorama shows there)
 ];
+
+// the quay where the strip ends: above it the strip is clear and Fuji's panorama shows (stage10.json: panorama.ridge)
+export const VIEW_FROM = 6748;
 
 // where the fights are: [x, u, name, radius]. Nothing tall may stand inside (the tests check the plots).
-// The first holds the scroll ("hold" in the stage file); the second is the crater, where the strip ends.
+// The first holds the scroll ("hold" in the stage file); the second is over the panorama, where the strip ends.
 export const ARENAS = [
   [90, 3400, 'KACHI-KACHI USAGI', 62],
-  [90, 6950, 'DAIDARABOTCHI', 62],
+  [90, 6958, 'DAIDARABOTCHI', 62],
 ];
 
-// the crater on the summit: its middle and radius (its rim walked round by the ohachi-meguri path)
-export const CRATER = [90, 6950, 46];
-
 // The time of day along the strip (props.mjs, todGrade): [u, [mul r, g, b], tint, tint amount, gamma].
-// Afternoon in the town, the golden hour on the lake, sunset over the lava, dusk at the fifth station, night on the
-// trail, the violet before dawn and the gold of sunrise on the summit.
+// Afternoon in the town, the golden hour on the lake, the sun going down over the north shore and the quay.
 export const TOD = [
   [0, [1.0, 0.98, 0.94], 0xffe0b0, 0.04],
   [1300, [1.02, 0.96, 0.88], 0xffc880, 0.06],
   [2400, [1.04, 0.92, 0.78], 0xffa050, 0.1],
-  [3900, [1.0, 0.8, 0.7], 0xff7040, 0.14],
-  [4700, [0.7, 0.66, 0.82], 0x5a4a80, 0.16],
-  [5600, [0.64, 0.66, 0.84], 0x1e2a5a, 0.12, 1.1], // (a clear night under the moon: the mountain stays legible)
-  [6400, [0.62, 0.64, 0.84], 0x1a2454, 0.12, 1.1],
-  [6760, [0.72, 0.62, 0.8], 0x6a3a7a, 0.14, 1.05],
-  [6920, [0.96, 0.82, 0.74], 0xffa060, 0.12],
-  [L, [1.04, 0.94, 0.84], 0xffc070, 0.08],
+  [3900, [1.02, 0.86, 0.74], 0xff8040, 0.12],
+  [5300, [0.98, 0.8, 0.72], 0xff6a40, 0.14],
+  [VIEW_FROM, [0.92, 0.74, 0.72], 0xe05a50, 0.16],
+  [L, [0.92, 0.74, 0.72], 0xe05a50, 0.16],
 ];
 
 // ---- shapes: { rect: [x, u, w, h] } | { ell: [cx, cu, rx, ru] } | { poly: [[x, u], ...] } |
 //      { chain: [[x, u, half width], ...] } (a ribbon) | { ring: [x, u, w, h, thickness] }  (tools/art/tokyo/geom.mjs)
 
-// Water. open: cut out of the strip, the far layer shows through (the lake; at the summit, the sea of clouds below
-// where the ground falls away); otherwise painted (ponds). Its shore gets an edge of pebbles.
+// Water. open: cut out of the strip, the far layer shows through (the lake); view: cut out for the panorama above the
+// quay; otherwise painted (ponds, the stream). Its shore gets an edge of pebbles, the view's a quay wall.
 export const WATER = [
   { id: 'kawaguchiko', open: true, shore: true, poly: [
     [180, 2140], [150, 2128], [120, 2136], [96, 2150], [82, 2182], [77, 2262], [75, 2340], [66, 2392], [42, 2412], [18, 2404], [0, 2418],
     [0, 3862], [22, 3874], [52, 3860], [82, 3868], [112, 3882], [142, 3866], [166, 3872], [180, 3860],
   ] },
-  { id: 'unkai_nishi', open: true, clouds: true, poly: [[0, 6890], [12, 6960], [8, 7070], [22, 7168], [0, 7168]] },
-  { id: 'unkai_higashi', open: true, clouds: true, poly: [[180, 6900], [168, 6990], [174, 7090], [158, 7168], [180, 7168]] },
   { id: 'shrine_ike', ell: [18, 1240, 9, 6] }, // (a pond by the shrine's cedars)
+  // the stream the maple corridor follows down to the lake (it runs out under the promenade's bridge into the view)
+  { id: 'nashi_gawa', chain: [[0, 5420, 3], [22, 5460, 3], [40, 5560, 3.5], [46, 5800, 4], [42, 6000, 4], [56, 6200, 4], [52, 6400, 4.5], [60, 6600, 5], [58, 6760, 5.5]] },
+  { id: 'miharashi', open: true, view: true, rect: [0, VIEW_FROM, 180, L - VIEW_FROM] },
 ];
 
 // Ground of a kind of its own: [kind, shape]. Kinds: park (lawn and trees), forest (cedar, mixed wood), gravel
-// (shrine grounds), plaza, sand, flowers (lavender), kochia (round shrubs in rows), lava (old flows, moss on them),
-// treeline (sparse larch and shrubs bent by the wind), scoria (black), scoria_red, snow, crater. Drawn in this
-// order; `over` ones after the water (the island, the piers' pontoons).
+// (shrine grounds), plaza, sand, flowers (Oishi's beds), kochia (round shrubs in rows), field (rice cut, its stubble
+// in rows), momiji (the maple wood's floor of fallen leaves). Drawn in this order; `over` ones after the water (the
+// island, the piers' pontoons).
 export const GROUNDS = [
   // Fujiyoshida
   { id: 'fujisan_ekimae', kind: 'plaza', rect: [56, 120, 30, 34] },
@@ -87,36 +82,27 @@ export const GROUNDS = [
   { id: 'oishi_kochia', kind: 'kochia', rect: [0, 2024, 58, 76] },
   { id: 'oishi_koen', kind: 'flowers', rect: [0, 2100, 70, 300] },
   { id: 'marina', kind: 'plaza', rect: [84, 2104, 46, 18] },
-  // the lake: Unoshima, the pontoons at the piers' ends, the south shore's beach and camp
+  // the lake: Unoshima, the pontoons at the piers' ends, the north shore's beach
   { id: 'unoshima', kind: 'forest', over: true, ell: [128, 3080, 13, 11] },
   { id: 'unoshima_hama', kind: 'sand', over: true, ell: [128, 3072, 15, 8] },
   { id: 'pontoon_1', kind: 'plaza', over: true, rect: [96, 2190, 10, 6] },
   { id: 'pontoon_2', kind: 'plaza', over: true, rect: [118, 2186, 10, 6] },
-  { id: 'minami_hama', kind: 'sand', rect: [0, 3840, 180, 64] },
-  // the lava forest, the camp in a clearing of it
-  { id: 'jukai', kind: 'forest', rect: [0, 3930, 180, 780] },
-  { id: 'camp', kind: 'park', rect: [96, 3936, 78, 64] },
-  { id: 'yogan_1', kind: 'lava', ell: [40, 4180, 30, 70] },
-  { id: 'yogan_2', kind: 'lava', ell: [148, 4380, 28, 60] },
-  { id: 'yogan_3', kind: 'lava', poly: [[60, 4560], [110, 4520], [130, 4600], [90, 4660], [50, 4630]] },
-  // up the mountain: the zones of height, then the fifth station's square
-  { id: 'shinrin_gen', kind: 'treeline', rect: [0, 4980, 180, 520] },
-  { id: 'gogome_hiroba', kind: 'plaza', rect: [26, 5470, 128, 112] },
-  { id: 'kuroi_jari', kind: 'scoria', rect: [0, 5582, 180, 640] },
-  { id: 'akai_jari', kind: 'scoria_red', rect: [0, 6222, 180, 946] },
-  { id: 'yuki_1', kind: 'snow', poly: [[150, 6420], [156, 6400], [164, 6520], [160, 6640], [152, 6600]] },
-  { id: 'yuki_2', kind: 'snow', poly: [[44, 6560], [50, 6540], [56, 6660], [52, 6760], [46, 6720]] },
-  { id: 'yuki_3', kind: 'snow', poly: [[164, 6700], [170, 6690], [176, 6800], [170, 6860]] },
-  { id: 'kakou', kind: 'crater', ell: [90, 6950, 46, 46] },
-  { id: 'kakou_yuki', kind: 'snow', ell: [96, 6936, 12, 8] },
+  { id: 'kita_hama', kind: 'sand', rect: [0, 3840, 180, 64] },
+  // Kawaguchi: its rice fields cut, the Asama shrine's wood and grounds
+  { id: 'tambo_1', kind: 'field', rect: [0, 4230, 80, 280] },
+  { id: 'tambo_2', kind: 'field', rect: [96, 4600, 84, 240] },
+  { id: 'asama_mori', kind: 'forest', rect: [100, 4960, 80, 330] },
+  { id: 'asama_keidai', kind: 'gravel', rect: [118, 5050, 50, 110] },
+  // the maple corridor along the stream, its car park; the quay at the strip's end
+  { id: 'momiji_mori', kind: 'momiji', rect: [0, 5350, 100, 1366] },
+  { id: 'momiji_parking', kind: 'plaza', rect: [148, 5560, 32, 60] },
+  { id: 'gampeki', kind: 'plaza', rect: [0, 6727, 180, 21] },
 ];
 
 // Roads: { id, cls, w (width), pts }. Classes: avenue and street (asphalt, pavements, a centre line), lane (a back
-// street), road (a mountain road: asphalt with a white edge line, no pavements), walk (a way for people: shrine
-// avenues, park paths, the steps up to the pagoda), deck (a pier), bridge (a road over the water on its piers),
-// trail (the climbers' way: packed scoria between stone walls and roped posts), descent (the way down: wide loose
-// scoria, the supply bulldozer's track along it). An end must be on the strip's edge, on another road, or at a plot
-// or a ground (the tests check).
+// street), walk (a way for people: shrine avenues, park paths, the steps up to the pagoda), deck (a pier), bridge (a
+// road over the water on its piers). An end must be on the strip's edge, on another road, or at a plot or a ground
+// (the tests check).
 export const ROADS = [
   // Fujiyoshida: Honcho-dori aimed straight at the mountain (its bronze torii, the kanadorii, spans it at u 820)
   { id: 'honcho_dori', cls: 'street', w: 10, pts: [[90, 0], [90, 996]] },
@@ -140,27 +126,18 @@ export const ROADS = [
   { id: 'oishi_michi', cls: 'walk', w: 3, pts: [[10, 2004], [10, 2380], [60, 2380], [60, 2282]] },
   { id: 'sanbashi_1', cls: 'deck', w: 3, pts: [[101, 2121], [101, 2190]] },
   { id: 'sanbashi_2', cls: 'deck', w: 3, pts: [[123, 2121], [123, 2186]] },
-  // the south shore and the lava forest
-  { id: 'kohan_minami', cls: 'street', w: 7, pts: [[0, 3918], [180, 3918]] },
-  { id: 'hyoketsu_michi', cls: 'walk', w: 3, pts: [[142, 3922], [142, 4110]] },
-  { id: 'fuketsu_michi', cls: 'walk', w: 3, pts: [[30, 3922], [30, 4040]] },
-  { id: 'tainai_michi', cls: 'walk', w: 3, pts: [[72, 3922], [72, 4060]] },
-  // the toll road winding up to the fifth station
-  { id: 'yuryo_doro', cls: 'road', w: 7, pts: [[88, 3922], [88, 4380], [150, 4460], [150, 4560], [40, 4640], [40, 4760], [150, 4860], [150, 4960], [40, 5060], [40, 5160], [140, 5260], [140, 5360], [104, 5430], [96, 5470]] },
-  // the Yoshida trail, the descent beside it, the path round the crater
-  { id: 'yoshida_trail', cls: 'trail', w: 3, pts: [
-    [104, 5580], [104, 5640], [138, 5700], [138, 5760], [110, 5810], [62, 5850], [130, 5900], [62, 5950], [130, 6000], [70, 6050], [130, 6100], [70, 6150],
-    [130, 6200], [78, 6250], [130, 6300], [78, 6350], [130, 6400], [86, 6450], [130, 6500], [92, 6560], [122, 6620], [96, 6680], [114, 6740], [102, 6800], [110, 6860],
-  ] },
-  { id: 'gesan_doro', cls: 'descent', w: 6, pts: [
-    [62, 5850], [22, 5900], [32, 5980], [10, 6040], [32, 6100], [8, 6160], [32, 6220], [8, 6280], [34, 6340], [8, 6400], [34, 6460], [8, 6520], [34, 6580],
-    [8, 6640], [34, 6700], [12, 6760], [32, 6820], [76, 6872],
-  ] },
-  { id: 'chojo_michi', cls: 'walk', w: 3, pts: [[111, 6866], [104, 6898]] }, // (from the torii to the rim)
-  { id: 'ohachi_meguri', cls: 'walk', w: 3, pts: Array.from({ length: 33 }, (_, i) => {
-    const a = Math.atan2(-52, 14) + (i / 32) * Math.PI * 2; // (round from where the path from the torii meets it)
-    return [Math.round((90 + Math.cos(a) * 54) * 10) / 10, Math.round((6950 + Math.sin(a) * 54) * 10) / 10];
-  }) },
+  // the north shore: the road along the beach, the old village street up through Kawaguchi and on to the quay
+  { id: 'kohan_kita', cls: 'street', w: 7, pts: [[0, 3918], [180, 3918]] },
+  { id: 'kawaguchi_kaido', cls: 'street', w: 7, pts: [[88, 3918], [88, 5320], [140, 5400], [140, 6722]] },
+  { id: 'kawaguchi_1', cls: 'lane', w: 4, pts: [[0, 4210], [88, 4210]] },
+  { id: 'kawaguchi_2', cls: 'street', w: 7, pts: [[0, 4560], [180, 4560]] },
+  { id: 'kawaguchi_3', cls: 'lane', w: 4, pts: [[88, 4880], [180, 4880]] },
+  { id: 'asama_sando', cls: 'walk', w: 4, pts: [[88, 5100], [118, 5100]] }, // (to the shrine's grounds, under its torii)
+  // the maple corridor: in from the village street, along the stream down to the promenade on the quay
+  { id: 'momiji_dori', cls: 'lane', w: 4, pts: [[0, 5340], [100, 5340]] },
+  { id: 'momiji_michi', cls: 'walk', w: 3, pts: [[62, 5340], [62, 5460], [58, 5600], [66, 5800], [62, 6000], [74, 6200], [70, 6400], [78, 6600], [78, 6722]] },
+  { id: 'kohan_nishi', cls: 'street', w: 7, pts: [[0, 6722], [180, 6722]] },
+  { id: 'nashi_bashi', cls: 'bridge', w: 7, pts: [[48, 6722], [70, 6722]] }, // (the promenade over the stream's mouth)
 ];
 
 // Tracks: { id, tracks, pts, style }. The local line from Fujisan station to Kawaguchiko (one track, its passing
@@ -171,7 +148,7 @@ export const RAILS = [
 ];
 
 // Plots for the landmarks: [id, x, u, w, h, what stands there, low]. low: lies flat or stands low (a statue, a well,
-// a torii over a path): may stand in an arena. Every plot gets its own drawing in phases 2-5.
+// a torii over a path): may stand in an arena. Every plot gets its own drawing.
 export const PLOTS = [
   // Fujiyoshida
   ['fujisan_eki', 14, 150, 44, 40, 'stacja Fujisan: budynek z dachem jak góra, peron z mijanką'],
@@ -208,40 +185,32 @@ export const PLOTS = [
   // the lake
   ['unoshima_jinja', 124, 3082, 8, 6, 'kapliczka na wyspie z torii nad wodą', 'low'],
   ['kanko_sen_noriba', 132, 2104, 22, 16, 'przystań statku wycieczkowego'],
-  // the south shore and the lava forest
-  ['camp_tent', 108, 3950, 30, 24, 'namioty i ognisko kempingu', 'low'],
-  ['camp_lodge', 146, 3966, 24, 22, 'domek kempingu'],
-  ['narusawa_hyoketsu', 140, 4110, 22, 18, 'wejście do jaskini lodowej: drewniane schodki w dół', 'low'],
-  ['fugaku_fuketsu', 20, 4040, 22, 18, 'wejście do jaskini wiatru', 'low'],
-  ['funatsu_tainai', 62, 4060, 22, 18, 'chram przy jaskini w lawie po drzewach', 'low'],
-  ['ryokinjo', 96, 4300, 20, 16, 'bramka płatnej drogi pod Fuji'],
-  // up the mountain
-  ['okuniwa', 120, 4660, 36, 36, 'parking i stara chatka na Okuniwa, karłowate modrzewie'],
-  ['tenbo_gogome', 60, 5300, 30, 20, 'punkt widokowy nad jeziorem w dole', 'low'],
-  ['bus_taminaru', 32, 5476, 54, 22, 'pętla autobusów piątej stacji'],
-  ['gogome_mise_1', 32, 5512, 40, 32, 'sklep z laskami wspinaczkowymi i pieczątkami'],
-  ['gogome_mise_2', 118, 5512, 32, 32, 'jadłodajnia i sklep z pamiątkami'],
-  ['komitake_jinja', 76, 5540, 22, 24, 'kapliczka Komitake'],
-  ['umaya', 118, 5476, 32, 18, 'konie juczne pod daszkiem'],
-  ['rokugome', 144, 5770, 24, 16, 'chatka szóstej stacji: punkt bezpieczeństwa'],
-  ['rakuseki_1', 90, 5872, 16, 10, 'zadaszenie przed spadającymi kamieniami nad szlakiem', 'low'],
-  ['kyugo', 140, 5880, 20, 14, 'punkt pierwszej pomocy'],
-  ['nanagome_1', 136, 5992, 24, 14, 'chatka siódmej stacji'],
-  ['nanagome_2', 40, 6042, 24, 14, 'chatka siódmej stacji'],
-  ['nanagome_3', 136, 6092, 24, 14, 'chatka siódmej stacji'],
-  ['nanagome_4', 40, 6142, 24, 14, 'chatka siódmej stacji z torii'],
-  ['nanagome_5', 136, 6192, 24, 14, 'chatka siódmej stacji'],
-  ['hachigome_1', 50, 6242, 24, 14, 'chatka ósmej stacji'],
-  ['hachigome_2', 136, 6292, 24, 14, 'chatka ósmej stacji'],
-  ['hachigome_3', 50, 6342, 24, 14, 'chatka ósmej stacji'],
-  ['hachigome_4', 136, 6392, 24, 14, 'chatka ósmej stacji z kapliczką'],
-  ['hon_hachigome', 58, 6442, 24, 14, 'główna ósma stacja: chatka i kapliczka'],
-  ['rakuseki_2', 112, 6466, 14, 10, 'zadaszenie przed spadającymi kamieniami', 'low'],
-  ['kyugome', 126, 6612, 14, 10, 'małe torii dziewiątej stacji', 'low'],
-  // the summit
-  ['chojo_torii', 102, 6860, 18, 8, 'torii na wejściu na szczyt', 'low'],
-  ['kusushi_jinja', 124, 6862, 28, 18, 'kapliczka na szczycie'],
-  ['chojo_goya', 54, 6852, 34, 18, 'kamienne domki szczytowe z ławkami'],
-  ['ginmeisui', 150, 6996, 8, 8, 'źródlana studnia', 'low'],
-  ['kengamine', 24, 7036, 28, 22, 'najwyższy punkt i budynek stacji pogodowej'],
+  // Kawaguchi: the pilgrims' lodgings (oshi) along the old street, persimmons drying, farms, the Asama shrine
+  ['oshi_1', 44, 3934, 36, 40, 'dom pielgrzymów oshi: brama, mur, chorągwie'],
+  ['oshi_2', 96, 3934, 40, 44, 'dom oshi z ogrodem i kamienną latarnią'],
+  ['hoto_ya', 142, 3934, 34, 30, 'jadłodajnia z hōtō: kocioł, noren, ławki'],
+  ['hoshigaki_1', 44, 4040, 36, 36, 'dom z kurtynami suszonych persymon pod okapem'],
+  ['kaki_en', 96, 4060, 44, 40, 'sad persymon: drzewa z owocami, drabina, koszyki'],
+  ['oshi_3', 0, 4100, 36, 40, 'dom oshi z bramą w budynku (nagaya-mon)'],
+  ['kominka', 140, 4250, 36, 40, 'stara chata kryta strzechą z persymonami pod okapem'],
+  ['kominkan', 96, 4420, 40, 36, 'świetlica wiejska z placem i wiatą'],
+  ['nouka', 0, 4600, 40, 40, 'zagroda: stodoła, snopki ryżu, mały traktor'],
+  ['oshi_4', 44, 4600, 36, 40, 'dom oshi ze składem drewna'],
+  ['jizo', 60, 4860, 16, 12, 'kamienne jizō w czerwonych śliniakach', 'low'],
+  ['oshi_5', 30, 5000, 40, 40, 'dom oshi z tablicą bractwa pielgrzymów'],
+  ['nanahon_sugi', 120, 4994, 44, 30, 'siedem wiekowych cedrów w sznurach shimenawa'],
+  ['asama_torii', 104, 5094, 8, 12, 'torii chramu Asama nad ścieżką', 'low'],
+  ['kagura_asama', 152, 5060, 16, 18, 'scena kagura'],
+  ['asama_honden', 126, 5164, 34, 30, 'chram Kawaguchi Asama: pawilony pod korą cyprysową'],
+  // the maple corridor, the promenade and the quay
+  ['yatai_1', 72, 5480, 30, 16, 'stragany jarmarku: hōtō, persymony, kasztany', 'low'],
+  ['yatai_2', 76, 5700, 30, 16, 'stragany z rękodziełem i maskami', 'low'],
+  ['koyo_chaya', 4, 5820, 28, 24, 'dom herbaciany pod klonami'],
+  ['yatai_3', 80, 5940, 30, 16, 'stragany z jedzeniem, ławki pod parasolami', 'low'],
+  ['ryokan_nishi', 148, 6040, 32, 50, 'ryokan nad jeziorem z ogrodem'],
+  ['kyukeijo', 96, 6100, 30, 24, 'herbaciarnia z czerwonym parasolem i ławkami'],
+  ['gallery', 96, 6300, 40, 50, 'galeria tkanin w kamiennym ogrodzie'],
+  ['minshuku', 148, 6400, 32, 40, 'pensjonat z łaźnią'],
+  ['tenbo_dai', 96, 6640, 36, 20, 'taras widokowy nad wodą z ławkami', 'low'],
+  ['shashin', 100, 6728, 60, 14, 'fotografowie ze statywami na nabrzeżu czekają na różową Fuji', 'low'],
 ];

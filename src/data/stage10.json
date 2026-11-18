@@ -11,44 +11,7 @@
   ],
   "skin": "kawaguchiko",
   "near": "none",
-  "dark": [
-    [
-      0,
-      0.0
-    ],
-    [
-      1300,
-      0.05
-    ],
-    [
-      2100,
-      0.12
-    ],
-    [
-      3900,
-      0.3
-    ],
-    [
-      4700,
-      0.6
-    ],
-    [
-      5600,
-      0.9
-    ],
-    [
-      6300,
-      0.85
-    ],
-    [
-      6800,
-      0.45
-    ],
-    [
-      7168,
-      0.15
-    ]
-  ],
+  "dark": [[0, 0.0], [1300, 0.05], [2100, 0.1], [3900, 0.16], [5300, 0.22], [6748, 0.28], [7168, 0.28]],
   "scroll": {
     "far": 12,
     "mid": 30,
@@ -81,7 +44,7 @@
   },
   "warnings": {
     "heavy": "ZAJĄC NA JEZIORZE",
-    "boss": "OLBRZYM WSTAJE Z CHMUR",
+    "boss": "OLBRZYM WSTAJE Z JEZIORA",
     "bossDown": "DAIDARABOTCHI POKONANY!"
   },
   "waves": [

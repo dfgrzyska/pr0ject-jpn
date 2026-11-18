@@ -1,9 +1,9 @@
-// Kawaguchiko's middle layer. Phase 1 of docs/plan-kawaguchiko.md: the skeleton of the whole route, painted from
-// route.mjs - the ground of each stretch and its own grounds (the shrine's gravel, Oishi's lavender, the lava, Fuji's
-// zones of height up to the crater), the lake cut out to the far layer with a pebbly shore, the sea of clouds at the
-// summit's sides, the roads, the paths, the trail and the descent, the railway and the ropeway, and the plots the
-// landmarks will stand on (hatched until their stretch is drawn). Then the strip is graded for the time of day. The
-// stretches' own files (phases 2-5) come in through PAINTERS, each given the context this file builds.
+// Kawaguchiko's middle layer (docs/plan-kawaguchiko.md): the skeleton of the whole route, painted from route.mjs -
+// the ground of each stretch and its own grounds (the shrine's gravel, Oishi's beds, the fields, the maple wood's
+// floor), the lake cut out to the far layer with a pebbly shore, the strip above the quay cut out for Fuji's
+// panorama, the roads and paths, the railway and the ropeway, and the plots the landmarks will stand on (hatched
+// until their stretch is drawn). Then the strip is graded for the time of day. The stretches' own files come in
+// through PAINTERS, each given the context this file builds.
 //
 // Coordinates: x across, u up from the strip's bottom; a fine pixel is a third of a logical one.
 import { fbm } from '../../lib/raster.mjs';
@@ -13,16 +13,14 @@ import { makeKit } from '../tokyo/kit.mjs';
 import { fujiyoshida } from './fujiyoshida.mjs';
 import { shore } from './shore.mjs';
 import { lake } from './lake.mjs';
-import { fujiGround, fujiSlopes, FUJI_DRAWN } from './fuji.mjs';
 import { W, S, L, SECTIONS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, PLOTS } from './route.mjs';
 import { near, inShape, bbox, railHalf } from '../tokyo/geom.mjs';
 
-// the stretches' painters, in the order they are called: (ctx) => void. (Phases 2-5 add theirs here.)
-const PAINTERS = [fujiyoshida, shore, lake, fujiSlopes];
-// what paints the ground itself, before the roads and paths go over it: (ctx) => void
-const UNDER = [fujiGround];
-const DRAWN_TO = 3900;
-const ARENA_DRAWN = new Set(['KACHI-KACHI USAGI', 'DAIDARABOTCHI']); // (arenas whose own ground is drawn: no ring; the lake is the miniboss's) // (the stretches drawn so far reach this far up the strip: their plots are not hatched, the painter lays them out)
+// the stretches' painters, in the order they are called: (ctx) => void
+const PAINTERS = [fujiyoshida, shore, lake];
+const DRAWN_TO = 3900; // (the stretches drawn so far reach this far up the strip: their plots are not hatched)
+// arenas with no ring: the lake is the miniboss's, the panorama the boss's
+const ARENA_DRAWN = new Set(['KACHI-KACHI USAGI', 'DAIDARABOTCHI']);
 
 const smooth = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -41,24 +39,20 @@ const GROUND = {
   sand: [0xcdbb8c, 0xd8c89a, 0xe2d4a8],
   flowers: [0x6a5a9a, 0x7a68b0, 0x8c7cc4, 0x5a7a44], // lavender in rows, the green between
   kochia: [0x5a8a3c, 0x6a9c44, 0x7aac4c],
-  lava: [0x2a2622, 0x34302a, 0x3e3a30, 0x4a5a34], // old flows, moss on them
-  treeline: [0x4a5a3c, 0x56664a, 0x6a6a52, 0x7a7058], // sparse larch, bare ground between
-  scoria: [0x26222a, 0x2e2a30, 0x383238],
-  scoria_red: [0x5a3024, 0x6a3a2a, 0x7a4632],
-  snow: [0xd8e0ea, 0xe6ecf4, 0xf4f8fc],
-  crater: [0x3a2420, 0x4a2c24, 0x5a362a],
+  field: [0x8a7a4a, 0x9a8854, 0xa8945c, 0x6a5c38], // rice stubble, the furrows between
+  momiji: [0x8a3a22, 0xa04a26, 0xb8662a, 0x6a4a2a], // fallen maple leaves, the earth under them
 };
 const PAINTED = [0x24505c, 0x2c5c68, 0x366a74, 0x447a82];
 const PEBBLES = [0x9a9282, 0xa8a090, 0xb6ae9c];
 const SIDEWALK = 0xa9a59c;
 const KERB = 0x7e7a72;
-const SURFACE = { avenue: 0x45474f, street: 0x4a4c54, lane: 0x5c5c62, road: 0x4c4e54, bridge: 0x56585e };
+const SURFACE = { avenue: 0x45474f, street: 0x4a4c54, lane: 0x5c5c62, bridge: 0x56585e };
 
 export function buildMid() {
   const img = new HiCanvas(W, L, S);
   const FW = W * S;
   const FH = L * S;
-  const wet = new Uint8Array(FW * FH); // 1: the lake (cut out), 2: painted water, 3: the sea of clouds (cut out)
+  const wet = new Uint8Array(FW * FH); // 1: the lake (cut out), 2: painted water, 4: the panorama's (cut out)
   /** Paint the box (x0, u0)-(x1, u1) a fine pixel at a time: fn(x, u, X, Y) -> a colour, or null to leave it. */
   const paint = (x0, u0, x1, u1, fn) => {
     const XA = Math.max(0, Math.floor(x0 * S));
@@ -90,15 +84,16 @@ export function buildMid() {
   const ground = (g) => fill(g, (x, u, X, Yy) => {
     wet[Yy * FW + X] = 0;
     if (g.kind === 'flowers') return Math.floor(x * 0.75 + u * 0.12) % 3 === 0 ? GROUND.flowers[3] : ramp(GROUND.flowers.slice(0, 3), x, u, 43, 4); // lavender rows
+    if (g.kind === 'field') return Math.floor(u * 1.5) % 3 === 0 ? GROUND.field[3] : ramp(GROUND.field.slice(0, 3), x, u, 47, 5); // stubble in rows
     if (g.kind === 'kochia') return (Math.floor(x / 4) + Math.floor(u / 4)) % 2 ? ramp(GROUND.kochia, x, u, 45, 3) : 0x8a7a5a; // round shrubs in a grid
     return ramp(GROUND[g.kind], x, u, 41);
   });
   for (const g of GROUNDS) if (!g.over) ground(g);
 
-  // ---- the water: the lake and the sea of clouds open to the far layer; ponds painted
+  // ---- the water: the lake open to the far layer, the strip above the quay open to the panorama; ponds painted
   const water = (w) => fill(w, (x, u, X, Yy) => {
     if (w.open) {
-      wet[Yy * FW + X] = w.clouds ? 3 : 1;
+      wet[Yy * FW + X] = w.view ? 4 : 1;
       img.hi.clear(X, Yy);
       return null;
     }
@@ -107,8 +102,7 @@ export function buildMid() {
   });
   for (const w of WATER) water(w);
   for (const g of GROUNDS) if (g.over) ground(g);
-  for (const p of UNDER) p({ paint, fill, wet, img, W, S, L, GROUNDS, inShape, bbox });
-  // the edges: pebbles along the lake and the ponds, a dark drop where the ground falls away into the clouds
+  // the edges: pebbles along the lake, the ponds and the stream, the quay's wall of dressed stone at the strip's end
   {
     const edge = [];
     for (let Yy = 0; Yy < FH; Yy++)
@@ -121,7 +115,7 @@ export function buildMid() {
     for (const [i, kind] of edge) {
       const X = i % FW;
       const Yy = Math.floor(i / FW);
-      img.hi.set(X, Yy, kind === 3 ? shade(0x2a1a16, 0.9 + hashPx(X, Yy, 9) * 0.2) : PEBBLES[Math.floor(hashPx(X, Yy, 9) * 3)]);
+      img.hi.set(X, Yy, kind === 4 ? (X % 10 === 0 ? 0x4a4640 : shade(0x9a948a, 0.88 + hashPx(X >> 1, Yy, 9) * 0.2)) : PEBBLES[Math.floor(hashPx(X, Yy, 9) * 3)]);
     }
   }
 
@@ -140,7 +134,6 @@ export function buildMid() {
   const edgeOf = (r) => {
     const walk = r.cls === 'avenue' ? 2 : r.cls === 'street' ? 1.34 : 0;
     if (walk) along(r.pts, r.w / 2 + walk, (n, x, u, X, Yy) => (n.d > r.w / 2 + walk - 0.34 ? KERB : shade(SIDEWALK, 0.96 + hashPx(X, Yy, 5) * 0.08)));
-    if (r.cls === 'trail') along(r.pts, r.w / 2 + 1, (n, x, u, X, Yy) => (n.d > r.w / 2 ? shade(0x5a524c, 0.85 + hashPx(X, Yy, 21) * 0.3) : null)); // its stone walls
   };
   const surface = (r) => {
     const half = r.w / 2;
@@ -148,13 +141,6 @@ export function buildMid() {
       along(r.pts, half, (n, x, u, X, Yy) => shade(0xb9b1a0, (Math.floor(n.along * S) % 6 === 0 ? 0.86 : 0.97) + hashPx(X, Yy, 7) * 0.06));
     else if (r.cls === 'deck')
       along(r.pts, half, (n, x, u, X, Yy) => shade(0x9a7a52, (Math.floor(n.along * S) % 3 === 0 ? 0.84 : 1) + hashPx(X, Yy, 13) * 0.06));
-    else if (r.cls === 'trail')
-      along(r.pts, half, (n, x, u, X, Yy) => shade(0xb09a84, 0.9 + hashPx(X, Yy, 23) * 0.16)); // packed scoria, pale with the feet on it
-    else if (r.cls === 'descent')
-      along(r.pts, half, (n, x, u, X, Yy) => {
-        if (Math.abs(Math.abs(n.side) - half * 0.5) < 0.5 && Math.floor(n.along * S) % 2 === 0) return 0x4a3a32; // the bulldozer's tracks
-        return shade(0x7a5a48, 0.88 + hashPx(X, Yy, 25) * 0.2); // loose scoria
-      });
     else
       along(r.pts, half, (n, x, u, X, Yy) => {
         if (r.cls === 'bridge' && n.d > half - 0.67) return 0xd0ccc4; // its parapets
@@ -162,7 +148,6 @@ export function buildMid() {
       });
   };
   const lines = (r) => {
-    if (r.cls === 'road') return along(r.pts, r.w / 2 - 0.5, (n) => (Math.abs(n.d - (r.w / 2 - 0.67)) < 0.17 ? 0xdedad0 : Math.abs(n.side) < 0.17 && Math.floor(n.along * S) % 18 < 10 ? 0xe0c466 : null));
     if (r.cls !== 'avenue' && r.cls !== 'street' && r.cls !== 'bridge') return;
     along(r.pts, r.w / 2 - 1, (n) => {
       const dash = Math.floor(n.along * S) % 18 < 10;
@@ -195,7 +180,7 @@ export function buildMid() {
   }
 
   // ---- the plots the landmarks will stand on: hatched, edged (a low one paler)
-  for (const [, x, u, w, h, , low] of PLOTS.filter((q) => q[2] >= DRAWN_TO && !FUJI_DRAWN.has(q[0])))
+  for (const [, x, u, w, h, , low] of PLOTS.filter((q) => q[2] >= DRAWN_TO))
     paint(x, u, x + w, u + h, (px, pu, X, Yy) => {
       const rim = px - x < 0.67 || x + w - px < 0.67 || pu - u < 0.67 || u + h - pu < 0.67;
       if (rim) return 0x34303a;
