@@ -1,5 +1,5 @@
-// Senko-ji's hillside (docs/plan-onomichi.md, section 4.1; phase 4 draws the close-up from SENKOJI_FROM to
-// SENKOJI_TO, phase 5 the whole stretch): the town of slopes seen from above at dusk. Up from the railway the
+// Senko-ji's hillside (docs/plan-onomichi.md, section 4.1 and phase 5; the close-up of phase 4 was approved by the
+// author): the town of slopes seen from above at dusk. Up from the railway the
 // hillside rises to the right in terraces along its contours, each held up by a wall of dressed granite (ishigaki)
 // with a lane at its foot one person wide, its houses facing the sea under grey tiles, here and there an empty house
 // gone to ivy, a garden, a well, a little Jizo chapel; steps climb between the walls, lamps along them coming on.
@@ -14,8 +14,8 @@ import { near, inShape, railHalf } from '../tokyo/geom.mjs';
 import { W, ROADS, RAILS, PLOTS, GROUNDS, railX, suidoShores, isSea } from './route.mjs';
 import { makeParts, VERMILION } from '../kawaguchiko/parts.mjs';
 
-export const SENKOJI_FROM = 4040;
-export const SENKOJI_TO = 4900;
+export const SENKOJI_FROM = 3800;
+export const SENKOJI_TO = 5100;
 
 // Onomichi's roofs: silver-grey and blue-grey kawara mostly, now and then a brown one or a tin roof gone to rust
 const TILES = [0x6a7078, 0x5e646e, 0x747a82, 0x4e5662, 0x585e66, 0x6c625a, 0x7a5a48];
@@ -249,7 +249,7 @@ export function senkoji(ctx) {
   }
 
   // ---- the steps up the hillside: treads across them, a handrail, lamps coming on as it gets dark
-  const STEPS = new Set(['tennei_kaidan', 'neko_no_hosomichi', 'senkoji_kaidan', 'bungaku_no_komichi', 'senkoji_sando', 'fukuzenji_kaidan', 'komyoji_kaidan']);
+  const STEPS = new Set(['daisanji_kaidan', 'tennei_kaidan', 'neko_no_hosomichi', 'senkoji_kaidan', 'bungaku_no_komichi', 'senkoji_sando', 'fukuzenji_kaidan', 'komyoji_kaidan']);
   for (const r of ROADS) {
     if (!STEPS.has(r.id)) continue;
     const half = r.w / 2;
@@ -555,6 +555,85 @@ export function senkoji(ctx) {
       });
     props.path(kit.offset(rope, -0.9), [gondola(0xe8e4d8)], { sp: 6, n: 1, mode: 'pp', hold: 8, turn: 'none', s0: 0.0, d: 0.3 });
     props.path(kit.offset([...rope].reverse(), -0.9), [gondola(0x3a6aa8)], { sp: 6, n: 1, mode: 'pp', hold: 8, turn: 'none', s0: 0.0, d: 0.3 });
+  }
+
+  // ---- the old temples on the way along the hillside (the temple walk): a court of raked gravel, the main hall
+  // under a great tiled roof with its ridge-end tiles, a gate at the head of the steps, pines, lanterns, the bell
+  const temple = (id, { gate = 'plain', bell = false, s }) => {
+    const p = plot(id);
+    ctx.pave(p.x, p.u, p.w, p.h, 'gravel', s);
+    ground(() => {
+      for (let u = p.u + 1; u < p.u + p.h - 1; u += 1.34) for (let X = FX(p.x + 1); X < FX(p.x + p.w - 1); X++) P(X, FY(u), 0xa49a84); // raked lines
+    });
+    const [hx, hu, hw, hh] = [p.x + 6, p.u + 4, p.w - 8, p.h - 6];
+    const [X0, X1, YT, YB] = [FX(hx), FX(hx + hw), FY(hu + hh), FY(hu)];
+    const fh = 7;
+    queue(YB, () => {
+      roof(X0 - 2, YT, X1 - X0 + 4, YB - YT - fh, 0x585e68);
+      const ry = YT + ((YB - YT - fh) >> 1);
+      R(X0 + 2, ry - 1, X1 - X0 - 4, 3, 0x3c4048); // the ridge
+      for (const ex of [X0 + 1, X1 - 4]) R(ex, ry - 2, 3, 4, 0x2e3238); // its end tiles
+      for (let j = 0; j < fh; j++)
+        for (let i = X0 + 1; i < X1 - 1; i++) {
+          let c = (i - X0) % 9 === 0 ? 0x4a3424 : j < 2 ? 0xe8e0cc : 0x7a5638; // white plaster under the eave, dark wood
+          if (j > 2 && j < fh - 1 && (i - X0) % 9 >= 3 && (i - X0) % 9 <= 6) c = (i + j) % 2 ? 0x3a2a20 : 0x5a4030; // latticed doors
+          if (j === fh - 1) c = 0x2a2226;
+          P(i, YB - fh + j, c);
+        }
+    }, () => shadowBox(X0 - 2, YT, X1 - X0 + 4, YB - YT, 20, 0.6));
+    // the gate on the side the steps come up (the left), its little roof; Fukuzen-ji's with a dragon carved over it
+    const [gx, gu] = [p.x + 2.4, p.u + p.h / 2];
+    queue(FY(gu) + 6, () => {
+      const [X, Y] = [FX(gx), FY(gu)];
+      R(X - 1, Y - 6, 2, 12, 0x4a3424);
+      roof(X - 5, Y - 9, 10, 18, 0x585e68);
+      if (gate === 'dragon') for (let j = -6; j <= 6; j++) P(X + Math.round(Math.sin(j * 0.9) * 2), Y + j, j % 3 ? 0x4a8a6a : 0xd0a040); // the dragon, green and gilt
+    }, () => shadowBox(FX(gx) - 5, FY(gu) - 9, 10, 18, 10, 0.62));
+    toro(p.x + 4, p.u + 2, true);
+    toro(p.x + 4, p.u + p.h - 2, true);
+    tree('pine', p.x + p.w - 2, p.u + 2, 2.4);
+    if (bell) {
+      const [BX, BY] = [FX(p.x + p.w - 3), FY(p.u + p.h - 4)];
+      queue(BY, () => {
+        roof(BX - 8, BY - 16, 16, 12, 0x585e68);
+        R(BX - 2, BY - 7, 5, 6, 0x6a5a34);
+      }, () => shadowBox(BX - 8, BY - 16, 16, 16, 12, 0.62));
+    }
+    crowd(p.x + 3, p.u + 1, 4, p.h - 2, 2);
+  };
+  temple('daisanji', { s: 861 });
+  temple('fukuzenji', { gate: 'dragon', bell: true, s: 862 });
+  temple('komyoji', { bell: true, s: 863 });
+
+  // ---- the trains along the foot of the hill: a local train each way, all the way from the bend to the station
+  {
+    const line = RAILS.find((r) => r.id === 'sanyo').pts;
+    kit.trainOn(kit.offset(line, 2.5), 0x3a7a5a, { n: 4, sp: 30, s0: 0.1, u: 4400 });
+    kit.trainOn(kit.offset([...line].reverse(), 2.5), 0x3a7a5a, { n: 4, sp: 30, s0: 0.55, u: 4400 });
+  }
+
+  // ---- cats that move where they sit: the tail swishing, an ear turning, now and then a yawn
+  {
+    const coatF = (coat, k) =>
+      kit.frame(3, 3, 4400, (put) => {
+        const [a, b, c] = [coat[0], coat[1], coat[2] ?? coat[1]];
+        const body = [[4, 2], [3, 3], [4, 3], [5, 3], [3, 4], [4, 4], [5, 4], [3, 5], [4, 5], [5, 5], [2, 6], [3, 6], [4, 6], [5, 6], [6, 6]];
+        body.forEach(([i, j], n) => put(i, j, n % 4 === 2 ? b : a));
+        put(3, 1, b);
+        put(5, k === 2 ? 2 : 1, b); // (an ear turned)
+        if (k === 3) put(4, 3, 0xd86a7a); // (a yawn)
+        const tail = [[[7, 6], [7, 5]], [[7, 6], [8, 6]], [[7, 6], [7, 7]], [[7, 6], [7, 5]]][k];
+        tail.forEach(([i, j]) => put(i, j, c));
+      });
+    for (let n = 0; n < 24; n++) {
+      const k = Math.floor(rand() * EDGES.length);
+      const u = U0 + 6 + rand() * (NU - 12);
+      const x = edge(k, u) + 0.7;
+      if (taken(x, u) || x < railX(u) + 7) continue;
+      const coat = pick(CATS);
+      const f = [0, 1, 2, 3].map((q) => coatF(coat, q));
+      props.loop(x, u, f, { fps: 2, seq: [0, 0, 1, 0, 2, 0, 0, 1, 0, 3, 0, 0], d: 0.02 });
+    }
   }
 
   // ---- the town below the railway: narrow houses and shops between the coast road and the tracks, two storeys,

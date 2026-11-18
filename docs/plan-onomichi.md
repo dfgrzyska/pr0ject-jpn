@@ -1,6 +1,6 @@
 # Plan: etap 11, ONOMICHI
 
-Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–1 gotowe, faza 4 czeka na akceptację zbliżenia stoku. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0, 1, 4 i 5 gotowe (zbliżenie stoku przyjęte przez autora 2026-11-18). Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -162,12 +162,12 @@ Wymaga: faza 1. Pliki: `tools/art/onomichi/suido.mjs`, `jodoji.mjs`.
 ### Faza 4: zbliżenie stoku do akceptacji
 Wymaga: faza 1. Plik: `tools/art/onomichi/senkoji.mjs`.
 - [x] Zbliżenie 1:1 kawałka stoku (u 4040–4900: pagoda Tennei-ji, uliczka kotów, Senkō-ji, las i park na szczycie, miasto pod torem, nabrzeże) według sekcji 4.1, wysłane autorowi 2026-11-18 (`tools/art/onomichi/senkoji.mjs`, podgląd: `node tools/art/onomichi/overview.mjs --from=4040 --to=4900`)
-- [ ] Akceptacja autora; dalej dopiero po niej
+- [x] Akceptacja autora (2026-11-18: „tak”)
 
 ### Faza 5: stok Senkō-ji (u 3800–5100)
 Wymaga: faza 4. Plik: `tools/art/onomichi/senkoji.mjs`.
-- [ ] Cały odcinek: tarasy, mury, schody, domy, świątynie na różnych wysokościach, Senkō-ji z czerwoną salą, Tamanoiwa (klejnot świeci o zmierzchu), skała-lustro, ścieżka literatury, park na szczycie, kolejka linowa, uliczka kotów, arena minibossa na dachach
-- [ ] Animacje: gondole, koty w miejscu, lampiony i latarnie przy schodach zapalające się o zmierzchu, pociąg pod stokiem
+- [x] Cały odcinek (u 3800–5100): tarasy, mury, schody, domy, świątynie na różnych wysokościach (Daisan-ji, Fukuzen-ji z bramą ze smokiem, Kōmyō-ji, Tennei-ji z pagodą), Senkō-ji z czerwoną salą, Tamanoiwa (klejnot świeci o zmierzchu), skała-lustro, ścieżka literatury, park na szczycie, kolejka linowa, uliczka kotów, arena minibossa na dachach (bez znacznika)
+- [x] Animacje: gondole, koty w miejscu (ogon, ucho, ziewnięcie), latarnie przy schodach i lampiony zapalające się o zmierzchu, pociągi w obie strony na całym torze od zakrętu do dworca (zielony pas, bez barw przewoźnika)
 
 ### Faza 6: Hondōri i dworzec (u 5100–7168)
 Wymaga: faza 1. Pliki: `tools/art/onomichi/hondori.mjs`, `minato.mjs`.
@@ -229,6 +229,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 5 | `senkoji.mjs` rysuje cały odcinek 3800–5100: dodane świątynie przy schodach (`temple`: dziedziniec z grabionym żwirem, sala pod wielkim dachem, brama, latarnie, sosna, dzwonnica), pociągi na torze `sanyo`, 24 koty animowane w miejscu; arena kota bez znacznika. Sprawdzone zrzutami w grze w 115 i 143 s. | Pociągi jadą po całym torze, więc widać je też na odcinkach jeszcze w szkicu. Następne: fazy 2, 3 i 6 (wyspy, cieśnina z Jōdo-ji, Hondōri z dworcem). |
 | 2026-11-18 | Claude | 4 | Zbliżenie stoku w `senkoji.mjs` (malarz w `PAINTERS`, rysuje na razie u 4040–4900): tarasy wzdłuż poziomic z murami z granitu i uliczkami u ich stóp, domy pod szarą dachówką, puste domy w bluszczu, ogródki, studnie i kapliczki jizō, pranie i doniczki, schody z poręczami i latarniami, koty (sześć umaszczeń, pięć póz), pagoda Tennei-ji, Senkō-ji z czerwoną salą na skale, głazami, kamiennymi Buddami, lampionami, Tamanoiwą ze świecącym klejnotem, skałą-lustrem i dzwonnicą, las ze ścieżką literatury, park z alejkami, ławkami i okrągłym tarasem, kolejka linowa z dwiema gondolami, miasto pod torem z automatami i podwórkami, latarnie i ludzie na nabrzeżu, łodzie przy nabrzeżu, brzeg Mukaishimy. Zmierzch rozjaśniony w `TOD`. | Czeka na akceptację. Poza u 4040–4900 dalej szkielet; łączenie z resztą w fazie 5. |
 | 2026-11-18 | Claude | 1 | Trasa jako dane w `tools/art/onomichi/route.mjs`, szkielet malowany z danych w `mid.mjs` (na bazie Kawaguchiko; nowe klasy dróg: `express` na filarach, `cycle` z niebieską linią, `arcade` z dachem; tory `mono` w sadach; promy `FERRIES` z pomostami), test `onomichiRoute`, arkusz podglądu, nazwy miejsc w `landmarks.js`. Sprawdzone w grze zrzutami w 20, 75, 120, 165 i 225 s. | Stok to na razie tarasy wzorem; domy, świątynie i schody z detalem w fazach 3–6. Szerokość między drogą nadbrzeżną a torem jest mała (18 jednostek przy Ozaki, pasaż w Hondōri), więc domy tam będą wąskie. Następne: faza 2 (wyspy) albo 4 (zbliżenie stoku do akceptacji). |
 | 2026-11-18 | Claude | 0 | Etap 11 w budowie: `stage11.json` (flaga `wip`, fale zastępcze, napisy PL/EN kart i zapowiedzi), makieta tła (`tools/art/onomichi/route.mjs`, `mid.mjs`, `far.mjs`), skórka `onomichi` z przeciwnikami Kioto na zastępstwo, nazwy odcinków w `landmarks.js`, licznik „JEDENAŚCIE”. Sprawdzone w przeglądarce: etap startuje z `?stage=11`, pasek INNOSHIMA, bez błędów w konsoli. | Etykieta Onomichi na mapie wyboru (tuż obok Hiroszimy) do ustawienia w fazie 15. Muzyka na razie z Kioto. Następna: faza 1 (szkielet trasy). |

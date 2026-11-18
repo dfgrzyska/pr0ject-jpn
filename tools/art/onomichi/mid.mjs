@@ -19,7 +19,7 @@ import { senkoji } from './senkoji.mjs';
 const PAINTERS = [senkoji];
 const DRAWN_TO = 0; // (the stretches drawn so far reach this far up the strip: their plots are not hatched)
 // arenas with no ring (once their own ground is drawn)
-const ARENA_DRAWN = new Set([]);
+const ARENA_DRAWN = new Set(['NEKOMATA']);
 
 const smooth = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
