@@ -52,7 +52,10 @@ export class JourneyMenu {
     this.segs = Array.from({ length: body?.n ?? 0 }, (_, i) => add(sharedArt(scene.add.image(0, 0, 'sprites', scene.ship.frame)).setFrame(`${scene.ship.frame}_${i === body.n - 1 ? 'tail' : 'seg'}`).setScale(1 - i * 0.045), DEPTH.overlay + 0.48 - i * 0.001));
     this.logo = add(scene.add.image(90, 0, 'menu', 'logo').setScale(FINE));
     this.tagline = add(pixelText(scene, 90, 0, 'LEĆ PRZEZ JAPONIĘ').setTint(0xffdba8));
-    this.caption = add(pixelText(scene, 90, 0, `${CITIES[STAGES.length] ?? STAGES.length} MIAST. JEDNA PODRÓŻ.`).setTint(0xc8ac85));
+    const caption = `${CITIES[STAGES.length] ?? STAGES.length} MIAST. JEDNA PODRÓŻ.`;
+    this.caption = add(pixelText(scene, 90, 0, caption).setTint(0xc8ac85));
+    // (eleven cities' worth of Polish no longer fits on one line: then it takes two)
+    if (this.caption.width > VIEW.width - 6) this.caption.setText(tr(caption).replace('. ', '.\n')).setCenterAlign();
     this.heading = add(pixelText(scene, 90, 50, 'WYBIERZ MIASTO'));
     this.newGame = add(pixelText(scene, 85, 0, 'WYRUSZ W PODRÓŻ'), DEPTH.overlay + 2);
     // the collection: the stamp book, the yōkai album and the food journal, a tab each

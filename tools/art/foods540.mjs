@@ -54,6 +54,12 @@ const RAMPS = {
   sr: tones([0x7a1408, 0xc4301a, 0xf07a4a]), // suridane, the red pepper paste
   wb: tones([0x4a2a12, 0x7a4a24, 0xa8743e]), // a dark wooden stand
   sy: tones([0x5a2e10, 0x9a5a24, 0xcc8c48]), // Yoshida's soy-and-miso broth
+  so: tones([0x3a1a08, 0x6a3414, 0x9a5826]), // Onomichi's clear soy broth, dark
+  fn: tones([0xbca058, 0xe8d08a, 0xfff2c4]), // its flat noodles
+  ha: tones([0xc87a10, 0xf0aa2a, 0xffd878]), // a hassaku's segments, juicy
+  hp: tones([0xc8b88a, 0xf2ead0, 0xfffcf0]), // its pith and the white bean paste
+  hs: tones([0xb05008, 0xec8a1c, 0xffc468]), // a peeled segment, cut through
+  dk: tones([0xa8a296, 0xe6e2d8, 0xffffff]), // the daifuku's dusted rice cake
 };
 const sprite = () => new HiSprite(60, 60, RAMPS);
 const crumb = (seed) => mix2(speckle({ amt: 0.28, dark: 0.12, light: 0.1, seed }), mottle({ amt: 0.12, scale: 3, seed: seed + 1 }));
@@ -459,7 +465,60 @@ function yoshidaudon() {
   return s;
 }
 
-const DRAW = { yatsuhashi, inari, goya, andagi, ramen, corn, shirokuma, karukan, kushi, takoyaki, toriten, pudding, okonomiyaki, momiji, castella, champon, crepe, melonpan, ningyoyaki, monjayaki, hoto, yoshidaudon };
+/** Onomichi: its ramen, a clear dark soy broth with little lumps of pork back fat floating in it, flat noodles,
+ * chashu, bamboo shoots and sliced green onion, in a plain white bowl with a blue band. */
+function onomichiramen() {
+  const s = sprite();
+  s.ellipse(30, 40, 28, 17, 'mw', { bias: 0.05 }); // the bowl
+  for (let k = 0; k < 40; k++) { // its blue band
+    const a = (k / 40) * TAU;
+    s.px(30 + Math.cos(a) * 26.5, 40 + Math.sin(a) * 15.8, 0x2a4a8a, 0.9);
+  }
+  s.ellipse(30, 35, 24, 12, 'so', { flat: 0.5, pat: mottle({ amt: 0.12, scale: 5, seed: 12 }) }); // the broth
+  for (let y = 31; y < 42; y += 2.4) s.poly([[9, y + 1.4], [48, y - 1.2], [48, y + 0.2], [9, y + 2.6]], 'fn', { flat: 0.7 }); // flat noodles, wide
+  s.ellipse(30, 35, 23, 11.5, 'so', { flat: 0.45 }); // (the broth over them, half hiding them)
+  for (let y = 33; y < 41; y += 2.4) s.line(12, y + 1, 44, y - 1, 0xe8d08a, 1, 0.6);
+  for (const [x, y, r] of [[14, 32, 1.4], [19, 37, 1.1], [24, 30, 1.6], [28, 39, 1.2], [33, 34, 1], [41, 38, 1.4], [45, 33, 1.1], [17, 34, 0.9], [36, 30, 1.2]]) {
+    s.dot(x, y, r, 0xf6eedc); // the back fat, floating
+    s.px(x - r * 0.5, y - r * 0.5, 0xffffff);
+  }
+  s.ellipse(38, 32, 8, 5.5, 'ch', { flat: 0.55 }); s.ellipse(38, 31, 6, 4, 'sp', { flat: 0.5 }); // chashu
+  for (const [x, y] of [[20, 28], [23, 27.5], [26, 28]]) s.poly([[x - 1.2, y], [x + 1.2, y], [x + 0.8, y + 6], [x - 0.8, y + 6]], 'ab', { flat: 0.65 }); // menma
+  for (const [x, y] of [[29, 34], [32, 37], [27, 31], [34, 33], [24, 35], [31, 30]]) { // green onion rings
+    s.dot(x, y, 1.2, 0x7ac85a);
+    s.px(x, y, 0xd8f4b0);
+  }
+  s.tube(36, 22, 56, 4, 1.2, 'wd'); s.tube(40, 23, 58, 8, 1.2, 'wd'); // chopsticks
+  for (let y = 6; y < 22; y++) s.px(22 + Math.sin(y * 0.55) * 2, y, 0xffffff, 0.22 + (y / 22) * 0.28); // steam
+  return s;
+}
+
+/** Innoshima: hassaku daifuku, a soft rice cake dusted white round white bean paste and a whole hassaku segment, cut in
+ * half to show it; a hassaku beside it, a leaf. */
+function hassakudaifuku() {
+  const s = sprite();
+  s.ellipse(30, 48, 26, 8, 'wd', { flat: 0.5, pat: mottle({ amt: 0.1, scale: 4, seed: 3 }) }); // a wooden dish
+  // the hassaku behind: big, pale yellow-orange, its dimpled peel, a leaf
+  s.ellipse(44, 26, 12, 11, 'ha', { bias: 0.08, pat: speckle({ amt: 0.18, seed: 21 }) });
+  s.dot(44, 16, 1.2, 0x5a4a1a);
+  s.poly([[45, 15], [53, 9], [56, 12], [48, 17]], 'bl', { flat: 0.6 });
+  // the whole daifuku on the left
+  s.ellipse(16, 38, 11, 9, 'dk', { bias: 0.08, pat: speckle({ amt: 0.2, dark: 0.04, light: 0.12, seed: 22 }) });
+  // the cut one at the front: the cake round its cut face, the paste, the segment glistening in it
+  s.ellipse(34, 41, 13, 9, 'dk', { bias: 0.06 });
+  s.ellipse(34, 40.5, 11, 7.2, 'hp', { flat: 0.8 }); // the white bean paste
+  // the segment cut through: a crescent lying in the paste, its membrane round it, the juice cells fanning out
+  const cres = (x, y) => ((x - 34) / 10) ** 2 + ((y - 42.5) / 6.5) ** 2 < 1 && ((x - 34) / 9) ** 2 + ((y - 45.5) / 5.2) ** 2 > 1;
+  s.paint([23, 35, 45, 44], (x, y) => cres(x, y), 'hs', (x, y) => 0.55 + 0.25 * Math.sin(Math.atan2(y - 46, x - 34) * 9));
+  for (let k = 0; k < 9; k++) {
+    const a = Math.PI + 0.35 + (k / 8) * (Math.PI - 0.7);
+    s.line(34 + Math.cos(a) * 9.2, 45.5 + Math.sin(a) * 5.4, 34 + Math.cos(a) * 10.2, 42.5 + Math.sin(a) * 6.6, 0xffd890, 1, 0.8);
+  }
+  for (const [x, y] of [[29, 37.5], [36, 36.6], [40, 38.4]]) s.px(x, y, 0xffffff); // glints
+  return s;
+}
+
+const DRAW = { yatsuhashi, inari, goya, andagi, ramen, corn, shirokuma, karukan, kushi, takoyaki, toriten, pudding, okonomiyaki, momiji, castella, champon, crepe, melonpan, ningyoyaki, monjayaki, hoto, yoshidaudon, onomichiramen, hassakudaifuku };
 
 /** The dish `id` at 540 px: a 60 x 60 Raster. */
 export function food540(id) {

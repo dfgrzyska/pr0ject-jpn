@@ -407,6 +407,58 @@ function kawaguchiko() {
   return inkUp(r, 103);
 }
 
+/** Onomichi: the three-storeyed pagoda of Tennei-ji over the hillside's steps, a cat sitting on them, a firework
+ * opening in the summer sky, the strait's ripples under the name; an eight-sided frame. */
+function onomichi() {
+  const r = new Raster(S, S);
+  const oct = (x, y, k) => {
+    const dx = Math.abs(x + 0.5 - MID);
+    const dy = Math.abs(y + 0.5 - MID);
+    return dx <= k && dy <= k && dx + dy <= k * 1.42;
+  };
+  for (let y = 0; y < S; y++)
+    for (let x = 0; x < S; x++) {
+      if (oct(x, y, 27.5) && !oct(x, y, 25.5)) on(r, x, y);
+      else if (oct(x, y, 24) && !oct(x, y, 23) && (x + y) % 3 && (y < 39 || y > 47)) on(r, x, y);
+    }
+  nameBand(r, 'ONOMICHI', 40, 46, (x, y) => oct(x, y, 25.5));
+  // the pagoda: its platform, three storeys each under a wider eave, the spire with its rings
+  for (let x = 31; x <= 45; x++) on(r, x, 37);
+  for (let i = 0; i < 3; i++) {
+    const y = 31 - i * 6;
+    const hw = 7.5 - i * 1.2;
+    eave(r, 38, y, hw);
+    for (let yy = y + 2; yy < y + 6; yy++) for (let x = Math.round(38 - hw + 2.5); x <= 38 + hw - 2.5; x++) on(r, x, yy);
+    off(r, 38, y + 4);
+  }
+  for (let y = 9; y < 19; y++) on(r, 38, y);
+  for (const y of [11, 13, 15]) {
+    on(r, 37, y);
+    on(r, 39, y);
+  }
+  // the steps coming up the hillside from the lower left, tread by tread
+  for (let k = 0; k < 6; k++) {
+    const [x0, y0] = [9 + k * 3, 37 - k * 3];
+    for (let x = x0; x <= x0 + 4; x++) on(r, x, y0);
+    on(r, x0 + 4, y0 - 1);
+    on(r, x0 + 4, y0 - 2);
+  }
+  for (let y = 22; y <= 37; y++) on(r, 30 - Math.round((y - 22) * 0.2), y); // the wall beside them
+  // a cat sitting on a step, its tail curled round
+  const cat = ['#...#', '##.##', '#####', '.###.', '.####', '#####', '######', '.#####'];
+  cat.forEach((row, j) => [...row].forEach((c, i) => c === '#' && on(r, 15 + i, 23 + j)));
+  // a firework opening over the town: a ring of stars round a heart
+  for (let k = 0; k < 12; k++) {
+    const a = (k / 12) * Math.PI * 2;
+    on(r, 16 + Math.cos(a) * 6, 13 + Math.sin(a) * 6);
+    if (k % 2) on(r, 16 + Math.cos(a) * 3.5, 13 + Math.sin(a) * 3.5);
+  }
+  on(r, 16, 13);
+  // the strait under the name: ripples, broken
+  for (const [y, k] of [[49, 0], [51, 2]]) for (let x = 14; x <= 41; x++) if ((x + k) % 5 && (x + k) % 5 !== 4 && oct(x, y, 24.5)) on(r, x, y);
+  return inkUp(r, 111);
+}
+
 export function stampSprites() {
   const nagasaki = new Raster(S, S);
   ring(nagasaki, MID, MID, 26, 2);
@@ -434,6 +486,7 @@ export function stampSprites() {
     { name: 'stamp_stage9', raster: tokyo() },
     { name: 'stamp_stage9_en', raster: tokyo('TOKYO') },
     { name: 'stamp_stage10', raster: kawaguchiko() },
+    { name: 'stamp_stage11', raster: onomichi() },
   ];
   // the HUD's little stamp: a round seal (tinted with the city's ink)
   const icon = new Raster(9, 9);

@@ -151,8 +151,8 @@ test('journal grid and pages: locking, keys, wrap, touch navigation, destruction
   const lockedScene = scene(); const locked = new DiscoveryBook(lockedScene, 'yokai');
   // the grid: a question mark on every tile not found yet, nothing on the tiles past the last entry
   assert.equal(locked.mode, 'grid'); assert.equal(locked.gridName.text, '???');
-  // (with Tokyo and Kawaguchiko there are 20: a full first page of 16 and four on the second)
-  assert.equal(YOKAI.length, 20);
+  // (with Tokyo, Kawaguchiko and Onomichi there are 22: a full first page of 16 and six on the second)
+  assert.equal(YOKAI.length, 22);
   locked.tiles.forEach((t, i) => { assert.equal(t.mark.visible, i < 16); assert(!t.art.visible); });
   assert(locked.page.visible, 'the grid runs on to a second page');
   locked.key('right'); assert.equal(locked.index, 1); locked.key('left'); assert.equal(locked.index, 0);
@@ -163,7 +163,7 @@ test('journal grid and pages: locking, keys, wrap, touch navigation, destruction
   locked.key('up'); assert.equal(locked.index, 19, 'up wraps to the lowest tile of the column');
   locked.key('up'); locked.key('up'); locked.key('up'); locked.key('up'); assert.equal(locked.index, 3);
   locked.key('down'); locked.key('down'); locked.key('down'); locked.key('left'); locked.key('left'); locked.key('left'); assert.equal(locked.index, 12);
-  locked.key('down'); assert.equal(locked.index, 16, 'down runs on to the next page'); assert.equal(locked.tiles[3].mark.visible, true); assert.equal(locked.tiles[4].mark.visible, false);
+  locked.key('down'); assert.equal(locked.index, 16, 'down runs on to the next page'); assert.equal(locked.tiles[5].mark.visible, true); assert.equal(locked.tiles[6].mark.visible, false);
   locked.key('up'); assert.equal(locked.index, 12);
   // an entry's page, locked: no art, no story; left and right turn through all of them
   locked.index = 0; locked.key('confirm'); assert.equal(locked.mode, 'page');

@@ -8,7 +8,7 @@ const server = await startServer(5177);
 let browser;
 try {
   browser = await launchBrowser();
-  for (const H of (process.env.BOSS_HEIGHT ? [Number(process.env.BOSS_HEIGHT)] : [320, 420])) for (const city of (process.env.BOSS_CITY ? [Number(process.env.BOSS_CITY)] : [3, 5, 8, 9, 10])) {
+  for (const H of (process.env.BOSS_HEIGHT ? [Number(process.env.BOSS_HEIGHT)] : [320, 420])) for (const city of (process.env.BOSS_CITY ? [Number(process.env.BOSS_CITY)] : [3, 5, 8, 9, 10, 11])) {
     const stage = JSON.parse(readFileSync(`src/data/stage${city}.json`, 'utf8'));
     const at = stage.waves.find(w => w.type === 'boss').t;
     const page = await browser.newPage({ viewport: { width: 540, height: H * 3 }, hasTouch: H === 420 });
@@ -74,6 +74,15 @@ try {
                 if (i >= 0) rope = (tx + rings[i][0]) / 2;
               }
               p.tx = g.stun > 0 || g.open > 0 ? g.x : g.hand ? s.enemies.ddHand(g, g.hand)[0] : rope ?? g.x;
+              if (g.stun > 0 && !audit.lastStun) audit.stuns++;
+              audit.lastStun = g.stun > 0;
+            } else if (city === 11) {
+              // Funa-yurei: a gold shell flying over it (shot a little ahead), the bare lantern, the gold-rimmed ladles
+              const E = s.enemies;
+              const sh = g.shells?.[0];
+              const [lx] = E.fyAt(g, [0, 56]);
+              const marks = E.fyMarks(g);
+              p.tx = sh ? sh.sp.x + ((sh.x1 - sh.x0) / 4.4) * 0.5 : g.open > 0 || g.stun > 0 ? lx : marks[0]?.x ?? lx;
               if (g.stun > 0 && !audit.lastStun) audit.stuns++;
               audit.lastStun = g.stun > 0;
             }
@@ -161,6 +170,7 @@ try {
     else if (city === 8) assert(state.fireworks > 0);
     else if (city === 9) assert(state.torn === 2 && state.stuns > 0 && state.opens > 0, 'Kurogane: both arms off, the drones downed, the reactor open');
     else if (city === 10) assert(state.stuns > 0 && state.opens > 0, 'Daidarabotchi: the basket dropped, the fissure open after a slam');
+    else if (city === 11) assert(state.stuns > 0 && state.opens > 0, 'Funa-yurei: a gold shell burst over it, the lantern bare');
     else assert.equal(state.opens, 0, 'Tako has no pin/open mechanic');
     const cleared = await page.evaluate(() => {
       const s = game.scene.getScene('Stage');

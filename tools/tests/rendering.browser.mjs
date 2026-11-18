@@ -79,7 +79,7 @@ try {
   }
   assert.equal(samples.at(-1).left - samples[0].left, 3);
 
-  const ORDER = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]; // (every city, one after another)
+  const ORDER = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // (every city, one after another)
   await page.evaluate(order => { game.scene.getScene('Stage').scene.restart({ order }); game.loop.start(game.step.bind(game)); }, ORDER);
   for (let pos = 0; pos < ORDER.length; pos++) {
     await page.waitForFunction(pos => { const s = game.scene.getScene('Stage'); return s.pos === pos && s.state === 'title' && !s.scene.get('Boot').load.isLoading(); }, pos);
@@ -99,7 +99,7 @@ try {
   await page.waitForFunction(() => { const s = game.scene.getScene('Stage'); return s.stage.id === 'stage6' && s.state === 'title' && !s.scene.get('Boot').load.isLoading(); });
   assert(await page.evaluate(() => !game.textures.exists('far_stage1') && game.textures.exists('far_stage6')));
   assert.deepEqual(errors, []);
-  console.log('540px: pointer menus, drag gain, pause, resize, half-pixel raster stability, ten city transitions and texture reload passed.');
+  console.log('540px: pointer menus, drag gain, pause, resize, half-pixel raster stability, every city transition and texture reload passed.');
 } finally {
   await browser?.close();
   server.kill();

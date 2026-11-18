@@ -1,14 +1,8 @@
 {
   "id": "stage11",
-  "wip": true,
   "name": "ONOMICHI",
   "subtitle": "ONOMICHI - MIASTO NA STOKU",
-  "map": [
-    133.2,
-    34.41,
-    6,
-    12
-  ],
+  "map": [133.2, 34.41, -9, -16],
   "skin": "onomichi",
   "enemyArt": true,
   "near": "none",

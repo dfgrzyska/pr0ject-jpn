@@ -237,4 +237,4 @@ export function onomichiEnemies(add) {
   funayureiFrames(add); // the boss, FUNA-YUREI's ship in parts (funayurei.mjs)
   hanabiFrames(add); // the festival's fireworks over the strait (hanabi.mjs, src/game/Hanabi.js)
 }
-export const ONOMICHI_PORTRAITS = ['o_neko_sit_0'];
+export const ONOMICHI_PORTRAITS = ['o_neko_sit_0', 'fy_portrait'];

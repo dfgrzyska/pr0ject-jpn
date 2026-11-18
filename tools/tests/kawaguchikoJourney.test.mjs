@@ -17,13 +17,13 @@ const kawa = STAGES.find((s) => s.id === 'stage10');
 const i18n = src('../../src/i18n.js');
 const english = (s) => i18n.includes(`  '${s}': '`) || i18n.includes(`\n  ${s}: '`);
 
-test('Kawaguchiko is the tenth city of the journey; Tokyo stays the last', () => {
+test('Kawaguchiko is a city of the journey; Tokyo stays the last', () => {
   assert.ok(kawa && !kawa.wip, 'out of the works');
-  assert.match(src('../../src/data/stages.js'), /stage9, stage10\];/);
+  assert.match(src('../../src/data/stages.js'), /stage9, stage10[,\]]/);
   const tokyo = STAGES.findIndex((s) => s.id === 'stage9');
   for (let k = 0; k < 20; k++) {
     const order = journeyOrder(STAGES, null, (list) => [...list].sort(() => Math.random() - 0.5));
-    assert.equal(order.length, 10);
+    assert.equal(order.length, STAGES.length);
     assert.ok(order.includes(STAGES.indexOf(kawa)));
     assert.equal(order.at(-1), tokyo);
   }

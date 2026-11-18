@@ -1,6 +1,6 @@
 # Plan: etap 11, ONOMICHI
 
-Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–14 gotowe (zbliżenie stoku i projekt okrętu przyjęte przez autora 2026-11-18): całe tło, przeciwnicy, fale, walki z Nekomatą i Funa-yūrei, woda w dzień i w nocy, fajerwerki, muzyka i dźwięki. Zostały: włączenie etapu i balans. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w podróży** (od 2026-11-18, faza 15). Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–15 gotowe (zbliżenie stoku i projekt okrętu przyjęte przez autora 2026-11-18): całe tło, przeciwnicy, fale, walki z Nekomatą i Funa-yūrei, woda w dzień i w nocy, fajerwerki, muzyka i dźwięki; Onomichi jest jedenastym miastem podróży. Został balans i przejście testowe przez człowieka. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -43,6 +43,7 @@ Kierunek lotu obraca się z mapą, jak spirala w Tokio. Nad wyspami lecimy na p�
 
 | u | Czas | Odcinek | Pora | Co widać |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 15 | Onomichi w podróży: bez `wip`, w `STAGES`; dania, album, gachapon, pieczątka, pieczęć 尾道, parada, etykieta na mapie, podpis menu w dwóch liniach. Okręt w teście walk bossów w przeglądarce. | Następne: faza 16 (balans botem bez nieśmiertelności, przegląd detalu, wydajność; przejście człowieka zostaje autorowi). |
 | 2026-11-18 | Claude | 14 | Muzyka w `score11.js` (9 piosenek), dźwięki w `Sfx.js` (fūrin, miau, chlust, róg, fajerwerki), podpięte w walkach, fajerwerkach i skórce. Sprawdzone w przeglądarce: grają właściwe piosenki, bez błędów. | Następne: faza 15. |
 | 2026-11-18 | Claude | 13 | Fajerwerki nad cieśniną (`Hanabi.js`, `hanabi.mjs`), barki i arena bossa przeniesione, łagodniejsze światło wybuchów bossa. Sprawdzone zrzutami w walce i po niej. | Następne: faza 14 (muzyka). |
 | 2026-11-18 | Claude | 7 | Dzienna woda z prądami, zawirowaniami i błyskami słońca w `far.mjs`; daleka warstwa barwiona porą dnia mapy (`farTint` w `mid.mjs` i `Parallax.js`). | Następne: faza 13 (fajerwerki w tle). |
@@ -220,8 +221,8 @@ Wymaga: faza 0. Plik: `src/audio/score11.js`.
 
 ### Faza 15: wpięcie w grę
 Wymaga: fazy 9–13.
-- [ ] Odkrycia (dwa dania, dwie walki) z tekstami PL/EN, pieczątka i pieczęć 尾道, pocztówka i barwy w gachaponie, parada w zakończeniu
-- [ ] Zdjęcie flagi `wip`, testy z jedenastoma miastami
+- [x] Odkrycia (dwa dania, dwie walki) z tekstami PL/EN, pieczątka i pieczęć 尾道, pocztówka i barwy w gachaponie, parada w zakończeniu. Dania w 540 px: hassaku daifuku nad Innoshimą (u 520) i ramen z Onomichi nad Hondōri (u 5500); w albumie Nekomata (KOT-ZJAWA) i Funa-yūrei (WIDMO, nowy portret `fy_portrait`: okręt od żagla po dziób z rękami i czerpakami), który idzie też w paradzie zakończenia; karty obu, pocztówka i barwy Onomichi w gachaponie. Pieczątka: pagoda Tennei-ji nad schodami stoku z kotem, fajerwerk, fale cieśniny, ośmiokątna ramka; pieczęć 尾道 (oba kanji rysowane ręcznie); tusz morsko-zielony. Etykieta na mapie nad kropką, między Hiroszimą a Kioto
+- [x] Zdjęcie flagi `wip`, testy z jedenastoma miastami (`onomichiJourney`, album z 22 wpisami, testy Tokio i Kawaguchiko liczą miasta same, test renderowania przechodzi przez 11 miast, test walk bossów w przeglądarce z okrętem na obu wysokościach ekranu: 59 s laserem i 108 s pociskami naprowadzanymi). Podpis w menu „JEDENAŚCIE MIAST. JEDNA PODRÓŻ.” nie mieścił się w linii, więc gdy jest za szeroki, przechodzi do dwóch
 
 ### Faza 16: balans i szlif
 Wymaga: wszystko powyżej.

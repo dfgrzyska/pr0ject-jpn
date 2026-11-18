@@ -9,6 +9,7 @@
 // Phase 11 of the plan: the design in its three forms for the author (preview: node tools/art/onomichi/funayurei.mjs
 // -> tools/preview/stage11_funayurei.png); its parts for the fight come once it is approved.
 import { HiSprite, tones, fur, speckle, mottle, mix2 } from '../../lib/hisprite.mjs';
+import { Raster } from '../../lib/raster.mjs';
 
 const RAMPS = {
   h: tones([0x161c1e, 0x34403e, 0x5e6e66]), // the hull's wood, sea-grey and green with age
@@ -448,6 +449,20 @@ export function funayureiFrames(add) {
     add(`fy_foam_${f}`, fyFoam(f), { trim: true });
   }
   add('fy_ladle', fyLadle());
+  add('fy_portrait', fyPortrait());
+}
+
+/** Its portrait for the album and the ending's parade: the ship from its sail to its bow, the arms with their ladles. */
+export function fyPortrait() {
+  const whole = funayurei('ladles');
+  const [y0, h] = [190, 292];
+  const out = new Raster(FW, h);
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < FW; x++) {
+      const i = ((y0 + y) * FW + x) * 4;
+      if (whole.data[i + 3]) out.setRGBA(x, y, whole.data[i], whole.data[i + 1], whole.data[i + 2], whole.data[i + 3]);
+    }
+  return out;
 }
 
 // ---------------------------------------------------------------- the preview: the three forms on the strait at night
