@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Fazy 0–4 gotowe. 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Fazy 0–4 gotowe, faza 5 w toku (zbliżenie panoramy czeka na akceptację). 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -244,6 +244,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 5 (część) | Zbliżenie panoramy (`tools/art/kawaguchiko/view.mjs`, podgląd: `node tools/art/kawaguchiko/viewPreview.mjs` → `tools/preview/stage10_view.png`): Fuji jako stożek widziany z boku, każdy punkt zbocza z głębokości pod szczytem i azymutu, oświetlony nachyleniem z grzbietami i żlebami; czapa śniegu z językami w żlebach, żwir, modrzewie, las, mgła u stóp; jesienne wzgórza z koronami drzew, domy drugiego brzegu, niebo o zachodzie z chmurami, odbicie w wodzie porwane zmarszczkami. Trzy warstwy: niebo, ląd, woda. | Czeka na akceptację autora. Potem: ruch, wpięcie w grę (`FujiView.js`, pole `panorama`), światła po walce. |
 | 2026-11-18 | Claude | 4 | Nowa trasa za jeziorem w `route.mjs`: północny brzeg z wsią Kawaguchi (domy oshi, sad persymon, pola, zagroda, jizō, chram Asama z cedrami), tunel klonów wzdłuż strumienia Nashi z jarmarkiem, promenada i nabrzeże; nad `VIEW_FROM` = 6748 taśma wycięta pod panoramę (woda typu `view`, krawędź jako mur nabrzeża). Grunty `field` i `momiji`. Fuji z góry usunięta (`fuji.mjs`, klasa drogi `road`, szlak, zejście). Nazwy miejsc, `dark`, test topologii. | Następna: faza 5, zaczyna się od zbliżenia panoramy do akceptacji. Działki od 3 900 są kreskowane do fazy 7. |
 | 2026-11-18 | Claude | plan | Zmiana kierunku na prośbę autora: Fuji jako klasyczna dominanta (z boku, ze śnieżną czapą) w panoramie na końcu etapu, mechanizmem z Nagasaki; wspinaczka po stokach wypada. Pora roku: późna jesień. Nowa trasa za jeziorem (północny brzeg, tunel klonów, nabrzeże), boss przed panoramą o zachodzie, nowy nośnik (persymony) i pułapka (ognisko z liści). Fazy przenumerowane od 4. | Czeka na akceptację planu. Fuji z góry (`fuji.mjs`, commit 11cec4e) zostaje w historii; faza 4 usuwa ją z kodu. |
 | 2026-11-17 | Claude | 4 (stara) | Fuji z góry jako rzeźba terenu ze stokami, szlakiem, chatkami i szczytem (`fuji.mjs`); zbliżenia zaakceptowane. | Zastąpione 2026-11-18 panoramą. |
