@@ -13,9 +13,10 @@ import { todGrade, tintTable, PropKit } from '../props.mjs';
 import { makeKit } from '../tokyo/kit.mjs';
 import { W, S, L, SECTIONS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, FERRIES, PLOTS, isSea } from './route.mjs';
 import { near, inShape, bbox, railHalf } from '../tokyo/geom.mjs';
+import { senkoji } from './senkoji.mjs';
 
 // the stretches' painters, in the order they are called: (ctx) => void
-const PAINTERS = [];
+const PAINTERS = [senkoji];
 const DRAWN_TO = 0; // (the stretches drawn so far reach this far up the strip: their plots are not hatched)
 // arenas with no ring (once their own ground is drawn)
 const ARENA_DRAWN = new Set([]);
@@ -82,10 +83,10 @@ export function buildMid() {
     wet[Yy * FW + X] = 0;
     if (g.kind === 'orchard') return Math.floor(u / 4) % 3 === 0 && Math.floor(u * S) % 12 < 2 ? GROUND.orchard[3] : ramp(GROUND.orchard.slice(0, 3), x, u, 47, 5); // a terrace wall every few rows
     if (g.kind === 'slope') {
-      // terraces stepping up the hill: each a band of its own height, a wall's shadow along its upper edge
-      const band = 7 + Math.floor(hashPx(Math.floor(x / 14), 0, 49) * 4);
-      const k = (u + hashPx(Math.floor(x / 14), 1, 49) * band) % band;
-      return k > band - 0.7 ? GROUND.slope[3] : ramp(GROUND.slope.slice(0, 3), x, u, 48, 6);
+      // terraces stepping up the hill to the right, along its contours: a wall's shadow at each step (the stretch
+      // draws its own walls over these)
+      const c = x + 2.2 * Math.sin(u / 53) + 1.4 * Math.sin(u / 17 + 1);
+      return ((c % 10.6) + 10.6) % 10.6 < 0.8 ? GROUND.slope[3] : ramp(GROUND.slope.slice(0, 3), x, u, 48, 6);
     }
     return ramp(GROUND[g.kind], x, u, 41);
   });
