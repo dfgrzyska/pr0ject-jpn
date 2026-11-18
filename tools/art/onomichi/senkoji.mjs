@@ -20,6 +20,11 @@ export const SENKOJI_FROM = 3800;
 export const SENKOJI_TO = 5100;
 // the terraces (and their houses, cats, steps and lamps) go on up the hillside behind Hondori to the station
 export const HILL_TO = 6900;
+// ... and down it from the bend past Jodo-ji (where the hillside begins over the railway); the town along the coast
+// road below the railway from the bend, the quay along the strait past it
+export const HILL_FROM = 2890;
+const TOWN_FROM = 2770;
+const QUAY_FROM = 2760;
 
 // Onomichi's roofs: silver-grey and blue-grey kawara mostly, now and then a brown one or a tin roof gone to rust
 const TILES = [0x6a7078, 0x5e646e, 0x747a82, 0x4e5662, 0x585e66, 0x6c625a, 0x7a5a48];
@@ -71,9 +76,9 @@ export function senkoji(ctx) {
   kit.setSun(0.85); // (the evening's long shadows)
 
   // ---- what the route already takes, over the whole hillside the terraces climb (to the station's square)
-  const [HU0, HU1] = [U0, HILL_TO];
+  const [HU0, HU1] = [HILL_FROM, HILL_TO];
   const NU = HU1 - HU0;
-  const { taken, boxFree, claim } = freeMap(HU0, HU1);
+  const { taken, boxFree, claim } = freeMap(Math.min(HU0, TOWN_FROM), HU1);
 
   // ---- the terraces: their edges run along the contours, each a little way further up the hill (to the right)
   const contour = (u) => 2.2 * Math.sin(u / 53) + 1.4 * Math.sin(u / 17 + 1);
@@ -263,7 +268,7 @@ export function senkoji(ctx) {
   }
 
   // ---- the steps up the hillside: treads across them, a handrail, lamps coming on as it gets dark
-  const STEPS = new Set(['saka_1', 'saka_2', 'saka_3', 'saka_4', 'saka_5', 'saikokuji_sando', 'daisanji_kaidan', 'tennei_kaidan', 'neko_no_hosomichi', 'senkoji_kaidan', 'bungaku_no_komichi', 'senkoji_sando', 'fukuzenji_kaidan', 'komyoji_kaidan']);
+  const STEPS = new Set(['kairyuji_kaidan', 'saigoji_kaidan', 'saka_1', 'saka_2', 'saka_3', 'saka_4', 'saka_5', 'saikokuji_sando', 'daisanji_kaidan', 'tennei_kaidan', 'neko_no_hosomichi', 'senkoji_kaidan', 'bungaku_no_komichi', 'senkoji_sando', 'fukuzenji_kaidan', 'komyoji_kaidan']);
   for (const r of ROADS) {
     if (!STEPS.has(r.id)) continue;
     const half = r.w / 2;
@@ -619,6 +624,8 @@ export function senkoji(ctx) {
   temple('fukuzenji', { gate: 'dragon', bell: true, s: 862 });
   temple('komyoji', { bell: true, s: 863 });
   temple('hodoji', { bell: true, s: 864 });
+  temple('saigoji', { bell: true, s: 865 });
+  temple('kairyuji', { s: 866 });
 
   // ---- up the hillside behind Hondori: a cafe in an old house, a merchant's house that takes guests, a Jizo on a
   // landing of the steps, a wall at the top of the steps where everyone stops for the view
@@ -688,7 +695,7 @@ export function senkoji(ctx) {
 
   // ---- the town below the railway: narrow houses and shops between the coast road and the tracks, two storeys,
   // their backs to the railway
-  for (let u = U0 + 1; u < U1 - 6; ) {
+  for (let u = TOWN_FROM; u < U1 - 6; ) {
     const len = 5 + rand() * 6;
     const [a, b] = [76.4, railX(u) - railHalf(RAILS[0]) - 1];
     if (boxFree(a, u, b - a, len)) {
@@ -717,18 +724,18 @@ export function senkoji(ctx) {
   // the quay's lamps and its rail, people out along the water in the evening
   const QUAY_TO = 6400; // (past it the water widens and the quay is the station's: minato.mjs)
   const onQuay = (x, u) => GROUNDS.some((g) => g.over && inShape(g, x, u)); // (Sumiyoshi's, put out over the water)
-  for (let u = U0 + 8; u < QUAY_TO - 4; u += 18) if (!onQuay(60, u)) mark(64.2, u, (X, Y) => lamp(X, Y));
+  for (let u = QUAY_FROM + 8; u < QUAY_TO - 4; u += 18) if (!onQuay(60, u)) mark(64.2, u, (X, Y) => lamp(X, Y));
   ground(() => {
-    for (let Y = FY(QUAY_TO); Y < FY(U0); Y++) {
+    for (let Y = FY(QUAY_TO); Y < FY(QUAY_FROM); Y++) {
       const u = ctx.L - Y / S;
       if (onQuay(suidoShores(u)[1] - 1, u)) continue;
       const X = FX(suidoShores(u)[1] + 0.6);
       P(X, Y, Y % 6 === 0 ? 0x3a3a40 : 0x8a8a90);
     }
   });
-  for (let u = U0 + 4; u < QUAY_TO - 8; u += 26 + rand() * 30) crowd(64.6, u, 1.6, 6, 2);
+  for (let u = QUAY_FROM + 4; u < QUAY_TO - 8; u += 26 + rand() * 30) crowd(64.6, u, 1.6, 6, 2);
   // boats tied up along the quay
-  for (let u = U0 + 20; u < QUAY_TO - 20; u += 34 + rand() * 30) {
+  for (let u = QUAY_FROM + 20; u < QUAY_TO - 20; u += 34 + rand() * 30) {
     const x = suidoShores(u)[1] - 4.2;
     if (onQuay(x, u + 6) || onQuay(x, u - 6) || FERRY_US.some((f) => Math.abs(f - u) < 10)) continue;
     mark(x, u, (X, Y) => {
@@ -741,7 +748,7 @@ export function senkoji(ctx) {
     });
   }
   // across the strait, Mukaishima's shore: its trees and roofs at the very edge
-  for (let u = U0; u < 6700; u += 3) {
+  for (let u = 2700; u < 6700; u += 3) {
     const w = suidoShores(u)[0];
     if (w < 2) continue;
     if (rand() < 0.6) tree(rand() < 0.4 ? 'pine' : 'broadleaf', Math.max(0.8, w * rand() - 0.5), u, 1.6 + rand() * 1.4);

@@ -1,6 +1,6 @@
 # Plan: etap 11, ONOMICHI
 
-Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0, 1, 4, 5 i 6 gotowe (zbliżenie stoku przyjęte przez autora 2026-11-18), z fazy 7 nocna woda. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–6 gotowe (zbliżenie stoku przyjęte przez autora 2026-11-18): całe tło narysowane; z fazy 7 nocna woda. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -151,13 +151,13 @@ Wymaga: faza 0. Pliki: `tools/art/onomichi/route.mjs`, `mid.mjs`, `overview.mjs`
 
 ### Faza 2: wyspy (u 0–2300)
 Wymaga: faza 1. Pliki: `tools/art/onomichi/islands.mjs`, `bridges.mjs`.
-- [ ] Innoshima: zamek morskich władców, muzeum z łodziami, sady hassaku z kolejką wózków, stocznia, przystań; most Innoshima z pylonami, linami, dwoma poziomami i podjazdami; Mukaishima: suchy dok z kadłubem i suwnicą, sady, wieś, port z garnkami na ośmiornice, przystanie promów
-- [ ] Animacje: auta i rowerzyści na moście i drogach, wózki w sadach, statki w cieśninie, wiry w miejscu, iskry spawania, łodzie rybackie
+- [x] Innoshima: zamek morskich władców (kamienna podstawa, palisada, biała wieża pod dwoma dachami, chorągwie z własnym znakiem), muzeum z łodziami kobaya i sekibune na trawniku, sady hassaku w rzędach z kolejką wózków i stacyjkami, stocznia z kadłubem na pochylni i dźwigiem, przystań z targiem i łodziami; most Innoshima: pomost, dwa pylony, liny nośne z wieszakami, zakotwienia na brzegach; Mukaishima: suchy dok z kadłubem w stali i czerwonym podkładzie, blokami pokładów, rusztowaniami i iskrami spawania, hala stoczni, blachy; sady cytryn z kolejką; szkoła z basenem na dachu sali i boiskiem z bieżnią; ryokan rowerzystów; sklepiki; las Iwashiyamy z tarasem; port z garnkami na ośmiornice; domy, warzywniki i drzewa na całych wyspach (`islands.mjs`)
+- [x] Animacje: auta na autostradzie i starej drodze, rowerzyści na trasie rowerowej, wózki w sadach, suwnica jeżdżąca nad dokiem, frachtowiec w cieśninie, trzy wiry w miejscu, dym z pochylni. Dolny pokład mostu (pas rowerowy pod jezdnią) z góry niewidoczny: rowerzyści wjeżdżają pod most
 
 ### Faza 3: cieśnina i Jōdo-ji (u 2300–3800)
 Wymaga: faza 1. Pliki: `tools/art/onomichi/suido.mjs`, `jodoji.mjs`.
-- [ ] Para mostów, promy, barki do fajerwerków, łodzie; Ozaki ze starymi domami i nabrzeżem; tor z przejazdami i pociągiem; Jōdo-ji z bramą, główną salą, pagodą tahōtō i ogrodem; pierwsze schody w górę
-- [ ] Animacje: promy po kursach, pociąg, auta, zachód słońca
+- [x] Para mostów (pylony w kształcie H, wachlarze want), prom z Mukaishimy na pomost w Ozaki z wiatą i czekającymi; Ozaki: domy wzdłuż drogi nadbrzeżnej, łaźnia z kominem, stary skład sosu sojowego (ściana namako, kula z cedru, beczki), domy wokół zjazdów z mostów; tor z pociągiem; Jōdo-ji: brama, główna sala z cynobrowymi drzwiami i lampionami, pagoda tahōtō, ogród ze stawem, kamieniami i sosną; las na górze z Kairyū-ji, Saigō-ji; tarasy stoku od 2890 (`jodoji.mjs`, `senkoji.mjs`). Barki do fajerwerków stoją tylko przed dworcem (tam się strzela)
+- [x] Animacje: promy po kursach, pociąg, auta, dym z łaźni, zachód słońca w `TOD`
 
 ### Faza 4: zbliżenie stoku do akceptacji
 Wymaga: faza 1. Plik: `tools/art/onomichi/senkoji.mjs`.
@@ -230,6 +230,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 2 i 3 | Wyspy i mosty (`islands.mjs`), Ozaki i Jōdo-ji (`jodoji.mjs`); stok, miasteczko i nabrzeże z `senkoji.mjs` sięgają w dół do zakrętu (`HILL_FROM` = 2890). Całe tło narysowane, żadna działka nie jest kreskowana. Sprawdzone zrzutami w grze w 11, 43, 73 i 98 s. | Arkusz całej trasy: `node tools/art/onomichi/overview.mjs`. Następne: faza 7 (dzienna woda z prądami), faza 8 (przeciwnicy), potem walki. |
 | 2026-11-18 | Claude | 6 (+7 część) | Hondōri (`hondori.mjs`) i nabrzeże przy dworcu (`minato.mjs`) narysowane, tarasy stoku za Hondōri do dworca, nocna woda (`far_night`), `dark` do 0,9. Sprawdzone zrzutami w grze w 153, 181, 203 i 231 s. | Działki od 3800 w górę nie są już kreskowane (`DRAWN` w `mid.mjs`). Odcinki 0–3800 dalej w szkicu: fazy 2 i 3. Fajerwerki w fazie 13. |
 | 2026-11-18 | Claude | 5 | `senkoji.mjs` rysuje cały odcinek 3800–5100: dodane świątynie przy schodach (`temple`: dziedziniec z grabionym żwirem, sala pod wielkim dachem, brama, latarnie, sosna, dzwonnica), pociągi na torze `sanyo`, 24 koty animowane w miejscu; arena kota bez znacznika. Sprawdzone zrzutami w grze w 115 i 143 s. | Pociągi jadą po całym torze, więc widać je też na odcinkach jeszcze w szkicu. Następne: fazy 2, 3 i 6 (wyspy, cieśnina z Jōdo-ji, Hondōri z dworcem). |
 | 2026-11-18 | Claude | 4 | Zbliżenie stoku w `senkoji.mjs` (malarz w `PAINTERS`, rysuje na razie u 4040–4900): tarasy wzdłuż poziomic z murami z granitu i uliczkami u ich stóp, domy pod szarą dachówką, puste domy w bluszczu, ogródki, studnie i kapliczki jizō, pranie i doniczki, schody z poręczami i latarniami, koty (sześć umaszczeń, pięć póz), pagoda Tennei-ji, Senkō-ji z czerwoną salą na skale, głazami, kamiennymi Buddami, lampionami, Tamanoiwą ze świecącym klejnotem, skałą-lustrem i dzwonnicą, las ze ścieżką literatury, park z alejkami, ławkami i okrągłym tarasem, kolejka linowa z dwiema gondolami, miasto pod torem z automatami i podwórkami, latarnie i ludzie na nabrzeżu, łodzie przy nabrzeżu, brzeg Mukaishimy. Zmierzch rozjaśniony w `TOD`. | Czeka na akceptację. Poza u 4040–4900 dalej szkielet; łączenie z resztą w fazie 5. |

@@ -16,11 +16,13 @@ import { near, inShape, bbox, railHalf } from '../tokyo/geom.mjs';
 import { senkoji } from './senkoji.mjs';
 import { hondori } from './hondori.mjs';
 import { minato } from './minato.mjs';
+import { islands } from './islands.mjs';
+import { jodoji } from './jodoji.mjs';
 
 // the stretches' painters, in the order they are called: (ctx) => void
-const PAINTERS = [senkoji, hondori, minato];
+const PAINTERS = [islands, jodoji, senkoji, hondori, minato];
 // (the stretches drawn so far: their plots are not hatched)
-const DRAWN = [[3800, L]];
+const DRAWN = [[0, L]];
 // arenas with no ring (once their own ground is drawn)
 const ARENA_DRAWN = new Set(['NEKOMATA', 'FUNA-YUREI']);
 
