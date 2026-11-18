@@ -79,12 +79,13 @@ try {
   }
   assert.equal(samples.at(-1).left - samples[0].left, 3);
 
-  await page.evaluate(() => { game.scene.getScene('Stage').scene.restart({ order: [0,1,2,3,4,5,6,7,8] }); game.loop.start(game.step.bind(game)); });
-  for (let pos = 0; pos < 9; pos++) {
+  const ORDER = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]; // (every city, one after another)
+  await page.evaluate(order => { game.scene.getScene('Stage').scene.restart({ order }); game.loop.start(game.step.bind(game)); }, ORDER);
+  for (let pos = 0; pos < ORDER.length; pos++) {
     await page.waitForFunction(pos => { const s = game.scene.getScene('Stage'); return s.pos === pos && s.state === 'title' && !s.scene.get('Boot').load.isLoading(); }, pos);
     const cities = await page.evaluate(() => [...new Set(game.textures.getTextureKeys().map(k => /^(?:far|mid|props|view)_(stage\d+)(?:_|$)/.exec(k)?.[1]).filter(Boolean))].sort());
-    assert.deepEqual(cities, [`stage${pos + 1}`, ...(pos < 8 ? [`stage${pos + 2}`] : [])]);
-    if (pos < 8) await page.evaluate(pos => game.scene.getScene('Stage').scene.restart({ order: [0,1,2,3,4,5,6,7,8], pos: pos + 1 }), pos);
+    assert.deepEqual(cities, [`stage${pos + 1}`, ...(pos < ORDER.length - 1 ? [`stage${pos + 2}`] : [])].sort());
+    if (pos < ORDER.length - 1) await page.evaluate(([pos, order]) => game.scene.getScene('Stage').scene.restart({ order, pos: pos + 1 }), [pos, ORDER]);
   }
   // A released city must load again.
   await page.evaluate(() => game.scene.getScene('Stage').scene.restart({ order: [0,1,2,3,4,5,6,7] }));
@@ -98,7 +99,7 @@ try {
   await page.waitForFunction(() => { const s = game.scene.getScene('Stage'); return s.stage.id === 'stage6' && s.state === 'title' && !s.scene.get('Boot').load.isLoading(); });
   assert(await page.evaluate(() => !game.textures.exists('far_stage1') && game.textures.exists('far_stage6')));
   assert.deepEqual(errors, []);
-  console.log('540px: pointer menus, drag gain, pause, resize, half-pixel raster stability, nine city transitions and texture reload passed.');
+  console.log('540px: pointer menus, drag gain, pause, resize, half-pixel raster stability, ten city transitions and texture reload passed.');
 } finally {
   await browser?.close();
   server.kill();

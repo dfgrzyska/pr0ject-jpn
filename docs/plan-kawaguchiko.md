@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Fazy 0–14 gotowe: całe tło etapu, przeciwnicy, fale, miniboss Kachi-kachi Usagi, boss Daidarabotchi, muzyka i dźwięki. Dalej wpięcie w grę (odkrycia, pieczątka, gachapon, zdjęcie flagi `wip`). 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Fazy 0–15 gotowe: etap jest w podróży jako dziesiąte miasto (bez flagi `wip`), z tłem, przeciwnikami, minibossem, bossem, muzyką, odkryciami i pieczątką. Dalej balans i przejście testowe przez człowieka. 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -227,9 +227,9 @@ Wymaga: faza 0. Plik: `src/audio/score10.js`.
 
 ### Faza 15: wpięcie w grę
 Wymaga: fazy 10–13.
-- [ ] Odkrycia (dwa dania, dwie walki) z tekstami PL/EN
-- [ ] Pieczątka, pieczęć 富士, punkt na mapie, karta-pocztówka w gachaponie
-- [ ] Zdjęcie flagi `wip`: miasto w podróży, książeczce i zakończeniu
+- [x] Odkrycia (dwa dania, dwie walki) z tekstami PL/EN: yoshida udon (spada nad Honchō-dōri w Fujiyoshidzie, ~8 s) i hōtō (nad jadłodajnią we wsi Kawaguchi, ~119 s), oba narysowane w 540 px (`foods540.mjs`: hōtō w żeliwnym garnku na podstawce, udon w brązowej misce z kapustą, mięsem i suridane); wpisy w albumie: Kachi-kachi Usagi (BAŚŃ / FOLKTALE) i Daidarabotchi (OLBRZYM / GIANT, nowy portret `dd_portrait`: ciało od pasa w górę z opuszczonymi ramionami). Album ma teraz 20 wpisów (druga strona siatki: cztery)
+- [x] Pieczątka (`tools/art/stamps.mjs`): Fuji nad jeziorem z czapą śniegu zostawioną bladą, brzeg i zmarszczki wody, dwa liście klonu, ramka z zaokrąglonymi rogami, KAWAGUCHIKO w pasku (dodana litera C); pieczęć 富士 na karcie miasta i w zakończeniu (znaki 富 i 士 narysowane ręcznie w `kanji.mjs`); tusz fioletowy jak niebo nad Fuji o zmierzchu; etykieta na mapie wyboru nad punktem miasta (obok jest Tokio, Kioto i Osaka). Gachapon: pocztówka z Kawaguchiko, malowanie „BARWY KAWAGUCHIKO”, karty zająca i olbrzyma (same z albumu). Parada w zakończeniu: Daidarabotchi
+- [x] Zdjęcie flagi `wip`: dziesięć miast w podróży (Tokio dalej zawsze ostatnie), książeczce (strona 2), zakończeniu i menu („DZIESIĘĆ MIAST. JEDNA PODRÓŻ.”). Angielskie wersje nowych napisów (tytuły faz, „SZCZELINA ODSŁONIĘTA!”); podtytuł po angielsku skrócony, żeby mieścił się na karcie miasta. Testy: nowy `kawaguchikoJourney.test.mjs`, album z 20 wpisami, test renderowania przez dziesięć miast
 
 ### Faza 16: balans i szlif
 Wymaga: wszystko powyżej.
@@ -244,6 +244,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 15 | Kawaguchiko w podróży: `STAGES` ma dziesięć miast, flaga `wip` zdjęta. Pieczątka, pieczęć 富士, tusz, dwa dania, dwa wpisy z portretem olbrzyma, pocztówka i barwy w gachaponie, parada, angielskie napisy. Sprawdzone w przeglądarce po polsku i angielsku: menu, mapa wyboru, karta miasta z pieczęcią, książeczka (strona 2), album, dziennik smaków, pieczęcie i parada w zakończeniu; bez błędów w konsoli. | Zając ma mały portret w albumie (jego klatka 66 × 102). Mapa w scenie zakończenia nie była oglądana osobno. Następna: faza 16 (balans, przejście przez człowieka). |
 | 2026-11-18 | Claude | 14 | Muzyka w `src/audio/score10.js` (`SONGS10`, 10 utworów), rozkład w `stage10.json` dopasowany do odcinków (zmierzone w grze: brzeg ~36 s, jezioro ~63 s, wieś ~123 s, klony ~170 s, nabrzeże ~218 s); dźwięki w `Sfx.js`. Poziomy sprawdzone renderem offline (szczyt < 0,6, RMS jak w innych miastach). | Utwory nie były odsłuchane przez człowieka. Następna: faza 15 (wpięcie w grę). |
 | 2026-11-18 | Claude | 13 | Walka z Daidarabotchim w `src/game/enemies/kawaguchiko-daidara.js` (`DAIDARA`, `DD`), podpięta w `Enemies.js` i `encounters.js`; `FujiView` podaje linię wody (`waterY`); `stage10.json` z `"boss": "daidara"`. | Headless Chromium na SwiftShaderze obcina obrócone sprite'y z atlasu miasta w niektórych partiach (`outTexDatum ==` w shaderze Phasera 4); na prawdziwym GPU wszystko się rysuje. Zrzuty walki robić z `--use-angle=d3d11`. Następna: faza 14 (muzyka). |
 | 2026-11-18 | Claude | 12 | Części olbrzyma w `daidara.mjs` (`daidaraFrames`, stałe `SHOULDER` i `CORE` do składania w grze); części dzielące kadr ciała pakowane z `trim`, żeby stały na swoich miejscach. | Następna: faza 13 (walka). |

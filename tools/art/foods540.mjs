@@ -46,6 +46,14 @@ const RAMPS = {
   mc: tones([0xb8902a, 0xeed27a, 0xfff6c8]), // melonpan's cookie crust
   ny: tones([0x7a3e10, 0xc07a34, 0xf0b868]), // ningyō-yaki, baked brown
   mj: tones([0x5a3a1c, 0x9a6a34, 0xd0a060]), // monja batter, browning
+  pu: tones([0xa0500a, 0xe08a1e, 0xffc060]), // kabocha's flesh, stewed
+  pg: tones([0x1e3a1a, 0x3a6a2a, 0x6e9a4a]), // its green skin
+  hn: tones([0xb8a070, 0xe8d6a8, 0xfff4d8]), // hōtō's flat noodles, floury
+  ud: tones([0xbcb6a4, 0xf0ece0, 0xffffff]), // Yoshida's firm udon
+  bw: tones([0x2a140a, 0x5a2e14, 0x8e5428]), // a brown-glazed bowl
+  sr: tones([0x7a1408, 0xc4301a, 0xf07a4a]), // suridane, the red pepper paste
+  wb: tones([0x4a2a12, 0x7a4a24, 0xa8743e]), // a dark wooden stand
+  sy: tones([0x5a2e10, 0x9a5a24, 0xcc8c48]), // Yoshida's soy-and-miso broth
 };
 const sprite = () => new HiSprite(60, 60, RAMPS);
 const crumb = (seed) => mix2(speckle({ amt: 0.28, dark: 0.12, light: 0.1, seed }), mottle({ amt: 0.12, scale: 3, seed: seed + 1 }));
@@ -416,7 +424,42 @@ function monjayaki() {
   return s;
 }
 
-const DRAW = { yatsuhashi, inari, goya, andagi, ramen, corn, shirokuma, karukan, kushi, takoyaki, toriten, pudding, okonomiyaki, momiji, castella, champon, crepe, melonpan, ningyoyaki, monjayaki };
+/** Kawaguchiko: hōtō, flat noodles stewed in miso with kabocha, in its little iron pot on a wooden stand, steaming. */
+function hoto() {
+  const s = sprite();
+  s.poly([[4, 46], [56, 46], [52, 56], [8, 56]], 'wb', { flat: 0.55, pat: mottle({ amt: 0.12, scale: 4, seed: 2 }) }); // the stand
+  s.ellipse(30, 40, 26, 14, 'ir', { bias: 0.06 }); // the iron pot
+  for (const sx of [-1, 1]) s.ellipse(30 + sx * 27, 36, 3.5, 2.5, 'ir', { flat: 0.4 }); // its lugs
+  s.ellipse(30, 35, 22, 10, 'ms', { flat: 0.55, pat: mottle({ amt: 0.14, scale: 5, seed: 4 }) }); // the miso broth
+  for (const [x, y, a] of [[16, 34, 0.3], [24, 31, -0.2], [34, 37, 0.15], [42, 33, -0.35], [27, 38, 0.5]]) { // flat noodles, folded in ribbons
+    s.poly([[x - 5, y - 1.2], [x + 5, y - 1.2 + a * 4], [x + 5, y + 1.6 + a * 4], [x - 5, y + 1.6]], 'hn', { flat: 0.7 });
+  }
+  for (const [x, y] of [[20, 30], [38, 30], [31, 33]]) { // kabocha wedges, the green skin on their backs
+    s.poly([[x - 5, y + 2], [x, y - 4], [x + 5, y + 2]], 'pu', { flat: 0.6 });
+    s.line(x - 5, y + 2, x + 5, y + 2, 0x3a6a2a, 1.5);
+  }
+  s.ellipse(44, 37, 3.5, 2.5, 'mm', { flat: 0.6 }); s.ellipse(14, 38, 3, 2, 'mm', { flat: 0.6 }); // shiitake
+  for (const [x, y] of [[25, 35], [35, 31], [29, 29], [41, 36]]) s.dot(x, y, 1.1, 0x6ab84a, 0.9); // green onion
+  for (let y = 4; y < 24; y++) for (const x0 of [22, 36]) s.px(x0 + Math.sin(y * 0.55 + x0) * 2, y, 0xffffff, 0.25 + (y / 24) * 0.3); // steam
+  return s;
+}
+
+/** Fujiyoshida: Yoshida udon, thick and firm, with boiled cabbage and sweet-stewed meat, a dab of red suridane on top. */
+function yoshidaudon() {
+  const s = sprite();
+  s.ellipse(28, 41, 26, 15, 'bw', { bias: 0.06, pat: speckle({ amt: 0.1, seed: 9 }) }); // the bowl
+  s.ellipse(28, 36, 22, 10, 'sy', { flat: 0.5, pat: mottle({ amt: 0.12, scale: 5, seed: 8 }) }); // the soy-and-miso broth
+  for (let y = 31; y < 42; y += 3) s.tube(10, y + 0.8, 45, y - 0.8, 1.6, 'ud', { rb: 1.6 }); // the thick noodles, one by one
+  s.ellipse(19, 32, 8, 4.5, 'cg', { flat: 0.6, pat: mottle({ amt: 0.25, scale: 2, seed: 6 }) }); // cabbage
+  for (const [x, y] of [[33, 31], [37, 34], [31, 35]]) s.poly([[x - 3, y - 1], [x + 3, y - 1.5], [x + 3, y + 1], [x - 3, y + 1.4]], 'ch', { flat: 0.6 }); // stewed meat
+  s.ellipse(27, 34, 3, 2, 'sr', { flat: 0.5 }); // suridane on top
+  s.ellipse(50, 22, 7, 4, 'mw', { flat: 0.6 }); s.ellipse(50, 21, 5, 2.4, 'sr', { flat: 0.55, pat: speckle({ amt: 0.3, seed: 3 }) }); // a dish of it
+  s.tube(6, 18, 40, 8, 1.2, 'wd'); s.tube(8, 22, 42, 12, 1.2, 'wd'); // chopsticks
+  for (let y = 6; y < 22; y++) s.px(26 + Math.sin(y * 0.6) * 2, y, 0xffffff, 0.25 + (y / 22) * 0.25); // steam
+  return s;
+}
+
+const DRAW = { yatsuhashi, inari, goya, andagi, ramen, corn, shirokuma, karukan, kushi, takoyaki, toriten, pudding, okonomiyaki, momiji, castella, champon, crepe, melonpan, ningyoyaki, monjayaki, hoto, yoshidaudon };
 
 /** The dish `id` at 540 px: a 60 x 60 Raster. */
 export function food540(id) {

@@ -322,6 +322,25 @@ export function ddIslet() {
   return s.render({ outline: 2 });
 }
 
+/** His portrait for the album and the ending's parade: the body from the waist up, both arms hanging (as in the fight). */
+export function ddPortrait() {
+  const [ox, oy, w, h] = [30, 76, 300, 224];
+  const out = new Raster(w, h);
+  const put = (r, x0, y0, flip = false) => {
+    for (let y = 0; y < r.h; y++)
+      for (let x = 0; x < r.w; x++) {
+        const i = (y * r.w + (flip ? r.w - 1 - x : x)) * 4;
+        const [X, Y] = [x0 + x - ox, y0 + y - oy];
+        if (r.data[i + 3] && X >= 0 && Y >= 0 && X < w && Y < h) out.setRGBA(X, Y, r.data[i], r.data[i + 1], r.data[i + 2], r.data[i + 3]);
+      }
+  };
+  const arm = ddArm('open', 0);
+  put(arm, SHOULDER[0][0] - 20 - AW / 2, SHOULDER[0][1] - 18);
+  put(arm, SHOULDER[1][0] + 20 - AW / 2, SHOULDER[1][1] - 18, true);
+  put(ddBody(0), 0, 0);
+  return out;
+}
+
 /** Every frame of the giant, for the city's atlas (enemies.mjs): name -> raster, `trim` for the parts that share
  * the body's frame (so they line up with it in the game). */
 export function daidaraFrames(add) {
@@ -346,4 +365,5 @@ export function daidaraFrames(add) {
   for (const f of [0, 1]) add(`dd_rock_${f}`, ddRock(f));
   add('dd_sun', ddSun());
   add('dd_islet', ddIslet());
+  add('dd_portrait', ddPortrait());
 }

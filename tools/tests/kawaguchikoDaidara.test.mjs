@@ -27,7 +27,7 @@ test('every part, in every state, is in the atlas; the parts on the body keep it
     assert.equal(frames[f].trimmed, true, f);
     assert.deepEqual(frames[f].sourceSize, { w: DW, h: DH }, f);
   }
-  assert.ok(portraits.dd_body_0);
+  assert.ok(portraits.dd_portrait && frames.dd_portrait);
 });
 
 test("the fight's places for the arms, the fissure and the arms' pivot are the art's", () => {

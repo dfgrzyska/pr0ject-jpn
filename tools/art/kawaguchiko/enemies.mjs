@@ -192,4 +192,4 @@ export function kawaguchikoEnemies(add) {
   usagiFrames(add); // the miniboss, KACHI-KACHI USAGI (usagi.mjs)
   daidaraFrames(add); // the boss, DAIDARABOTCHI (daidara.mjs)
 }
-export const KAWAGUCHIKO_PORTRAITS = ['k_usagi_rest_0', 'dd_body_0'];
+export const KAWAGUCHIKO_PORTRAITS = ['k_usagi_rest_0', 'dd_portrait'];

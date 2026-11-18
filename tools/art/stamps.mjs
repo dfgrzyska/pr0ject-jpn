@@ -11,6 +11,7 @@ const MID = 27.5;
 const MINI = {
   A: ['.#.', '#.#', '###', '#.#', '#.#'],
   B: ['##.', '#.#', '##.', '#.#', '##.'],
+  C: ['.##', '#..', '#..', '#..', '.##'],
   E: ['###', '#..', '##.', '#..', '###'],
   G: ['.##', '#..', '#.#', '#.#', '.##'],
   H: ['#.#', '#.#', '###', '#.#', '#.#'],
@@ -368,6 +369,44 @@ function tokyo(name = 'TOKIO') {
   return inkUp(r, 97);
 }
 
+/** Kawaguchiko: Fuji over the lake, its snow cap left pale, the shore and the ripples below, a maple leaf falling. */
+function kawaguchiko() {
+  const r = new Raster(S, S);
+  // the frame: a rounded square, a thick rule and a dotted one inside it
+  const sq = (x, y, k, rad) => {
+    const dx = Math.abs(x + 0.5 - MID);
+    const dy = Math.abs(y + 0.5 - MID);
+    if (dx > k || dy > k) return false;
+    return !(dx > k - rad && dy > k - rad && Math.hypot(dx - (k - rad), dy - (k - rad)) > rad);
+  };
+  for (let y = 0; y < S; y++)
+    for (let x = 0; x < S; x++) {
+      if (sq(x, y, 27, 9) && !sq(x, y, 24.5, 7)) on(r, x, y);
+      else if (sq(x, y, 23, 6) && !sq(x, y, 22, 5.5) && (x + y) % 3 && (y < 39 || y > 47)) on(r, x, y);
+    }
+  // (the long name: its band runs out to the thick rule, the dotted one broken round it)
+  nameBand(r, 'KAWAGUCHIKO', 40, 46, (x, y) => sq(x, y, 24.5, 7));
+  // Fuji: concave slopes from the flat-topped summit, the lower slopes in ink, the cap pale with tongues down the gullies
+  const half = (y) => 3 + (y - 10) * 0.55 + ((y - 10) / 23) ** 2 * 9;
+  for (let y = 10; y <= 33; y++) {
+    const w = half(y);
+    for (let x = Math.round(MID - w); x <= MID + w; x++) {
+      const tongue = 15 + 3.2 * Math.abs(Math.sin((x - MID) * 0.62)) + ((x * 7) % 3);
+      if (y > tongue || Math.abs(x + 0.5 - MID) > w - 1) on(r, x, y);
+    }
+  }
+  for (let x = Math.round(MID - 3); x <= MID + 3; x++) on(r, x, 10); // the summit's rim
+  // the shore under it, a ridge each side, then the lake: ripples, broken
+  for (let x = 7; x <= 48; x++) if (sq(x, 34, 22.5, 5.5)) on(r, x, 34);
+  for (const [x0, x1, y] of [[8, 16, 33], [39, 47, 33], [9, 13, 32], [42, 46, 32]]) for (let x = x0; x <= x1; x++) on(r, x, y);
+  for (const [y, k] of [[36, 0], [38, 2]]) for (let x = 9; x <= 46; x++) if ((x + k) % 5 && (x + k) % 5 !== 4 && sq(x, y, 22, 5)) on(r, x, y);
+  // maple leaves falling over the lake: a big one top left, a small one on the right
+  const leaf = (x0, y0, rows) => rows.forEach((row, j) => [...row].forEach((c, i) => c === '#' && on(r, x0 + i, y0 + j)));
+  leaf(9, 9, ['...#...', '.#.#.#.', '.#####.', '#######', '.#####.', '..#.#..', '...#...', '....#..']);
+  leaf(41, 16, ['..#..', '#.#.#', '#####', '.###.', '..#..', '...#.']);
+  return inkUp(r, 103);
+}
+
 export function stampSprites() {
   const nagasaki = new Raster(S, S);
   ring(nagasaki, MID, MID, 26, 2);
@@ -394,6 +433,7 @@ export function stampSprites() {
     { name: 'stamp_stage7_en', raster: hiroshima('HIROSHIMA') },
     { name: 'stamp_stage9', raster: tokyo() },
     { name: 'stamp_stage9_en', raster: tokyo('TOKYO') },
+    { name: 'stamp_stage10', raster: kawaguchiko() },
   ];
   // the HUD's little stamp: a round seal (tinted with the city's ink)
   const icon = new Raster(9, 9);

@@ -258,6 +258,7 @@ export const ITEMS = [
   { id: 'paint_city_hiroshima', kind: 'paint', rarity: 'R', name: 'BARWY HIROSZIMY', info: 'MALOWANIE: MIASTA', colors: [0xf4f4f4, 0xd8201a, 0x2a7a4a, 0xf0c040] },
   { id: 'paint_city_nagasaki', kind: 'paint', rarity: 'R', name: 'BARWY NAGASAKI', info: 'MALOWANIE: MIASTA', colors: [0x2a3a7a, 0xf0c040, 0xd8402a, 0xffffff] },
   { id: 'paint_city_tokyo', kind: 'paint', rarity: 'R', name: 'BARWY TOKIO', info: 'MALOWANIE: MIASTA', colors: [0x1e1c2a, 0xff5aa8, 0x4ae0f0, 0xf0c040] },
+  { id: 'paint_city_kawaguchiko', kind: 'paint', rarity: 'R', name: 'BARWY KAWAGUCHIKO', info: 'MALOWANIE: MIASTA', colors: [0xf4f0f8, 0x5a4a8a, 0xd8401a, 0xf0a030] },
   { id: 'paint_hanami', kind: 'paint', rarity: 'SR', name: 'HANAMI', info: 'MALOWANIE: PORY ROKU', colors: [0xffd8e6, 0xf08bb0, 0x7ab85a, 0xffffff] },
   { id: 'paint_hanabi', kind: 'paint', rarity: 'SR', name: 'LETNIE FAJERWERKI', info: 'MALOWANIE: PORY ROKU', colors: [0x14183a, 0xff5a3a, 0xf8d020, 0x3ac8ff] },
   { id: 'paint_momiji', kind: 'paint', rarity: 'SR', name: 'MOMIJI', info: 'MALOWANIE: PORY ROKU', colors: [0xf4e0c0, 0xd8401a, 0xf09a1a, 0x7a2a10] },
@@ -608,7 +609,7 @@ export const ITEMS = [
   { id: 'card_higuma', kind: 'card', rarity: 'SSR', name: 'KARTA: HIGUMA', info: 'KARTA DO KOLEKCJI', card: { frame: 'kuma_0', stage: 'stage3', name: 'HIGUMA' } },
   { id: 'card_sakurajima', kind: 'card', rarity: 'SSR', name: 'KARTA: SAKURAJIMA', info: 'KARTA DO KOLEKCJI', card: { frame: 'crater_0', stage: 'stage4', name: 'SAKURAJIMA' } },
   { id: 'card_tako', kind: 'card', rarity: 'SSR', name: 'KARTA: TAKO', info: 'KARTA DO KOLEKCJI', card: { frame: 'tako_0', stage: 'stage5', name: 'TAKO' } },
-  ...[['stage1', 'KIOTO'], ['stage2', 'OKINAWA'], ['stage3', 'SAPPORO'], ['stage4', 'KAGOSHIMA'], ['stage5', 'OSAKA'], ['stage6', 'BEPPU'], ['stage7', 'HIROSZIMA'], ['stage8', 'NAGASAKI'], ['stage9', 'TOKIO']].map(([stage, city]) => (
+  ...[['stage1', 'KIOTO'], ['stage2', 'OKINAWA'], ['stage3', 'SAPPORO'], ['stage4', 'KAGOSHIMA'], ['stage5', 'OSAKA'], ['stage6', 'BEPPU'], ['stage7', 'HIROSZIMA'], ['stage8', 'NAGASAKI'], ['stage9', 'TOKIO'], ['stage10', 'KAWAGUCHIKO']].map(([stage, city]) => (
     { id: `card_post_${stage}`, kind: 'card', rarity: 'N', name: `POCZTÓWKA: ${city}`, info: 'POCZTÓWKA DO KOLEKCJI', card: { frame: `stamp_${stage}`, stage, name: `POCZTÓWKA: ${city}`, post: true } })),
   // ---- premium animations (all SSR or UR). An animated hull: the tint flowing over it (premiumFx.js) and the
   // bits it sheds; an aura: sprites circling the ship; a trail: bits streaming from the engine; and a burst (a

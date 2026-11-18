@@ -1,14 +1,8 @@
 {
   "id": "stage10",
-  "wip": true,
   "name": "KAWAGUCHIKO",
   "subtitle": "KAWAGUCHIKO - JEZIORO I FUJI",
-  "map": [
-    138.76,
-    35.51,
-    -10,
-    10
-  ],
+  "map": [138.76, 35.51, -6, -24],
   "skin": "kawaguchiko",
   "enemyArt": true,
   "near": "momiji",

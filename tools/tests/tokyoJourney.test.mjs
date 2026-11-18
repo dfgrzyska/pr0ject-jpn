@@ -17,8 +17,8 @@ const tokyo = STAGES.find((s) => s.id === 'stage9');
 const i18n = src('../../src/i18n.js');
 const english = (s) => i18n.includes(`  '${s}': '`) || i18n.includes(`\n  ${s}: '`); // (a phrase in the phrasebook)
 
-test('Tokyo is the ninth city of the journey and always its last', () => {
-  assert.match(src('../../src/data/stages.js'), /export const STAGES = \[stage1, stage2, stage3, stage4, stage5, stage6, stage7, stage8, stage9\];/);
+test('Tokyo is a city of the journey and always its last', () => {
+  assert.match(src('../../src/data/stages.js'), /export const STAGES = \[stage1, stage2, stage3, stage4, stage5, stage6, stage7, stage8, stage9, stage10\];/);
   assert.ok(tokyo.last && !tokyo.wip, 'Tokyo marked last, out of the works');
   for (let k = 0; k < 20; k++) {
     const order = journeyOrder(STAGES, null, (list) => [...list].sort(() => Math.random() - 0.5));

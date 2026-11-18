@@ -25,6 +25,7 @@ const BOSSES = {
   stage6: [['oni_0', 0, 0]],
   stage7: [['brazier_0', -30, 4], ['brazier_0', 30, 4], ['sankibo_0', 0, 0]],
   stage9: [['kg_portrait', 0, 0]],
+  stage10: [['dd_portrait', 0, -6]], // (the giant stands taller than the others: lifted clear of his name)
 };
 
 /**
