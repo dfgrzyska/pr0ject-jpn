@@ -5,6 +5,7 @@
 // the colour of their power. Seen from above like every city's, drawn with HiSprite (tools/lib/hisprite.mjs).
 import { HiSprite, tones, speckle, mottle, mix2, fur } from '../../lib/hisprite.mjs';
 import { usagiFrames } from './usagi.mjs';
+import { daidaraFrames } from './daidara.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -189,5 +190,6 @@ export function kawaguchikoEnemies(add) {
   add('k_hokora_wreck', hokoraBase(true));
   for (let i = 0; i < 16; i++) add(`k_hokora_head_${i}`, hokoraHead(i));
   usagiFrames(add); // the miniboss, KACHI-KACHI USAGI (usagi.mjs)
+  daidaraFrames(add); // the boss, DAIDARABOTCHI (daidara.mjs)
 }
-export const KAWAGUCHIKO_PORTRAITS = ['k_usagi_rest_0'];
+export const KAWAGUCHIKO_PORTRAITS = ['k_usagi_rest_0', 'dd_body_0'];

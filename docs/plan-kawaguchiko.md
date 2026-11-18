@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Fazy 0–11 gotowe: całe tło etapu, przeciwnicy, fale i miniboss Kachi-kachi Usagi. Dalej boss (jeszcze Kyūbi na zastępstwo). 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Fazy 0–12 gotowe: całe tło etapu, przeciwnicy, fale, miniboss Kachi-kachi Usagi i grafika bossa. Dalej walka z Daidarabotchim (w grze jeszcze Kyūbi na zastępstwo). 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -211,8 +211,8 @@ Wymaga: faza 0. Pliki: `src/game/enemies/kawaguchiko-usagi.js`, `tools/art/kawag
 
 ### Faza 12: Daidarabotchi, grafika
 Wymaga: faza 5. Plik: `tools/art/kawaguchiko/daidara.mjs`.
-- [ ] Projekt w trzech postaciach (kopiący, z koszem, sylwetka pod słońce) na tle panoramy, do akceptacji przed rysowaniem klatek
-- [ ] Części, stopnie zniszczenia, kosz i sznury, portret
+- [x] Projekt w trzech postaciach (kopiący, z koszem, sylwetka pod słońce) na tle panoramy, zaakceptowany przez autora (2026-11-18: „na ten moment tak”)
+- [x] Części w atlasie miasta (`dd_*`, 34 klatki, atlas 1024 × 997): ciało w trzech stopniach zużycia (pęknięcia, opadający mech i trawa, odłupane bryły barków, ubywające drzewa), nakładki twarzy (mrugnięcie powiekami z ziemi, ryk z kamiennymi zębami i rozlanymi oczami-jeziorkami), ramię na osi w barku z dłonią otwartą, zgarniającą wodę, z grudą i zaciśniętą (drugie to samo odbite), kikut lewego ramienia, drążek, kosz pełny i pusty (sznury rysuje gra), świecąca szczelina w piersi (słaby punkt, miętowy), grudy i kamienie w dwóch klatkach, słońce, wysepka z klonem; ciało, twarze, ramiona, kikut i drążek także jako sylwetki pod słońce (`_dusk`). Portret do albumu: `dd_body_0`
 
 ### Faza 13: Daidarabotchi, walka
 Wymaga: faza 12. Plik: `src/game/enemies/kawaguchiko-daidara.js`.
@@ -244,6 +244,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 12 | Części olbrzyma w `daidara.mjs` (`daidaraFrames`, stałe `SHOULDER` i `CORE` do składania w grze); części dzielące kadr ciała pakowane z `trim`, żeby stały na swoich miejscach. | Następna: faza 13 (walka). |
 | 2026-11-18 | Claude | 12 (część) | Projekt Daidarabotchiego w trzech postaciach (`tools/art/kawaguchiko/daidara.mjs`): olbrzym z ziemi i kamienia po pas w jeziorze, rdzawa trawa, mech i kamienie na nim, klony i sosna na barkach, oczy jak jeziorka z niebem, usta jak jaskinia, kamienne dłonie, w piersi szczelina (słaby punkt); kopiący (garście ziemi, z których cieknie woda), z drążkiem i koszem na złotych sznurach, sylwetka pod zachodzące słońce z płonącym obrysem. Makiety na tle panoramy wysłane autorowi. | Czeka na akceptację projektu; potem klatki, części i stopnie zniszczenia. |
 | 2026-11-18 | Claude | 11 | `src/game/enemies/kawaguchiko-usagi.js` (wmiksowany w `Enemies`, strzały przez `bossDeviceHit`, koniec `usagi` w `updateDying`), `HEAVY.hp.usagi` = 860, skórka `heavy` z `kind: 'usagi'`. | Muzyka minibossa dalej z Kioto (faza 14). Następne: fazy 12–13 (Daidarabotchi). |
 | 2026-11-18 | Claude | 10 | Fale w `stage10.json` (generowane skryptem, jeden wpis w wierszu), pułapki i zasadzki ze współrzędnych mapy. | Testy `traps` i `ambush` obejmą etap po zdjęciu `wip`; reguły sprawdzone już przy pisaniu. Następna: faza 11 (Kachi-kachi Usagi). |
