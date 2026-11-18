@@ -526,6 +526,7 @@ export const ITEMS = [
   { id: 'companion_owl', kind: 'companion', rarity: 'R', name: 'TOWARZYSZ: SOWA', info: 'LECI ZA STATKIEM', pic: 'pal_owl', move: 'flutter' },
   { id: 'companion_chochin', kind: 'companion', rarity: 'SR', name: 'TOWARZYSZ: LAMPION-DUCH', info: 'LECI ZA STATKIEM', pic: 'pal_chochin', move: 'flicker' },
   { id: 'companion_kasa', kind: 'companion', rarity: 'SR', name: 'TOWARZYSZ: KASA-OBAKE', info: 'LECI ZA STATKIEM', pic: 'pal_kasa', move: 'hop' },
+  { id: 'companion_hachiko', kind: 'companion', rarity: 'SR', name: 'TOWARZYSZ: HACHIKŌ', info: 'CZEKA, GDY STATEK SPADNIE', pic: 'pal_hachiko', move: 'wait' },
   { id: 'companion_tengu', kind: 'companion', rarity: 'SR', name: 'TOWARZYSZ: TENGU', info: 'LECI ZA STATKIEM', pic: 'pal_tengu', move: 'flutter' },
   { id: 'companion_rabbit', kind: 'companion', rarity: 'SR', name: 'TOWARZYSZ: KRÓLIK', info: 'LECI ZA STATKIEM', pic: 'pal_rabbit', move: 'hop' },
   { id: 'companion_dragon', kind: 'companion', rarity: 'SSR', name: 'TOWARZYSZ: SMOCZEK', info: 'LECI ZA STATKIEM', pic: 'pal_dragon', move: 'swim' },

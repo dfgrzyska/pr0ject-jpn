@@ -330,25 +330,33 @@ export class Player {
     else if (this.flame.rotation) this.flame.setRotation(0);
     this.dot.setPosition(this.x, this.y);
     // the companion: behind the left wing, catching up with the ship, bobbing as it flies
-    const palOn = Boolean(this.ship.look?.pal) && this.alive && this.sprite.visible;
+    const mv = this.ship.look?.palMove;
+    // Hachiko ('wait'): when the ship goes down he stays where it was, sitting, waiting for it to come back; then he
+    // runs to it (no jump to its side)
+    const waiting = mv === 'wait' && Boolean(this.palAt) && (!this.alive || this.entering > 0);
+    const palOn = Boolean(this.ship.look?.pal) && ((this.alive && this.sprite.visible) || waiting);
     this.pal.setVisible(palOn);
-    if (palOn) {
+    if (waiting) {
+      if (this.pal.frame.name !== 'pal_hachiko_sit') this.pal.setFrame('pal_hachiko_sit');
+      const t = this.scene.t;
+      this.pal.setPosition(this.palAt.x, this.palAt.y).setRotation(0).setScale(1, 1 + Math.sin(t * 2.2) * 0.03).setAlpha(1); // (breathing)
+    } else if (palOn) {
+      if (mv === 'wait' && this.pal.frame.name !== this.ship.look.pal) this.pal.setFrame(this.ship.look.pal);
       const tx = this.x - 12;
       const ty = this.y + 10;
-      if (!this.palAt || Math.hypot(tx - this.palAt.x, ty - this.palAt.y) > 60) this.palAt = { x: tx, y: ty };
+      if (!this.palAt || (mv !== 'wait' && Math.hypot(tx - this.palAt.x, ty - this.palAt.y) > 60)) this.palAt = { x: tx, y: ty };
       const k = Math.min(1, dt * 7);
       this.palAt.x += (tx - this.palAt.x) * k;
       this.palAt.y += (ty - this.palAt.y) * k;
       // (each in its own manner: trotting, hopping, rocking, swinging, flickering, fluttering, swimming)
       const t = this.scene.t;
-      const mv = this.ship.look.palMove;
       let ox = 0;
       let oy = Math.sin(t * 5) * 1.2;
       let rot = 0;
       let sx = 1;
       let sy = 1;
       let alpha = 1;
-      if (mv === 'trot') { oy = -Math.abs(Math.sin(t * 9)) * 1.6; rot = Math.sin(t * 9) * 0.09; }
+      if (mv === 'trot' || mv === 'wait') { oy = -Math.abs(Math.sin(t * 9)) * 1.6; rot = Math.sin(t * 9) * 0.09; }
       else if (mv === 'hop') { const h = Math.abs(Math.sin(t * 4.5)); oy = -h * 4.5; sy = 0.86 + h * 0.2; sx = 1.1 - h * 0.12; }
       else if (mv === 'rock') rot = Math.sin(t * 4) * 0.32;
       else if (mv === 'swing') { rot = Math.sin(t * 3) * 0.45; ox = Math.sin(t * 3) * 1.5; }

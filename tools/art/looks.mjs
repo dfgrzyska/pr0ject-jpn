@@ -132,6 +132,7 @@ const GREEN = [0x1f5a2a, 0x37903f, 0x5cc05a, 0x9ae48a];
 const BLUE = [0x1c3f9a, 0x3a82f0, 0x7ac0ff, 0xc8f0ff];
 const PINK = [0xc85a85, 0xf08bb0, 0xffb8d0, 0xffe0ec];
 const SHIBA = [0x9a6428, 0xd8964a, 0xf0b870, 0xffd8a0];
+const AKITA = [0x9a6a38, 0xd4a872, 0xf0d4a4, 0xfff2d6]; // (Hachiko: an Akita, cream and fawn)
 const pal = (fn) => {
   const r = new Raster(PW, PW);
   fn(r);
@@ -268,6 +269,36 @@ export const PALS = {
     eyes(r, 8, 17, 12);
     r.rect(12, 16, 3, 2, INK);
     r.rect(13, 20, 2, 3, 0xf08bb0);
+  }),
+  // Hachiko, the Akita who waited for his master at Shibuya station every day for ten years after he died: a whole dog
+  // (not a face like the others), his left ear down as his was, the tail curled over his back. Running after the
+  // ship; sitting where it went down, waiting for it to come back (Player: 'wait').
+  hachiko: () => pal((r) => {
+    ball(r, 7, 9, 3.4, 3, AKITA); // the tail, curled over the back
+    r.disc(7, 9, 1, AKITA[0]);
+    for (const [x0, x1] of [[4, 1], [8, 6], [19, 22], [22, 25]]) poly(r, [[x0, 15], [x0 + 2, 15], [x1 + 2, 22], [x1, 22]], x0 < 12 ? AKITA[0] : AKITA[1]); // legs, stretched out
+    ball(r, 13, 15, 8.5, 4.6, AKITA); // the body
+    ball(r, 15, 18, 5, 1.8, WHITE); // the pale belly (urajiro)
+    ball(r, 21, 10, 4.6, 4.2, AKITA); // the head
+    ball(r, 24.2, 12, 2.4, 1.8, WHITE); // the muzzle
+    r.rect(25, 11, 2, 1, INK); // the nose
+    poly(r, [[19, 7], [21, 2], [23, 7]], AKITA[1]); // the right ear up
+    poly(r, [[16.5, 7], [14.5, 13.5], [17, 14], [19.5, 9]], AKITA[0]); // the left ear down, as his was
+    r.rect(22, 9, 1, 2, INK); // the eye
+  }),
+  hachiko_sit: () => pal((r) => {
+    ball(r, 6, 19, 3.4, 3, AKITA); // the tail curled at his side
+    r.disc(6, 19, 1, AKITA[0]);
+    ball(r, 11, 19, 6.5, 5.5, AKITA); // the haunches
+    ball(r, 15, 14, 4.5, 6, AKITA); // the chest up
+    ball(r, 16.5, 15, 2.6, 4.4, WHITE); // its pale front
+    for (const x of [14, 17]) r.rect(x, 18, 2, 6, x === 14 ? AKITA[1] : AKITA[2]); // the forelegs, straight
+    ball(r, 16, 7, 4.6, 4.2, AKITA); // the head, looking along the way
+    ball(r, 19.4, 9, 2.4, 1.8, WHITE);
+    r.rect(20, 8, 2, 1, INK);
+    poly(r, [[14, 4], [16, -1], [18, 4]], AKITA[1]);
+    poly(r, [[11.5, 4], [9.5, 10.5], [12, 11], [14.5, 6]], AKITA[0]);
+    r.rect(17, 6, 1, 2, INK);
   }),
   crane: () => pal((r) => {
     poly(r, [[13.5, 12], [1, 5], [7, 17]], 0xffffff);
