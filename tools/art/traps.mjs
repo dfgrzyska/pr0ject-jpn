@@ -195,26 +195,31 @@ function tokyo(f) {
   return s;
 }
 
-/** Kawaguchiko: a bonfire of fallen leaves raked into a heap in a garden, a bamboo rake against it; smouldering, then
- * it catches and throws up a burst of sparks. */
+/** Kawaguchiko: a bonfire of fallen leaves raked into a pit ringed with stones; it burns
+ * low all the time, its smoke rising, so it reads as a fire and never as something to pick up (no plate under it, no
+ * handle off it); then it catches and throws up a burst of sparks. */
 function kawaguchiko(f) {
   const s = sprite();
-  shadow(s, 34, 42, 17, 7);
-  // the heap: leaves of every colour, red maples on top, gold ginkgo and larch, brown oak, a stick or two
-  for (let k = 0; k < 26; k++) {
-    const a = k * 2.399;
-    const r = Math.sqrt(k / 26) * 13;
-    const [x, y] = [30 + Math.cos(a) * r, 34 + Math.sin(a) * r * 0.62];
-    s.ellipse(x, y, 3.6, 2.4, k % 3 === 0 ? 'lg' : 'lv2', { bias: 0.05 + (k % 2) * 0.05 });
+  // the ring of stones round the pit, ash grey between them
+  for (let k = 0; k < 13; k++) {
+    const a = (k / 13) * TAU + 0.2;
+    s.ellipse(30 + Math.cos(a) * 16, 35 + Math.sin(a) * 10, 2.8 - (k % 3) * 0.3, 2.2, 'st', { bias: Math.sin(a) * -0.1, tex: 0.3, seed: k });
   }
-  for (const [x0, y0, x1, y1] of [[20, 30, 30, 36], [33, 28, 40, 38]]) s.tube(x0, y0, x1, y1, 0.9, 'wd');
-  // the bamboo rake left leaning on it, its fan of tines
-  s.tube(52, 18, 40, 34, 0.9, 'wd', { bias: 0.15 });
-  for (let i = -3; i <= 3; i++) s.line(52, 18, 56 + i * 1.6, 10 + Math.abs(i) * 0.6, 0xd8c890, 1, 0.9);
-  const k = f === 0 ? 0.35 : f === 1 ? 0.75 : 1;
-  for (let i = 0; i < 6; i++) s.dot(25 + i * 2, 34 + (i % 2), 1.1, f ? 0xffa030 : 0xc04010, k); // embers under the leaves
-  if (f === 0) for (let i = 0; i < 4; i++) s.ellipse(30 + Math.sin(i * 1.7) * 3, 26 - i * 4, 1.8 - i * 0.25, 1.6 - i * 0.2, 'sm', { flat: 0.6, glow: true }); // a wisp of smoke
-  if (f >= 1) flame(s, 30, 32, f === 1 ? 9 : f === 2 ? 16 : 20, f === 1 ? 4 : 7, f);
+  // the heap: leaves of every colour, red maples, gold ginkgo and larch, the edges blackened, sticks across
+  for (let k = 0; k < 22; k++) {
+    const a = k * 2.399;
+    const r = Math.sqrt(k / 22) * 10;
+    const [x, y] = [30 + Math.cos(a) * r, 35 + Math.sin(a) * r * 0.62];
+    s.ellipse(x, y, 3.2, 2.2, k % 3 === 0 ? 'lg' : 'lv2', { bias: 0.02 + (k % 2) * 0.05 });
+    if (r > 6) s.dot(x + Math.cos(a) * 2, y + Math.sin(a) * 1.4, 1.1, 0x1a1210, 0.8);
+  }
+  for (const [x0, y0, x1, y1] of [[22, 32, 32, 38], [34, 30, 39, 39]]) s.tube(x0, y0, x1, y1, 0.9, 'wd');
+  // embers glowing through it, flames always, higher as it wakes
+  for (let i = 0; i < 7; i++) s.dot(24 + i * 2, 35 + (i % 2), 1.2, f ? 0xffb040 : 0xff7020, 0.9);
+  flame(s, 27, 34, f === 0 ? 7 : f === 1 ? 11 : f === 2 ? 16 : 20, f === 0 ? 3 : f === 1 ? 4.5 : 7, f);
+  flame(s, 33, 35, f === 0 ? 5 : f === 1 ? 8 : 12, f === 0 ? 2.4 : 3.6, f + 1.7);
+  // its smoke going up the screen in puffs, thick while it smoulders
+  for (let i = 0; i < 3; i++) s.ellipse(29 + Math.sin(i * 1.7 + f) * 2.5, 23 - i * 5, 3.4 - i * 0.6, 2.8 - i * 0.5, 'sm', { flat: 0.78 + i * 0.06 });
   if (f >= 2) for (let i = 0; i < 9; i++) s.ellipse(30 + Math.sin(i * 2.3 + f) * 13, 6 + i * 2.4, 0.9, 0.9, 'fl', { flat: i % 3 ? 0.95 : 0.7, glow: true }); // sparks
   return s;
 }

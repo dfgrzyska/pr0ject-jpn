@@ -1,7 +1,7 @@
 // Kawaguchiko's enemies at 540 px (docs/plan-kawaguchiko.md, section 5 and phase 9): the red dragonflies of autumn,
 // akatombo, in swarms; a largemouth bass, the anglers' fish of the lake, leaping in its arc; kasagumo, the cap
-// cloud that settles on Fuji's summit, as a sleepy spirit that spits drops; a pilgrims' wooden wayside shrine whose
-// round bronze mirror turns to the ship and flashes; strings of persimmons drying (hoshigaki), carrying a charm in
+// cloud that settles on Fuji's summit, as a sleepy spirit that spits drops; a pilgrims' wayside shrine whose dark
+// bronze mirror turns to the ship and glints red; strings of persimmons drying (hoshigaki), carrying a charm in
 // the colour of their power. Seen from above like every city's, drawn with HiSprite (tools/lib/hisprite.mjs).
 import { HiSprite, tones, speckle, mottle, mix2, fur } from '../../lib/hisprite.mjs';
 import { usagiFrames } from './usagi.mjs';
@@ -15,7 +15,10 @@ const RAMPS = {
   b: tones([0x8a8a70, 0xd8d8c0, 0xfffff0]), // its pale belly
   c: tones([0x8a7aa0, 0xe4dcef, 0xffffff]), // cloud, lit pink-white by the low sun
   w: tones([0x4a2e18, 0x8a5a32, 0xc8925a]), // weathered wood
-  m: tones([0x6a4a1a, 0xc8a050, 0xfff0b0]), // the bronze mirror
+  m: tones([0x3a2a12, 0x7a5a2a, 0xc09a50]), // the bronze mirror's cast back and rim, dark with age
+  v: tones([0x161c2a, 0x3e4a64, 0x98a8c8]), // its polished face, dark, the evening sky in it
+  p: tones([0x1a4038, 0x357a64, 0x82c8a8]), // the shrine's copper roof, gone green
+  q: tones([0x4a1a4a, 0x8a3a8a, 0xd080c8]), // the mirror's purple tassels
   k: tones([0x7a2a0a, 0xd8601a, 0xffa858]), // persimmon, drying
   s: tones([0x6a5a30, 0xb8a060, 0xe8d8a0]), // straw rope
   t: tones([0x3a3a40, 0x6a6a74, 0xa8a8b4]), // the shrine's roof, its copper gone dark
@@ -138,24 +141,43 @@ export function hoshigaki(color, f) {
 }
 
 // ---------------------------------------------------------------- turret: a pilgrims' wayside shrine (base 57 x 57) and its mirror (head 51 x 51)
+// Drawn to read at a glance as a building on the ground with a weapon on it, never as a pickup: a gabled roof of
+// copper gone green with crossed chigi at its ends, a thick straw rope with white papers along the front; the mirror a
+// dark bronze disc on two posts, the evening's red glinting on its face where it turns to the ship (and the whole of
+// it glowing red as it is about to fire: skins.js, heat).
 export function hokoraBase(wreck) {
   const s = new HiSprite(57, 57, RAMPS);
   const c = 28.5;
   const grain = { pat: mix2(fur(0, { amt: 0.14, len: 10, seed: 3 }), speckle({ amt: 0.1, seed: 5 })) };
-  // the stone footing, the little gabled roof of dark copper seen from above, a straw rope with papers under its eave
-  s.poly([[6, 10], [51, 10], [51, 50], [6, 50]], 'E', { flat: 0.45, tex: 0.3 });
+  // the stone footing
+  s.poly([[5, 9], [52, 9], [52, 52], [5, 52]], 'E', { flat: 0.38, tex: 0.35 });
   if (wreck) {
     s.poly([[10, 16], [47, 20], [44, 46], [12, 42]], 'w', { flat: 0.35, ...grain });
+    s.poly([[14, 14], [30, 18], [26, 30], [12, 26]], 'p', { flat: 0.4, pat: speckle({ amt: 0.2, seed: 9 }) }); // a piece of the roof
     for (const [x0, y0, x1, y1] of [[12, 18], [44, 22], [20, 44], [40, 40]].map(([x, y]) => [x, y, c, c])) s.line(x0, y0, x1, y1, INK, 2);
-    for (const [x, y] of [[18, 26], [36, 30], [26, 38], [31, 21]]) s.poly([[x, y], [x + 4, y + 1], [x + 1, y + 4]], 'm', { flat: 0.85 }); // the mirror in shards
+    for (const [x, y] of [[34, 30], [26, 38], [38, 22]]) s.poly([[x, y], [x + 4, y + 1], [x + 1, y + 4]], 'v', { flat: 0.8 }); // the mirror in shards
+    s.tube(10, 46, 46, 44, 1.6, 's'); // the rope, fallen
     return s.render();
   }
-  s.poly([[9, 13], [48, 13], [48, 47], [9, 47]], 't', { flat: 0.5, pat: speckle({ amt: 0.16, seed: 9 }) });
-  s.poly([[9, 13], [28.5, 13], [28.5, 47], [9, 47]], 't', { flat: 0.68, pat: speckle({ amt: 0.16, seed: 9 }) }); // the slope to the light
-  s.line(c, 12, c, 48, 0x22242a, 2); // the ridge
-  for (let x = 11; x < 47; x += 4) s.line(x, 47, x + 1, 51, 0xe8e4d8, 1); // the papers hanging from the rope
-  s.line(9, 47.5, 48, 47.5, 0xb8a060, 1.5);
-  for (const [x, y] of [[13, 16], [44, 44]]) s.dot(x, y, 1.6, 0x4a7a4a, 0.8); // lichen
+  // the roof: two slopes of green copper meeting at the ridge (running down the screen), the eaves' wooden edge
+  s.poly([[8, 12], [49, 12], [49, 46], [8, 46]], 'w', { flat: 0.42, ...grain });
+  s.poly([[9, 12], [28.5, 12], [28.5, 45], [9, 45]], 'p', { flat: 0.68, pat: speckle({ amt: 0.14, seed: 9 }) }); // the slope to the light
+  s.poly([[28.5, 12], [48, 12], [48, 45], [28.5, 45]], 'p', { flat: 0.42, pat: speckle({ amt: 0.14, seed: 10 }) });
+  for (let y = 15; y < 44; y += 4) {
+    s.line(10, y, 27, y, 0x1a4038, 1, 0.55); // the copper's seams
+    s.line(30, y, 47, y, 0x123028, 1, 0.55);
+  }
+  s.line(c, 11, c, 46, 0x5a3a1a, 3); // the ridge beam
+  // the chigi: crossed boards at either end of the ridge
+  for (const y of [11, 46]) {
+    s.line(c - 5, y - 4, c + 5, y + 4, 0x8a5a32, 2);
+    s.line(c + 5, y - 4, c - 5, y + 4, 0x8a5a32, 2);
+  }
+  for (const x of [20, 37]) s.ellipse(x, c, 1.6, 2.4, 'w', { flat: 0.7 }); // katsuogi logs across the ridge
+  // the thick straw rope along the front, its twist, the zigzag papers hanging from it
+  s.tube(7, 48, 50, 48, 2.2, 's', { pat: fur(0.8, { amt: 0.25, len: 3, seed: 4 }) });
+  for (let x = 10; x < 48; x += 7) s.poly([[x, 49], [x + 2.5, 50], [x + 0.5, 52], [x + 3, 54], [x + 1, 55]], 'W', { flat: 0.95 });
+  for (const [x, y] of [[12, 16], [45, 42]]) s.dot(x, y, 1.4, 0x8ac0a0, 0.7); // verdigris
   return s.render({ outline: 2 });
 }
 
@@ -165,15 +187,24 @@ export function hokoraHead(i) {
   const a = (i / 16) * TAU;
   const dx = -Math.sin(a);
   const dy = Math.cos(a);
-  // the round bronze mirror on its wooden stand, its face turned towards the ship; a lit crescent on the face
-  s.tube(c - dx * 6, c - dy * 6, c + dx * 4, c + dy * 4, 3, 'w', { rb: 2.4 });
-  const [mx, my] = [c + dx * 7, c + dy * 7];
-  s.ellipse(mx, my, 11, 11, 'm', { bias: 0.05 });
-  s.ellipse(mx, my, 8, 8, 'm', { flat: 0.92, glow: true });
-  s.paint([mx - 8, my - 8, mx + 8, my + 8], (x, y) => Math.hypot(x - mx, y - my) < 8 && (x - mx) * dx + (y - my) * dy > 2.5, 'W', () => 0.95, { glow: true });
+  const [px, py] = [-dy, dx]; // (across)
+  // the mirror on two wooden posts, turned towards the ship; purple tassels hanging from its stand
+  for (const k of [-1, 1]) s.tube(c + px * k * 9 - dx * 4, c + py * k * 9 - dy * 4, c + px * k * 8 + dx * 3, c + py * k * 8 + dy * 3, 1.6, 'w');
+  s.tube(c + px * 10, c + py * 10, c - px * 10, c - py * 10, 1.4, 'w'); // the crossbar
+  for (const k of [-1, 1]) s.tube(c + px * k * 10, c + py * k * 10, c + px * k * 12 - dx * 6, c + py * k * 12 - dy * 6, 0.9, 'q', { rb: 1.3 });
+  const [mx, my] = [c + dx * 5, c + dy * 5];
+  s.ellipse(mx, my, 9.5, 9.5, 'm', { bias: -0.05 }); // the cast rim
+  s.ellipse(mx, my, 7, 7, 'v', { flat: 0.42 }); // the dark polished face, flat
+  s.line(mx - 4, my - 1, mx - 1, my - 4, 0xb8c8e0, 1, 0.7); // a streak of the sky in it
+  // the sunset's red glinting on the face's edge turned to the ship
+  s.paint([mx - 7, my - 7, mx + 7, my + 7], (x, y) => {
+    const d = Math.hypot(x - mx, y - my);
+    return d < 7 && d > 3.6 && (x - mx) * dx + (y - my) * dy > 3;
+  }, 'r', () => 0.8);
+  s.dot(mx + dx * 4.5, my + dy * 4.5, 1, 0xffd0a0);
   for (let k = 0; k < 12; k++) {
     const b = (k / 12) * TAU;
-    s.px(mx + Math.cos(b) * 10, my + Math.sin(b) * 10, 0x6a4a1a); // the cast rim's pattern
+    s.px(mx + Math.cos(b) * 8.4, my + Math.sin(b) * 8.4, 0x2a1a0a); // the cast rim's pattern
   }
   return s.render();
 }

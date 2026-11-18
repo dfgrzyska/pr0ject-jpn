@@ -9,6 +9,10 @@ import { lots } from '../tokyo/blocks.mjs';
 import { PAL, shade } from '../tokyo/kit.mjs';
 import { makeParts, VERMILION } from './parts.mjs';
 import { swanFrame, rowboatFrame } from './boats.mjs';
+import { inShape } from '../tokyo/geom.mjs';
+import { WATER } from './route.mjs';
+
+const LAKE = WATER.find((w) => w.id === 'kawaguchiko');
 
 export function shore(ctx) {
   const { kit, blocks, pave, plot, props, S } = ctx;
@@ -324,7 +328,10 @@ export function shore(ctx) {
       for (let u = u0; u < u1; u += 7) {
         const left = (u / 7) % 2 < 1;
         const f = (u + x) % 3 === 0 ? 'row' : 'swan';
-        mark(x + (left ? -4.2 : 4.2), u, (X, Y) => (f === 'swan' ? swanAt : rowAt)(X, Y), u);
+        const bx = x + (left ? -4.8 : 4.8);
+        // (only where it floats: the piers start on the beach)
+        if (![-4.5, 0, 4.5].every((du) => [-2, 2].every((dx) => inShape(LAKE, bx + dx, u + du)))) continue;
+        mark(bx, u, (X, Y) => (f === 'swan' ? swanAt : rowAt)(X, Y), u);
       }
   }
   {
@@ -336,7 +343,7 @@ export function shore(ctx) {
 
   /** A swan boat seen from above at the fine pixel (X, Y), its head up the strip. */
   function swanAt(X, Y) {
-    swanFrame((i, j, c) => P(X - 4 + i, Y - 7 + j, c));
+    swanFrame((i, j, c) => P(X - 6 + i, Y - 12 + j, c));
   }
   function rowAt(X, Y) {
     rowboatFrame((i, j, c) => P(X - 3 + i, Y - 7 + j, c));

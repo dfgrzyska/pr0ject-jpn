@@ -1263,7 +1263,7 @@ export class Enemies {
       const i = ((Math.round(th / (TAU / 16)) % 16) + 16) % 16;
       e.head.setFrame(`${tl.head}${i}`).setPosition(e.x, e.y - 1);
     }
-    e.heat = e.pattern === 'puff' && this.canFire(e) && e.timer < 0.55; // a steam nozzle glows red before it fires
+    e.heat = (e.pattern === 'puff' || tl.heat) && this.canFire(e) && e.timer < 0.55; // a steam nozzle (or a look with heat) glows red before it fires
     if (this.canFire(e)) {
       e.timer -= dt * this.haste;
       if (e.timer <= 0) {

@@ -66,7 +66,7 @@ export function lake(ctx) {
 
   // ---------------------------------------------------------------- the boats
   const frame = (painter, len, wid, ...args) => kit.frame(len / S, wid / S, 2800, (put) => painter((a, b, c) => put(a, b, c), ...args));
-  const swanF = frame(swan, 15, 9);
+  const swans = [0xe86a8a, 0x6aa8e0, 0xf0c040].map((c) => frame(swan, 25, 12, c)); // (their seats pink, sky blue and yellow)
   const rowF = frame(rowboat, 14, 6);
   const anglers = [0x2a6aa0, 0xc04a30, 0x3a7a4a].map((c) => frame(anglerBoat, 16, 7, c));
   const motorF = frame(motorboat, 20, 8);
@@ -79,7 +79,8 @@ export function lake(ctx) {
   props.wander(140, 3620, 24, 70, [anglers[2], rowF, anglers[0]], { n: 3, sp: 0.7, turn: 'rot', fps: 1, idle: 0.6, d: -0.4 });
   props.wander(110, 2560, 30, 80, [rowF, anglers[1]], { n: 3, sp: 0.8, turn: 'rot', fps: 1, idle: 0.5, d: -0.4 });
   // swan boats and rowing boats out from the marina
-  props.wander(126, 2230, 26, 30, [swanF, swanF, rowF], { n: 5, sp: 1.6, turn: 'rot', fps: 1, idle: 0.4, d: -0.4 });
+  props.wander(126, 2232, 28, 32, [...swans, swans[0], rowF], { n: 7, sp: 1.6, turn: 'rot', fps: 1, idle: 0.4, d: -0.4 });
+  props.wander(40, 2470, 22, 26, swans, { n: 3, sp: 1.4, turn: 'rot', fps: 1, idle: 0.5, d: -0.4 }); // (a few further out along the shore)
   // a motorboat across the lake, the sightseeing boat out round the island and back to its landing
   props.path([[-30, 2620], [50, 2660], [130, 2740], [210, 2790]], [motorF], { sp: 16, n: 1, mode: 'wrap', turn: 'rot', s0: 0.2, d: -0.4, wake: { f: wake, every: 6, life: 2.4 } });
   props.path([[210, 3560], [120, 3600], [40, 3680], [-30, 3700]], [motorF], { sp: 14, n: 1, mode: 'wrap', turn: 'rot', s0: 0.7, d: -0.4, wake: { f: wake, every: 6, life: 2.4 } });

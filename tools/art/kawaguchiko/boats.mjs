@@ -9,19 +9,43 @@ const oval = (a, b, len, wid, bowSharp = 0.6) => {
   return Math.abs(b - (wid - 1) / 2) <= half;
 };
 
-/** A swan pedal boat: a white body, the neck curving up from its bow with an orange beak, a canopy over the seats. */
-export function swan(put) {
-  const [len, wid] = [12, 9];
+/** A swan pedal boat (25 x 12 fine pixels): a broad white body, its raised wings feathered along the sides with grey
+ * tips at the stern and the tail between them, the open cockpit with its two seats (`seat`: their colour; the fleet
+ * has a few), the neck rising from the broad chest at the bow, the head with two eyes, the black knob and the orange
+ * beak out in front. */
+export function swan(put, seat = 0xe86a8a) {
+  const [len, wid] = [19, 12];
+  // the body round like a bird's: widest behind the middle, rounding into the tail and into the chest
+  const body = (a, b) => {
+    const t = (a + 0.5) / len;
+    const half = (wid / 2) * Math.sin(Math.PI * Math.min(1, t * 0.92 + 0.06)) ** 0.55 * (t > 0.55 ? 1 - (t - 0.55) * 0.55 : 1);
+    return Math.abs(b + 0.5 - wid / 2) <= half;
+  };
   for (let a = 0; a < len; a++)
     for (let b = 0; b < wid; b++) {
-      if (!oval(a, b, len, wid, 0.8)) continue;
-      const edge = !oval(a, b - 1, len, wid, 0.8) || !oval(a, b + 1, len, wid, 0.8);
-      put(a, b, edge ? 0xb8c0c8 : b < 3 ? 0xffffff : 0xe8ecf0);
+      if (!body(a, b)) continue;
+      const edge = !body(a, b - 1) || !body(a, b + 1) || !body(a - 1, b) || !body(a + 1, b);
+      const side = b < 3 || b > wid - 4;
+      const feather = side && a > 1 && a < 15 && (a + b) % 3 === 0; // the wings' rows of feathers
+      const tip = side && a < 4; // their grey tips at the stern
+      put(a, b, edge ? 0x8e98a6 : tip ? 0xb4bcc8 : feather ? 0xccd4de : b < wid / 2 ? 0xffffff : 0xe4eaf0);
     }
-  for (let a = 3; a < 8; a++) for (let b = 2; b < 7; b++) put(a, b, a === 3 || a === 7 ? 0xc04a6a : 0xe86a8a); // the canopy
-  for (const [a, b] of [[9, 4], [10, 4], [11, 3], [12, 3], [13, 3]]) put(a, b, 0xffffff); // the neck
-  put(14, 3, 0xf0a030); // the beak
-  put(12, 2, 0x2a2a30); // the eye
+  for (const [a, b] of [[0, 5], [0, 6], [1, 5], [1, 6]]) put(a, b, 0xe8ecf0); // the tail
+  // the open cockpit: dark inside, two seats one behind the other
+  for (let a = 5; a < 13; a++)
+    for (let b = 3; b < wid - 3; b++) {
+      if ((a === 5 || a === 12) && (b === 3 || b === wid - 4)) continue; // (its corners rounded)
+      const rim = a === 5 || a === 12 || b === 3 || b === wid - 4;
+      put(a, b, rim ? 0x6a7280 : (a === 6 || a === 7 || a === 10 || a === 11) && b > 3 && b < wid - 4 ? (a % 2 ? shade(seat, 0.8) : seat) : 0x3a4250);
+    }
+  // the neck from the chest, the head, the knob and the beak
+  // (the neck bows a little to one side and back, as a swan's does)
+  for (const [a, b] of [[16, 4], [16, 5], [16, 6], [16, 7], [17, 4], [17, 5], [17, 6], [18, 4], [18, 5], [19, 4], [19, 5], [20, 5], [20, 6], [21, 5], [21, 6], [21, 7], [22, 5], [22, 6], [22, 7], [23, 6]]) put(a, b, (b === 6 && a < 20) || (a === 16 && b === 7) ? 0xdde3ea : 0xffffff);
+  put(22, 4, 0x8e98a6); // the head's edge
+  put(22, 7, 0x1a1a22); // the eye
+  put(23, 5, 0x1a1a20); // the knob
+  put(24, 6, 0xf09a28); // the beak
+  put(24, 7, 0xd0781a);
 }
 
 /** A rowing boat for hire: wooden, two thwarts, the oars out. */
@@ -83,5 +107,5 @@ export function sightseer(put) {
 
 /** A painter turned to lie with the bow up the strip: put(x, y) with y down the strip. */
 export const upright = (painter, len) => (put) => painter((a, b, c) => put(b, len - 1 - a, c));
-export const swanFrame = upright(swan, 15);
+export const swanFrame = upright(swan, 25);
 export const rowboatFrame = upright(rowboat, 14);

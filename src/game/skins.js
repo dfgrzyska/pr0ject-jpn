@@ -150,7 +150,7 @@ export const SKINS = {
     diver: { frame: 'k_bass_0', anim: 'k_bass' },
     carrier: { frame: 'k_hoshigaki_{c}_0', anim: 'k_hoshigaki_{c}' },
     heavy: { frame: 'k_usagi_rest_0', kind: 'usagi' }, // the miniboss: KACHI-KACHI USAGI (kawaguchiko-usagi.js)
-    turret: { base: 'k_hokora_base', head: 'k_hokora_head_', wreck: 'k_hokora_wreck' },
+    turret: { base: 'k_hokora_base', head: 'k_hokora_head_', wreck: 'k_hokora_wreck', heat: true }, // (its mirror glows red before it fires)
   },
   // Hiroshima & Miyajima: maple-leaf spirit flocks, armored Seto oysters with pearl crits, scooping shamoji paddles,
   // tidal stone lanterns, Heike-gani samurai crab, and Sankibō the Great Tengu of Mount Misen
