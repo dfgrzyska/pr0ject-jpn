@@ -435,6 +435,16 @@ export class Sfx {
     if (big) this.blip('sine', 90, 36, 0.6, 0.22, t);
   }
 
+  /** An earthen crock breaking on the water: a hard clack, the shards' clatter, a splash. */
+  crock() {
+    if (!this.ready('crock', 0.1)) return;
+    const t = this.now();
+    this.s.noiseBurst(t, 0.03, 'bandpass', 2400, 2, 0.22);
+    this.blip('triangle', 980, 420, 0.07, 0.07, t);
+    for (let i = 0; i < 4; i++) this.s.noiseBurst(t + 0.03 + Math.random() * 0.12, 0.012, 'bandpass', 3500 + Math.random() * 2500, 5, 0.06);
+    this.hiss(t + 0.04, 0.2, 0.04, 1300, 500, 0.8, 0.02);
+  }
+
   /** A rope parting: the crack of the fibres and the slack end whipping off. */
   rope() {
     if (!this.ready('rope', 0.08)) return;

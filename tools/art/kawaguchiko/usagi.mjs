@@ -2,9 +2,10 @@
 // kawaguchiko-usagi.js). The white hare of the old tale in a red headband, sitting in his wooden boat on the lake,
 // a striker and a flint in his paws. Seen from above, the boat's bow down the screen (towards the ship), the hare
 // facing the same way, his long ears laid back along the boat. Poses: at rest (an ear twitching), striking sparks,
-// throwing a burning bundle of brushwood, rowing (four strokes), worn out; the empty boat; leaping, and waving from
-// the ropeway's gondola as it carries him off. The tanuki's boats of mud with a clay hare in each (soft, soaking,
-// crumbling) and the bundles burning on the water.
+// throwing a burning bundle of brushwood, rowing (four strokes), beating the water with an oar, worn out; the
+// empty boat; leaping, and waving from the ropeway's gondola as it carries him off. The tanuki's boats of mud with a
+// clay hare in each (soft, soaking, crumbling), the bundles burning on the water, the crock of red pepper paste and
+// its flakes.
 import { HiSprite, tones, speckle, mottle, mix2, fur } from '../../lib/hisprite.mjs';
 
 const INK = 0x14101c;
@@ -19,6 +20,9 @@ const RAMPS = {
   f: [0xa0400a, 0xe06a10, 0xff9a30, 0xffd070, 0xffffff], // flame
   g: tones([0x3a4a5a, 0x8a98a8, 0xd8e0e8]), // the gondola's paint
   o: tones([0x6a5a3a, 0xb8a06a, 0xe8d8a8]), // the oars
+  k: tones([0x2a1a14, 0x6a3a22, 0xa8683a]), // the crock's dark glaze
+  q: tones([0x8a1006, 0xe0301a, 0xff8a4a]), // red pepper
+  n: tones([0x6a5a30, 0xb09a5a, 0xe0d098]), // straw rope
 };
 const W = 66;
 const H = 102;
@@ -102,6 +106,22 @@ function hare(s, pose, f = 0, y0 = 50) {
       s.ellipse(CX + sx * 30, y0 + 6 + sw, 2.4, 4.4, 'o', { flat: 0.55 });
       s.ellipse(CX + sx * 6, y0 + 12, 2.2, 2, 'h', { flat: 0.72 });
     }
+  } else if (pose === 'slam') {
+    // one oar in both paws: f 0 swung up over his head (its blade high, nearer us, over the stern), f 1 brought down
+    // on the water before the bow in a splash
+    const [bx, by] = f ? [CX + 20, y0 + 42] : [CX + 15, y0 - 24];
+    s.tube(CX + 3, y0 + 12, bx, by, f ? 1.2 : 1.7, 'o');
+    s.ellipse(bx, by, f ? 3 : 4.6, f ? 5 : 7.4, 'o', { flat: f ? 0.5 : 0.7 });
+    for (const sx of [-1, 1]) s.ellipse(CX + 3 + sx * 3 + (f ? 1 : 0), y0 + (f ? 17 : 13), 2.5, 2.1, 'h', { flat: 0.74 });
+    if (f) {
+      // the splash: drops thrown out round the blade, the water white over it
+      s.dot(bx, by, 5.4, 0xe8f4ff, 0.4);
+      for (let i = 0; i < 11; i++) {
+        const a = (i / 11) * Math.PI * 2 + 0.3;
+        const r = 6.5 + (i % 3) * 1.6;
+        s.dot(bx + Math.cos(a) * r, by + Math.sin(a) * r * 0.75, 0.9 + (i % 2) * 0.5, 0xf4faff, 0.95);
+      }
+    }
   } else if (pose === 'rest' || tired) {
     for (const sx of [-1, 1]) s.ellipse(CX + sx * 6, y0 + 18, 2.4, 2, 'h', { flat: 0.7 });
   }
@@ -111,7 +131,7 @@ function hare(s, pose, f = 0, y0 = 50) {
 export function usagi(pose, f = 0) {
   const s = new HiSprite(W, H, RAMPS);
   boat(s);
-  if (pose !== 'row') for (const sx of [-1, 1]) s.tube(CX + sx * 10, 22, CX + sx * 9, 84, 1, 'o', { bias: 0.1 }); // (the oars shipped along the sides)
+  if (pose !== 'row') for (const sx of pose === 'slam' ? [-1] : [-1, 1]) s.tube(CX + sx * 10, 22, CX + sx * 9, 84, 1, 'o', { bias: 0.1 }); // (the oars shipped along the sides; beating the water, he has the other)
   if (pose === 'empty') return s.render();
   hare(s, pose, f);
   return s.render();
@@ -175,6 +195,36 @@ export function shiba(f) {
   return s.render();
 }
 
+/** The crock of red pepper paste he throws (the tale's "medicine" for the burnt tanuki): a small dark-glazed jar seen
+ * from above, the paste red in its mouth, a straw rope round its neck. */
+export function tsubo() {
+  const s = new HiSprite(33, 33, RAMPS);
+  s.ellipse(16.5, 18, 12, 11, 'k', { bias: 0.08, pat: speckle({ amt: 0.06 }) });
+  s.dot(12, 13, 2.2, 0xd8a070, 0.45); // the glaze's shine
+  s.ellipse(16.5, 15, 7.4, 6.6, 'n', { pat: fur(0, { amt: 0.2, len: 2, seed: 9 }) }); // the rope round the neck
+  s.ellipse(16.5, 15, 5.6, 5, 'k', { flat: 0.3 }); // the rim
+  s.ellipse(16.5, 15, 4.2, 3.6, 'q', { bias: 0.1, pat: mottle({ amt: 0.25, scale: 1.5, seed: 4 }) }); // the paste
+  for (const [x, y] of [[15, 14], [18, 16], [17, 13]]) s.dot(x, y, 0.6, 0xffd0a0, 0.9); // its seeds
+  s.tube(22, 12, 28, 6, 1, 'n'); // the rope's ends
+  s.tube(22, 13, 29, 11, 1, 'n');
+  return s.render();
+}
+
+/** A flake of red pepper flying (a bullet of his): a curled sliver in a hot glow, so that it reads as a shot over
+ * the maple leaves drifting on the lake; two turns of it. */
+export function flake(f) {
+  const s = new HiSprite(27, 27, RAMPS);
+  s.ellipse(13.5, 13.5, 8.6, 8.6, 'f', { flat: 0.62, glow: true }); // the glow, hot orange to its pale core
+  s.ellipse(13.5, 13.5, 5.6, 5.6, 'f', { flat: 0.86, glow: true });
+  // a long curled sliver of the pod's skin: across, or end on as it turns over
+  if (f) s.poly([[9, 6], [15, 5], [19, 10], [18, 19], [12, 21], [9, 14]], 'q', { flat: 0.4 });
+  else s.poly([[5, 17], [8, 10], [15, 6], [22, 8], [17, 12], [11, 15], [7, 20]], 'q', { flat: 0.4 });
+  if (f) s.line(11, 7, 16, 6, 0xffb070, 1.2, 0.95);
+  else s.line(8, 13, 15, 8, 0xffb070, 1.2, 0.95); // its lit edge
+  s.dot(13, 13, 1, 0xfff0c8); // a seed stuck to it
+  return s.render();
+}
+
 /** Every frame of the fight, for the city's atlas (enemies.mjs). */
 export function usagiFrames(add) {
   for (const f of [0, 1]) add(`k_usagi_rest_${f}`, usagi('rest', f));
@@ -187,4 +237,7 @@ export function usagiFrames(add) {
   for (const f of [0, 1]) add(`k_gondola_${f}`, gondola(f));
   for (const k of [0, 1, 2]) add(`k_dorobune_${k}`, dorobune(k));
   for (const f of [0, 1]) add(`k_shiba_${f}`, shiba(f));
+  for (const f of [0, 1]) add(`k_usagi_slam_${f}`, usagi('slam', f));
+  add('k_tsubo', tsubo());
+  for (const f of [0, 1]) add(`k_flake_${f}`, flake(f));
 }

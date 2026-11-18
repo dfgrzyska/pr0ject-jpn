@@ -47,7 +47,7 @@ test('stage 10 names only its own songs; the hare and the giant bring theirs', (
 });
 
 test('the Kawaguchiko sounds exist and are played', () => {
-  for (const k of ['flint', 'oar', 'crackle', 'rustle', 'earth', 'rope']) assert.equal(typeof Sfx.prototype[k], 'function', k);
+  for (const k of ['flint', 'oar', 'crackle', 'rustle', 'earth', 'rope', 'crock']) assert.equal(typeof Sfx.prototype[k], 'function', k);
   const used = read('game/enemies/kawaguchiko-usagi.js') + read('game/enemies/kawaguchiko-daidara.js') + read('game/skins.js');
-  for (const k of ['flint?.(', 'oar?.(', 'crackle?.(', 'earth?.(', 'rope?.(', "'rustle'", "sound: 'crackle'"]) assert.ok(used.includes(k), k);
+  for (const k of ['flint?.(', 'oar?.(', 'crackle?.(', 'earth?.(', 'rope?.(', 'crock?.(', "'rustle'", "sound: 'crackle'"]) assert.ok(used.includes(k), k);
 });
