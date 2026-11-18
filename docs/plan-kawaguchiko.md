@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Fazy 0–7 gotowe: cała taśma narysowana (miasto, brzeg i jezioro w jesieni, północny brzeg, tunel klonów), panorama Fuji w grze. 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Fazy 0–8 gotowe: całe tło etapu (taśma, daleka i bliska warstwa, panorama Fuji). Dalej przeciwnicy, fale i walki. 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -187,9 +187,9 @@ Wymaga: faza 4. Plik: `tools/art/kawaguchiko/north.mjs`.
 
 ### Faza 8: warstwy daleka i bliska
 Wymaga: fazy 4 i 5. Pliki: `tools/art/kawaguchiko/far.mjs`, `src/game/Parallax.js` (tylko jeśli trzeba).
-- [ ] Daleka warstwa pod jeziorem: niebo złotej godziny i rozmyte odbicie Fuji, rozbijane zmarszczkami
-- [ ] Bliska warstwa: tylko to, co lata (ważki, liście, klucz gęsi)
-- [ ] Przejścia pory dnia sprawdzone na całej trasie
+- [x] Daleka warstwa pod jeziorem: woda z pasmami światła złotej godziny i odbicie Fuji do góry nogami (podstawa ku drugiemu brzegowi, czapa ku nam), miękkie, porwane zmarszczkami, z błyskami słońca; pętla bez szwu
+- [x] Bliska warstwa: spadające liście klonu (istniejący rodzaj `momiji` z Miyajimy, bez nowego kodu). Ważki są przeciwnikami, a gęsi lecą w panoramie, więc w bliskiej warstwie ich nie ma
+- [x] Przejścia pory dnia sprawdzone w grze: 23, 65, 83, 99, 143 i 203 s
 
 ### Faza 9: grafika przeciwników, pułapki i zasadzki
 Wymaga: faza 0. Pliki: `tools/art/kawaguchiko/enemies.mjs`, `sprites.mjs`, `tools/art/traps.mjs`, `tools/art/ambush.mjs`, `src/game/skins.js`.
@@ -244,6 +244,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 8 | `far.mjs`: jezioro z odbiciem Fuji (okresy szumów dobrane do pętli 384 px); `stage10.json`: `"near": "momiji"`. | Następne: faza 9 (grafika przeciwników, pułapki i zasadzki). |
 | 2026-11-18 | Claude | 7 | Północny brzeg w `tools/art/kawaguchiko/north.mjs`; `DRAWN_TO` = 6748 (żadna działka nie jest już kreskowana). Kawałek za zakrętem drogi wypełniany osobno wyszukiwarką skośną (inaczej klin zjadały wąskie paski). Persymony z owocami także dla drzew zamówionych wprost (`kaki`). | Następne: faza 8 (daleka warstwa pod jeziorem z odbiciem Fuji, bliska z liśćmi i gęsiami). |
 | 2026-11-18 | Claude | 6 | Jesień na odcinkach 0–3900: nowe barwy koron w `tools/art/nature.mjs` (momiji, kaede, icho, karamatsu, keyaki, kaki), a zestaw miejski (`tools/art/tokyo/kit.mjs`) przyjmuje od etapu `kinds` (zamiana gatunków drzew) i `cloth` (barwy ubrań); dla Tokio bez zmian. W `mid.mjs` funkcja `autumn` wybiera gatunek kępami według miejsca i sypie liście pod klony i miłorzęby; grunty parku, lasu, lawendy i kochii jesienne. | Następna: faza 7 (północny brzeg i tunel klonów). |
 | 2026-11-18 | Claude | 5 | Panorama w grze: `src/game/FujiView.js` (wybierany polem `"view": "fuji"` w `panorama` w `stage10.json`), siedem warstw z `view.mjs` (góra i woda malowane dwa razy: w słońcu i o zmierzchu, przenikane po walce), klatki łódki, kilwateru i gęsi w rekwizytach etapu (`viewFrames` w `mid.mjs`), test warstw. | Boss Kioto na zastępstwo zasłania szczyt: właściwy Daidarabotchi (fazy 12–13) ma stać niżej. Następne: faza 6 (jesień na gotowych odcinkach). |
