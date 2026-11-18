@@ -1,102 +1,92 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Fazy 0–3 gotowe, faza 4 w toku (styl Fuji zaakceptowany). Decyzje z sekcji 2 przyjęte według rekomendacji. Wymóg autora: **Fuji ma robić wrażenie i być pełna detali** (sekcja 4.1). Fazy z sekcji 8 idą po kolei. Postęp odznacza się checkboxami w sekcji 8.
+Stan: **w budowie**. Fazy 0–3 gotowe. 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
-- Etap zwykłej długości, jak osiem pierwszych miast: około 232 s, tło 8 kafli (7 168 px), przewijanie 30 px/s. Tokio zostaje wyjątkiem.
-- Dwie rzeczy dominują mapę: **jezioro Kawaguchi** w środku trasy i **Fuji** w drugiej połowie. Trasa prowadzi od miasta Fujiyoshida, przez brzeg i taflę jeziora, przez las na lawie na stoki i szlakiem Yoshida na sam szczyt.
-- Fuji widać od pierwszych sekund: jej odbicie leży na wodzie jeziora (w dalekiej warstwie, pod wodą wyciętą z warstwy środkowej), a od połowy etapu lecimy już nad samą górą.
-- Pora dnia płynie z trasą: popołudnie w mieście, złota godzina nad jeziorem (Fuji czerwienieje w odbiciu), zmierzch na piątej stacji, nocne wejście z łańcuchem czołówek wspinaczy, świt na szczycie nad morzem chmur.
-- Jeden miniboss i jeden boss, każdy z trzema fazami: **Kachi-kachi Usagi** (zając z ludowej opowieści, na łodzi na jeziorze) i **Daidarabotchi** (olbrzym z legend, który usypał górę, walka na kraterze o świcie).
-- Poziom detalu jak w poprzednich miastach. Finał (szczyt o świcie) dostaje dodatki, ale nie kosztem miasta i jeziora.
+- Etap zwykłej długości, jak osiem pierwszych miast: około 230 s, tło 8 kafli (7 168 px), przewijanie 30 px/s.
+- Trasa: miasto Fujiyoshida, wschodni brzeg z dworcem i kolejką na Tenjō, przelot nad jeziorem, północny brzeg w jesiennych klonach. Na końcu ziemia urywa się na brzegu zachodniej części jeziora, a za nią **wyrasta klasyczna Fuji**: śnieżna czapa, różowa w zachodzącym słońcu (beni-Fuji), jej odbicie w wodzie, las u stóp. Ten sam mechanizm co widok z Inasy w Nagasaki.
+- Fuji przez cały etap: z góry widać ją w odbiciu na tafli jeziora (daleka warstwa), na końcu staje przed nami w całej okazałości. Ostatni ekran to pocztówka, na której toczy się walka z bossem.
+- Pora dnia płynie z trasą: popołudnie w mieście, złota godzina nad jeziorem, zachód słońca na północnym brzegu i w finale. Po walce zapada zmierzch i zapalają się światła na drugim brzegu.
+- Jeden miniboss i jeden boss, każdy z trzema fazami: **Kachi-kachi Usagi** (zając z ludowej opowieści, na łodzi na jeziorze) i **Daidarabotchi** (olbrzym z legend, który usypał Fuji, wynurza się z jeziora przed górą).
+- Poziom detalu jak w poprzednich miastach. Finał dostaje dodatki, ale nie kosztem miasta i brzegów.
 
-## 2. Decyzje (przyjęte według rekomendacji)
+## 2. Decyzje
 
-| # | Pytanie | Moja rekomendacja |
+| # | Pytanie | Decyzja |
 |---|---|---|
-| D1 | Kierunek trasy | **Fujiyoshida → jezioro → Fuji → szczyt.** Lecimy w stronę góry, więc ona rośnie z każdą sekundą, a finał wypada na szczycie. Odwrotnie (zejście ze szczytu nad jezioro) daje bossa nad wodą, ale Fuji zostaje za plecami i na początku. |
-| D2 | Pora roku | **Lato**, sezon wspinaczkowy (lipiec–sierpień): szlak otwarty, chatki czynne, lawenda w parku Ōishi, łódki i rowerki-łabędzie na jeziorze. Fuji ma wtedy tylko płaty śniegu w żlebach, ale za to czerwono-czarny żwir wulkaniczny, którego nie ma żadne inne miasto. Wiosna dałaby wiśnie przy pagodzie (ale wiśnie ma już Kioto), jesień czerwone liście (ma je Miyajima); w obu szlak jest zamknięty i trasa musiałaby kończyć się na piątej stacji. |
-| D3 | Miniboss | **Kachi-kachi Usagi** (sekcja 6.1): zając z ludowej opowieści o górze Kachi-kachi, którą tradycja wiąże z górą Tenjō nad tym jeziorem. Walka na łodzi pośrodku jeziora. Zapas: opętany rowerek-łabędź (tsukumogami), równie lokalny. |
-| D4 | Boss | **Daidarabotchi** (sekcja 6.2): olbrzym z podań, który według legendy kopał ziemię i usypał z niej Fuji. Własny projekt z ziemi, kamienia i mchu z koszem na drążku, bez podobieństwa do przezroczystych leśnych duchów ze znanych filmów. Wulkan jako boss odpada, bo ma go już Kagoshima. |
-| D5 | Miejsce w podróży | Dziesiąte miasto, w **losowej** kolejności z pozostałymi ośmioma; Tokio dalej zawsze ostatnie. Menu mówi „dziesięć miast”, książeczka i zakończenie mają dziesięć pieczęci. |
-| D6 | Jak pokazać Fuji, zanim nad nią dolecimy | **Odbicie w jeziorze** (daleka warstwa) plus **cień chmur** na stokach. Bez osobnej panoramy jak w Nagasaki, żeby nie przekombinować. Jeśli po fazie 3 będzie za mało Fuji w pierwszej połowie, panoramę z widokiem spod pagody Chūreitō można dodać jako rozszerzenie (mechanizm z Nagasaki już istnieje). |
+| D1 | Kierunek trasy | **Fujiyoshida → wschodni brzeg → jezioro → północny brzeg → widok na Fuji.** Przelatujemy jezioro i idziemy północnym brzegiem na zachód; tam, gdzie brzeg się kończy, Fuji stoi po drugiej stronie wody, tak jak na klasycznych widokach znad jeziora. (2026-11-18, zamiast wspinaczki na szczyt.) |
+| D2 | Pora roku | **Późna jesień** (połowa listopada): świeży śnieg na czapie Fuji, czerwone klony i tunel klonów na północnym brzegu, złote modrzewie, żółte miłorzęby przy chramie, czerwone krzewy kochii w parku Ōishi, suszone persymony pod okapami. Klony ma też Miyajima, ale tu grają z Fuji i jeziorem, a nie z morzem i torii w wodzie. (2026-11-18, zamiast lata.) |
+| D3 | Miniboss | **Kachi-kachi Usagi** (sekcja 6.1), bez zmian. |
+| D4 | Boss | **Daidarabotchi** (sekcja 6.2). Według podań olbrzym wykopał ziemię, usypał z niej Fuji, a doły po niej zalała woda. Walka nad wodą przed panoramą góry, o zachodzie słońca. |
+| D5 | Miejsce w podróży | Dziesiąte miasto, w losowej kolejności z pozostałymi ośmioma; Tokio dalej zawsze ostatnie. Bez zmian. |
+| D6 | Jak pokazać Fuji | **Panorama na finał** (mechanizm z Nagasaki: taśma jest przezroczysta nad linią brzegu, warstwy widoku wysuwają się zza niej) plus **odbicie w jeziorze** pod przelotem. Fuji z góry, jako rzeźba terenu, wypada. |
 
 ## 3. Zasady
 
-1. **Licencje.** Żadnych logotypów, nazw firm, sieci i maskotek. Na trasie celowo **nie ma**: parku rozrywki u stóp góry, pociągów z postaciami z bajek, maskotek kolejki linowej, sklepu sieciowego z „Fuji nad dachem”. Kolejka linowa, pociągi i statek wycieczkowy są rysowane z kształtu, bez napisów. Obrazy starych mistrzów z Fuji są w domenie publicznej, ale nie kopiujemy ich kompozycji. Nazwy miejsc w pasku lokalizacji są nazwami geograficznymi.
-2. **Wrażliwe miejsca.** Las na lawie u stóp Fuji rysujemy jako przyrodę (korzenie na lawie, mech, jaskinie wiatru i lodu), **bez jego nazwy** i bez żadnych odniesień do ponurej sławy tego miejsca.
-3. **Topologia.** Drogi, tory, ścieżki, mosty, pomosty i szlak muszą dokądś prowadzić i zgadzać się na łączeniach kafli. Serpentyny drogi Subaru i szlaku liczy się raz w szkielecie (faza 1).
-4. **Nic na ziemi się nie przesuwa względem mapy.** Ruszają się tylko rzeczy, które latają, pływają albo jadą po swoim torze (łódki, gondole kolejki, pociąg, autobusy na serpentynach, czołówki wspinaczy idące szlakiem), oraz animacje w miejscu (falująca lawenda, ogień pochodni).
-5. **Detal bez wypełniaczy.** Jezioro to nie pusta woda: łódki wędkarzy, rowerki-łabędzie, statek wycieczkowy, pomosty, wyspa z kapliczką, odbicie góry. Las to nie powtarzalne korony: polany, lawa, wejścia do jaskiń, ścieżki.
-6. **Jedna faza = jeden zamknięty kawałek.** Faza kończy się zielonymi testami, wpisem w dzienniku (sekcja 9) i commitem.
-7. **Pliki nie nachodzą na siebie.** Tło w `tools/art/kawaguchiko/`, walki w `src/game/enemies/kawaguchiko-*.js`. Wspólne pliki (`stage10.json`, `Enemies.js`, `gen-art.mjs`, `skins.js`) zmienia się tylko w zakresie opisanym w fazie.
-8. **Teksty.** Każdy nowy napis ma wersję PL i EN, nazwy mieszczą się w czcionce gry (bez makronów w pasku lokalizacji: KAWAGUCHIKO, FUJIYOSHIDA, CHUREITO).
+1. **Licencje.** Żadnych logotypów, nazw firm, sieci i maskotek. Na trasie celowo **nie ma**: parku rozrywki u stóp góry, pociągów z postaciami z bajek, maskotek kolejki linowej, sklepu sieciowego z „Fuji nad dachem”. Kolejka linowa, pociągi i statek wycieczkowy są rysowane z kształtu, bez napisów. Panorama to własna kompozycja: nie kopiujemy zdjęć ani drzeworytów (stare drzeworyty są w domenie publicznej, ale ich kompozycji też nie przenosimy). Nazwy miejsc w pasku lokalizacji są nazwami geograficznymi.
+2. **Wrażliwe miejsca.** Lasu na lawie u stóp Fuji nie nazywamy i nie robimy żadnych odniesień do jego ponurej sławy. W panoramie to po prostu ciemny las u podnóża.
+3. **Topologia.** Drogi, tory, ścieżki, mosty i pomosty muszą dokądś prowadzić i zgadzać się na łączeniach kafli. Na końcu taśmy drogi dochodzą do nabrzeża, nie urywają się w powietrzu.
+4. **Nic na ziemi się nie przesuwa względem mapy.** Ruszają się tylko rzeczy, które latają, pływają albo jadą po swoim torze (łódki, gondole kolejki, pociąg, auta), oraz animacje w miejscu (spadające liście, dym z ognisk, latarnie). W panoramie warstwy przesuwają się względem siebie tylko przy wysuwaniu i lekko na boki za statkiem, tak jak w Nagasaki.
+5. **Detal bez wypełniaczy.** Jezioro to nie pusta woda: łódki, rowerki-łabędzie, statek wycieczkowy, pomosty, wyspa z kapliczką, odbicie góry. Las to nie powtarzalne korony: klony, modrzewie, cedry i sosny w kępach, polany, ścieżki.
+6. **Jedna faza to jeden zamknięty kawałek.** Faza kończy się zielonymi testami, wpisem w dzienniku (sekcja 9) i commitem.
+7. **Pliki nie nachodzą na siebie.** Tło w `tools/art/kawaguchiko/`, walki w `src/game/enemies/kawaguchiko-*.js`. Wspólne pliki (`stage10.json`, `Enemies.js`, `gen-art.mjs`, `skins.js`, `Stage.js`) zmienia się tylko w zakresie opisanym w fazie.
+8. **Teksty.** Każdy nowy napis ma wersję PL i EN, a nazwy mieszczą się w czcionce gry (w pasku lokalizacji bez makronów: KAWAGUCHIKO, FUJIYOSHIDA, CHUREITO).
 
 ## 4. Trasa
 
-Współrzędna `u` liczona od dołu taśmy. Góra ekranu jest w `u = 420 + 30 × t`. Kolumna „Czas” jest przybliżona. Granice ustali faza 1.
+Współrzędna `u` jest liczona od dołu taśmy. Góra ekranu jest w `u = 420 + 30 × t`. Kolumna „Czas” jest przybliżona (bez postoju na minibossa). Granice odcinków po 3 900 ustali faza 4.
 
 | u | Czas | Odcinek | Pora | Co widać |
 |---|---|---|---|---|
-| 0–1300 | 0–30 s | **FUJIYOSHIDA** | popołudnie | Stara ulica handlowa Honchō-dōri, której koniec celuje prosto w górę; sklepiki z udonem z Yoshidy, łaźnia, szyldy bez napisów; aleja olbrzymich kryptomerii do chramu Kitaguchi Hongū Fuji Sengen z wielką drewnianą torii; park na wzgórzu Arakura z **pięciopiętrową pagodą Chūreitō** i schodami w zieleni; tory z pociągiem |
-| 1300–2100 | 30–57 s | **BRZEG JEZIORA** | późne popołudnie | Dworzec Kawaguchiko w drewnianym stylu; ryokany z gorącymi źródłami nad wodą; **park Ōishi** z pasami lawendy i krzewami kochii; promenada; **kolejka linowa** na górę Tenjō z dwiema gondolami jadącymi w górę i w dół; most Kawaguchiko-ōhashi nad przewężeniem jeziora |
-| 2100–3900 | 57–117 s | **JEZIORO** | złota godzina | Szeroka tafla z **odbiciem Fuji** (sakasa-Fuji) w dalekiej warstwie; łódki wędkarzy, rowerki-łabędzie, statek wycieczkowy z kilwaterem, pomosty i przystań; **wyspa Unoshima** z kapliczką i torii; **arena minibossa** na otwartej wodzie (u ≈ 3400) |
-| 3900–4700 | 117–143 s | **POŁUDNIOWY BRZEG I LAS NA LAWIE** | zachód słońca | Kemping nad wodą; pola zastygłej lawy porośnięte mchem i lasem o korzeniach na wierzchu; wejścia do **jaskini wiatru** i **jaskini lodowej** z drewnianymi schodkami; początek drogi Subaru z bramką |
-| 4700–5600 | 143–173 s | **DROGA SUBARU I PIĄTA STACJA** | zmierzch | Serpentyny drogi przez coraz rzadszy las, autobusy z zapalonymi światłami; **piąta stacja**: plac, sklepy z laskami wspinaczkowymi, mała kapliczka Komitake, konie juczne, punkt widokowy nad jeziorem w dole |
-| 5600–6700 | 173–210 s | **SZLAK YOSHIDA** | noc | Zakosy szlaku po czerwono-czarnym żwirze, kamienne murki i liny wzdłuż ścieżki, **chatki górskie** z ciepłym światłem i flagami, łańcuch **czołówek wspinaczy** pełznący zakosami (animacja), małe torii na szlaku, płaty śniegu w żlebach, morze chmur zaczyna się pod nami |
-| 6700–7168 | 210–232 s | **SZCZYT** | świt | Torii na szczycie, kapliczka, kamienne domki na krawędzi, **krater** (arena bossa, u ≈ 6950), za krawędzią morze chmur i wschodzące słońce (goraikō) |
+| 0–1300 | 0–30 s | **FUJIYOSHIDA** (gotowe, do przemalowania na jesień) | popołudnie | Honchō-dōri wycelowana w górę, łaźnia, tkalnie, stacje; wzgórze Arakura z pagodą Chūreitō w czerwonych klonach; aleja cedrów do chramu Sengen z żółtymi miłorzębami |
+| 1300–2100 | 30–57 s | **WSCHODNI BRZEG** (gotowe, do przemalowania) | późne popołudnie | Dworzec Kawaguchiko, ryokany z łaźniami, kolejka na Tenjō w złotym lesie, park Ōishi z czerwonymi kochiami i ściętą lawendą, przystań, most Ōhashi |
+| 2100–3900 | 57–117 s | **JEZIORO** (gotowe) | złota godzina | Tafla z odbiciem Fuji w dalekiej warstwie; łódki, rowerki-łabędzie, statek wycieczkowy, wyspa Unoshima; **arena minibossa** (u ≈ 3400) |
+| 3900–~5300 | 117–163 s | **PÓŁNOCNY BRZEG: KAWAGUCHI** | zachód słońca | Stara wieś pielgrzymów: domy oshi z bramami i chorągwiami, kurtyny suszonych persymon pod okapami, skoszone pola ze snopkami na żerdziach, ogrody z kapustą, ogniska z liści; chram Asama z wiekowymi cedrami |
+| ~5300–6748 | 163–211 s | **TUNEL KLONÓW** | zachód słońca | Strumień w tunelu czerwonych klonów z latarniami, jarmark jesienny ze straganami (hōtō, persymony, rękodzieło), tłum, promenada nad zachodnią częścią jeziora, fotografowie ze statywami na nabrzeżu czekający na różową Fuji |
+| 6748–7168 | 211–230 s | **WIDOK NA FUJI** | zachód słońca, potem zmierzch | Taśma kończy się na nabrzeżu. Za nim wysuwa się panorama: woda z odbiciem, drugi brzeg, las u stóp, **Fuji ze śnieżną czapą**. Tu walczymy z bossem (sekcja 6.2) |
 
 ### 4.1 Fuji: najważniejszy element etapu
 
-Fuji to główna postać tego miasta. Każdy jej element ma swoje miejsce na mapie i powód, żeby tam być; nic nie jest kolorową plamą. Lista poniżej jest wymaganiem dla faz 4–6, nie propozycją.
+Fuji to główna postać tego miasta. Lista poniżej jest wymaganiem dla panoramy (faza 5) i odbicia (faza 8), a nie propozycją.
 
-**Bryła widziana z góry**
-- Grzbiety i żleby rozchodzą się promieniście od krateru. Strona odsłoneczna w głębokim cieniu, długość cieni według pory dnia (zachód, noc, świt z drugiej strony).
-- Barwy zmieniają się z wysokością i każda strefa ma własną fakturę: las na lawie → granica lasu z karłowatymi modrzewiami i krzewami pochylonymi od wiatru → goły czarny żwir → czerwono-brązowy żwir wulkaniczny wyżej → płaty śniegu w żlebach przy szczycie.
-- Dawne potoki lawy jako języki z wyniesionym obrzeżem i spękaną powierzchnią; luźne bloki i rumowiska pod skałkami.
-- Wielki żleb Ōsawa schodzący spod krateru po zachodniej stronie, widoczny przy szczycie.
+**Bryła (panorama)**
+- Klasyczna sylwetka widziana znad jeziora od północy: stoki strome przy szczycie, coraz łagodniejsze w dół, rozlane szeroko poza kadr. Płaski wierzchołek z drobnymi garbami krawędzi krateru, na północnym stoku ledwie zaznaczone ramię starego wulkanu Komitake. Góra zajmuje całą szerokość ekranu i ponad jedną trzecią jego wysokości.
+- **Śnieżna czapa** świeżego jesiennego śniegu: zwarta przy szczycie, w dół rozpada się w języki wzdłuż żlebów, z postrzępionym dolnym brzegiem. Między językami ciemne grzbiety, nie płaska plama.
+- **Światło zachodu** z prawej (od zachodu): prawy stok ciepły, lewy w niebieskim cieniu. Śnieg różowieje (beni-Fuji) i z czasem walki przechodzi w fiolet zmierzchu. Grzbiety rzucają cienie na śnieg.
+- Niżej: ciemny las u podnóża, pas złotych modrzewi na granicy lasu, smugi mgły w lesie, niskie zalesione wzgórza po bokach (zielone i rdzawe), drugi brzeg z domami, hotelami i nabrzeżem.
+- Niebo: od pomarańczu przy horyzoncie przez róż do fioletu u góry, oświetlone od spodu pasma chmur, a czasem soczewkowata chmura-czapa nad szczytem (kasa-gumo).
 
-**Szlak Yoshida i ludzie**
-- Zakosy wejściowe z murkami z kamienia wulkanicznego, liny na palikach, kamienne schodki na stromiznach.
-- Osobna droga zejściowa szerokimi zakosami w żwirze, a po niej **buldożer zaopatrzeniowy** jadący swoim torem (jedyne, co tam jeździ).
-- Chatki na kolejnych stacjach: kamienne ściany, blaszane dachy przyciśnięte kamieniami, ławki, flagi, palety z zapasami, ciepłe okna nocą. Każda chatka inna.
-- Zadaszenia chroniące przed spadającymi kamieniami, punkt pierwszej pomocy, małe torii i kamienne stele pielgrzymów.
-- Wspinacze: nocą łańcuch czołówek pełznący zakosami; o świcie postacie z laskami i plecakami, grupy odpoczywające przy chatkach, ludzie na krawędzi krateru czekający na słońce.
+**Woda (panorama)**
+- **Odbicie Fuji** odwrócone w tafli, ciemniejsze i chłodniejsze, porwane zmarszczkami w poziome pasma, które się poruszają. Kilwater łódek przecina odbicie.
+- Łódki wędkarzy, statek wycieczkowy płynący wzdłuż drugiego brzegu, klucz gęsi nad wodą, kormorany.
 
-**Szczyt**
-- Torii na wejściu na szczyt, kapliczka, kamienne domki szczytowe, ścieżka wokół krateru.
-- Krater: czerwono-brązowe ściany warstwami, rumowisko na zboczach, płat śniegu na dnie, cień krawędzi przesuwający się ze wschodem słońca.
-- Najwyższy punkt z budynkiem stacji pogodowej (bez napisów), źródlana studnia, kamienne kopczyki.
-
-**Światło i odbicie**
-- Świt: słońce wstaje z morza chmur na wschodzie, krawędź krateru zapala się złotem, cienie długie i wyraźne.
-- **Cień Fuji (kage-Fuji)**: o świcie trójkątny cień góry pada na morze chmur po zachodniej stronie. Finałowy dodatek w dalekiej warstwie.
-- Odbicie w jeziorze: pełna bryła z grzbietami i płatami śniegu, czerwieniejąca w złotej godzinie, rozbijana zmarszczkami i kilwaterem łodzi.
+**Odbicie pod przelotem (taśma, widok z góry)**
+- Pod przezroczystą wodą jeziora w dalekiej warstwie: niebo złotej godziny z chmurami i rozmyte odbicie góry z bielą czapy, rozbijane zmarszczkami.
 
 **Kontrola jakości**
-- Przed rysowaniem całych stoków: trzy zbliżenia 1:1 do akceptacji autora (granica lasu z lawą, chatka ze szlakiem i zejściem, krater o świcie).
-- Po narysowaniu: przegląd na zbliżeniach całej taśmy od 3 900 px w górę, żeby żaden odcinek stoku nie był pusty ani powtarzalny.
+- Najpierw jedno zbliżenie panoramy 1:1 (sama Fuji z niebem i wodą, bez ruchomych części) do akceptacji autora. Dopiero potem reszta warstw, ruch i wpięcie w grę.
+- Po wpięciu: zrzuty z gry w trzech momentach (wysuwanie, walka, zmierzch po walce) i na wąskim i wysokim ekranie telefonu.
 
 ### Jak czas ma się do trasy
 
-- Miniboss na jeziorze ma pole `"hold": true` (jak w Tokio): przewijanie i zegar stoją, dopóki żyje, więc arena zostaje na wodzie. Wychodzi w około 100 s.
-- Przewijanie kończy się na końcu taśmy. Boss wchodzi w około 215 s i walczy nad nieruchomym kraterem.
-- Pora dnia: harmonogram `dark` w `stage10.json` rośnie do nocy na szlaku i spada do jasności na świcie. To pierwszy etap, który przy końcu jaśnieje, więc faza 0 sprawdza, że nakładanie pory dnia to umie (światła mają gasnąć w drugą stronę).
+- Miniboss na jeziorze ma pole `"hold": true` (jak w Tokio): przewijanie i zegar stoją, dopóki żyje, więc arena zostaje na wodzie.
+- Przewijanie kończy się na końcu taśmy. Panorama wysuwa się od `u = 6748` (linia nabrzeża) do końca przewijania. Boss wchodzi, gdy widok stoi, i walczy nad nim.
+- Pora dnia: harmonogram `dark` w `stage10.json` rośnie łagodnie do zachodu; panorama ma własne światło (zachód, a po walce zmierzch z zapalającymi się światłami drugiego brzegu).
 
 ## 5. Przeciwnicy
 
-Pięć istniejących typów zachowań dostaje jeden komplet skórek na cały etap (bez zestawów na odcinki jak w Tokio: etap jest zwykłej długości). Do tego pułapka i stwór z zasadzki, które ma teraz każde miasto.
+Pięć istniejących typów zachowań dostaje jeden komplet skórek na cały etap. Do tego pułapka i stwór z zasadzki, które ma teraz każde miasto.
 
 | Typ | Skórka | Uwagi |
 |---|---|---|
-| popcorn | **Akatombo**, stada czerwonych ważek | stado jak ptaki w Sapporo, premia za całe stado |
-| diver | **bass** (okoń wielkogębowy, ryba wędkarzy z jeziora) wyskakujący z wody łukiem | nad jeziorem naturalny, wyżej leci jak latająca ryba z Okinawy |
-| shooter | **kasagumo**, chmura-kapelusz, która siada na Fuji | duch chmury z oczami; strzela kroplami, przy trafieniu rozwiewa się w strzępy |
+| popcorn | **Akatombo**, stada czerwonych ważek (owady jesieni) | stado jak ptaki w Sapporo, premia za całe stado |
+| diver | **bass** (okoń wielkogębowy, ryba wędkarzy z jeziora) wyskakujący z wody łukiem | nad jeziorem naturalny, nad brzegiem leci jak latająca ryba z Okinawy |
+| shooter | **kasagumo**, chmura-kapelusz, która siada na Fuji | duch chmury z oczami; strzela kroplami, a przy trafieniu rozwiewa się w strzępy |
 | turret | drewniana **kapliczka pielgrzymów** z okrągłym lustrem | lustro błyska (zapowiedź) i strzela odbitym światłem; wrak: rozbite lustro |
-| carrier | **brzoskwinia z Yamanashi** w koszyku na sznurku | w trzech kolorach wzmocnień |
-| pułapka | **pochodnia taimatsu** z festiwalu ognia w Yoshidzie | w mieście i na brzegu; wzdłuż szlaku ten sam typ jako kamienny piec chatki (do decyzji w fazie 6) |
-| zasadzka | **kret** z kopczyka | w lawendzie, na kempingu, w żwirze szlaku: pasuje do każdej ziemi na trasie |
+| carrier | **sznur suszonych persymon** (hoshigaki z Yamanashi) | w trzech kolorach wzmocnień |
+| pułapka | **ognisko z liści** (takibi) | w ogrodach, na polach, przy straganach |
+| zasadzka | **kret** z kopczyka | w ogrodach, polach i parku |
 
 Klatki: lot (3–4), trafienie, zniszczenie własnym efektem (skrzydełka ważek, łuski, strzępy chmury, drzazgi, pestki).
 
@@ -106,144 +96,146 @@ Kolory zapowiedzi jak w `docs/boss-encounters.md`: czerwony to nadchodzący atak
 
 ### 6.1 Miniboss: KACHI-KACHI USAGI, „ZAJĄC Z KRZESIWEM” (jezioro)
 
-Biały zając w opasce, z krzesiwem w łapkach, na drewnianej łodzi. W starej opowieści przechytrzył tanuki, który odpłynął w łodzi z błota i zatonął. Arena: otwarte jezioro przy wyspie Unoshima, odbicie Fuji pod spodem.
+Biały zając w opasce, z krzesiwem w łapkach, na drewnianej łodzi. W starej opowieści przechytrzył tanuki, który odpłynął w łodzi z błota i zatonął. Arena: otwarte jezioro przy wyspie Unoshima.
 
 | Faza | Co robi | Jak go trafić |
 |---|---|---|
-| 1. Krzesiwo | Krzesze iskry („KACHI KACHI!”), z łodzi lecą wachlarze iskier; rzuca płonące wiązki chrustu łukiem, które pływają po wodzie i parzą (czerwony krąg). | Zawsze, ale wiązki zasłaniają łódź |
-| 2. Łodzie z błota | Na jeziorze pojawiają się trzy łodzie z błota z jego kukłami; wszystkie strzelają. Prawdziwa drewniana łódź błyska złotem przy każdym wiosłowaniu. | Trafione błotne łodzie rozmakają i toną z bulgotem; prawdziwą widać po złocie |
-| 3. Wiosło | Wiosłuje jak szalony i taranuje przez całą szerokość po zapowiedzianej linii, zostawia kilwater z rzędów pocisków. | Po każdej szarży łódź staje, zając łapie oddech (miętowy) |
+| 1. Krzesiwo | Krzesze iskry („KACHI KACHI!”), z łodzi lecą wachlarze iskier. Rzuca łukiem płonące wiązki chrustu, które pływają po wodzie i parzą (czerwony krąg). | Zawsze, ale wiązki zasłaniają łódź |
+| 2. Łodzie z błota | Na jeziorze pojawiają się trzy łodzie z błota z jego kukłami i wszystkie strzelają. Prawdziwa, drewniana łódź błyska złotem przy każdym pociągnięciu wioseł. | Trafione błotne łodzie rozmakają i toną z bulgotem; prawdziwą widać po złocie |
+| 3. Wiosło | Wiosłuje jak szalony i taranuje przez całą szerokość po zapowiedzianej linii, zostawiając kilwater z rzędów pocisków. | Po każdej szarży łódź staje, a zając łapie oddech (miętowy) |
 
-Animacje: ruchy uszu, krzesanie (iskry), rzut wiązki, wiosłowanie (4 klatki), rozmakanie błotnej łodzi (3 stopnie), plusk i fala, zmęczony zając. Koniec: zając wskakuje do gondoli kolejki linowej przelatującej nad jeziorem i odjeżdża na górę Tenjō, machając.
+Animacje: ruchy uszu, krzesanie (iskry), rzut wiązki, wiosłowanie (4 klatki), rozmakanie błotnej łodzi (3 stopnie), plusk i fala, zmęczony zając. Koniec: zając wskakuje do gondoli kolejki linowej przelatującej nad jeziorem, odjeżdża na górę Tenjō i macha.
 
-### 6.2 Boss: DAIDARABOTCHI, „OLBRZYM, KTÓRY USYPAŁ GÓRĘ” (szczyt o świcie)
+### 6.2 Boss: DAIDARABOTCHI, „OLBRZYM, KTÓRY USYPAŁ GÓRĘ” (przed Fuji, o zachodzie)
 
-Własny projekt: olbrzym z ziemi i kamienia, porośnięty mchem i trawą, z płatami śniegu na ramionach, oczy jak dwa jeziorka odbijające niebo, na ramieniu drążek z wielkim plecionym koszem na ziemię (mokko) na sznurach. Wynurza się z morza chmur obok krateru. Bez przezroczystości i bez leśnej poświaty, żeby nie przypominał znanych duchów z filmów.
+Własny projekt: olbrzym z ziemi i kamienia, porośnięty mchem i rdzawą jesienną trawą, z czerwonymi klonami na barkach jak na zboczu. Oczy ma jak dwa jeziorka odbijające niebo, a na ramieniu drążek z wielkim plecionym koszem na ziemię (mokko) na sznurach. Wynurza się z jeziora przed panoramą, do pasa w wodzie, i nie zasłania szczytu Fuji. Bez przezroczystości i bez leśnej poświaty, żeby nie przypominał znanych duchów z filmów.
 
 | Faza | Co robi | Mechanika |
 |---|---|---|
-| 1. Kopanie (100–65%) | Wielkie dłonie nabierają ziemię z krawędzi krateru. Grudy lecą łukiem i pękają w pierścienie; odciski dłoni zostają na ziemi jako krótkie strefy. | Dłoń przy nabieraniu jest odsłonięta (miętowa) |
-| 2. Kosz (65–30%) | Niesie kosz na drążku. Kosz kołysze się nad ekranem i sypie toczące się kamienie rzędami z przerwami; sznury kosza świecą złotem. | Przestrzelenie obu sznurów zrzuca mu kosz na stopę: ogłuszony, pęknięcie w piersi odsłonięte |
-| 3. Wschód słońca (30–0%) | Słońce wstaje za nim, olbrzym staje się sylwetką z płonącym obrysem. Zgarnia morze chmur i rzuca ściany mgły z wąskimi przejściami; na koniec uderza obiema dłońmi w ziemię, fale uderzeniowe pierścieniami. | Po każdym uderzeniu pęknięcie w piersi świeci światłem świtu (miętowe) |
+| 1. Kopanie (100–65%) | Wielkie dłonie nabierają ziemię i wodę z jeziora. Grudy lecą łukiem i pękają w pierścienie, a fale od dłoni idą po wodzie krótkimi strefami. | Dłoń przy nabieraniu jest odsłonięta (miętowa) |
+| 2. Kosz (65–30%) | Niesie kosz na drążku. Kosz kołysze się nad ekranem i sypie toczące się kamienie rzędami z przerwami, a jego sznury świecą złotem. | Przestrzelenie obu sznurów zrzuca mu kosz na stopę: jest ogłuszony, a pęknięcie w piersi zostaje odsłonięte |
+| 3. Zachód (30–0%) | Słońce schodzi za nim, olbrzym staje się sylwetką z płonącym obrysem, a Fuji za nim płonie różem. Zgarnia mgłę znad wody i rzuca jej ściany z wąskimi przejściami; na koniec uderza obiema dłońmi w wodę i fale idą pierścieniami. | Po każdym uderzeniu pęknięcie w piersi świeci światłem zachodu (miętowe) |
 
-Animacje: oddech (osypująca się ziemia), mruganie oczu-jezior, nabieranie i rzut, kołysanie kosza, pękanie sznurów, ogłuszenie, trzy stopnie zniszczenia (odpadające płaty mchu, pęknięcia, odłamane ramię), sylwetka pod słońce. Koniec: siada na krawędzi krateru i rozsypuje się w mały pagórek, w odcisku jego stopy zbiera się woda w maleńkie jeziorko; słońce wychodzi w pełni, wspinacze na krawędzi wiwatują.
+Animacje: oddech (osypująca się ziemia), mruganie oczu-jezior, nabieranie i rzut, kołysanie kosza, pękanie sznurów, ogłuszenie, trzy stopnie zniszczenia (odpadające płaty mchu, pęknięcia, odłamane ramię), sylwetka pod słońce. Koniec: siada w wodzie i rozsypuje się w małą wysepkę z jednym czerwonym klonem. Zapada zmierzch, róż na czapie Fuji gaśnie w fiolet, a na drugim brzegu zapalają się światła.
 
 ## 7. Poza grafiką i walkami
 
-- **Muzyka** (`src/audio/score10.js`): wstęp, rozwinięcie i pełny temat etapu; motyw minibossa (skoczny, z „kachi kachi” drewienek); temat bossa (taiko, ciężki, rozjaśnia się przy świcie). Charakter: ludowe min'yō, shakuhachi i koto, na szlaku powolne narastanie.
-- **Dźwięki**: krzesiwo, plusk wioseł, wiatr na szlaku, dzwoneczki lasek wspinaczy, osypywanie się ziemi, pękanie sznura.
-- **Odkrycia** (`src/data/discoveries.js`): dwa dania jak w zwykłych miastach: **hōtō** (gęsta zupa z płaskim makaronem i dynią) i **udon z Yoshidy** (twardy, z kapustą i przyprawą suridane); wpisy za walki: Kachi-kachi Usagi i Daidarabotchi.
-- **Pieczątka** (`tools/art/stamps.mjs`): Fuji z odbiciem w jeziorze i pagodą; pieczęć **富士**, własny kolor tuszu; punkt na mapie Japonii.
+- **Muzyka** (`src/audio/score10.js`): wstęp, rozwinięcie i pełny temat etapu; motyw minibossa (skoczny, z „kachi kachi” drewienek); temat bossa (taiko, ciężki, rozjaśnia się przy zachodzie). Charakter: ludowe min'yō, shakuhachi i koto.
+- **Dźwięki**: krzesiwo, plusk wioseł, szelest liści, trzask ogniska, osypywanie się ziemi, pękanie sznura.
+- **Odkrycia** (`src/data/discoveries.js`): dwa dania jak w zwykłych miastach, **hōtō** (gęsta zupa z płaskim makaronem i dynią, danie na chłody) i **udon z Yoshidy** (twardy, z kapustą i przyprawą suridane); wpisy za walki: Kachi-kachi Usagi i Daidarabotchi.
+- **Pieczątka** (`tools/art/stamps.mjs`): Fuji nad jeziorem z liściem klonu; pieczęć **富士**, własny kolor tuszu; punkt na mapie Japonii.
 - **Kupony**: miniboss i boss, razem 2, jak w zwykłych miastach.
-- **Pogoda**: na szlaku wiatr (kąt opadających drobin), na szczycie mgła z morza chmur. Bez nowego systemu: wariant istniejącego śniegu i popiołu.
+- **Pogoda**: spadające liście klonu w tunelu klonów i nad wsią. Bez nowego systemu: wariant istniejących drobin (śniegu i popiołu).
 - **Gachapon**: karta-pocztówka z Kawaguchiko i kolory miasta.
 
 ## 8. Fazy pracy
 
-Każda faza ma: zakres, pliki, które wolno ruszać, warunek ukończenia. „Wymaga” mówi, co musi być odhaczone wcześniej.
+Każda faza ma zakres, pliki, które wolno ruszać, i warunek ukończenia. „Wymaga” mówi, co musi być odhaczone wcześniej.
 
 ### Faza 0: dziesiąte miasto i szkielet etapu
 Wymaga: decyzje D1–D6. Pliki: `src/data/stage10.json`, `src/data/stages.js`, `src/data/journeyOrder.js`, `src/game/skins.js`, `src/game/Stamps.js`, `src/game/Ending.js`, `tools/gen-art.mjs`, `tools/art/kawaguchiko/index.mjs`, testy z wpisaną liczbą miast.
 - [x] `stage10.json` w `stages.js` z flagą `"wip": true` (uruchamia się przez `?stage=10` i z menu bossów), fale zastępcze, przeciwnicy, miniboss (tanuki) i boss (Kyūbi) z Kioto na zastępstwo
-- [x] Makieta tła 8 kafli ładuje się i przewija (`tools/art/kawaguchiko/`: odcinki, jezioro otwarte do dalekiej warstwy z wyspą, ulice Fujiyoshidy, stoki Fuji w strefach wysokości ze żlebami i śniegiem, zakosy szlaku, krater, areny, linijka)
-- [x] Gra gotowa na dziesięć miast: kolejność losowa z Tokio na końcu (sprawdzone na dziesięciu), książeczka pieczątek i pieczęcie zakończenia liczą miasta z listy, podpis w menu liczy je słownie („DZIESIĘĆ MIAST”, EN „TEN CITIES”); testy biorą miasta z listy plików (`tools/tests/cities.mjs`), więc Kawaguchiko wejdzie do nich samo po zdjęciu flagi
-- [x] Pora dnia, która przy końcu etapu jaśnieje (świt): `darkness()` interpoluje w obie strony, a za nią idą cienie, poświaty i bliska warstwa (sprawdzone w grze: 0,81 na szlaku, 0,3 na szczycie). Światła rysowane w samej grafice tła przyjdą w fazach 2–5
-- [x] `npm test` i `npx vite build` przechodzą; w grze: miniboss zatrzymuje przewijanie i zegar na arenie jeziora, boss wchodzi w 220 s nad kraterem
+- [x] Makieta tła 8 kafli ładuje się i przewija
+- [x] Gra gotowa na dziesięć miast: kolejność losowa z Tokio na końcu, książeczka pieczątek i pieczęcie zakończenia liczą miasta z listy, podpis w menu liczy je słownie („DZIESIĘĆ MIAST”, EN „TEN CITIES”); testy biorą miasta z listy plików (`tools/tests/cities.mjs`)
+- [x] Pora dnia, która przy końcu etapu może jaśnieć: `darkness()` interpoluje w obie strony
+- [x] `npm test` i `npx vite build` przechodzą
 
 ### Faza 1: szkielet trasy
-Wymaga: faza 0. Pliki: `tools/art/kawaguchiko/route.mjs`, `tools/art/kawaguchiko/mid.mjs`, `tools/art/kawaguchiko/overview.mjs`, `src/data/landmarks.js`, `tools/tests/kawaguchikoRoute.test.mjs`.
-- [x] Linia brzegu jeziora z ramieniem i półwyspem Ōishi, wyspa, most Ōhashi nad przewężeniem, pomosty z pontonami; ulice Fujiyoshidy (Honchō-dōri prosto na górę), tor lokalnej kolejki od stacji Fujisan do Kawaguchiko, kolejka linowa na Tenjō, droga wzdłuż brzegu; płatna droga serpentynami do piątej stacji; szlak Yoshida zakosami, osobna droga zejściowa z torem buldożera, ścieżka wokół krateru; po bokach szczytu ziemia opada w morze chmur
-- [x] Granice odcinków i 18 nazw miejsc w `landmarks.js` (las na lawie bez nazwy: FUNATSU)
-- [x] 64 działki pod obiekty z opisami; dwie areny zaznaczone, wolne od wysokich obiektów, arena minibossa cała na otwartej wodzie
-- [x] Strefy wysokości Fuji jako grunty: las na lawie, granica lasu, czarny żwir, czerwony żwir, płaty śniegu, krater
-- [x] Harmonogram pory dnia (`TOD` w `route.mjs`, zgodny z `dark` w `stage10.json`)
-- [x] Test topologii (`kawaguchikoRoute.test.mjs`): drogi, tory i ścieżki kończą się na krawędzi, na innej drodze, przy działce albo na gruncie; działki nie stoją na drogach, torach ani w jeziorze; szlak idzie stale w górę od placu piątej stacji do torii na szczycie
-- [x] Podgląd: `node tools/art/kawaguchiko/overview.mjs` (cała taśma w czterech kolumnach z numerami działek; z `--from= --to=` wybrany odcinek w pełnej rozdzielczości)
+Wymaga: faza 0. Pliki: `tools/art/kawaguchiko/route.mjs`, `mid.mjs`, `overview.mjs`, `src/data/landmarks.js`, `tools/tests/kawaguchikoRoute.test.mjs`.
+- [x] Jezioro z ramieniem i półwyspem Ōishi, wyspa, most Ōhashi, pomosty; ulice Fujiyoshidy, tor lokalnej kolejki, kolejka linowa na Tenjō, droga wzdłuż brzegu
+- [x] Nazwy miejsc, działki pod obiekty, areny, harmonogram pory dnia, test topologii, arkusz podglądu
 
 ### Faza 2: Fujiyoshida (u 0–1300)
 Wymaga: faza 1. Plik: `tools/art/kawaguchiko/fujiyoshida.mjs`.
-- [x] Stacja Fujisan (dach w kształcie góry, peron, wiata nad pociągiem, parking rowerów, plac z autobusem i taksówkami), stacja Shimoyoshida
-- [x] Honchō-dōri: jadłodajnia z udonem (noren, ławka, chorągwie), łaźnia z ceglanym kominem, tkalnia pod dachem szedowym z suszącymi się belami, sklep z sake (beczki, kula z cedru), kawiarnia z markizą, rząd sklepików, kamienny bank; betonowe słupy z drutami po obu stronach, spiżowa torii nad końcem ulicy, przechodnie
-- [x] Kwartały: domy pod dachówką, warsztaty tkackie, ogródki warzywne, zieleń; drzewa wzdłuż drogi krajowej
-- [x] Wzgórze Arakura: gęsty las, schody z latarniami i ludźmi, pagoda Chūreitō (pięć dachów, cynobrowe ściany, iglica, schodkowy cień), kapliczka z torii, taras widokowy z ludźmi przy barierce
-- [x] Wielka cynobrowa torii, aleja kryptomerii i kamiennych latarni; chram: płotek tamagaki, dwa pawilony w cynobrze i złocie pod dachami z kory cyprysowej, zakrzywiony szczyt nad schodami, skrzynka na ofiary, wygrabiony żwir, pawilon do obmyć, święte drzewo w sznurze, biuro z amuletami, stojak z wróżbami, scena kagura, szopa z pochodniami festiwalu ognia, staw z mostkiem
-- [x] Animacje: pociąg kursujący do Kawaguchiko i z powrotem, auta na drodze krajowej i Honchō-dōri, dym z kuchni i z komina łaźni, chorągwie nobori, karpie w stawie
+- [x] Stacje, Honchō-dōri ze sklepami, łaźnią, tkalnią, sklepem z sake, kawiarnią i bankiem, słupy z drutami, spiżowa torii; kwartały; wzgórze Arakura z pagodą; wielka torii, aleja cedrów i chram Sengen z całym wyposażeniem
+- [x] Animacje: pociąg, auta, dym, chorągwie, karpie
 
 ### Faza 3: brzeg i jezioro (u 1300–3900)
-Wymaga: faza 1. Pliki: `tools/art/kawaguchiko/shore.mjs`, `tools/art/kawaguchiko/lake.mjs`.
-- [x] Stacja Kawaguchiko (drewniany budynek z lukarnami, peron końcowy z wiatą, kozioł oporowy), plac z autobusami na piątą stację; ryokany ze skrzydłami wokół ogrodu ze stawem i sosną, łaźnie pod gołym niebem z parą, hotel tarasami, sklepy z pamiątkami i wypożyczalnia rowerów z chorągwiami, parkingi, domy, słupy przy drodze nad wodą
-- [x] Góra Tenjō: gęsty las, przecinka pod liną, słup w połowie, stacje dolna i górna, kapliczka zająca z dwoma białymi zającami i torii, taras z dzwonem i ludźmi
-- [x] Park Ōishi: rzędy lawendy z rabatami innych kwiatów wzdłuż rzędów, okrągłe krzewy kochii z cieniami, pawilon z lodami lawendowymi i parasolami, ławki, drzewa nad brzegiem półwyspu
-- [x] Jezioro: most Ōhashi z dźwigarem, filarami i cieniem na wodzie, przystań z wypożyczalnią, kołami ratunkowymi i rowerkami-łabędziami i łódkami przy pomostach, przystań statku wycieczkowego, wyspa Unoshima z drzewami, kamieniami i torii w płyciźnie, trzciny przy brzegach, boje kąpieliska, plaża z łódkami, kajakami, parasolami i ludźmi; arena minibossa to samo jezioro (bez pierścienia)
-- [x] Animacje: gondole mijające się na linie, łódki wędkarzy, łabędzie i łódki wiosłowe, dwie motorówki i statek wycieczkowy wokół wyspy z kilwaterem, perkozy, krążące kanie, kręgi po rybach, ruch na moście, falująca lawenda
+Wymaga: faza 1. Pliki: `tools/art/kawaguchiko/shore.mjs`, `lake.mjs`, `boats.mjs`, `parts.mjs`.
+- [x] Dworzec Kawaguchiko, ryokany z łaźniami, hotel, sklepy, góra Tenjō z kolejką, kapliczką zająca i dzwonem, park Ōishi, most Ōhashi, przystań, Unoshima, trzciny, boje, plaża
+- [x] Animacje: gondole, łódki, łabędzie, motorówki, statek wycieczkowy, perkozy, kanie, ryby, ruch na moście
 
-### Faza 4: las na lawie, droga Subaru, piąta stacja (u 3900–5600)
-Wymaga: faza 1. Plik: `tools/art/kawaguchiko/slopes.mjs`.
-- [x] Trzy zbliżenia 1:1 z sekcji 4.1 (granica lasu, chatka ze szlakiem, krater o świcie) zaakceptowane przez autora (2026-11-17: „na ten moment jest ok”); dopiero potem całe stoki w fazach 4 i 5
-- [ ] Kemping, lawa z mchem i korzeniami, wejścia do jaskiń wiatru i lodu, bramka drogi
-- [ ] Serpentyny przez rzednący las, piąta stacja z placem, sklepami, kapliczką i końmi
-- [ ] Animacje: autobusy na serpentynach, konie, światła zmierzchu
+### Faza 4: nowa trasa po jeziorze
+Wymaga: fazy 1–3. Pliki: `tools/art/kawaguchiko/route.mjs`, `mid.mjs`, `overview.mjs`, `src/data/landmarks.js`, `src/data/stage10.json`, `tools/tests/kawaguchikoRoute.test.mjs`; usunięcie `tools/art/kawaguchiko/fuji.mjs` (Fuji z góry; zostaje w historii gita).
+- [ ] Odcinki od 3 900 w górę: północny brzeg (wieś Kawaguchi, chram Asama), tunel klonów i promenada, nabrzeże na `u = 6748`, za nim taśma przezroczysta do końca
+- [ ] Drogi, strumień, ścieżki i działki nowych odcinków; drogi dochodzą do nabrzeża
+- [ ] Arena bossa nad panoramą (bez wysokich obiektów na ostatnim ekranie taśmy), pora dnia do zachodu, nowe nazwy miejsc
+- [ ] `stage10.json`: `panorama` (linia brzegu, czas po walce), `dark` do zachodu, karta bossa
+- [ ] Test topologii przepisany (bez szlaku), arkusz podglądu
 
-### Faza 5: szlak i szczyt (u 5600–7168)
-Wymaga: faza 1. Plik: `tools/art/kawaguchiko/summit.mjs`.
-- [ ] Strefy wysokości z sekcji 4.1, grzbiety i żleby, potoki lawy, rumowiska, płaty śniegu, żleb Ōsawa
-- [ ] Zakosy wejściowe z murkami i linami, droga zejściowa, zadaszenia, punkt pierwszej pomocy, małe torii i stele, chatki (każda inna)
-- [ ] Szczyt: torii, kapliczka, domki, ścieżka wokół krateru, krater warstwami, stacja pogodowa, studnia (arena bossa)
-- [ ] Animacje: łańcuch czołówek, buldożer na drodze zejściowej, okna chatek, flagi na wietrze, wspinacze na krawędzi krateru o świcie
-- [ ] Przegląd na zbliżeniach całego stoku: żaden odcinek pusty ani powtarzalny
+### Faza 5: panorama Fuji
+Wymaga: faza 4. Pliki: `tools/art/kawaguchiko/view.mjs`, `src/game/FujiView.js`, `src/data/fujiView.js`, `src/scenes/Stage.js` (tylko wybór widoku), `tools/gen-art.mjs` (tylko wpięcie).
+- [ ] **Zbliżenie 1:1 do akceptacji autora**: niebo, Fuji z czapą w świetle zachodu, las u stóp, drugi brzeg, woda z odbiciem
+- [ ] Warstwy widoku (niebo, chmury, góra, wzgórza, drugi brzeg, woda z odbiciem) i światła drugiego brzegu jako osobne maski
+- [ ] Ruch: wysuwanie warstw zza nabrzeża, lekkie przesunięcie za statkiem, chmury, zmarszczki na odbiciu, łódki z kilwaterem, klucz gęsi
+- [ ] Światło: róż na czapie przechodzi w fiolet po walce, zapalają się okna na drugim brzegu
+- [ ] Zrzuty z gry w trzech momentach i na ekranie telefonu
 
-### Faza 6: warstwy daleka i bliska
-Wymaga: fazy 2–5. Pliki: `tools/art/kawaguchiko/far.mjs`, `src/game/Parallax.js` (tylko jeśli trzeba).
-- [ ] Daleka warstwa pod jeziorem: **odbicie Fuji**, czerwieniejące w złotej godzinie, rozbijane zmarszczkami
-- [ ] Daleka warstwa pod szczytem: morze chmur, wschód słońca i **cień Fuji** na chmurach
-- [ ] Bliska warstwa: tylko to, co lata (ważki, chmury, paralotnia bez napisów)
+### Faza 6: jesień na gotowych odcinkach (u 0–3900)
+Wymaga: faza 4. Pliki: `fujiyoshida.mjs`, `shore.mjs`, `lake.mjs`, `mid.mjs` (tylko paleta drzew i gruntów).
+- [ ] Drzewa: klony czerwone i pomarańczowe, miłorzęby żółte, modrzewie złote, cedry i sosny zielone (wymieszane w kępach, nie losowo)
+- [ ] Park Ōishi: czerwone kochie, ścięta lawenda, kosmosy; trawniki płowe; liście na ziemi pod klonami
+- [ ] Ludzie w kurtkach, persymony na drzewach w ogrodach
+- [ ] Przegląd na zbliżeniach całej przemalowanej taśmy
+
+### Faza 7: północny brzeg i tunel klonów (u 3900–6748)
+Wymaga: faza 4. Plik: `tools/art/kawaguchiko/north.mjs`.
+- [ ] Wieś Kawaguchi: domy pielgrzymów oshi (bramy, mury, chorągwie), kurtyny persymon pod okapami, pola ze snopkami na żerdziach, ogrody z kapustą, ogniska z liści z dymem
+- [ ] Chram Asama: torii, wiekowe cedry w sznurach, pawilony, scena
+- [ ] Tunel klonów: strumień z mostkami, klony nad wodą, latarnie, stragany jarmarku, tłum; promenada nad wodą; nabrzeże z fotografami i statywami
+- [ ] Animacje: spadające liście, dym z ognisk, auta, latarnie zapalające się o zachodzie
+
+### Faza 8: warstwy daleka i bliska
+Wymaga: fazy 4 i 5. Pliki: `tools/art/kawaguchiko/far.mjs`, `src/game/Parallax.js` (tylko jeśli trzeba).
+- [ ] Daleka warstwa pod jeziorem: niebo złotej godziny i rozmyte odbicie Fuji, rozbijane zmarszczkami
+- [ ] Bliska warstwa: tylko to, co lata (ważki, liście, klucz gęsi)
 - [ ] Przejścia pory dnia sprawdzone na całej trasie
 
-### Faza 7: grafika przeciwników, pułapki i zasadzki
-Wymaga: faza 0. Pliki: `tools/art/kawaguchiko/enemies.mjs`, `tools/art/kawaguchiko/sprites.mjs`, `tools/art/traps.mjs`, `tools/art/ambush.mjs`, `src/game/skins.js`.
+### Faza 9: grafika przeciwników, pułapki i zasadzki
+Wymaga: faza 0. Pliki: `tools/art/kawaguchiko/enemies.mjs`, `sprites.mjs`, `tools/art/traps.mjs`, `tools/art/ambush.mjs`, `src/game/skins.js`.
 - [ ] Pięć skórek z sekcji 5 z klatkami lotu, trafienia i efektem zniszczenia
-- [ ] Pochodnia taimatsu (4 klatki), kret z kopczyka (5 klatek)
+- [ ] Ognisko z liści (4 klatki), kret z kopczyka (5 klatek)
 - [ ] Testy `enemyArt`, `sprites540`, `traps`, `ambush` przechodzą
 
-### Faza 8: fale
-Wymaga: fazy 0 i 7. Plik: `src/data/stage10.json`.
-- [ ] Fale 0–90 s (do minibossa), 115–200 s (do bossa)
-- [ ] 8–14 pułapek i 4–10 zasadzek w miejscach z sensem (zbliżenia mapy), z dala od walk
+### Faza 10: fale
+Wymaga: fazy 4 i 9. Plik: `src/data/stage10.json`.
+- [ ] Fale do minibossa i od minibossa do bossa
+- [ ] 8–14 pułapek i 4–10 zasadzek w miejscach z sensem, z dala od walk
 - [ ] Oddechy przed areną i dostawa wzmocnień po minibossie
 
-### Faza 9: Kachi-kachi Usagi
+### Faza 11: Kachi-kachi Usagi
 Wymaga: faza 0. Pliki: `src/game/enemies/kawaguchiko-usagi.js`, `tools/art/kawaguchiko/usagi.mjs`.
 - [ ] Grafika i animacje z sekcji 6.1
 - [ ] Faza 1 · [ ] Faza 2 z łodziami z błota · [ ] Faza 3
 - [ ] Wejście z kartą, zakończenie z gondolą, kupon, wpis w menu deweloperskim bossów
 
-### Faza 10: Daidarabotchi, grafika
-Wymaga: faza 0. Plik: `tools/art/kawaguchiko/daidara.mjs`.
-- [ ] Projekt w trzech postaciach (kopiący, z koszem, sylwetka pod słońce) do akceptacji przed rysowaniem klatek
+### Faza 12: Daidarabotchi, grafika
+Wymaga: faza 5. Plik: `tools/art/kawaguchiko/daidara.mjs`.
+- [ ] Projekt w trzech postaciach (kopiący, z koszem, sylwetka pod słońce) na tle panoramy, do akceptacji przed rysowaniem klatek
 - [ ] Części, stopnie zniszczenia, kosz i sznury, portret
 
-### Faza 11: Daidarabotchi, walka
-Wymaga: faza 10. Plik: `src/game/enemies/kawaguchiko-daidara.js`.
-- [ ] Faza 1 z dłońmi · [ ] Faza 2 z koszem · [ ] Faza 3 ze świtem
-- [ ] Wejście z kartą, zakończenie z jeziorkiem w odcisku stopy
+### Faza 13: Daidarabotchi, walka
+Wymaga: faza 12. Plik: `src/game/enemies/kawaguchiko-daidara.js`.
+- [ ] Faza 1 z dłońmi · [ ] Faza 2 z koszem · [ ] Faza 3 z zachodem
+- [ ] Wejście z kartą, zakończenie z wysepką i zmierzchem
 - [ ] Wpis w `docs/boss-encounters.md` i w teście walk bossów
 
-### Faza 12: muzyka i dźwięk
+### Faza 14: muzyka i dźwięk
 Wymaga: faza 0. Plik: `src/audio/score10.js`.
 - [ ] Trzy części tematu, motyw minibossa, temat bossa
 - [ ] Dźwięki z sekcji 7
 
-### Faza 13: wpięcie w grę
-Wymaga: fazy 8–11.
+### Faza 15: wpięcie w grę
+Wymaga: fazy 10–13.
 - [ ] Odkrycia (dwa dania, dwie walki) z tekstami PL/EN
 - [ ] Pieczątka, pieczęć 富士, punkt na mapie, karta-pocztówka w gachaponie
 - [ ] Zdjęcie flagi `wip`: miasto w podróży, książeczce i zakończeniu
 
-### Faza 14: balans i szlif
+### Faza 16: balans i szlif
 Wymaga: wszystko powyżej.
 - [ ] Bot przechodzi etap na obu poziomach trudności; czasy walk w widełkach innych miast
 - [ ] Przegląd równego detalu: żaden odcinek nie odstaje
-- [ ] Wydajność na telefonie nad jeziorem (odbicie) i w walce z bossem
+- [ ] Wydajność na telefonie nad jeziorem i w walce z bossem przed panoramą
 - [ ] Przejście testowe przez człowieka i poprawki po nim
 
 ## 9. Dziennik przekazań
@@ -252,10 +244,10 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
-| 2026-11-17 | Claude | 4 (część) | Sposób rysowania Fuji (`tools/art/kawaguchiko/fuji.mjs`): rzeźba terenu z mapy wysokości (stożek, żleby i grzbiety prosto w dół zbocza, wachlarzem przy szczycie, misa krateru i krawędź), oświetlona z lewej góry, malowana przed drogami (`UNDER` w `mid.mjs`); strefy wysokości z postrzępionymi granicami, stare potoki lawy z mchem, śnieg w żlebach przy szczycie, warstwy ścian krateru z piargiem; las na lawie przerzedzający się w granicę lasu; mury i liny szlaku, stopnie przy chatkach, chatki (kamienne ściany, blaszane dachy z kamieniami, ławki, szyldy, zapasy, światła nocą), zadaszenia, punkt pierwszej pomocy, wały drogi zejściowej z buldożerem, czołówki wspinaczy nocą, szczyt (torii z lwami, kapliczka, domki, stacja pogodowa, studnia, kopczyki, ludzie na krawędzi). Noc na szlaku jaśniejsza, księżycowa. Trzy zbliżenia wysłane autorowi. | Autor zaakceptował zbliżenia. Reszta fazy 4: plac piątej stacji, Okuniwa, bramka, jaskinie, kemping. |
-| 2026-11-17 | Claude | 3 | Brzeg i jezioro (`shore.mjs`, `lake.mjs`), łodzie w `boats.mjs`, wspólne części (dach, torii, latarnia, słupy, chorągwie, rowery) w `parts.mjs`; z Tokio wzięte też fale za łodziami i boje (`tools/art/tokyo/umi.mjs`). `DRAWN_TO` = 3900, arena jeziora bez pierścienia (`ARENA_DRAWN`). | Jezioro na statycznym obrazie to woda: żyje ruchomymi częściami, a odbicie Fuji dojdzie w fazie 6. Następna: faza 4, zaczyna się od trzech zbliżeń Fuji do akceptacji. |
-| 2026-11-17 | Claude | 2 | Fujiyoshida (`tools/art/kawaguchiko/fujiyoshida.mjs`) rysowana tokijskim zestawem (`tools/art/tokyo/kit.mjs`, `blocks.mjs`), który `mid.mjs` podpina tak jak w Tokio (kwartały, działki, ruchome części, światła). Działki odcinków już narysowanych nie są kreskowane (`DRAWN_TO` w `mid.mjs`). | Następne: faza 3 (brzeg i jezioro). Po każdej fazie przesunąć `DRAWN_TO`. |
-| 2026-11-17 | Claude | 1 | Trasa jako dane w `tools/art/kawaguchiko/route.mjs` (odcinki, areny, krater, pora dnia, woda, grunty, drogi, tory, 64 działki), szkielet malowany z danych w `mid.mjs` (geometria wspólna z Tokio: `tools/art/tokyo/geom.mjs`), test topologii, arkusz podglądu, nazwy miejsc. Miniboss przesunięty na 105,5 s, żeby stanął nad środkiem areny. | Następne: fazy 2–5 (odcinki tła) w dowolnej kolejności, ale faza 4 zaczyna się od trzech zbliżeń Fuji do akceptacji. Uwaga na fazę 6: daleka warstwa jest jedna na etap, a pod jeziorem ma być woda z odbiciem, pod szczytem morze chmur; trzeba będzie przełączać ją według odcinka, nie według ciemności. |
-| 2026-11-17 | Claude | 0 | Etap 10 w budowie: `stage10.json` (flaga `wip`, fale zastępcze, miniboss z `"hold"` w 104 s, boss w 220 s), makieta tła 8 kafli z jeziorem i stożkiem Fuji (`tools/art/kawaguchiko/route.mjs`, `mid.mjs`, `far.mjs`), skórka `kawaguchiko` z przeciwnikami Kioto na zastępstwo, nazwy odcinków w `landmarks.js`, napisy PL/EN. Podpis menu liczy miasta słownie; testy biorą miasta z listy plików (`tools/tests/cities.mjs`). | Następna: faza 1 (szkielet trasy). Las na lawie podpisany jako FUNATSU, nigdy własną nazwą. Muzyka na razie z Kioto. |
-| 2026-11-17 | Claude | plan | Autor przyjął plan i decyzje D1–D6. Dopisana sekcja 4.1: Fuji jako najważniejszy element etapu (strefy wysokości, szlak i ludzie, szczyt, światło, cień Fuji, odbicie) i kontrola jakości z trzema zbliżeniami do akceptacji przed rysowaniem stoków. | Następna: faza 0. |
-| 2026-11-17 | Claude | plan | Plan etapu napisany: trasa, przeciwnicy, dwie walki, fazy. | Czeka na decyzje D1–D6. |
+| 2026-11-18 | Claude | plan | Zmiana kierunku na prośbę autora: Fuji jako klasyczna dominanta (z boku, ze śnieżną czapą) w panoramie na końcu etapu, mechanizmem z Nagasaki; wspinaczka po stokach wypada. Pora roku: późna jesień. Nowa trasa za jeziorem (północny brzeg, tunel klonów, nabrzeże), boss przed panoramą o zachodzie, nowy nośnik (persymony) i pułapka (ognisko z liści). Fazy przenumerowane od 4. | Czeka na akceptację planu. Fuji z góry (`fuji.mjs`, commit 11cec4e) zostaje w historii; faza 4 usuwa ją z kodu. |
+| 2026-11-17 | Claude | 4 (stara) | Fuji z góry jako rzeźba terenu ze stokami, szlakiem, chatkami i szczytem (`fuji.mjs`); zbliżenia zaakceptowane. | Zastąpione 2026-11-18 panoramą. |
+| 2026-11-17 | Claude | 3 | Brzeg i jezioro (`shore.mjs`, `lake.mjs`), łodzie w `boats.mjs`, wspólne części w `parts.mjs`; z Tokio wzięte fale za łodziami i boje (`tools/art/tokyo/umi.mjs`). `DRAWN_TO` = 3900, arena jeziora bez pierścienia (`ARENA_DRAWN`). | Odbicie Fuji pod jeziorem dojdzie w fazie 8. |
+| 2026-11-17 | Claude | 2 | Fujiyoshida (`fujiyoshida.mjs`) rysowana tokijskim zestawem (`tools/art/tokyo/kit.mjs`, `blocks.mjs`), który `mid.mjs` podpina tak jak w Tokio. Działki odcinków już narysowanych nie są kreskowane (`DRAWN_TO` w `mid.mjs`). | Po każdej fazie przesunąć `DRAWN_TO`. |
+| 2026-11-17 | Claude | 1 | Trasa jako dane w `route.mjs`, szkielet malowany z danych w `mid.mjs` (geometria wspólna z Tokio: `tools/art/tokyo/geom.mjs`), test topologii, arkusz podglądu, nazwy miejsc. Miniboss na 105,5 s. | Daleka warstwa jest jedna na etap: pod jeziorem woda z odbiciem; panorama to osobny widok jak w Nagasaki. |
+| 2026-11-17 | Claude | 0 | Etap 10 w budowie: `stage10.json` (flaga `wip`, fale zastępcze, miniboss z `"hold"`, boss w 220 s), makieta tła, skórka `kawaguchiko` z przeciwnikami Kioto na zastępstwo, nazwy odcinków, napisy PL/EN, podpis menu liczy miasta słownie, testy biorą miasta z listy plików. | Muzyka na razie z Kioto. |
+| 2026-11-17 | Claude | plan | Plan etapu napisany i przyjęty (decyzje D1–D6), sekcja 4.1 o Fuji. | |
