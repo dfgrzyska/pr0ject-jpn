@@ -11,11 +11,15 @@
 import { PAL, shade } from '../tokyo/kit.mjs';
 import { hashPx } from '../hires.mjs';
 import { near, inShape, railHalf } from '../tokyo/geom.mjs';
-import { W, ROADS, RAILS, PLOTS, GROUNDS, railX, suidoShores, isSea } from './route.mjs';
+import { W, ROADS, RAILS, PLOTS, GROUNDS, FERRIES, railX, suidoShores, isSea } from './route.mjs';
+
+const FERRY_US = FERRIES.slice(1).map((f) => f.pts[0][1]);
 import { makeParts, VERMILION } from '../kawaguchiko/parts.mjs';
 
 export const SENKOJI_FROM = 3800;
 export const SENKOJI_TO = 5100;
+// the terraces (and their houses, cats, steps and lamps) go on up the hillside behind Hondori to the station
+export const HILL_TO = 6900;
 
 // Onomichi's roofs: silver-grey and blue-grey kawara mostly, now and then a brown one or a tin roof gone to rust
 const TILES = [0x6a7078, 0x5e646e, 0x747a82, 0x4e5662, 0x585e66, 0x6c625a, 0x7a5a48];
@@ -25,15 +29,11 @@ const GRANITE = [0x8a867e, 0x9e9a90, 0xb2aea2, 0xc4c0b4];
 // the cats of the town: white, black, ginger, grey tabby, calico, black-and-white
 const CATS = [[0xf2efe8, 0xcfc8bc], [0x2a2628, 0x46403e], [0xe0903e, 0xb0662a], [0x8e8a82, 0x5e5a54], [0xf0ece4, 0xd88a3a, 0x2a2628], [0xf0ece4, 0x2a2628]];
 
-export function senkoji(ctx) {
-  const { kit, plot, props, S, along, ramp, GROUND } = ctx;
-  const { house, building, tree, mark, ground, rand, pick, P, R, FX, FY, queue, shadowBox, hi, lamp, person, crowd, E, halo } = kit;
-  const { roof, toro } = makeParts(ctx);
-  const [U0, U1] = [SENKOJI_FROM, SENKOJI_TO];
-  kit.setSun(0.85); // (the evening's long shadows)
-
-  // ---- what the route already takes (roads with their pavements, tracks, plots, grounds of their own, the sea),
-  // on a grid of logical pixels over the stretch
+/**
+ * What the route already takes between u0 and u1 (roads with their pavements, tracks, plots, grounds of their own,
+ * the sea) on a grid of logical pixels: taken(x, u), boxFree(x, u, w, h), claim(x, u, w, h) (then taken too).
+ */
+export function freeMap(U0, U1) {
   const NU = U1 - U0;
   const busy = new Uint8Array(W * NU);
   const mark_ = (test, x0, u0, x1, u1) => {
@@ -60,6 +60,20 @@ export function senkoji(ctx) {
     return true;
   };
   const claim = (x, u, w, h) => mark_(() => true, x, u, x + w, u + h);
+  return { taken, boxFree, claim };
+}
+
+export function senkoji(ctx) {
+  const { kit, plot, props, S, along, ramp, GROUND } = ctx;
+  const { house, building, tree, mark, ground, rand, pick, P, R, FX, FY, queue, shadowBox, hi, lamp, person, crowd, E, halo } = kit;
+  const { roof, toro } = makeParts(ctx);
+  const [U0, U1] = [SENKOJI_FROM, SENKOJI_TO];
+  kit.setSun(0.85); // (the evening's long shadows)
+
+  // ---- what the route already takes, over the whole hillside the terraces climb (to the station's square)
+  const [HU0, HU1] = [U0, HILL_TO];
+  const NU = HU1 - HU0;
+  const { taken, boxFree, claim } = freeMap(HU0, HU1);
 
   // ---- the terraces: their edges run along the contours, each a little way further up the hill (to the right)
   const contour = (u) => 2.2 * Math.sin(u / 53) + 1.4 * Math.sin(u / 17 + 1);
@@ -68,7 +82,7 @@ export function senkoji(ctx) {
   const WALL = 1.5; // (the wall's top and face, seen from above)
   const LANE = 1.7; // (the lane along its foot... on the terrace above it: one person wide)
   ground(() => {
-    for (let Y = FY(U1); Y < FY(U0); Y++) {
+    for (let Y = FY(HU1); Y < FY(HU0); Y++) {
       const u = ctx.L - (Y + 0.5) / S;
       for (let k = 0; k < EDGES.length; k++) {
         const e = edge(k, u);
@@ -222,7 +236,7 @@ export function senkoji(ctx) {
     });
 
   for (let k = 0; k < EDGES.length; k++)
-    for (let u = U0 + rand() * 4; u < U1 - 4; ) {
+    for (let u = HU0 + rand() * 4; u < HU1 - 4; ) {
       let len = 5.5 + rand() * 6;
       let [a, b] = lotOf(k, u, len);
       // (a house set back from the lane now and then, or one a little narrower, so the rows do not line up)
@@ -241,20 +255,20 @@ export function senkoji(ctx) {
       } else u += 1;
     }
   // cats on the walls and in the lanes
-  for (let n = 0; n < 70; n++) {
+  for (let n = 0; n < Math.round((70 * NU) / 860); n++) {
     const k = Math.floor(rand() * EDGES.length);
-    const u = U0 + 4 + rand() * (NU - 8);
+    const u = HU0 + 4 + rand() * (NU - 8);
     const x = edge(k, u) + (rand() < 0.5 ? 0.7 : WALL + LANE * 0.5);
     if (!taken(x, u) && x > railX(u) + 7) cat(x, u);
   }
 
   // ---- the steps up the hillside: treads across them, a handrail, lamps coming on as it gets dark
-  const STEPS = new Set(['daisanji_kaidan', 'tennei_kaidan', 'neko_no_hosomichi', 'senkoji_kaidan', 'bungaku_no_komichi', 'senkoji_sando', 'fukuzenji_kaidan', 'komyoji_kaidan']);
+  const STEPS = new Set(['saka_1', 'saka_2', 'saka_3', 'saka_4', 'saka_5', 'saikokuji_sando', 'daisanji_kaidan', 'tennei_kaidan', 'neko_no_hosomichi', 'senkoji_kaidan', 'bungaku_no_komichi', 'senkoji_sando', 'fukuzenji_kaidan', 'komyoji_kaidan']);
   for (const r of ROADS) {
     if (!STEPS.has(r.id)) continue;
     const half = r.w / 2;
     along(r.pts, half + 0.4, (n, x, u, X, Yy) => {
-      if (u < U0 || u >= U1) return null;
+      if (u < HU0 || u >= ctx.L) return null;
       if (n.d > half) return 0x6a6a6e; // the handrail
       if (x < railX(u) + 6) return null; // (no treads where the way crosses the flat or the tracks)
       return Math.floor(n.along * S) % 3 === 0 ? 0x7a766c : shade(0xb6b0a2, 0.96 + hashPx(X, Yy, 831) * 0.06);
@@ -265,7 +279,7 @@ export function senkoji(ctx) {
       const len = Math.hypot(bx - ax, bu - au);
       for (let t = (14 - (run % 14)) / len; t < 1; t += 14 / len) {
         const [x, u] = [ax + (bx - ax) * t, au + (bu - au) * t];
-        if (u < U0 + 2 || u > U1 - 2 || x < railX(u) + 6) continue;
+        if (u < HU0 + 2 || u > ctx.L - 2 || x < railX(u) + 6) continue;
         const side = (Math.floor(u) % 2 ? 1 : -1) * (half + 1);
         mark(x + side, u, (X, Y) => lamp(X, Y));
       }
@@ -604,6 +618,42 @@ export function senkoji(ctx) {
   temple('daisanji', { s: 861 });
   temple('fukuzenji', { gate: 'dragon', bell: true, s: 862 });
   temple('komyoji', { bell: true, s: 863 });
+  temple('hodoji', { bell: true, s: 864 });
+
+  // ---- up the hillside behind Hondori: a cafe in an old house, a merchant's house that takes guests, a Jizo on a
+  // landing of the steps, a wall at the top of the steps where everyone stops for the view
+  {
+    const c = plot('kafe_saka');
+    ctx.pave(c.x, c.u, c.w, c.h, 'plaza', 871);
+    house(c.x + 1, c.u + 5, c.w - 2, c.h - 6, { tile: 0x5e646e, hip: false, wall: 0xe8e2d4, face: 2.2, s: 8711 });
+    // its terrace out front: tables under parasols, a cat on a chair
+    for (let k = 0; k < 3; k++) mark(c.x + 3 + k * 6, c.u + 2.6, (X, Y) => kit.parasol(X, Y, [0xe8e4d8, 0x3a6aa8, 0xe8e4d8][k]));
+    cat(c.x + c.w - 3, c.u + 1.6, 'loaf');
+    const k = plot('kominka_yado');
+    ctx.pave(k.x, k.u, k.w, k.h, 'park', 872);
+    house(k.x + 1, k.u + 6, k.w - 6, k.h - 7, { tile: 0x4e5662, hip: true, wall: 0xe0d8c4, face: 2.4, s: 8721 });
+    house(k.x + k.w - 7, k.u + 2, 6, 8, { tile: 0x4e5662, hip: true, wall: 0xf0ece0, face: 2, s: 8722 }); // (its white storehouse)
+    tree('pine', k.x + 3, k.u + 3, 2.2);
+    toro(k.x + 8, k.u + 2.4, true);
+    const j = plot('jizo_do');
+    mark(j.x + j.w / 2, j.u + j.h / 2, (X, Y) => {
+      R(X - 6, Y - 12, 12, 3, 0x5e646e);
+      R(X - 5, Y - 9, 10, 9, 0x6a4a30);
+      R(X - 2, Y - 8, 5, 6, 0xb4b0a6);
+      R(X - 2, Y - 4, 5, 2, 0xc8302a);
+      E(X - 4, Y + 1, 0xffc060); // a candle
+      halo(X - 4, Y + 1, 8, 6, 0xffc060, 0.35);
+    });
+    const t = plot('tenbo_saka');
+    ctx.pave(t.x, t.u, t.w, t.h, 'plaza', 873);
+    mark(t.x, t.u + 1, (X, Y) => R(X, Y - 2, FX(t.w) - FX(0), 2, 0x9a968c)); // the wall at the edge
+    mark(t.x + 4, t.u + 6, (X, Y) => {
+      R(X, Y - 2, 10, 2, 0x6a4a30);
+      R(X, Y - 2, 10, 1, 0x8a6a48);
+    });
+    for (let q = 0; q < 4; q++) cat(t.x + 3 + q * 5, t.u + 3 + (q % 2) * 3);
+    for (let q = 0; q < 3; q++) mark(t.x + 14 + q * 2.4, t.u + 2, (X, Y) => person(X, Y, 8800 + q));
+  }
 
   // ---- the trains along the foot of the hill: a local train each way, all the way from the bend to the station
   {
@@ -625,9 +675,9 @@ export function senkoji(ctx) {
         const tail = [[[7, 6], [7, 5]], [[7, 6], [8, 6]], [[7, 6], [7, 7]], [[7, 6], [7, 5]]][k];
         tail.forEach(([i, j]) => put(i, j, c));
       });
-    for (let n = 0; n < 24; n++) {
+    for (let n = 0; n < 40; n++) {
       const k = Math.floor(rand() * EDGES.length);
-      const u = U0 + 6 + rand() * (NU - 12);
+      const u = HU0 + 6 + rand() * (NU - 12);
       const x = edge(k, u) + 0.7;
       if (taken(x, u) || x < railX(u) + 7) continue;
       const coat = pick(CATS);
@@ -665,17 +715,22 @@ export function senkoji(ctx) {
     } else u += 1;
   }
   // the quay's lamps and its rail, people out along the water in the evening
-  for (let u = U0 + 8; u < U1 - 4; u += 18) mark(64.2, u, (X, Y) => lamp(X, Y));
+  const QUAY_TO = 6400; // (past it the water widens and the quay is the station's: minato.mjs)
+  const onQuay = (x, u) => GROUNDS.some((g) => g.over && inShape(g, x, u)); // (Sumiyoshi's, put out over the water)
+  for (let u = U0 + 8; u < QUAY_TO - 4; u += 18) if (!onQuay(60, u)) mark(64.2, u, (X, Y) => lamp(X, Y));
   ground(() => {
-    for (let Y = FY(U1); Y < FY(U0); Y++) {
-      const X = FX(suidoShores(ctx.L - Y / S)[1] + 0.6);
+    for (let Y = FY(QUAY_TO); Y < FY(U0); Y++) {
+      const u = ctx.L - Y / S;
+      if (onQuay(suidoShores(u)[1] - 1, u)) continue;
+      const X = FX(suidoShores(u)[1] + 0.6);
       P(X, Y, Y % 6 === 0 ? 0x3a3a40 : 0x8a8a90);
     }
   });
-  for (let u = U0 + 4; u < U1 - 8; u += 26 + rand() * 30) crowd(64.6, u, 1.6, 6, 2);
+  for (let u = U0 + 4; u < QUAY_TO - 8; u += 26 + rand() * 30) crowd(64.6, u, 1.6, 6, 2);
   // boats tied up along the quay
-  for (let u = U0 + 20; u < U1 - 20; u += 34 + rand() * 30) {
+  for (let u = U0 + 20; u < QUAY_TO - 20; u += 34 + rand() * 30) {
     const x = suidoShores(u)[1] - 4.2;
+    if (onQuay(x, u + 6) || onQuay(x, u - 6) || FERRY_US.some((f) => Math.abs(f - u) < 10)) continue;
     mark(x, u, (X, Y) => {
       const c = pick([0xf0ece4, 0xe8e4d8, 0x3a6aa8]);
       for (let j = -12; j <= 0; j++) {
@@ -686,8 +741,9 @@ export function senkoji(ctx) {
     });
   }
   // across the strait, Mukaishima's shore: its trees and roofs at the very edge
-  for (let u = U0; u < U1; u += 3) {
+  for (let u = U0; u < 6700; u += 3) {
     const w = suidoShores(u)[0];
+    if (w < 2) continue;
     if (rand() < 0.6) tree(rand() < 0.4 ? 'pine' : 'broadleaf', Math.max(0.8, w * rand() - 0.5), u, 1.6 + rand() * 1.4);
     else if (rand() < 0.3) house(0, u, Math.max(2, w - 2.5), 4, { tile: pick(TILES), hip: true, face: 1.4 });
   }

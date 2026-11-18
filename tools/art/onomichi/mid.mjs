@@ -14,12 +14,15 @@ import { makeKit } from '../tokyo/kit.mjs';
 import { W, S, L, SECTIONS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, FERRIES, PLOTS, isSea } from './route.mjs';
 import { near, inShape, bbox, railHalf } from '../tokyo/geom.mjs';
 import { senkoji } from './senkoji.mjs';
+import { hondori } from './hondori.mjs';
+import { minato } from './minato.mjs';
 
 // the stretches' painters, in the order they are called: (ctx) => void
-const PAINTERS = [senkoji];
-const DRAWN_TO = 0; // (the stretches drawn so far reach this far up the strip: their plots are not hatched)
+const PAINTERS = [senkoji, hondori, minato];
+// (the stretches drawn so far: their plots are not hatched)
+const DRAWN = [[3800, L]];
 // arenas with no ring (once their own ground is drawn)
-const ARENA_DRAWN = new Set(['NEKOMATA']);
+const ARENA_DRAWN = new Set(['NEKOMATA', 'FUNA-YUREI']);
 
 const smooth = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -209,7 +212,7 @@ export function buildMid() {
   for (const f of FERRIES) along(f.pts, 0.4, (n) => (Math.floor(n.along) % 4 ? null : 0xe8e4d8));
 
   // ---- the plots the landmarks will stand on: hatched, edged (a low one paler)
-  for (const [, x, u, w, h, , low] of PLOTS.filter((q) => q[2] >= DRAWN_TO))
+  for (const [, x, u, w, h, , low] of PLOTS.filter((q) => !DRAWN.some(([a, b]) => q[2] >= a && q[2] < b)))
     paint(x, u, x + w, u + h, (px, pu, X, Yy) => {
       const rim = px - x < 0.67 || x + w - px < 0.67 || pu - u < 0.67 || u + h - pu < 0.67;
       if (rim) return 0x34303a;

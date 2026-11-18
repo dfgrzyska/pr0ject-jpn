@@ -1,6 +1,6 @@
 # Plan: etap 11, ONOMICHI
 
-Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0, 1, 4 i 5 gotowe (zbliżenie stoku przyjęte przez autora 2026-11-18). Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0, 1, 4, 5 i 6 gotowe (zbliżenie stoku przyjęte przez autora 2026-11-18), z fazy 7 nocna woda. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -171,12 +171,13 @@ Wymaga: faza 4. Plik: `tools/art/onomichi/senkoji.mjs`.
 
 ### Faza 6: Hondōri i dworzec (u 5100–7168)
 Wymaga: faza 1. Pliki: `tools/art/onomichi/hondori.mjs`, `minato.mjs`.
-- [ ] Pasaż z dachem i życiem pod nim, bary z ramenem z kolejkami, łaźnia, chram Sumiyoshi z festiwalem i straganami, nabrzeże, przystanie promów, magazyny, plac przed dworcem, tory, Saikoku-ji z bramą i wielkimi sandałami; arena bossa nad wodą
-- [ ] Animacje: tłum w yukatach, para ze straganów, lampiony, łodzie widzów, promy, autobusy, pociągi; nocne światła
+- [x] Pasaż z dachem świecącym od środka i lampionami u wejść, wąskie sklepy i domy po obu jego stronach, bary z ramenem z kolejkami i parą, łaźnia z kominem, kawiarnia z markizą; nabrzeże Sumiyoshi z chramem (zielona miedź), kamienną torii, straganami, widzami w yukatach na niebieskich matach, sznurami lampionów; łodzie widzów; przystanie promów; magazyny (jeden to hotel i kawiarnia rowerzystów, bez nazwy); hotele i biura na zakręcie drogi; promenada z latarniami; plac przed dworcem z autobusami, taksówkami i wiatą; dworzec z peronem pod daszkiem i kładką; za torami stok i brama Saikoku-ji z wielkimi sandałami; dwie barki z moździerzami do fajerwerków; arena bossa nad wodą (bez znacznika). Tarasy stoku (`senkoji.mjs`) idą dalej za Hondōri aż do dworca (`HILL_TO` = 6900), ze świątynią Hōdo-ji, kawiarnią na stoku, domem kupieckim, kapliczką jizō i murkiem widokowym. Pliki: `hondori.mjs`, `minato.mjs`; wspólna mapa zajętego terenu `freeMap` w `senkoji.mjs`
+- [x] Animacje: para ze straganów i barów, cztery promy od pomostu do pomostu, auta na drodze nadbrzeżnej w obie strony, dwie łodzie widzów dryfujące po wodzie, pociągi; nocne światła (pasaż, lampiony, latarnie, okna)
 
 ### Faza 7: warstwy daleka i bliska
 Wymaga: faza 1. Pliki: `tools/art/onomichi/far.mjs`, `src/game/Parallax.js` (tylko jeśli trzeba).
-- [ ] Daleka warstwa pod morzem: woda Morza Wewnętrznego z pasmami prądu i światłem pory dnia, pętla bez szwu; nocna wersja wody (`far_night`, jak w Tokio), która przenika się z dzienną, gdy miasto ciemnieje (dziś woda zostaje jasna w nocy)
+- [ ] Daleka warstwa pod morzem: woda Morza Wewnętrznego z pasmami prądu i światłem pory dnia, pętla bez szwu
+- [x] Nocna wersja wody (`buildFarNight` → `far_night.png`, jak w Tokio): granat pod nocnym niebem, ciepła łuna miasta, światła brzegu w krótkich smugach; `dark` w `stage11.json` dochodzi do 0,9 przy dworcu
 - [ ] Bliska warstwa: istniejący rodzaj albo żaden; przejścia pory dnia sprawdzone w grze
 
 ### Faza 8: grafika przeciwników, pułapki i zasadzki
@@ -229,6 +230,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 6 (+7 część) | Hondōri (`hondori.mjs`) i nabrzeże przy dworcu (`minato.mjs`) narysowane, tarasy stoku za Hondōri do dworca, nocna woda (`far_night`), `dark` do 0,9. Sprawdzone zrzutami w grze w 153, 181, 203 i 231 s. | Działki od 3800 w górę nie są już kreskowane (`DRAWN` w `mid.mjs`). Odcinki 0–3800 dalej w szkicu: fazy 2 i 3. Fajerwerki w fazie 13. |
 | 2026-11-18 | Claude | 5 | `senkoji.mjs` rysuje cały odcinek 3800–5100: dodane świątynie przy schodach (`temple`: dziedziniec z grabionym żwirem, sala pod wielkim dachem, brama, latarnie, sosna, dzwonnica), pociągi na torze `sanyo`, 24 koty animowane w miejscu; arena kota bez znacznika. Sprawdzone zrzutami w grze w 115 i 143 s. | Pociągi jadą po całym torze, więc widać je też na odcinkach jeszcze w szkicu. Następne: fazy 2, 3 i 6 (wyspy, cieśnina z Jōdo-ji, Hondōri z dworcem). |
 | 2026-11-18 | Claude | 4 | Zbliżenie stoku w `senkoji.mjs` (malarz w `PAINTERS`, rysuje na razie u 4040–4900): tarasy wzdłuż poziomic z murami z granitu i uliczkami u ich stóp, domy pod szarą dachówką, puste domy w bluszczu, ogródki, studnie i kapliczki jizō, pranie i doniczki, schody z poręczami i latarniami, koty (sześć umaszczeń, pięć póz), pagoda Tennei-ji, Senkō-ji z czerwoną salą na skale, głazami, kamiennymi Buddami, lampionami, Tamanoiwą ze świecącym klejnotem, skałą-lustrem i dzwonnicą, las ze ścieżką literatury, park z alejkami, ławkami i okrągłym tarasem, kolejka linowa z dwiema gondolami, miasto pod torem z automatami i podwórkami, latarnie i ludzie na nabrzeżu, łodzie przy nabrzeżu, brzeg Mukaishimy. Zmierzch rozjaśniony w `TOD`. | Czeka na akceptację. Poza u 4040–4900 dalej szkielet; łączenie z resztą w fazie 5. |
 | 2026-11-18 | Claude | 1 | Trasa jako dane w `tools/art/onomichi/route.mjs`, szkielet malowany z danych w `mid.mjs` (na bazie Kawaguchiko; nowe klasy dróg: `express` na filarach, `cycle` z niebieską linią, `arcade` z dachem; tory `mono` w sadach; promy `FERRIES` z pomostami), test `onomichiRoute`, arkusz podglądu, nazwy miejsc w `landmarks.js`. Sprawdzone w grze zrzutami w 20, 75, 120, 165 i 225 s. | Stok to na razie tarasy wzorem; domy, świątynie i schody z detalem w fazach 3–6. Szerokość między drogą nadbrzeżną a torem jest mała (18 jednostek przy Ozaki, pasaż w Hondōri), więc domy tam będą wąskie. Następne: faza 2 (wyspy) albo 4 (zbliżenie stoku do akceptacji). |
