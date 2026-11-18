@@ -1,0 +1,229 @@
+# Plan: etap 11, ONOMICHI
+
+Stan: **plan, czeka na akceptację autora** (decyzje D1–D7 w sekcji 2 mają rekomendacje). Po akceptacji fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+
+## 1. W skrócie
+
+- Etap zwykłej długości, jak Kawaguchiko: około 230 s, tło 8 kafli (7 168 px), przewijanie 30 px/s.
+- Trasa Szlakiem Shimanami pod prąd, z wysp do miasta: wyspa Innoshima z zamkiem morskich władców, wielki most wiszący Innoshima, wyspa Mukaishima ze stocznią i sadami cytrusów, przelot nad cieśniną Onomichi (para mostów), potem wzdłuż miasta na zachód. Po prawej stronie ekranu stok gór z dziesiątkami świątyń, schodami i domami piętrzącymi się nad torami, po lewej cieśnina z promami. Koniec na wodzie przed dworcem.
+- Pora roku: **lato, koniec lipca**, wieczór festiwalu fajerwerków nad cieśniną. Pora dnia płynie z trasą: jasne popołudnie na wyspach, złota godzina na mostach, zachód słońca przy świątyni Jōdo-ji, zmierzch z lampionami na stoku Senkō-ji, noc z festiwalem na Hondōri. Walka z bossem toczy się nad cieśniną, a nad nią wybuchają fajerwerki.
+- Jeden miniboss i jeden boss, każdy z trzema fazami: **Nekomata** (dwuogoniasty kot-zjawa na dachach i schodach „miasta kotów”) i **Funa-yūrei** (widmowy okręt morskich władców z rękami trzymającymi czerpaki, wynurza się z cieśniny w noc fajerwerków).
+- Poziom detalu jak w poprzednich miastach. Finał dostaje dodatki (fajerwerki), ale nie kosztem wysp i stoku.
+
+## 2. Decyzje do podjęcia przed startem
+
+| # | Pytanie | Moja rekomendacja |
+|---|---|---|
+| D1 | Kierunek trasy | **Innoshima → Mukaishima → Onomichi.** Tak etap kończy się w nocy w mieście, nad cieśniną, gdzie naprawdę odpala się fajerwerki (przy chramie Sumiyoshi). Odwrotny kierunek (z miasta na wyspy) kończy się na moście Innoshima, a fajerwerki tam nie pasują. |
+| D2 | Pora roku | **Lato, koniec lipca**, wieczór festiwalu fajerwerków Sumiyoshi. Wiosna (sakury w parku Senkō-ji) powtarzałaby Kioto, a jesień jest już w Hiroszimie i Kawaguchiko. Lato w innych miastach ma tylko Okinawa, i to tropikalne. |
+| D3 | Miniboss | **Nekomata**, dwuogoniasty kot-zjawa z folkloru, bo Onomichi słynie z kotów na stromych uliczkach. Arena: dachy i schody pod świątynią Senkō-ji o zmierzchu. Alternatywa: tako-nyūdō (olbrzymia ośmiornica z podań Morza Wewnętrznego), ale ośmiornica jest już bossem w Osace. |
+| D4 | Boss | **Funa-yūrei** na widmowym okręcie (sekcja 6.2). Według podań Morza Wewnętrznego widma topielców proszą żeglarzy o czerpak, żeby zalać im łódź, a trzeba im dać czerpak bez dna. Alternatywy: **ushi-oni** (byk-pająk z wybrzeży Morza Wewnętrznego, wspinający się na most), ale ma pajęcze nogi jak krab z Hiroszimy i jest oni, które było w Beppu; **umibōzu** (czarny olbrzym z morza) za bardzo przypomina Daidarabotchiego. |
+| D5 | Miejsce w podróży | Jedenaste miasto, w losowej kolejności z pozostałymi dziewięcioma; Tokio dalej zawsze ostatnie. Wymaga licznika „JEDENAŚCIE MIAST” (faza 0). |
+| D6 | Jak pokazać fajerwerki | **Nad mapą z góry**, w walce i po niej: rozkwitające kule iskier, dym, rozbłyski na wodzie i dachach. Bez panoramy z boku (mechanizm z Nagasaki i Kawaguchiko), żeby nie przekombinować i żeby finał nie powtarzał Fuji. |
+| D7 | Szlak Shimanami | **Pokazany jako trasa rowerowa** na moście i wyspach (niebieska linia na jezdni, rowerzyści na swoim pasie, podjazdy na mosty). Bez wypożyczalni z nazwami firm. |
+
+## 3. Zasady
+
+1. **Licencje.** Żadnych logotypów, nazw firm, sklepów, hoteli i stoczni. Na trasie celowo **nie ma**: kamiennych kotów jednego artysty z uliczki kotów (rysujemy żywe koty i własne malowane kamienie bez cudzych wzorów), scen i plakatów z filmów kręconych w mieście, postaci z anime, które się tam dzieją, hotelu rowerowego w magazynie z jego nazwą, wypożyczalni rowerów znanej marki, szyldów sklepów z ramenem, herbów prawdziwych rodów na flagach morskich władców (flagi mają własny znak). Pociągi, promy, kolejka linowa i statki są rysowane z kształtu, bez barw konkretnych przewoźników. Nazwy w pasku lokalizacji są nazwami geograficznymi.
+2. **Wrażliwe miejsca.** Funa-yūrei to postać z podań, a nie prawdziwa katastrofa. Nie ma żadnych odniesień do konkretnych zatonięć ani ofiar. Świątynie to miejsca kultu, więc nie walczymy w ich salach: arena minibossa jest na dachach domów i schodach pod świątynią.
+3. **Topologia.** Drogi, tory, schody, mosty i pomosty muszą dokądś prowadzić i zgadzać się na łączeniach kafli. Promy kursują między przystaniami po obu stronach cieśniny. Schody na stoku łączą uliczki z drogą przy torach i z przejazdami pod torami.
+4. **Nic na ziemi się nie przesuwa względem mapy.** Ruszają się tylko rzeczy, które latają, pływają albo jadą po swoim torze (promy, łodzie, statki, pociągi, kolejka linowa, auta, rowerzyści, wózki kolejki do sadów), oraz animacje w miejscu (wiry w cieśninie, lampiony, dym ze straganów, koty myjące się na murkach). Fajerwerki są w powietrzu.
+5. **Detal bez wypełniaczy.** Stok to nie powtarzalne dachy: każda działka ma swoje schody, mur oporowy, ogródek, pranie, koty, studnię albo kapliczkę. Morze to nie pusta woda: prądy z wirami, promy, łodzie rybackie, barki do fajerwerków, boje, sieci.
+6. **Jedna faza to jeden zamknięty kawałek.** Faza kończy się zielonymi testami, wpisem w dzienniku (sekcja 9) i commitem.
+7. **Pliki nie nachodzą na siebie.** Tło w `tools/art/onomichi/`, walki w `src/game/enemies/onomichi-*.js`. Wspólne pliki (`stage11.json`, `Enemies.js`, `gen-art.mjs`, `skins.js`, `Stage.js`) zmienia się tylko w zakresie opisanym w fazie.
+8. **Teksty.** Każdy nowy napis ma wersję PL i EN, a nazwy mieszczą się w czcionce gry (w pasku lokalizacji bez makronów: ONOMICHI, JODOJI, SENKOJI, HONDORI). Japońskie okrzyki i dźwięki na ekranie czyta się po polsku przed commitem i zmienia, jeśli brzmią jak przekleństwo.
+
+## 4. Trasa
+
+Współrzędna `u` jest liczona od dołu taśmy. Góra ekranu jest w `u = 420 + 30 × t`. Kolumna „Czas” jest przybliżona (bez postoju na minibossa). Dokładne granice odcinków ustali faza 1.
+
+Kierunek lotu obraca się z mapą, jak spirala w Tokio. Nad wyspami lecimy na północ. Za parą mostów taśma skręca na zachód: cieśnina, którą przecinamy w poprzek, wygina się i biegnie dalej wzdłuż lewej krawędzi ekranu, a stok gór jest po prawej. Na taśmie to po prostu dalej w górę.
+
+| u | Czas | Odcinek | Pora | Co widać |
+|---|---|---|---|---|
+| 0–700 | 0–23 s | **INNOSHIMA** | jasne popołudnie | Zamek morskich władców na wzgórzu (odtworzony, z wieżą, palisadą i flagami), muzeum łodzi z łodziami kobaya na brzegu, sady hassaku na tarasach z kolejką wózków, mała stocznia, rybacka przystań, droga z niebieską linią do podjazdu na most |
+| 700–1500 | 23–50 s | **INNOSHIMA-OHASHI** | popołudnie | Most wiszący nad cieśniną (dwa poziomy: na górze jezdnia z autami, pod nią pas rowerzystów i pieszych, widoczny przy pylonach i zjazdach), dwa pylony, liny nośne z wieszakami, zakotwienia na obu brzegach, pętla podjazdu dla rowerów; w wodzie prądy pływowe z wirami, statki i barki płynące cieśniną |
+| 1500–2300 | 50–77 s | **MUKAISHIMA** | późne popołudnie | Stocznia z suchym dokiem i kadłubem w budowie, suwnica bramowa nad dokiem, spawacze z iskrami; sady cytrusów na stokach z kolejką wózków; wieś z ryokanem, sklepikami, szkołą z boiskiem; mały port z rzędami glinianych garnków na ośmiornice i suszącymi się sieciami; przystanie promów naprzeciw Onomichi |
+| 2300–2900 | 77–97 s | **ONOMICHI-SUIDO** | złota godzina | Cieśnina z dwoma mostami obok siebie (starszy i nowszy, oba podwieszane), promy przecinające wodę między przystaniami, łodzie, barki z rurami do fajerwerków już na swoich miejscach |
+| 2900–3800 | 97–127 s | **JODOJI** | zachód słońca | Ozaki: stare domy, nabrzeże, tor kolejki wzdłuż brzegu z przejazdami; świątynia Jōdo-ji (brama, główna sala, dwupiętrowa pagoda tahōtō, ogród), nad nią góra ze ścieżką; pierwsze schody i uliczki pnące się w górę |
+| 3800–5100 | 127–170 s | **SENKOJI** | zmierzch | Najważniejszy odcinek (sekcja 4.1): stok z domami, schodami i murami; świątynie na różnych wysokościach, trzypiętrowa pagoda Tennei-ji nad dachami; świątynia Senkō-ji z czerwoną salą na skale, skała Tamanoiwa z klejnotem i skała-lustro, ścieżka literatury z kamieniami z wierszami, park na szczycie z tarasem widokowym, kolejka linowa z dwiema gondolami; uliczka kotów; **arena minibossa** (u ≈ 4300, dachy i schody pod Senkō-ji) |
+| 5100–6200 | 170–207 s | **HONDORI** | noc, festiwal | Długi kryty pasaż handlowy (dach z przejrzystymi płytami, pod nim światła i tłum), kolejki do barów z ramenem, stara łaźnia, kawiarnie; między pasażem a wodą chram Sumiyoshi z festiwalem: tłum w yukatach, stragany z parą, lampiony, łodzie widzów na wodzie |
+| 6200–7168 | 207–230 s | **ONOMICHI** | noc | Nabrzeże przed dworcem: promenada, przystanie trzech promów, magazyny portowe, plac przed dworcem z autobusami, wiązka torów; za torami stok ze świątynią Saikoku-ji i jej bramą z wielkimi sandałami. Ostatni ekran to cieśnina z barkami do fajerwerków: **arena bossa** (nic wysokiego, walka nad wodą) |
+
+### 4.1 Stok: najważniejszy element etapu
+
+Onomichi to miasto na stoku: od torów w górę domy stoją na tarasach, jedne nad drugimi, a łączą je schody i ścieżki szerokie na jedną osobę. To trzeba pokazać z góry, bez perspektywy z boku. Lista jest wymaganiem dla fazy 5, a nie propozycją.
+
+**Jak z góry widać stok**
+- Tarasy z kamiennymi murami oporowymi (ishigaki): każdy mur rzuca cień w dół zbocza, a im wyżej, tym tarasy węższe. Domy na tarasie wyżej zasłaniają kawałek ogrodu poniżej.
+- Schody: kamienne i betonowe, z poręczami, zakręcające między murami, z podestami; pod torami przejścia w krótkich tunelach, nad torami przejazdy.
+- Dachy z szarej i ciemnoniebieskiej dachówki, zwrócone kalenicą wzdłuż stoku; między nimi pranie na balkonach, doniczki na murkach, studnie, kapliczki jizō, śmietniki, automaty z napojami na rogach.
+- Koty: na murkach, schodach, dachach i w cieniu, w kilku umaszczeniach; myją się, śpią, przeciągają (animacje w miejscu).
+- Pora dnia: zachód z lewej (od cieśniny), długie cienie w górę stoku; o zmierzchu zapalają się latarnie przy schodach i okna, lampiony przy świątyniach.
+
+**Kontrola jakości**
+- Najpierw jedno zbliżenie stoku 1:1 (kawałek z Senkō-ji, pagodą Tennei-ji i uliczką kotów) do akceptacji autora. Dopiero potem reszta odcinka.
+
+### Jak czas ma się do trasy
+
+- Miniboss ma pole `"hold": true` (jak w Tokio i Kawaguchiko): przewijanie i zegar stoją, dopóki żyje, więc arena zostaje na stoku.
+- Przewijanie kończy się na końcu taśmy. Boss wchodzi, gdy taśma stoi, i walczy nad cieśniną. Fajerwerki zaczynają się, gdy taśma się zatrzymuje, i trwają po walce.
+- Pora dnia: harmonogram `dark` w `stage11.json` rośnie od złotej godziny do nocy. Nocne światła (pasaż, lampiony, okna, latarnie przy schodach, światła promów) przez `kit.E`, `kit.halo` i `kit.night(u)`, jak w Tokio.
+
+## 5. Przeciwnicy
+
+Pięć istniejących typów zachowań dostaje jeden komplet skórek na cały etap. Do tego pułapka i stwór z zasadzki, które ma każde miasto. Wszystko ma wyglądać na przeciwnika (oczy, ostre kolory zapowiedzi), żeby nikt nie wziął tego za znajdźkę.
+
+| Typ | Skórka | Uwagi |
+|---|---|---|
+| popcorn | **Tsubame**, jaskółki (gniazdują latem pod okapami pasażu) | stado jak ptaki w Sapporo, premia za całe stado |
+| diver | **debera**, suszona płastuga (przysmak z Onomichi), która ożywa i pikuje płasko jak latawiec | nad wodą wyskakuje z fal jako żywa płastuga |
+| shooter | **fūrin**, szklany dzwonek wietrzny z paskiem papieru, z okiem na szkle | dzwoni (zapowiedź) i strzela pierścieniem kropel; trafiony pęka na odłamki szkła |
+| turret | **onigawara**, gliniana dachówka z twarzą demona na kalenicy | stoi na dachach domów i świątyń; przed strzałem żarzy się w paszczy; wrak: rozbita dachówka |
+| carrier | **hanabi-dama**, kula fajerwerku z lontem | w trzech kolorach wzmocnień; zniszczona rozkwita małym fajerwerkiem |
+| pułapka | **katori-buta**, gliniana świnka na kadzidełko przeciw komarom | na werandach, w ogródkach i przy straganach; wypuszcza pierścienie dymu |
+| zasadzka | **ośmiornica z glinianego garnka** (takotsubo) | w rzędach garnków na przystaniach Mukaishimy i Innoshimy |
+
+Klatki: lot (3–4), trafienie, zniszczenie własnym efektem (pióra, łuski, odłamki szkła, skorupy dachówki, iskry).
+
+## 6. Walki
+
+Kolory zapowiedzi jak w `docs/boss-encounters.md`: czerwony to nadchodzący atak, złoty to obiekt mechaniki, miętowy to odsłonięty słaby punkt. Jedna mechanika na fazę.
+
+### 6.1 Miniboss: NEKOMATA, „KOT O DWÓCH OGONACH” (stok Senkō-ji, zmierzch)
+
+Stary czarno-biały kot z rozwidlonym ogonem, na końcach ogonów błędne ogniki (onibi). Według podań kot, który żyje bardzo długo, wyrasta mu drugi ogon i staje się zjawą. Arena: dachy i schody pod świątynią, ogniki świecą w zmierzchu.
+
+| Faza | Co robi | Jak go trafić |
+|---|---|---|
+| 1. Ogniki | Skacze z dachu na dach (cień i czerwony krąg zapowiadają, gdzie wyląduje). Z ogonów puszcza ogniki: wolne, krążące wokół niego, potem odlatujące w statek. Przy lądowaniu z dachówek tryska wachlarz odłamków. | W skoku i chwilę po lądowaniu |
+| 2. Koci chór | Na murkach i schodach siadają zwykłe koty z miasta (dekoracja), a między nimi trzy jego kopie z ognikami. Kopie miauczą falą nut w statek. Prawdziwy nekomata ma dwa ogony, kopie po jednym: jego ogony świecą złotem. | Trafione kopie znikają w dymie; prawdziwego poznać po dwóch ogonach |
+| 3. Taniec | Staje na tylnych łapach z ręcznikiem na głowie (w podaniach nekomata tańczy nocą) i tańczy po kalenicy: obraca się, a ogniki układają się w spirale i koła. Na koniec każdej figury skacze w statek po zapowiedzianej linii. | Po każdej figurze siada zdyszany i myje łapę (miętowy) |
+
+Im mniej ma życia, tym szybciej działa. Animacje: oddech, mruganie, ruch uszu i ogonów, przyczajenie przed skokiem, skok (3 klatki), lądowanie, puszczanie ogników, miauczenie, taniec (4 klatki), mycie łapy, zmęczenie. Koniec: kot ziewa, zwija się w kłębek na dachu, drugi ogon gaśnie i jest już zwykłym kotem, który zasypia.
+
+### 6.2 Boss: FUNA-YŪREI, „WIDMOWY OKRĘT” (cieśnina Onomichi, noc fajerwerków)
+
+Własny projekt: stary okręt w stylu łodzi morskich władców z Morza Wewnętrznego (sekibune: skrzynkowy kadłub, burty z desek z otworami na wiosła, nadbudówka z dachem, maszt z żaglem z mat), sczerniały i porośnięty wodorostami, przeświecający bladym zielono-niebieskim światłem. Na burtach flagi z podartego płótna z własnym znakiem (nie herbem prawdziwego rodu). Z wody wokół wynurzają się blade ręce z drewnianymi czerpakami. Na dziobie wielka latarnia z ognikiem (słaby punkt). Wynurza się z cieśniny przed dworcem, gdy nad wodą zaczynają się fajerwerki.
+
+| Faza | Co robi | Mechanika |
+|---|---|---|
+| 1. Czerpaki (100–66%) | Wzdłuż obu burt ręce czerpią wodę i chlustają nią łukami w statek; wiosła widma biją w wodę falami kropel. | Czerpaki świecą złotem. Zestrzelony czerpak traci dno (jak w podaniu: czerpak bez dna nie zaleje łodzi) i leje wodę bez szkody. Gdy cała burta ma dziurawe czerpaki, latarnia na dziobie jest odsłonięta (miętowa) |
+| 2. Ogniste garnki (66–33%) | Z nadbudówki leci ogień: gliniane garnki z prochem (hōroku-hiya, broń morskich władców) łukiem, pękają w pierścienie płomieni; róg z muszli (horagai) dmie i rozchodzi się fala pocisków. | Nad okrętem przelatują prawdziwe kule fajerwerków z festiwalu (złote). Zestrzelona kula wybucha nad okrętem, ogłusza go i odsłania latarnię |
+| 3. Wir (33–0%) | Okręt kręci się w wirze pływowym, który sam wywołuje: pociski układają się w spirale, z wody po zapowiedzianych liniach wyciągają się rzędy rąk. Maszt z żaglem łamie się, żagiel płonie. | Po każdym obrocie wiru okręt staje bokiem i latarnia otwiera się (miętowa) |
+
+Animacje: kołysanie na fali, falowanie podartych flag i żagla, ręce z czerpakami (wynurzenie, nabranie, chlust, czerpak bez dna), wiosła, otwieranie nadbudówki i rzut garnka, dęcie w róg, ogłuszenie po fajerwerku, trzy stopnie zniszczenia (dziury w burtach, połamane wiosła, złamany maszt i płonący żagiel), wir. Koniec: latarnia gaśnie, okręt zapada się w wodę, ręce puszczają czerpaki i znikają, z wody wznoszą się małe światełka, a nad cieśniną otwiera się wielki ostatni fajerwerk. Festiwal trwa dalej: łodzie widzów, światła na nabrzeżu.
+
+### 6.3 Fajerwerki (finał)
+
+- Kule iskier różnych rodzajów (chryzantema, piwonia, wierzba z opadającymi złotymi smugami, małe trzaskające), rysowane z góry jako rozkwitające kręgi z dymem, który powoli dryfuje z wiatrem.
+- Odpalane z barek w cieśninie (barki widać na mapie, rury i błyski przy odpaleniu). Rozbłyski kolorowego światła na wodzie, dachach i nabrzeżu.
+- W walce fajerwerki są tłem i nie strzelają w gracza. Złote kule w fazie 2 bossa to jedyne, które mają mechanikę.
+- Wydajność: liczba iskier na ekranie z limitem, sprawdzona przy spowolnionym procesorze (faza 15).
+
+## 7. Poza grafiką i walkami
+
+- **Muzyka** (`src/audio/score11.js`): wstęp, rozwinięcie i pełny temat etapu; motyw minibossa (zadziorny, z „miau” na shamisenie); temat bossa (bębny, róg z muszli, flet; na końcu przechodzi w radosny temat festiwalu). Charakter: letnie Morze Wewnętrzne, flet shinobue, koto, taiko, dzwonki fūrin.
+- **Dźwięki**: dzwonek fūrin, miauczenie, chlust wody z czerpaka, dęcie w róg z muszli, wystrzał i rozkwit fajerwerku, trzask garnka z prochem.
+- **Odkrycia** (`src/data/discoveries.js`): dwa dania, **ramen z Onomichi** (bulion sojowy z drobinkami tłuszczu, płaski makaron) nad Hondōri i **hassaku daifuku** (ciastko ryżowe z cytrusem hassaku, który pochodzi z Innoshimy) nad Innoshimą; wpisy za walki: Nekomata i Funa-yūrei.
+- **Pieczątka** (`tools/art/stamps.mjs`): kot na schodach z pagodą i cieśniną w tle; pieczęć **尾道**, własny kolor tuszu; punkt na mapie Japonii.
+- **Kupony**: miniboss i boss, razem 2.
+- **Pogoda**: bez opadów. W finale opadające iskry i dym fajerwerków jako wariant istniejących drobin (bez nowego systemu).
+- **Gachapon**: karta-pocztówka z Onomichi i kolory miasta.
+
+## 8. Fazy pracy
+
+Każda faza ma zakres, pliki, które wolno ruszać, i warunek ukończenia. „Wymaga” mówi, co musi być odhaczone wcześniej.
+
+### Faza 0: jedenaste miasto i szkielet etapu
+Wymaga: decyzje D1–D7. Pliki: `src/data/stage11.json`, `src/data/stages.js`, `src/data/journeyOrder.js`, `src/game/JourneyMenu.js`, `src/i18n.js`, `src/game/skins.js`, `src/game/Stamps.js`, `src/game/Ending.js`, `tools/gen-art.mjs`, `tools/art/onomichi/index.mjs`.
+- [ ] `stage11.json` w `stages.js` z flagą `"wip": true`, fale zastępcze, miniboss i boss z innego miasta na zastępstwo
+- [ ] Makieta tła 8 kafli ładuje się i przewija
+- [ ] Gra gotowa na jedenaście miast: licznik słownie („JEDENAŚCIE MIAST”, EN „ELEVEN CITIES”), miejsce w książeczce pieczątek i w pieczęciach zakończenia
+- [ ] `npm test` i `npx vite build` przechodzą
+
+### Faza 1: szkielet trasy
+Wymaga: faza 0. Pliki: `tools/art/onomichi/route.mjs`, `mid.mjs`, `overview.mjs`, `src/data/landmarks.js`, `tools/tests/onomichiRoute.test.mjs`.
+- [ ] Morze i cieśniny, linia brzegów wysp i miasta, zakręt cieśniny za mostami; drogi z niebieską linią, mosty (wiszący i para podwieszanych), tor kolejki wzdłuż brzegu, wiązka torów przy dworcu, kolejka linowa, kursy trzech promów, schody i ścieżki stoku, pasaż
+- [ ] Nazwy miejsc, działki pod obiekty, areny, harmonogram pory dnia, test topologii (promy od przystani do przystani, schody łączą się z drogami, nic wysokiego w arenach), arkusz podglądu
+
+### Faza 2: wyspy (u 0–2300)
+Wymaga: faza 1. Pliki: `tools/art/onomichi/islands.mjs`, `bridges.mjs`.
+- [ ] Innoshima: zamek morskich władców, muzeum z łodziami, sady hassaku z kolejką wózków, stocznia, przystań; most Innoshima z pylonami, linami, dwoma poziomami i podjazdami; Mukaishima: suchy dok z kadłubem i suwnicą, sady, wieś, port z garnkami na ośmiornice, przystanie promów
+- [ ] Animacje: auta i rowerzyści na moście i drogach, wózki w sadach, statki w cieśninie, wiry w miejscu, iskry spawania, łodzie rybackie
+
+### Faza 3: cieśnina i Jōdo-ji (u 2300–3800)
+Wymaga: faza 1. Pliki: `tools/art/onomichi/suido.mjs`, `jodoji.mjs`.
+- [ ] Para mostów, promy, barki do fajerwerków, łodzie; Ozaki ze starymi domami i nabrzeżem; tor z przejazdami i pociągiem; Jōdo-ji z bramą, główną salą, pagodą tahōtō i ogrodem; pierwsze schody w górę
+- [ ] Animacje: promy po kursach, pociąg, auta, zachód słońca
+
+### Faza 4: zbliżenie stoku do akceptacji
+Wymaga: faza 1. Plik: `tools/art/onomichi/senkoji.mjs`.
+- [ ] Zbliżenie 1:1 kawałka stoku (Senkō-ji, pagoda Tennei-ji, uliczka kotów) według sekcji 4.1, wysłane autorowi; dalej dopiero po akceptacji
+
+### Faza 5: stok Senkō-ji (u 3800–5100)
+Wymaga: faza 4. Plik: `tools/art/onomichi/senkoji.mjs`.
+- [ ] Cały odcinek: tarasy, mury, schody, domy, świątynie na różnych wysokościach, Senkō-ji z czerwoną salą, Tamanoiwa (klejnot świeci o zmierzchu), skała-lustro, ścieżka literatury, park na szczycie, kolejka linowa, uliczka kotów, arena minibossa na dachach
+- [ ] Animacje: gondole, koty w miejscu, lampiony i latarnie przy schodach zapalające się o zmierzchu, pociąg pod stokiem
+
+### Faza 6: Hondōri i dworzec (u 5100–7168)
+Wymaga: faza 1. Pliki: `tools/art/onomichi/hondori.mjs`, `minato.mjs`.
+- [ ] Pasaż z dachem i życiem pod nim, bary z ramenem z kolejkami, łaźnia, chram Sumiyoshi z festiwalem i straganami, nabrzeże, przystanie promów, magazyny, plac przed dworcem, tory, Saikoku-ji z bramą i wielkimi sandałami; arena bossa nad wodą
+- [ ] Animacje: tłum w yukatach, para ze straganów, lampiony, łodzie widzów, promy, autobusy, pociągi; nocne światła
+
+### Faza 7: warstwy daleka i bliska
+Wymaga: faza 1. Pliki: `tools/art/onomichi/far.mjs`, `src/game/Parallax.js` (tylko jeśli trzeba).
+- [ ] Daleka warstwa pod morzem: woda Morza Wewnętrznego z pasmami prądu i światłem pory dnia, pętla bez szwu
+- [ ] Bliska warstwa: istniejący rodzaj albo żaden; przejścia pory dnia sprawdzone w grze
+
+### Faza 8: grafika przeciwników, pułapki i zasadzki
+Wymaga: faza 0. Pliki: `tools/art/onomichi/enemies.mjs`, `tools/art/traps.mjs`, `tools/art/ambush.mjs`, `src/game/skins.js`.
+- [ ] Pięć skórek z sekcji 5 w 540 px, katori-buta (pułapka) i ośmiornica z garnka (zasadzka); każda czytelna jako przeciwnik, nie znajdźka
+- [ ] Testy przechodzą
+
+### Faza 9: fale
+Wymaga: fazy 1 i 8. Plik: `src/data/stage11.json`.
+- [ ] Fale do minibossa i od minibossa do bossa; nad wodą płastugi i jaskółki, bez dachówek na wodzie; pułapki i zasadzki z miejsca na mapie (werandy, stragany, przystanie), z dala od walk; oddech przed areną i cisza przed bossem
+
+### Faza 10: Nekomata
+Wymaga: faza 0. Pliki: `src/game/enemies/onomichi-nekomata.js`, `tools/art/onomichi/nekomata.mjs`.
+- [ ] Grafika (sekcja 6.1) · [ ] Faza 1 · [ ] Faza 2 · [ ] Faza 3
+- [ ] Wejście z kartą, zakończenie, bot na obu poziomach trudności
+
+### Faza 11: Funa-yūrei, grafika
+Wymaga: faza 6. Plik: `tools/art/onomichi/funayurei.mjs`.
+- [ ] Projekt w trzech postaciach (z czerpakami, z ogniem, w wirze) na tle cieśniny, do akceptacji autora
+- [ ] Części w atlasie miasta: kadłub w trzech stopniach zniszczenia, nadbudówka, maszt i żagiel, ręce z czerpakami (z dnem i bez), latarnia, garnki, wir
+
+### Faza 12: Funa-yūrei, walka
+Wymaga: faza 11. Plik: `src/game/enemies/onomichi-funayurei.js`.
+- [ ] Faza 1 z czerpakami · [ ] Faza 2 z fajerwerkami · [ ] Faza 3 z wirem
+- [ ] Wejście z kartą, zakończenie z ostatnim fajerwerkiem; wpis w `docs/boss-encounters.md` i w teście walk bossów
+
+### Faza 13: fajerwerki
+Wymaga: fazy 6 i 12. Pliki: `src/game/Hanabi.js`, `tools/art/onomichi/hanabi.mjs`.
+- [ ] Rodzaje kul, dym, rozbłyski na wodzie i dachach, barki z odpaleniami; start po zatrzymaniu taśmy, trwanie po walce; limit iskier
+
+### Faza 14: muzyka i dźwięk
+Wymaga: faza 0. Plik: `src/audio/score11.js`.
+- [ ] Trzy części tematu, motyw minibossa, temat bossa, dźwięki z sekcji 7
+
+### Faza 15: wpięcie w grę
+Wymaga: fazy 9–13.
+- [ ] Odkrycia (dwa dania, dwie walki) z tekstami PL/EN, pieczątka i pieczęć 尾道, pocztówka i barwy w gachaponie, parada w zakończeniu
+- [ ] Zdjęcie flagi `wip`, testy z jedenastoma miastami
+
+### Faza 16: balans i szlif
+Wymaga: wszystko powyżej.
+- [ ] Bot przechodzi etap na obu poziomach trudności; czasy walk w widełkach innych miast
+- [ ] Przegląd równego detalu: żaden odcinek nie odstaje
+- [ ] Wydajność na telefonie, zwłaszcza w finale z fajerwerkami
+- [ ] Przejście testowe przez człowieka i poprawki po nim
+
+## 9. Dziennik przekazań
+
+Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co uważać.
+
+| Data | Kto | Faza | Zrobione | Zostało / uwagi |
+|---|---|---|---|---|
+| 2026-11-18 | Claude | plan | Plan etapu napisany: trasa Innoshima → Mukaishima → Onomichi, lato i noc fajerwerków, Nekomata i Funa-yūrei, sekcja 4.1 o stoku. | Czeka na akceptację decyzji D1–D7. |
