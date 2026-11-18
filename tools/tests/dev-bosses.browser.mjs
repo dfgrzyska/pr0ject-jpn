@@ -3,6 +3,7 @@
 // invulnerability switch carries into the game. No console warnings on the way.
 import assert from 'node:assert/strict';
 import { startServer, launchBrowser } from './browser-support.mjs';
+import { allStages } from './cities.mjs';
 
 const server = await startServer(5186);
 let browser;
@@ -24,7 +25,9 @@ try {
   });
   console.log(JSON.stringify(menu));
   assert.equal(menu.state, 'dev');
-  assert.equal(menu.cities, 19, "a miniboss and a boss for each of the eight cities, Tokyo's two minibosses and its boss");
+  // (every stage file's minibosses and boss, a city in the works too: Tokyo has two minibosses)
+  const fights = allStages().flatMap((st) => st.waves.filter((w) => w.type === 'heavy' || w.type === 'boss')).length;
+  assert.equal(menu.cities, fights, 'a row for every miniboss and boss of every city');
   assert.equal(menu.encounters, 7, 'every random encounter');
   await page.screenshot({ path: 'tools/preview/dev-bosses.png' });
   // a random encounter, invulnerable
