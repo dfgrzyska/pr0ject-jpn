@@ -1,6 +1,6 @@
 # Plan: etap 11, ONOMICHI
 
-Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–6 i 8–10 gotowe (zbliżenie stoku przyjęte przez autora 2026-11-18): całe tło, przeciwnicy, fale, walka z Nekomatą; z fazy 7 nocna woda. Projekt bossa (Funa-yūrei) czeka na akceptację autora; w grze boss dalej na zastępstwo (Kyūbi z Kioto). Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–6 i 8–12 gotowe (zbliżenie stoku i projekt okrętu przyjęte przez autora 2026-11-18): całe tło, przeciwnicy, fale, walki z Nekomatą i Funa-yūrei; z fazy 7 nocna woda. Zostały: dzienna woda z prądami, fajerwerki w tle, muzyka, włączenie etapu i balans. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -43,6 +43,7 @@ Kierunek lotu obraca się z mapą, jak spirala w Tokio. Nad wyspami lecimy na p�
 
 | u | Czas | Odcinek | Pora | Co widać |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 11 i 12 | Projekt okrętu przyjęty; części `fy_*` w atlasie Onomichi, podgląd składa okręt z części. Walka w `onomichi-funayurei.js` (FUNA, FY): wynurzenie z cieśniny po zatrzymaniu taśmy, czerpaki i wiosła, ogniste garnki, róg z muszli i złote kule ogłuszające okręt, wir z obrotami, spiralami i rzędami rąk, latarnia jako słaby punkt; koniec z tonięciem, światełkami i ostatnim fajerwerkiem. Wpięta w `Enemies.js`, `encounters.js`; strefa `ghost` w `Bullets.js`; napisy EN. Sprawdzone zrzutami w grze we wszystkich fazach i w zakończeniu, test `onomichiFunayurei`. | Autor zgodził się, by kolejne fazy szły bez akceptacji. Następne: faza 7 (dzienna woda), 13 (fajerwerki w tle), 14, 15, 16. |
 | 0–700 | 0–23 s | **INNOSHIMA** | jasne popołudnie | Zamek morskich władców na wzgórzu (odtworzony, z wieżą, palisadą i flagami), muzeum łodzi z łodziami kobaya na brzegu, sady hassaku na tarasach z kolejką wózków, mała stocznia, rybacka przystań, droga z niebieską linią do podjazdu na most |
 | 700–1500 | 23–50 s | **INNOSHIMA-OHASHI** | popołudnie | Most wiszący nad cieśniną (dwa poziomy: na górze jezdnia z autami, pod nią pas rowerzystów i pieszych, widoczny przy pylonach i zjazdach), dwa pylony, liny nośne z wieszakami, zakotwienia na obu brzegach, pętla podjazdu dla rowerów; w wodzie prądy pływowe z wirami, statki i barki płynące cieśniną |
 | 1500–2300 | 50–77 s | **MUKAISHIMA** | późne popołudnie | Stocznia z suchym dokiem i kadłubem w budowie, suwnica bramowa nad dokiem, spawacze z iskrami; sady cytrusów na stokach z kolejką wózków; wieś z ryokanem, sklepikami, szkołą z boiskiem; mały port z rzędami glinianych garnków na ośmiornice i suszącymi się sieciami; przystanie promów naprzeciw Onomichi |
@@ -198,13 +199,13 @@ Wymaga: faza 0. Pliki: `src/game/enemies/onomichi-nekomata.js`, `tools/art/onomi
 ### Faza 11: Funa-yūrei, grafika
 Wymaga: faza 6. Plik: `tools/art/onomichi/funayurei.mjs`.
 - [x] Projekt w trzech postaciach (z czerpakami, z ogniem, w wirze) na tle cieśniny przed dworcem nocą, wysłany autorowi 2026-11-18 (`tools/art/onomichi/funayurei.mjs`, podgląd: `node tools/art/onomichi/funayurei.mjs` → `tools/preview/stage11_funayurei.png`): sekibune z góry, dziobem w dół ekranu (do statku), kadłub z wyblakłego szarozielonego drewna z wodorostami i zimną zielonkawą poświatą wzdłuż obrysu i szwów, wiosła przez otwory w burtach, pokład z linami, beczkami, włóczniami i kałużami morza, dwupiętrowa nadbudówka pod czterospadowym dachem z oknami w zimnym świetle i ognikami u okapów, maszt z żaglem z mat, dwa podarte proporce z własnym znakiem (trzy fale w kole, żaden herb), wielka latarnia z ognikiem na dziobie (słaby punkt); faza 1: blade ręce topielców wynurzone wzdłuż burt z drewnianymi czerpakami, złote obręcze to cele, czerpak bez dna przelewa wodę; faza 2: otwarty luk z ogniem w nadbudówce, garnki z prochem przy niej, muszla na dachu; faza 3: maszt złamany, żagiel płonie na pokładzie, dziury w burtach, połamane wiosła, wir dookoła
-- [ ] Akceptacja autora
-- [ ] Części w atlasie miasta: kadłub w trzech stopniach zniszczenia, nadbudówka, maszt i żagiel, ręce z czerpakami (z dnem i bez), latarnia, garnki, wir
+- [x] Akceptacja autora (2026-11-18)
+- [x] Części w atlasie miasta (`funayureiFrames`, ramki `fy_*`): kadłub z nadbudówką i olinowaniem w trzech stopniach zniszczenia (z czerpakami; z otwartym lukiem, garnkami i muszlą; ze złamanym masztem, płonącym żaglem i dziurami), proporce w trzech klatkach falowania (całe i nadpalone), latarnia (dwa migotania, odsłonięta, zgaszona), ręce topielców w czterech pozach (wynurzona dłoń, z pełnym czerpakiem, chlust, czerpak bez dna), gliniany garnek z prochem i złota kula fajerwerku (po dwie klatki), czerpak dryfujący na wodzie, dwa ramiona piany wiru. Kadłuby spakowane bez pustych brzegów, ale z pełną ramką, więc dzielą środek. Podgląd składa okręt z części tak jak gra
 
 ### Faza 12: Funa-yūrei, walka
 Wymaga: faza 11. Plik: `src/game/enemies/onomichi-funayurei.js`.
-- [ ] Faza 1 z czerpakami · [ ] Faza 2 z fajerwerkami · [ ] Faza 3 z wirem
-- [ ] Wejście z kartą, zakończenie z ostatnim fajerwerkiem; wpis w `docs/boss-encounters.md` i w teście walk bossów
+- [x] Faza 1 z czerpakami · [x] Faza 2 z fajerwerkami · [x] Faza 3 z wirem
+- [x] Wejście z kartą (czeka, aż miasto dojedzie do końca, wynurza się z cieśniny: „HISHAKU O KASE...”), zakończenie: latarnia gaśnie, okręt tonie, ręce puszczają czerpaki, z wody wznoszą się światełka, nad cieśniną otwiera się ostatni wielki fajerwerk („TAMAYA~!”); wpis w `docs/boss-encounters.md`, test `onomichiFunayurei` (części w atlasie, położenie części zgodne z grafiką, okręt i ręce na wodzie, haki w grze). Napisy faz i komunikaty PL/EN; rzędy rąk w fazie 3 mają własny wygląd strefy (`ghost`). Bez bota w grze: statek z nieśmiertelnością idący pod to, co odsłonięte (z wyprzedzeniem pod złote kule), pokonuje okręt w 60 s przy mocy 4 (fazy po 23, 19 i 19 s) i w 133 s przy mocy 1 (42, 46, 46 s); Daidarabotchi botem 55–65 s przy mocy 4
 
 ### Faza 13: fajerwerki
 Wymaga: fazy 6 i 12. Pliki: `src/game/Hanabi.js`, `tools/art/onomichi/hanabi.mjs`.

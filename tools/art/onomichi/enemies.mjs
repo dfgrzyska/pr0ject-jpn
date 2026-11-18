@@ -6,6 +6,7 @@
 // burning fuse), never as a pickup. Seen from above like every city's, drawn with HiSprite (tools/lib/hisprite.mjs).
 import { HiSprite, tones, speckle, mottle, mix2, fur } from '../../lib/hisprite.mjs';
 import { nekomataFrames } from './nekomata.mjs';
+import { funayureiFrames } from './funayurei.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -232,5 +233,6 @@ export function onomichiEnemies(add) {
   add('o_ridge_wreck', ridgeBase(true));
   for (let i = 0; i < 16; i++) add(`o_oni_head_${i}`, onigawara(i));
   nekomataFrames(add); // the miniboss, NEKOMATA (nekomata.mjs)
+  funayureiFrames(add); // the boss, FUNA-YUREI's ship in parts (funayurei.mjs)
 }
 export const ONOMICHI_PORTRAITS = ['o_neko_sit_0'];

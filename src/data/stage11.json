@@ -208,6 +208,6 @@
     {"t":200.5,"type":"popcorn","x":90,"path":"row","count":7},
     {"t":203,"type":"shooter","x":64,"pattern":"fan"},
     {"t":203.6,"type":"shooter","x":116,"pattern":"fan"},
-    {"t":220,"type":"boss","x":90,"boss":"kyubi","card":["FUNA-YUREI","WIDMOWY OKRĘT"]}
+    {"t":220,"type":"boss","x":62,"boss":"funayurei","card":["FUNA-YUREI","WIDMOWY OKRĘT"]}
   ]
 }

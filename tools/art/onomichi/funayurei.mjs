@@ -177,66 +177,120 @@ function rigging(s, state) {
   s.dot(CX, my - 2, 3, 0x3a2a1a);
 }
 
+/** A banner on its pole, the pole's foot at (x, y): streaming up the screen (the ship's way), torn; our own sign on it.
+ * `f` its flutter (0..2), `len` shorter once it is burnt. */
+function banner(s, x, y, len, f) {
+  s.ellipse(x, y, 3, 3, 'l', { bias: 0.1 });
+  const wave = (t) => Math.sin(t * 5 + f * 2.1) * 3 + Math.sin(t * 9 + f * 1.3) * 0.8;
+  s.paint([x - 13, y - len - 4, x + 13, y], (px, py) => {
+    const t = (y - py) / len;
+    if (t < 0 || t > 1) return false;
+    const c = x + wave(t) * t;
+    const ragged = t > 0.75 && Math.sin(px * 1.7 + f) > 0.2;
+    return Math.abs(px - c) < 9 && !ragged;
+  }, 'c', (px, py) => 0.55 + 0.18 * Math.sin(((y - py) / len) * 5 + f * 2.1));
+  const [sxc, syc] = [x + wave(0.45) * 0.45, y - len * 0.45];
+  for (let a = 0; a < 6.3; a += 0.15) s.px(sxc + Math.cos(a) * 6, syc + Math.sin(a) * 6, 0x1e3a5a);
+  for (let k = -1; k <= 1; k++) for (let i = -4; i <= 4; i++) s.px(sxc + i, syc + k * 2.6 + Math.round(Math.sin(i * 1.2)), 0x1e3a5a); // three waves in a ring
+}
+
 function banners(s, state) {
-  // two poles at the stern's corners, the banners streaming up the screen (the ship's way), torn; our own sign on them
-  for (const sx of [-1, 1]) {
-    const [x, y] = [CX + sx * 88, STERN + 6];
-    s.ellipse(x, y, 3, 3, 'l', { bias: 0.1 });
-    const len = state === 'whirl' ? 36 : 58;
-    const wave = (t) => Math.sin(t * 5 + sx) * 3;
-    s.paint([x - 10, y - len - 4, x + 10, y], (px, py) => {
-      const t = (y - py) / len;
-      if (t < 0 || t > 1) return false;
-      const c = x + wave(t) * t;
-      const ragged = t > 0.75 && Math.sin(px * 1.7) > 0.2;
-      return Math.abs(px - c) < 9 && !ragged;
-    }, 'c', () => 0.6);
-    const [sxc, syc] = [x + wave(0.45) * 0.45, y - len * 0.45];
-    for (let a = 0; a < 6.3; a += 0.15) s.px(sxc + Math.cos(a) * 6, syc + Math.sin(a) * 6, 0x1e3a5a);
-    for (let k = -1; k <= 1; k++) for (let i = -4; i <= 4; i++) s.px(sxc + i, syc + k * 2.6 + Math.round(Math.sin(i * 1.2)), 0x1e3a5a); // three waves in a ring
+  // two poles at the stern's corners
+  for (const sx of [-1, 1]) banner(s, CX + sx * 88, STERN + 6, state === 'whirl' ? 36 : 58, sx < 0 ? 0 : 1);
+}
+
+/** The great lantern at (x, y) on its post: lit (two flickers), open (blazing: the weak point laid bare), out. */
+function lanternAt(s, x, y, kind = 'lit', f = 0) {
+  s.tube(x, y + 18, x, y - 4, 2.4, 'l');
+  const out = kind === 'out';
+  s.ellipse(x, y, 15, 13, out ? 'h' : 'c', { bias: 0.02 });
+  for (let k = -2; k <= 2; k++) s.line(x - 14, y + k * 4.5, x + 14, y + k * 4.5, 0x3a4a4a, 1, 0.6); // its ribs
+  if (!out) {
+    const open = kind === 'open';
+    s.ellipse(x, y, 11, 9, 'C', { flat: 0.9, glow: true });
+    s.paint([x - 12, y - 12, x + 12, y + 10], (px, py) => ((px - x) / 10) ** 2 + ((py - y) / 8.5) ** 2 < 1, 'C', (px, py) => (open ? 1.1 : 0.95) - Math.hypot(px - x, py - y) / 20, { glow: true });
+    // the wisp in it, flickering; blazing white when open
+    const [wr, wy] = open ? [6.4, 7.4] : f ? [4.2, 6.2] : [4.8, 5.2];
+    s.ellipse(x + (f ? 0.6 : -0.4), y + 1, wr, wy, 'W', { flat: 0.98, glow: true });
+    s.ellipse(x + (f ? 0.6 : -0.4), y - wy + 1.6, wr * 0.45, 2.2, 'W', { flat: 0.98, glow: true }); // its tongue
+    if (open) for (let k = -2; k <= 2; k += 2) s.line(x + k * 3, y - 6, x + k * 3, y + 7, 0x3a4a4a, 1, 0.35);
+  } else {
+    // gone out: the paper scorched and dark, a thread of smoke
+    s.ellipse(x, y, 10, 8, 'K', { flat: 0.35 });
+    for (let k = 0; k < 6; k++) s.px(x + Math.sin(k) * 1.5, y - 14 - k * 2, 0x8a9a9a, 0.6 - k * 0.08);
+  }
+  s.poly([[x - 9, y - 12], [x + 9, y - 12], [x + 6, y - 15], [x - 6, y - 15]], 'K', { flat: 0.3 });
+  s.poly([[x - 9, y + 12], [x + 9, y + 12], [x + 6, y + 15], [x - 6, y + 15]], 'K', { flat: 0.3 });
+}
+
+function lantern(s) {
+  lanternAt(s, CX, 418);
+}
+
+// An arm's parts from the ring where it comes out of the water (fine px, for an arm on the ship's right; mirrored on
+// its left): the elbow, the hand, the ladle's bowl. The game hit-tests the bowl (FY_ARM in onomichi-funayurei.js).
+export const ARM = {
+  hold: { elbow: [6, -18], hand: [-8, -32], bowl: [21, -40] },
+  throw: { elbow: [9, -15], hand: [13, -24], bowl: [27, -8] },
+  rise: { elbow: [3, -10], hand: [2, -18] },
+};
+
+/**
+ * One arm of the drowned out of the water at (x0, y0), `sx` the side it leans out to (1: right): 'rise' (a hand
+ * reaching up), 'hold' (a ladle full of water, its rim gold: a target), 'throw' (swung at the ship, the water
+ * flying), 'holed' (its bottom knocked out: pouring away through it).
+ */
+function arm(s, x0, y0, sx, pose, seed = 0) {
+  const P = ARM[pose === 'holed' ? 'hold' : pose];
+  const at = ([dx, dy]) => [x0 + sx * dx, y0 + dy];
+  const [ex, ey] = at(P.elbow);
+  const [hx, hy] = at(P.hand);
+  // the ring of light where it comes up out of the water, ripples round it
+  s.ellipse(x0, y0, 9, 3.6, 'o', { flat: 0.35, glow: true });
+  for (let a = 0; a < 6.3; a += 0.25) if (Math.sin(a * 3 + seed) > -0.3) s.px(x0 + Math.cos(a) * 12, y0 + Math.sin(a) * 4.6, 0x5ae6d4, 0.5);
+  s.tube(x0, y0 - 2, ex, ey, 3.4, 'g', { rb: 3, pat: speckle({ amt: 0.12, seed }) });
+  s.tube(ex, ey, hx, hy, 3, 'g', { rb: 2.6, pat: speckle({ amt: 0.12, seed: seed + 9 }) });
+  for (let k = 0; k < 5; k++) s.px(x0 + sx * (k - 2) * 1.6, y0 - 4 - k * 1.2, 0x9ad8e0, 0.7); // water running off it
+  if (pose === 'rise') {
+    // fingers spread, reaching
+    for (let f = -2; f <= 2; f++) s.tube(hx, hy, hx + f * 2.6, hy - 6 + Math.abs(f) * 1.2, 1, 'g', { rb: 0.8 });
+    return;
+  }
+  for (let f = -1; f <= 1; f++) s.line(hx + f * 2, hy, hx + f * 2.4 - sx, hy - 5, 0xd8f4f8, 1); // fingers round the handle
+  const [bx, by] = at(P.bowl);
+  s.tube(hx, hy - 2, bx - sx * 7, by + (pose === 'throw' ? -4 : 0), 1.4, 'l');
+  if (pose === 'throw') {
+    // tipped at the ship: the outside of the bowl, the water flying out of it towards the bottom of the screen
+    s.ellipse(bx, by, 8, 6, 'l', { bias: 0.08 });
+    s.ellipse(bx + sx, by + 2, 6, 3.4, 'C', { flat: 0.7 });
+    for (let a = 0; a < 6.3; a += 0.2) s.px(bx + Math.cos(a) * 8.2, by + Math.sin(a) * 6.2, 0xffd84a, 0.95);
+    for (let q = 0; q < 9; q++) s.dot(bx + sx * (1 + q * 1.2) + Math.sin(q * 2) * 2, by + 6 + q * 2.2, q < 5 ? 1.5 : 1, q % 3 ? 0x9ad8ff : 0xe0f8ff, 0.9 - q * 0.06);
+    return;
+  }
+  const holed = pose === 'holed';
+  s.ellipse(bx, by, 9, 8, 'l', { bias: 0.05 });
+  s.ellipse(bx, by, 6.6, 5.6, holed ? 'C' : 'K', { flat: holed ? 0.55 : 0.3 });
+  if (!holed) {
+    s.ellipse(bx, by + 1, 4.6, 3.4, 'C', { flat: 0.7 }); // the water in it
+    for (let a = 0; a < 6.3; a += 0.2) s.px(bx + Math.cos(a) * 9.2, by + Math.sin(a) * 8.2, 0xffd84a, 0.95); // its rim gold: it can be shot through
+  } else {
+    // the bottom gone: the dark water below seen through it, splintered edges, the water pouring away
+    s.ellipse(bx, by, 4.4, 3.6, 'K', { flat: 0.15 });
+    for (let a = 0; a < 6.3; a += 0.7) s.px(bx + Math.cos(a) * 4.6, by + Math.sin(a) * 3.8, 0x9a7a52);
+    for (let q = 0; q < 5; q++) s.dot(bx + Math.sin(q) * 1.2, by + 6 + q * 2.4, 1.1, 0x9ad8ff, 0.85 - q * 0.12);
   }
 }
 
-function lantern(s, state) {
-  // the great lantern at the bow on its post, the wisp burning in it: the weak point (brighter when it is open)
-  const [x, y] = [CX, 418];
-  s.tube(x, y + 18, x, y - 4, 2.4, 'l');
-  s.ellipse(x, y, 15, 13, 'c', { bias: 0.02 });
-  for (let k = -2; k <= 2; k++) s.line(x - 14, y + k * 4.5, x + 14, y + k * 4.5, 0x3a4a4a, 1, 0.6); // its ribs
-  s.ellipse(x, y, 11, 9, 'C', { flat: 0.9, glow: true });
-  s.paint([x - 12, y - 12, x + 12, y + 10], (px, py) => ((px - x) / 10) ** 2 + ((py - y) / 8.5) ** 2 < 1, 'C', (px, py) => 0.95 - Math.hypot(px - x, py - y) / 20, { glow: true });
-  s.ellipse(x, y + 1, 4.6, 5.6, 'W', { flat: 0.98, glow: true });
-  s.poly([[x - 9, y - 12], [x + 9, y - 12], [x + 6, y - 15], [x - 6, y - 15]], 'K', { flat: 0.3 });
-  s.poly([[x - 9, y + 12], [x + 9, y + 12], [x + 6, y + 15], [x - 6, y + 15]], 'K', { flat: 0.3 });
-  void state;
-}
-
 function arms(s, state) {
-  // the arms of the drowned risen out of the water along its sides, each holding a ladle: with its bottom (dipping
-  // water to fill the ship's enemies), or knocked out (gold rim: a target in the fight; holed: pouring through)
   if (state !== 'ladles') return;
   let k = 0;
-  for (const y of [120, 196, 272, 348])
+  for (const y of ROWS)
     for (const sx of [-1, 1]) {
-      const x0 = CX + sx * (half(y) + 34);
-      const [ex, ey] = [x0 + sx * 6, y - 12]; // the elbow
-      const [hx, hy] = [x0 - sx * 8, y - 26]; // the hand, gripping the handle
-      s.ellipse(x0, y + 6, 9, 3.6, 'o', { flat: 0.35, glow: true }); // the ring of light where it comes up out of the water
-      s.tube(x0, y + 4, ex, ey, 3.4, 'g', { rb: 3, pat: speckle({ amt: 0.12, seed: k }) });
-      s.tube(ex, ey, hx, hy, 3, 'g', { rb: 2.6, pat: speckle({ amt: 0.12, seed: k + 9 }) });
-      for (let f = -1; f <= 1; f++) s.line(hx + f * 2, hy, hx + f * 2.4 - sx, hy - 5, 0xd8f4f8, 1); // fingers round the handle
-      const [lx, ly] = [hx + sx * 22, hy - 8];
-      s.tube(hx, hy - 2, lx, ly, 1.4, 'l');
-      const holed = k % 3 === 2;
-      s.ellipse(lx + sx * 7, ly, 9, 8, 'l', { bias: 0.05 });
-      s.ellipse(lx + sx * 7, ly, 6.6, 5.6, holed ? 'C' : 'K', { flat: holed ? 0.55 : 0.3 });
-      if (!holed) s.ellipse(lx + sx * 7, ly + 1, 4.6, 3.4, 'C', { flat: 0.7 }); // the water in it
-      else for (let q = 0; q < 4; q++) s.dot(lx + sx * 7 + (q - 1.5) * 2, ly + 9 + q * 2, 1.1, 0x9ad8ff); // pouring away through the hole
-      // its rim gold: it can be shot through
-      for (let a = 0; a < 6.3; a += 0.2) if (!holed) s.px(lx + sx * 7 + Math.cos(a) * 9.2, ly + Math.sin(a) * 8.2, 0xffd84a, 0.95);
+      arm(s, CX + sx * (half(y) + 34), y + 6, sx, k % 3 === 2 ? 'holed' : 'hold', k);
       k++;
     }
 }
+const ROWS = [120, 196, 272, 348]; // (fine y of the arms' rows along its sides)
 
 /** The whole ship in one of its forms ('ladles', 'fire', 'whirl'), for the author's look at the design. */
 export function funayurei(state) {
@@ -251,7 +305,153 @@ export function funayurei(state) {
 }
 export const COLORS = { GLOW, FIRE, INK };
 
+// ---------------------------------------------------------------- its parts for the fight (the city's atlas)
+// Where they sit, fine px from the middle of the hull's frame (the game has them in logical px, a third of these: FY in
+// onomichi-funayurei.js; the test onomichiFunayurei checks they agree).
+export const PARTS = {
+  lantern: [0, 418 - FH / 2],
+  banner: [88, STERN + 6 - FH / 2], // (the right one; the left mirrored)
+  hatch: [0, 138 - FH / 2],
+  conch: [40, 102 - FH / 2],
+  sail: [-10, 288 - FH / 2], // (burning on the deck in the whirl)
+  arms: ROWS.map((y) => [half(y) + 34, y + 6 - FH / 2]), // (the rings on the right; the left mirrored)
+  oars: [...Array(13)].map((_, k) => [half(110 + k * 22) + 48, 110 + k * 22 + 15 - FH / 2]), // (the oars' blades, right side)
+};
+// the small frames' canvases and the points they turn on (fine px)
+export const ARM_FRAME = { w: 60, h: 76, ox: 16, oy: 54 };
+export const LANTERN_FRAME = { w: 36, h: 44, ox: 18, oy: 18 };
+export const BANNER_FRAME = { w: 32, h: 72, ox: 16, oy: 68 };
+export const FOAM_FRAME = 240; // (its corner is the whirl's middle)
+
+/** The hull with its house and rigging, worn 0 (with the ladles), 1 (fire: the hatch open) or 2 (in the whirl). */
+export function fyHull(wear) {
+  const state = ['ladles', 'fire', 'whirl'][wear];
+  const s = new HiSprite(FW, FH, { ...RAMPS });
+  hull(s, state);
+  house(s, state);
+  rigging(s, state);
+  return s.render({ outline: 2 });
+}
+
+export function fyBanner(f, torn) {
+  const B = BANNER_FRAME;
+  const s = new HiSprite(B.w, B.h, { ...RAMPS });
+  banner(s, B.ox, B.oy, torn ? 36 : 58, f);
+  return s.render({ outline: 2 });
+}
+
+export function fyLantern(kind, f = 0) {
+  const L = LANTERN_FRAME;
+  const s = new HiSprite(L.w, L.h, { ...RAMPS });
+  lanternAt(s, L.ox, L.oy, kind, f);
+  return s.render({ outline: 2 });
+}
+
+export function fyArm(pose) {
+  const A = ARM_FRAME;
+  const s = new HiSprite(A.w, A.h, { ...RAMPS });
+  arm(s, A.ox, A.oy, 1, pose, 3);
+  return s.render({ outline: 2 });
+}
+
+/** A clay fire pot (hōroku-hiya) thrown from the house: a round pot bound with rope, its fuse spitting sparks. */
+export function fyPot(f) {
+  const s = new HiSprite(27, 27, { ...RAMPS });
+  const [x, y] = [13.5, 15];
+  s.ellipse(x, y, 8.4, 8, 'p', { bias: 0.06, pat: speckle({ amt: 0.14, seed: 21 }) });
+  for (const k of [-3.4, 3.4]) s.line(x - 8 + Math.abs(k) * 0.2, y + k, x + 8 - Math.abs(k) * 0.2, y + k, 0xb89a62, 1, 0.9); // its rope
+  for (const k of [-2.6, 2.6]) s.line(x + k, y - 7.6, x + k, y + 7.6, 0xb89a62, 1, 0.75);
+  s.ellipse(x, y - 7, 3.6, 2, 'p', { flat: 0.3 }); // its mouth, stopped
+  const [fx, fy] = [x + 3 + f, y - 11 + f];
+  s.line(x + 1, y - 8, fx, fy, 0x3a2a1a, 1);
+  for (let k = 0; k < 6; k++) {
+    const a = k * 1.05 + f * 0.5;
+    s.px(fx + Math.cos(a) * (2 + (k % 2)), fy + Math.sin(a) * (2 + (k % 2)), k % 2 ? FIRE[3] : FIRE[2]);
+  }
+  s.dot(fx, fy, 1.2, FIRE[4]);
+  return s.render({ outline: 2 });
+}
+
+/** A festival shell lit gold, flying over the strait: pasted paper in strips, a burning fuse. Shot, it bursts. */
+export function fyShell(f) {
+  const s = new HiSprite(27, 27, { ...RAMPS });
+  const [x, y] = [13.5, 13.5];
+  s.ellipse(x, y, 8.6, 8.6, 'Y', { bias: 0.08, pat: mottle({ amt: 0.16, scale: 3, seed: 30 + f }) });
+  for (let k = -2; k <= 2; k++) {
+    // the pasted strips, curved round the ball
+    for (let t = -1; t <= 1; t += 0.05) s.px(x + k * 3.2 * Math.sqrt(1 - t * t), y + t * 8, 0x9a5f10, 0.55);
+  }
+  s.line(x - 8, y, x + 8, y, 0xfff0a0, 1, 0.5);
+  const [fx, fy] = [x - 6 - f, y - 7];
+  s.line(x - 3, y - 7, fx, fy, 0x3a2a1a, 1);
+  for (let k = 0; k < 6; k++) {
+    const a = k * 1.05 + f;
+    s.px(fx + Math.cos(a) * (1.6 + (k % 2) * 1.4), fy + Math.sin(a) * (1.6 + (k % 2) * 1.4), k % 2 ? 0xfff0a0 : 0xffffff);
+  }
+  return s.render({ outline: 1 });
+}
+
+/** A ladle let go of, floating: bowl and handle (after the end, and holed ones dropped). */
+export function fyLadle() {
+  const s = new HiSprite(36, 22, { ...RAMPS });
+  s.tube(4, 14, 22, 9, 1.4, 'l');
+  s.ellipse(27, 9, 7.4, 6.6, 'l', { bias: 0.05 });
+  s.ellipse(27, 9, 5.2, 4.4, 'K', { flat: 0.3 });
+  s.ellipse(27, 10, 3.6, 2.6, 'C', { flat: 0.6 });
+  return s.render({ outline: 2 });
+}
+
+/**
+ * One arm of the whirlpool's foam, a spiral streak of it on the dark water from near the middle outwards, thinning and
+ * breaking up; the frame's top left corner is the whirl's middle (the game turns copies of it round there).
+ */
+export function fyFoam(f) {
+  const N = FOAM_FRAME;
+  const s = new HiSprite(N, N, { ...RAMPS });
+  const span = 1.3;
+  for (let y = 0; y < N; y++)
+    for (let x = 0; x < N; x++) {
+      const [r, a] = [Math.hypot(x + 0.5, y + 0.5), Math.atan2(y + 0.5, x + 0.5)];
+      if (a > span) continue;
+      const q = a / span;
+      for (const [k, lane] of [[0, 0], [1, 15], [2, -13]]) {
+        const rc = 116 + 104 * q + lane;
+        const w = (k ? 2.2 : 6) * Math.sqrt(1 - q) + 1;
+        const d = Math.abs(r - rc);
+        if (d > w) continue;
+        // broken into flecks as it thins out, more so on the side lanes
+        const fleck = Math.sin(r * 0.9 + a * 40 + f * 2.3 + k) + Math.sin(r * 0.37 - a * 23 + f);
+        if (fleck < -0.4 - (1 - q) * 1.2 + k * 0.6) continue;
+        const al = (1 - d / w) * (1 - q * 0.75) * (k ? 0.5 : 0.85);
+        if (al < 0.12) continue;
+        s.px(x, y, d < w * 0.35 && !k ? 0xf4ffff : 0xbfe6ea, al);
+      }
+    }
+  return s.render({ outline: 0 });
+}
+
+/** Every frame of the ship for the city's atlas (enemies.mjs): the hulls packed trimmed, so they line up. */
+export function funayureiFrames(add) {
+  for (const w of [0, 1, 2]) add(`fy_hull_${w}`, fyHull(w), { trim: true });
+  for (const f of [0, 1, 2]) {
+    add(`fy_banner_${f}`, fyBanner(f, false));
+    add(`fy_banner_torn_${f}`, fyBanner(f, true));
+  }
+  add('fy_lantern_0', fyLantern('lit', 0));
+  add('fy_lantern_1', fyLantern('lit', 1));
+  add('fy_lantern_open', fyLantern('open'));
+  add('fy_lantern_out', fyLantern('out'));
+  for (const p of ['rise', 'hold', 'throw', 'holed']) add(`fy_arm_${p}`, fyArm(p));
+  for (const f of [0, 1]) {
+    add(`fy_pot_${f}`, fyPot(f));
+    add(`fy_shell_${f}`, fyShell(f));
+    add(`fy_foam_${f}`, fyFoam(f), { trim: true });
+  }
+  add('fy_ladle', fyLadle());
+}
+
 // ---------------------------------------------------------------- the preview: the three forms on the strait at night
+// put together from the parts as the game puts them (so their places are checked), the small frames along the bottom
 if (import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}` || process.argv[1]?.endsWith('funayurei.mjs')) {
   const { writeFileSync, mkdirSync } = await import('node:fs');
   const { Raster } = await import('../../lib/raster.mjs');
@@ -260,35 +460,80 @@ if (import.meta.url === `file:///${process.argv[1]?.replace(/\\/g, '/')}` || pro
   const { strip } = buildMid();
   const far = buildFarNight();
   const [PW, PH] = [540, 1140];
-  const out = new Raster(PW * 3 + 40, PH);
+  const out = new Raster(PW * 3 + 40, PH + 260);
   out.rect(0, 0, out.w, out.h, 0x101018);
+  const put = (r, x0, y0, flip = false, scale = 1) => {
+    for (let y = 0; y < r.h * scale; y++)
+      for (let x = 0; x < r.w * scale; x++) {
+        const sx = Math.floor(x / scale);
+        const i = (Math.floor(y / scale) * r.w + (flip ? r.w - 1 - sx : sx)) * 4;
+        if (r.data[i + 3] < 20) continue;
+        const j = ((y0 + y) * out.w + x0 + x) * 4;
+        const a = r.data[i + 3] / 255;
+        for (let c = 0; c < 3; c++) out.data[j + c] = r.data[i + c] * a + out.data[j + c] * (1 - a);
+        out.data[j + 3] = 255;
+      }
+  };
   const top = 0; // (the strip's end, at its top row: the water before the station)
+  const [shipX, shipY] = [186, 288]; // (fine px: where the game puts the hull's middle, x 62, y 96)
   ['ladles', 'fire', 'whirl'].forEach((state, n) => {
     const ox = n * (PW + 20);
+    const wear = n;
+    const wx = state === 'whirl' ? shipX - 24 : shipX;
     for (let y = 0; y < PH; y++)
       for (let x = 0; x < PW; x++) {
         const i = ((top + y) * strip.w + x) * 4;
         const a = strip.data[i + 3];
         const j = (((top + y) % far.h) * far.w + x) * 4;
-        let [r, g, b] = a ? [strip.data[i], strip.data[i + 1], strip.data[i + 2]] : [far.data[j], far.data[j + 1], far.data[j + 2]];
-        if (state === 'whirl' && !a) {
-          // the whirlpool round it: spiral arms of foam on the dark water
-          const [dx, dy] = [x - 240, y - 420];
-          const rr = Math.hypot(dx, dy);
-          const arm = Math.sin(Math.atan2(dy, dx) * 3 + rr * 0.045);
-          if (rr > 150 && rr < 380 && arm > 0.86) [r, g, b] = [r + 70, g + 90, b + 90].map((v) => Math.min(255, v));
+        out.setRGBA(ox + x, y, ...(a ? [strip.data[i], strip.data[i + 1], strip.data[i + 2]] : [far.data[j], far.data[j + 1], far.data[j + 2]]), 255);
+      }
+    if (state === 'whirl') {
+      // the foam's arms round the whirl's middle (in the game: copies of fy_foam turned round it)
+      const foam = fyFoam(0);
+      for (let k = 0; k < 5; k++) {
+        const t = (k / 5) * Math.PI * 2;
+        for (let y = 0; y < foam.h; y++)
+          for (let x = 0; x < foam.w; x++) {
+            const i = (y * foam.w + x) * 4;
+            if (!foam.data[i + 3]) continue;
+            const [X, Y] = [Math.round(wx + x * Math.cos(t) - y * Math.sin(t)), Math.round(shipY + x * Math.sin(t) + y * Math.cos(t))];
+            if (X < 0 || Y < 0 || X >= PW || Y >= PH) continue;
+            if (strip.data[((top + Y) * strip.w + X) * 4 + 3]) continue; // (on the water only)
+            const j = (Y * out.w + ox + X) * 4;
+            const a = foam.data[i + 3] / 255;
+            for (let c = 0; c < 3; c++) out.data[j + c] = foam.data[i + c] * a + out.data[j + c] * (1 - a);
+          }
+      }
+    }
+    const at = ([dx, dy], flip = false) => [ox + wx + (flip ? -dx : dx), shipY + dy];
+    const hullR = fyHull(wear);
+    put(hullR, ox + wx - FW / 2, shipY - FH / 2);
+    const B = BANNER_FRAME;
+    for (const flip of [false, true]) {
+      const [bx, by] = at(PARTS.banner, flip);
+      put(fyBanner(flip ? 1 : 0, wear === 2), bx - (flip ? B.w - B.ox : B.ox), by - B.oy, flip);
+    }
+    const L = LANTERN_FRAME;
+    const [lx, ly] = at(PARTS.lantern);
+    put(fyLantern(state === 'fire' ? 'open' : 'lit'), lx - L.ox, ly - L.oy);
+    if (state === 'ladles') {
+      const A = ARM_FRAME;
+      PARTS.arms.forEach((p, k) => {
+        for (const flip of [false, true]) {
+          const [ax, ay] = at(p, flip);
+          const pose = ['hold', 'throw', 'holed', 'rise'][(k + (flip ? 2 : 0)) % 4];
+          put(fyArm(pose), ax - (flip ? A.w - A.ox : A.ox), ay - A.oy, flip);
         }
-        out.setRGBA(ox + x, y, r, g, b, 255);
-      }
-    const ship = funayurei(state);
-    const [sx, sy] = [ox + 240 - FW / 2, 420 - 250];
-    for (let y = 0; y < ship.h; y++)
-      for (let x = 0; x < ship.w; x++) {
-        const i = (y * ship.w + x) * 4;
-        if (ship.data[i + 3] < 100) continue;
-        out.setRGBA(sx + x, sy + y, ship.data[i], ship.data[i + 1], ship.data[i + 2], 255);
-      }
+      });
+    }
+    if (state === 'fire') put(fyShell(0), ox + 380, 170);
   });
+  // the small frames, twice the size
+  let x = 10;
+  for (const r of [fyArm('rise'), fyArm('hold'), fyArm('throw'), fyArm('holed'), fyLantern('lit', 0), fyLantern('lit', 1), fyLantern('open'), fyLantern('out'), fyBanner(0, false), fyBanner(2, true), fyPot(0), fyPot(1), fyShell(0), fyShell(1), fyLadle()]) {
+    put(r, x, PH + 20, false, 2);
+    x += r.w * 2 + 14;
+  }
   mkdirSync(new URL('../../preview/', import.meta.url), { recursive: true });
   writeFileSync(new URL('../../preview/stage11_funayurei.png', import.meta.url), out.toPNG());
   console.log('stage11_funayurei.png');

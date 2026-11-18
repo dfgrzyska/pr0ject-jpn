@@ -39,6 +39,7 @@ const ZONES = {
   ash: { warn: 0xc8b8a8, fill: 0x5a524c, core: 0xe08a4a }, // Kagoshima's fumaroles
   snow: { warn: 0xe0f0ff, fill: 0xb8d8f4, core: 0xffffff }, // Sapporo's snow cannons
   spark: { warn: 0xfff08a, fill: 0x6a8aff, core: 0xffffff }, // Tokyo's transformers, Nagasaki's mortars
+  ghost: { warn: 0x5ae6d4, fill: 0x0e4a4a, core: 0x5ae6d4 }, // the drowned's arms reaching up out of Onomichi's strait
 };
 
 // the standard bullets are fine-pixel art, shown at a third of their size: a flash as they are fired, then their
