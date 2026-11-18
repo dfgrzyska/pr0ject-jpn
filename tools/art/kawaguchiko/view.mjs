@@ -27,6 +27,7 @@ export const FUJI = {
   base: 248, // where the mountain meets the far shore
 };
 export const WATERLINE = 257; // the far shore's edge on the water: the reflection's axis
+const HILLS_BELOW = 96; // (how far the hills go on under the water's edge: the water starts 90 px under them, FujiView)
 
 const smooth = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -183,9 +184,9 @@ const hillTop = (x) => {
   const middle = 245.5 + crowns(93) * 0.6;
   return Math.min(left, right, middle);
 };
-function hillAt(x, y) {
+function hillAt(x, y, below = 0) {
   const top = hillTop(x);
-  if (y < top || y >= WATERLINE) return null;
+  if (y < top || y >= WATERLINE + below) return null;
   const depth = y - top;
   // autumn crowns, each a small round head lit on its upper right: maples rust and red, larch and zelkova gold, the
   // dark of the cedars and pines; the slope turned to the sun warmer, the hollows in shade
@@ -289,14 +290,14 @@ export function buildPanorama() {
     for (let Y = 0; Y < H; Y++)
       for (let X = 0; X < W; X++) {
         const [x, y] = [(X + 0.5) / S, (Y + 0.5) / S];
-        if (y >= WATERLINE) {
-          put(waterL, X, Y, waterAt(x, y));
-          continue;
-        }
-        const near = shoreAt(x, y) ?? hillAt(x, y);
+        if (y >= WATERLINE) put(waterL, X, Y, waterAt(x, y));
+        // each layer goes on under the nearer ones in front of it, and the further ones on down under the water's
+        // edge: as the view rises the nearer come up from further below (FujiView's SHIFT), and until they are in
+        // place what is behind shows there: the hills' crowns, the mountain's foot in the mist, the glow of the sky
+        const near = y < WATERLINE ? shoreAt(x, y) ?? hillAt(x, y) : hillAt(x, y, HILLS_BELOW);
         if (near && d === 0) put(layers.hills, X, Y, near);
         const far = fujiAt(x, y);
-        if (far && !near) put(fujiL, X, Y, far);
+        if (far) put(fujiL, X, Y, far);
         if (d === 0) put(layers.sky, X, Y, skyAt(x, y));
       }
   }
