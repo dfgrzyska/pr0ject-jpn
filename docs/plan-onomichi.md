@@ -1,6 +1,6 @@
 # Plan: etap 11, ONOMICHI
 
-Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–12 gotowe (zbliżenie stoku i projekt okrętu przyjęte przez autora 2026-11-18): całe tło, przeciwnicy, fale, walki z Nekomatą i Funa-yūrei, woda w dzień i w nocy. Zostały: fajerwerki w tle, muzyka, włączenie etapu i balans. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Plan i decyzje D1–D7 przyjęte przez autora 2026-11-18 według rekomendacji („najwyżej zmienimy później”). Fazy 0–13 gotowe (zbliżenie stoku i projekt okrętu przyjęte przez autora 2026-11-18): całe tło, przeciwnicy, fale, walki z Nekomatą i Funa-yūrei, woda w dzień i w nocy, fajerwerki. Zostały: muzyka, włączenie etapu i balans. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -43,6 +43,7 @@ Kierunek lotu obraca się z mapą, jak spirala w Tokio. Nad wyspami lecimy na p�
 
 | u | Czas | Odcinek | Pora | Co widać |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 13 | Fajerwerki nad cieśniną (`Hanabi.js`, `hanabi.mjs`), barki i arena bossa przeniesione, łagodniejsze światło wybuchów bossa. Sprawdzone zrzutami w walce i po niej. | Następne: faza 14 (muzyka). |
 | 2026-11-18 | Claude | 7 | Dzienna woda z prądami, zawirowaniami i błyskami słońca w `far.mjs`; daleka warstwa barwiona porą dnia mapy (`farTint` w `mid.mjs` i `Parallax.js`). | Następne: faza 13 (fajerwerki w tle). |
 | 2026-11-18 | Claude | 11 i 12 | Projekt okrętu przyjęty; części `fy_*` w atlasie Onomichi, podgląd składa okręt z części. Walka w `onomichi-funayurei.js` (FUNA, FY): wynurzenie z cieśniny po zatrzymaniu taśmy, czerpaki i wiosła, ogniste garnki, róg z muszli i złote kule ogłuszające okręt, wir z obrotami, spiralami i rzędami rąk, latarnia jako słaby punkt; koniec z tonięciem, światełkami i ostatnim fajerwerkiem. Wpięta w `Enemies.js`, `encounters.js`; strefa `ghost` w `Bullets.js`; napisy EN. Sprawdzone zrzutami w grze we wszystkich fazach i w zakończeniu, test `onomichiFunayurei`. | Autor zgodził się, by kolejne fazy szły bez akceptacji. Następne: faza 7 (dzienna woda), 13 (fajerwerki w tle), 14, 15, 16. |
 | 0–700 | 0–23 s | **INNOSHIMA** | jasne popołudnie | Zamek morskich władców na wzgórzu (odtworzony, z wieżą, palisadą i flagami), muzeum łodzi z łodziami kobaya na brzegu, sady hassaku na tarasach z kolejką wózków, mała stocznia, rybacka przystań, droga z niebieską linią do podjazdu na most |
@@ -210,7 +211,7 @@ Wymaga: faza 11. Plik: `src/game/enemies/onomichi-funayurei.js`.
 
 ### Faza 13: fajerwerki
 Wymaga: fazy 6 i 12. Pliki: `src/game/Hanabi.js`, `tools/art/onomichi/hanabi.mjs`.
-- [ ] Rodzaje kul, dym, rozbłyski na wodzie i dachach, barki z odpaleniami; start po zatrzymaniu taśmy, trwanie po walce; limit iskier
+- [x] Rodzaje kul, dym, rozbłyski na wodzie i dachach, barki z odpaleniami; start po zatrzymaniu taśmy, trwanie po walce; limit iskier. `Hanabi.js` włączany polem `hanabi` w `stage11.json` (barki, co ile kula w walce i po niej, limit 260 gwiazd): chryzantemy ze smugami, piwonie zmieniające kolor, złote wierzby na długich smugach, małe trzaskające; błysk u wylotu rury i dym na barce, światło nad wybuchem i odbicie na wodzie (mocniejsze, im ciemniej), dym dryfujący z wiatrem. W walce przygaszone (×0,7), żeby pociski się wyróżniały; nikogo nie ranią. Barki przeniesione pod okręt (u 6905), arena bossa tam, gdzie okręt naprawdę staje (u 7072), łódź widzów między nimi. Grafika w `hanabi.mjs` (gwiazdy, dym, błysk, gładkie światło w 540 px). Test `onomichiHanabi`. Wydajność na telefonie: faza 16
 
 ### Faza 14: muzyka i dźwięk
 Wymaga: faza 0. Plik: `src/audio/score11.js`.

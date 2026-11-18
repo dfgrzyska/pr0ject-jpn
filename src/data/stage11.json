@@ -12,6 +12,7 @@
   "skin": "onomichi",
   "enemyArt": true,
   "near": "none",
+  "hanabi": { "barges": [[21, 6908], [103, 6908]], "every": [0.8, 1.6], "after": [0.35, 0.8], "max": 260 },
   "dark": [
     [
       0,

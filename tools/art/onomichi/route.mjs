@@ -33,7 +33,7 @@ export const SECTIONS = [
 // before the station, where the strip ends.
 export const ARENAS = [
   [90, 4300, 'NEKOMATA', 62],
-  [68, 6960, 'FUNA-YUREI', 58],
+  [62, 7072, 'FUNA-YUREI', 58], // (where the ship lies once the town has stopped: onomichi-funayurei.js HOME)
 ];
 
 // The time of day along the strip (props.mjs, todGrade): [u, [mul r, g, b], tint, tint amount, gamma].
@@ -281,6 +281,6 @@ export const PLOTS = [
   ['onomichi_eki', 136, 6880, 24, 50, 'dworzec Onomichi: perony pod daszkami, budynek z drewna'],
   ['basu_noriba', 136, 6800, 12, 12, 'przystanek autobusów na placu', 'low'],
   ['saikokuji', 163, 7010, 17, 30, 'brama Niōmon świątyni Saikoku-ji z wielkimi słomianymi sandałami'],
-  ['hanabi_dai_1', 26, 7060, 14, 6, 'barka z rurami do fajerwerków', 'low'],
-  ['hanabi_dai_2', 92, 7090, 14, 6, 'barka z rurami do fajerwerków', 'low'],
+  ['hanabi_dai_1', 14, 6905, 14, 6, 'barka z rurami do fajerwerków', 'low'], // (below the ship: the shells go up over it)
+  ['hanabi_dai_2', 96, 6905, 14, 6, 'barka z rurami do fajerwerków', 'low'],
 ];

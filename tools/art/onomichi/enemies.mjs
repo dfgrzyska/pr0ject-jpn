@@ -7,6 +7,7 @@
 import { HiSprite, tones, speckle, mottle, mix2, fur } from '../../lib/hisprite.mjs';
 import { nekomataFrames } from './nekomata.mjs';
 import { funayureiFrames } from './funayurei.mjs';
+import { hanabiFrames } from './hanabi.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -234,5 +235,6 @@ export function onomichiEnemies(add) {
   for (let i = 0; i < 16; i++) add(`o_oni_head_${i}`, onigawara(i));
   nekomataFrames(add); // the miniboss, NEKOMATA (nekomata.mjs)
   funayureiFrames(add); // the boss, FUNA-YUREI's ship in parts (funayurei.mjs)
+  hanabiFrames(add); // the festival's fireworks over the strait (hanabi.mjs, src/game/Hanabi.js)
 }
 export const ONOMICHI_PORTRAITS = ['o_neko_sit_0'];

@@ -19,6 +19,7 @@ import { PauseMenu } from '../game/PauseMenu.js';
 import { DevBossMenu } from '../game/DevBossMenu.js';
 import { Shadows } from '../game/Shadows.js';
 import { Quake } from '../game/Quake.js';
+import { Hanabi } from '../game/Hanabi.js';
 import { Parallax } from '../game/Parallax.js';
 import { Player } from '../game/Player.js';
 import { Pool } from '../game/Pool.js';
@@ -164,6 +165,7 @@ export class Stage extends Phaser.Scene {
     this.player = new Player(this);
     this.shadows = this.stage.shadows ? new Shadows(this) : null;
     this.quake = this.stage.quakes ? new Quake(this, this.stage.quakes) : null; // Kagoshima's earthquakes
+    this.hanabi = this.stage.hanabi ? new Hanabi(this, this.stage.hanabi) : null; // Onomichi's fireworks over the strait
     // N comes from stage 1 (x10 by the end of stage 1 without dying); the multiplier carries over
     const step =
       SCORE.multiplierStep === 'auto'
@@ -938,6 +940,7 @@ export class Stage extends Phaser.Scene {
     if (playing) this.scenicView?.update(dt);
     if (playing) this.quake?.update(dt);
     else this.quake?.stop();
+    this.hanabi?.update(dt);
     if (playing) this.collide();
     if (this.hitboxes) this.drawHitboxes();
 

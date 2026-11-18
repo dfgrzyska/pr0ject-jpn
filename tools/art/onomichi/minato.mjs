@@ -171,7 +171,7 @@ export function minato(ctx) {
       for (let i = 5; i < 23; i += 4) put(i, 4, 0xff9a5a);
     }, true);
     props.path([[20, 6720], [96, 6740]], [boatF], { sp: 2.4, n: 1, mode: 'pp', hold: 10, turn: 'none', s0: 0.2, d: 0.05 });
-    props.path([[110, 7130], [30, 7140]], [boatF], { sp: 2, n: 1, mode: 'pp', hold: 12, turn: 'none', s0: 0.6, d: 0.05 });
+    props.path([[38, 6948], [84, 6956]], [boatF], { sp: 2, n: 1, mode: 'pp', hold: 12, turn: 'none', s0: 0.6, d: 0.05 }); // (between the barges and where the ship comes up)
   }
   for (let u = 6560; u < 6880; u += 40 + rand() * 30) {
     const x = suidoShores(u)[1] - 4.2;

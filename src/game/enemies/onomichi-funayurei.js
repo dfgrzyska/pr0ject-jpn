@@ -502,9 +502,7 @@ export const onomichiFunayurei = {
       const an = (i / (n / 2)) * TAU + 0.1;
       fx.part(fx.parts, 'dot_1', x, y, { vx: Math.cos(an) * 14 * size, vy: Math.sin(an) * 14 * size, g: 20, drag: 1.1, life: 0.8 }).setTint(0xffffff).setBlendMode(Phaser.BlendModes.ADD);
     }
-    const glow = fx.part(fx.parts, 'glow', x, y, { life: 0.5, a0: 0.9 });
-    glow.setScale(glow.base * 0.8 * size).setTint(cols[0]).setBlendMode(Phaser.BlendModes.ADD);
-    fx.light(x, y, 1.2 * size, false, cols[0]);
+    fx.light(x, y, Math.min(1.4, 0.7 * size), false, cols[0]);
     s.sfx.explode(size > 1 ? 'm' : 's');
   },
 
