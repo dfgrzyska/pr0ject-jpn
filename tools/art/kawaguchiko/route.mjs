@@ -18,8 +18,8 @@ export const L = CHUNK * CHUNKS; // 7168
 // [from u, to u, id, name, ground colour]: the ground is what is left between everything else
 export const SECTIONS = [
   [0, 1300, 'fujiyoshida', 'FUJIYOSHIDA', 0x8a8274],
-  [1300, 2100, 'shore', 'OISHI', 0x7a7c64],
-  [2100, 3900, 'lake', 'KAWAGUCHI-KO', 0x6c7c58],
+  [1300, 2100, 'shore', 'OISHI', 0x847a62],
+  [2100, 3900, 'lake', 'KAWAGUCHI-KO', 0x7a7258],
   [3900, 5300, 'kawaguchi', 'KAWAGUCHI', 0x76704e],
   [5300, 6748, 'momiji', 'MOMIJI KAIRO', 0x66563e],
   [6748, L, 'view', 'FUJI-SAN', 0x3a4a5a], // (cut out: the panorama shows there)

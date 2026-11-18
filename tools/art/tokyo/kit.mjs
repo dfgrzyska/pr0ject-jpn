@@ -34,7 +34,9 @@ export const PAL = {
   skin: [0xf0c8a0, 0xe8b890, 0xd8a880],
 };
 
-export function makeKit({ img, W, L, S, seed, props, tod }) {
+/** kinds(kind, x, u, r): a stage may turn the trees it is asked for into its own (Kawaguchiko: autumn's); cloth: its
+ * people's colours. */
+export function makeKit({ img, W, L, S, seed, props, tod, kinds, cloth = PAL.cloth }) {
   const hi = img.hi;
   const FW = W * S;
   const FH = L * S;
@@ -271,7 +273,7 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
     } else R(X - 1, Y - 6, 3, 2, 0xd8dce0);
   };
   const person = (X, Y, s) => {
-    const c = PAL.cloth[Math.floor(hashPx(X, Y, s) * PAL.cloth.length)];
+    const c = cloth[Math.floor(hashPx(X, Y, s) * cloth.length)];
     hi.tint(X + 2, Y + 3, 0.7);
     hi.tint(X + 2, Y + 4, 0.7);
     P(X, Y, hashPx(X, Y, s + 1) < 0.75 ? 0x2a2228 : 0x6a4a30);
@@ -539,6 +541,7 @@ export function makeKit({ img, W, L, S, seed, props, tod }) {
 
   /** A tree at (x, u), its crown r across (nature.mjs: broadleaf, sakura, pine, cedar, bamboo, tiny). */
   const tree = (kind, x, u, r) => {
+    if (kinds) kind = kinds(kind, x, u, r);
     const s = Math.floor(rand() * 1e9);
     const [cx, cy] = [FX(x), FY(u)];
     const px = () => crownPixels(kind, cx, cy, r * S, rng(s), s & 1023);

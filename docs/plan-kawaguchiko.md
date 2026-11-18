@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Fazy 0–5 gotowe (panorama Fuji zaakceptowana i w grze). 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Fazy 0–6 gotowe (panorama Fuji zaakceptowana i w grze, gotowe odcinki przemalowane na jesień). 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -173,10 +173,10 @@ Wymaga: faza 4. Pliki: `tools/art/kawaguchiko/view.mjs`, `src/game/FujiView.js`,
 
 ### Faza 6: jesień na gotowych odcinkach (u 0–3900)
 Wymaga: faza 4. Pliki: `fujiyoshida.mjs`, `shore.mjs`, `lake.mjs`, `mid.mjs` (tylko paleta drzew i gruntów).
-- [ ] Drzewa: klony czerwone i pomarańczowe, miłorzęby żółte, modrzewie złote, cedry i sosny zielone (wymieszane w kępach, nie losowo)
-- [ ] Park Ōishi: czerwone kochie, ścięta lawenda, kosmosy; trawniki płowe; liście na ziemi pod klonami
-- [ ] Ludzie w kurtkach, persymony na drzewach w ogrodach
-- [ ] Przegląd na zbliżeniach całej przemalowanej taśmy
+- [x] Drzewa: klony czerwone i pomarańczowe, miłorzęby żółte, modrzewie złote, zelkowy rdzawe, cedry i sosny zielone, kilka zimozielonych; w kępach według miejsca (klony wokół pagody, miłorzęby przy chramie Sengen i wzdłuż drogi krajowej)
+- [x] Park Ōishi: czerwone kochie na płowym trawniku, lawenda ścięta na zimę, rabaty aksamitek, kosmosów i szałwii; trawniki płowe; liście na ziemi pod klonami i miłorzębami, dno lasu w opadłych liściach
+- [x] Ludzie w płaszczach i kurtkach, persymony z owocami w ogrodach, kula z cedru nad sklepem z sake brązowa
+- [x] Przegląd na zbliżeniach całej przemalowanej taśmy
 
 ### Faza 7: północny brzeg i tunel klonów (u 3900–6748)
 Wymaga: faza 4. Plik: `tools/art/kawaguchiko/north.mjs`.
@@ -244,6 +244,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 6 | Jesień na odcinkach 0–3900: nowe barwy koron w `tools/art/nature.mjs` (momiji, kaede, icho, karamatsu, keyaki, kaki), a zestaw miejski (`tools/art/tokyo/kit.mjs`) przyjmuje od etapu `kinds` (zamiana gatunków drzew) i `cloth` (barwy ubrań); dla Tokio bez zmian. W `mid.mjs` funkcja `autumn` wybiera gatunek kępami według miejsca i sypie liście pod klony i miłorzęby; grunty parku, lasu, lawendy i kochii jesienne. | Następna: faza 7 (północny brzeg i tunel klonów). |
 | 2026-11-18 | Claude | 5 | Panorama w grze: `src/game/FujiView.js` (wybierany polem `"view": "fuji"` w `panorama` w `stage10.json`), siedem warstw z `view.mjs` (góra i woda malowane dwa razy: w słońcu i o zmierzchu, przenikane po walce), klatki łódki, kilwateru i gęsi w rekwizytach etapu (`viewFrames` w `mid.mjs`), test warstw. | Boss Kioto na zastępstwo zasłania szczyt: właściwy Daidarabotchi (fazy 12–13) ma stać niżej. Następne: faza 6 (jesień na gotowych odcinkach). |
 | 2026-11-18 | Claude | 5 (część) | Zbliżenie panoramy (`tools/art/kawaguchiko/view.mjs`, podgląd: `node tools/art/kawaguchiko/viewPreview.mjs` → `tools/preview/stage10_view.png`): Fuji jako stożek widziany z boku, każdy punkt zbocza z głębokości pod szczytem i azymutu, oświetlony nachyleniem z grzbietami i żlebami; czapa śniegu z językami w żlebach, żwir, modrzewie, las, mgła u stóp; jesienne wzgórza z koronami drzew, domy drugiego brzegu, niebo o zachodzie z chmurami, odbicie w wodzie porwane zmarszczkami. Trzy warstwy: niebo, ląd, woda. | Czeka na akceptację autora. Potem: ruch, wpięcie w grę (`FujiView.js`, pole `panorama`), światła po walce. |
 | 2026-11-18 | Claude | 4 | Nowa trasa za jeziorem w `route.mjs`: północny brzeg z wsią Kawaguchi (domy oshi, sad persymon, pola, zagroda, jizō, chram Asama z cedrami), tunel klonów wzdłuż strumienia Nashi z jarmarkiem, promenada i nabrzeże; nad `VIEW_FROM` = 6748 taśma wycięta pod panoramę (woda typu `view`, krawędź jako mur nabrzeża). Grunty `field` i `momiji`. Fuji z góry usunięta (`fuji.mjs`, klasa drogi `road`, szlak, zejście). Nazwy miejsc, `dark`, test topologii. | Następna: faza 5, zaczyna się od zbliżenia panoramy do akceptacji. Działki od 3 900 są kreskowane do fazy 7. |

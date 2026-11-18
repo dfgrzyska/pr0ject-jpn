@@ -17,6 +17,13 @@ export const RAMPS = {
   palm: [0x1e4a1e, 0x337a2a, 0x58a83a, 0x9cd65c],
   // winter (Sapporo): Todo fir and Ezo spruce, dark under the snow
   fir: [0x0c1f1c, 0x15302a, 0x22463a, 0x34604c],
+  // late autumn (Kawaguchiko): maples red and orange, ginkgo yellow, larch gold, zelkova rust, a persimmon's last leaves
+  momiji: [0x4a1412, 0x8a2218, 0xc23a24, 0xec6a3a],
+  kaede: [0x5a2410, 0x9a4618, 0xd07424, 0xf2a840],
+  icho: [0x5a4a12, 0x9a801a, 0xd8b82c, 0xf8e070],
+  karamatsu: [0x4a3a16, 0x7a6020, 0xb48c2a, 0xdcbc54],
+  keyaki: [0x3a2416, 0x6a3c20, 0x9a602c, 0xc48c44],
+  kaki: [0x3a2a1a, 0x6a4424, 0x9a5a28, 0xc87a34],
 };
 
 const LIGHT = (() => {

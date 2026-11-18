@@ -10,6 +10,7 @@ import { fbm } from '../../lib/raster.mjs';
 import { HiCanvas, hashPx } from '../hires.mjs';
 import { todGrade, tintTable, PropKit } from '../props.mjs';
 import { makeKit } from '../tokyo/kit.mjs';
+import { RAMPS } from '../nature.mjs';
 import { fujiyoshida } from './fujiyoshida.mjs';
 import { shore } from './shore.mjs';
 import { lake } from './lake.mjs';
@@ -33,13 +34,12 @@ const shade = (c, f) => {
 };
 
 const GROUND = {
-  park: [0x4f7c40, 0x5a8a48, 0x66964e],
-  forest: [0x24462a, 0x2e5432, 0x3a643a],
+  park: [0x7a7848, 0x8a8452, 0x98905c], // lawns gone straw in late autumn
+  forest: [0x4a3a26, 0x5a4428, 0x6a4a2a, 0x74402a], // the wood's floor, fallen leaves on it
   gravel: [0xb0a690, 0xbcb29c, 0xc6bca6],
   plaza: [0x9c988f, 0xa8a49a, 0xb2aea4],
   sand: [0xcdbb8c, 0xd8c89a, 0xe2d4a8],
-  flowers: [0x6a5a9a, 0x7a68b0, 0x8c7cc4, 0x5a7a44], // lavender in rows, the green between
-  kochia: [0x5a8a3c, 0x6a9c44, 0x7aac4c],
+  flowers: [0x748070, 0x84907c, 0x929c88, 0x5a4a34], // lavender cut back to grey-green mounds in rows, the earth between
   field: [0x8a7a4a, 0x9a8854, 0xa8945c, 0x6a5c38], // rice stubble, the furrows between
   momiji: [0x8a3a22, 0xa04a26, 0xb8662a, 0x6a4a2a], // fallen maple leaves, the earth under them
 };
@@ -86,7 +86,7 @@ export function buildMid() {
     wet[Yy * FW + X] = 0;
     if (g.kind === 'flowers') return Math.floor(x * 0.75 + u * 0.12) % 3 === 0 ? GROUND.flowers[3] : ramp(GROUND.flowers.slice(0, 3), x, u, 43, 4); // lavender rows
     if (g.kind === 'field') return Math.floor(u * 1.5) % 3 === 0 ? GROUND.field[3] : ramp(GROUND.field.slice(0, 3), x, u, 47, 5); // stubble in rows
-    if (g.kind === 'kochia') return (Math.floor(x / 4) + Math.floor(u / 4)) % 2 ? ramp(GROUND.kochia, x, u, 45, 3) : 0x8a7a5a; // round shrubs in a grid
+    if (g.kind === 'kochia') return ramp(GROUND.park, x, u, 45); // (a lawn: the round shrubs stand on it)
     return ramp(GROUND[g.kind], x, u, 41);
   });
   for (const g of GROUNDS) if (!g.over) ground(g);
@@ -281,7 +281,34 @@ export function buildMid() {
   const ground_ = (id) => GROUNDS.find((g) => g.id === id);
   const tod = todGrade(TOD, smooth);
   const props = new PropKit(10109, { artScale: S });
-  const kit = makeKit({ img, W, L, S, seed: 10009, props, tod });
+  // Late autumn: the broadleaved trees turn, in stands rather than one by one - the maples round the pagoda red, the
+  // shrine's ginkgos yellow, elsewhere zelkova, maples, ginkgo and larch by turns, a few evergreens still green -
+  // and under a maple or a ginkgo its leaves lie on the ground.
+  const autumn = (kind, x, u, r) => {
+    if (kind !== 'broadleaf' && kind !== 'tiny') return kind;
+    const h = hashPx(Math.round(x * 7), Math.round(u * 7), 302);
+    const zone = fbm(x * 0.05, u * 0.05, { seed: 301, scale: 1, octaves: 2 }) + (h - 0.5) * 0.16;
+    let k;
+    if (kind === 'tiny') k = h < 0.35 ? 'momiji' : h < 0.55 ? 'kaki' : 'tiny';
+    else if (u > 700 && u < 1016) k = h < 0.62 ? 'momiji' : h < 0.86 ? 'kaede' : 'keyaki'; // (Arakurayama)
+    else if (u >= 1016 && u < 1300) k = h < 0.42 ? 'icho' : h < 0.7 ? 'keyaki' : 'broadleaf'; // (the Sengen shrine)
+    else k = zone < 0.36 ? 'keyaki' : zone < 0.47 ? 'kaede' : zone < 0.58 ? 'momiji' : zone < 0.66 ? 'icho' : zone < 0.74 ? 'karamatsu' : 'broadleaf';
+    if (k === 'momiji' || k === 'kaede' || k === 'icho') {
+      const c = RAMPS[k];
+      const [X0, Y0, R0] = [Math.round(x * S), Math.round((L - u) * S), Math.round(r * S * 1.35)];
+      for (let n = 0; n < R0 * R0 * 0.22; n++) {
+        const [X, Yy] = [X0 + Math.round((hashPx(n, X0, 303) - 0.5) * 2 * R0), Yy0(Y0, R0, n, X0)];
+        if (X < 0 || X >= FW || Yy < 0 || Yy >= FH || wet[Yy * FW + X] || !img.hi.alpha(X, Yy)) continue;
+        img.hi.set(X, Yy, c[1 + (n % 3)]);
+      }
+    }
+    if (k === 'kaki') kit.mark(x, u, (X, Y) => { for (let n = 0; n < 5; n++) P_(X + Math.round((hashPx(n, X, 304) - 0.5) * r * S * 1.6), Y + Math.round((hashPx(n, Y, 305) - 0.5) * r * S * 1.6), n % 2 ? 0xf07a1a : 0xe8601a); }, u - r * 0.7); // (the fruit left on it)
+    return k;
+  };
+  const Yy0 = (Y0, R0, n, X0) => Y0 + Math.round((hashPx(n, X0, 306) - 0.5) * 2 * R0 * 0.8);
+  const P_ = (X, Y, c) => img.hi.set(X, Y, c);
+  const CLOTH = [0x5a3a2a, 0x2a3a5a, 0x6a6a52, 0xa83a30, 0xd8ccb4, 0x38383c, 0x6a4a7a, 0xc88a3a, 0x3a5a4a, 0x8a2a3a]; // coats and jackets
+  const kit = makeKit({ img, W, L, S, seed: 10009, props, tod, kinds: autumn, cloth: CLOTH });
   const covers = []; // boxes of the strip shown again over the moving parts (a station's roof over its train)
   const claim = (x, u, w, h) => {
     for (let j = Math.max(0, Math.floor(u)); j < Math.min(L, u + h); j++) occ.fill(1, j * W + Math.max(0, Math.floor(x)), j * W + Math.min(W, Math.ceil(x + w)));

@@ -3,7 +3,7 @@
 // to the water - inns under great tiled roofs round their gardens, their open-air baths steaming on terraces, a hotel
 // in tiers, souvenir shops and a bicycle hire; Mt Tenjo's wood with the ropeway climbing it, two gondolas passing on
 // the way, the top station with its terrace and bell and the little shrine of the rabbit of the old tale; Oishi
-// park on its peninsula, rows of lavender and the round kochia bushes, the pavilion selling lavender ice cream; the
+// park on its peninsula, rows of lavender cut back and the round kochia bushes turned crimson, the pavilion selling lavender ice cream; the
 // marina, its piers lined with swan boats and rowing boats, the sightseeing boat's landing.
 import { lots } from '../tokyo/blocks.mjs';
 import { PAL, shade } from '../tokyo/kit.mjs';
@@ -250,9 +250,9 @@ export function shore(ctx) {
     }
     void us;
   }
-  for (let x = 96; x < 154; x += 14) tree('broadleaf', x, 2101, 1.8); // (cherries along the promenade, green in summer)
+  for (let x = 96; x < 154; x += 14) tree('kaede', x, 2101, 1.8); // (cherries along the promenade, their leaves turned orange)
 
-  // ---------------------------------------------------------------- Oishi park: kochia, lavender, the pavilion
+  // ---------------------------------------------------------------- Oishi park: kochia turned crimson, the lavender cut back, the pavilion
   {
     const g = ctx.ground('oishi_kochia').rect;
     const c = plot('oishi_center');
@@ -262,7 +262,7 @@ export function shore(ctx) {
         const X = FX(x + ((u * 7) % 3) * 0.3);
         const Y = FY(u);
         queue(Y + 3, () => {
-          for (let j = -3; j <= 3; j++) for (let i = -3; i <= 3; i++) if (i * i + j * j <= 10) P(X + i, Y + j, i + j < -2 ? 0x8ac25a : i + j > 2 ? 0x4a7a2e : (i * 5 + j * 3) % 7 ? 0x6aa040 : 0x5a9034);
+          for (let j = -3; j <= 3; j++) for (let i = -3; i <= 3; i++) if (i * i + j * j <= 10) P(X + i, Y + j, i + j < -2 ? 0xe0604a : i + j > 2 ? 0x7a2026 : (i * 5 + j * 3) % 7 ? 0xc03a34 : 0xa82e2e);
         }, () => shadowBox(X - 2, Y - 2, 5, 5, 2, 0.7));
       }
     building(c.x + 1, c.u + 4, c.w - 2, c.h - 6, { face: 3, style: 'plain', wall: 0xf0ece0, roof: 0x7a6aa0, shop: true, s: 7201 });
@@ -277,19 +277,19 @@ export function shore(ctx) {
     });
   }
   {
-    // the lavender: visitors along its rows, benches by the path, a breeze running through it
+    // the lavender, cut back for the winter: visitors along its rows, benches by the path, a breeze through the cosmos
     const g = ctx.ground('oishi_koen').rect;
-    // by the pavilion, beds of other flowers in bands across the lavender: marigolds, white cosmos, pink, poppies
+    // by the pavilion, beds of autumn flowers in bands across the lavender: marigolds, white cosmos, pink cosmos, salvia
     ground(() => {
-      // (they follow the lavender's rows: only its flowering stripes change colour, the green between stays)
-      const bands = [[2106, 2116, 0xd8b040], [2122, 2130, 0xe4e0d4], [2136, 2144, 0xd0809c], [2150, 2156, 0xc8603e]];
+      // (they follow the lavender's rows: only its stripes change colour, the earth between stays)
+      const bands = [[2106, 2116, 0xd8a030], [2122, 2130, 0xe4e0d4], [2136, 2144, 0xd8709c], [2150, 2156, 0xc83a34]];
       for (const [u0, u1, c] of bands)
         for (let u = u0; u < u1; u += 1 / S)
           for (let x = g[0] + 15; x < 66; x += 1 / S) {
             if (Math.floor(x * 0.75 + u * 0.12) % 3 === 0) continue;
             const [X, Y] = [FX(x), FY(u)];
             const v = (X * 7 + Y * 13) % 11;
-            P(X, Y, v < 3 ? 0x5a7a40 : v < 5 ? shade(c, 0.82) : v === 10 ? shade(c, 1.15) : c);
+            P(X, Y, v < 3 ? 0x5a6a40 : v < 5 ? shade(c, 0.82) : v === 10 ? shade(c, 1.15) : c);
           }
     });
     // trees along the peninsula's shore, the path under them
@@ -301,7 +301,7 @@ export function shore(ctx) {
     });
     const shimmer = [0, 1].map((k) =>
       kit.frame(14, 6, 2200, (put) => {
-        for (let j = 0; j < 18; j++) for (let i = 0; i < 42; i++) if ((i * 0.75 * 3 + j * 0.12 * 3 + k * 7) % 9 < 1.4 && (i + j * 3 + k) % 5 < 3) put(i, j, 0xc8b0f0, 0.55);
+        for (let j = 0; j < 18; j++) for (let i = 0; i < 42; i++) if ((i * 0.75 * 3 + j * 0.12 * 3 + k * 7) % 9 < 1.4 && (i + j * 3 + k) % 5 < 3) put(i, j, 0xd8dcc8, 0.4);
       }));
     const parts = [];
     for (let u = g[1] + 12; u < g[1] + g[3]; u += 14) for (let x = g[0] + 2; x < g[0] + g[2] - 14; x += 16) parts.push([(parts.length % 2), x, u, (x + u) * 0.05]);

@@ -180,7 +180,7 @@ export function fujiyoshida(ctx) {
         R(X - 4, Y, 9, 1, 0x3a2a1a);
       });
     mark(p.x + p.w - 8, p.u + 8, (X, Y) => {
-      for (let j = -4; j <= 4; j++) for (let i = -4; i <= 4; i++) if (i * i + j * j <= 16) P(X + i, Y - 8 + j, (i * 3 + j * 5) % 7 < 3 ? 0x3a5a2a : 0x5a7a3a);
+      for (let j = -4; j <= 4; j++) for (let i = -4; i <= 4; i++) if (i * i + j * j <= 16) P(X + i, Y - 8 + j, (i * 3 + j * 5) % 7 < 3 ? 0x5a4a2a : 0x7a6438); // (hung green in the spring, brown by now)
       R(X, Y - 3, 1, 3, 0x3a2a1a);
     }, p.u + 8);
   }
@@ -514,8 +514,8 @@ export function fujiyoshida(ctx) {
   // the national road: street trees, parked cars at the shops
   for (let u = 14; u < 1290; u += 19) {
     if ([250, 480, 700, 1200].some((c) => Math.abs(u - c) < 10)) continue;
-    tree('broadleaf', 153.4, u, 2);
-    tree('broadleaf', 166.6, u + 9, 2);
+    tree('icho', 153.4, u, 2); // (ginkgos along the national road)
+    tree('icho', 166.6, u + 9, 2);
   }
 
   // ---------------------------------------------------------------- traffic: up and down the national road (and on round the lake), along Honcho-dori
