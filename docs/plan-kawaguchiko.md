@@ -1,6 +1,6 @@
 # Plan: etap 10, KAWAGUCHIKO
 
-Stan: **w budowie**. Fazy 0–9 gotowe: całe tło etapu (taśma, daleka i bliska warstwa, panorama Fuji) i grafika przeciwników. Dalej fale i walki. 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Fazy 0–10 gotowe: całe tło etapu (taśma, daleka i bliska warstwa, panorama Fuji), przeciwnicy i fale. Dalej walki (miniboss i boss są jeszcze na zastępstwo). 2026-11-18 autor zmienił kierunek: Fuji ma być **dominantą pokazaną klasycznie** (z boku, ze śnieżną czapą), więc etap kończy się **panoramą Fuji nad jeziorem**, a wspinaczka po stokach wypada. Pora roku: **późna jesień**. Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
 
 ## 1. W skrócie
 
@@ -199,9 +199,9 @@ Wymaga: faza 0. Pliki: `tools/art/kawaguchiko/enemies.mjs`, `sprites.mjs`, `tool
 
 ### Faza 10: fale
 Wymaga: fazy 4 i 9. Plik: `src/data/stage10.json`.
-- [ ] Fale do minibossa i od minibossa do bossa
-- [ ] 8–14 pułapek i 4–10 zasadzek w miejscach z sensem, z dala od walk
-- [ ] Oddechy przed areną i dostawa wzmocnień po minibossie
+- [x] Fale do minibossa i od minibossa do bossa (130 wpisów): nad miastem i brzegiem ważki, chmury i kapliczki; nad jeziorem okonie i chmury, bez kapliczek na wodzie; nad północnym brzegiem i w tunelu klonów wszystko razem, gęściej pod koniec
+- [x] 11 ognisk i 6 kretów tam, gdzie się grabi liście: ogrody, lasy przy chramach i pagodzie, park Ōishi, sad persymon, pola, las klonowy; liczone z miejsca na mapie (`u = 430 + 30 t`), z dala od walk
+- [x] Oddech 13 s przed areną zająca, dwa sznury persymon zaraz po nim, cisza od 205 s, gdy wysuwa się panorama. Bot na normalnym: 1 trafienie w falach (Hiroszima 0)
 
 ### Faza 11: Kachi-kachi Usagi
 Wymaga: faza 0. Pliki: `src/game/enemies/kawaguchiko-usagi.js`, `tools/art/kawaguchiko/usagi.mjs`.
@@ -244,6 +244,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-18 | Claude | 10 | Fale w `stage10.json` (generowane skryptem, jeden wpis w wierszu), pułapki i zasadzki ze współrzędnych mapy. | Testy `traps` i `ambush` obejmą etap po zdjęciu `wip`; reguły sprawdzone już przy pisaniu. Następna: faza 11 (Kachi-kachi Usagi). |
 | 2026-11-18 | Claude | 9 | Przeciwnicy z prefiksem `k_` (animacje w `CITY_ANIMS`), `"enemyArt": true` w `stage10.json`, skórka `kawaguchiko` z pułapką (pierścień 7 pocisków co 3,8 s) i zasadzką. Miniboss i boss dalej na zastępstwo (tanuki i Kyūbi ze wspólnego atlasu). | Następna: faza 10 (fale, pułapki, zasadzki). |
 | 2026-11-18 | Claude | 8 | `far.mjs`: jezioro z odbiciem Fuji (okresy szumów dobrane do pętli 384 px); `stage10.json`: `"near": "momiji"`. | Następne: faza 9 (grafika przeciwników, pułapki i zasadzki). |
 | 2026-11-18 | Claude | 7 | Północny brzeg w `tools/art/kawaguchiko/north.mjs`; `DRAWN_TO` = 6748 (żadna działka nie jest już kreskowana). Kawałek za zakrętem drogi wypełniany osobno wyszukiwarką skośną (inaczej klin zjadały wąskie paski). Persymony z owocami także dla drzew zamówionych wprost (`kaki`). | Następne: faza 8 (daleka warstwa pod jeziorem z odbiciem Fuji, bliska z liśćmi i gęsiami). |
