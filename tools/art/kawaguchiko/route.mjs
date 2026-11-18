@@ -161,6 +161,8 @@ export const PLOTS = [
   ['shoten_5', 96, 590, 30, 50, 'kamieniczki ze sklepami, Fuji na końcu ulicy'],
   ['shoten_6', 46, 590, 38, 50, 'stary bank z kamienną fasadą'],
   ['shimoyoshida_eki', 22, 740, 34, 36, 'stacja Shimoyoshida z mijanką'],
+  ['yuenchi', 46, 782, 37, 210, 'park rozrywki (własny, bez cudzych atrakcji i znaków): brama od Honcho-dori, wielka kolejka górska, nawiedzony szpital, ogródek z jedzeniem'],
+  ['yuenchi_nishi', 0, 782, 32, 210, 'park rozrywki za torami (kładka): diabelski młyn, statek, karuzela, filiżanki, wieża spadowa'],
   ['churei_to', 114, 880, 22, 26, 'pięciopiętrowa pagoda Chūreitō'],
   ['arakura_jinja', 138, 760, 16, 20, 'chram Arakurayama Sengen u stóp schodów'],
   ['tenbodai', 106, 940, 40, 20, 'taras widokowy nad pagodą', 'low'],

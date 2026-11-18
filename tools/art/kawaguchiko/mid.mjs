@@ -12,6 +12,7 @@ import { todGrade, tintTable, PropKit } from '../props.mjs';
 import { makeKit } from '../tokyo/kit.mjs';
 import { RAMPS } from '../nature.mjs';
 import { fujiyoshida } from './fujiyoshida.mjs';
+import { yuenchi } from './yuenchi.mjs';
 import { shore } from './shore.mjs';
 import { lake } from './lake.mjs';
 import { north } from './north.mjs';
@@ -20,7 +21,7 @@ import { W, S, L, SECTIONS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, PLOTS } f
 import { near, inShape, bbox, railHalf } from '../tokyo/geom.mjs';
 
 // the stretches' painters, in the order they are called: (ctx) => void
-const PAINTERS = [fujiyoshida, shore, lake, north];
+const PAINTERS = [fujiyoshida, yuenchi, shore, lake, north];
 const DRAWN_TO = 6748; // (the stretches drawn so far reach this far up the strip: their plots are not hatched)
 // arenas with no ring: the lake is the miniboss's, the panorama the boss's
 const ARENA_DRAWN = new Set(['KACHI-KACHI USAGI', 'DAIDARABOTCHI']);
