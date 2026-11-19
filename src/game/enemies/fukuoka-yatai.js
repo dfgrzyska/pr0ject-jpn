@@ -21,9 +21,9 @@ import { slow, TAU } from './shared.js';
 export const YATAI = {
   hp: 960,
   phase: [0.66, 0.33],
-  time: 95,
+  time: 110,
   rush: 0.45,
-  guard: 0.2,
+  guard: 0.25,
   ramen: { ladle: 1.3, strands: 3, links: 9, gap: 0.05, wig: 4.5, wf: 8, spread: 0.42, bowls: 2, bowl: 105, back: 125, every: 3 },
   kaedama: { up: 0.6, hang: 2.1, drop: 0.35, stun: 2.2 },
   gyoza: { griddles: 3, r: 13, warn: 1, live: 0.9, n: 4, fly: 0.95, land: 10, valve: 3.4, back: 2.2, every: 4 },
