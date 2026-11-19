@@ -173,7 +173,7 @@ export const SKINS = {
     shooter: { frame: 'f_fugu_0', anim: 'f_fugu' },
     diver: { frame: 'f_goma_0', anim: 'f_goma' },
     carrier: { frame: 'f_uso_{c}_0', anim: 'f_uso_{c}' },
-    heavy: { frame: 'tanuki_0', anim: 'tanuki', kind: 'tanuki' }, // (the miniboss's place: YATAI-OBAKE, phase 12)
+    heavy: { frame: 'yt_idle_0', kind: 'yatai' }, // the miniboss: YATAI-OBAKE (fukuoka-yatai.js)
     turret: { base: 'f_dai_base', head: 'f_ningyo_', wreck: 'f_dai_wreck' }, // (the doll stands; its bow turns to the ship)
     // its own three (enemies/fukuoka.js): lanterns on a rope across a street, a pair of mentaiko, the oboro-guruma
     chain: { frame: 'f_chochin_0', eye: 'f_chochin_eye_', lit: 'f_chochin_lit_', burnt: 'f_chochin_burnt', pole: 'f_pole' },

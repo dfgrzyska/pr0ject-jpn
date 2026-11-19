@@ -29,7 +29,7 @@ const PAINTERS = [momochi, ohori, nakasu, hakata, kuko, sasaguri, dazaifu, dazai
 // (the stretches drawn so far: their plots are not hatched)
 const DRAWN = [[0, L]]; // (5460-5760: Dazaifu's close-up, phase 6; the rest of it phase 7)
 // arenas with no ring (once their own ground is drawn)
-const ARENA_DRAWN = new Set(['NURIKABE']);
+const ARENA_DRAWN = new Set(['NURIKABE', 'YATAI-OBAKE']);
 
 const smooth = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
