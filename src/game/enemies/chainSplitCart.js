@@ -10,7 +10,8 @@
 //           from its wheels. It breaks up as it is hit: the blind torn off (it sees, and fires sooner), a wheel gone
 //           (it limps), the roof on fire; its wreck stays on the street, and it leaves a power-up behind.
 // Their looks are a skin's `chain`, `split` and `cart` (skins.js); their tuning CHAIN, SPLIT, CART (config.js). A look may
-// change the colours and sounds: chain { rope, char, light, text }, split { sound }, cart { debris, light }. A cart's
+// change the colours and sounds: chain { rope, char, light, text }, split { sound }, cart { debris, light }; a rope may
+// hang several things in turn (chain.frames, as Nagasaki's signal flags). A cart's
 // look may have a beast pulling it that is no yokai (cart.runner): when the cart goes down it breaks free and runs off.
 import { CART, CHAIN, DEPTH, SPLIT, SPLIT_ONE, VIEW } from '../../config.js';
 import { volley } from '../../difficulty.js';
@@ -62,7 +63,7 @@ export const chainSplitCart = {
     for (let i = 0; i < n; i++) {
       const [x, u] = ropeAt(rope, (i + 1) / (n + 1));
       const eye = i % 3 === 1;
-      const e = this.pool.spawn(eye ? `${look.eye}0` : look.frame, x, s.parallax.screenY(u), { ...base, u, rope, slot: i, eye, wreck: look.burnt, timer: CHAIN.every * (0.4 + Math.random() * 0.8) });
+      const e = this.pool.spawn(eye ? `${look.eye}0` : look.frames?.[i % look.frames.length] ?? look.frame, x, s.parallax.screenY(u), { ...base, u, rope, slot: i, eye, wreck: look.burnt, timer: CHAIN.every * (0.4 + Math.random() * 0.8) });
       e.setDepth(DEPTH.ground);
       first ??= e;
     }

@@ -12,6 +12,9 @@ import * as geo from '../art/nagasaki/geo.mjs';
 const json = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url)));
 const stage = json('../../src/data/stage8.json');
 const atlas = json('../../public/assets/sprites.json').frames;
+// (the city's own atlas: the frames drawn at 540 px, as the signal flags, the kakuni-manju and the Kunchi whale)
+const cityAtlas = json('../../public/assets/bg/stage8/enemies.json').frames;
+const has = (k) => atlas[k] || (Array.isArray(cityAtlas) ? cityAtlas.some((f) => f.filename === k) : cityAtlas[k]);
 const meta = json('../../public/assets/bg/stage8/meta.json');
 const { W } = geo;
 
@@ -32,7 +35,7 @@ function timeAt(u) {
 test('Nagasaki assets, music, landmarks and the quiet memorial interval', () => {
   for (const look of Object.values(SKINS.nagasaki)) {
     if (typeof look !== 'object') continue;
-    for (const key of ['frame', 'base', 'wreck']) if (look[key]) for (const c of ['red', 'green', 'blue']) assert(atlas[look[key].replace('{c}', c)], look[key]);
+    for (const key of ['frame', 'base', 'wreck']) if (look[key]) for (const c of ['red', 'green', 'blue']) assert(has(look[key].replace('{c}', c)), look[key]);
     if (look.head) for (let i = 0; i < 16; i++) assert(atlas[look.head + i]);
   }
   for (const key of ['n_ja_0', 'n_segment', 'n_pearl', 'n_traffic', 'n_view_ferry_0', 'n_view_ferry_1', 'n_view_wake', 'n_oranda_0', 'n_oranda_1', 'n_oranda_gun_0', 'n_oranda_gun_1', 'n_oranda_burnt', 'n_keg_0', 'n_keg_1', 'seal_stage8', 'stamp_stage8', 'food_castella', 'food_champon'])

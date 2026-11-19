@@ -154,7 +154,7 @@ test('the oboro-guruma breaks up in three stages and keeps to its street', () =>
 });
 
 test('the three are Fukuoka\'s (and Onomichi\'s, Kyoto\'s, Okinawa\'s), in waves, their frames in each one\'s atlas', () => {
-  const cities = { fukuoka: 'stage12', onomichi: 'stage11', kyoto: 'stage1', okinawa: 'stage2' };
+  const cities = { fukuoka: 'stage12', onomichi: 'stage11', kyoto: 'stage1', okinawa: 'stage2', nagasaki: 'stage8' };
   for (const t of ['chain', 'split', 'cart']) {
     assert.ok(ENEMIES[t] && PACKED.has(t), t);
     for (const city of Object.keys(SKINS)) if (!cities[city]) assert.equal(SKINS[city][t], undefined, `${city} has no ${t}`);
@@ -165,6 +165,7 @@ test('the three are Fukuoka\'s (and Onomichi\'s, Kyoto\'s, Okinawa\'s), in waves
     const { chain, split, cart } = SKINS[city];
     for (const f of [chain.frame, `${chain.eye}0`, `${chain.eye}1`, `${chain.lit}0`, `${chain.lit}1`, chain.burnt, chain.pole, split.frame, split.one, cart.wreck]) assert.ok(has.has(f), `${city}: ${f}`);
     for (let st = 0; st < 4; st++) for (let f = 0; f < 2; f++) assert.ok(has.has(`${cart.anim}${st}_${f}`), `${city}: ${cart.anim}${st}_${f}`);
+    for (const f of chain.frames ?? []) assert.ok(has.has(f), `${city}: ${f}`);
     if (cart.runner) for (let f = 0; f < 2; f++) assert.ok(has.has(`${cart.runner.anim}_${f}`), `${city}: ${cart.runner.anim}_${f}`);
   }
   // a rope is one wave of all its lanterns

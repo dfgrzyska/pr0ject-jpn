@@ -8,6 +8,7 @@
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
 import * as SHIP from './oranda540.mjs';
 import * as DRAGON from './dragon540.mjs';
+import { nagasakiNewFoes } from './newfoes.mjs';
 import { Raster, fbm } from '../../lib/raster.mjs';
 
 const INK = 0x14101c;
@@ -483,6 +484,7 @@ export function cannonSmoke(f) {
 }
 
 export function nagasakiEnemies(add) {
+  nagasakiNewFoes(add); // (the signal flags on their halyards, the kakuni-manju, the Kunchi whale: newfoes.mjs)
   for (let f = 0; f < 4; f++) {
     add(`n_lantern_${f}`, lantern(f));
     add(`n_biidoro_${f}`, biidoro(f));

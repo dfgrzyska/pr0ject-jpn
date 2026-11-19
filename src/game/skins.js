@@ -21,6 +21,10 @@ export const SKINS = {
     carrier: { frame: 'n_castella_{c}_0', anim: 'n_castella_{c}', scale: 0.75 },
     heavy: { frame: 'n_oranda_0', anim: 'n_oranda', kind: 'oranda' },
     turret: { base: 'n_winch_base', head: 'n_winch_', wreck: 'n_winch_wreck', pattern: 'tide' },
+    // signal flags on a halyard (Alfa, Delta, Kilo, Uniform in turn; India wakes), kakuni-manju, the Kunchi whale
+    chain: { frame: 'ng_flag_0', frames: ['ng_flag_0', 'ng_flag_1', 'ng_flag_2', 'ng_flag_3'], eye: 'ng_flag_eye_', lit: 'ng_flag_lit_', burnt: 'ng_flag_burnt', pole: 'ng_pole', rope: 0xd8d8d0 },
+    split: { frame: 'ng_manju_0', anim: 'ng_manju', one: 'ng_manju_one_0', oneAnim: 'ng_manju_one', sound: 'squelch' },
+    cart: { anim: 'ng_kujira_', wreck: 'ng_kujira_wreck', debris: 0x1e4aa0, light: 0xffa040 },
   },
   kyoto: {
     trap: trap('kyoto', 'foxfire', 10, { kind: 'ring', n: 6 }, 3.6), // a stone lantern breathing fox fire (enemies/traps.js)
