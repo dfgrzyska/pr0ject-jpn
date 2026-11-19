@@ -231,6 +231,6 @@
     {"t":206,"type":"popcorn","x":156,"path":"arc","count":6},
     {"t":208,"type":"split","x":60},
     {"t":208.4,"type":"split","x":120},
-    {"t":220,"type":"boss","x":90,"boss":"kyubi","card":["NURIKABE","ŚCIANA NA DRODZE"]}
+    {"t":220,"type":"boss","x":90,"boss":"nurikabe","card":["NURIKABE","ŚCIANA NA DRODZE"]}
   ]
 }

@@ -173,6 +173,7 @@ export const encounters = {
     if (g?.kind === 'kaiken' && this.kaikenDeaf(shot)) return true; // the hush while the man's hand is at his ear (kaiken.js)
     if (g?.kind === 'kurogane' && this.kuroShot(shot)) return true; // the mech's fists, drones, armour and reactor (tokyo-kurogane.js)
     if (g?.kind === 'daidara' && this.ddShot(shot)) return true; // the giant's ropes, cupped hand, earth and fissure (kawaguchiko-daidara.js)
+    if (g?.kind === 'nurikabe' && this.nuShot(shot)) return true; // the wall's footing, its stretches' cornerstones, its face; DON! (fukuoka-nurikabe.js)
     if (g?.kind === 'funayurei' && this.fyShot(shot)) return true; // the ship's shells, ladles, lantern and hull (onomichi-funayurei.js)
     if (!g || g.defeated || g.kind !== 'jaodori' || !g.launchers || g.parts[0].state !== 'fight') return false;
     for (const pad of g.launchers) {

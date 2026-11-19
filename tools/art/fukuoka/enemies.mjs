@@ -8,6 +8,7 @@
 import { HiSprite, tones, speckle, mottle, mix2, fur } from '../../lib/hisprite.mjs';
 import { fukuokaNewFoes } from './newfoes.mjs';
 import { yataiFrames } from './yatai.mjs';
+import { nurikabeFrames } from './nurikabe.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -303,5 +304,6 @@ export function fukuokaEnemies(add) {
   for (let i = 0; i < 16; i++) add(`f_ningyo_${i}`, archer(i));
   fukuokaNewFoes(add); // (the lanterns on their ropes, the mentaiko, the oboro-guruma: newfoes.mjs)
   yataiFrames(add); // the miniboss, YATAI-OBAKE (yatai.mjs)
+  nurikabeFrames(add); // the boss, NURIKABE (nurikabe.mjs)
 }
 export const FUKUOKA_PORTRAITS = ['yt_idle_0'];

@@ -168,7 +168,7 @@ export function wallPart(w, o = {}) {
   // ---- a small conduit in a stretch's face (the alley: water from the gaps)
   if (o.slot) conduit(s, cx, 138, 0.7, o.mouth ?? 0);
   // ---- its mouth: the old wooden conduit, through its face; the earth below it dark with the damp
-  if (o.mouth != null && !o.slot) s.shade([cx - 40, MOUTH[1], cx + 40, FOOT[0]], (px, py) => Math.abs(px - cx) < 30 - (py - MOUTH[1]) * 0.2 + Math.sin(py / 3) * 2, -0.16);
+  if ((o.mouth != null || o.damp) && !o.slot) s.shade([cx - 40, MOUTH[1], cx + 40, FOOT[0]], (px, py) => Math.abs(px - cx) < 30 - (py - MOUTH[1]) * 0.2 + Math.sin(py / 3) * 2, -0.16);
   if (o.mouth != null && !o.slot) conduit(s, cx + MOUTH[0], MOUTH[1], 1.3, o.mouth);
   // ---- its eyes of fired clay, between the second and third course
   if (o.eyes) for (const ex of o.eyeAt ?? EYES) eye(s, cx + ex, EYE_Y + breath(cx + ex), o.eyes, ex < 0 ? -1 : ex > 0 ? 1 : -1);
@@ -282,7 +282,7 @@ export function stretch(n, o = {}) {
 
 /** The night (phase 3): gone invisible but for its eyes and the petals settled on its ridge, its outline a shimmer. */
 export function night(o = {}) {
-  const s = wallPart(WALL_W, { eyes: 'glow', mouth: null, petals: 520, seed: 1, plums: [] });
+  const s = wallPart(WALL_W, { eyes: o.eyes === undefined ? 'glow' : o.eyes, mouth: null, petals: 520, seed: 1, plums: [] });
   const out = s.render({ outline: 0 });
   // keep only the eyes, the petals and a faint shimmer of its edges
   const keep = (x, y) => {
@@ -293,6 +293,7 @@ export function night(o = {}) {
   const edgeA = (x, y) => {
     const a = out.data[(y * WALL_W + x) * 4 + 3];
     const n = (dx, dy) => (x + dx >= 0 && y + dy >= 0 && x + dx < WALL_W && y + dy < WALL_H ? out.data[((y + dy) * WALL_W + x + dx) * 4 + 3] : 0);
+    if (y > FOOT[0] - 2 && y < FOOT[1] - 2) return 0; // (not the joints of its footing: only its outline)
     return a && (!n(0, -1) || !n(0, 1) || !n(-1, 0) || !n(1, 0)) ? 1 : 0;
   };
   const res = out.clone ? out.clone() : out;
@@ -377,6 +378,64 @@ export function shadow(w = WALL_W) {
 
 export { EYE_CORE, WALL_H as H };
 
+// ---------------------------------------------------------------- its parts for the fight (the city's atlas)
+// Where they sit, fine px from the middle of the wall's frame (the game has them in logical px, a third of these: NURI
+// in fukuoka-nurikabe.js; the test fukuokaNurikabe checks they agree).
+export const PARTS = {
+  eyes: EYES.map((x) => [x, EYE_Y - WALL_H / 2]),
+  eyesCore: EYE_CORE.map((x) => [x, EYE_Y - WALL_H / 2]),
+  mouth: [MOUTH[0], MOUTH[1] - WALL_H / 2],
+  slot: [0, 138 - WALL_H / 2],
+  gold: [0, (FOOT[0] + FOOT[1]) / 2 - WALL_H / 2],
+  foot: [0, FOOT[0] - WALL_H / 2, FOOT[1] - WALL_H / 2], // (the footing's top and bottom)
+  ridge: [RIDGE[0] - WALL_H / 2, RIDGE[1] - WALL_H / 2],
+};
+export const EYE_FRAME = { w: 60, h: 36 }; // (its eye in the middle)
+export const MOUTH_FRAME = { w: 84, h: 84, oy: 30 }; // (the conduit's mouth at (w / 2, oy))
+export const SIZES = { wall: WALL_W, core: 240, stretch: 124 };
+
+/** An eye on its own frame: look (shut, half, open, glare, glow), side -1 (its left) or 1. */
+export function eyeFrame(look, side) {
+  const s = new HiSprite(EYE_FRAME.w, EYE_FRAME.h, RAMPS);
+  eye(s, EYE_FRAME.w / 2, EYE_FRAME.h / 2, look, side);
+  return s.render({ outline: look === 'shut' ? 0 : 1 });
+}
+
+/** Its mouth on its own frame: 0 shut, 1 open, 2-3 gushing. */
+export function mouthFrame(m) {
+  const s = new HiSprite(MOUTH_FRAME.w, MOUTH_FRAME.h, RAMPS);
+  conduit(s, MOUTH_FRAME.w / 2, MOUTH_FRAME.oy, 1.3, m >= 2 ? 2 : m);
+  if (m === 3) s.shade([0, 0, MOUTH_FRAME.w, MOUTH_FRAME.h], (x, y) => y > MOUTH_FRAME.oy + 12 && Math.sin(y / 2.4 + x / 9) > 0.3, 0.12);
+  return s.render({ outline: 1 });
+}
+
+/** The footing alone, glowing mint (over the wall as it lifts: it can be hit there). */
+export function footMint(w = WALL_W) {
+  const s = wallPart(w, { lift: true, seed: 1 });
+  for (let i = 0; i < s.mat.length; i++) if (Math.floor(i / w) < FOOT[0] - 1) s.mat[i] = null;
+  return s.render({ outline: 0 });
+}
+
+/** Every frame, under the names the fight uses (src/game/enemies/fukuoka-nurikabe.js). */
+export function nurikabeFrames(add) {
+  for (let k = 0; k < 4; k++) add(`nu_wall_${k}`, wallPart(WALL_W, { k, damp: true, plums: [118, 404], seed: 1 }).render({ outline: 2 }));
+  for (let k = 0; k < 2; k++) add(`nu_core_${k}`, wallPart(240, { k: k * 2, damp: true, cut: 'lr', plums: [60], seed: 2 }).render({ outline: 2 }));
+  for (let n = 0; n < 4; n++) add(`nu_stretch_${n}`, wallPart(124, { cut: n % 2 ? 'l' : 'r', gold: 62, slot: true, mouth: 0, seed: 3 + n, plums: n === 1 ? [40] : [] }).render({ outline: 2 }));
+  add('nu_foot', footMint());
+  add('nu_night', night({ eyes: null }));
+  for (const look of ['shut', 'half', 'open', 'glare', 'glow']) for (const [side, n] of [[-1, 'l'], [1, 'r']]) add(`nu_eye_${look}_${n}`, eyeFrame(look, side));
+  for (let m = 0; m < 4; m++) add(`nu_mouth_${m}`, mouthFrame(m));
+  add('nu_shadow', shadow());
+  add('nu_shadow_m', shadow(240));
+  add('nu_shadow_s', shadow(124));
+  for (let f = 0; f < 4; f++) {
+    add(`nu_clod_${f}`, clod(f));
+    add(`nu_petal_${f}`, petal(f));
+  }
+  for (let f = 0; f < 2; f++) add(`nu_gout_${f}`, gout(f));
+  add('nu_plum', plumInBloom());
+}
+
 // ---------------------------------------------------------------- the preview: the three forms on the ruins' field
 if (process.argv[1]?.replace(/\\/g, '/').endsWith('fukuoka/nurikabe.mjs')) {
   const { writeFileSync, existsSync, readFileSync, mkdirSync } = await import('node:fs');
@@ -421,24 +480,35 @@ if (process.argv[1]?.replace(/\\/g, '/').endsWith('fukuoka/nurikabe.mjs')) {
   // 1. the wall: risen in front of the earthwork, across the field, its mouth gushing; the shadow it casts
   ground(0, 'dusk');
   put(shadow(), 8, 560 + 168, 1, 0.9);
-  put(wall({ mouth: 2, eyes: 'open' }), 0, 560 - 0);
+  // (put together from its parts, where the game puts them)
+  const frames = {};
+  nurikabeFrames((name, r) => (frames[name] = r));
+  const at = (name, cx, cy, [dx, dy]) => put(frames[name], cx + dx - frames[name].w / 2, cy + dy - frames[name].h / 2);
+  const mouthAt = (name, cx, cy) => put(frames[name], cx + PARTS.mouth[0] - MOUTH_FRAME.w / 2, cy + PARTS.mouth[1] - MOUTH_FRAME.oy);
+  const face = (body, cx, cy, eyes, look, mouth) => {
+    at(body, cx, cy, [0, 0]);
+    eyes.forEach((p, i) => at(`nu_eye_${look}_${i ? 'r' : 'l'}`, cx, cy, p));
+    mouthAt(`nu_mouth_${mouth}`, cx, cy);
+  };
+  face('nu_wall_0', 270, 560 + WALL_H / 2, PARTS.eyes, 'open', 2);
   // its next hop flagged: a red band on the ground
   for (let y = 800; y < 940; y++) for (let x = 0; x < PW; x++) if ((x + y) % 10 < 5 && (y < 804 || y > 936)) out.setRGBA(x, y, 255, 115, 94, 255);
   // 2. the alley: its core before the earthwork, four stretches round the ship's lane closing in
   const ox2 = PW + 20;
   ground(ox2, 'dusk');
   put(shadow(240), ox2 + 150 + 6, 410 + 168, 1, 0.9);
-  put(core({ mouth: 2 }), ox2 + 150, 410);
+  face('nu_core_0', ox2 + 270, 410 + WALL_H / 2, PARTS.eyesCore, 'glare', 3);
   const lanes = [[16, 650, 0], [400, 650, 1], [76, 860, 2], [340, 860, 3]];
   for (const [x, y, n] of lanes) {
     put(shadow(124), ox2 + x + 6, y + 168, 1, 0.9);
-    put(stretch(n, { mouth: n === 1 ? 2 : 0 }), ox2 + x, y);
+    at(`nu_stretch_${n}`, ox2 + x + 62, y + WALL_H / 2, [0, 0]);
   }
   // 3. the night: the sun down, the wall invisible, its shadow, its eyes, the petals on its ridge
   const ox3 = 2 * (PW + 20);
   ground(ox3, 'night');
   put(shadow(), ox3 + 8, 600 + 168, 1, 0.75);
-  put(night(), ox3, 600);
+  at('nu_night', ox3 + 270, 600 + WALL_H / 2, [0, 0]);
+  PARTS.eyes.forEach((p, i) => at(`nu_eye_glow_${i ? 'r' : 'l'}`, ox3 + 270, 600 + WALL_H / 2, p));
   for (let i = 0; i < 40; i++) put(petal(i & 3), ox3 + hash(i, 1, 5) * PW, 300 + hash(i, 2, 5) * 600);
   // the small things, twice the size, along the bottom
   let x = 10;

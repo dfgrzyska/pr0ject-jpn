@@ -8,7 +8,7 @@ const server = await startServer(5177);
 let browser;
 try {
   browser = await launchBrowser();
-  for (const H of (process.env.BOSS_HEIGHT ? [Number(process.env.BOSS_HEIGHT)] : [320, 420])) for (const city of (process.env.BOSS_CITY ? [Number(process.env.BOSS_CITY)] : [3, 5, 8, 9, 10, 11])) {
+  for (const H of (process.env.BOSS_HEIGHT ? [Number(process.env.BOSS_HEIGHT)] : [320, 420])) for (const city of (process.env.BOSS_CITY ? [Number(process.env.BOSS_CITY)] : [3, 5, 8, 9, 10, 11, 12])) {
     const stage = JSON.parse(readFileSync(`src/data/stage${city}.json`, 'utf8'));
     const at = stage.waves.find(w => w.type === 'boss').t;
     const page = await browser.newPage({ viewport: { width: 540, height: H * 3 }, hasTouch: H === 420 });
@@ -85,6 +85,12 @@ try {
               p.tx = sh ? sh.sp.x + ((sh.x1 - sh.x0) / 4.4) * 0.5 : g.open > 0 || g.stun > 0 ? lx : marks[0]?.x ?? lx;
               if (g.stun > 0 && !audit.lastStun) audit.stuns++;
               audit.lastStun = g.stun > 0;
+            } else if (city === 12) {
+              // Nurikabe: the cornerstones of the alley's stretches, the core's face while bare; under the wall, out of
+              // the band it will land on (its footing is struck from anywhere below it as it lifts)
+              const st = (g.stretches ?? []).filter((t) => t.state === 'up').sort((a, b) => Math.abs(a.x - p.x) - Math.abs(b.x - p.x))[0];
+              p.tx = g.stage === 2 ? (g.open > 0 ? g.x : st ? st.x : g.x) : p.x;
+              if (g.band) p.ty = Math.max(p.ty, g.band.y + 60);
             }
             if (fail) { p.tx = 15; p.ty = s.H - 30; }
             p.tx = Math.max(10, Math.min(170, p.tx));
@@ -171,6 +177,7 @@ try {
     else if (city === 9) assert(state.torn === 2 && state.stuns > 0 && state.opens > 0, 'Kurogane: both arms off, the drones downed, the reactor open');
     else if (city === 10) assert(state.stuns > 0 && state.opens > 0, 'Daidarabotchi: the basket dropped, the fissure open after a slam');
     else if (city === 11) assert(state.stuns > 0 && state.opens > 0, 'Funa-yurei: a gold shell burst over it, the lantern bare');
+    else if (city === 12) assert(state.opens > 0, 'Nurikabe: a cornerstone shot, the face bare');
     else assert.equal(state.opens, 0, 'Tako has no pin/open mechanic');
     const cleared = await page.evaluate(() => {
       const s = game.scene.getScene('Stage');
