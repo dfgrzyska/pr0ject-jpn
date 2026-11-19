@@ -10,7 +10,9 @@
     -14
   ],
   "skin": "fukuoka",
-  "near": "none",
+  "near": "fukuoka",
+  "mist": [4400, 5200],
+  "petalsFrom": 5300,
   "dark": [
     [
       0,

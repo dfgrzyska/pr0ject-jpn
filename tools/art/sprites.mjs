@@ -11,6 +11,7 @@ import { osakaSprites } from './osaka/sprites.mjs';
 import { beppuSprites } from './beppu/sprites.mjs';
 import { nagasakiSprites } from './nagasaki/sprites.mjs';
 import { hiroshimaSprites } from './hiroshima/sprites.mjs';
+import { fukuokaSprites } from './fukuoka/sprites.mjs';
 import { tokyoSprites } from './tokyo/sprites.mjs';
 import { stampSprites } from './stamps.mjs';
 import { fxSprites } from './fx.mjs';
@@ -300,6 +301,7 @@ kagoshimaSprites(add);
 osakaSprites(add);
 beppuSprites(add);
 hiroshimaSprites(add);
+fukuokaSprites(add); // plum petals over Dazaifu
 for (const { name, raster } of nagasakiSprites()) add(name, raster);
 tokyoSprites(add);
 for (const { name, raster } of stampSprites()) add(name, raster); // the stamp book

@@ -88,6 +88,8 @@ export class Parallax {
     this.flashT = 0;
     this.embersFrom = stage.embersFrom ?? Infinity; // stage time from which embers rise
     this.nightFrom = stage.nightFrom ?? Infinity; // Osaka: clouds and gulls by day, a clear night sky after
+    this.mistZone = stage.mist ?? null; // Fukuoka: [u0, u1] of the strip where mist lies in the valleys
+    this.petalsFrom = stage.petalsFrom ?? Infinity; // Fukuoka: plum petals drift from here on
     this.dark = stage.dark ?? [[0, 0]]; // how dark the city is along the strip: [u, 0..1]
     // the shadows of clouds drifting over the land, fading out as night falls (a stage drawn finer than the
     // game brings its own, soft-edged, among its moving parts)
@@ -325,6 +327,7 @@ export class Parallax {
     else if (this.nearKind === 'rain') this.spawnRain(dt);
     else if (this.nearKind === 'steam') this.spawnSteam(dt, fall);
     else if (this.nearKind === 'momiji') this.spawnMomiji(dt, fall, scrolling);
+    else if (this.nearKind === 'fukuoka') this.spawnFukuoka(dt, fall, scrolling, H);
     else if (this.nearKind === 'none') { /* (an encounter's arena brings its own moving parts) */ }
     else if (this.nearKind === 'osaka' || this.nearKind === 'harbor') {
       if (this.time < this.nightFrom) this.spawnTropic(dt, fall, scrolling);
@@ -362,7 +365,7 @@ export class Parallax {
     }
     this.near.sweep();
     let j = 0;
-    const isLeaf = this.nearKind === 'sakura' || this.nearKind === 'momiji';
+    const isLeaf = this.nearKind === 'sakura' || this.nearKind === 'momiji' || this.nearKind === 'fukuoka';
     const pl = isLeaf && this.scene.player?.alive ? this.scene.player : null;
     for (const b of this.bitsLive) {
       if (pl && Math.abs(b.x - pl.x) < 46 && Math.abs(b.y - pl.y) < 46) {
@@ -557,6 +560,34 @@ export class Parallax {
         flipT: 0,
       });
       m.setAlpha(0.22);
+    }
+  }
+
+  /**
+   * Fukuoka: nothing in the night air over the bay and the town; mist lying in Sasaguri's wooded valleys at noon, in
+   * slow banks; over Dazaifu the plum groves' petals drifting, white, pink and deep red, thicker as the groves come
+   * on, and thinning while Nurikabe is up (its wall must stay readable).
+   */
+  spawnFukuoka(dt, fall, scrolling, H) {
+    const u = this.stripU(H / 2);
+    const z = this.mistZone;
+    if (z && scrolling) {
+      const k = Math.max(0, Math.min(1, (u - z[0]) / 120, (z[1] - u) / 120));
+      this.mistTimer -= dt * k;
+      if (k > 0 && this.mistTimer <= 0) {
+        this.mistTimer = 1.4 + Math.random() * 1.8;
+        const m = this.near.spawn(`mist_${Math.floor(Math.random() * 2)}`, Math.random() * 180, -20, { vy: fall * 1.06, vx: -2 + Math.random() * 4, sway: 0, age: 0, flipT: 0 });
+        m.setAlpha(0.16 + Math.random() * 0.08).setScale(1.4 + Math.random() * 0.6);
+      }
+    }
+    const k = Math.max(0, Math.min(1, (u - this.petalsFrom) / 200));
+    if (k <= 0) return;
+    const boss = this.scene.enemies?.live.some((e) => e.type === 'boss' && !e.dead);
+    this.petalTimer -= dt * k * (boss ? 0.35 : 1);
+    while (this.petalTimer <= 0) {
+      this.petalTimer += 0.08 + Math.random() * 0.12;
+      const p = this.bit(`ume_${Math.floor(Math.random() * 4)}`, Math.random() * 220 - 20, -6, fall * (0.72 + Math.random() * 0.45), -6 + Math.random() * 14, 0.6, 3 + Math.random() * 5, Math.random() * 6, 0.18 + Math.random() * 0.3);
+      p.setAlpha(boss ? 0.5 : 0.8);
     }
   }
 
