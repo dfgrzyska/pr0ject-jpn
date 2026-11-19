@@ -60,6 +60,6 @@ test('the temple bell rings over Nanzo-in, in the quiet there', () => {
 
 test('the Fukuoka sounds exist and are played', () => {
   for (const k of ['chain', 'squelch', 'creak', 'spin', 'puff', 'wheel', 'kaedama', 'sizzle', 'don', 'earth', 'bell']) assert.equal(typeof Sfx.prototype[k], 'function', k);
-  const used = read('game/enemies/fukuoka.js') + read('game/enemies/fukuoka-yatai.js') + read('game/enemies/fukuoka-nurikabe.js') + read('game/skins.js') + read('game/Enemies.js') + read('scenes/Stage.js');
-  for (const k of ['chain?.(', 'squelch?.(', 'creak?.(', 'wheel?.(', 'kaedama?.(', 'sizzle?.(', 'don?.(', 'earth?.(', 'bell?.(', "sound: 'puff'", "sound: 'spin'", 'this.scene.sfx[e.sound]']) assert.ok(used.includes(k), k);
+  const used = read('game/enemies/chainSplitCart.js') + read('game/enemies/fukuoka-yatai.js') + read('game/enemies/fukuoka-nurikabe.js') + read('game/skins.js') + read('game/Enemies.js') + read('scenes/Stage.js');
+  for (const k of ['chain?.(', "?? 'squelch']?.(", 'creak?.(', 'wheel?.(', 'kaedama?.(', 'sizzle?.(', 'don?.(', 'earth?.(', 'bell?.(', "sound: 'puff'", "sound: 'spin'", 'this.scene.sfx[e.sound]']) assert.ok(used.includes(k), k);
 });

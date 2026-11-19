@@ -175,7 +175,7 @@ export const SKINS = {
     carrier: { frame: 'f_uso_{c}_0', anim: 'f_uso_{c}' },
     heavy: { frame: 'yt_idle_0', kind: 'yatai' }, // the miniboss: YATAI-OBAKE (fukuoka-yatai.js)
     turret: { base: 'f_dai_base', head: 'f_ningyo_', wreck: 'f_dai_wreck' }, // (the doll stands; its bow turns to the ship)
-    // its own three (enemies/fukuoka.js): lanterns on a rope across a street, a pair of mentaiko, the oboro-guruma
+    // its own three (enemies/chainSplitCart.js): lanterns on a rope across a street, a pair of mentaiko, the oboro-guruma
     chain: { frame: 'f_chochin_0', eye: 'f_chochin_eye_', lit: 'f_chochin_lit_', burnt: 'f_chochin_burnt', pole: 'f_pole' },
     split: { frame: 'f_mentaiko_0', anim: 'f_mentaiko', one: 'f_mentaiko_one_0', oneAnim: 'f_mentaiko_one' },
     cart: { anim: 'f_cart_', wreck: 'f_cart_wreck' },

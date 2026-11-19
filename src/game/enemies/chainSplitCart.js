@@ -1,4 +1,5 @@
-// Fukuoka's three new ones (docs/plan-fukuoka.md, phase 10):
+// Three behaviours for a city's small fry, first made for Fukuoka (docs/plan-fukuoka.md, phase 10) and shared with
+// the other cities (docs/plan-silniejsze-fale.md); Fukuoka's looks are described here, each city has its own:
 //   chain - paper lanterns on a rope strung across a street between two poles, on the map. One shot down sets its
 //           neighbours alight one after another along the rope, each burning paying more than the last; a burning
 //           one close to another rope sets that one going too. Every third has an eye and fires.
@@ -8,7 +9,8 @@
 //   cart  - the oboro-guruma, a Heian ox-cart with no ox, driving its street on the map and throwing fans of shots
 //           from its wheels. It breaks up as it is hit: the blind torn off (it sees, and fires sooner), a wheel gone
 //           (it limps), the roof on fire; its wreck stays on the street, and it leaves a power-up behind.
-// Their looks are the fukuoka skin's `chain`, `split` and `cart` (skins.js); their tuning CHAIN, SPLIT, CART (config.js).
+// Their looks are a skin's `chain`, `split` and `cart` (skins.js); their tuning CHAIN, SPLIT, CART (config.js). A look may
+// change the colours and sounds: chain { rope, char, light, text }, split { sound }, cart { debris, light }.
 import { CART, CHAIN, DEPTH, SPLIT, SPLIT_ONE, VIEW } from '../../config.js';
 import { volley } from '../../difficulty.js';
 import { slow, DOWN, TAU, EXTRAS } from './shared.js';
@@ -43,7 +45,7 @@ export function ropeAt(rope, t) {
 const ROPE = 0x2a1c14; // the hemp rope
 const CHAR = 0x120c0a; // and where it burnt
 
-export const fukuoka = {
+export const chainSplitCart = {
   // ---------------------------------------------------------------- chain
   /** w: { x, x2, n, skew }: a rope from x to x2 (by default the mirror of x), its far end `skew` px up the map. */
   spawnChain(w, base, look) {
@@ -90,11 +92,12 @@ export const fukuoka = {
     const s = this.scene;
     const rope = e.rope;
     rope.burnt[e.slot] = true;
-    s.fx.light(e.x, e.y, 0.9, true, 0xff9a40);
+    const L = rope.look ?? {};
+    s.fx.light(e.x, e.y, 0.9, true, L.light ?? 0xff9a40);
     if (e.chainK > 0) {
       const pts = CHAIN.bonus * e.chainK * s.score.mult;
       s.score.add(pts);
-      s.fx.text(e.x, e.y - 9, `${pts}`, 0.7, 0xffc070);
+      s.fx.text(e.x, e.y - 9, `${pts}`, 0.7, L.text ?? 0xffc070);
       s.sfx.chain?.(e.chainK);
     }
     const k = e.chainK + 1;
@@ -129,7 +132,7 @@ export const fukuoka = {
         const right = a < r.n && r.burnt[a];
         if (left && right) continue;
         const burnt = left || right;
-        g.lineStyle(burnt ? R * 2 : R * 3, burnt ? CHAR : ROPE, burnt ? 0.85 : 1);
+        g.lineStyle(burnt ? R * 2 : R * 3, burnt ? r.look?.char ?? CHAR : r.look?.rope ?? ROPE, burnt ? 0.85 : 1);
         for (let j = 0; j < 3; j++) {
           const [x0, y0] = pt((a + j / 3) / (r.n + 1));
           const [x1, y1] = pt((a + (j + 1) / 3) / (r.n + 1));
@@ -176,7 +179,7 @@ export const fukuoka = {
         e.vx = Math.cos(a) * SPLIT.dive;
         e.vy = Math.sin(a) * SPLIT.dive;
         e.setRotation(a - DOWN);
-        s.sfx.squelch?.();
+        s.sfx[e.look?.sound ?? 'squelch']?.();
       }
     } else {
       e.x += e.vx * dt;
@@ -187,7 +190,7 @@ export const fukuoka = {
   /** The pair shot apart: its two sacs fly out (a bomb takes it all at once); a sac shot down spills its roe. */
   splitDown(e, byBomb) {
     const s = this.scene;
-    s.sfx.squelch?.();
+    s.sfx[e.look?.sound ?? 'squelch']?.();
     if (e.one) {
       if (byBomb) return;
       for (let i = 0; i < SPLIT.roe; i++) s.fx.coin(e.x + (Math.random() - 0.5) * 6, e.y + (Math.random() - 0.5) * 8, SPLIT.roePts * s.score.mult);
@@ -217,6 +220,7 @@ export const fukuoka = {
         bits: e.bits,
         art: L.one,
         one: true,
+        look: L,
         pack,
         state: 'out',
         timer: 0.45,
@@ -284,12 +288,12 @@ export const fukuoka = {
     e.cartStage = st;
     e.play(`${e.look.anim}${st}`);
     s.sfx.creak?.();
-    s.fx.debris(e.x, e.y, st === 2 ? 10 : 6, 0x3a2a26, 1, true);
+    s.fx.debris(e.x, e.y, st === 2 ? 10 : 6, e.look.debris ?? 0x3a2a26, 1, true);
     if (st === 2) {
       s.fx.shards(e.x + 8, e.y + 4, 4, true); // (the wheel coming off)
       s.sfx.wheel?.();
     }
-    if (st === 3) s.fx.light(e.x, e.y - 4, 1.2, true, 0xff8a30);
+    if (st === 3) s.fx.light(e.x, e.y - 4, 1.2, true, e.look.light ?? 0xff8a30);
     s.cameras.main.shake(80, 0.002);
   },
 

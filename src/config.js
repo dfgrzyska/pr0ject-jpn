@@ -130,7 +130,7 @@ export const ENEMIES = {
   trap: { hp: 1, weight: 0, score: 0, radius: 8, explosion: 's', ground: true },
   // every city's ambusher, hiding in its map until it jumps out to shoot (enemies/ambush.js)
   ambush: { hp: 26, weight: 2, score: 400, radius: 7, explosion: 's', ground: true },
-  // Fukuoka (enemies/fukuoka.js): paper lanterns on a rope across a street (one shot down sets its neighbours
+  // Fukuoka first, now any city (enemies/chainSplitCart.js): paper lanterns on a rope across a street (one shot down sets its neighbours
   // burning), a pair of mentaiko (shot apart, its two sacs dive at the ship), the oboro-guruma ox-cart with no ox
   chain: { hp: 8, weight: 1, score: 120, radius: 5, explosion: 's', ground: true },
   split: { hp: 26, weight: 2, score: 300, radius: 8, explosion: 's' },
@@ -138,7 +138,7 @@ export const ENEMIES = {
 };
 
 /**
- * Fukuoka's three new ones (enemies/fukuoka.js).
+ * The three behaviours first made for Fukuoka (enemies/chainSplitCart.js).
  * CHAIN: `n` lanterns on a rope (a wave's own `n` wins), every third with an eye that fires one slow shot every
  *   `every` s; one burning sets its neighbours alight `step` s apart, each paying `bonus` x its place in the run;
  *   a burning one within `cross` px of another rope sets that one going too. `sag`: the rope's dip (px).

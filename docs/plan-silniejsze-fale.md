@@ -27,7 +27,7 @@ Pomiar botem w Onomichi, Kawaguchiko i Kioto (plan Fukuoki, 5.1): popcorn ginie 
 
 ## 2. Co jest gotowe, a co trzeba zrobić w każdym mieście
 
-**Gotowe (kod z Fukuoki):** wszystkie trzy zachowania biorą wygląd ze skórki miasta (`chain`, `split`, `cart` w `skins.js`, logika w `src/game/enemies/fukuoka.js`). Kod przeniosę do wspólnego modułu bez zmian w działaniu.
+**Gotowe (kod z Fukuoki):** wszystkie trzy zachowania biorą wygląd ze skórki miasta (`chain`, `split`, `cart` w `skins.js`, logika we wspólnym `src/game/enemies/chainSplitCart.js`, przeniesionym z `fukuoka.js` bez zmian w działaniu; kolory i dźwięki skórka może zmienić).
 
 **Do zrobienia w każdym mieście:**
 1. Grafika 540 px dla trzech wzorów. W Fukuoce to było około 35 klatek:
@@ -111,6 +111,8 @@ Wszystko narysowane od zera, bez marek i postaci z cudzych dzieł. Przedmioty z 
 - **D3. Popcorn do 40–45%** we wszystkich miastach, czy łagodniej, np. 55%, żeby wcześniejsze miasta zostały lżejsze, bo są pierwsze w podróży? Polecam 45% wszędzie oprócz Kioto (55%), bo Kioto jest często pierwszym etapem.
 - **D4. Pomijanie.** Czy zgadzasz się nie dawać pary w Kagoshimie, Osace i Beppu ani wozu w Sapporo, bo mają już coś podobnego?
 - **D5. Wzory.** Które z propozycji z sekcji 3 zmienić?
+
+**Przyjęte (2026-11-19): wszystko według rekomendacji.** D1: próba na Onomichi i Kioto. D2: potem Okinawa, Nagasaki, Kawaguchiko, następnie Sapporo, Kagoshima, Osaka, Beppu, Hiroszima, Tokio na końcu. D3: popcorn około 45%, w Kioto 55%. D4: bez pary w Kagoshimie, Osace i Beppu, bez wozu w Sapporo. D5: wzory jak w sekcji 3.
 
 ## 5. Fazy (po decyzjach, dla każdego miasta)
 

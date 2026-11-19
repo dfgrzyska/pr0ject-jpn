@@ -33,7 +33,7 @@ import { kawaguchikoDaidara } from './enemies/kawaguchiko-daidara.js';
 import { onomichiFunayurei } from './enemies/onomichi-funayurei.js';
 import { traps } from './enemies/traps.js';
 import { ambush } from './enemies/ambush.js';
-import { fukuoka } from './enemies/fukuoka.js';
+import { chainSplitCart } from './enemies/chainSplitCart.js';
 // the second phases of the minibosses (Yuki-onna and the Oranda-bune have theirs; the bunraku puppet's go by
 // its puppeteers): its name on the banner
 const HEAVY_P2 = { tanuki: 'TANUKI PIJE SAKE', manta: 'KORALOWA SPIRALA', raiju: 'PRZEŁADOWANIE PIORUNA', wani: 'FAŁSZYWE CIENIE', heikegani: 'PĘKNIĘTY PANCERZ' };
@@ -1481,4 +1481,4 @@ export class Enemies {
 }
 
 // each city's enemies and bosses live in its own module (src/game/enemies/): their methods join the class here
-Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, kaiken, tokyoKasa, tokyoTaiyaki, kawaguchikoUsagi, onomichiNekomata, tokyoKurogane, kawaguchikoDaidara, onomichiFunayurei, traps, ambush, fukuoka, fukuokaYatai, fukuokaNurikabe);
+Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, kaiken, tokyoKasa, tokyoTaiyaki, kawaguchikoUsagi, onomichiNekomata, tokyoKurogane, kawaguchikoDaidara, onomichiFunayurei, traps, ambush, chainSplitCart, fukuokaYatai, fukuokaNurikabe);

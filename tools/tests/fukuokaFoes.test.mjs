@@ -1,11 +1,11 @@
-// Fukuoka's three new ones (src/game/enemies/fukuoka.js, docs/plan-fukuoka.md phase 10): the lanterns on a rope burn
+// Fukuoka's three new ones (src/game/enemies/chainSplitCart.js, docs/plan-fukuoka.md phase 10): the lanterns on a rope burn
 // one after another outward from the one shot, a run paying more each, and catch a rope crossing close by; the pair
 // of mentaiko shot apart gives two sacs and no more, and a sac spills its roe; the oboro-guruma breaks up in its
 // stages and keeps to its street. Their frames are all in the city's atlas.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { burnOrder, cartStage, catching, fukuoka, ropeAt } from '../../src/game/enemies/fukuoka.js';
+import { burnOrder, cartStage, catching, chainSplitCart as fukuoka, ropeAt } from '../../src/game/enemies/chainSplitCart.js';
 import { CART, CHAIN, ENEMIES, SPLIT, SPLIT_ONE } from '../../src/config.js';
 import { SKINS } from '../../src/game/skins.js';
 import { Waves, PACKED } from '../../src/game/Waves.js';
