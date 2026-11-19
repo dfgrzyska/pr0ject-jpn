@@ -434,6 +434,7 @@ export function nurikabeFrames(add) {
   }
   for (let f = 0; f < 2; f++) add(`nu_gout_${f}`, gout(f));
   add('nu_plum', plumInBloom());
+  add('nu_portrait', core({ eyes: 'open', mouth: 0 })); // (the album's and the parade's: its face, a stretch of the earthwork)
 }
 
 // ---------------------------------------------------------------- the preview: the three forms on the ruins' field

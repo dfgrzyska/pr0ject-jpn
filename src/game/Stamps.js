@@ -31,6 +31,7 @@ export const INK = {
   stage9: 0x2e2a36, // (sumi, the black of Kurogane's iron)
   stage10: 0x5a4a8a, // (the violet of the dusk sky over Fuji)
   stage11: 0x1e5a6e, // (the blue-green of the Inland Sea)
+  stage12: 0xa02a52, // (the crimson of Dazaifu's plums)
 };
 
 /** The stamp's frame in the atlas (Kyoto's, Hiroshima's and Tokyo's bands have English variants). */

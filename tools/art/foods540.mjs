@@ -58,6 +58,9 @@ const RAMPS = {
   fn: tones([0xbca058, 0xe8d08a, 0xfff2c4]), // its flat noodles
   ha: tones([0xc87a10, 0xf0aa2a, 0xffd878]), // a hassaku's segments, juicy
   hp: tones([0xc8b88a, 0xf2ead0, 0xfffcf0]), // its pith and the white bean paste
+  ue: tones([0xb48a52, 0xe8cfa0, 0xfff3dc]), // umegae-mochi's thin skin of rice, toasted pale
+  gz: tones([0xa88a5a, 0xeadcb8, 0xfff8e8]), // a gyoza's skin, steamed
+  gc: tones([0x7a3e0c, 0xc07a28, 0xf2b860]), // its bottom, fried crisp, and the lacy skirt
   hs: tones([0xb05008, 0xec8a1c, 0xffc468]), // a peeled segment, cut through
   dk: tones([0xa8a296, 0xe6e2d8, 0xffffff]), // the daifuku's dusted rice cake
 };
@@ -518,7 +521,74 @@ function hassakudaifuku() {
   return s;
 }
 
-const DRAW = { yatsuhashi, inari, goya, andagi, ramen, corn, shirokuma, karukan, kushi, takoyaki, toriten, pudding, okonomiyaki, momiji, castella, champon, crepe, melonpan, ningyoyaki, monjayaki, hoto, yoshidaudon, onomichiramen, hassakudaifuku };
+/** Dazaifu: umegae-mochi, rice cakes with red bean paste inside, toasted on a griddle with a plum flower pressed into
+ * each; one broken open to show the paste; on paper, a sprig of plum blossom by them. */
+function umegaemochi() {
+  const s = sprite();
+  s.poly([[6, 30], [52, 22], [56, 48], [10, 54]], 'mw', { flat: 0.7, pat: mottle({ amt: 0.06, scale: 6, seed: 4 }) }); // the paper
+  const cake = (cx, cy, r, seed) => {
+    s.ellipse(cx, cy, r, r * 0.86, 'ue', { bias: 0.06, pat: mix2(speckle({ amt: 0.14, seed }), mottle({ amt: 0.14, scale: 3, seed: seed + 1 })) });
+    for (let k = 0; k < 14; k++) { // toasted brown at its rim
+      const a = (k / 14) * TAU;
+      s.dot(cx + Math.cos(a) * (r - 1.6), cy + Math.sin(a) * (r * 0.86 - 1.4), 1.2, 0xb4804a, 0.7);
+    }
+    // the plum flower pressed into it: five round petals, a dot in the middle
+    for (let k = 0; k < 5; k++) {
+      const a = -Math.PI / 2 + (k / 5) * TAU;
+      const [px, py] = [cx + Math.cos(a) * r * 0.34, cy + Math.sin(a) * r * 0.3];
+      s.dot(px, py, r * 0.2, 0x9a6a3a, 0.75);
+      s.dot(px - 0.5, py - 0.5, r * 0.12, 0xc89a60, 0.6);
+    }
+    s.dot(cx, cy, r * 0.11, 0x7a4a20);
+  };
+  cake(20, 32, 11, 5);
+  cake(31, 44, 11, 7);
+  // the one broken open: its two halves, the dark paste showing in the break
+  s.ellipse(45, 33, 9, 8, 'ue', { bias: 0.05, pat: speckle({ amt: 0.14, seed: 9 }) });
+  s.poly([[39, 27], [44, 33], [41, 39], [37, 34]], 'an', { flat: 0.5, pat: speckle({ amt: 0.2, seed: 10 }) });
+  s.ellipse(41, 33, 3.4, 5.2, 'an', { flat: 0.45 });
+  s.px(40, 31, 0x9a4a40).px(42, 34, 0x9a4a40);
+  // a sprig of plum blossom: its dark twig, white and pink flowers
+  s.tube(4, 14, 30, 6, 1, 'wb');
+  s.tube(18, 10, 22, 2, 0.7, 'wb');
+  for (const [x, y, c] of [[10, 12, 'mw'], [17, 9, 'mp'], [25, 7, 'mw'], [22, 3, 'mp']]) {
+    for (let k = 0; k < 5; k++) s.ellipse(x + Math.cos((k / 5) * TAU) * 2, y + Math.sin((k / 5) * TAU) * 1.8, 1.6, 1.5, c, { flat: 0.75 });
+    s.dot(x, y, 0.9, 0xd8a020);
+  }
+  return s;
+}
+
+/** Hakata: hitokuchi gyoza, little dumplings of one bite each, fried in a row in a small iron pan, joined by a lacy
+ * skirt of crisp batter; a dish of soy and vinegar, yuzu-koshō, chopsticks. */
+function hitokuchigyoza() {
+  const s = sprite();
+  s.ellipse(27, 34, 24, 18, 'ir', { bias: 0.05 }); // the pan
+  s.ellipse(27, 33, 21, 15.5, 'ir', { flat: 0.32, pat: speckle({ amt: 0.15, seed: 6 }) });
+  s.tube(48, 38, 58, 46, 2.4, 'wd'); // its wooden handle
+  // the lacy skirt under them, browned, with holes
+  s.ellipse(27, 33, 19, 13, 'gc', { flat: 0.62, pat: mix2(speckle({ amt: 0.28, seed: 7 }), mottle({ amt: 0.18, scale: 2, seed: 8 })) });
+  for (let k = 0; k < 26; k++) s.dot(10 + (k * 37) % 34, 22 + (k * 23) % 22, 0.8, 0x2e2c34, 0.8);
+  // the dumplings, two rows of five, laid on their sides: half-moons, the curved edge pleated, the flat side fried
+  // golden where it sat on the iron, the tops pale and glossy from the steam
+  for (let r = 0; r < 2; r++)
+    for (let k = 0; k < 5; k++) {
+      const [x, y] = [12 + k * 7 + r * 2.4, 27 + r * 10];
+      s.ellipse(x, y + 1.4, 3.1, 1.6, 'gc', { bias: 0.15 }); // (the side fried on the iron)
+      s.ellipse(x, y - 0.8, 2.9, 3, 'gz', { bias: 0.25 }); // (the rounded back, steamed)
+      for (let p = -2; p <= 2; p++) s.px(x + p * 0.95, y - 3.4 + Math.abs(p) * 0.45, 0xb8a47c); // (its pleats)
+      s.px(x - 1.2, y - 1.8, 0xffffff, 0.85).px(x - 0.6, y - 2.2, 0xffffff, 0.5);
+    }
+  // the dish of soy and vinegar, a dab of yuzu-koshō
+  s.ellipse(50, 14, 8, 5, 'mw', { bias: 0.05 });
+  s.ellipse(50, 13.5, 6, 3.4, 'sc', { flat: 0.4 });
+  s.ellipse(48, 13, 1.6, 0.8, 'mw', { flat: 0.9 }); // (light on it)
+  s.ellipse(44, 22, 2.6, 1.8, 'gg', { flat: 0.55, pat: speckle({ amt: 0.3, seed: 9 }) });
+  s.tube(30, 4, 56, 24, 1, 'wd'); s.tube(28, 7, 54, 27, 1, 'wd'); // chopsticks
+  for (let y = 8; y < 20; y++) s.px(20 + Math.sin(y * 0.6) * 2, y, 0xffffff, 0.2 + (y / 20) * 0.25); // steam
+  return s;
+}
+
+const DRAW = { yatsuhashi, inari, goya, andagi, ramen, corn, shirokuma, karukan, kushi, takoyaki, toriten, pudding, okonomiyaki, momiji, castella, champon, crepe, melonpan, ningyoyaki, monjayaki, hoto, yoshidaudon, onomichiramen, hassakudaifuku, umegaemochi, hitokuchigyoza };
 
 /** The dish `id` at 540 px: a 60 x 60 Raster. */
 export function food540(id) {

@@ -18,14 +18,13 @@ const ono = STAGES.find((s) => s.id === 'stage11');
 const i18n = src('../../src/i18n.js');
 const english = (s) => i18n.includes(`  '${s}': '`) || i18n.includes(`\n  ${s}: '`) || i18n.includes(`  '${s}': "`);
 
-test('Onomichi is the eleventh city of the journey; Tokyo stays the last', () => {
+test('Onomichi is a city of the journey; Tokyo stays the last', () => {
   assert.ok(ono && !ono.wip, 'out of the works');
-  assert.match(src('../../src/data/stages.js'), /stage10, stage11\];/);
-  assert.equal(STAGES.length, 11);
+  assert.match(src('../../src/data/stages.js'), /stage10, stage11[,\]]/);
   const tokyo = STAGES.findIndex((s) => s.id === 'stage9');
   for (let k = 0; k < 20; k++) {
     const order = journeyOrder(STAGES, null, (list) => [...list].sort(() => Math.random() - 0.5));
-    assert.equal(order.length, 11);
+    assert.equal(order.length, STAGES.length);
     assert.ok(order.includes(STAGES.indexOf(ono)));
     assert.equal(order.at(-1), tokyo);
   }

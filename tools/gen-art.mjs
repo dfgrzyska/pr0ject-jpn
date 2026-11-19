@@ -71,8 +71,8 @@ const ENEMY_ART = [
   { id: 'stage8', build: nagasakiEnemies, portraits: NAGASAKI_PORTRAITS },
   { id: 'stage9', build: tokyoEnemies, portraits: TOKYO_PORTRAITS }, // (Tokyo: five sets, docs/plan-tokyo.md)
   { id: 'stage10', build: kawaguchikoEnemies, portraits: KAWAGUCHIKO_PORTRAITS }, // (docs/plan-kawaguchiko.md)
-  { id: 'stage11', build: onomichiEnemies, portraits: ONOMICHI_PORTRAITS }, // (in the works: docs/plan-onomichi.md)
-  { id: 'stage12', build: fukuokaEnemies, portraits: FUKUOKA_PORTRAITS }, // (in the works: docs/plan-fukuoka.md)
+  { id: 'stage11', build: onomichiEnemies, portraits: ONOMICHI_PORTRAITS },
+  { id: 'stage12', build: fukuokaEnemies, portraits: FUKUOKA_PORTRAITS },
   // the random encounters (src/data/encounters.js): an arena and a boss each, no album portraits (yet)
   { id: 'ex1', build: jihankiEnemies, portraits: [] },
   { id: 'ex2', build: keicarEnemies, portraits: [] },
@@ -96,7 +96,7 @@ const STAGES = [
   { id: 'stage9', art: tokyo }, // (Tokyo: docs/plan-tokyo.md)
   { id: 'stage10', art: kawaguchiko }, // (Kawaguchiko: docs/plan-kawaguchiko.md)
   { id: 'stage11', art: onomichi }, // (Onomichi: docs/plan-onomichi.md)
-  { id: 'stage12', art: fukuoka }, // (in the works: docs/plan-fukuoka.md)
+  { id: 'stage12', art: fukuoka },
   { id: 'ex1', art: greatwave }, // the vending machine's arena: the Great Wave, fizzy
   { id: 'ex2', art: tokaido }, // the kei car's: the Tōkaidō of Hiroshige's Fifty-three Stations, racing by
   { id: 'ex3', art: namazu }, // the site cat's: a namazu-e, the giant catfish under a building site in Edo

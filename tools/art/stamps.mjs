@@ -13,6 +13,7 @@ const MINI = {
   B: ['##.', '#.#', '##.', '#.#', '##.'],
   C: ['.##', '#..', '#..', '#..', '.##'],
   E: ['###', '#..', '##.', '#..', '###'],
+  F: ['###', '#..', '##.', '#..', '#..'],
   G: ['.##', '#..', '#.#', '#.#', '.##'],
   H: ['#.#', '#.#', '###', '#.#', '#.#'],
   I: ['###', '.#.', '.#.', '.#.', '###'],
@@ -459,6 +460,53 @@ function onomichi() {
   return inkUp(r, 111);
 }
 
+/** Fukuoka: Fukuoka Tower rising over the bay, the red drum bridge of Dazaifu Tenmangū over its pond, a sprig of plum
+ * blossom; a round frame with the plum crest of Dazaifu (umebachi) knocked out of it at the top, ripples under the name. */
+function fukuoka() {
+  const r = new Raster(S, S);
+  const d = (x, y) => Math.hypot(x + 0.5 - MID, y + 0.5 - MID);
+  for (let y = 0; y < S; y++)
+    for (let x = 0; x < S; x++) {
+      if (d(x, y) <= 27.5 && d(x, y) > 25.3) on(r, x, y);
+      else if (d(x, y) <= 24 && d(x, y) > 23 && (x + y) % 3 && (y < 39 || y > 47) && y > 6) on(r, x, y);
+    }
+  nameBand(r, 'FUKUOKA', 40, 46, insideCircle(24.5));
+  // the plum crest on the frame's top: a disc, five round petals knocked out of it round a heart
+  for (let y = 0; y < 9; y++) for (let x = 22; x < 34; x++) if (Math.hypot(x + 0.5 - MID, y + 0.5 - 4) < 5.2) on(r, x, y);
+  for (let k = 0; k < 5; k++) {
+    const a = -Math.PI / 2 + (k / 5) * Math.PI * 2;
+    off(r, MID - 0.5 + Math.cos(a) * 2.6, 3.5 + Math.sin(a) * 2.6);
+  }
+  // Fukuoka Tower: its slim shaft tapering up, the observation deck near the top, the antenna; its glass in bands
+  for (let y = 17; y <= 36; y++) {
+    const hw = 0.6 + (y - 17) / 10;
+    for (let x = Math.round(38 - hw); x <= Math.round(38 + hw); x++) on(r, x, y);
+    if (y % 4 === 1 && y > 20) off(r, 38, y);
+  }
+  for (let x = 36; x <= 40; x++) for (const y of [13, 14, 15]) on(r, x, y);
+  off(r, 37, 14); off(r, 39, 14); // (its windows)
+  for (let y = 8; y < 13; y++) on(r, 38, y);
+  // the bay at its foot: Momochi's beach, the sea
+  for (let x = 31; x <= 47; x++) on(r, x, 37);
+  for (let x = 32; x <= 46; x++) if (x % 4 !== 1) on(r, x, 39 - 4);
+  // the drum bridge: its deck rising steep from the banks, the rail with its posts over it, its piers in the pond
+  const arch = (x) => 35 - 6.5 * Math.sin(((x - 8) / 22) * Math.PI);
+  for (let x = 8; x <= 30; x++) {
+    on(r, x, arch(x));
+    on(r, x, arch(x) + 1);
+    on(r, x, arch(x) - 3);
+    if (x % 4 === 0) for (let k = 1; k <= 2; k++) on(r, x, arch(x) - k);
+  }
+  for (const x of [12, 19, 26]) for (let y = Math.round(arch(x)) + 2; y <= 37; y++) on(r, x, y);
+  for (let x = 6; x <= 32; x++) if (x % 5 && x % 5 !== 4) on(r, x, 38); // the pond's ripples under it
+  // a sprig of plum over it, its blossoms five petals round a heart
+  for (let k = 0; k <= 13; k++) on(r, 8 + k, 13 + k * 0.35);
+  for (let k = 0; k <= 4; k++) on(r, 15 + k * 0.6, 15 - k);
+  const bloom = ['.#.#.', '##.##', '.#.#.', '..#..'];
+  for (const [x, y] of [[9, 8], [22, 12], [17, 6]]) bloom.forEach((row, j) => [...row].forEach((c, i) => c === '#' && on(r, x + i, y + j)));
+  return inkUp(r, 112);
+}
+
 export function stampSprites() {
   const nagasaki = new Raster(S, S);
   ring(nagasaki, MID, MID, 26, 2);
@@ -487,6 +535,7 @@ export function stampSprites() {
     { name: 'stamp_stage9_en', raster: tokyo('TOKYO') },
     { name: 'stamp_stage10', raster: kawaguchiko() },
     { name: 'stamp_stage11', raster: onomichi() },
+    { name: 'stamp_stage12', raster: fukuoka() },
   ];
   // the HUD's little stamp: a round seal (tinted with the city's ink)
   const icon = new Raster(9, 9);

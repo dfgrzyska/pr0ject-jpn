@@ -27,6 +27,7 @@ const BOSSES = {
   stage9: [['kg_portrait', 0, 0]],
   stage10: [['dd_portrait', 0, -6]], // (the giant stands taller than the others: lifted clear of his name)
   stage11: [['fy_portrait', 0, -4]],
+  stage12: [['nu_portrait', 0, 0]],
 };
 
 /**

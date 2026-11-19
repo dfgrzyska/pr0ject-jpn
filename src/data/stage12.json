@@ -2,13 +2,7 @@
   "id": "stage12",
   "name": "FUKUOKA",
   "subtitle": "FUKUOKA - OD NOCY DO ZACHODU",
-  "wip": true,
-  "map": [
-    130.4,
-    33.59,
-    -10,
-    -14
-  ],
+  "map": [130.4, 33.59, -10, -17.5],
   "skin": "fukuoka",
   "enemyArt": true,
   "near": "fukuoka",

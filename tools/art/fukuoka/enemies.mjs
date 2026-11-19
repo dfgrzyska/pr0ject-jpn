@@ -306,4 +306,4 @@ export function fukuokaEnemies(add) {
   yataiFrames(add); // the miniboss, YATAI-OBAKE (yatai.mjs)
   nurikabeFrames(add); // the boss, NURIKABE (nurikabe.mjs)
 }
-export const FUKUOKA_PORTRAITS = ['yt_idle_0'];
+export const FUKUOKA_PORTRAITS = ['yt_idle_0', 'nu_portrait'];
