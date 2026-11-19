@@ -14,9 +14,10 @@ import { freeMap } from './free.mjs';
 const [U0, U1] = [3790, 4400];
 const road = (id) => ROADS.find((r) => r.id === id);
 
-/** A plane seen from above, nose up the strip (fine pixels on put): wings, tailplane, engines, its windows. */
-const plane = (put, k = 1) => {
+/** A plane seen from above, nose up the strip or down it (down), fine pixels on put: wings, tailplane, engines, windows. */
+const plane = (put0, k = 1, down = false) => {
   const [W2, H] = [Math.round(18 * k), Math.round(20 * k)];
+  const put = down ? (i, j, ...c) => put0(i, H * 2 - 1 - j, ...c) : put0;
   for (let j = 0; j < H * 2; j++) {
     const t = j / (H * 2);
     const half = t < 0.08 ? Math.round(t * 20) : t > 0.85 ? 1 : 2; // the fuselage: its nose, its tail
@@ -125,13 +126,16 @@ export function kuko(ctx) {
       for (const u0 of [ru + 30, ru + 50, ru + rh - 40, ru + rh - 60]) for (const side of [0.3, 0.62]) R(FX(rx + rw * side), FY(u0 + 6), 6, 18, 0xe0e0d8);
       for (let u = ru; u < ru + rh; u += 6) for (const x of [rx + 0.4, rx + rw - 0.6]) P(FX(x), FY(u), 0xf0f0d8);
     });
-    // a plane coming in to land over the city (flying: it moves), and its shadow on the ground, offset
-    const air = kit.frame(16, 18, 4200, (put) => plane(put, 1.35));
-    const shade_ = kit.frame(16, 18, 4200, (put) => plane((i, j) => put(i, j, 0x000000, 0.28), 1.35));
+    // a plane coming in to land over the city (flying: it moves, nose first, down the strip to the runway), and its
+    // shadow on the ground, offset
+    const air = kit.frame(16, 18, 4200, (put) => plane(put, 1.35, true));
+    const shade_ = kit.frame(16, 18, 4200, (put) => plane((i, j) => put(i, j, 0x000000, 0.28), 1.35, true));
     props.path([[126, 4560], [126, 3700]], [shade_], { sp: 22, n: 1, mode: 'wrap', turn: 'none', s0: 0.15, d: -0.1 });
     props.path([[118, 4600], [118, 3740]], [air], { sp: 22, n: 1, mode: 'wrap', turn: 'none', s0: 0.15, d: 0.6 });
+    // another taxiing along the runway and back, nose first both ways
     const taxiing = kit.frame(12, 13.4, 4200, (put) => plane(put, 1));
-    props.path(road('yudo_ro').pts, [taxiing], { sp: 4, n: 1, mode: 'pp', hold: 12, turn: 'none', s0: 0.5, d: 0.05 });
+    const taxiingDown = kit.frame(12, 13.4, 4200, (put) => plane(put, 1, true));
+    props.path(road('yudo_ro').pts, [taxiing], { sp: 4, n: 1, mode: 'pp', hold: 12, turn: 'none', fu: [taxiing], fd: [taxiingDown], s0: 0.5, d: 0.05 });
   }
   // the airport's grass: its fence, lights in rows past the runway's end
   {

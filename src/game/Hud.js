@@ -10,6 +10,7 @@ import { sharedArt } from './enemyArt.js';
 const W = VIEW.width;
 // Line pitch for panels: 7px glyphs + raised Polish accents need 14px to never touch the line above.
 const LINE = 14;
+const PLACE_SHOW = 4.5; // (how long a place's name shows at the bottom as the ship comes over it, s)
 const WEAPON_ICON = { basic: 'wpn_basic', spread: 'wpn_spread', laser: 'wpn_laser', homing: 'wpn_homing' };
 
 /**
@@ -260,16 +261,22 @@ export class Hud {
   update(dt) {
     const s = this.scene;
     const u = s.parallax.stripU(this.H / 2);
+    // the place's name: shown for a while as the ship comes over it, not all the while it is under it, and never
+    // over a fight with a boss or a miniboss (it would hide the bottom of the screen)
     const place = landmarkAt(s.stage.id, u);
-    const showPlace = s.state === 'play' && !s.paused && !!place && this.cardT <= 0 && this.sealT <= 0;
+    if (place && this.placeLabel !== place[2]) {
+      this.placeLabel = place[2];
+      this.placeName.setText(this.placeLabel);
+      this.placeT = 0;
+    }
+    if (s.state === 'play' && !s.paused && this.cardT <= 0 && this.sealT <= 0) this.placeT = (this.placeT ?? 0) + dt; // (not while a card hides it)
+    const g = s.enemies?.bossGroup;
+    const fight = !!s.enemies?.heavy || (!!g && !g.defeated) || !!s.enemies?.bossBar(); // (from when the boss or the miniboss comes)
+    const showPlace = s.state === 'play' && !s.paused && !!place && this.cardT <= 0 && this.sealT <= 0 && !fight && this.placeT < PLACE_SHOW;
     this.placeBand.setVisible(showPlace);
     this.placeName.setVisible(showPlace);
     if (showPlace) {
-      if (this.placeLabel !== place[2]) {
-        this.placeLabel = place[2];
-        this.placeName.setText(this.placeLabel);
-      }
-      const alpha = Math.min(1, (u - place[0]) / 24, (place[1] - u) / 24);
+      const alpha = Math.min(1, (u - place[0]) / 24, (place[1] - u) / 24, this.placeT / 0.3, (PLACE_SHOW - this.placeT) / 0.6);
       this.placeBand.setAlpha(alpha);
       this.placeName.setAlpha(alpha);
     }
