@@ -141,9 +141,9 @@ export const GROUNDS = [
   { id: 'kassoro', kind: 'runway', rect: [118, 3996, 16, 396] },
   { id: 'kuko_shiba', kind: 'park', rect: [134, 3996, 46, 396] },
   // Sasaguri: the wooded mountains, fields in the valley, Nanzo-in's terrace
-  { id: 'yama_w', kind: 'forest', rect: [0, 4640, 46, 560] },
-  { id: 'yama_e', kind: 'forest', rect: [128, 4560, 52, 640] },
-  { id: 'yama_n', kind: 'forest', rect: [46, 4880, 82, 320] },
+  { id: 'yama_w', kind: 'forest', rect: [0, 4640, 50, 560] },
+  { id: 'yama_e', kind: 'forest', rect: [126, 4560, 54, 640] },
+  { id: 'yama_n', kind: 'forest', rect: [50, 4860, 76, 340] },
   { id: 'tanbo_s1', kind: 'field', rect: [84, 4486, 92, 70] },
   { id: 'tanbo_s2', kind: 'field', rect: [0, 4486, 56, 120] },
   { id: 'nanzoin_keidai', kind: 'gravel', rect: [50, 4760, 76, 100] },
