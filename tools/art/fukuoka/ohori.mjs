@@ -16,6 +16,8 @@ import { freeMap } from './free.mjs';
 import { umeKit } from './ume.mjs';
 import { fukuokaParts } from './parts.mjs';
 import { makeParts, VERMILION } from '../kawaguchiko/parts.mjs';
+import { swan } from '../kawaguchiko/boats.mjs';
+import { makeUmi } from '../tokyo/umi.mjs';
 
 const [U0, U1] = [800, 2000];
 const OFFICE = [0xc8ccd0, 0xb8bcc4, 0xd8d4cc, 0xa8b0b8, 0xe0dcd4, 0x9aa4ae];
@@ -23,7 +25,8 @@ const road = (id) => ROADS.find((r) => r.id === id);
 
 export function ohori(ctx) {
   const { kit, plot, props, S, pave, W } = ctx;
-  const { house, building, mark, ground, rand, pick, P, R, FX, FY, queue, shadowBox, hi, lamp, person, crowd, E, ER, halo, car, trafficOn, tree, glint } = kit;
+  const { house, building, mark, ground, rand, pick, P, R, FX, FY, queue, shadowBox, hi, lamp, person, crowd, E, ER, halo, car, trafficOn, tree, glint, after } = kit;
+  const { wake } = makeUmi(ctx);
   const { roof, torii, toro } = makeParts(ctx);
   const ume = umeKit(kit, S);
   const { yatai, ishigaki, lampsAlong } = fukuokaParts(ctx);
@@ -31,16 +34,30 @@ export function ohori(ctx) {
   const pond = WATER.find((w) => w.id === 'ohori_ike');
   const islands = GROUNDS.filter((g) => /^shima_/.test(g.id));
   const onPond = (x, u) => inShape(pond, x, u) && !islands.some((g) => inShape(g, x, u));
+  const streaks = []; // (lights on the painted water: laid over it after the grade, below)
+  const streak = (x, u, len, c, a, dir = [0, 1]) => streaks.push([FX(x), FY(u), len, c, a, dir]);
 
   // ---- the pond: lamps round its path, their light broken into streaks on the water; trees outside the path
   const ring = road('ohori_ring').pts;
   lampsAlong(ring, 11, -2.6);
-  for (let k = 0; k < ring.length - 1; k += 1) {
-    const [x, u] = ring[k];
-    const [dx, du] = [80 - x, 1140 - u];
-    const d = Math.hypot(dx, du) || 1;
-    const [gx, gu] = [x + (dx / d) * 6, u + (du / d) * 6];
-    if (onPond(gx, gu)) glint(FX(gx), FY(gu), 6 + Math.floor(hashPx(k, 1, 2) * 6), 0xffe0a0, 0.5);
+  {
+    // each lamp's light on the water: a broken streak from the shore out towards the middle (as lampsAlong sets them)
+    const [pcx, pcu, prx, pru] = pond.ell;
+    let run = 0;
+    for (let k = 0; k + 1 < ring.length; k++) {
+      const [[ax, au], [bx, bu]] = [ring[k], ring[k + 1]];
+      const len = Math.hypot(bx - ax, bu - au) || 1;
+      for (; run < len; run += 11) {
+        const [x, u] = [ax + ((bx - ax) * run) / len, au + ((bu - au) * run) / len];
+        // the shore's normal there, pointing in (on the screen: fine px, u up)
+        const [nx, nu] = [-(x - pcx) / prx ** 2, -(u - pcu) / pru ** 2];
+        const nl = Math.hypot(nx, nu) || 1;
+        const t = Math.sqrt(1 / (((x - pcx) / prx) ** 2 + ((u - pcu) / pru) ** 2)) * 0.985;
+        const [sx, su] = [pcx + (x - pcx) * t, pcu + (u - pcu) * t];
+        streak(sx, su, 14 + Math.floor(hashPx(k, Math.floor(run), 2) * 14), 0xffd890, 0.6, [nx / nl, -nu / nl]);
+      }
+      run -= len;
+    }
   }
   for (let k = 0; k < ring.length - 1; k++) {
     const [x, u] = ring[k];
@@ -190,6 +207,126 @@ export function ohori(ctx) {
     }
   }
   for (const id of ['jo_michi', 'jo_kaidan', 'jo_mon']) lampsAlong(road(id).pts, 14, 2);
+
+  // ---- the pond's water itself (painted, and the moat's): laid over it after the night's grade, the wind's ripples
+  // catching the moon in little dashes, the trees of the shore and the islands dark in it close by, the vermilion
+  // bridge's arch red in it, the stone bridges grey, every lamp's light a broken streak on it
+  {
+    const L0 = FY(0) / S;
+    const [pcx, pcu, prx, pru] = pond.ell;
+    const isl = islands.map((g) => g.ell);
+    const [bx] = road('ohori_watari').pts[0];
+    after(({ d, FW: fw }) => {
+      const blend = (o, c, a) => {
+        d[o] = Math.round(d[o] * (1 - a) + ((c >> 16) & 255) * a);
+        d[o + 1] = Math.round(d[o + 1] * (1 - a) + ((c >> 8) & 255) * a);
+        d[o + 2] = Math.round(d[o + 2] * (1 - a) + (c & 255) * a);
+      };
+      for (let Y = FY(pcu + pru); Y <= FY(pcu - pru); Y++) {
+        const u = L0 - Y / S;
+        for (let X = FX(pcx - prx); X <= FX(pcx + prx); X++) {
+          const o = (Y * fw + X) * 4;
+          const x = X / S;
+          const qp = ((x - pcx) / prx) ** 2 + ((u - pcu) / pru) ** 2;
+          if (qp >= 0.985 || Math.abs(x - bx) < 1.7) continue; // (the shore's stones, the bridges)
+          let near = (1 - Math.sqrt(qp)) * prx; // (how far in from the shore)
+          for (const [cx, cu, rx, ru] of isl) near = Math.min(near, (Math.sqrt(((x - cx) / rx) ** 2 + ((u - cu) / ru) ** 2) - 1) * Math.min(rx, ru));
+          if (near < 0.6) continue; // (an island, its stones)
+          let c = -1;
+          let a = 0;
+          if (near < 5) {
+            // the trees dark in the water by the shore, broken by the ripples
+            c = 0x060a10;
+            a = 0.42 * (1 - near / 5) * (Y % 3 === 1 ? 0.6 : 1);
+          }
+          const dx = Math.abs(x - bx);
+          if (dx < 3.4 && dx > 1.6) {
+            const arch = u > 1166 && u < 1226;
+            if (arch && (Y + X) % 3) [c, a] = [0x8a2a1c, 0.38 * (1 - (dx - 1.6) / 1.8)];
+            else if (!arch && Y % 2) [c, a] = [0x5a5a58, 0.22 * (1 - (dx - 1.6) / 1.8)];
+          }
+          // the wind's ripples: short dashes, lit on top, dark below
+          const seg = Math.floor((X + Y * 5) / 6);
+          if (Y % 3 === 0 && hashPx(seg, Y, 1401) > 0.84) [c, a] = [hashPx(seg, Y, 1402) < 0.3 ? 0xc8b888 : 0x7890b4, Math.max(a, 0.4)];
+          else if (Y % 3 === 1 && hashPx(Math.floor((X + (Y - 1) * 5) / 6), Y - 1, 1401) > 0.84) [c, a] = [0x04080e, Math.max(a, 0.35)];
+          if (c >= 0) blend(o, c, a);
+        }
+      }
+      // the lamps' light on the water: broken streaks, wavering
+      for (const [X, Y, len, c, a, [ux, uy]] of streaks)
+        for (let j = 0; j < len; j++) {
+          if (j % 4 === 3) continue;
+          const w = Math.sin(j * 0.7 + X) * 0.8; // (wavering across its way)
+          const [x, y] = [Math.round(X + ux * j - uy * w), Math.round(Y + uy * j + ux * w)];
+          for (const q of [0, 1]) blend((Math.round(y + ux * q) * fw + Math.round(x - uy * q)) * 4, c, a * (1 - j / len) ** 1.4 * (q ? 0.5 : 1));
+        }
+    });
+    // the vermilion bridge's railings: posts with their bronze knobs (giboshi), the rails between, lit by its lamps
+    mark(bx, 1224, (X, Y) => {
+      const n = Math.round((FY(1168) - FY(1224)) / 1);
+      for (let j = 0; j <= n; j++) {
+        const post = j % 9 === 0;
+        for (const side of [-5, 5]) {
+          P(X + side, Y + j, post ? 0x5a1a10 : 0xd84a2a);
+          if (post) {
+            P(X + side + Math.sign(side), Y + j, 0x5a1a10);
+            P(X + side, Y + j - 1, 0xb89a50); // the knob, bronze
+          }
+        }
+      }
+    }, 1224);
+  }
+  // swan boats out on the pond from the boathouse, a few rowing boats; ducks in a line; their wakes on the water
+  {
+    const sw = [0xe86a8a, 0x6aa8e0, 0xf0c040].map((c) => kit.frame(25 / S, 12 / S, 1180, (put) => swan((a, b, col) => put(a, b, col), c)));
+    const duck = (male) => kit.frame(7 / S, 4 / S, 1180, (put) => {
+      for (let a = 0; a < 7; a++) for (let b = 0; b < 4; b++) if (((a - 3) / 3.5) ** 2 + ((b - 1.5) / 2) ** 2 <= 1) put(a, b, b === 0 || b === 3 ? 0x4a3a2a : 0x8a6a4a);
+      put(6, 1, male ? 0x2a6a3a : 0x6a5a40); // its head
+      put(6, 2, male ? 0x2a6a3a : 0x6a5a40);
+      put(5, 1, male ? 0xe8e8e0 : 0x6a5a40); // the white ring of the drake's neck
+      put(1, 1, 0x1a1a1a); // its tail
+    });
+    props.wander(56, 1150, 9, 105, [...sw, sw[0]], { n: 4, sp: 1.3, turn: 'rot', fps: 1, idle: 0.4 });
+    props.wander(104, 1130, 9, 105, [sw[1], sw[2]], { n: 2, sp: 1.2, turn: 'rot', fps: 1, idle: 0.5 });
+    props.path([[56, 1000], [64, 1060], [58, 1120], [52, 1060], [56, 1000]], [duck(true), duck(false), duck(true), duck(false)], { sp: 1.4, n: 4, gap: 3.2, mode: 'wrap', turn: 'rot', s0: 0.2, wake: { f: wake, every: 4, life: 1.4 } });
+    props.path([[104, 1290], [98, 1250], [106, 1210], [110, 1250], [104, 1290]], [duck(false), duck(true), duck(false)], { sp: 1.2, n: 3, gap: 3.2, mode: 'wrap', turn: 'rot', s0: 0.6, wake: { f: wake, every: 4, life: 1.4 } });
+  }
+  // the castle's moat: last summer's lotus, dead now, its stalks bent over the water and its seed heads; the walls lit
+  // from below for the plum evenings, their foot in shadow; the corner stones laid long and short
+  {
+    const [mx, mu, mw, mh] = WATER.find((w) => w.id === 'hori').rect;
+    ground(() => {
+      for (let k = 0; k < 260; k++) {
+        const x = mx + 0.4 + hashPx(k, 1, 1501) * (mw - 0.8);
+        const u = mu + 4 + hashPx(k, 2, 1501) * (mh - 8);
+        if (hashPx(Math.floor(u / 30), 3, 1501) < 0.3) continue; // (open water between the beds)
+        const [X, Y] = [FX(x), FY(u)];
+        const len = 3 + Math.floor(hashPx(k, 4, 1501) * 5);
+        const dir = hashPx(k, 5, 1501) < 0.5 ? -1 : 1;
+        for (let j = 0; j < len; j++) P(X + (j > len / 2 ? dir : 0), Y - j, j % 3 ? 0xa89060 : 0x7a6640);
+        if (hashPx(k, 6, 1501) < 0.35) {
+          R(X - 1 + (dir > 0 ? 1 : -1), Y - len - 1, 3, 2, 0x6a5430); // a seed head
+          P(X + (dir > 0 ? 1 : -1), Y - len - 1, 0x5a4a30);
+        } else if (hashPx(k, 7, 1501) < 0.3) for (let i = -2; i <= 2; i++) P(X + i, Y + 1, 0x4a4430); // a leaf gone brown, lying flat
+      }
+    });
+    for (let u = mu + 20; u < mu + mh; u += 28) streak(mx + mw / 2, u, 10, 0xffe8c0, 0.45);
+    // the light on the walls: along the moat's wall and the terraces'
+    for (let u = 940; u < 1416; u += 16) mark(133.5, u, (X, Y) => halo(X + 6, Y, 10, 18, 0xffe8c0, 0.18));
+    for (const [u, x0] of [[1040, 136], [1124, 140], [1248, 138], [1330, 136]])
+      for (let x = x0 + 4; x < 178; x += 12) mark(x, u - 4.5, (X, Y) => {
+        halo(X, Y - 4, 16, 10, 0xffe8c0, 0.2);
+        E(X, Y + 1, 0xfff0d0); // the uplight in the grass at its foot
+      });
+    ground(() => {
+      // the walls' foot in shadow, their corners of long and short stones
+      for (const [u, x0] of [[1040, 136], [1124, 140], [1248, 138], [1330, 136]]) {
+        const Y = FY(u - 4);
+        for (let X = FX(x0); X < FX(180); X++) for (let j = 1; j <= 3; j++) P(X, Y + j, shade(0x2a3424, 0.6 + j * 0.12));
+        for (let j = 0; j < 12; j++) for (let i = 0; i < (Math.floor(j / 3) % 2 ? 4 : 8); i++) P(FX(x0) + i, Y - 12 + j, j % 3 === 2 ? 0x4a463e : shade(0xb0aa9e, 1 - j / 30));
+      }
+    });
+  }
 
   // ---- Tenjin: the plots
   {

@@ -16,7 +16,7 @@ const ROOFS = [0x7c7e84, 0x8a8880, 0x70747c, 0x9a958a];
 
 export function momochi(ctx) {
   const { kit, plot, props, S, pave, W } = ctx;
-  const { house, building, mark, ground, rand, pick, P, R, FX, FY, queue, shadowBox, hi, lamp, person, crowd, E, ER, halo, car, trafficOn, tree } = kit;
+  const { house, building, mark, ground, rand, pick, P, R, FX, FY, queue, shadowBox, hi, lamp, person, crowd, E, ER, halo, car, trafficOn, tree, glint } = kit;
   const { boxFree, claim } = freeMap(U0, U1);
 
   // ---- the surf breaking along the beach: a white line of foam at the water's edge, a second further out, the wet
@@ -87,6 +87,32 @@ export function momochi(ctx) {
       E(X, Y, 0xfff0c8);
       halo(X, Y, 6, 6, 0xffe0a0, 0.28);
     });
+  }
+
+  // ---- on the beach and the bay at night: the tower's colours laid long on the water off the beach, the chapel's
+  // deck lamps on it; people strolling along the water's edge both ways, couples sitting on the sand
+  {
+    const tx = plot('fukuoka_tower').x + plot('fukuoka_tower').w / 2;
+    for (let i = -7; i <= 7; i++) {
+      const x = tx + i / S;
+      const c = [0x3a6aff, 0x7a5aff, 0xd86ad8][(i + 7) % 3];
+      glint(FX(x), FY(bayShore(x)) + 3 + (i & 1) * 2, 30 + Math.round((7 - Math.abs(i)) * 7 + hashPx(i, 1, 1206) * 14), c, 0.8);
+    }
+    const [mx, mu, mw] = ctx.ground('marizon').rect;
+    for (const x of [mx + 0.7, mx + mw - 1]) glint(FX(x), FY(mu) + 2, 18, 0xffe0a0, 0.6);
+    const walker = (c, k) => kit.frame(1, 1.67, 320, (put) => {
+      for (let j = 0; j < 5; j++) for (let i = 0; i < 3; i++) if (!(j === 0 && i !== 1) && !(j === 4 && i === (k & 1 ? 0 : 2))) put(i, j, j === 0 ? 0x2a2018 : j < 3 ? c : 0x2a2a30);
+    });
+    const coats = [0xe8e4dc, 0x3a4a6a, 0x8a6a4a, 0xc84a4a, 0x2a2a3a];
+    const edge = [];
+    for (let x = -4; x <= W + 4; x += 6) edge.push([x, bayShore(Math.max(0, Math.min(W, x))) + 6]);
+    props.path(edge, coats.map((c, k) => walker(c, k)), { sp: 1.5, n: 5, gap: 50, mode: 'wrap', turn: 'none', s0: 0.15 });
+    props.path([...edge].reverse().map(([x, u]) => [x, u + 4]), coats.slice(1).map((c, k) => walker(c, k + 1)), { sp: 1.2, n: 3, gap: 70, mode: 'wrap', turn: 'none', s0: 0.6 });
+    for (const x of [40, 92, 118, 160]) if (Math.abs(x - 65) > 6) {
+      const u = bayShore(x) + 12;
+      mark(x, u, (X, Y) => person(X, Y, 1206 + x));
+      mark(x + 1.2, u, (X, Y) => person(X, Y, 1207 + x));
+    }
   }
 
   // ---- the seaside park: palms in a row along the promenade, lamps, benches, people out in the evening

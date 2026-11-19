@@ -1,7 +1,9 @@
 // Fukuoka's own small things, drawn the same way wherever they stand (docs/plan-fukuoka.md):
-//   yatai(x, u, o)     - a food stall seen from above at night: its cart under a canopy, the noren hung round three
-//                        sides, a red paper lantern lit at the front, the counter with stools and people on them, the
-//                        steam off its pot; o: { kind (ramen, oden, yakitori, gyoza, tempura, mentaiko), noren, queue }
+//   yatai(x, u, o)     - a food stall seen from above at night: its cart on its wheels under a canopy, the clear
+//                        winter sheets let down at its sides, the noren along its front, two red paper lanterns lit,
+//                        its tin chimney, the counter with stools and people on them, the steam off its pot; beside
+//                        it crates of beer, its gas bottle, a menu board on a stand, spare stools stacked;
+//                        o: { kind (ramen, oden, yakitori, gyoza, tempura, mentaiko), noren, queue }
 //   ishigaki(x, u, w, h) - a castle's dry-stone wall face, its stones fitted in courses, lit from the upper left
 //   lampsAlong(pts, every, side) - street lamps along a line
 import { shade } from '../tokyo/kit.mjs';
@@ -27,6 +29,12 @@ export function fukuokaParts(ctx) {
           E(X + i, Y + j, shade(0x8a7c64, sag * (j < -3 ? 1.06 : 0.94))); // (lit from under: it glows faintly)
         }
       for (const i of [-11, 11]) for (let j = -9; j <= 3; j++) P(X + i, Y + j, 0x5a4a3a);
+      // the clear sheets let down its sides against the winter, the warm inside showing through, creased
+      for (const i of [-13, -12, 12, 13]) for (let j = -8; j <= 5; j++) E(X + i, Y + j, shade(0xd8c8a0, (j + i) % 3 ? 0.78 : 0.62));
+      // its wheels at the sides, its tin chimney with a cap
+      for (const i of [-12, 11]) R(X + i, Y - 1, 2, 3, 0x1a1a1e);
+      R(X - 7, Y - 12, 2, 4, 0x8a8c94);
+      R(X - 8, Y - 12, 4, 1, 0x5a5c64);
       // the noren round its front: strips of cloth with the slits between them
       for (let i = -11; i <= 11; i++) for (let j = 4; j <= 6; j++) E(X + i, Y + j, i % 4 === 0 ? shade(nc, 0.5) : shade(nc, j === 4 ? 1.05 : 0.9)); // (the light through the cloth)
       // the counter of bare wood, stools before it, bowls and a pot on it; steam coming off
@@ -35,10 +43,23 @@ export function fukuokaParts(ctx) {
       for (let i = -9; i <= 9; i += 4) R(X + i, Y + 10, 2, 2, 0x6a2a24);
       const ware = { ramen: 0xf0ece4, oden: 0xc8a050, yakitori: 0x8a4a2a, gyoza: 0xe8c890, tempura: 0xe8c060, mentaiko: 0xd84a4a }[kind] ?? 0xf0ece4;
       for (let i = -8; i <= 8; i += 5) P(X + i, Y + 7, ware);
-      // the red lantern at its corner, lit
-      ER(X + 10, Y + 3, 3, 4, 0xe03a2a);
-      E(X + 11, Y + 4, 0xffb070);
-      halo(X + 11, Y + 5, 9, 8, 0xff7040, 0.45);
+      // the red lanterns at its corners, lit, their black caps
+      for (const lx of [-12, 10]) {
+        ER(X + lx, Y + 3, 3, 4, 0xe03a2a);
+        E(X + lx + 1, Y + 4, 0xffb070);
+        P(X + lx + 1, Y + 2, 0x1a1a1e);
+        halo(X + lx + 1, Y + 5, 9, 8, 0xff7040, 0.4);
+      }
+      // beside it: beer crates stacked, the gas bottle, the menu board on its stand, spare stools
+      for (const [cx, cy, c] of [[15, -6, 0xe8b020], [15, -3, 0xc8302a], [18, -5, 0xe8b020]]) {
+        R(X + cx, Y + cy, 3, 3, c);
+        P(X + cx + 1, Y + cy + 1, shade(c, 0.5)); // its bottles' caps
+      }
+      ER(X - 16, Y - 4, 3, 3, 0x9a9ca4);
+      P(X - 15, Y - 5, 0xd8dce0);
+      R(X - 17, Y + 2, 3, 5, 0x3a2a1e);
+      for (let j = 0; j < 4; j++) E(X - 16, Y + 3 + j, j % 2 ? 0xf0e8d0 : 0xd8c8a0); // the menu: lines of chalk
+      for (let k = 0; k < 3; k++) R(X + 15, Y + 2 + k, 2, 1, k % 2 ? 0x6a2a24 : 0x8a3a2e);
       halo(X, Y + 9, 26, 14, 0xffc878, 0.42); // the light from under its canopy on the ground before it
       halo(X, Y - 3, 16, 10, 0xffd8a0, 0.2);
     }, () => shadowBox(X - 11, Y - 9, 23, 13, 3, 0.66));

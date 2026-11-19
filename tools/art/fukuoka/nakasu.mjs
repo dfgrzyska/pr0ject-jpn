@@ -25,9 +25,22 @@ export function nakasu(ctx) {
 
   // ---- the stalls on the bank of the Naka and the walk's lamps
   const kinds = ['ramen', 'oden', 'yakitori', 'tempura', 'gyoza', 'ramen', 'oden', 'ramen', 'mentaiko'];
-  for (let k = 1; k <= 9; k++) {
+  kinds.push('yakitori', 'oden', 'ramen');
+  for (let k = 1; k <= 12; k++) {
     const p = plot(`yatai_${k}`);
     yatai(p.x + p.w / 2, p.u + 4, { kind: kinds[k - 1], queue: k % 3 === 1 ? 4 : k % 3 === 2 ? 1 : 0, seed: 2200 + k });
+    // their light on the river: warm streaks off the bank by each
+    for (let i = 0; i < 4; i++) glint(FX(46.6 - (i % 2) * 1.4), FY(p.u + 6 - i * 2.4), 10 + i * 3, i % 2 ? 0xff8a50 : 0xffd090, 0.75);
+  }
+  {
+    // people strolling along the walk by the river, both ways, stopping at the stalls
+    const walker = (c, k) => kit.frame(1, 1.67, 2400, (put) => {
+      for (let j = 0; j < 5; j++) for (let i = 0; i < 3; i++) if (!(j === 0 && i !== 1) && !(j === 4 && i === (k & 1 ? 0 : 2))) put(i, j, j === 0 ? 0x2a2018 : j < 3 ? c : 0x2a2a30);
+    });
+    const coats = [0x8a6a4a, 0x2a2a3a, 0xc8b8a0, 0x6a2a2a, 0x3a4a6a, 0xe8e4dc];
+    const walk = road('nakasu_kawabata').pts.slice(1);
+    props.path(walk.map(([x, u]) => [x - 0.8, u]), coats.map((c, k) => walker(c, k)), { sp: 1.6, n: 9, gap: 90, mode: 'pp', hold: 3, turn: 'none', s0: 0.1 });
+    props.path([...walk].reverse().map(([x, u]) => [x + 0.8, u]), coats.slice(2).map((c, k) => walker(c, k + 1)), { sp: 1.3, n: 8, gap: 100, mode: 'pp', hold: 4, turn: 'none', s0: 0.55 });
   }
   lampsAlong(road('nakasu_kawabata').pts.slice(1), 16, -2.4);
   lampsAlong(road('nakasu_kawabata_e').pts, 18, 2);
