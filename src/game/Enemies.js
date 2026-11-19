@@ -1446,7 +1446,7 @@ export class Enemies {
       p.vy = 32;
       p.life = p.max = 0.3;
     }
-    if (e.fight > 34) {
+    if (e.fight > 39) {
       e.state = 'leave';
       return;
     }

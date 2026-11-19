@@ -158,3 +158,13 @@ Bot (`tools/preview/scratch/heavy-stats.mjs`, lot do końca walki z minibossem) 
 
 Bot celuje w środek minibossa i nie zna mechanik, poza tymi, których go nauczono (Yatai-obake, Funa-yurei, Nurikabe). Tam, gdzie mechanika jest (Kioto, Osaka, Beppu, Hiroszima, Tokio), liczby zawyżają ucieczki względem gracza, który ją rozumie. Pewne są te bez mechaniki: manta odlatuje w około 1 locie na 3, także na mocy 4.
 
+Wydłużone (2026-11-19): tanuki i raijū 34 → 45 s, manta 34 → 39 s (przy 45 s jej walka w 18 lotach na 40 wpadała na linę surume przy domu latarnika, 192 s). Ponowny pomiar z 45 s dla wszystkich trojga (po 40 lotów):
+
+| Miasto | Ucieczki przy 34 s | Ucieczki przy 45 s | HP przy ucieczce, 34 s | HP przy ucieczce, 45 s |
+|---|---|---|---|---|
+| Kioto (tanuki) | 13/40 | 17/38 | 28-49% | 4-38% |
+| Okinawa (manta) | 11/40 | 14/40 | 6-49% | 1-31% |
+| Kagoshima (raijū) | 8/39 | 5/40 | 17-39% | 8-24% |
+
+Bot nie zestrzeliwuje ich częściej, tylko odlatują z mniejszym zapasem: walki, które się przeciągają, przeciągają się dalej (w drugiej fazie bot zbija ok. 1-2% na sekundę). To więc nie brak czasu, tylko to, jak bot strzela w drugiej fazie; ile da graczowi 11 s więcej, pokaże dopiero przelot człowieka albo mądrzejszy bot.
+

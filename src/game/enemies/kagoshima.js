@@ -112,7 +112,7 @@ export const kagoshima = {
     }
     e.fight += dt;
     if (e.dash) return this.raijuDash(e, dt, b);
-    if (e.fight > 34) {
+    if (e.fight > 45) {
       e.state = 'leave';
       return;
     }

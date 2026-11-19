@@ -91,9 +91,10 @@ test('nothing new in the quiet before the manta nor before the shisa', () => {
   const boss = of('boss')[0];
   for (const w of [...of('chain'), ...of('cart'), ...of('split')]) {
     const stays = w.type === 'chain' ? 13 : w.type === 'cart' ? 10 : 0;
-    // (the manta does not hold the scroll: its fight runs on for up to about forty seconds; a coconut there only
-    // in place of a wave of popcorn)
-    assert.ok(w.t + stays <= heavy.t - 1 || w.t >= heavy.t + 40 || w.type === 'split', `${w.type} at ${w.t} s at the manta's fight`);
+    // (the manta does not hold the scroll: its fight runs on for up to about forty-five seconds, 39 s once it is in
+    // place, and the rope by the lighthouse keeper's house comes after it; a coconut there only in place of a wave of
+    // popcorn)
+    assert.ok(w.t + stays <= heavy.t - 1 || w.t >= heavy.t + 45 || w.type === 'split', `${w.type} at ${w.t} s at the manta's fight`);
     assert.ok(w.t < boss.t - 9, `${w.type} at ${w.t} s just before the shisa`);
   }
 });

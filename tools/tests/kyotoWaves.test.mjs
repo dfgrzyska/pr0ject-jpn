@@ -66,9 +66,9 @@ test('nothing new in the quiet before the tanuki nor before Kyubi', () => {
   const boss = of('boss')[0];
   for (const w of [...of('chain'), ...of('cart'), ...of('split')]) {
     const stays = w.type === 'chain' ? 13 : w.type === 'cart' ? 9 : 0;
-    // (the tanuki does not hold the scroll: its fight runs on for up to about forty seconds; a pair there only in
-    // place of a wave of popcorn)
-    assert.ok(w.t + stays <= heavy.t - 1 || w.t >= heavy.t + 40 || w.type === 'split', `${w.type} at ${w.t} s at the tanuki's fight`);
+    // (the tanuki does not hold the scroll: its fight runs on for up to about fifty seconds, 45 s once it is in
+    // place; a pair there only in place of a wave of popcorn)
+    assert.ok(w.t + stays <= heavy.t - 1 || w.t >= heavy.t + 52 || w.type === 'split', `${w.type} at ${w.t} s at the tanuki's fight`);
     assert.ok(w.t < boss.t - 9, `${w.type} at ${w.t} s just before Kyubi`);
   }
 });

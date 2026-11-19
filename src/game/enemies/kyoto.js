@@ -50,7 +50,7 @@ export const kyoto = {
       return;
     }
     e.fight += dt;
-    if (e.fight > 34) {
+    if (e.fight > 45) {
       this.dropDecoys(e);
       e.play('tanuki');
       e.state = 'leave';
