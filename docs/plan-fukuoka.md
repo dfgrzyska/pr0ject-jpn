@@ -1,0 +1,331 @@
+# Plan: etap 12, FUKUOKA
+
+Stan: **plan do akceptacji** (2026-11-19). Decyzje D1–D8 z sekcji 2 czekają na autora. Po akceptacji fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+
+## 1. W skrócie
+
+- Etap zwykłej długości, jak Onomichi: około 230 s, tło 8 kafli (7 168 px), przewijanie 30 px/s.
+- Trasa przez całą dobę, od nocy do zachodu słońca:
+  - zaczyna się nocą nad zatoką Hakata przy wieży Fukuoka;
+  - dalej nocą przez park Ōhori z ruinami zamku, Tenjin i Nakasu z jatai nad rzeką;
+  - o świcie Hakata (chram Kushida, Tōchō-ji, kanał w Sumiyoshi);
+  - rano dworzec i lotnisko z lądującymi samolotami;
+  - w południe Nanzō-in z leżącym Buddą w lesie;
+  - po południu Dazaifu w kwitnących śliwach;
+  - o zachodzie ruiny dawnego urzędu i wał obronny Mizuki, gdzie toczy się walka z bossem.
+- Pora roku: **przedwiośnie, przełom lutego i marca**, pełnia kwitnienia śliw w Dazaifu. Tego jeszcze nie było: sakury ma Kioto, lato Onomichi i Okinawa, jesień Hiroszima i Kawaguchiko, zimę Sapporo.
+- Jeden miniboss i jeden boss, każdy z trzema fazami:
+  - **Yatai-obake**: ożywiony wózek z jedzeniem z Nakasu, który nie chce zamknąć przed świtem;
+  - **Nurikabe**: niewidzialna ściana z podań prefektury Fukuoka, która wyrasta z wału Mizuki.
+- **Nowość tego etapu: przeciwnicy, których niszczenie cieszy** (sekcja 5). To odpowiedź na uwagę autora, że rozwalanie fal jest mało satysfakcjonujące:
+  - trzy nowe zachowania: łańcuch lampionów, który wybucha po kolei; mentaiko, które się dzieli; widmowy wóz, który rozpada się z każdym trafieniem;
+  - zmiany odczucia zniszczenia, jeśli autor zechce, dla całej gry (decyzja D7).
+- Poziom detalu jak w poprzednich miastach. Finał dostaje dodatki (śliwy, zachód nad wałem), ale nie kosztem nocnego miasta i Nanzō-in.
+
+## 2. Decyzje
+
+Do akceptacji autora. Przy każdej decyzji na pierwszym miejscu stoi rekomendacja.
+
+| # | Pytanie | Rekomendacja |
+|---|---|---|
+| D1 | Kierunek trasy | **Zatoka → miasto → Nanzō-in → Dazaifu.** Etap idzie od nocy do zachodu: neony i jatai wypadają nocą, kiedy naprawdę działają, a finał o zachodzie wśród śliw kończy się na lądzie. Dwa ostatnie miasta kończyły się nad wodą (jezioro z Fuji, nocna cieśnina). Odwrotny kierunek (Dazaifu rano → zatoka nocą) dałby trzeci finał z rzędu nocą nad wodą. |
+| D2 | Pora roku | **Przedwiośnie (śliwy).** Dazaifu ma około 6 000 drzew śliwy, a z nimi wiąże się legenda latającej śliwy (tobiume). Przy okazji: mgła o poranku, para z jatai w chłodną noc, rzepak nad rzekami. Lato z festiwalem Yamakasa powtarzałoby Onomichi; wóz festiwalowy i tak stoi przez cały rok w chramie Kushida, więc pokażemy go w tle. |
+| D3 | Miniboss | **Yatai-obake** (sekcja 6.1), wózek z jedzeniem, który ożył. Jatai to najbardziej „fukuokańska” rzecz w nocnym mieście. Arena: nabrzeże rzeki Naka w Nakasu. Alternatywa: **Ō-goma**, wielki bąk hakata-goma, który jeździ po linie i po ostrzu miecza jak w pokazach (wtedy bąki znikają z rzędu przeciwników). |
+| D4 | Boss | **Nurikabe** (sekcja 6.2). Podanie zapisane w powiecie Onga w prefekturze Fukuoka: niewidzialna ściana nocą zagradza drogę. Według podania nic nie da pchanie jej ani uderzanie w górę, a znika, gdy uderzy się kijem w jej dół. To jest mechanika walki. Wał Mizuki z 664 roku to prawdziwa ziemna ściana broniąca Dazaifu, więc boss wyrasta z niego. Alternatywa: **Oboro-guruma** (widmowy wóz z twarzą) jako boss, ale wtedy wóz nie może być średnim przeciwnikiem. |
+| D5 | Miejsce w podróży | **Dwunaste miasto**, w losowej kolejności z pozostałymi; Tokio dalej zawsze ostatnie. Licznik „DWANAŚCIE MIAST” (EN „TWELVE CITIES”), w menu w dwóch liniach. |
+| D6 | Nanzō-in | **Cichy przelot nad leżącym Buddą**: przez około 8 s nad posągiem nie ma fal ani pocisków, lecą tylko ptaki, a muzyka cichnie do dzwonu. To miejsce kultu, a cisza w środku etapu da też oddech przed Dazaifu. Alternatywa: zwykłe fale, z dala od posągu. |
+| D7 | Satysfakcja z niszczenia | **Wspólne zmiany dla całej gry plus nowe zachowania w Fukuoce** (sekcja 5.2): premia za całą falę, zamiana pocisków zestrzelonego strzelca w punkty, mocniejsze zniszczenie średnich przeciwników. Wspólne zmiany wychodzą poza samą Fukuokę, dlatego to osobna decyzja; bez nich Fukuoka dostaje tylko nowe zachowania. |
+| D8 | Kanał w Sumiyoshi (Canal City) | **Narysowany rozpoznawalnie, bez nazwy.** To kompleks handlowy z nazwą handlową, więc w pasku lokalizacji jest SUMIYOSHI (dzielnica), bez szyldów i logotypów. Tak samo kopuła stadionu w Momochi. |
+
+## 3. Zasady
+
+1. **Licencje.** Żadnych logotypów, nazw firm, sklepów, hoteli i domów towarowych.
+   - Celowo **nie ma** na trasie:
+     - projektu nurikabe z mangi i anime (szara płyta z małymi oczkami i krótkimi nóżkami): nasza ściana to warstwy ubitej ziemi wału Mizuki, z własną twarzą (sekcja 6.2);
+     - postaci z anime związanych z chramem Kamado (nie leży na trasie i nie robimy do nich nawiązań);
+     - maskotek drużyny baseballowej i nazwy stadionu;
+     - muzeum postaci z bajek w centrum handlowym nad rzeką;
+     - szyldów sieci z ramenem;
+     - opakowań pamiątek (maska niwaka z krakersów, pudełka mentaiko z markami).
+   - Pociągi (shinkansen, linie lokalne), samoloty, statki i autobusy są rysowane z kształtu, bez barw przewoźników i linii lotniczych.
+   - Wieża Fukuoka, kanał w Sumiyoshi i muzeum w Dazaifu to budowle rysowane z kształtu, bez napisów.
+   - Muzyka jest własna; ludowej pieśni Kuroda-bushi nie cytujemy.
+   - Nazwy w pasku lokalizacji są nazwami geograficznymi, bez makronów: MOMOCHI, OHORI, TENJIN, NAKASU, HAKATA, SUMIYOSHI, SASAGURI, NANZOIN, DAZAIFU, TOFURO, MIZUKI.
+2. **Wrażliwe miejsca.**
+   - Nanzō-in i Dazaifu Tenmangū to miejsca kultu. Nad posągiem Buddy nie ma walki (D6), a na terenie świątyń i chramów nie stawiamy wieżyczek, pułapek, wraków ani śladów wybuchów.
+   - Bóstwo Tenmangū (Sugawara no Michizane, czczony jako bóg nauki) nie pojawia się jako przeciwnik ani jako bóg piorunów.
+   - Wał Mizuki i kamienne mury nad zatoką pokazujemy jako zabytki, bez odniesień do wojen i najazdów.
+   - Nakasu to też dzielnica nocnej rozrywki: pokazujemy jatai, rzekę, neony bez napisów i teatr; żadnych lokali dla dorosłych.
+3. **Topologia.**
+   - Drogi, tory, mosty, ścieżki i nabrzeża muszą dokądś prowadzić i zgadzać się na łączeniach kafli.
+   - Pas startowy ma drogę kołowania do terminalu.
+   - Ścieżka pielgrzymów w Sasaguri łączy kapliczki.
+   - Most-bęben w Dazaifu łączy aleję z chramem przez staw.
+4. **Nic na ziemi się nie przesuwa względem mapy.**
+   - Ruszają się tylko rzeczy, które latają, pływają albo jadą po swoim torze: samoloty, statki, łodzie, pociągi, auta, wózki jatai ciągnięte przez auta, rowerzyści, ludzie na ścieżkach.
+   - Do tego animacje w miejscu: para z jatai, neony, fontanny w kanale, płatki śliw, mgła.
+   - Widmowy wóz (sekcja 5.2) to przeciwnik, który jedzie po drodze, jak pług w Sapporo.
+5. **Detal bez wypełniaczy.**
+   - Nocne miasto to nie same światła: każda przecznica ma swoje jatai, rowery, automaty, krzyżówki z pasami.
+   - Gaj śliw to nie powtarzalne korony: drzewa białe, różowe i czerwone, płaczące, stare z podpartymi konarami, ławki, ludzie z aparatami, maty na trawie.
+   - Las w Sasaguri ma ścieżki, kapliczki, kamienne posągi, wodospad i strumień.
+6. **Jedna faza to jeden zamknięty kawałek.** Faza kończy się zielonymi testami, wpisem w dzienniku (sekcja 9) i commitem.
+7. **Pliki nie nachodzą na siebie.**
+   - Tło w `tools/art/fukuoka/`, walki w `src/game/enemies/fukuoka-*.js`, nowe zachowania w `src/game/enemies/behaviours-*.js`.
+   - Wspólne pliki (`stage12.json`, `Enemies.js`, `gen-art.mjs`, `skins.js`, `Stage.js`, `Fx.js`, `Score.js`) zmienia się tylko w zakresie opisanym w fazie.
+8. **Teksty.** Każdy nowy napis ma wersję PL i EN, a nazwy mieszczą się w czcionce gry. Japońskie okrzyki i dźwięki na ekranie czyta się po polsku przed commitem i zmienia, jeśli brzmią jak przekleństwo.
+
+## 4. Trasa
+
+Współrzędna `u` jest liczona od dołu taśmy. Góra ekranu jest w `u = 420 + 30 × t`. Kolumna „Czas” jest przybliżona (bez postoju na minibossa). Dokładne granice odcinków ustali faza 1.
+
+Kierunek lotu obraca się z mapą, jak w Onomichi:
+- znad zatoki lecimy na południe przez miasto;
+- za dworcem taśma skręca na wschód, do gór Sasaguri;
+- za Nanzō-in skręca na południowy zachód, do Dazaifu i wału.
+
+Na taśmie to po prostu dalej w górę.
+
+| u | Czas | Odcinek | Pora | Co widać |
+|---|---|---|---|---|
+| 0–800 | 0–27 s | **MOMOCHI** | noc | Zatoka Hakata z kutrami wypływającymi na połów (światła); sztuczna plaża z promenadą i molem; wieża Fukuoka (trójkątna w przekroju, lustrzana, oświetlona); kopuła stadionu; resztki kamiennego muru wzdłuż dawnego brzegu w sosnowym lesie; nadmorska autostrada na filarach |
+| 800–1500 | 27–50 s | **OHORI** | noc | Staw Ōhori z trzema wyspami połączonymi mostami, latarnie wzdłuż ścieżki wokół wody, biegacze, czaple; ogród japoński; ruiny zamku Fukuoka: kamienne mury, wieżyczka tamon, brama, park Maizuru z gajem śliw (pierwsze śliwy etapu) |
+| 1500–2000 | 50–67 s | **TENJIN** | noc | Śródmieście: aleje z rzędami świateł, krzyżówki z pasami, budynek z ogrodem na tarasach schodzących do parku, autobusy, jatai na chodniku przy alei |
+| 2000–3000 | 67–100 s | **NAKASU** | noc | Wyspa między rzekami Naka i Hakata: rząd jatai na nabrzeżu z parą, czerwonymi lampionami i stołkami, neony bez napisów odbite w rzece, mosty, łodzie wycieczkowe, teatr z dachem w stylu dawnym, kryty pasaż; **arena minibossa** (u ≈ 2700, nabrzeże rzeki Naka) |
+| 3000–3800 | 100–127 s | **HAKATA**, **SUMIYOSHI** | świt | Chram Kushida z wozem festiwalowym (wysoka dekorowana konstrukcja z lalkami i własnymi scenami), Tōchō-ji z cynobrową pięciopiętrową pagodą, Shōfuku-ji (pierwsza świątynia zen w Japonii) z kamiennym mostkiem i sosnami, drewniane domy kupieckie; kanał z budynkami w łuku, kolorowymi tarasami i fontannami (sekcja D8); chram Sumiyoshi w lesie; jatai odciągane przez małe ciężarówki do domu (poranek) |
+| 3800–4400 | 127–147 s | **HAKATA-EKI**, **FUKUOKA-KUKO** | ranek | Dworzec z wiązką torów, shinkansen wjeżdżający na peron pod dachem, plac przed dworcem; lotnisko: pas startowy z oznaczeniami, drogi kołowania, terminal z rękawami, samoloty na stanowiskach, a nad miastem **samoloty schodzące do lądowania nisko nad dachami** (latają, cień na ziemi); rzeka Mikasa |
+| 4400–5200 | 147–173 s | **SASAGURI**, **NANZOIN** | południe | Góry w lesie cedrów i bambusów, poranna mgła w dolinach, tory linii lokalnej z pociągiem, wioski z polami ryżowymi po zimie, ścieżka 88 pielgrzymich kapliczek z czerwonymi czapkami posągów; Nanzō-in: **leżący Budda z brązu** (ponad 40 m długości) na boku na tarasie w lesie, sala główna, wodospad Fudō z posągami w skale, setki małych posągów; cichy przelot (D6) |
+| 5200–6500 | 173–217 s | **DAZAIFU** | popołudnie, złota godzina | Aleja do chramu ze sklepikami i paleniskami umegae-mochi, kolejki ludzi; brama torii z kamienia, staw Shinji-ike z trzema mostami (dwa łukowe jak bęben, jeden płaski), żółwie w stawie; chram Tenmangū (teren nietykalny, sekcja 3), **gaj śliw** białych, różowych i czerwonych, stara śliwa tobiume przy sali; uczta poetycka nad krętym strumieniem (dworzanie w strojach Heian, czarki z sake płynące strumieniem, jak co roku w marcu); Muzeum Narodowe Kiusiu (falisty dach ze szkła na wzgórzu, ruchome schody w tunelu do chramu); Kōmyōzen-ji (suchy ogród z kamieni i mchu); Kanzeon-ji z dzwonnicą |
+| 6500–7168 | 217–239 s | **TOFURO**, **MIZUKI** | zachód słońca | Ruiny dawnego urzędu Dazaifu: kamienie fundamentów w trawie na równym polu, kamienne słupy z napisami, ludzie na kocach; za nimi **wał Mizuki**: długi ziemny nasyp przez dolinę, porośnięty trawą i drzewami, z fosą po stronie zatoki i drewnianą rurą odpływu; góra Ōno z ruinami zamku na grzbiecie. **Arena bossa** (pole ruin pod wałem, nic wysokiego) |
+
+### 4.1 Dazaifu w śliwach: najważniejszy element etapu
+
+Finał etapu to Dazaifu: śliwy, aleja, staw z mostami i zachód nad wałem. Lista jest wymaganiem dla fazy 8, a nie propozycją.
+
+**Jak z góry widać gaj śliw**
+- Korony śliw są rzadsze niż sakury: widać ciemne, kręte, często podparte drewnianymi kulami konary, a kwiaty siedzą na gałązkach kropkami. Trzy barwy (biała, różowa, głęboko czerwona) w kępach, a nie na zmianę. Pod koronami płatki na mchu i żwirze.
+- Śliwy płaczące z gałęziami do ziemi, stare drzewa z tabliczkami odmian, ogrodzenia z bambusa wokół najstarszych.
+- Ludzie: z aparatami pod drzewami, na matach, w kolejkach przy sklepikach z umegae-mochi; uczniowie z tabliczkami ema przed egzaminami (chram boga nauki).
+- Światło popołudnia z zachodu: długie cienie na wschód, a w złotej godzinie ciepłe smugi na płatkach.
+
+**Kontrola jakości**
+- Najpierw jedno zbliżenie 1:1 (staw z mostami, aleja i gaj śliw) do akceptacji autora. Dopiero potem reszta odcinka.
+
+### Jak czas ma się do trasy
+
+- Miniboss ma pole `"hold": true` (jak w Onomichi): przewijanie i zegar stoją, dopóki żyje, więc arena zostaje na nabrzeżu. Wypada wcześniej niż w innych miastach (około 90 s zamiast 110–135 s), bo jatai działają tylko nocą. Po nim walka przechodzi w świt.
+- Pora dnia: harmonogram `dark` w `stage12.json` spada od nocy (0,85) do świtu, zero przez dzień i rośnie lekko o zachodzie. Nocne światła przez `kit.E`, `kit.halo` i `kit.night(u)`, jak w Tokio i Onomichi; tabela `TOD` od nocy przez świt do zachodu.
+- Przewijanie kończy się na końcu taśmy. Boss wchodzi, gdy taśma stoi, i walczy nad polem ruin; słońce zachodzi w trakcie walki (faza 3 bossa jest już po zmroku).
+
+## 5. Przeciwnicy
+
+### 5.1 Skąd mało satysfakcji dziś (pomiar)
+
+Bot przeleciał przez Onomichi, Kawaguchiko i Kioto (`tools/preview/scratch/kill_stats.mjs`, moc 4, bez nieśmiertelności) i policzył każdego małego przeciwnika: czy zginął, czy uciekł, i ile żył od wejścia na ekran.
+
+| Typ | Ilu na etap (Onomichi) | Ile żyje (moc 4) | Ile żyje (moc 1) |
+|---|---|---|---|
+| popcorn | ~200 (63%) | 1,4 s | 2,1 s |
+| diver | ~60 | 1,4 s | 1,9 s |
+| shooter | ~30 | 2,2 s | 2,9 s |
+| turret | ~18 | 3,7 s | 4,1 s |
+| carrier | 6 | 2,0 s | 3,4 s |
+
+Wnioski:
+- **Dwie trzecie przeciwników to popcorn, który ginie, zanim cokolwiek zrobi.** Strzelec zdąży oddać jedną serię z trzech. Tak samo w Kawaguchiko i Kioto.
+- **Zniszczenie nic nie mówi.** Poza stadem w niektórych miastach nie ma premii ani liczb, nie ma różnicy między falą zestrzeloną całą a połową, a pociski zestrzelonego strzelca lecą dalej, jakby nic się nie stało.
+- **Brak przeciwników średnich**: między popcornem (5 HP) a minibossem (960 HP) jest tylko wieżyczka (38 HP), więc nic nie stawia oporu, który czuć.
+
+### 5.2 Co robimy
+
+**Wspólne zmiany dla całej gry** (jeśli D7, faza 2; liczby do strojenia botem):
+- **Premia za całą falę**: każda fala zestrzelona do ostatniego przeciwnika daje punkty i krótki dźwięk. Uogólnia dzisiejszą premię za stado. Kolejne pełne fale podnoszą premię i ton dźwięku („SERIA ×3”); seria pęka, gdy coś ucieknie.
+- **Pociski w punkty**: gdy ginie strzelec, wieżyczka albo średni przeciwnik, jego pociski w locie zamieniają się w małe złote punkty, które lecą do statku. To nagradza zabicie strzelca szybko i widać, co zrobiło trafienie.
+- **Mocniejsze zniszczenie średnich**: przy zniszczeniu wieżyczki i średniego przeciwnika pauza na 2–3 klatki, pierścień fali uderzeniowej, drgnięcie ekranu o 1 px i liczba punktów nad wrakiem. Popcorn bez zmian, żeby nie zaśmiecać ekranu.
+- **Miara**: bot z sekcji 5.1 zostaje narzędziem (`tools/preview/kill-stats.mjs`). Dla każdego etapu wypisuje udział popcornu, czasy życia i odsetek fal zestrzelonych w całości.
+
+**Trzy nowe zachowania** (faza 10; używa ich Fukuoka, a później mogą je dostać inne miasta):
+
+| Zachowanie | Skórka w Fukuoce | Jak działa | Czemu cieszy |
+|---|---|---|---|
+| **łańcuch** | **sznury czerwonych lampionów** nad ulicami Nakasu i Hakaty, nad rzeką i nad aleją w Dazaifu | Sznur 5–9 lampionów rozpiętych między słupami, na ziemi (jedzie z mapą). Część lampionów ma oczy i strzela pojedynczo. Trafiony lampion zapala się, a ogień biegnie po sznurze i odpala sąsiadów po kolei, z rosnącymi punktami i tonem. Dwa sznury przecinające się przenoszą ogień na siebie. | Jeden strzał, a reakcja idzie sama |
+| **rozpad** | **mentaiko**: para woreczków ikry mintaja, przysmak Hakaty | Para (hara) spada wolno i strzela kroplami; po trafieniu dzieli się na dwa pojedyncze woreczki, które rozlatują się na boki i nurkują; zestrzelony woreczek pęka w obłok ikry, która opada jako punkty do zebrania. | Z jednego celu robią się trzy, każdy coraz szybszy |
+| **średni** | **Oboro-guruma**: widmowy wóz z czasów Heian z wielką twarzą w zasłonie (z podań; bez wołu) | Jedzie po drogach jak pług w Sapporo, ma około 150 HP i strzela wachlarzami szprych. Rozpada się na oczach w trzech stopniach: zrywa się zasłona, odpada koło i wóz kuleje, płonie dach. Ginie z wielkim wybuchem; zostawia wzmocnienie i wrak na drodze. | Opór, który czuć, i widać, jak się sypie |
+
+**Skórki pięciu istniejących typów, pułapka i zasadzka**. Wszystko ma wyglądać na przeciwnika (oczy, ostre kolory zapowiedzi), żeby nikt nie wziął tego za znajdźkę. Klatki: lot (3–4), trafienie, zniszczenie własnym efektem.
+
+| Typ | Skórka | Uwagi |
+|---|---|---|
+| popcorn | **tobiume**, latające kwiaty śliwy (z legendy o śliwie, która przyleciała za swoim panem do Dazaifu) | stada białych i czerwonych kwiatów wirujących w locie; premia za stado; zestrzelone sypią płatkami |
+| diver | **hakata-goma**, bąk rzucony sznurkiem | celuje (sznurek się napina), potem pędzi w statek wirując; trafiony koziołkuje i odbija się od krawędzi ekranu, zanim pęknie |
+| shooter | **fugu**, rozdymka z targu rybnego | wisi w powietrzu, nadyma się (zapowiedź) i wypuszcza pierścień kolców; trafiony sflacza z sykiem i odlatuje jak balon |
+| turret | **łucznik hakata-ningyō**, gliniana lalka z łukiem na postumencie | stoi na dachach, w ogrodach i przed sklepami; napina łuk w stronę statku (16 kierunków) i strzela wachlarzem strzał; wrak: rozbita glina i postument |
+| carrier | **uso**, drewniany gil-talizman z Dazaifu | w trzech kolorach wzmocnień; trafiony obraca się i „zamienia” na wzmocnienie (obrzęd usokae: zamiana pecha na szczęście) |
+| pułapka | **shichirin**, gliniany grill na węgiel | przy jatai, sklepikach i paleniskach umegae-mochi; wypuszcza pierścienie iskier i dymu |
+| zasadzka | **suppon**, żółw miękkoskorupy | w stawach i fosach (Ōhori, fosa zamku, Shinji-ike, rzeki); wynurza się i kłapie |
+
+### 5.3 Skład fal
+
+- Popcorn najwyżej **40%** przeciwników etapu (dziś 63%). Zamiast niego łańcuchy (8–10 na etap), mentaiko (15–20) i więcej strzelców.
+- Oboro-guruma pięć–sześć razy na etap, na drogach w Hakacie, przy lotnisku, w Sasaguri i w Dazaifu. Nigdy dwa naraz i nigdy w ciszy przed walkami.
+- Fale układane w figury, które da się zestrzelić w całości (premia z D7), a nie pojedyncze rozsypane cele.
+- Miara po fazie 11: średni czas życia przeciwników innych niż popcorn co najmniej 3 s; strzelec oddaje średnio co najmniej dwie serie; trafienia bota w widełkach Onomichi i Kawaguchiko.
+
+## 6. Walki
+
+Kolory zapowiedzi jak w `docs/boss-encounters.md`: czerwony to nadchodzący atak, złoty to obiekt mechaniki, miętowy to odsłonięty słaby punkt. Jedna mechanika na fazę.
+
+### 6.1 Miniboss: YATAI-OBAKE, „JATAI, KTÓRE NIE CHCE ZAMKNĄĆ” (Nakasu, noc)
+
+Własny projekt: drewniany wózek-bar z płóciennym dachem, a na nim twarz:
+- zasłony noren to grzywka i powieki;
+- dwa czerwone lampiony to oczy;
+- lada to usta, a stołki to zęby;
+- z kominka idzie para, wielki garnek z bulionem kipi na boku, a wózek toczy się na kołach.
+
+Jatai działają w nocy i o świcie są odciągane do domu. Ten nie chce zamknąć. Arena: nabrzeże rzeki Naka, neony na wodzie.
+
+| Faza | Co robi | Jak go trafić |
+|---|---|---|
+| 1. Ramen | Chochlą wyrzuca makaron: długie faliste łańcuchy pocisków; miski lecą jak bumerangi i wracają. | Woła „KAEDAMA!” (dokładka makaronu) i podrzuca złotą kulę makaronu. Zestrzelona wpada mu do garnka, bulion chlusta i wózek jest ogłuszony (miętowy) |
+| 2. Gyoza | Na nabrzeżu rozgrzewa płyty do pierożków (czerwone strefy skwierczą), pierożki lecą łukiem i lądują jako strefy. | Złoty zawór butli z gazem: zestrzelony bucha płomieniem i wózek obraca się tyłem (miętowy) |
+| 3. Shime (zamykanie) | Świta. Wózek ucieka po nabrzeżu i mostach po zapowiedzianych liniach, ciągnąc za sobą stołki, które rozsypują się w pociski. | Po każdej ucieczce staje zdyszany, a noren się podnosi (miętowy) |
+
+Im mniej ma życia, tym szybciej działa. Animacje: kołysanie na kołach, para, mruganie lampionami, chochla, rzut misek, płyta i pierożki, obrót, bieg z kołami w pyle, zdyszanie. Koniec: robi się jasno, a mała ciężarówka podjeżdża i odciąga zaspany wózek. Noren opada z napisem „ZAMKNIĘTE”, a para jeszcze leci z garnka.
+
+### 6.2 Boss: NURIKABE, „ŚCIANA, KTÓRA ZAGRADZA DROGĘ” (ruiny pod wałem Mizuki, zachód)
+
+Własny projekt (zasada 1 w sekcji 3), czyli nie płyta z mangi:
+- odcinek wału Mizuki: warstwy ubitej ziemi w paskach różnych odcieni, kamienna podstawa, trawa i młode śliwy na grzbiecie;
+- drewniana rura odpływu to usta, a dwoje glinianych oczu otwiera się między warstwami;
+- ściana ciągnie się przez całą szerokość ekranu;
+- z góry widać jej grzbiet i przednią ścianę z cieniem.
+
+Według podania nocą zagradza drogę: pchanie i uderzanie w górę nic nie daje, a znika, gdy uderzy się w jej dół.
+
+| Faza | Co robi | Mechanika |
+|---|---|---|
+| 1. Ściana (100–66%) | Stoi w poprzek między statkiem a dalszą częścią pola i zatrzymuje strzały gracza. Podskakuje do przodu w stronę statku (czerwony pas na ziemi), przy lądowaniu sypie rzędy grud ziemi. Z ust tryska strumień wody. | Strzały w grzbiet i ścianę odbijają się iskrą („DON!”). Gdy się unosi do skoku, widać kamienną podstawę: **dół świeci na miętowo** |
+| 2. Zaułek (66–33%) | Rozpada się na trzy–cztery odcinki ściany, które ustawiają się w korytarz wokół statku i przesuwają, zawężając go. Odcinki zatrzymują strzały; z ust w szparach lecą strumienie wody. | Na każdym odcinku złoty kamień węgielny. Zestrzelony kamień rozsypuje odcinek w grudy i na chwilę odsłania twarz głównej ściany (miętowa) |
+| 3. Noc (33–0%) | Słońce zachodzi i ściana robi się **niewidzialna**, jak w podaniu. Widać tylko cień, oczy błyskające co chwilę i płatki śliw, które osiadają na jej grzbiecie i zdradzają jej kształt. Sunie za statkiem i zatrzymuje strzały. | Płatki pokazują, gdzie jest. Przy każdym podskoku dół świeci na miętowo |
+
+Animacje: oddech (warstwy ziemi lekko się przesuwają), mruganie, otwieranie ust, unoszenie i lądowanie z kurzem, rozpad na odcinki i składanie się z powrotem, kruszenie, płatki na grzbiecie, zanikanie o zmroku. Koniec: ściana wzdycha, osuwa się z powrotem w wał i zarasta trawą; na grzbiecie zakwita młoda śliwa, a nad polem ruin pokazują się pierwsze gwiazdy.
+
+## 7. Poza grafiką i walkami
+
+- **Muzyka** (`src/audio/score12.js`), wszystkie piosenki etapu na jednym ciągu i tempie, jak w Onomichi:
+  - nocne miasto: shamisen na ciepłym basie, z nutą miejskiego jazzu na neonach Nakasu;
+  - świt: koto i flet;
+  - Sasaguri: cisza z dzwonem świątynnym;
+  - Dazaifu: dworska muzyka w duchu gagaku (organki shō, obój hichiriki, flet ryūteki), bo Dazaifu było dworem na krańcu cesarstwa.
+  - Motyw minibossa: zadziorny, z kołatkami i „pieśnią” sprzedawcy.
+  - Temat bossa: ciężkie taiko i niskie dęte, cichnie w fazie 3 (niewidzialna ściana); po walce spokojny wieczór.
+- **Dźwięki**: zapalanie lampionu i pękanie łańcucha (rosnący ton), pękanie ikry, wirowanie bąka, sflaczenie rozdymki, skrzypienie wozu i odpadające koło, „KAEDAMA!”, skwierczenie płyty, „DON!” ściany, osuwanie się ziemi, dzwon świątynny.
+- **Odkrycia** (`src/data/discoveries.js`):
+  - dwa dania: **umegae-mochi** (pieczone ciastko ryżowe z pastą fasolową i odciśniętym kwiatem śliwy) nad aleją w Dazaifu i **hitokuchi gyoza** (małe pierożki z Hakaty na jeden kęs) nad jatai w Nakasu. Ramen z Hakaty odpada, bo ramen jest już w Sapporo i w Onomichi;
+  - wpisy za walki: Yatai-obake i Nurikabe.
+- **Pieczątka** (`tools/art/stamps.mjs`): gałązka śliwy nad mostem-bębnem w Dazaifu, z wieżą Fukuoka w tle. Pieczęć **福岡**, własny kolor tuszu. Punkt na mapie Japonii na północy Kiusiu; etykieta z dala od Nagasaki, Beppu i Hiroszimy.
+- **Kupony**: miniboss i boss, razem 2.
+- **Pogoda**: bez opadów. Płatki śliw jako bliska warstwa nad Dazaifu (wariant płatków sakury), mgła w dolinach Sasaguri.
+- **Gachapon**: karta-pocztówka z Fukuoki i kolory miasta.
+
+## 8. Fazy pracy
+
+Każda faza ma zakres, pliki, które wolno ruszać, i warunek ukończenia. „Wymaga” mówi, co musi być odhaczone wcześniej.
+
+### Faza 0: dwunaste miasto i szkielet etapu
+Wymaga: decyzje D1–D8. Pliki: `src/data/stage12.json`, `src/data/stages.js`, `src/game/JourneyMenu.js`, `src/i18n.js`, `src/game/skins.js`, `tools/gen-art.mjs`, `tools/art/fukuoka/index.mjs`.
+- [ ] `stage12.json` z flagą `"wip": true` (`?stage=12` i menu bossów), fale zastępcze, miniboss i boss z innego miasta na zastępstwo; miniboss około 90 s z `"hold"`, boss w 220 s
+- [ ] Makieta tła 8 kafli: zatoka, miasto, rzeki, dworzec i lotnisko, góry Sasaguri, Dazaifu, wał; obie areny; licznik „DWANAŚCIE” (EN „TWELVE”)
+- [ ] `npm test` i `npx vite build` przechodzą
+
+### Faza 1: szkielet trasy
+Wymaga: faza 0. Pliki: `tools/art/fukuoka/route.mjs`, `mid.mjs`, `overview.mjs`, `src/data/landmarks.js`, `tools/tests/fukuokaRoute.test.mjs`.
+- [ ] Morze, rzeki Naka, Hakata i Mikasa, stawy (Ōhori, Shinji-ike), fosa; drogi, autostrada na filarach, tory (shinkansen i linie lokalne), pas startowy z drogami kołowania, mosty, ścieżki pielgrzymów i ścieżka do Nanzō-in, aleja w Dazaifu, wał Mizuki
+- [ ] Grunty i działki z opisami, obie areny, pora dnia od nocy do zachodu, nazwy miejsc; test topologii `fukuokaRoute`; arkusz podglądu
+
+### Faza 2: odczucie zniszczenia (jeśli D7)
+Wymaga: faza 0. Pliki: `src/game/Enemies.js` (tylko `destroy` i zliczanie fal), `src/game/Fx.js`, `src/game/Score.js`, `src/game/Bullets.js`, `tools/preview/kill-stats.mjs`, testy.
+- [ ] Premia za całą falę i seria fal; pociski zestrzelonego strzelca, wieżyczki i średniego w punkty; pauza, pierścień i drgnięcie przy średnich
+- [ ] Bot `kill-stats` przed i po na trzech miastach: trafienia i czas walk bez zmian poza widełkami, wydajność bez spadku; wpis w dzienniku z liczbami
+
+### Faza 3: nocne miasto (u 0–2000)
+Wymaga: faza 1. Pliki: `tools/art/fukuoka/momochi.mjs`, `ohori.mjs`.
+- [ ] Momochi, Ōhori z ruinami zamku, Tenjin
+- [ ] Animacje: kutry, auta, autobusy, biegacze, neony i okna, światła wieży
+
+### Faza 4: Nakasu i Hakata (u 2000–3800)
+Wymaga: faza 1. Pliki: `tools/art/fukuoka/nakasu.mjs`, `hakata.mjs`.
+- [ ] Jatai z parą i lampionami, neony w rzece, mosty, teatr, pasaż; Kushida z wozem festiwalowym, Tōchō-ji, Shōfuku-ji, domy kupieckie, kanał z fontannami, Sumiyoshi; arena minibossa bez znacznika
+- [ ] Animacje: łodzie, para, neony, fontanny; o świcie ciężarówki odciągające jatai po drogach
+
+### Faza 5: dworzec, lotnisko i Sasaguri (u 3800–5200)
+Wymaga: faza 1. Pliki: `tools/art/fukuoka/kuko.mjs`, `sasaguri.mjs`.
+- [ ] Dworzec z torami, lotnisko z pasem i terminalem; Sasaguri: las, wioski, ścieżka 88 kapliczek, Nanzō-in z leżącym Buddą, wodospad i posągi
+- [ ] Animacje: shinkansen, pociągi, samoloty schodzące do lądowania z cieniem na ziemi, mgła, strumień
+
+### Faza 6: zbliżenie Dazaifu do akceptacji
+Wymaga: faza 1. Plik: `tools/art/fukuoka/dazaifu.mjs`.
+- [ ] Zbliżenie 1:1 (staw z mostami, aleja, gaj śliw) według sekcji 4.1, wysłane autorowi
+- [ ] Akceptacja autora
+
+### Faza 7: Dazaifu i Mizuki (u 5200–7168)
+Wymaga: faza 6. Pliki: `tools/art/fukuoka/dazaifu.mjs`, `mizuki.mjs`.
+- [ ] Cały odcinek: aleja, chram (bez walki), gaj śliw, uczta nad strumieniem, muzeum, Kōmyōzen-ji, Kanzeon-ji, ruiny urzędu, wał Mizuki z fosą, góra Ōno; arena bossa bez znacznika
+- [ ] Animacje: ludzie na alei, płatki, czarki na strumieniu, zachód słońca w `TOD`
+
+### Faza 8: warstwy daleka i bliska
+Wymaga: faza 1. Pliki: `tools/art/fukuoka/far.mjs`, `src/game/Parallax.js` (tylko jeśli trzeba).
+- [ ] Nocna zatoka i rzeki z odbiciami świateł, woda w dzień barwiona porą dnia (`farTint` jak w Onomichi)
+- [ ] Bliska warstwa: płatki śliw nad Dazaifu, mgła nad Sasaguri; przejścia pory dnia sprawdzone zrzutami
+
+### Faza 9: grafika przeciwników, pułapki i zasadzki
+Wymaga: faza 0. Pliki: `tools/art/fukuoka/enemies.mjs`, `tools/art/traps.mjs`, `tools/art/ambush.mjs`, `src/game/skins.js`.
+- [ ] Pięć skórek z sekcji 5.2 w 540 px (prefiks `f_`), pułapka i zasadzka; testy przechodzą
+
+### Faza 10: nowe zachowania
+Wymaga: fazy 2 (jeśli D7) i 9. Pliki: `src/game/enemies/behaviours-chain.js`, `behaviours-split.js`, `behaviours-cart.js`, `tools/art/fukuoka/newfoes.mjs`, `src/game/Enemies.js` (tylko spawn i przekazanie aktualizacji).
+- [ ] Łańcuch lampionów (zapłon biegnący po sznurze, przenoszenie na drugi sznur), mentaiko (para → dwa woreczki → ikra jako punkty), oboro-guruma (trzy stopnie rozpadu, wrak, wzmocnienie)
+- [ ] Testy każdego zachowania (łańcuch odpala wszystkich sąsiadów po kolei, rozpad daje dwa i potem nic, wóz jedzie po drodze i nigdy po działkach); zrzuty w grze
+
+### Faza 11: fale
+Wymaga: fazy 1, 9 i 10. Plik: `src/data/stage12.json`.
+- [ ] Fale według sekcji 5.3; łańcuchy, wieżyczki i pułapki tylko na lądzie, z dala od miejsc kultu; zasadzki w wodzie stawów i fos; cisza nad Nanzō-in (D6); bot `kill-stats` spełnia miary z sekcji 5.3
+
+### Faza 12: Yatai-obake
+Wymaga: faza 0. Pliki: `src/game/enemies/fukuoka-yatai.js`, `tools/art/fukuoka/yatai.mjs`.
+- [ ] Grafika, trzy fazy, wejście z kartą, koniec z ciężarówką; test `fukuokaYatai`; czas walki botem w widełkach innych minibossów
+
+### Faza 13: Nurikabe, grafika
+Wymaga: faza 7. Plik: `tools/art/fukuoka/nurikabe.mjs`.
+- [ ] Projekt w trzech postaciach (ściana, zaułek, noc z płatkami) na tle pola ruin, wysłany autorowi
+- [ ] Akceptacja autora
+- [ ] Części w atlasie miasta, podgląd składa ścianę z części tak jak gra
+
+### Faza 14: Nurikabe, walka
+Wymaga: faza 13. Plik: `src/game/enemies/fukuoka-nurikabe.js`.
+- [ ] Faza 1 ściana · [ ] Faza 2 zaułek · [ ] Faza 3 noc
+- [ ] Ściana zatrzymuje strzały gracza (z iskrą), ale nie zatrzymuje statku; wejście z kartą, zakończenie; wpis w `docs/boss-encounters.md`; test `fukuokaNurikabe`
+
+### Faza 15: muzyka i dźwięk
+Wymaga: faza 0. Plik: `src/audio/score12.js`, `src/audio/Sfx.js`.
+- [ ] Piosenki i dźwięki z sekcji 7; test, że wszystkie piosenki się parsują i grają
+
+### Faza 16: wpięcie w grę
+Wymaga: fazy 11–14.
+- [ ] Odkrycia, pieczątka i pieczęć 福岡, pocztówka i barwy w gachaponie, parada w zakończeniu, etykieta na mapie
+- [ ] Zdjęcie flagi `wip`, testy z dwunastoma miastami, test walk bossów w przeglądarce z Nurikabe
+
+### Faza 17: balans i szlif
+Wymaga: wszystko powyżej.
+- [ ] Bot przechodzi etap na obu poziomach trudności; trafienia i czasy walk w widełkach innych miast; miary z sekcji 5.3
+- [ ] Przegląd równego detalu i wydajności (spowolniony procesor)
+- [ ] Przejście testowe przez człowieka i poprawki po nim
+
+## 9. Dziennik przekazań
+
+Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co uważać.
+
+| Data | Kto | Faza | Zrobione | Zostało / uwagi |
+|---|---|---|---|---|
+| 2026-11-19 | Claude | plan | Plan etapu: trasa od nocnej zatoki przez Nakasu, Hakatę, lotnisko i Nanzō-in do Dazaifu w śliwach i wału Mizuki o zachodzie; Yatai-obake i Nurikabe; pomiar botem, czemu niszczenie fal nie cieszy (sekcja 5.1), trzy nowe zachowania i wspólne zmiany odczucia zniszczenia. | Czeka na akceptację decyzji D1–D8. |
