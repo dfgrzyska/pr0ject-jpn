@@ -159,6 +159,71 @@ export class Sfx {
     this.blip('sawtooth', 160, 70, 0.18, 0.08, t, this.s.filter('lowpass', 900));
   }
 
+  // ---- Fukuoka (src/game/enemies/fukuoka*.js, skins.js)
+  /** A Hakata top let go off its cord: a whirr rising as it spins up, a buzz of its iron rim. */
+  spin() {
+    if (!this.ready('spin', 0.25)) return;
+    const t = this.now();
+    const s = this.s;
+    const o = s.osc('sawtooth', 70, t, t + 0.5);
+    o.frequency.exponentialRampToValueAtTime(190, t + 0.45);
+    const am = s.osc('sine', 38, t, t + 0.5);
+    const depth = s.gain(0.5);
+    const g = s.gain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.07, t + 0.06);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.48);
+    am.connect(depth).connect(g.gain);
+    o.connect(s.filter('bandpass', 900, 1.4)).connect(g).connect(this.out);
+  }
+
+  /** A puffer puffing its shots out: the rush of air as it goes slack, a little rubbery squeak. */
+  puff() {
+    if (!this.ready('puff', 0.12)) return;
+    const t = this.now();
+    this.hiss(t, 0.22, 0.05, 1600, 600, 0.9, 0.01);
+    this.blip('sine', 520, 260, 0.12, 0.05, t + 0.02);
+  }
+
+  /** The ghost cart's wheel coming off: a crack, then the wheel's wooden rattle rolling away. */
+  wheel() {
+    if (!this.ready('wheel', 0.3)) return;
+    const t = this.now();
+    this.s.noiseBurst(t, 0.03, 'bandpass', 1400, 2, 0.2);
+    for (let i = 0; i < 6; i++) this.blip('triangle', 300 - i * 20, 220 - i * 15, 0.04, 0.05 * (1 - i / 7), t + 0.06 + i * 0.07 + i * i * 0.006);
+  }
+
+  /** A shot striking the wall: a dull thud of packed earth, no ring to it. */
+  don() {
+    if (!this.ready('don', 0.12)) return;
+    const t = this.now();
+    this.blip('sine', 120, 55, 0.14, 0.18, t);
+    this.s.noiseBurst(t, 0.03, 'lowpass', 700, 1, 0.08);
+  }
+
+  /** The stall crying KAEDAMA!: four syllables of a vendor's call, up and down, through the voice's formants. */
+  kaedama() {
+    if (this.muted || !this.ready('kaedama', 1)) return;
+    const s = this.s;
+    const t0 = this.now();
+    // ka - e - da - ma: pitch and the vowel's two formants for each
+    [[250, 700, 1200], [280, 450, 1900], [330, 700, 1200], [260, 700, 1200]].forEach(([f, f1, f2], i) => {
+      const t = t0 + i * 0.11;
+      const len = i === 3 ? 0.3 : 0.1;
+      const o = s.osc('sawtooth', f, t, t + len + 0.05);
+      if (i === 3) o.frequency.exponentialRampToValueAtTime(f * 0.8, t + len);
+      const g = s.gain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.4, t + 0.02);
+      g.gain.setValueAtTime(0.4, t + len * 0.7);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.04);
+      o.connect(s.filter('bandpass', f1, 5)).connect(g);
+      o.connect(s.filter('bandpass', f2, 7)).connect(g);
+      g.connect(this.out);
+      if (i === 0 || i === 2) s.noiseBurst(t, 0.02, 'bandpass', 2400, 2, 0.05); // (the consonants' click)
+    });
+  }
+
   /** A bullet turned to points reaching the ship: the faintest tick. */
   coin() {
     if (!this.ready('coin', 0.035)) return;

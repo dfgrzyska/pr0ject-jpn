@@ -285,7 +285,10 @@ export const fukuoka = {
     e.play(`${e.look.anim}${st}`);
     s.sfx.creak?.();
     s.fx.debris(e.x, e.y, st === 2 ? 10 : 6, 0x3a2a26, 1, true);
-    if (st === 2) s.fx.shards(e.x + 8, e.y + 4, 4, true); // (the wheel coming off)
+    if (st === 2) {
+      s.fx.shards(e.x + 8, e.y + 4, 4, true); // (the wheel coming off)
+      s.sfx.wheel?.();
+    }
     if (st === 3) s.fx.light(e.x, e.y - 4, 1.2, true, 0xff8a30);
     s.cameras.main.shake(80, 0.002);
   },

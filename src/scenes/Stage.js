@@ -156,6 +156,7 @@ export class Stage extends Phaser.Scene {
     this.endTimer = 0;
     this.clearT = 0;
     this.warned = new Set();
+    this.rang = new Set(); // (the temple bells already struck: stage "bells")
 
     this.parallax = new Parallax(this, this.stage, this.cache.json.get(`bg_${this.stage.id}`));
     this.fx = new Fx(this);
@@ -888,6 +889,11 @@ export class Stage extends Phaser.Scene {
       this.parallax.hold = Boolean(arena?.hold && arena.state !== 'leave');
       if (!this.parallax.hold) this.t += dt;
       this.waves.update(this.t, (w) => this.enemies.spawn(w));
+      // a temple bell struck at its moments of the flight (Fukuoka: over Nanzo-in's Buddha)
+      for (const at of this.stage.bells ?? []) if (this.t >= at && this.t - at < 1 && !(this.rang ??= new Set()).has(at)) {
+        this.rang.add(at);
+        this.sfx.bell?.();
+      }
       this.interlude?.update(dt, this.t);
       for (const type of ['heavy', 'boss']) {
         const w = this.waves.upcoming(type, this.t, 3);

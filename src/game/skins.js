@@ -170,8 +170,8 @@ export const SKINS = {
     trap: trap('fukuoka', 'fire', 10, { kind: 'ring', n: 8 }, 3.6), // a shichirin grill by the stalls, throwing out rings of sparks (enemies/traps.js)
     ambush: { ...ambush('fukuoka', 'splash'), sound: ['splash'] }, // a soft-shell turtle out of a pond or a moat (enemies/ambush.js)
     popcorn: { frame: 'f_tobiume_0', anim: 'f_tobiume', flock: true },
-    shooter: { frame: 'f_fugu_0', anim: 'f_fugu' },
-    diver: { frame: 'f_goma_0', anim: 'f_goma' },
+    shooter: { frame: 'f_fugu_0', anim: 'f_fugu', sound: 'puff' },
+    diver: { frame: 'f_goma_0', anim: 'f_goma', sound: 'spin' }, // (the top whirrs as its cord snaps and it rushes)
     carrier: { frame: 'f_uso_{c}_0', anim: 'f_uso_{c}' },
     heavy: { frame: 'yt_idle_0', kind: 'yatai' }, // the miniboss: YATAI-OBAKE (fukuoka-yatai.js)
     turret: { base: 'f_dai_base', head: 'f_ningyo_', wreck: 'f_dai_wreck' }, // (the doll stands; its bow turns to the ship)

@@ -229,6 +229,7 @@ export const fukuokaNurikabe = {
     g.mouth = 0;
     s.cameras.main.shake(260, 0.008);
     s.sfx.explode('m');
+    s.sfx.earth?.(true);
     SAY(s, 90, g.y + 40, 'DOSUN!', 1, 0xe0d0a0);
     const p = s.player;
     if (p.alive && !p.god && p.invulnerable <= 0 && p.entering <= 0 && Math.abs(p.y - g.y) < NURI.h / 2) p.hit();
@@ -336,7 +337,7 @@ export const fukuokaNurikabe = {
     g.open = NURIKABE.alley.open * (easy() ? 1.3 : 1);
     g.look = 'half';
     g.blink = g.open;
-    s.sfx.explode('m');
+    s.sfx.earth?.();
     SAY(s, st.x, st.y - 10, 'BORO BORO...', 0.9, 0xe0d0a0);
     for (let i = 0; i < 26; i++) s.fx.part(s.fx.parts, `nu_clod_${i & 3}`, st.x + (Math.random() - 0.5) * NURI.stretch, st.y + (Math.random() - 0.5) * NURI.h * 0.8, { vx: (Math.random() - 0.5) * 70, vy: -20 - Math.random() * 40, g: 160, life: 0.8, a0: 1 });
     s.fx.smoke(st.x, st.y, 3, 6, true);
@@ -348,7 +349,7 @@ export const fukuokaNurikabe = {
     const s = this.scene;
     this.phaseBreak(g, 90, g.y, 3, 'NOC');
     for (const st of g.stretches) if (st.state !== 'gone') Object.assign(st, { state: 'sink', t: 0 });
-    Object.assign(g, { act: null, open: 0, y: 150, z: 0, look: 'open', fill: 0, mouth: 0 });
+    Object.assign(g, { act: null, open: 0, y: 150, z: 0, look: 'open', fill: 0, mouth: 0, song: 's12_boss_night' }); // (its theme falls almost silent)
     g.plan = 0;
     SAY(s, 90, g.y + 46, 'NURI... NURI...', 1.6, 0xb8c8ff);
   },
@@ -510,7 +511,10 @@ export const fukuokaNurikabe = {
     if (s.t > (g.donAt ?? 0)) {
       g.donAt = s.t + 1.2;
       SAY(s, shot.x, shot.y - 8, 'DON!', 0.5, 0xe0d0a0);
-      s.sfx.bossHit?.(true);
+    }
+    if (s.t > (g.thudAt ?? 0)) {
+      g.thudAt = s.t + 0.14;
+      s.sfx.don?.();
     }
   },
 
@@ -568,6 +572,7 @@ export const fukuokaNurikabe = {
     if (t >= 1.2 && !N.said.sigh) {
       N.said.sigh = true;
       fx.text(90, N.y + 44, 'FUUUU...', 1.4, 0xe0d0a0);
+      s.sfx.earth?.(true);
       s.cameras.main.shake(2400, 0.003);
     }
     // back into the earthwork: up to its place in the bank, sinking into it, the dust settling

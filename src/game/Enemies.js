@@ -109,6 +109,7 @@ export class Enemies {
       state: 'enter',
       timer: 0,
       shots: 0,
+      sound: null, // (a pooled sprite never keeps another's sound)
       x0: w.x,
       path: w.path ?? 'line',
       pattern: w.pattern ?? 'aimed',
@@ -182,6 +183,7 @@ export class Enemies {
         e.stopY = w.y ?? 30 + Math.random() * 18;
         e.thief = !!look.thief;
         e.scoop = !!look.scoop;
+        e.sound = look.sound ?? null; // (Fukuoka's top whirrs off as it dives)
         break;
       case 'carrier': {
         // the power-up it carries is drawn at random (not the same twice running, most of the time), and on normal
@@ -1269,6 +1271,7 @@ export class Enemies {
         // never dive upwards
         if (Math.sin(e.ang) < 0.35) e.ang = e.ang < -DOWN || e.ang > DOWN ? Math.PI - 0.36 : 0.36;
         e.v = 70;
+        if (e.sound) this.scene.sfx[e.sound]?.(); // (Fukuoka's top whirring off)
         if (this.skin.diver.spin || e.scoop) e.setRotation(e.ang - DOWN);
         if (e.scoop && this.canFire(e)) this.scene.bullets.fan(e.x, e.y + 6, e.ang, 3, 0.52, slow);
       }

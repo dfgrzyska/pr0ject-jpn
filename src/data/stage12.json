@@ -53,27 +53,12 @@
   "boss": true,
   "end": 232,
   "music": {
-    "schedule": [
-      [
-        0,
-        "intro"
-      ],
-      [
-        24,
-        "build"
-      ],
-      [
-        47,
-        "full"
-      ],
-      [
-        196,
-        "final"
-      ]
-    ],
-    "heavy": "tanuki",
-    "boss": "boss"
+    "schedule": [[0, "s12_intro"], [13, "s12_build"], [36, "s12_full"], [86, "s12_asa"], [113, "s12_hiru"], [133, "s12_sasaguri"], [159, "s12_dazaifu"], [203, "s12_yugure"]],
+    "heavy": "s12_yatai",
+    "boss": "s12_boss",
+    "night": "s12_yube"
   },
+  "bells": [150.5],
   "warnings": {
     "heavy": "JATAI NIE CHCE ZAMKNĄĆ",
     "boss": "ŚCIANA WYRASTA Z WAŁU",
@@ -141,7 +126,7 @@
     {"t":71,"type":"popcorn","x":24,"path":"arc","count":6},
     {"t":72.5,"type":"popcorn","x":156,"path":"arc","count":6},
     {"t":74.5,"type":"split","x":90},
-    {"t":82,"type":"heavy","look":"heavy","hold":true,"x":76,"card":["YATAI-OBAKE","JATAI DO ŚWITU"]},
+    {"t":82,"type":"heavy","look":"heavy","music":"s12_yatai","hold":true,"x":76,"card":["YATAI-OBAKE","JATAI DO ŚWITU"]},
     {"t":85.2,"type":"chain","x":58,"x2":178,"n":8},
     {"t":86.5,"type":"diver","x":50,"count":3},
     {"t":87,"type":"diver","x":130,"count":3},

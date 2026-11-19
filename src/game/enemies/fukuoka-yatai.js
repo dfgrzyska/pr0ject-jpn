@@ -268,7 +268,7 @@ export const fukuokaYatai = {
     const y = this.ytY(g);
     g.ball = { act: 'up', at: 0, x: g.x + POT[0], y: y + POT[1], from: [g.x + POT[0], y + POT[1]], sp: this.segPool.spawn('yt_kaedama_0', g.x + POT[0], y + POT[1]).setDepth(DEPTH.air - 0.08) };
     SAY(s, g.x, y - 34, 'KAEDAMA!', GOLD, 1);
-    s.sfx.shout?.();
+    s.sfx.kaedama?.();
   },
 
   /** The noodle ball: up, hanging there turning gold, then back into the pot (caught; or, shot, splashing). */
