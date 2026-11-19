@@ -11,8 +11,9 @@
 //           (it limps), the roof on fire; its wreck stays on the street, and it leaves a power-up behind.
 // Their looks are a skin's `chain`, `split` and `cart` (skins.js); their tuning CHAIN, SPLIT, CART (config.js). A look may
 // change the colours and sounds: chain { rope, char, light, text }, split { sound }, cart { debris, light }; a rope may
-// hang several things in turn (chain.frames, as Nagasaki's signal flags). A cart's
-// look may have a beast pulling it that is no yokai (cart.runner): when the cart goes down it breaks free and runs off.
+// hang several things in turn (chain.frames, as Nagasaki's signal flags) and carry its fire further, to a line hung
+// close by (chain.cross: Kagoshima's ash). A cart's look may have a beast pulling it that is no yokai (cart.runner):
+// when the cart goes down it breaks free and runs off.
 import { CART, CHAIN, DEPTH, SPLIT, SPLIT_ONE, VIEW } from '../../config.js';
 import { volley } from '../../difficulty.js';
 import { slow, DOWN, TAU, EXTRAS } from './shared.js';
@@ -112,7 +113,7 @@ export const chainSplitCart = {
       if (l.type !== 'chain' || l.dead) continue;
       if (l.rope === rope && Math.abs(l.slot - e.slot) === 1) lit(l, CHAIN.step);
     }
-    for (const l of catching(this.pool.live.filter((o) => o.type === 'chain'), e, CHAIN.cross)) lit(l, CHAIN.step * 2);
+    for (const l of catching(this.pool.live.filter((o) => o.type === 'chain'), e, rope.look?.cross ?? CHAIN.cross)) lit(l, CHAIN.step * 2);
   },
 
   /** The ropes, drawn every frame between their poles through the lanterns (charred where one burnt). */

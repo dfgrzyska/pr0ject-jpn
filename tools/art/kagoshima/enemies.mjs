@@ -8,6 +8,7 @@
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
 import { breakOpen, lightning } from '../breakopen.mjs';
 import * as V from './volcano540.mjs';
+import { kagoshimaNewFoes } from './newfoes.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -394,5 +395,6 @@ export function kagoshimaEnemies(add) {
   const open = V.crater('open', 0);
   [0.15, 0.4, 0.62, 0.85].forEach((k, i) => add(`crater_open_${i}`, breakOpen(shut, open, k, { seed: 512, cells: 34, centre: [0.5, 0.45], seam: 0xff6a10, lip: 0xffd080 })));
   for (let f = 0; f < 4; f++) add(`raiju_spark_${f}`, lightning(raiju(0), f, { arcs: 5, seed: 31 }));
+  kagoshimaNewFoes(add); // (the daikon drying on their rack, the ishi-yaki imo cart: newfoes.mjs)
 }
 export const KAGOSHIMA_PORTRAITS = ['kappa_0', 'raiju_0', 'vent_0', 'crater_0'];

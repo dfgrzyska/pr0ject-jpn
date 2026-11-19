@@ -78,6 +78,8 @@ export const SKINS = {
     carrier: { frame: 'shirokuma_{c}_0', melt: 5.5 },
     heavy: { frame: 'raiju_0', anim: 'raiju', kind: 'raiju' },
     turret: { base: 'tsubo_base', head: 'tsubo_lid_', wreck: 'tsubo_wreck', lid: true },
+    chain: { frame: 'kg_daikon_0', frames: ['kg_daikon_0', 'kg_daikon_1'], eye: 'kg_daikon_eye_', lit: 'kg_daikon_lit_', burnt: 'kg_daikon_burnt', pole: 'kg_pole', rope: 0x8a7a3a, cross: 16 }, // daikon drying on a bamboo rack by Sakurajima's fields; the ash carries the fire to the next line (enemies/chainSplitCart.js)
+    cart: { anim: 'kg_imo_', wreck: 'kg_imo_wreck', debris: 0x7a5434, light: 0xff8a30 }, // an ishi-yaki imo cart rolling down a street of Tenmonkan
   },
   // Osaka: every regular enemy comes as a manzai duo (see Enemies.duoDown)
   osaka: {

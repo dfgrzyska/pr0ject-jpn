@@ -112,7 +112,8 @@ export const kagoshima = {
     }
     e.fight += dt;
     if (e.dash) return this.raijuDash(e, dt, b);
-    if (e.fight > 45) {
+    // (it flies off before the daikon racks over Sakurajima's road come: stage4.json, 142 s)
+    if (e.fight > 36) {
       e.state = 'leave';
       return;
     }
