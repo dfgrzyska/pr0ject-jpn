@@ -152,6 +152,7 @@ export const CITY_ANIMS = {
   ok_yashi: [four('ok_yashi'), 4], ok_yashi_one: [['ok_yashi_one_0', 'ok_yashi_one_1'], 6], ok_gyu_run: [['ok_gyu_run_0', 'ok_gyu_run_1'], 8],
   ng_manju: [four('ng_manju'), 4], ng_manju_one: [['ng_manju_one_0', 'ng_manju_one_1'], 6],
   k_iga: [four('k_iga'), 4], k_iga_one: [['k_iga_one_0', 'k_iga_one_1'], 6],
+  sp_jaga: [four('sp_jaga'), 4], sp_jaga_one: [['sp_jaga_one_0', 'sp_jaga_one_1'], 6],
   ...Object.fromEntries([0, 1, 2, 3].flatMap((st) => [[`o_ferry_${st}`, [[`o_ferry_${st}_0`, `o_ferry_${st}_1`], 4]], [`ky_hoko_${st}`, [[`ky_hoko_${st}_0`, `ky_hoko_${st}_1`], 6]], [`ok_gyu_${st}`, [[`ok_gyu_${st}_0`, `ok_gyu_${st}_1`], 3]], [`ng_kujira_${st}`, [[`ng_kujira_${st}_0`, `ng_kujira_${st}_1`], 5]], [`k_hakucho_${st}`, [[`k_hakucho_${st}_0`, `k_hakucho_${st}_1`], 4]]])),
   // Fukuoka
   f_tobiume: [four('f_tobiume'), 12], f_goma: [four('f_goma'), 16], f_fugu: [four('f_fugu'), 3],

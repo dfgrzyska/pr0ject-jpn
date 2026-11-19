@@ -66,6 +66,8 @@ export const SKINS = {
     heavy: { frame: 'yukionna_0', anim: 'yukionna', kind: 'yukionna' },
     turret: { base: 'yuki_base', head: 'yuki_head_', wreck: 'yuki_wreck', pattern: 'lob' },
     plow: { frame: 'plow_d_0', anim: 'plow_d', side: 'plow_r_0', sideAnim: 'plow_r', chute: 'plow_chute_', wreck: 'plow_wreck' },
+    chain: { frame: 'sp_sake_0', frames: ['sp_sake_0', 'sp_sake_1'], eye: 'sp_sake_eye_', lit: 'sp_sake_lit_', burnt: 'sp_sake_burnt', pole: 'sp_pole', rope: 0xb8a060 }, // salted salmon hung over the avenue by Nijo market (enemies/chainSplitCart.js)
+    split: { frame: 'sp_jaga_0', anim: 'sp_jaga', one: 'sp_jaga_one_0', oneAnim: 'sp_jaga_one', sound: 'squelch' }, // jaga-bata from the Snow Festival's stalls
   },
   // Kagoshima: bombs that split, aim-line snipers, lidded jars, surfacing kappa, melting shirokuma
   kagoshima: {

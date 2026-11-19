@@ -8,6 +8,7 @@
 // Every frame is three times the old one's size (old mask coordinate m -> fine (m + 1) * 3).
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
 import { thaw, frost, breath, melt } from './kuma2a.mjs';
+import { sapporoNewFoes } from './newfoes.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -641,5 +642,6 @@ export function sapporoEnemies(add) {
   for (let n = 1; n <= 3; n++) add(`kuma_melt_${n}`, melt(ice, n));
   add('kuma_paw', kumaPaw());
   for (let f = 0; f < 2; f++) add(`kuma_heart_${f}`, kumaHeart(f));
+  sapporoNewFoes(add); // (the salted salmon on their line, the jaga-bata: newfoes.mjs)
 }
 export const SAPPORO_PORTRAITS = ['yukionna_0', 'kuma_0'];
