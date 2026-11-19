@@ -31,7 +31,8 @@ test('the stall is the miniboss of Fukuoka, its life the same in both places', (
   assert.equal(SKINS.fukuoka.heavy.kind, 'yatai');
   assert.ok(names.has(SKINS.fukuoka.heavy.frame));
   assert.equal(HEAVY.hp.yatai, num('hp'));
-  assert.ok(num('guard') > 0 && num('guard') < 0.5);
+  const guard = JSON.parse(/\n {2}guard: (\[[^\]]+\])/.exec(fight)[1]); // (by phase)
+  assert.ok(guard.length === 3 && guard.every((g) => g > 0 && g < 0.5));
   assert.ok(num('time') >= 80 && num('time') <= 110);
 });
 

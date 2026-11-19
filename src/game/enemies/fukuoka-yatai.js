@@ -14,7 +14,9 @@ import { slow, TAU } from './shared.js';
  * between them, their wave, the spread), its bowls (how many, how fast, how hard they come back), every how many
  * rounds the noodle ball; the noodle ball (up, hanging, falling into the pot, how long it is stunned). Gyoza: its
  * griddles (how many, how big, the warning, how long they burn), the dumplings (how many, their flight, the patch
- * they burn), the gas valve (how long it shows, how long the stall has its back turned), every how many rounds.
+ * they burn), the gas valve (how long it shows, how long the stall has its back turned), every how many rounds, how
+ * fast it rolls along the bank as it cooks; the hanetsuki flipped out of its pan (its flight, how far short of the
+ * ship it breaks up, its dumplings and flakes of crust); the oil off its griddle (how long, how often, its sweep).
  * Shime: the warning of its run, its speed, how many legs a run, a stool every so often, the stool's fuse and burst,
  * how long it pants.
  */
@@ -23,16 +25,19 @@ export const YATAI = {
   phase: [0.66, 0.33],
   time: 110,
   rush: 0.45,
-  guard: 0.25,
+  guard: [0.25, 0.4, 0.25], // (by phase: at its griddles it is busy, and feels more of what comes in)
   ramen: { ladle: 1.3, strands: 3, links: 9, gap: 0.05, wig: 4.5, wf: 8, spread: 0.42, bowls: 2, bowl: 105, back: 125, every: 3 },
   kaedama: { up: 0.6, hang: 2.1, drop: 0.35, stun: 2.2 },
-  gyoza: { griddles: 3, r: 13, warn: 1, live: 0.9, n: 4, fly: 0.95, land: 10, valve: 3.4, back: 2.2, every: 4 },
+  gyoza: { griddles: 2, r: 13, warn: 1, live: 0.9, n: 4, fly: 0.95, land: 10, valve: 3.4, back: 3, every: 2, drift: 24 },
+  hane: { fly: 0.9, short: 55, n: 7, lace: 8 },
+  oil: { time: 1.2, every: 0.055, sweep: 0.75, wf: 5, speed: 1.3 },
   shime: { warn: 1, speed: 120, legs: 2, stool: 0.12, fuse: 0.55, burst: 4, pant: 1.6 },
 };
 
 // where it stands on Nakasu's bank (x, u: the row of stalls between the bank road and the houses), the second place
 // it rolls to; the streets it runs along at dawn (the bank, Nakasu-dori, the cross streets, the two bridges' ends)
 const HOME = [[58, 2745], [58, 2685]];
+const DRIFT = [2745, 2795]; // (how far along the bank it rolls as it cooks: from its place up, away from the ship)
 export const NODES = { A: [60, 2830], M: [60, 2690], B: [60, 2550], C: [86, 2830], N: [86, 2690], D: [86, 2550], E: [24, 2830], G: [108, 2830], H: [108, 2550], F: [130, 2550] };
 export const EDGES = ['AM', 'MB', 'CN', 'ND', 'AC', 'CG', 'BD', 'DH', 'HF', 'AE'];
 const NEXT = {};
@@ -94,8 +99,11 @@ export const fukuokaYatai = {
    * 1. RAMEN: its ladle flings long wavy strands of noodles, its bowls fly out like boomerangs and come back. Now and
    *    then it cries KAEDAMA! and tosses a gold ball of noodles up: shot, it drops into the pot, the broth splashes
    *    over it and it is stunned (mint), else it catches it;
-   * 2. GYOZA: it heats griddles on the bank (red zones that sizzle) and flings dumplings that land as burning patches;
-   *    a gold gas valve shows at its side: shot, it flares and the stall turns its back (mint);
+   * 2. GYOZA: rolling to and fro along the bank as it cooks, in turn: it heats griddles on the bank (red zones that
+   *    sizzle) and flings dumplings that land as burning patches; it flips a whole pan of hanetsuki gyoza out at the
+   *    ship, the ring breaking up short of it into dumplings and flakes of crust; its griddle spits hot oil in a
+   *    sweeping fan. Every other round a gold gas valve shows at its side: shot, it flares and the stall turns its back
+   *    (mint);
    * 3. SHIME (closing): dawn. It runs off along the streets and bridges on lanes flagged red, its stools dragged
    *    behind it bursting into shots; after each run it stands panting, its noren lifted (mint).
    * Out of its windows it feels a fifth of every shot. The less life it has, the quicker it goes. Beaten: it gets
@@ -105,7 +113,7 @@ export const fukuokaYatai = {
     const s = this.scene;
     const g = (e.yatai = {
       t: 0, act: 'enter', at: 0, x: HOME[0][0], u: s.parallax.stripU(-34), home: 0, pace: 1, open: false, round: 0,
-      strands: [], ball: null, valve: null, gyoza: [], stools: [], path: null, leg: 0, node: null, said: false, dawn: 0,
+      strands: [], ball: null, valve: null, gyoza: [], hane: [], stools: [], path: null, leg: 0, node: null, said: false, dawn: 0,
     });
     Object.assign(e, { stage: 1, radius: 16 });
     e.setDepth(DEPTH.air - 0.09);
@@ -148,6 +156,7 @@ export const fukuokaYatai = {
     this.ytBall(e, g, dt);
     this.ytValve(e, g, dt);
     this.ytFlights(e, g, dt);
+    this.ytHanes(e, g, dt);
     this.ytStools(e, g, dt);
     this.ytPlace(e, g, dt);
   },
@@ -330,19 +339,49 @@ export const fukuokaYatai = {
       if (g.at > G.back * (easy() ? 1.3 : 1)) this.ytAct(g, 'idle');
       return;
     }
-    if (g.act === 'roll') {
-      if (this.ytRoll(g, dt)) this.ytAct(g, 'idle');
-      return;
+    // it rolls along the bank as it cooks, up from its place and back
+    if (g.act !== 'idle') {
+      g.drift ??= 1;
+      const tu = DRIFT[g.drift];
+      const d = tu - g.u;
+      g.u += Math.sign(d) * Math.min(Math.abs(d), dt * G.drift * g.pace);
+      if (Math.abs(tu - g.u) < 0.5) g.drift = 1 - g.drift;
     }
     if (g.act === 'idle') {
       if (g.at > 0.5 / g.pace) {
         g.round++;
-        if (g.round % 4 === 0) {
-          g.home = 1 - g.home;
-          this.ytAct(g, 'roll');
-        } else this.ytAct(g, 'grill');
+        this.ytAct(g, ['grill', 'hane', 'oil'][(g.round - 1) % 3]);
         if (g.round % G.every === 1 && !g.valve) this.ytShowValve(g);
       }
+      return;
+    }
+    if (g.act === 'hane') {
+      // its iron pan turned over: the whole ring of gyoza flipped out at the ship
+      if (!g.said && g.at > 0.45 / g.pace) {
+        g.said = true;
+        if (this.canFire(e)) this.ytHane(g);
+        SAY(s, g.x, this.ytY(g) - 34, 'HANETSUKI!', GOLD, 0.8);
+        s.sfx.sizzle?.();
+      }
+      if (g.at > 1.2 / g.pace) this.ytAct(g, 'idle');
+      return;
+    }
+    if (g.act === 'oil') {
+      // the griddle spits: hot oil in a fan sweeping to and fro over the ship
+      const O = YATAI.oil;
+      if (!g.said) {
+        g.said = true;
+        g.oilAt = 0.3;
+        g.oilAim = this.aimAt(e, 6, 6);
+        SAY(s, g.x, this.ytY(g) - 34, 'JUWAAA!', 0xffd070, 0.7);
+        s.sfx.sizzle?.();
+      }
+      while (g.at >= g.oilAt / g.pace && g.oilAt < O.time + 0.3) {
+        const a = g.oilAim + Math.sin((g.oilAt - 0.3) * O.wf) * O.sweep;
+        g.oilAt += O.every;
+        if (this.canFire(e)) s.bullets.shot('yt_oil', g.x + 6, this.ytY(g) + 8, a, slow * O.speed, 1.4);
+      }
+      if (g.at > (O.time + 0.8) / g.pace) this.ytAct(g, 'idle');
       return;
     }
     if (g.act === 'grill') {
@@ -411,6 +450,52 @@ export const fukuokaYatai = {
       }
     }
     g.gyoza = g.gyoza.filter((f) => !f.done);
+  },
+
+  /** The hanetsuki out of its pan: it flies at the ship, spinning, to break up short of it. */
+  ytHane(g) {
+    const s = this.scene;
+    const p = s.player;
+    const H = YATAI.hane;
+    const y = this.ytY(g);
+    const [x0, y0] = [g.x + 6, y + 4];
+    const d = Math.hypot(p.x - x0, p.y - y0) || 1;
+    const k = Math.max(0.3, (d - H.short) / d);
+    const tx = Phaser.Math.Clamp(x0 + (p.x - x0) * k, 24, 156);
+    const ty = Phaser.Math.Clamp(y0 + (p.y - y0) * k, 50, s.H - 70);
+    g.hane.push({ x0, y0, tx, ty, t: 0, sp: this.segPool.spawn('yt_hane_0', x0, y0).setDepth(DEPTH.air - 0.08) });
+  },
+
+  ytHanes(e, g, dt) {
+    const s = this.scene;
+    const H = YATAI.hane;
+    const p = s.player;
+    for (const f of g.hane) {
+      f.t += dt;
+      const time = H.fly / rules().bulletSpeed;
+      const k = Math.min(1, f.t / time);
+      const q = 1 - (1 - k) ** 2;
+      const x = f.x0 + (f.tx - f.x0) * q;
+      const y = f.y0 + (f.ty - f.y0) * q - Math.sin(k * Math.PI) * 18;
+      f.sp.setPosition(x, y).setFrame(`yt_hane_${Math.floor(f.t * 8) & 1}`).setRotation(f.t * 9).setScale(f.sp.base * (1 + Math.sin(k * Math.PI) * 0.25));
+      this.tele.lineStyle(1.5, WARN, 0.5 + 0.4 * k).strokeCircle(f.tx, f.ty, 20 - k * 8);
+      if (p.alive && !p.god && p.invulnerable <= 0 && p.entering <= 0 && Math.hypot(p.x - x, p.y - y) < 9) p.hit();
+      if (k < 1) continue;
+      // it breaks up: the dumplings out in a ring, the flakes of crust slower between them
+      f.done = true;
+      this.segPool.kill(f.sp);
+      s.sfx.crock?.();
+      s.fx.shards(f.tx, f.ty, 6, true);
+      SAY(s, f.tx, f.ty - 12, 'PARI!', 0xffe0a0, 0.6);
+      if (e.state === 'fight' && this.canFire({ type: 'heavy', seen: e.seen, y: f.ty })) {
+        const a0 = Math.random() * TAU;
+        const n = volley(H.n);
+        for (let i = 0; i < n; i++) s.bullets.shot(`yt_gyoza_${i & 1}`, f.tx, f.ty, a0 + (i / n) * TAU, slow * 0.95, 2.6);
+        const m = volley(H.lace);
+        for (let i = 0; i < m; i++) s.bullets.shot('yt_lace', f.tx, f.ty, a0 + ((i + 0.5) / m) * TAU, slow * 0.7, 1.6);
+      }
+    }
+    g.hane = g.hane.filter((f) => !f.done);
   },
 
   /** The gold valve on its gas bottle, showing at its side for a while. */
@@ -557,7 +642,7 @@ export const fukuokaYatai = {
     if (g.act === 'stun') fr = `yt_stun_${Math.floor(g.t * 4) & 1}`;
     else if (g.act === 'back') fr = `yt_back_${Math.floor(g.t * 6) & 1}`;
     else if (g.act === 'ladle') fr = `yt_ladle_${g.at > 0.5 / g.pace ? 1 : 0}`;
-    else if (g.act === 'grill') fr = `yt_grill_${Math.floor(g.t * 6) & 1}`;
+    else if (g.act === 'grill' || g.act === 'oil' || g.act === 'hane') fr = `yt_grill_${Math.floor(g.t * 6) & 1}`;
     else if (g.act === 'run' || g.act === 'leave' || g.act === 'roll' || g.act === 'enter') fr = `yt_run_${Math.floor(g.t * 8) & 1}`;
     else if (g.act === 'pant') fr = `yt_pant_${Math.floor(g.t * 3) & 1}`;
     else if (g.act === 'bowls' || g.act === 'gyoza' || (g.ball && g.ball.act === 'up')) fr = 'yt_shout';
@@ -590,7 +675,7 @@ export const fukuokaYatai = {
     }
     if (!g.open && (e.state === 'fight' || e.state === 'enter') && Math.abs(shot.x - e.x) < BODY[0] + shot.radius && Math.abs(shot.y - e.y) < BODY[1] + shot.radius) {
       g.shrug = 0.18;
-      this.damage(e, shot.damage * YATAI.guard);
+      this.damage(e, shot.damage * YATAI.guard[e.stage - 1]);
       if (s.t > (g.funAt ?? 0)) {
         g.funAt = s.t + 1.1;
         SAY(s, shot.x, shot.y - 10, 'KON!', 0xd8e4f4, 0.5);
@@ -606,6 +691,7 @@ export const fukuokaYatai = {
     if (g.ball) this.segPool.kill(g.ball.sp);
     if (g.valve) this.segPool.kill(g.valve.sp);
     for (const f of g.gyoza) this.segPool.kill(f.sp);
+    for (const f of g.hane) this.segPool.kill(f.sp.setRotation(0).setScale(f.sp.base));
     for (const st of g.stools) this.segPool.kill(st.sp);
     this.segPool.kill(g.shadow);
     g.light?.destroy();

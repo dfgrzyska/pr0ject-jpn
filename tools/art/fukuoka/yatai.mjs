@@ -17,6 +17,9 @@
 //   yt_bowl_0..1    a ramen bowl spinning (its boomerangs)
 //   yt_kaedama_0..1 a gold ball of noodles (the mark it tosses: shoot it into its pot)
 //   yt_gyoza_0..1   a dumpling in its arc (low, high)
+//   yt_hane_0..1    hanetsuki gyoza flipped out of its iron pan: dumplings in a ring joined by a lacy golden crust
+//   yt_oil          a drop of hot oil off its griddle (its bullets)
+//   yt_lace         a flake of the crust (its bullets)
 //   yt_noodle       a curl of noodle (its bullets)
 //   yt_stool        a stool it leaves behind as it runs (bursts into shots)
 //   yt_valve_0..1   the gas bottle's valve, gold (the mark of phase 2)
@@ -36,6 +39,7 @@ const RAMPS = {
   br: tones([0x8a6430, 0xe0b878, 0xfff0d0]), // broth, noodles
   gs: tones([0x4a4c56, 0x9a9ca8, 0xe6e8f0]), // the gas bottle
   gy: tones([0x8a5a24, 0xe6c48a, 0xfff4dc]), // a gyoza's skin
+  gb: tones([0x5a3010, 0x9a5a22, 0xd8964a]), // its face fried golden brown
   bw: tones([0x8a8a94, 0xeeeef2, 0xffffff]), // a bowl's porcelain
   Y: tones([0x9a5f10, 0xe2aa32, 0xfff0a0]),
   tk: tones([0x6a7a8a, 0xd8e0e8, 0xffffff]), // the truck's white paint
@@ -214,6 +218,59 @@ function gyoza(f) {
   return s.render();
 }
 
+/** A pan's worth of gyoza flipped out whole: seven in a ring, their pleats outward, browned bottoms up, joined by the
+ * crisp lacy wing (hane) the starch water fried into; chopped green onion in the middle. f: the crust's glints. */
+function hane(f) {
+  const s = new HiSprite(48, 48, RAMPS);
+  const [cx, cy, R] = [24, 24, 22];
+  // the lace: a golden disc full of little holes, thinner and more open towards its rim
+  const hole = (x, y) => {
+    const d = Math.hypot(x - cx, y - cy) / R;
+    const h = Math.sin(x * 1.9 + y * 0.7) * Math.cos(y * 1.7 - x * 0.5) + Math.sin((x + y) * 1.1 + f);
+    return h > 1.25 - d * 0.9;
+  };
+  s.paint([0, 0, 48, 48], (x, y) => Math.hypot(x - cx, y - cy) <= R - (Math.sin(Math.atan2(y - cy, x - cx) * 11) > 0.6 ? 2 : 0) && !hole(x, y), 'Y', () => 0.5, { tex: 0.35, seed: 7 + f });
+  // the dumplings, browned side up, in a ring
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2 - Math.PI / 2;
+    const [ix, iy, ox, oy] = [cx + Math.cos(a) * 6, cy + Math.sin(a) * 6, cx + Math.cos(a) * 16, cy + Math.sin(a) * 16];
+    s.tube(ix, iy, ox, oy, 4.2, 'gy', { bias: 0.05 });
+    s.tube(ix + Math.cos(a) * 1.5, iy + Math.sin(a) * 1.5, ox - Math.cos(a) * 1.5, oy - Math.sin(a) * 1.5, 2.4, 'gb', { bias: 0.05 }); // the crisp brown face
+    // its pleats, along one edge
+    for (let k = 0; k < 4; k++) {
+      const t = 0.15 + k * 0.22;
+      const [px, py] = [ix + (ox - ix) * t, iy + (oy - iy) * t];
+      s.line(px + Math.cos(a + 1.57) * 3.6, py + Math.sin(a + 1.57) * 3.6, px + Math.cos(a + 1.57) * 2, py + Math.sin(a + 1.57) * 2, 0xb8945a, 1);
+    }
+  }
+  // green onion in the middle, a few sesame seeds
+  for (const [x, y, c] of [[23, 22, 0x5ab84a], [26, 25, 0x8ad86a], [22, 26, 0x5ab84a], [25, 21, 0x8ad86a], [24, 24, 0x3a8a3a]]) s.dot(x, y, 1.2, c);
+  for (const [x, y] of [[20, 23], [27, 23], [24, 28]]) s.px(x, y, 0xfff4dc);
+  // the crust's glints
+  for (let i = 0; i < 6; i++) {
+    const a = i * 1.05 + f * 0.5;
+    s.px(Math.round(cx + Math.cos(a) * 19), Math.round(cy + Math.sin(a) * 19), 0xfff0a0);
+  }
+  return s.render();
+}
+
+/** A drop of hot oil off the griddle: amber, glossy. */
+function oil() {
+  const s = new HiSprite(12, 12, RAMPS);
+  s.ellipse(6, 6, 3.6, 3.6, 'Y', { glow: true, bias: 0.1 });
+  s.dot(5, 5, 1, 0xfff8d0);
+  return s.render();
+}
+
+/** A flake of the gyoza's lacy crust, broken off. */
+function lace() {
+  const s = new HiSprite(12, 12, RAMPS);
+  s.poly([[2, 4], [6, 1], [10, 3], [11, 8], [7, 11], [2, 9]], 'Y', { flat: 0.55 });
+  for (const [x, y] of [[5, 5], [8, 7], [5, 8]]) s.px(x, y, 0x6a3f0a);
+  s.px(7, 3, 0xfff0a0);
+  return s.render();
+}
+
 function noodle() {
   const s = new HiSprite(12, 12, RAMPS);
   for (let t = 0; t < 1; t += 0.05) s.dot(6 + Math.sin(t * 9) * 3, 2 + t * 8, 1.4, 0xfff0c0);
@@ -273,9 +330,12 @@ export function yataiFrames(add) {
     add(`yt_bowl_${f}`, bowl(f));
     add(`yt_kaedama_${f}`, kaedama(f));
     add(`yt_gyoza_${f}`, gyoza(f));
+    add(`yt_hane_${f}`, hane(f));
     add(`yt_valve_${f}`, valve(f));
   }
   add('yt_noodle', noodle());
+  add('yt_oil', oil());
+  add('yt_lace', lace());
   add('yt_stool', stool());
   add('yt_truck', truck());
   add('yt_shadow', shadow());

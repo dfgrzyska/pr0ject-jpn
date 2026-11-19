@@ -10,9 +10,11 @@ import { slow, DOWN, TAU } from './shared.js';
 /**
  * Its life and the phases' thresholds; how much of a shot it takes in its windows (its footing bared as it lifts, its
  * core's face laid bare in the alley); the wall (a stream of water off its mouth, the lift and how long it hangs, the
- * leap, the rows of clods it sheds landing, how far forward it comes); the alley (its stretches' cornerstones, how
- * long a stretch lies crumbled and the face is bare, the corridor's width, the water off their slots); the night (how
- * soon the dark comes, its eyes flashing, how fast it follows the ship, the petals settling); how long its end takes.
+ * leap, the rows of clods it sheds landing); the alley (its stretches' cornerstones, how long a stretch lies crumbled
+ * and the face is bare, the corridor's width, the water off their slots; every how long one of its tricks: the alley
+ * squeezed shut and the water forced down it, water swept out of the slots, a stretch toppled across it); the night (how soon the
+ * dark comes, its eyes flashing, how fast it follows the ship, how far it leaps, the petals settling); how long its end
+ * takes. Where it stands: nuPlaces.
  */
 export const NURIKABE = {
   hp: 1200,
@@ -22,8 +24,12 @@ export const NURIKABE = {
   lift: { up: 0.5, hang: 1.0, h: 9 },
   leap: { time: 0.6, h: 14 },
   clods: { n: 9, rows: 2, gap: 0.32, speed: 0.95 },
-  rows: [150, 205], // (where it stands in the first phase: just off the earthwork, then out on the field)
-  alley: { gold: 8, down: 7, open: 3.2, gap: [46, 96], every: 2.3, fan: 5, fanEvery: 2.7 },
+  alley: {
+    gold: 8, down: 7, open: 3.2, gap: [46, 96], every: 2.3, fan: 5, fanEvery: 2.7, moveEvery: 4.2,
+    squeeze: { warn: 0.9, hold: 1.3, gap: 26, slide: 70, every: 0.07, speed: 1.45, wide: 0.1 },
+    cross: { warn: 0.7, n: 9, every: 0.05, speed: 1.2, rows: [0, 1, 0], step: 0.6, end: 0.25 },
+    topple: { warn: 0.9, fall: 0.35, down: 2.4 },
+  },
   night: { dark: 0.62, glide: 2.4, flash: 0.9, follow: 24, reach: 46, fill: 0.22 },
   outro: 9,
 };
@@ -57,6 +63,24 @@ export function corridor(cx, gap) {
   const half = NURI.stretch / 2;
   const c = Phaser.Math.Clamp(cx, half * 2 + gap / 2, 180 - half * 2 - gap / 2);
   return [c - gap / 2 - half, c + gap / 2 + half];
+}
+
+/**
+ * Where it stands on a screen H tall (they run 320 to 420 px; on a short one it keeps further from the ship): the
+ * wall's two rows in the first phase (just off the earthwork, then out on the field), the core and the stretches' two
+ * rows in the alley, how far down it follows the ship at night and how far down it leaps.
+ */
+export function nuPlaces(H) {
+  const low = Math.min(240, H - 100);
+  return { rows: [136, Math.round(136 + 0.11 * H)], core: low - 130, alley: [low - 64, low], glide: Math.round(H * 0.5), hop: Math.round(H * 0.55) };
+}
+
+/** Where a stretch tipping over on its inner foot (by rot) has its middle. */
+export function tipped(st, rot) {
+  const half = NURI.stretch / 2;
+  const [px, py] = [st.x - st.side * half, st.y + NURI.h / 2];
+  const [vx, vy] = [st.side * half, -NURI.h / 2];
+  return [px + vx * Math.cos(rot) - vy * Math.sin(rot), py + vx * Math.sin(rot) + vy * Math.cos(rot)];
 }
 
 export const fukuokaNurikabe = {
@@ -131,7 +155,7 @@ export const fukuokaNurikabe = {
     }
     if (g.rise >= 1) {
       Object.assign(g, { state: 'fight', awake: true });
-      this.nuHop(g, NURIKABE.rows[0]);
+      this.nuHop(g, nuPlaces(this.scene.H).rows[0]);
     }
   },
 
@@ -152,7 +176,8 @@ export const fukuokaNurikabe = {
       const kind = P[g.plan++ % P.length];
       if (kind === 'hop') {
         const p = this.scene.player;
-        const to = g.stage === 1 ? NURIKABE.rows[(g.row = 1 - g.row)] : Phaser.Math.Clamp(Math.min(g.y + NURIKABE.night.reach, p.y - 70), 120, 250);
+        const at = nuPlaces(this.scene.H);
+        const to = g.stage === 1 ? at.rows[(g.row = 1 - g.row)] : Phaser.Math.Clamp(Math.min(g.y + NURIKABE.night.reach, p.y - 95), 120, at.hop);
         this.nuHop(g, to);
       } else g.act = { kind, t: 0, done: {} };
     }
@@ -267,8 +292,10 @@ export const fukuokaNurikabe = {
     Object.assign(g, { act: null, band: null, z: 0, mouth: 0, look: 'glare', cx: s.player.x });
     // its wings break off and rise again as four stretches round the ship
     for (let i = 0; i < 40; i++) s.fx.part(s.fx.parts, 'dot_1', Math.random() * 180, g.y + (Math.random() - 0.5) * 50, { vx: (Math.random() - 0.5) * 80, vy: (Math.random() - 0.5) * 60, drag: 1.2, life: 0.8, a0: 0.9 }).setTint(Math.random() < 0.5 ? 0x9a8a6a : 0x8c5434);
-    g.y = 112;
-    g.stretches = [0, 1, 2, 3].map((n) => ({ n, side: n % 2 ? 1 : -1, row: n < 2 ? 0 : 1, x: n % 2 ? 160 : 20, y: n < 2 ? 178 : 244, gold: NURIKABE.alley.gold, state: 'rise', t: 0, a: 0, cry: 1 + n * 0.55 }));
+    const at = nuPlaces(s.H);
+    g.y = at.core;
+    g.stretches = [0, 1, 2, 3].map((n) => ({ n, side: n % 2 ? 1 : -1, row: n < 2 ? 0 : 1, x: n % 2 ? 160 : 20, y: at.alley[n < 2 ? 0 : 1], gold: NURIKABE.alley.gold, state: 'rise', t: 0, a: 0, rot: 0, wob: 0, cry: 1 + n * 0.55 }));
+    Object.assign(g, { move: null, moveT: 3, moveN: 0 });
     SAY(s, 90, g.y + 46, 'ZUZUZUZU...', 1.4, 0xe0d0a0);
     s.sfx.quake?.();
     g.fanT = 1.5;
@@ -277,8 +304,17 @@ export const fukuokaNurikabe = {
   nuAlley(g, dt) {
     const s = this.scene;
     const A = NURIKABE.alley;
-    // the corridor closes in round the ship, then opens a little, and follows it slowly
-    g.cx += (s.player.x - g.cx) * Math.min(1, dt * 0.45);
+    // the corridor closes in round the ship, then opens a little, and follows it slowly (not while it squeezes)
+    if (g.move?.kind !== 'squeeze') g.cx += (s.player.x - g.cx) * Math.min(1, dt * 0.45);
+    // now and then one of its tricks, in turn: the alley squeezed shut, water across it, a stretch toppled across it
+    if (!g.move && (g.moveT -= dt * this.nuHaste(g)) <= 0) {
+      const up = g.stretches.filter((st) => st.state === 'up');
+      let kind = ['squeeze', 'cross', 'topple'][g.moveN++ % 3];
+      if (kind !== 'cross' && up.length < 2) kind = 'cross';
+      if (up.length) this.nuMove(g, kind, up);
+      else g.moveT = 1;
+    }
+    if (g.move) this.nuMoveStep(g, dt);
     // its mouth: a fan of water at the ship now and then
     g.mouth = g.open > 0 ? 1 : (g.fanT ?? 0) < 0.5 ? 2 : 0;
     if ((g.fanT -= dt * this.nuHaste(g)) <= 0) {
@@ -292,12 +328,109 @@ export const fukuokaNurikabe = {
     }
   },
 
+  /** One of its tricks begins: how long its warning lasts; the stretch to topple (the one whose fall covers the ship). */
+  nuMove(g, kind, up) {
+    const s = this.scene;
+    const A = NURIKABE.alley;
+    const m = (g.move = { kind, t: 0, warn: A[kind].warn * rules().warn * (easy() ? 1.3 : 1) });
+    if (kind === 'squeeze') {
+      SAY(s, g.x, g.y + 40, 'GIGIGI...', 0.9, 0xe0d0a0);
+      s.sfx.quake?.();
+    } else if (kind === 'cross') m.rows = A.cross.rows.map((row, i) => ({ row, at: m.warn + i * A.cross.step, left: A.cross.n, next: 0 }));
+    else {
+      const p = s.player;
+      m.st = up.map((st) => [st, Math.abs(tipped(st, -st.side * Math.PI / 2)[1] - p.y) + Math.random() * 8]).sort((a, b) => a[1] - b[1])[0][0];
+      Object.assign(m.st, { state: 'topple', t: 0 });
+      SAY(s, m.st.x, m.st.y - 34, 'GURA...', 0.8, 0xe0d0a0);
+    }
+  },
+
+  nuMoveStep(g, dt) {
+    const s = this.scene;
+    const A = NURIKABE.alley;
+    const m = g.move;
+    m.t += dt;
+    let over = false;
+    if (m.kind === 'squeeze') {
+      // the alley shut round the ship: what is caught between the stretches is crushed
+      const on = m.t > m.warn && m.t < m.warn + A.squeeze.hold + 0.3;
+      const p = s.player;
+      if (on && p.alive && !p.god && p.invulnerable <= 0 && p.entering <= 0) {
+        for (const st of g.stretches) if (st.state === 'up' && Math.abs(p.x - st.x) < NURI.stretch / 2 - 2 && Math.abs(p.y - st.y) < NURI.h / 2 - 4) p.hit();
+      }
+      if (m.t > m.warn && !m.shut) {
+        m.shut = true;
+        s.cameras.main.shake(200, 0.004);
+        s.sfx.earth?.();
+        SAY(s, g.cx, g.y + 44, 'DOBAA!', 0.8, 0xc8e8ff);
+      }
+      // the water forced down the shut alley, out of its end at the ship's side of the field
+      if (on && m.t > m.warn + 0.25) {
+        g.mouth = 2;
+        m.next = (m.next ?? 0) - dt;
+        while (m.next <= 0) {
+          m.next += A.squeeze.every;
+          const [mx, my] = [g.cx, g.y + NURI.mouth[1] + 8];
+          if (this.canFire(g.body)) s.bullets.shot(`nu_gout_${Math.floor(m.t * 10) & 1}`, mx, my, DOWN + (Math.random() - 0.5) * A.squeeze.wide, slow * A.squeeze.speed, 2.2);
+        }
+      }
+      over = m.t > m.warn + A.squeeze.hold + 0.8;
+    } else if (m.kind === 'cross') {
+      // a row's stretches in turn (the near row, the far one, the near again), a stream off each slot swept from across
+      // the alley down over the field
+      const C = A.cross;
+      for (const r of m.rows) {
+        if (m.t < r.at || r.left <= 0) continue;
+        r.next -= dt;
+        while (r.next <= 0 && r.left > 0) {
+          r.next += C.every;
+          r.left--;
+          for (const st of g.stretches) {
+            if (st.state !== 'up' || st.row !== r.row) continue;
+            const [sx, sy] = [st.x + NURI.slot[0], st.y + NURI.slot[1] + 2];
+            const k = 1 - r.left / (C.n - 1);
+            const a0 = st.side < 0 ? 0 : Math.PI;
+            const a1 = DOWN + st.side * C.end;
+            if (this.canFire({ type: 'boss', seen: g.body.seen, y: sy })) s.bullets.shot(`nu_gout_${r.left & 1}`, sx, sy, a0 + (a1 - a0) * k, slow * C.speed, 2.2);
+          }
+          if (r.left === C.n - 1) s.sfx.splash?.();
+        }
+      }
+      over = m.rows.every((r) => r.left <= 0);
+    } else over = m.st.state === 'gone' || m.st.state === 'sink' || m.st.state === 'rise';
+    if (over) Object.assign(g, { move: null, moveT: A.moveEvery });
+  },
+
+  /** A toppled stretch lands across the alley: what is under it is crushed, clods off it, and the core's face bares. */
+  nuLand(g, st) {
+    const s = this.scene;
+    const [cx, cy] = tipped(st, st.rot);
+    Object.assign(st, { state: 'down', t: 0 });
+    g.open = Math.max(g.open, NURIKABE.alley.topple.down * (easy() ? 1.3 : 1));
+    g.look = 'half';
+    g.blink = g.open;
+    s.cameras.main.shake(240, 0.007);
+    s.sfx.explode('m');
+    s.sfx.earth?.(true);
+    SAY(s, cx, cy - 24, 'DOSUN!', 1, 0xe0d0a0);
+    const p = s.player;
+    if (p.alive && !p.god && p.invulnerable <= 0 && p.entering <= 0 && Math.abs(p.x - cx) < NURI.h / 2 - 2 && Math.abs(p.y - cy) < NURI.stretch / 2 - 2) p.hit();
+    for (let i = 0; i < 24; i++) s.fx.part(s.fx.parts, 'dot_1', cx + (Math.random() - 0.5) * NURI.h, cy + NURI.stretch / 2 - Math.random() * 6, { vx: (Math.random() - 0.5) * 60, vy: (Math.random() - 0.5) * 40, drag: 1.5, life: 0.7, a0: 0.8 }).setTint(Math.random() < 0.5 ? 0x9a8a6a : 0x7a6a4a);
+    if (this.canFire({ type: 'boss', seen: g.body.seen, y: cy })) {
+      const n = volley(5);
+      for (let i = 0; i < n; i++) s.bullets.shot(`nu_clod_${i & 3}`, cx + (i - (n - 1) / 2) * 12, cy + 14, DOWN + (i - (n - 1) / 2) * 0.14, slow * 0.9, 2.6);
+    }
+  },
+
   /** The stretches: rising, sliding to their places in the corridor, water off their slots, crumbling, rising again. */
   nuStretches(g, dt) {
     const s = this.scene;
     const A = NURIKABE.alley;
     if (!g.stretches.length) return;
-    const gap = A.gap[0] + (A.gap[1] - A.gap[0]) * (0.5 + 0.5 * Math.cos(g.t * 0.55));
+    const m = g.move;
+    const squeeze = m?.kind === 'squeeze' && m.t > m.warn && m.t < m.warn + A.squeeze.hold;
+    const gap = squeeze ? A.squeeze.gap : A.gap[0] + (A.gap[1] - A.gap[0]) * (0.5 + 0.5 * Math.cos(g.t * 0.55));
+    const slide = m?.kind === 'squeeze' && m.t > m.warn ? A.squeeze.slide : 18;
     const [lx, rx] = corridor(g.cx, gap);
     for (const st of g.stretches) {
       st.t += dt;
@@ -305,8 +438,32 @@ export const fukuokaNurikabe = {
         st.a = Math.max(0, st.a - dt * 1.5);
         continue;
       }
+      if (st.state === 'topple') {
+        // it rocks on its foot, then tips over across the alley
+        const warn = m?.st === st ? m.warn : A.topple.warn;
+        if (st.t < warn) st.wob = Math.sin(st.t * 30) * 0.05 * (st.t / warn);
+        else {
+          const k = Math.min(1, (st.t - warn) / A.topple.fall);
+          st.wob = 0;
+          st.rot = -st.side * (Math.PI / 2) * k * k;
+          if (k >= 1) this.nuLand(g, st);
+        }
+        continue;
+      }
+      if (st.state === 'down') {
+        // lying across the alley, then it crumbles away (to rise again later)
+        if (st.t > A.topple.down * (easy() ? 1.3 : 1)) {
+          const [cx, cy] = tipped(st, st.rot);
+          for (let i = 0; i < 20; i++) s.fx.part(s.fx.parts, `nu_clod_${i & 3}`, cx + (Math.random() - 0.5) * NURI.h, cy + (Math.random() - 0.5) * NURI.stretch * 0.8, { vx: (Math.random() - 0.5) * 60, vy: -20 - Math.random() * 30, g: 160, life: 0.7, a0: 1 });
+          s.fx.smoke(cx, cy, 3, 6, true);
+          SAY(s, cx, cy - 10, 'BORO BORO...', 0.9, 0xe0d0a0);
+          Object.assign(st, { state: 'gone', t: 0, rot: 0, gold: A.gold });
+        }
+        continue;
+      }
       if (st.state === 'gone') {
         st.a = 0;
+        st.rot = 0;
         if (st.t > A.down * (easy() ? 0.8 : 1) && g.stage === 2) Object.assign(st, { state: 'rise', t: 0, gold: A.gold });
         continue;
       }
@@ -317,7 +474,7 @@ export const fukuokaNurikabe = {
       }
       // sliding to its side of the corridor (its footing scraping)
       const tx = st.side < 0 ? lx - (st.row ? 6 : 0) : rx + (st.row ? 6 : 0);
-      st.x += Phaser.Math.Clamp(tx - st.x, -dt * 18, dt * 18);
+      st.x += Phaser.Math.Clamp(tx - st.x, -dt * slide, dt * slide);
       if (st.state === 'up' && g.stage === 2 && g.awake) {
         st.cry -= dt * this.nuHaste(g);
         if (st.cry <= 0) {
@@ -333,7 +490,7 @@ export const fukuokaNurikabe = {
   /** A cornerstone shot through: its stretch crumbles into clods, and the core's face lies bare for a while. */
   nuCrumble(g, st) {
     const s = this.scene;
-    Object.assign(st, { state: 'gone', t: 0 });
+    Object.assign(st, { state: 'gone', t: 0, rot: 0, wob: 0 });
     g.open = NURIKABE.alley.open * (easy() ? 1.3 : 1);
     g.look = 'half';
     g.blink = g.open;
@@ -348,8 +505,8 @@ export const fukuokaNurikabe = {
   nuToNight(g) {
     const s = this.scene;
     this.phaseBreak(g, 90, g.y, 3, 'NOC');
-    for (const st of g.stretches) if (st.state !== 'gone') Object.assign(st, { state: 'sink', t: 0 });
-    Object.assign(g, { act: null, open: 0, y: 150, z: 0, look: 'open', fill: 0, mouth: 0, song: 's12_boss_night' }); // (its theme falls almost silent)
+    for (const st of g.stretches) if (st.state !== 'gone') Object.assign(st, { state: 'sink', t: 0, wob: 0 });
+    Object.assign(g, { act: null, open: 0, y: 140, z: 0, look: 'open', fill: 0, mouth: 0, move: null, song: 's12_boss_night' }); // (its theme falls almost silent)
     g.plan = 0;
     SAY(s, 90, g.y + 46, 'NURI... NURI...', 1.6, 0xb8c8ff);
   },
@@ -359,7 +516,7 @@ export const fukuokaNurikabe = {
     const s = this.scene;
     const N = NURIKABE.night;
     const p = s.player;
-    const to = Phaser.Math.Clamp(p.y - 120, 120, 230);
+    const to = Phaser.Math.Clamp(p.y - 140, 120, nuPlaces(s.H).glide);
     g.y += Phaser.Math.Clamp(to - g.y, -dt * N.follow, dt * N.follow);
     a.next = (a.next ?? 0.4) - dt * this.nuHaste(g);
     if (a.next <= 0) {
@@ -387,6 +544,47 @@ export const fukuokaNurikabe = {
         t.lineStyle(1.5, GOLD, 0.45 + 0.35 * Math.sin(g.t * 9 + st.n)).strokeCircle(gx, gy, 6);
       }
       if (g.open > 0) t.lineStyle(2, SAFE, 0.5 + 0.3 * Math.sin(g.t * 12)).strokeRect(g.x - NURI.core / 2, g.y - NURI.h / 2, NURI.core, NURI.h);
+      this.nuMoveTele(g);
+    }
+  },
+
+  /** Its tricks flagged: where the stretches will shut round the ship, the rows the water will cross, where one falls. */
+  nuMoveTele(g) {
+    const t = this.tele;
+    const m = g.move;
+    if (!m) return;
+    const A = NURIKABE.alley;
+    const pulse = 0.08 + 0.06 * Math.sin(g.t * 18);
+    const half = NURI.stretch / 2;
+    if (m.kind === 'squeeze' && m.t < m.warn) {
+      const [lx, rx] = corridor(g.cx, A.squeeze.gap);
+      for (const st of g.stretches) {
+        if (st.state !== 'up') continue;
+        const x = st.side < 0 ? lx - (st.row ? 6 : 0) : rx + (st.row ? 6 : 0);
+        t.fillStyle(WARN, pulse).fillRect(x - half, st.y - NURI.h / 2, half * 2, NURI.h);
+        t.lineStyle(2, WARN, 0.8).lineBetween(x - st.side * half, st.y - NURI.h / 2, x - st.side * half, st.y + NURI.h / 2);
+      }
+      // and the lane the water will come down
+      const y0 = g.y + NURI.mouth[1] + 8;
+      t.fillStyle(WARN, pulse).fillRect(g.cx - 7, y0, 14, this.scene.H - y0);
+      t.lineStyle(1.5, WARN, 0.8).lineBetween(g.cx - 7, y0, g.cx - 7, this.scene.H).lineBetween(g.cx + 7, y0, g.cx + 7, this.scene.H);
+    } else if (m.kind === 'cross') {
+      for (const r of m.rows) {
+        if (m.t > r.at || m.t < r.at - m.warn) continue;
+        for (const st of g.stretches) {
+          if (st.state !== 'up' || st.row !== r.row) continue;
+          // the sweep: from across the alley to down over the field
+          const [x, y] = [st.x + NURI.slot[0], st.y + NURI.slot[1] + 2];
+          const a1 = DOWN + st.side * A.cross.end;
+          t.lineStyle(1.5, WARN, 0.8).lineBetween(x, y, x - st.side * 40, y);
+          t.lineStyle(1.5, WARN, 0.8).lineBetween(x, y, x + Math.cos(a1) * 160, y + Math.sin(a1) * 160);
+          t.fillStyle(WARN, pulse).slice(x, y, 60, Math.min(st.side < 0 ? 0 : Math.PI, a1), Math.max(st.side < 0 ? 0 : Math.PI, a1), false).fillPath();
+        }
+      }
+    } else if (m.kind === 'topple' && m.st.state === 'topple' && !m.st.rot) {
+      const [cx, cy] = tipped(m.st, -m.st.side * Math.PI / 2);
+      t.fillStyle(WARN, pulse + 0.04).fillRect(cx - NURI.h / 2, cy - half, NURI.h, half * 2);
+      t.lineStyle(2, WARN, 0.8).strokeRect(cx - NURI.h / 2, cy - half, NURI.h, half * 2);
     }
   },
 
@@ -415,6 +613,13 @@ export const fukuokaNurikabe = {
     for (const st of g.stretches) {
       if (st.a <= 0) continue;
       const sink = st.state === 'rise' ? (1 - st.a) * 10 : st.state === 'sink' ? (1 - st.a) * 10 : 0;
+      const rot = (st.rot ?? 0) + (st.wob ?? 0);
+      if (rot) {
+        // tipping over on its inner foot, or lying across the alley
+        const [x, y1] = tipped(st, rot);
+        put(`st${st.n}`, `nu_stretch_${st.n}`, x, y1 + sink, { a: st.a, z: st.row * 0.01 + 0.02, rot });
+        continue;
+      }
       put(`stsh${st.n}`, 'nu_shadow_s', st.x + 2, st.y + NURI.foot[1] + 5, { a: st.a * 0.6, z: -0.05 });
       put(`st${st.n}`, `nu_stretch_${st.n}`, st.x, st.y + sink, { a: st.a, z: st.row * 0.01 });
     }
@@ -435,6 +640,7 @@ export const fukuokaNurikabe = {
       if (sp.depth !== z) sp.setDepth(z);
       const oy = o.oy ?? 0.5;
       if (sp.originY !== oy) sp.setOrigin(0.5, oy);
+      if (sp.rotation !== (o.rot ?? 0)) sp.setRotation(o.rot ?? 0);
       sp.setPosition(it.x, it.y).setAlpha(o.a ?? 1).setVisible(true);
       seen.add(it.key);
     });
@@ -447,7 +653,7 @@ export const fukuokaNurikabe = {
 
   nuKill(sp) {
     if (!sp || sp.dead) return;
-    sp.setOrigin(0.5, 0.5).setAlpha(1).clearTint();
+    sp.setOrigin(0.5, 0.5).setAlpha(1).setRotation(0).clearTint();
     this.segPool.kill(sp);
   },
 
@@ -457,7 +663,7 @@ export const fukuokaNurikabe = {
     if (g.state !== 'fight') return [];
     const out = [];
     if (g.stage === 2) {
-      for (const st of g.stretches) if (st.state === 'up') out.push({ x: st.x + NURI.gold[0], y: st.y + NURI.gold[1] });
+      for (const st of g.stretches) if (st.state === 'up' || (st.state === 'topple' && !st.rot)) out.push({ x: st.x + NURI.gold[0], y: st.y + NURI.gold[1] });
       if (g.open > 0) out.push({ x: g.x, y: g.y + 8 });
     } else if (this.nuLifted(g)) out.push({ x: this.scene.player.x, y: g.y - g.z + NURI.foot[1] });
     return out;
@@ -475,9 +681,10 @@ export const fukuokaNurikabe = {
     const s = this.scene;
     const r = shot.radius;
     for (const st of g.stretches) {
-      if (st.state !== 'up' && st.state !== 'rise') continue;
+      const rocking = st.state === 'topple' && !st.rot;
+      if (st.state !== 'up' && st.state !== 'rise' && !rocking) continue;
       if (Math.abs(shot.x - st.x) > NURI.stretch / 2 + r || shot.y < st.y - NURI.h / 2 - r || shot.y > st.y + NURI.h / 2 + r) continue;
-      if (st.state === 'up' && g.state === 'fight' && Math.hypot(shot.x - (st.x + NURI.gold[0]), shot.y - (st.y + NURI.gold[1])) < 5 + r) {
+      if ((st.state === 'up' || rocking) && g.state === 'fight' && Math.hypot(shot.x - (st.x + NURI.gold[0]), shot.y - (st.y + NURI.gold[1])) < 5 + r) {
         st.gold -= shot.damage;
         s.fx.spark(shot.x, shot.y - 2, GOLD);
         if (st.gold <= 0) this.nuCrumble(g, st);
