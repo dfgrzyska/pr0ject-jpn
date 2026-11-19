@@ -14,11 +14,13 @@ import { todGrade, tintTable, PropKit } from '../props.mjs';
 import { makeKit } from '../tokyo/kit.mjs';
 import { W, S, L, SECTIONS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, PLOTS, isSea, bayShore } from './route.mjs';
 import { near, inShape, bbox, railHalf } from '../tokyo/geom.mjs';
+import { momochi } from './momochi.mjs';
+import { ohori } from './ohori.mjs';
 
 // the stretches' painters, in the order they are called: (ctx) => void
-const PAINTERS = [];
+const PAINTERS = [momochi, ohori];
 // (the stretches drawn so far: their plots are not hatched)
-const DRAWN = [];
+const DRAWN = [[0, 2000]];
 // arenas with no ring (once their own ground is drawn)
 const ARENA_DRAWN = new Set();
 
@@ -37,7 +39,7 @@ const GROUND = {
   forest: [0x26341e, 0x2e3c22, 0x364626], // the wood's floor in shade
   gravel: [0xb0a690, 0xbcb29c, 0xc6bca6],
   plaza: [0x9c988f, 0xa8a49a, 0xb2aea4],
-  stone: [0x8e8a80, 0x9a968c, 0xa6a296, 0x5a5650], // the castle's terraces: dressed stone, a wall's shadow at each step
+  stone: [0x5e6a3e, 0x667244, 0x6e7a4a, 0x5a5650], // the castle's terraces: grass on top of its walls, a wall's shadow at each step
   apron: [0xa4a49e, 0xaeaea8, 0xb8b8b2],
   runway: [0x55575c, 0x5c5e63, 0x64666a],
   field: [0x7a6a4a, 0x847250, 0x8c7a56, 0x9aa040], // paddies after winter: stubble and mud, rape in flower on the bunds

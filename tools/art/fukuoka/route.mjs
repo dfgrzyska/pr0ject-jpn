@@ -272,7 +272,7 @@ export const FERRIES = [
 // garden, foundation stones): may stand in an arena. Every plot gets its own drawing.
 export const PLOTS = [
   // Momochi
-  ['fukuoka_tower', 112, 404, 16, 16, 'wieża Fukuoka: trójkątna w przekroju, lustrzana, oświetlona nocą, u stóp plac'],
+  ['fukuoka_tower', 105, 404, 22, 100, 'wieża Fukuoka: trójkątna w przekroju, lustrzana, oświetlona nocą, u stóp plac (234 m: rysowana w górę taśmy)'],
   ['dome', 8, 410, 56, 50, 'kopuła stadionu (bez nazwy), parking dookoła'],
   ['hotel_kaihin', 68, 420, 20, 32, 'hotel nad morzem w kształcie statku (bez nazwy)'],
   ['borui', 136, 470, 40, 8, 'resztki kamiennego muru wzdłuż dawnego brzegu w sosnach', 'low'],
