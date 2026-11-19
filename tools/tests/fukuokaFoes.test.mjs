@@ -153,14 +153,19 @@ test('the oboro-guruma breaks up in three stages and keeps to its street', () =>
   }
 });
 
-test('the three are Fukuoka\'s, in waves, their frames in its atlas', () => {
+test('the three are Fukuoka\'s (and, on trial, Onomichi\'s and Kyoto\'s), in waves, their frames in each one\'s atlas', () => {
+  const cities = { fukuoka: 'stage12', onomichi: 'stage11', kyoto: 'stage1' };
   for (const t of ['chain', 'split', 'cart']) {
     assert.ok(ENEMIES[t] && PACKED.has(t), t);
-    for (const city of Object.keys(SKINS)) if (city !== 'fukuoka') assert.equal(SKINS[city][t], undefined, `${city} has no ${t}`);
+    for (const city of Object.keys(SKINS)) if (!cities[city]) assert.equal(SKINS[city][t], undefined, `${city} has no ${t}`);
   }
-  const { chain, split, cart } = SKINS.fukuoka;
-  for (const f of [chain.frame, `${chain.eye}0`, `${chain.eye}1`, `${chain.lit}0`, `${chain.lit}1`, chain.burnt, chain.pole, split.frame, split.one, cart.wreck]) assert.ok(names.has(f), f);
-  for (let st = 0; st < 4; st++) for (let f = 0; f < 2; f++) assert.ok(names.has(`${cart.anim}${st}_${f}`));
+  for (const [city, stage] of Object.entries(cities)) {
+    const a = stage === 'stage12' ? atlas : JSON.parse(readFileSync(new URL(`../../public/assets/bg/${stage}/enemies.json`, import.meta.url)));
+    const has = new Set(Array.isArray(a.frames) ? a.frames.map((f) => f.filename) : Object.keys(a.frames));
+    const { chain, split, cart } = SKINS[city];
+    for (const f of [chain.frame, `${chain.eye}0`, `${chain.eye}1`, `${chain.lit}0`, `${chain.lit}1`, chain.burnt, chain.pole, split.frame, split.one, cart.wreck]) assert.ok(has.has(f), `${city}: ${f}`);
+    for (let st = 0; st < 4; st++) for (let f = 0; f < 2; f++) assert.ok(has.has(`${cart.anim}${st}_${f}`), `${city}: ${cart.anim}${st}_${f}`);
+  }
   // a rope is one wave of all its lanterns
   const w = new Waves([{ t: 1, type: 'chain', x: 20, n: 5 }]);
   const out = [];

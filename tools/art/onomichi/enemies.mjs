@@ -4,6 +4,7 @@
 // roof's ridge, turning its scowl to the ship and glowing in its mouth before it fires; a firework shell with its fuse
 // lit, a band in the colour of its power. Each reads at a glance as something that will hurt (eyes, a scowl, a
 // burning fuse), never as a pickup. Seen from above like every city's, drawn with HiSprite (tools/lib/hisprite.mjs).
+import { onomichiNewFoes } from './newfoes.mjs';
 import { HiSprite, tones, speckle, mottle, mix2, fur } from '../../lib/hisprite.mjs';
 import { nekomataFrames } from './nekomata.mjs';
 import { funayureiFrames } from './funayurei.mjs';
@@ -236,5 +237,6 @@ export function onomichiEnemies(add) {
   nekomataFrames(add); // the miniboss, NEKOMATA (nekomata.mjs)
   funayureiFrames(add); // the boss, FUNA-YUREI's ship in parts (funayurei.mjs)
   hanabiFrames(add); // the festival's fireworks over the strait (hanabi.mjs, src/game/Hanabi.js)
+  onomichiNewFoes(add); // (the flags on their ropes, the hassaku, the ferry: newfoes.mjs)
 }
 export const ONOMICHI_PORTRAITS = ['o_neko_sit_0', 'fy_portrait'];

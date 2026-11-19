@@ -32,6 +32,11 @@ export const SKINS = {
     heavy: { frame: 'tanuki_0', anim: 'tanuki', kind: 'tanuki' },
     tanuki: { frame: 'tanuki_0', anim: 'tanuki', kind: 'tanuki' }, // (the waves name it: look: 'tanuki')
     turret: { base: 'turret_base', head: 'turret_head_', wreck: 'turret_wreck' },
+    // the shared three (enemies/chainSplitCart.js): omikuji on a straw rope catching the fox fire, kai-awase shells, a
+    // yamaboko of the Gion festival driving itself
+    chain: { frame: 'ky_kuji_0', eye: 'ky_kuji_eye_', lit: 'ky_kuji_lit_', burnt: 'ky_kuji_burnt', pole: 'ky_pole', rope: 0xb8a060, char: 0x4a4a56, light: 0x8ad0ff, text: 0xa8e0ff },
+    split: { frame: 'ky_kai_0', anim: 'ky_kai', one: 'ky_kai_one_0', oneAnim: 'ky_kai_one', sound: 'crock' },
+    cart: { anim: 'ky_hoko_', wreck: 'ky_hoko_wreck', debris: 0x6a4a30 },
   },
   okinawa: {
     trap: trap('okinawa', 'water', 13, { kind: 'ring', n: 8 }, 3.4), // a blowhole in the reef (enemies/traps.js)
@@ -163,6 +168,10 @@ export const SKINS = {
     carrier: { frame: 'o_hanabi_{c}_0', anim: 'o_hanabi_{c}' },
     heavy: { frame: 'o_neko_sit_0', kind: 'nekomata' }, // the miniboss: NEKOMATA (onomichi-nekomata.js)
     turret: { base: 'o_ridge_base', head: 'o_oni_head_', wreck: 'o_ridge_wreck', heat: true }, // (its mouth glows red before it fires)
+    // the shared three (enemies/chainSplitCart.js): fishermen's flags on a rope, a hassaku, the ferry over the strait
+    chain: { frame: 'o_bata_0', eye: 'o_bata_eye_', lit: 'o_bata_lit_', burnt: 'o_bata_burnt', pole: 'o_pole' },
+    split: { frame: 'o_hassaku_0', anim: 'o_hassaku', one: 'o_hassaku_one_0', oneAnim: 'o_hassaku_one' },
+    cart: { anim: 'o_ferry_', wreck: 'o_ferry_wreck', debris: 0xdce4ec },
   },
   // Fukuoka (docs/plan-fukuoka.md): plum flowers flying in flocks (tobiume), the spinning top of Hakata, a fugu
   // puffing into spines, Dazaifu's wooden bullfinch carrying the power-ups, an archer of Hakata clay on its stand

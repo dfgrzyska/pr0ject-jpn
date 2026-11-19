@@ -237,17 +237,21 @@ export const chainSplitCart = {
   },
 
   // ---------------------------------------------------------------- cart
-  /** Down its street (w.x), or across from a screen edge (w.dir -1/1 at w.y), like Sapporo's snowploughs. */
+  /**
+   * Down its street (w.x; w.up: up it, as a ferry crossing against the scroll), or across from a screen edge (w.dir
+   * -1/1 at w.y), like Sapporo's snowploughs. w.stop: where its way ends (a u going up or down, an x going across):
+   * it stops there, as a ferry at its pier, and fights on where it lies.
+   */
   spawnCart(w, base, look) {
     const s = this.scene;
     const horiz = typeof w.dir === 'number';
     const x = horiz ? (w.dir > 0 ? -16 : VIEW.width + 16) : w.x;
     const y = horiz ? w.y : -20;
-    const e = this.pool.spawn(`${look.anim}0_0`, x, y, { ...base, horiz, dir: horiz ? w.dir : 1, wreck: look.wreck, timer: 1.4, cartStage: 0 });
+    const e = this.pool.spawn(`${look.anim}0_0`, x, y, { ...base, horiz, dir: horiz ? w.dir : w.up ? -1 : 1, stop: w.stop ?? null, docked: false, wreck: look.wreck, timer: 1.4, cartStage: 0 });
     e.u = s.parallax.stripU(y);
     e.look = look;
     e.play(`${look.anim}0`);
-    if (horiz) e.setRotation(-e.dir * Math.PI / 2); // (it is drawn driving down the screen)
+    e.setRotation(horiz ? -e.dir * Math.PI / 2 : e.dir < 0 ? Math.PI : 0); // (it is drawn driving down the screen)
     return e;
   },
 
@@ -259,11 +263,21 @@ export const chainSplitCart = {
     // a wheel gone: it limps along slower, lurching
     const limp = e.cartStage >= 2;
     const v = CART.speed * (limp ? 0.6 : 1) * (limp ? 0.75 + Math.abs(Math.sin(e.age * 4)) * 0.5 : 1);
-    if (e.horiz) e.x += e.dir * v * dt;
-    else e.u -= v * dt;
+    if (!e.docked) {
+      if (e.horiz) e.x += e.dir * v * dt;
+      else e.u -= e.dir * v * dt;
+      // (at the end of its way it stops: a ferry at its pier)
+      const at = e.horiz ? e.x : e.u;
+      const past = e.stop != null && (e.horiz ? e.dir * (at - e.stop) : -e.dir * (at - e.stop)) >= 0;
+      if (past) {
+        if (e.horiz) e.x = e.stop;
+        else e.u = e.stop;
+        e.docked = true;
+      }
+    }
     e.y = s.parallax.screenY(e.u);
-    const base = e.horiz ? -e.dir * Math.PI / 2 : 0;
-    e.setRotation(base + (limp ? Math.sin(e.age * 4) * 0.09 : 0));
+    const base = e.horiz ? -e.dir * Math.PI / 2 : e.dir < 0 ? Math.PI : 0;
+    e.setRotation(base + (limp && !e.docked ? Math.sin(e.age * 4) * 0.09 : 0));
     if (e.cartStage >= 3 && Math.random() < dt * 14) {
       // the roof burning
       s.fx.smoke(e.x + (Math.random() - 0.5) * 8, e.y - 6, 1, 2, true);

@@ -1,6 +1,7 @@
 // Kyoto's enemies at 540 px (docs/enemies-540-plan.md): the same silhouettes as the old sprites, three times
 // as fine, each frame exactly three times the old one's size so the game's pivots stay put.
 // Old mask coordinates (m) map to fine ones as (m + 1) * 3: the old 1 px outline border becomes 3 fine px.
+import { kyotoNewFoes } from './newfoes.mjs';
 import { HiSprite, S, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
 import { mix, Raster, fbm } from '../../lib/raster.mjs';
 import { body as kyubiBody, tail as kyubiTail } from './kyubi540.mjs'; // (the white fox of the Inari shrines)
@@ -387,6 +388,7 @@ export function spirit(f) {
 // ---------------------------------------------------------------- the lot, and the portraits for the album and the parade
 export const TAIL_COUNT = 6;
 export function kyotoEnemies(add) {
+  kyotoNewFoes(add); // (the omikuji on their ropes, the kai-awase shells, the yamaboko: newfoes.mjs)
   for (let f = 0; f < 4; f++) {
     add(`popcorn_${f}`, popcorn(f));
     add(`shooter_${f}`, shooter(f));
