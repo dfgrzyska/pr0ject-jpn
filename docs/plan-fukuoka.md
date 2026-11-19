@@ -1,6 +1,6 @@
 # Plan: etap 12, FUKUOKA
 
-Stan: **plan do akceptacji** (2026-11-19). Decyzje D1–D8 z sekcji 2 czekają na autora. Po akceptacji fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami.
+Stan: **w budowie**. Plan i decyzje D1–D8 przyjęte przez autora 2026-11-19 według rekomendacji („Wykonaj wszystkie twoje rekomendacje”). Fazy z sekcji 8 idą po kolei, a postęp odznacza się w nich checkboxami. Autor akceptuje jeszcze zbliżenie Dazaifu (faza 6) i projekt Nurikabe (faza 13).
 
 ## 1. W skrócie
 
@@ -24,9 +24,9 @@ Stan: **plan do akceptacji** (2026-11-19). Decyzje D1–D8 z sekcji 2 czekają n
 
 ## 2. Decyzje
 
-Do akceptacji autora. Przy każdej decyzji na pierwszym miejscu stoi rekomendacja.
+Przyjęte 2026-11-19 według rekomendacji.
 
-| # | Pytanie | Rekomendacja |
+| # | Pytanie | Decyzja |
 |---|---|---|
 | D1 | Kierunek trasy | **Zatoka → miasto → Nanzō-in → Dazaifu.** Etap idzie od nocy do zachodu: neony i jatai wypadają nocą, kiedy naprawdę działają, a finał o zachodzie wśród śliw kończy się na lądzie. Dwa ostatnie miasta kończyły się nad wodą (jezioro z Fuji, nocna cieśnina). Odwrotny kierunek (Dazaifu rano → zatoka nocą) dałby trzeci finał z rzędu nocą nad wodą. |
 | D2 | Pora roku | **Przedwiośnie (śliwy).** Dazaifu ma około 6 000 drzew śliwy, a z nimi wiąże się legenda latającej śliwy (tobiume). Przy okazji: mgła o poranku, para z jatai w chłodną noc, rzepak nad rzekami. Lato z festiwalem Yamakasa powtarzałoby Onomichi; wóz festiwalowy i tak stoi przez cały rok w chramie Kushida, więc pokażemy go w tle. |
@@ -235,14 +235,14 @@ Każda faza ma zakres, pliki, które wolno ruszać, i warunek ukończenia. „Wy
 
 ### Faza 0: dwunaste miasto i szkielet etapu
 Wymaga: decyzje D1–D8. Pliki: `src/data/stage12.json`, `src/data/stages.js`, `src/game/JourneyMenu.js`, `src/i18n.js`, `src/game/skins.js`, `tools/gen-art.mjs`, `tools/art/fukuoka/index.mjs`.
-- [ ] `stage12.json` z flagą `"wip": true` (`?stage=12` i menu bossów), fale zastępcze, miniboss i boss z innego miasta na zastępstwo; miniboss około 90 s z `"hold"`, boss w 220 s
-- [ ] Makieta tła 8 kafli: zatoka, miasto, rzeki, dworzec i lotnisko, góry Sasaguri, Dazaifu, wał; obie areny; licznik „DWANAŚCIE” (EN „TWELVE”)
-- [ ] `npm test` i `npx vite build` przechodzą
+- [x] `stage12.json` z flagą `"wip": true` (`?stage=12` i menu bossów), fale zastępcze z Onomichi, tanuki i Kyūbi z Kioto na zastępstwo; miniboss w 82 s z `"hold"` (wtedy arena na nabrzeżu jest w połowie ekranu), boss w 220 s; noc gaśnie o świcie nad Sumiyoshi (`dark`)
+- [x] Tło 8 kafli od razu jako szkielet trasy z fazy 1; skórka `fukuoka` z przeciwnikami Kioto na zastępstwo; woda z Onomichi na zastępstwo (`far.mjs`, do fazy 8); licznik „DWANAŚCIE” (EN „TWELVE”); napisy kart i zapowiedzi PL/EN
+- [x] `npm test` i `npx vite build` przechodzą
 
 ### Faza 1: szkielet trasy
 Wymaga: faza 0. Pliki: `tools/art/fukuoka/route.mjs`, `mid.mjs`, `overview.mjs`, `src/data/landmarks.js`, `tools/tests/fukuokaRoute.test.mjs`.
-- [ ] Morze, rzeki Naka, Hakata i Mikasa, stawy (Ōhori, Shinji-ike), fosa; drogi, autostrada na filarach, tory (shinkansen i linie lokalne), pas startowy z drogami kołowania, mosty, ścieżki pielgrzymów i ścieżka do Nanzō-in, aleja w Dazaifu, wał Mizuki
-- [ ] Grunty i działki z opisami, obie areny, pora dnia od nocy do zachodu, nazwy miejsc; test topologii `fukuokaRoute`; arkusz podglądu
+- [x] Zatoka z plażą i molem, rzeki Naka (ujście w poprzek pod Nakasu, potem w górę taśmy), Hakata (wzdłuż drugiego brzegu Nakasu, łączy się z Naką na obu końcach) i Mikasa, stawy (Ōhori z trzema wyspami, Shinji-ike, ogród), fosa zamku i fosa przed wałem, strumień w Sasaguri; autostrada na filarach, aleje i ulice, ścieżka wokół stawu i przez wyspy, mosty, kryty pasaż, tory: główna linia z sześcioma torami i shinkansen na wiadukcie przy dworcu, linia Sasaguri, linia do Dazaifu; pas startowy z drogami kołowania; ścieżki pielgrzymów, aleja do chramu, ścieżka do muzeum
+- [x] Grunty (plaża, parki, tarasy zamku, żwir chramów i świątyń, lasy, płyta i pas lotniska, pola po zimie z rzepakiem na miedzach, gaje śliw, trawa ruin, wał), 66 działek z opisami, obie areny, pora dnia od nocy do zachodu (`TOD`), 23 nazwy miejsc (`landmarks.js`); test topologii `fukuokaRoute` (działki z dala od dróg, torów i wody, każdy koniec drogi i toru dokądś prowadzi, mosty nad wodą, Nakasu jest wyspą, arena bossa na polu ruin pod wałem); arkusz podglądu `node tools/art/fukuoka/overview.mjs`
 
 ### Faza 2: odczucie zniszczenia (jeśli D7)
 Wymaga: faza 0. Pliki: `src/game/Enemies.js` (tylko `destroy` i zliczanie fal), `src/game/Fx.js`, `src/game/Score.js`, `src/game/Bullets.js`, `tools/preview/kill-stats.mjs`, testy.
@@ -328,4 +328,5 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-19 | Claude | 0 i 1 | Etap 12 w budowie: `stage12.json` (flaga `wip`, fale zastępcze), trasa jako dane w `tools/art/fukuoka/route.mjs`, szkielet malowany z danych w `mid.mjs` (na bazie Onomichi; nowe grunty: plaża, kamienne tarasy, płyta i pas lotniska, pola, gaj śliw, ruiny, wał; rzeki z kamiennymi nabrzeżami; shinkansen na wiadukcie), test `fukuokaRoute`, arkusz podglądu, nazwy miejsc, skórka i licznik „DWANAŚCIE”. Sprawdzone w grze zrzutami w 8, 60, 95, 140, 175 i 228 s, bez błędów. | Woda z Onomichi na zastępstwo (faza 8). Następne: faza 2 (odczucie zniszczenia), potem tło. |
 | 2026-11-19 | Claude | plan | Plan etapu: trasa od nocnej zatoki przez Nakasu, Hakatę, lotnisko i Nanzō-in do Dazaifu w śliwach i wału Mizuki o zachodzie; Yatai-obake i Nurikabe; pomiar botem, czemu niszczenie fal nie cieszy (sekcja 5.1), trzy nowe zachowania i wspólne zmiany odczucia zniszczenia. | Czeka na akceptację decyzji D1–D8. |

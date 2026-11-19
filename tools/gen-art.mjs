@@ -26,6 +26,7 @@ import * as hiroshima from './art/hiroshima/index.mjs';
 import * as tokyo from './art/tokyo/index.mjs';
 import * as kawaguchiko from './art/kawaguchiko/index.mjs';
 import * as onomichi from './art/onomichi/index.mjs';
+import * as fukuoka from './art/fukuoka/index.mjs';
 import { kyotoEnemies, KYOTO_PORTRAITS } from './art/kyoto/enemies.mjs';
 import { okinawaEnemies, OKINAWA_PORTRAITS } from './art/okinawa/enemies.mjs';
 import { sapporoEnemies, SAPPORO_PORTRAITS } from './art/sapporo/enemies.mjs';
@@ -92,7 +93,8 @@ const STAGES = [
   { id: 'stage8', art: nagasaki },
   { id: 'stage9', art: tokyo }, // (Tokyo: docs/plan-tokyo.md)
   { id: 'stage10', art: kawaguchiko }, // (Kawaguchiko: docs/plan-kawaguchiko.md)
-  { id: 'stage11', art: onomichi }, // (in the works: docs/plan-onomichi.md)
+  { id: 'stage11', art: onomichi }, // (Onomichi: docs/plan-onomichi.md)
+  { id: 'stage12', art: fukuoka }, // (in the works: docs/plan-fukuoka.md)
   { id: 'ex1', art: greatwave }, // the vending machine's arena: the Great Wave, fizzy
   { id: 'ex2', art: tokaido }, // the kei car's: the Tōkaidō of Hiroshige's Fifty-three Stations, racing by
   { id: 'ex3', art: namazu }, // the site cat's: a namazu-e, the giant catfish under a building site in Edo

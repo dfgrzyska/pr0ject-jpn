@@ -164,6 +164,17 @@ export const SKINS = {
     heavy: { frame: 'o_neko_sit_0', kind: 'nekomata' }, // the miniboss: NEKOMATA (onomichi-nekomata.js)
     turret: { base: 'o_ridge_base', head: 'o_oni_head_', wreck: 'o_ridge_wreck', heat: true }, // (its mouth glows red before it fires)
   },
+  // Fukuoka (docs/plan-fukuoka.md): stand-ins until its own are drawn (phase 9), Kyoto's
+  fukuoka: {
+    trap: trap('kyoto', 'foxfire', 10, { kind: 'ring', n: 6 }, 3.6),
+    ambush: ambush('kyoto', 'leaves'),
+    popcorn: { frame: 'popcorn_0', anim: 'popcorn' },
+    shooter: { frame: 'shooter_0', anim: 'shooter' },
+    diver: { frame: 'diver_0', anim: 'diver' },
+    carrier: { frame: 'carrier_{c}_0', anim: 'carrier_{c}' },
+    heavy: { frame: 'tanuki_0', anim: 'tanuki', kind: 'tanuki' }, // (the miniboss's place: YATAI-OBAKE, phase 12)
+    turret: { base: 'turret_base', head: 'turret_head_', wreck: 'turret_wreck' },
+  },
   // Hiroshima & Miyajima: maple-leaf spirit flocks, armored Seto oysters with pearl crits, scooping shamoji paddles,
   // tidal stone lanterns, Heike-gani samurai crab, and Sankibō the Great Tengu of Mount Misen
   hiroshima: {
