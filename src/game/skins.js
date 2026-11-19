@@ -164,16 +164,17 @@ export const SKINS = {
     heavy: { frame: 'o_neko_sit_0', kind: 'nekomata' }, // the miniboss: NEKOMATA (onomichi-nekomata.js)
     turret: { base: 'o_ridge_base', head: 'o_oni_head_', wreck: 'o_ridge_wreck', heat: true }, // (its mouth glows red before it fires)
   },
-  // Fukuoka (docs/plan-fukuoka.md): stand-ins until its own are drawn (phase 9), Kyoto's
+  // Fukuoka (docs/plan-fukuoka.md): plum flowers flying in flocks (tobiume), the spinning top of Hakata, a fugu
+  // puffing into spines, Dazaifu's wooden bullfinch carrying the power-ups, an archer of Hakata clay on its stand
   fukuoka: {
-    trap: trap('kyoto', 'foxfire', 10, { kind: 'ring', n: 6 }, 3.6),
-    ambush: ambush('kyoto', 'leaves'),
-    popcorn: { frame: 'popcorn_0', anim: 'popcorn' },
-    shooter: { frame: 'shooter_0', anim: 'shooter' },
-    diver: { frame: 'diver_0', anim: 'diver' },
-    carrier: { frame: 'carrier_{c}_0', anim: 'carrier_{c}' },
+    trap: trap('fukuoka', 'fire', 10, { kind: 'ring', n: 8 }, 3.6), // a shichirin grill by the stalls, throwing out rings of sparks (enemies/traps.js)
+    ambush: { ...ambush('fukuoka', 'splash'), sound: ['splash'] }, // a soft-shell turtle out of a pond or a moat (enemies/ambush.js)
+    popcorn: { frame: 'f_tobiume_0', anim: 'f_tobiume', flock: true },
+    shooter: { frame: 'f_fugu_0', anim: 'f_fugu' },
+    diver: { frame: 'f_goma_0', anim: 'f_goma' },
+    carrier: { frame: 'f_uso_{c}_0', anim: 'f_uso_{c}' },
     heavy: { frame: 'tanuki_0', anim: 'tanuki', kind: 'tanuki' }, // (the miniboss's place: YATAI-OBAKE, phase 12)
-    turret: { base: 'turret_base', head: 'turret_head_', wreck: 'turret_wreck' },
+    turret: { base: 'f_dai_base', head: 'f_ningyo_', wreck: 'f_dai_wreck' }, // (the doll stands; its bow turns to the ship)
   },
   // Hiroshima & Miyajima: maple-leaf spirit flocks, armored Seto oysters with pearl crits, scooping shamoji paddles,
   // tidal stone lanterns, Heike-gani samurai crab, and Sankibō the Great Tengu of Mount Misen

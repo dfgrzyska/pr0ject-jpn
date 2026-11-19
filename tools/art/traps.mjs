@@ -28,6 +28,7 @@ const RAMPS = {
   lg: tones([0x6a4a10, 0xc8902a, 0xf0c860]), // fallen ginkgo and larch, gold
   sm: tones([0x6a666a, 0xa8a4a4, 0xdcd8d4]), // leaf smoke
   pg: tones([0x6a2e14, 0xb0602e, 0xe89a64]), // a terracotta pig
+  dc: tones([0x7a6a4a, 0xd8c8a0, 0xfff4d8]), // a shichirin's pale diatomite clay
 };
 const sprite = () => new HiSprite(60, 60, RAMPS);
 const shadow = (s, cx, cy, rx, ry) => {
@@ -252,7 +253,46 @@ function onomichi(f) {
   return s;
 }
 
-const DRAW = { kyoto, okinawa, sapporo, kagoshima, osaka, hiroshima, nagasaki, tokyo, kawaguchiko, onomichi };
+/** Fukuoka: a shichirin, the little round charcoal grill of pale diatomite clay by the food stalls and the shops'
+ * grills: an iron band round it, the wire grate on top with skewers on it, its draught door at the front; the coals
+ * glow red under the grate, then flare, and it throws out a ring of sparks and a puff of smoke. */
+function fukuoka(f) {
+  const s = sprite();
+  shadow(s, 33, 42, 16, 7);
+  // the pot: its side (the front of it, toward the bottom of the screen), the rim, the iron band round it
+  s.paint([12, 28, 48, 46], (x, y) => ((x - 30) / 17) ** 2 < 1 && y >= 32 && y <= 32 + 11 * Math.sqrt(1 - ((x - 30) / 17) ** 2), 'dc', (x) => 0.75 - Math.abs(x - 26) / 40, { tex: 0.25, seed: 4 });
+  s.line(13.5, 37, 46.5, 37, 0x2a2830, 2);
+  s.line(14, 36, 46, 36, 0x6a6672, 1, 0.8);
+  s.ellipse(30, 32, 17, 8, 'dc', { bias: 0.06, tex: 0.2 });
+  // the draught door at the front, the glow behind it
+  s.poly([[26, 38], [34, 38], [34, 43], [26, 43]], 'ir', { flat: 0.4 });
+  s.poly([[27, 39], [33, 39], [33, 42], [27, 42]], 'lv', { flat: f === 0 ? 0.35 : 0.75, glow: f > 0 });
+  // inside the rim: the coals, then the wire grate over them, two skewers on it
+  s.ellipse(30, 32, 14, 6.4, 'ir', { flat: 0.2 });
+  for (let i = 0; i < 9; i++) s.dot(21 + i * 2.2, 32 + Math.sin(i * 1.7) * 2.6, 1.6, f === 0 ? 0x8a2a10 : f === 1 ? 0xe05a1a : 0xff9a30, 0.95);
+  if (f > 0) s.ellipse(30, 32, 10, 4.4, 'lv', { flat: 0.55 + f * 0.1, glow: true });
+  for (let x = 18; x <= 42; x += 3) s.line(x, 27, x, 37, 0x3a3842, 1, 0.8);
+  for (let y = 28; y <= 36; y += 3) s.line(17, y, 43, y, 0x3a3842, 1, 0.8);
+  for (const y of [30, 34]) {
+    s.line(16, y, 44, y - 1, 0xc8a070, 1);
+    for (let k = 0; k < 4; k++) s.ellipse(22 + k * 5, y - 0.5, 1.8, 1.4, k % 2 ? 'tk' : 'pp', { bias: 0.1 }); // what is grilling on them
+  }
+  // the flare and the burst: flames up through the grate, sparks flying out in a ring, a puff of smoke
+  if (f >= 2) {
+    flame(s, 26, 31, f === 2 ? 8 : 12, 3, f);
+    flame(s, 34, 32, f === 2 ? 6 : 10, 2.6, f + 1.4);
+  }
+  if (f === 3) {
+    for (let k = 0; k < 10; k++) {
+      const a = (k / 10) * TAU;
+      s.ellipse(30 + Math.cos(a) * 22, 33 + Math.sin(a) * 14, 1, 1, 'fl', { flat: 0.95, glow: true });
+    }
+    for (let i = 0; i < 3; i++) s.ellipse(30 + Math.sin(i * 1.9) * 3, 18 - i * 5, 4 - i * 0.6, 3 - i * 0.5, 'sm', { flat: 0.8 });
+  } else for (let i = 0; i < 3; i++) s.dot(30 + Math.sin(i * 1.3 + f) * 1.6, 24 - i * 5, 1.4 - i * 0.2, 0xc8c4c0, 0.6 - i * 0.12);
+  return s;
+}
+
+const DRAW = { kyoto, okinawa, sapporo, kagoshima, osaka, hiroshima, nagasaki, tokyo, kawaguchiko, onomichi, fukuoka };
 export const TRAP_CITIES = Object.keys(DRAW);
 
 /** Every trap's four frames, for the shared 540 px atlas. */

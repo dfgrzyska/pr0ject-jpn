@@ -10,6 +10,7 @@
     -14
   ],
   "skin": "fukuoka",
+  "enemyArt": true,
   "near": "fukuoka",
   "mist": [4400, 5200],
   "petalsFrom": 5300,

@@ -42,6 +42,9 @@ const RAMPS = {
   ml: tones([0x16141a, 0x2e2a34, 0x5a5466]), // a mole's velvet
   lv: tones([0x5a1a0c, 0xb83a1c, 0xe8803a]), // a fallen maple leaf
   tp: tones([0x4a2412, 0x8a4e2c, 0xc8865a]), // an octopus pot's fired clay
+  pw: tones([0x14302a, 0x2a5a4c, 0x5a8a78]), // a pond's green water
+  sf: tones([0x2a2e1e, 0x5a6244, 0x98a07a]), // a soft-shell turtle's leathery olive
+  sb: tones([0x8a8466, 0xd4ceb0, 0xf6f2e0]), // its pale throat and belly
 };
 const sprite = () => new HiSprite(60, 60, RAMPS);
 const shadow = (s, cx, cy, rx, ry, a = 0.32) => {
@@ -469,7 +472,58 @@ function onomichi(f) {
   return s;
 }
 
-const DRAW = { kyoto, okinawa, sapporo, osaka, beppu, hiroshima, nagasaki, tokyo, kawaguchiko, onomichi };
+// ---------------------------------------------------------------- Fukuoka: a soft-shell turtle out of a pond
+function fukuoka(f) {
+  const s = sprite();
+  // the pond's green water, still, a reed or two at its edge
+  s.ellipse(30, 36, 24, 15, 'pw', { flat: 0.55, pat: mottle({ amt: 0.1, scale: 4, seed: 3 }) });
+  for (const [x, y] of [[9, 30], [11, 26], [50, 28]]) s.line(x, y + 8, x + 1, y, 0x5a7a3a, 1.2);
+  const rings = (x, y, n) => {
+    for (let k = 0; k < n; k++) for (let a = 0; a < TAU; a += 0.25) s.px(x + Math.cos(a) * (4 + k * 3), y + Math.sin(a) * (2.4 + k * 1.8), 0x9ac0b0, 0.55 - k * 0.12);
+  };
+  if (f === 0) {
+    // at rest: only the tip of its long snout up through the water, breathing, rings round it
+    s.dot(30, 37, 1.2, 0x5a6244);
+    s.dot(29.6, 36.6, 0.5, 0x14101c);
+    s.dot(30.6, 36.6, 0.5, 0x14101c);
+    rings(30, 37, 2);
+    return s;
+  }
+  if (f === 1) {
+    // stirring: the round shadow of its shell under the water, bubbles, two eyes catching the light
+    s.ellipse(30, 33, 12, 9, 'sf', { flat: 0.25 });
+    for (const sx of [-1, 1]) s.dot(30 + sx * 2, 42, 0.9, 0xf0d040);
+    for (let i = 0; i < 5; i++) s.dot(24 + i * 3, 30 + (i % 2) * 3, 0.8, 0xc8e8e0, 0.8);
+    rings(30, 42, 2);
+    return s;
+  }
+  // half out and out: the flat leathery shell, its soft rim, the feet paddling, the long neck, the snout like a
+  // little trunk, the mouth (which bites)
+  const out = f >= 3;
+  s.ellipse(30, 31, 13, 10.5, 'sf', { bias: 0.05, pat: mix2(speckle({ amt: 0.18, dark: 0.12, seed: 6 }), mottle({ amt: 0.12, scale: 3, seed: 7 })) });
+  s.paint([16, 20, 44, 42], (x, y) => { const q = ((x - 30) / 13) ** 2 + ((y - 31) / 10.5) ** 2; return q < 1 && q > 0.72; }, 'sf', () => 0.75); // the soft rim
+  for (let k = 0; k < 7; k++) s.dot(24 + (k % 4) * 4, 27 + Math.floor(k / 4) * 5, 0.8, 0x2a2e1e, 0.7);
+  if (out)
+    for (const [sx, sy] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
+      s.ellipse(30 + sx * 13, 31 + sy * 6, 4, 2.6, 'sf', { bias: 0.08 });
+      for (let k = -1; k <= 1; k++) s.dot(30 + sx * 16.4, 31 + sy * 6 + k * 1.2, 0.6, 0xe8e0c8); // its claws
+    }
+  const ny = out ? 46 : 43;
+  s.tube(30, 40, 30, ny, out ? 3 : 2.6, 'sf');
+  s.ellipse(30, ny + 1.4, 3.4, 3, 'sf', { bias: 0.08 });
+  s.ellipse(30, ny + 2.4, 2.2, 1.6, 'sb', { flat: 0.8 }); // its pale throat
+  s.tube(30, ny + 3, 30, ny + 6, 0.9, 'sf'); // the snout
+  for (const sx of [-1, 1]) {
+    s.dot(30 + sx * 2, ny + 0.4, 1.1, 0xf0d040);
+    s.dot(30 + sx * 2, ny + 0.6, 0.5, 0x14101c);
+  }
+  if (out) s.line(28, ny + 3.6, 32, ny + 3.6, 0x14101c, 1.2); // the mouth, open
+  rings(30, 31, out ? 3 : 2);
+  if (f === 4) charge(s, 30, ny + 9, 2.6, 'gm', 0xffe080);
+  return s;
+}
+
+const DRAW = { kyoto, okinawa, sapporo, osaka, beppu, hiroshima, nagasaki, tokyo, kawaguchiko, onomichi, fukuoka };
 export const AMBUSH_CITIES = Object.keys(DRAW);
 
 /** Every ambusher's five frames, for the shared 540 px atlas. */
