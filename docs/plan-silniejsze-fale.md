@@ -135,3 +135,26 @@ Pierwszy krok, wspólny: przeniesienie zachowań z `fukuoka.js` do wspólnego mo
 | 2026-11-19 | Claude | 2-5 (Okinawa) | Grafika w atlasie `bg/stage2`, skórka (niebieska lina rybacka, stuk kokosa). Nowe w zachowaniu wozu: `cart.runner` w skórce i `flee` w fali (punkty trasy); po rozbiciu wozu bawół biegnie dalej uliczką, a potem od punktu do punktu. 5 lin z kałamarnicami: przy barze na plaży, dwie nad ścieżką do bungalowów, nad podjazdem hotelu, przy domu latarnika nad ścieżką do pomostu. 13 kokosów w miejscu fal popcornu, 1 wóz na uliczce z Bise do drogi nadbrzeżnej; bawół przecina drogę i ucieka ścieżką na plażę (na drodze jest ruch). Popcorn 45%. Bot (4 bronie, moc 4), trafienia przed bossem: 6 → 11 na normalnym, 3 → 9 na łatwym (0–5 na przebieg). Test `okinawaWaves`. | Drugi wóz nie ma tu dobrej drogi: poprzeczne uliczki Bise przecinają trasę malowanego wozu, a most Kōri i droga na wyspie wypadają przy mancie, która nie wstrzymuje przewijania. Do zrobienia przez człowieka: przelot bez trybu boga. |
 | 2026-11-19 | Claude | 1 (Nagasaki) | Projekty grafiki do akceptacji, `tools/art/nagasaki/newfoes.mjs`: flagi sygnałowe na linie między stalowymi słupkami (Alfa, Delta, Kilo, Uniform na zmianę; India, żółta z czarną kulą, budzi się: kula otwiera się w oko i strzela; płonąca, zwęglony strzęp). Kakuni-manjū: dwie na papierze w bambusowym parowniku, para, obie z groźnymi minami; osobno: złożona biała bułeczka, plaster duszonego boczku, liść sałaty. Wóz: wieloryb z Kunchi (kujira no shiofuki) na platformie: czarny wieloryb tryskający wodą, płetwa ogonowa z tyłu, niebieska spódnica z białymi falami seigaiha, cztery koła, liny bez ludzi; rozpad: rozdarta spódnica i fontanna słabnie (czerwone oczy), odpadłe koło, płonący grzbiet; wrak przewrócony na bok. Jeszcze nie w atlasie ani w grze. | **Zmiana wobec planu:** zamiast statku-platformy wieloryb, bo miniboss Nagasaki to już Oranda-bune, holenderski statek z Kunchi, a boss to smok z Kunchi; tramwaj odpada, bo po torach jeżdżą malowane tramwaje. Wieloryb jedzie główną ulicą Shinchi (x 92) po walce z Oranda-bune (15–19 s botem). Flagi nad torem suwnicy w stoczni, nad drogą nadbrzeżną przy terminalu i w Oura. Nowe w zachowaniu: sznur z kilkoma wzorami na zmianę (lista klatek w skórce). Zaakceptowane 2026-11-19. |
 | 2026-11-19 | Claude | 2-5 (Nagasaki) | Grafika w atlasie `bg/stage8`, skórka (biała linka, flagi na zmianę: `chain.frames`). 3 linki z flagami: dwie nad drogą nadbrzeżną przy terminalu Matsugae (słupek na nabrzeżu i za jezdnią), jedna nad torem suwnicy w stoczni. 10 kakuni-manjū w miejscu fal popcornu, wieloryb na głównej ulicy Shinchi w 106 s (po walce z Oranda-bune; przerwa po niej sięga 110 s). Popcorn 44%. Bot (4 bronie, moc 4), trafienia przed bossem: 8 → 3 na normalnym, 1 → 4 na łatwym (0–2 na przebieg: w granicach rozrzutu, Nagasaki zostaje łagodne); Oranda-bune pada w 8–44 s, ani razu nie odpływa. Testy `nagasakiWaves` (też: nic nowego nie wpada w chwilę pamięci nad Parkiem Pokoju), `nagasaki` sprawdza teraz także atlas miasta. | Para przy 142 s spadałaby, niezestrzelona, w chwilę pamięci (149–162 s): zostaje tam popcorn. Pierwsze pomiary Okinawy i Nagasaki poszły omyłkowo na Kioto (bot dostał `stage2`/`stage8` zamiast numeru i po cichu wziął pierwsze miasto); powtórzone. **Znalezione przy okazji:** minibossy ze wspólnym zachowaniem (tanuki w Kioto, manta na Okinawie) odlatują po 34 s walki; z botem dzieje się to w ok. 2 przebiegach na 8 także przed zmianą fal, a gracz traci wtedy ich wpis w albumie. Do osobnej decyzji. |
+
+## 7. Minibossy, które odlatują (pomiar 2026-11-19)
+
+Bot (`tools/preview/scratch/heavy-stats.mjs`, lot do końca walki z minibossem) w każdym mieście: 4 bronie × normalny i łatwy, moc 4 (3 powtórzenia) i moc 2 (2 powtórzenia), 480 lotów. Liczba to ile razy miniboss odleciał, zanim padł (gracz traci wtedy wpis w albumie).
+
+| Miasto | Miniboss | Limit | Moc 4, normalny | Moc 4, łatwy | Moc 2, normalny | Moc 2, łatwy | Czego bot nie umie |
+|---|---|---|---|---|---|---|---|
+| Kioto | tanuki | 34 s | 6/12 | 4/12 | 2/8 | 1/8 | kopie z liści |
+| Okinawa | manta | 34 s | 4/12 | 4/12 | 1/8 | 2/8 | (nic: zwykły miniboss) |
+| Sapporo | yuki-onna | ok. 57 s | 3/12 | 4/12 | 1/8 | 1/8 | |
+| Kagoshima | raijū | 34 s | 3/11 | 2/12 | 1/8 | 2/8 | |
+| Osaka | bunraku | ok. 45 s | 10/12 | 9/12 | 6/8 | 6/8 | najpierw lalkarze kuroko; wachlarz gejszy odbija strzały |
+| Beppu | wani | 38 s | 3/12 | 3/12 | 6/8 | 4/8 | pod wodą |
+| Hiroszima | heike-gani | 35 s | 6/12 | 3/12 | 6/8 | 1/8 | szczypce blokują strzały z przodu, trzeba zajść z boku |
+| Nagasaki | Oranda-bune | 52 s | 0/12 | 0/12 | 0/8 | 0/8 | |
+| Tokio | kasa-obake | ok. 95 s | 5/12 | 9/12 | 5/8 | 2/8 | oko trafialne tylko przy języku |
+| Tokio | taiyaki | ok. 95 s | 10/12 | 8/10 | 7/7 | 7/8 | wielka ryba odsłonięta tylko po szarży |
+| Kawaguchiko | usagi | | 4/12 | 0/12 | 3/8 | 0/8 | |
+| Onomichi | nekomata | | 2/12 | 0/12 | 1/8 | 0/7 | |
+| Fukuoka | yatai | 110 s | 0/12 | 0/12 | 0/7 | 0/8 | (bot zna okienka) |
+
+Bot celuje w środek minibossa i nie zna mechanik, poza tymi, których go nauczono (Yatai-obake, Funa-yurei, Nurikabe). Tam, gdzie mechanika jest (Kioto, Osaka, Beppu, Hiroszima, Tokio), liczby zawyżają ucieczki względem gracza, który ją rozumie. Pewne są te bez mechaniki: manta odlatuje w około 1 locie na 3, także na mocy 4.
+
