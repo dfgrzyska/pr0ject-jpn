@@ -65,15 +65,16 @@ export function dazaifu(ctx) {
   // ---- the approach: a continuous row of shops either side under grey tile, their fronts open on to it - the eaves,
   // an awning, the goods laid out on trays, a paper lantern or a banner here and there; every third a grill of
   // umegae-mochi at its front with its smoke and its queue
+  const shops = (uA, uB, fm = { boxFree, claim }, k0 = 0) => {
   for (const side of [-1, 1]) {
-    let u = U0 + (side > 0 ? 2 : 0); // (whole units: one shop's claim ends where the next begins)
-    let k = 0;
-    while (u < 5575) {
+    let u = uA + (side > 0 ? 2 : 0); // (whole units: one shop's claim ends where the next begins)
+    let k = k0;
+    while (u < uB) {
       const len = 5 + Math.floor(hashPx(k, side, 3) * 4);
       const [x, w] = side < 0 ? [76.4, 11.5] : [96.2, 11.5]; // (as near the approach as its edge allows)
-      if (u + len > 5575) break;
-      if (!boxFree(x, u, w, len)) { u += 1; continue; }
-      claim(x, u, w, len);
+      if (u + len > uB) break;
+      if (!fm.boxFree(x, u, w, len)) { u += 1; continue; }
+      fm.claim(x, u, w, len);
       house(x, u, w, len - 0.3, { tile: TILE[(k + (side > 0 ? 1 : 0)) % TILE.length], wall: [0x6a4a34, 0xe4dccc, 0x5a4232][k % 3], hip: false, face: 2.2, s: 26000 + k * 2 + (side > 0 ? 1 : 0) });
       const ex = side < 0 ? x + w : x; // the edge on the approach
       const grill = k % 3 === 1;
@@ -103,6 +104,8 @@ export function dazaifu(ctx) {
       k++;
     }
   }
+  };
+  shops(U0, 5575);
   // the approach itself: its slabs, its stone torii, people up and down it
   fill(89, U0, 95, 5604, (x, u, X, Y) => (Math.abs(x - 92) < 3 ? ((Y % 6 === 0 || (X + (Math.floor(Y / 6) % 2) * 3) % 6 === 0) ? 0x9a968c : shade(0xbab4a6, 0.96 + hashPx(X >> 1, Y >> 1, 4) * 0.08)) : null));
   for (const u of [5500, 5584]) torii(87.6, 96.4, u, 0x9a968c, 5, true);
@@ -477,13 +480,14 @@ export function dazaifu(ctx) {
     crowd(x0 + 2, u0 + h - 3, w - 4, 2, 6);
   }
   for (const [x0, u0, x1, u1] of LANES) if (x1 - x0 > u1 - u0) trafficOn([[x0, (u0 + u1) / 2], [x1, (u0 + u1) / 2]], { sp: 6, gap: 90, s0: rand() });
-  for (let u = U0; u < 5586; u += 1)
+  const homes = (uA, uB, fm = { boxFree, claim }) => {
+  for (let u = uA; u < uB; u += 1)
     for (let x = 0; x < W - 4; x += 1) {
       const big = rand() < 0.12;
       const w = big ? 14 + Math.floor(rand() * 6) : 6 + Math.floor(rand() * 6);
       const h = big ? 10 + Math.floor(rand() * 4) : 6 + Math.floor(rand() * 4);
-      if (!boxFree(x, u, w, h)) continue;
-      claim(x - 1, u - 1, w + 2, h + 2);
+      if (!fm.boxFree(x, u, w, h)) continue;
+      fm.claim(x - 1, u - 1, w + 2, h + 2);
       if (big) {
         // an inn round its courtyard garden
         house(x + 0.5, u + h - 4, w - 1, 3.4, { tile: pick(TILE), wall: 0xe8e4d8, hip: false, face: 1.6, s: Math.floor(rand() * 1e6) });
@@ -501,11 +505,14 @@ export function dazaifu(ctx) {
       }
       x += w + 1;
     }
+  };
+  homes(U0, 5586);
   // what the houses leave: shrubs, a vegetable plot, a shed, bicycles, a parked car
-  for (let u = U0; u < 5578; u += 1)
+  const odds = (uA, uB, fm = { boxFree, claim }) => {
+  for (let u = uA; u < uB; u += 1)
     for (let x = 0; x < W - 3; x += 1) {
-      if (!boxFree(x, u, 3, 3)) continue;
-      claim(x, u, 3, 3);
+      if (!fm.boxFree(x, u, 3, 3)) continue;
+      fm.claim(x, u, 3, 3);
       const r = rand();
       if (r < 0.32) tree(pick(['tiny', 'broadleaf']), x + 1.5, u + 1.5, 1 + rand() * 0.5);
       else if (r < 0.44) fill(x + 0.3, u + 0.3, x + 2.7, u + 2.7, (xx, uu, X, Y) => (Y % 2 ? 0x6a8a3a : 0x6a5038)); // a vegetable plot
@@ -514,5 +521,143 @@ export function dazaifu(ctx) {
       else if (r < 0.74) mark(x + 0.5, u + 2.4, (X, Y) => { R(X, Y - 4, 4, 6, pick([0xe8e4dc, 0x2a2a30, 0x8a9aa8, 0xa83a3a])); R(X, Y - 3, 4, 1, 0x8ab0c8); kit.hi.tint(X + 4, Y - 2, 0.7); }); // a parked car
       x += 2;
     }
+  };
+  odds(U0, 5578);
   void n;
+
+  // ---- the rest of Dazaifu (phase 7): from the station up the approach to the close-up, then past the shrine to
+  // the museum, the fields and Kanzeon-ji (dazaifu-kita.mjs)
+  ekimae({ ctx, kit, props, plot, fill, shops, homes, odds, ume, torii, toro, crowdFrames });
+}
+
+/**
+ * From the station to the close-up (u 5200-5460): the terminus of the branch line with its two-car train at the
+ * platform, the station under its gabled roof of the shrine's style, the square before it with taxis, a bus at its
+ * stop, bicycles and people pouring out; the approach climbing from it between its unbroken rows of shops under the
+ * first stone torii, the two biggest umegae-mochi shops with their grills and queues; the town behind with its lanes
+ * out to the edges, houses and inns among plums.
+ */
+function ekimae({ ctx, kit, props, plot, fill, shops, homes, odds, ume, torii, toro, crowdFrames }) {
+  const { W } = ctx;
+  const { house, mark, rand, pick, P, R, FY, FX, person, crowd, smoke, trafficOn, trainOn, hi } = kit;
+  const [A, B] = [5200, 5460];
+  const fm = freeMap(A, B);
+  const { taken, claim } = fm;
+
+  // the lanes: across from the approach to the edges, up the town's two back streets to the close-up's, a road from
+  // the square to the east edge for the buses; kept first
+  const LANES = [[0, 5286, 89, 5289.4], [95, 5286, W, 5289.4], [0, 5340, 89, 5343.4], [95, 5340, W, 5343.4], [0, 5394, 89, 5397.4], [95, 5394, W, 5397.4], [95, 5436, W, 5439.4], [58, 5229, 61.4, B], [148, 5221.6, 151.4, B], [110, 5218.2, W, 5221.6]];
+  const inLane = (x, u) => LANES.some(([x0, u0, x1, u1]) => x >= x0 && x < x1 && u >= u0 && u < u1);
+  for (const [x0, u0, x1, u1] of LANES) claim(x0, u0 - 0.6, x1 - x0, u1 - u0 + 1.2);
+  // the platform along the track's last stretch
+  const railU = (x) => 5212 + (x * 10) / 58;
+  for (let x = 12; x < 58; x += 1) claim(x, railU(x) + 1.6, 1, 4);
+  fill(0, A, W, B, (x, u, X, Y) => (taken(x, u) ? null : shade(0xa49c8c, 0.94 + hashPx(X >> 1, Y >> 1, 29) * 0.1)));
+
+  // ---- the station: the platform of concrete with its yellow line, the canopy over its middle, the buffer at the
+  // end; the building under a gabled roof of grey tile with the shrine's curved bargeboard; the train
+  fill(12, 5210, 60, 5232, (x, u, X, Y) => {
+    const d = u - railU(x);
+    if (d < 1.8 || d > 5.2) return null;
+    if (d < 2.2) return 0xe0c040; // the yellow line along its edge
+    if (x > 26 && x < 54 && d > 2.6) return X % 9 === 0 ? 0x5a5e66 : shade(0x7a8088, 0.96 + hashPx(X, Y, 3) * 0.06); // the canopy
+    return shade(0xb4b0a8, 0.95 + hashPx(X, Y, 4) * 0.08);
+  });
+  mark(57.6, railU(57.6) - 0.4, (X, Y) => {
+    R(X - 1, Y - 3, 2, 6, 0xc8302a); // the buffer
+    R(X - 1, Y - 3, 2, 1, 0xf0ece0);
+  });
+  {
+    const p = plot('dazaifu_eki');
+    house(p.x + 1, p.u + 1, p.w - 2, p.h - 3, { tile: 0x4e5058, wall: 0xe8e4d8, hip: false, face: 2.4, s: 27001 });
+    mark(p.x + p.w / 2, p.u + 0.6, (X, Y) => {
+      for (let i = -9; i <= 9; i++) P(X + i, Y - 8 - Math.round(2 * (1 - (i / 9) ** 2)), 0x2a2a30); // the curved bargeboard over its door
+      R(X - 3, Y - 5, 7, 4, 0x3a3028); // its doors open on the square
+      for (const dx of [-7, 6]) R(X + dx, Y - 6, 2, 5, 0x6a4a34); // wooden pillars
+    }, p.u + 1);
+    crowd(p.x + p.w - 2, p.u - 2, 8, 4, 10); // people coming out
+  }
+  trainOn([[-30, railU(-30)], [56, railU(56)]], 0x8a5a3a, { n: 2, sp: 18, mode: 'pp', hold: 12, s0: 0.15 }); // (a two-car train in the line's own colour)
+
+  // ---- the square: slabs, the taxi rank, a bus at its stop, bicycles in their rack, people, a pair of stone
+  // lanterns and a plum at its corner
+  {
+    const g = ctx.GROUNDS.find((q) => q.id === 'dazaifu_ekimae').rect;
+    fill(g[0], g[1], g[0] + g[2], g[1] + g[3], (x, u, X, Y) => (Y % 6 === 0 || (X + (Math.floor(Y / 6) % 2) * 3) % 6 === 0 ? 0x8e8a80 : shade(0xb0aca0, 0.96 + hashPx(X >> 1, Y >> 1, 31) * 0.08)));
+    for (let k = 0; k < 4; k++)
+      mark(g[0] + 2 + k * 2.4, g[1] + 6, (X, Y) => {
+        R(X, Y - 6, 5, 7, [0x2a2a30, 0xe8e4dc, 0x2a2a30, 0xd8c040][k]); // the taxis waiting in line
+        R(X, Y - 5, 5, 1, 0x8ab0c8);
+        R(X + 1, Y - 3, 3, 1, 0xf0ece0); // the light on its roof
+        hi.tint(X + 5, Y - 4, 0.7);
+      });
+    mark(g[0] + g[2] - 4, g[1] + 3, (X, Y) => {
+      R(X, Y - 26, 8, 28, 0xf0ece4); // a bus at its stop, its roof from above
+      R(X, Y - 26, 8, 2, 0x3a4a5a);
+      R(X + 1, Y - 18, 6, 4, 0xd8d8d0);
+      for (let j = -22; j < 2; j += 8) R(X, Y + j, 8, 1, 0x3a8a5a);
+      hi.tint(X + 8, Y - 24, 0.7);
+    });
+    mark(g[0] + 14, g[1] + 2, (X, Y) => {
+      R(X - 1, Y - 6, 1, 7, 0x6a6a70);
+      R(X, Y - 6, 18, 1, 0x6a6a70);
+      for (let i = 0; i < 18; i += 2) {
+        P(X + i, Y - 1, 0x2a2a30);
+        P(X + i, Y - 2, pick([0xc8302a, 0x3a6aa8, 0xe8e4d8, 0x5a8a4a])); // bicycles in the rack
+      }
+    });
+    for (const x of [g[0] + 12, g[0] + 22]) toro(x, g[1] + g[3] - 2);
+    ume(g[0] + 30, g[1] + g[3] - 3, 2.2, 'red', { bloom: 1 });
+    crowd(g[0] + 10, g[1] + 6, 18, 14, 34);
+  }
+
+  // ---- the approach: its slabs, the first stone torii, the two great grills, the shops either side, the crowd
+  fill(89, 5232, 95, B, (x, u, X, Y) => (Math.abs(x - 92) < 3 ? (Y % 6 === 0 || (X + (Math.floor(Y / 6) % 2) * 3) % 6 === 0 ? 0x9a968c : shade(0xbab4a6, 0.96 + hashPx(X >> 1, Y >> 1, 4) * 0.08)) : null));
+  torii(87.6, 96.4, 5262, 0x9a968c, 5, true);
+  for (const [x, u] of [[86.2, 5258], [97.8, 5258]]) toro(x, u);
+  for (const id of ['umegae_1', 'umegae_2']) {
+    const p = plot(id);
+    const side = p.x > 92 ? 1 : -1;
+    const [x, w] = side < 0 ? [76.4, 11.5] : [96.2, 11.5];
+    claim(x, p.u, w, p.h);
+    house(x, p.u, w, p.h - 0.3, { tile: 0x3a3c44, wall: 0x6a4a34, hip: false, face: 2.6, s: 27010 + p.u });
+    const ex = side < 0 ? x + w : x;
+    mark(ex, p.u + p.h - 0.3, (X, Y) => {
+      const n = FY(p.u) - Y;
+      const at = (d) => X + side * -d - (side > 0 ? 1 : 0);
+      for (let j = 0; j < n; j++) {
+        P(at(0), Y + j, 0x2a2a30);
+        P(at(1), Y + j, shade(0xf0ece0, j % 3 === 0 ? 0.8 : 1)); // a white awning, the shop's plum crest on it
+        P(at(2), Y + j, j % 9 === 4 ? 0xc8302a : shade(0xf0ece0, 0.84));
+      }
+      for (let j = 4; j < n - 4; j += 10) R(at(4) - 1, Y + j, 3, 4, 0xe8402a); // its lanterns
+    });
+    // two grills at the front, the cakes in rows on them, a cook in white at each, the smoke, a queue
+    for (const du of [2.6, 6.4]) {
+      const gx = ex - side * 1.4 - (side > 0 ? 0.6 : 0);
+      mark(gx, p.u + du, (X, Y) => {
+        R(X, Y - 4, 2, 9, 0x2a2624);
+        for (let j = -3; j < 5; j += 2) {
+          P(X, Y + j, 0xf08030);
+          P(X + 1, Y + j, 0xe8d8a8);
+        }
+        P(X - side * 2, Y - 2, 0xf4f2ec);
+        P(X - side * 2, Y - 3, 0xe8c8a8);
+      });
+      smoke(gx + 0.5, p.u + du + 1, { rate: 1.1, a: 0.32 });
+    }
+    for (let q = 0; q < 9; q++) mark(ex - side * (1.6 + (q % 2) * 0.8), p.u - 1.6 - q * 1.2, (X, Y) => person(X, Y, 27100 + p.u + q));
+  }
+  shops(5236, B, fm, 40);
+  for (const [x, sp, s0] of [[89.8, 1.8, 0.3], [91.2, 1.5, 0.7]]) props.path([[x, 5234], [x, B + 4]], crowdFrames, { sp, n: 16, gap: 9, mode: 'wrap', turn: 'none', s0 });
+  for (const [x, sp, s0] of [[92.8, 1.6, 0.15], [94.2, 1.4, 0.5]]) props.path([[x, B + 4], [x, 5234]], crowdFrames, { sp, n: 16, gap: 9, mode: 'wrap', turn: 'none', s0 });
+  crowd(89.4, 5234, 5.2, B - 5234, 84);
+
+  // ---- the town: its lanes, cars on them, houses and inns with their gardens and plums, what the houses leave
+  for (const [x0, u0, x1, u1] of LANES)
+    fill(x0, u0, x1, u1, (x, u, X, Y) => (!inLane(x, u) ? null : (X - FX(x0)) % 30 === 0 && x1 - x0 > u1 - u0 ? 0x6a6a70 : shade(0x5c5c62, 0.97 + hashPx(X, Y, 23) * 0.05)));
+  for (const [x0, u0, x1, u1] of LANES) if (x1 - x0 > u1 - u0) trafficOn([[x0, (u0 + u1) / 2], [x1, (u0 + u1) / 2]], { sp: 6, gap: 90, s0: rand() });
+  trafficOn([[149.7, 5222], [149.7, B]], { sp: 6, gap: 120, s0: rand() });
+  homes(A, B, fm);
+  odds(A, B - 2, fm);
 }

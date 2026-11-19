@@ -21,13 +21,15 @@ import { hakata } from './hakata.mjs';
 import { kuko } from './kuko.mjs';
 import { sasaguri } from './sasaguri.mjs';
 import { dazaifu } from './dazaifu.mjs';
+import { dazaifuKita } from './dazaifu-kita.mjs';
+import { mizuki } from './mizuki.mjs';
 
 // the stretches' painters, in the order they are called: (ctx) => void
-const PAINTERS = [momochi, ohori, nakasu, hakata, kuko, sasaguri, dazaifu];
+const PAINTERS = [momochi, ohori, nakasu, hakata, kuko, sasaguri, dazaifu, dazaifuKita, mizuki];
 // (the stretches drawn so far: their plots are not hatched)
-const DRAWN = [[0, 5200], [5460, 5760]]; // (5460-5760: Dazaifu's close-up, phase 6)
+const DRAWN = [[0, L]]; // (5460-5760: Dazaifu's close-up, phase 6; the rest of it phase 7)
 // arenas with no ring (once their own ground is drawn)
-const ARENA_DRAWN = new Set();
+const ARENA_DRAWN = new Set(['NURIKABE']);
 
 const smooth = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));

@@ -255,7 +255,8 @@ export const ROADS = [
   { id: 'koen_michi', cls: 'walk', w: 2, pts: [[92, 5420], [70, 5420], [52, 5440], [40, 5480]] },
   { id: 'niji_michi', cls: 'walk', w: 3, pts: [[118, 5716], [124, 5790], [148, 5850], [150, 5960]] },
   { id: 'dazaifu_kaido', cls: 'street', w: 7, pts: [[0, 5930], [128, 5930]] },
-  { id: 'dazaifu_2', cls: 'lane', w: 4, pts: [[118, 6040], [118, 6230], [180, 6230]] },
+  { id: 'dazaifu_2', cls: 'lane', w: 4, pts: [[118, 5930], [118, 6230], [180, 6230]] },
+  { id: 'hakubutsukan_michi', cls: 'lane', w: 4, pts: [[128, 5930], [142, 5930], [142, 5957]] }, // (up the hill to the museum's car park)
   { id: 'kanzeonji_michi', cls: 'lane', w: 4, pts: [[0, 6230], [118, 6230]] },
   { id: 'tofuro_dori', cls: 'street', w: 7, pts: [[0, 6620], [180, 6620]] },
   { id: 'tofuro_michi', cls: 'walk', w: 3, pts: [[90, 6620], [90, 6896]] },
