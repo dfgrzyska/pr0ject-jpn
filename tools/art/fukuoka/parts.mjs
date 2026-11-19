@@ -24,14 +24,14 @@ export function fukuokaParts(ctx) {
       for (let j = -9; j <= 3; j++)
         for (let i = -11; i <= 11; i++) {
           const sag = Math.abs(i) % 11 === 0 || j === -9 || j === 3 ? 0.9 : 1.04;
-          P(X + i, Y + j, shade(0xc8bca0, sag * (j < -3 ? 1.06 : 0.94)));
+          E(X + i, Y + j, shade(0x8a7c64, sag * (j < -3 ? 1.06 : 0.94))); // (lit from under: it glows faintly)
         }
       for (const i of [-11, 11]) for (let j = -9; j <= 3; j++) P(X + i, Y + j, 0x5a4a3a);
       // the noren round its front: strips of cloth with the slits between them
-      for (let i = -11; i <= 11; i++) for (let j = 4; j <= 6; j++) P(X + i, Y + j, i % 4 === 0 ? shade(nc, 0.6) : shade(nc, j === 4 ? 1.1 : 0.95));
+      for (let i = -11; i <= 11; i++) for (let j = 4; j <= 6; j++) E(X + i, Y + j, i % 4 === 0 ? shade(nc, 0.5) : shade(nc, j === 4 ? 1.05 : 0.9)); // (the light through the cloth)
       // the counter of bare wood, stools before it, bowls and a pot on it; steam coming off
-      R(X - 10, Y + 7, 21, 2, 0x8a6a48);
-      R(X - 10, Y + 7, 21, 1, 0xa8845a);
+      ER(X - 10, Y + 7, 21, 2, 0xb08a5a);
+      ER(X - 10, Y + 7, 21, 1, 0xd8b080);
       for (let i = -9; i <= 9; i += 4) R(X + i, Y + 10, 2, 2, 0x6a2a24);
       const ware = { ramen: 0xf0ece4, oden: 0xc8a050, yakitori: 0x8a4a2a, gyoza: 0xe8c890, tempura: 0xe8c060, mentaiko: 0xd84a4a }[kind] ?? 0xf0ece4;
       for (let i = -8; i <= 8; i += 5) P(X + i, Y + 7, ware);
@@ -39,7 +39,8 @@ export function fukuokaParts(ctx) {
       ER(X + 10, Y + 3, 3, 4, 0xe03a2a);
       E(X + 11, Y + 4, 0xffb070);
       halo(X + 11, Y + 5, 9, 8, 0xff7040, 0.45);
-      halo(X, Y + 9, 22, 10, 0xffd090, 0.3); // the light from under its canopy on the ground before it
+      halo(X, Y + 9, 26, 14, 0xffc878, 0.42); // the light from under its canopy on the ground before it
+      halo(X, Y - 3, 16, 10, 0xffd8a0, 0.2);
     }, () => shadowBox(X - 11, Y - 9, 23, 13, 3, 0.66));
     // its customers on the stools, a queue maybe, the steam
     for (let k = 0; k < 3 + Math.floor(h(3, 3) * 3); k++) mark(x - 3 + k * 1.3, u - 3.4, (PX, PY) => person(PX, PY, s + k));

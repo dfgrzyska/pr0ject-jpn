@@ -16,11 +16,13 @@ import { W, S, L, SECTIONS, ARENAS, TOD, WATER, GROUNDS, ROADS, RAILS, PLOTS, is
 import { near, inShape, bbox, railHalf } from '../tokyo/geom.mjs';
 import { momochi } from './momochi.mjs';
 import { ohori } from './ohori.mjs';
+import { nakasu } from './nakasu.mjs';
+import { hakata } from './hakata.mjs';
 
 // the stretches' painters, in the order they are called: (ctx) => void
-const PAINTERS = [momochi, ohori];
+const PAINTERS = [momochi, ohori, nakasu, hakata];
 // (the stretches drawn so far: their plots are not hatched)
-const DRAWN = [[0, 2000]];
+const DRAWN = [[0, 3800]];
 // arenas with no ring (once their own ground is drawn)
 const ARENA_DRAWN = new Set();
 

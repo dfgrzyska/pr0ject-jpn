@@ -256,8 +256,8 @@ Wymaga: faza 1. Pliki: `tools/art/fukuoka/momochi.mjs`, `ohori.mjs`.
 
 ### Faza 4: Nakasu i Hakata (u 2000–3800)
 Wymaga: faza 1. Pliki: `tools/art/fukuoka/nakasu.mjs`, `hakata.mjs`.
-- [ ] Jatai z parą i lampionami, neony w rzece, mosty, teatr, pasaż; Kushida z wozem festiwalowym, Tōchō-ji, Shōfuku-ji, domy kupieckie, kanał z fontannami, Sumiyoshi; arena minibossa bez znacznika
-- [ ] Animacje: łodzie, para, neony, fontanny; o świcie ciężarówki odciągające jatai po drogach
+- [x] Nakasu (`nakasu.mjs`): dziewięć jatai na nabrzeżu Naki (świecą od środka, lampiony, para, ludzie na stołkach i w kolejkach), latarnie promenad, neony budynków (pasy, ramki, stosy znaków bez słów) i ich smugi na obu rzekach, parkingi piętrowe, hotele, kapliczka między budynkami, taksówki czekające na ulicy, teatr w dawnym stylu z chorągwiami, kryty pasaż świecący od środka, chram Kushida z wielkim miłorzębem i wozem festiwalowym pod dachem (rysowany w górę taśmy: fale, skały, lalki wojowników, zamek w chmurach). Hakata o świcie (`hakata.mjs`): kanał w łuku z kolorowymi tarasowymi budynkami, zielenią na tarasach, mostkami i fontanną, chram Sumiyoshi w lesie, Tōchō-ji i jego cynobrowa pięciopiętrowa pagoda w górę taśmy, Shōfuku-ji z bramą, stawem i kamiennym mostkiem wśród sosen, domy kupieckie z kratami, drzewa wzdłuż alei. Arena minibossa jeszcze ze znacznikiem (zdejmie go faza 12)
+- [x] Animacje: łodzie wycieczkowe z lampionami na Nace, para z jatai, ruch na mostach i alejach, fontanna w kanale, o świcie małe ciężarówki odciągające jatai
 
 ### Faza 5: dworzec, lotnisko i Sasaguri (u 3800–5200)
 Wymaga: faza 1. Pliki: `tools/art/fukuoka/kuko.mjs`, `sasaguri.mjs`.
@@ -328,6 +328,7 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-19 | Claude | 4 | Nakasu i Hakata: `nakasu.mjs`, `hakata.mjs`; jatai w `parts.mjs` świecą od środka. Sprawdzone w grze zrzutami w 60, 72, 92, 100, 108 i 118 s. | Następne: faza 5 (dworzec, lotnisko, Sasaguri). |
 | 2026-11-19 | Claude | 3 | Nocne miasto od zatoki do rzeki: `momochi.mjs`, `ohori.mjs` i wspólne `parts.mjs`, `ume.mjs`, `free.mjs`; działka wieży wydłużona do 100 (wieża rośnie w górę taśmy). Sprawdzone w grze zrzutami w 4, 14, 26, 38 i 50 s. | Następne: faza 4 (Nakasu i Hakata). |
 | 2026-11-19 | Claude | 2 | Odczucie zniszczenia dla całej gry (D7): wspólny licznik fali w `Waves.js` (zastępuje dawny licznik stada), `waveDown`, `bulletsToPoints` i `heavyKill` w `Enemies.js`, właściciel pocisku w `Bullets.js`, gwiazdki-punkty w `Fx.js` (`coin`), mały pierścień (`shockwave` z opcjami), pauza bez błysku (`freeze(sec, false)`), dźwięki `wave` i `coin`, liczby w `FEEL`; bot pomiarowy jako narzędzie. | Typy `chain`, `split`, `cart` już są w `PACKED` i `FEEL` (faza 10). Do oceny przez człowieka: czy seria ×8 nie przesadza z punktami. |
 | 2026-11-19 | Claude | 0 i 1 | Etap 12 w budowie: `stage12.json` (flaga `wip`, fale zastępcze), trasa jako dane w `tools/art/fukuoka/route.mjs`, szkielet malowany z danych w `mid.mjs` (na bazie Onomichi; nowe grunty: plaża, kamienne tarasy, płyta i pas lotniska, pola, gaj śliw, ruiny, wał; rzeki z kamiennymi nabrzeżami; shinkansen na wiadukcie), test `fukuokaRoute`, arkusz podglądu, nazwy miejsc, skórka i licznik „DWANAŚCIE”. Sprawdzone w grze zrzutami w 8, 60, 95, 140, 175 i 228 s, bez błędów. | Woda z Onomichi na zastępstwo (faza 8). Następne: faza 2 (odczucie zniszczenia), potem tło. |
