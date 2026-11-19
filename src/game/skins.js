@@ -164,6 +164,9 @@ export const SKINS = {
     carrier: { frame: 'k_hoshigaki_{c}_0', anim: 'k_hoshigaki_{c}' },
     heavy: { frame: 'k_usagi_rest_0', kind: 'usagi' }, // the miniboss: KACHI-KACHI USAGI (kawaguchiko-usagi.js)
     turret: { base: 'k_hokora_base', head: 'k_hokora_head_', wreck: 'k_hokora_wreck', heat: true }, // (its mirror glows red before it fires)
+    chain: { frame: 'k_koi_0', frames: ['k_koi_1', 'k_koi_0', 'k_koi_2'], eye: 'k_koi_eye_', lit: 'k_koi_lit_', burnt: 'k_koi_burnt', pole: 'k_koi_pole', rope: 0xd0c4a8 }, // koinobori on a line across Honcho-dori (enemies/chainSplitCart.js)
+    split: { frame: 'k_iga_0', anim: 'k_iga', one: 'k_iga_one_0', oneAnim: 'k_iga_one', sound: 'crackle' }, // a chestnut burr of the maple corridor, cracking open
+    cart: { anim: 'k_hakucho_', wreck: 'k_hakucho_wreck', debris: 0xe8ecf0, light: 0xc8e8f0 }, // a swan pedal boat paddling itself down the lake
   },
   // Onomichi (docs/plan-onomichi.md): swallows of summer in flocks, a dried flatfish come alive, a glass wind bell with
   // an eye, firework shells with their fuses lit, the demon tile on a temple's ridge, and NEKOMATA on the roofs

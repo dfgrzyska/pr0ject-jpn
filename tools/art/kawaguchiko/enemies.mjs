@@ -6,6 +6,7 @@
 import { HiSprite, tones, speckle, mottle, mix2, fur } from '../../lib/hisprite.mjs';
 import { usagiFrames } from './usagi.mjs';
 import { daidaraFrames } from './daidara.mjs';
+import { kawaguchikoNewFoes } from './newfoes.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -222,5 +223,6 @@ export function kawaguchikoEnemies(add) {
   for (let i = 0; i < 16; i++) add(`k_hokora_head_${i}`, hokoraHead(i));
   usagiFrames(add); // the miniboss, KACHI-KACHI USAGI (usagi.mjs)
   daidaraFrames(add); // the boss, DAIDARABOTCHI (daidara.mjs)
+  kawaguchikoNewFoes(add); // (the koinobori on their line, the chestnut burrs, the swan boat: newfoes.mjs)
 }
 export const KAWAGUCHIKO_PORTRAITS = ['k_usagi_rest_0', 'dd_portrait'];

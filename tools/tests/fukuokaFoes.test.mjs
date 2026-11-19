@@ -154,7 +154,7 @@ test('the oboro-guruma breaks up in three stages and keeps to its street', () =>
 });
 
 test('the three are Fukuoka\'s (and Onomichi\'s, Kyoto\'s, Okinawa\'s), in waves, their frames in each one\'s atlas', () => {
-  const cities = { fukuoka: 'stage12', onomichi: 'stage11', kyoto: 'stage1', okinawa: 'stage2', nagasaki: 'stage8' };
+  const cities = { fukuoka: 'stage12', onomichi: 'stage11', kyoto: 'stage1', okinawa: 'stage2', nagasaki: 'stage8', kawaguchiko: 'stage10' };
   for (const t of ['chain', 'split', 'cart']) {
     assert.ok(ENEMIES[t] && PACKED.has(t), t);
     for (const city of Object.keys(SKINS)) if (!cities[city]) assert.equal(SKINS[city][t], undefined, `${city} has no ${t}`);
