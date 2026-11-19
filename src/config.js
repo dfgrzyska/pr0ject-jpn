@@ -85,6 +85,23 @@ export const BOMB = {
   clearTime: 1.0, // enemy bullets are cancelled for this long
 };
 
+// How shooting the small fry down feels (docs/plan-fukuoka.md, 5.2): a whole wave down pays for every one in it
+// (each/flockEach x its number x the multiplier, x1.5, x2... for whole waves in a row, up to streakMax); a shooter's
+// or a turret's bullets still in the air turn to points (coin x the multiplier each) flying to the ship; the bigger
+// ones go down with a beat's pause, a ring going out and the screen shaken a pixel.
+export const FEEL = {
+  waveEach: 100,
+  flockEach: 200,
+  streakStep: 0.5,
+  streakMax: 8,
+  coin: 10,
+  ownBullets: new Set(['shooter', 'turret', 'cart']),
+  heavyKill: new Set(['turret', 'cart']),
+  pause: 0.05,
+  ring: { grow: 150, life: 0.32 },
+  shake: 0.0025,
+};
+
 export const SCORE = {
   multiplierMax: 10,
   // Contribution needed per +1 multiplier. 'auto' = sum of enemy weights in the stage / 9

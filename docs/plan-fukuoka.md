@@ -246,8 +246,8 @@ Wymaga: faza 0. Pliki: `tools/art/fukuoka/route.mjs`, `mid.mjs`, `overview.mjs`,
 
 ### Faza 2: odczucie zniszczenia (jeśli D7)
 Wymaga: faza 0. Pliki: `src/game/Enemies.js` (tylko `destroy` i zliczanie fal), `src/game/Fx.js`, `src/game/Score.js`, `src/game/Bullets.js`, `tools/preview/kill-stats.mjs`, testy.
-- [ ] Premia za całą falę i seria fal; pociski zestrzelonego strzelca, wieżyczki i średniego w punkty; pauza, pierścień i drgnięcie przy średnich
-- [ ] Bot `kill-stats` przed i po na trzech miastach: trafienia i czas walk bez zmian poza widełkami, wydajność bez spadku; wpis w dzienniku z liczbami
+- [x] Premia za całą falę i seria fal: przeciwnicy jednego wpisu i wpisy jednego typu w odstępie do 1 s dzielą licznik (`Waves.js`, `PACKED`), ostatni zestrzelony płaci 100 pkt (stado ptaków 200) × liczba × mnożnik × (1 + 0,5 za każdą pełną falę z rzędu, do ×8), napis „FALA!” / „STADO!” z „×n” i dzwonek o ton wyżej z każdą falą serii; ucieczka jednego zrywa serię. Pociski zestrzelonego strzelca i wieżyczki (i wozu z fazy 10) w locie zamieniają się w złote migające gwiazdki, które lecą do statku (10 pkt × mnożnik). Przy wieżyczce (i wozie) pauza 0,05 s bez błysku, mały pierścień, drgnięcie ekranu i punkty nad wrakiem. Liczby w `FEEL` w `src/config.js`; test `waveBonus`
+- [x] Bot `tools/preview/kill-stats.mjs` przed i po (moc 4, trzy bronie, Onomichi i Kawaguchiko): trafienia przed 3–5 i 6–8, po 1–7 i 5–11 (w granicach rozrzutu bota), średnio 7–12 pocisków na ekranie przed i po; po zmianie zestrzelone w całości 51–63 fale na około 65, seria dochodzi do ×8, 180–390 pocisków na etap zamienia się w punkty. Sprawdzone zrzutami w grze (napis fali, seria, gwiazdki), bez błędów
 
 ### Faza 3: nocne miasto (u 0–2000)
 Wymaga: faza 1. Pliki: `tools/art/fukuoka/momochi.mjs`, `ohori.mjs`.
@@ -328,5 +328,6 @@ Po każdej sesji jeden wiersz: kto, która faza, co zrobione, co zostało, na co
 
 | Data | Kto | Faza | Zrobione | Zostało / uwagi |
 |---|---|---|---|---|
+| 2026-11-19 | Claude | 2 | Odczucie zniszczenia dla całej gry (D7): wspólny licznik fali w `Waves.js` (zastępuje dawny licznik stada), `waveDown`, `bulletsToPoints` i `heavyKill` w `Enemies.js`, właściciel pocisku w `Bullets.js`, gwiazdki-punkty w `Fx.js` (`coin`), mały pierścień (`shockwave` z opcjami), pauza bez błysku (`freeze(sec, false)`), dźwięki `wave` i `coin`, liczby w `FEEL`; bot pomiarowy jako narzędzie. | Typy `chain`, `split`, `cart` już są w `PACKED` i `FEEL` (faza 10). Do oceny przez człowieka: czy seria ×8 nie przesadza z punktami. |
 | 2026-11-19 | Claude | 0 i 1 | Etap 12 w budowie: `stage12.json` (flaga `wip`, fale zastępcze), trasa jako dane w `tools/art/fukuoka/route.mjs`, szkielet malowany z danych w `mid.mjs` (na bazie Onomichi; nowe grunty: plaża, kamienne tarasy, płyta i pas lotniska, pola, gaj śliw, ruiny, wał; rzeki z kamiennymi nabrzeżami; shinkansen na wiadukcie), test `fukuokaRoute`, arkusz podglądu, nazwy miejsc, skórka i licznik „DWANAŚCIE”. Sprawdzone w grze zrzutami w 8, 60, 95, 140, 175 i 228 s, bez błędów. | Woda z Onomichi na zastępstwo (faza 8). Następne: faza 2 (odczucie zniszczenia), potem tło. |
 | 2026-11-19 | Claude | plan | Plan etapu: trasa od nocnej zatoki przez Nakasu, Hakatę, lotnisko i Nanzō-in do Dazaifu w śliwach i wału Mizuki o zachodzie; Yatai-obake i Nurikabe; pomiar botem, czemu niszczenie fal nie cieszy (sekcja 5.1), trzy nowe zachowania i wspólne zmiany odczucia zniszczenia. | Czeka na akceptację decyzji D1–D8. |

@@ -484,12 +484,12 @@ export class Stage extends Phaser.Scene {
   }
 
   /** A moment's hit-stop when a boss or miniboss goes down: everything holds still, then the explosions. */
-  freeze(sec) {
+  freeze(sec, flash = true) {
     if (this.freezeT > 0) return;
     this.freezeT = sec;
     this.anims.pauseAll();
     this.time.paused = true;
-    this.fx.flash(0.55, sec + 0.15);
+    if (flash) this.fx.flash(0.55, sec + 0.15);
   }
 
   /** Tickets for the gachapon: a miniboss or a boss shot down (not with invulnerability on, nor on the developer screen). */

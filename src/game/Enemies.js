@@ -1,6 +1,6 @@
 import { TICKETS } from '../data/gacha.js';
 import Phaser from 'phaser';
-import { BEANS, CAMPAIGN, DEPTH, ENEMIES, FAIR, HEAVY, PHASE, TURRETS, VIEW, WEAPONS } from '../config.js';
+import { BEANS, CAMPAIGN, DEPTH, ENEMIES, FAIR, FEEL, HEAVY, PHASE, TURRETS, VIEW, WEAPONS } from '../config.js';
 import { rules } from '../difficulty.js';
 import { Pool } from './Pool.js';
 import { enemyTexture } from './enemyArt.js';
@@ -116,6 +116,7 @@ export class Enemies {
       head: null,
       u: 0,
       ...EXTRAS,
+      pack: w.pack ?? null,
     };
     if (w.hp == null && def.weight > 0 && w.type !== 'boss' && w.type !== 'heavy') base.hp = Math.round(base.hp * this.toughness);
     base.maxHp = base.hp;
@@ -130,7 +131,7 @@ export class Enemies {
         e = this.pool.spawn(look.frame, w.x, -8, base);
         if (look.anim) e.play({ key: look.anim, startFrame: Math.floor(Math.random() * 2) });
         e.fireAt = Math.random() < rules().popcornFireChance ? 0.9 + Math.random() * 1.4 : Infinity;
-        if (look.flock && w.flock) e.flock = w.flock;
+        if (look.flock && w.pack) e.flock = w.pack;
         e.split = !!look.split;
         e.crane = !!look.crane;
         e.hatch = look.hatch ?? 0;
@@ -466,13 +467,10 @@ export class Enemies {
       this.remove(e);
       return;
     }
-    if (e.flock && !e.flock.lost && ++e.flock.hit >= e.flock.n) {
-      // the whole flock shot down: bonus
-      const pts = 200 * e.flock.n * s.score.mult;
-      s.score.add(pts);
-      s.fx.text(e.x, e.y - 12, `STADO! +${pts}`, 1.5, 0xd8f0ff);
-    }
+    if (e.pack && !e.pack.lost && ++e.pack.hit >= e.pack.n) this.waveDown(e);
+    if (FEEL.ownBullets.has(e.type)) this.bulletsToPoints(e);
     const big = e.type === 'heavy' || e.type === 'boss';
+    if (FEEL.heavyKill.has(e.type)) this.heavyKill(e, byBomb);
     if (e.ground) {
       s.fx.explode(e.x, e.y, e.def.explosion, e.u, false, e.bits);
       const wr = this.wrecks.spawn(e.wreck ?? this.skin.turret.wreck, e.x, e.y, { u: e.u });
@@ -511,6 +509,39 @@ export class Enemies {
       }
       s.onBossDefeated();
     }
+  }
+
+  /**
+   * A whole wave shot down to its last one (docs/plan-fukuoka.md, 5.2): points for every one in it, more for each
+   * whole wave in a row (the run breaks when one gets away), a chime going up with the run.
+   */
+  waveDown(e) {
+    const s = this.scene;
+    this.streak = Math.min(FEEL.streakMax, (this.streak ?? 0) + 1);
+    const pts = Math.round((e.flock ? FEEL.flockEach : FEEL.waveEach) * e.pack.n * s.score.mult * (1 + FEEL.streakStep * (this.streak - 1)));
+    s.score.add(pts);
+    const name = e.flock ? 'STADO!' : 'FALA!';
+    s.fx.text(e.x, e.y - (FEEL.heavyKill.has(e.type) ? 26 : 12), this.streak > 1 ? `${name} ×${this.streak} +${pts}` : `${name} +${pts}`, 1.5, e.flock ? 0xd8f0ff : 0xffe8a0);
+    s.sfx.wave?.(this.streak);
+  }
+
+  /** A shooter or a turret down: what it fired and is still in the air turns to points, flying to the ship. */
+  bulletsToPoints(e) {
+    const s = this.scene;
+    for (const b of s.bullets.pool.live) {
+      if (b.dead || b.owner !== e) continue;
+      s.fx.coin(b.x, b.y, FEEL.coin * s.score.mult);
+      s.bullets.pool.kill(b);
+    }
+  }
+
+  /** The bigger ones go down harder: a beat's pause, a ring going out, the screen shaken a pixel, their points. */
+  heavyKill(e, byBomb) {
+    const s = this.scene;
+    if (!byBomb) s.freeze(FEEL.pause, false);
+    s.fx.shockwave(e.x, e.y, 0xffe0a0, FEEL.ring);
+    s.cameras.main.shake(90, FEEL.shake);
+    s.fx.text(e.x, e.y - 10, `${e.def.score * s.score.mult}`, 0.9, 0xffe080);
   }
 
   /** HP shown in the top bar: the mid-stage heavy or the whole boss pair. */
@@ -899,6 +930,7 @@ export class Enemies {
       if (e.dead) continue;
       e.age += dt;
       if (e.y > -e.radius) e.seen += dt;
+      b.owner = e; // (what it fires now is its own: bulletsToPoints)
       switch (e.type) {
         case 'popcorn':
           this.popcorn(e, dt);
@@ -1043,7 +1075,10 @@ export class Enemies {
       const off = e.y > H + 40 || e.y < -70 || e.x < -50 || e.x > VIEW.width + 50;
       if (e.wounds) for (const w of e.wounds) if (e.flash > 0) w.setVisible(false);
       if (off && e.type !== 'boss' && (e.age > 2 || e.y > H)) {
-        if (e.flock) e.flock.lost = true; // a bird got away: no flock bonus
+        if (e.pack && !e.pack.lost) {
+          e.pack.lost = true; // one got away: no bonus for its wave, and the run of whole waves is broken
+          this.streak = 0;
+        }
         if (e.loot) s.fx.text(Phaser.Math.Clamp(e.x, 40, VIEW.width - 40), 40, 'UKRADZIONE!', 1.4, 0xff8a6a);
         this.remove(e);
       }
@@ -1059,6 +1094,7 @@ export class Enemies {
       if (w.y > H + 20) this.wrecks.kill(w);
     }
     this.wrecks.sweep();
+    b.owner = null; // (what fires after this is no small enemy's)
   }
 
   // ---------------------------------------------------------------- behaviours

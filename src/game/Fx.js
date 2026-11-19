@@ -35,6 +35,7 @@ export class Fx {
     this.ground = new Pool(scene, DEPTH.ground + 0.5);
     this.sparks = new Pool(scene, DEPTH.fx);
     this.petals = new Pool(scene, DEPTH.fx);
+    this.coins = new Pool(scene, DEPTH.fx + 0.5); // a shot-down enemy's bullets turned to points, flying to the ship
     this.parts = new Pool(scene, DEPTH.airFx + 0.05); // debris and the city's bits
     this.smokes = new Pool(scene, DEPTH.airFx + 0.1);
     this.scorch = new Pool(scene, DEPTH.ground - 0.1); // under the wrecks, riding on the ground
@@ -179,6 +180,18 @@ export class Fx {
     s.once('animationcomplete', () => this.sparks.kill(s));
   }
 
+  /** A bullet turned to points (pts) where it was: it twinkles gold, drifts a moment and flies to the ship. */
+  coin(x, y, pts) {
+    const c = this.coins.spawn('spark_0', x, y);
+    const a = Math.random() * Math.PI * 2;
+    c.vx = Math.cos(a) * 30;
+    c.vy = Math.sin(a) * 30 - 10;
+    c.v = 60;
+    c.age = 0;
+    c.pts = pts;
+    c.setTint(0xffd860);
+  }
+
   flash(alpha, duration, color = 0xffffff) {
     this.flashRect.setFillStyle(color);
     this.flashA = alpha;
@@ -187,8 +200,9 @@ export class Fx {
   }
 
   /** color: the ring's (one of a list); the bomb's look out of the gachapon. */
-  shockwave(x, y, color = null) {
-    this.rings.push({ x, y, r: 4, life: 0.6, c: Array.isArray(color) ? color[Math.floor(Math.random() * color.length)] : color });
+  shockwave(x, y, color = null, { grow = 420, life = 0.6 } = {}) {
+    this.rings.push({ x, y, r: 4, life, grow, c: Array.isArray(color) ? color[Math.floor(Math.random() * color.length)] : color });
+    if (grow < 420) return; // (a small one: only its ring)
     for (const pool of [this.smokes, this.parts, this.petals]) {
       for (const p of pool.live) {
         if (p.ground) continue;
@@ -487,6 +501,33 @@ export class Fx {
       }
       pool.sweep();
     }
+    // the points a shot-down enemy's bullets turned into: a moment's drift, then off to the ship, faster and faster
+    const ship = this.scene.player;
+    for (const c of this.coins.live) {
+      c.age += dt;
+      if (c.age > 0.18 && ship?.alive) {
+        const [dx, dy] = [ship.x - c.x, ship.y - c.y];
+        const d = Math.hypot(dx, dy) || 1;
+        c.v = Math.min(520, c.v + 900 * dt);
+        c.vx += ((dx / d) * c.v - c.vx) * Math.min(1, 9 * dt);
+        c.vy += ((dy / d) * c.v - c.vy) * Math.min(1, 9 * dt);
+        if (d < 7) {
+          this.scene.score.add(c.pts);
+          this.scene.sfx.coin?.();
+          this.coins.kill(c);
+          continue;
+        }
+      } else if (!ship?.alive && c.age > 1.2) {
+        this.coins.kill(c);
+        continue;
+      }
+      c.vx *= c.age > 0.18 ? 1 : 1 - 4 * dt;
+      c.vy *= c.age > 0.18 ? 1 : 1 - 4 * dt;
+      c.x += c.vx * dt;
+      c.y += c.vy * dt;
+      c.setFrame(Math.floor(c.age * 14) % 3 ? 'spark_1' : 'spark_0'); // (a gold star, twinkling)
+    }
+    this.coins.sweep();
     for (const p of this.petals.live) {
       p.life -= dt;
       p.vx *= 1 - 2.2 * dt;
@@ -509,7 +550,7 @@ export class Fx {
     for (const r of this.rings) if ((r.life -= dt) > 0) this.rings[n++] = r;
     this.rings.length = n;
     for (const r of this.rings) {
-      r.r += 420 * dt;
+      r.r += r.grow * dt;
       this.ring.lineStyle(3, r.c ?? 0xffd6e5, Math.min(1, r.life * 2.5));
       this.ring.strokeCircle(r.x, r.y, r.r);
       this.ring.lineStyle(1, 0xffffff, Math.min(1, r.life * 2.5));

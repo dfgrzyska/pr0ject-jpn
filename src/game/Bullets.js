@@ -79,6 +79,7 @@ export class Bullets {
     b.vx = Math.cos(angle) * speed * k;
     b.vy = Math.sin(angle) * speed * k;
     b.radius = radius;
+    b.owner = this.owner ?? null; // (the enemy updating as it fires: Enemies.bulletsToPoints)
     if (extra) Object.assign(b, extra);
     if (k !== 1) {
       // falling and curving bullets keep their paths, only slower

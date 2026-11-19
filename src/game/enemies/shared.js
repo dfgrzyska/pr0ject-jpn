@@ -7,11 +7,12 @@ export const TAU = Math.PI * 2;
 // per-skin extras, listed so a pooled sprite never keeps a previous enemy's state
 export const EXTRAS = {
   flashTint: null, // the hit flash's tint (null: the usual)
+  pack: null, // { n, hit, lost }: the tally its wave shares (Waves.js): the last one down pays the bonus for the whole wave
   passOn: null, // { to, k }: hands k of every hit on to another part of its boss (the otaku room's towers)
   armor: 0,
   maxArmor: 0,
   lantern: false,
-  flock: null,
+  flock: null, // (its pack, when the city's popcorn are birds in a flock: the bonus is called a flock's)
   ghost: false, // faded out: shots pass through, no contact
   invuln: false, // shots are absorbed without damage
   pass: false, // shots fly through (still solid to touch)

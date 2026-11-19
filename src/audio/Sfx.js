@@ -127,6 +127,22 @@ export class Sfx {
     this.blip('square', 1320, 1310, 0.08, 0.045, t + 0.055, this.s.filter('lowpass', 3200));
   }
 
+  /** A whole wave shot down: a bright two-note chime, a step higher for each whole wave in a row (n). */
+  wave(n = 1) {
+    if (!this.ready('wave', 0.12)) return;
+    const t = this.now();
+    const f = 660 * 2 ** (Math.min(n - 1, 7) / 12 * 2); // (a whole tone up for each in the run)
+    this.blip('triangle', f, f, 0.07, 0.07, t);
+    this.blip('triangle', f * 1.5, f * 1.5, 0.12, 0.06, t + 0.06);
+  }
+
+  /** A bullet turned to points reaching the ship: the faintest tick. */
+  coin() {
+    if (!this.ready('coin', 0.035)) return;
+    const t = this.now();
+    this.blip('square', 1760 + Math.random() * 240, 1900, 0.025, 0.018, t, this.s.filter('lowpass', 4000));
+  }
+
   /** A rising arpeggio: power up, a bomb earned back. */
   powerUp() {
     if (!this.ready('powerup', 0.2)) return;
