@@ -10,7 +10,8 @@
 //           from its wheels. It breaks up as it is hit: the blind torn off (it sees, and fires sooner), a wheel gone
 //           (it limps), the roof on fire; its wreck stays on the street, and it leaves a power-up behind.
 // Their looks are a skin's `chain`, `split` and `cart` (skins.js); their tuning CHAIN, SPLIT, CART (config.js). A look may
-// change the colours and sounds: chain { rope, char, light, text }, split { sound }, cart { debris, light }.
+// change the colours and sounds: chain { rope, char, light, text }, split { sound }, cart { debris, light }. A cart's
+// look may have a beast pulling it that is no yokai (cart.runner): when the cart goes down it breaks free and runs off.
 import { CART, CHAIN, DEPTH, SPLIT, SPLIT_ONE, VIEW } from '../../config.js';
 import { volley } from '../../difficulty.js';
 import { slow, DOWN, TAU, EXTRAS } from './shared.js';
@@ -247,7 +248,7 @@ export const chainSplitCart = {
     const horiz = typeof w.dir === 'number';
     const x = horiz ? (w.dir > 0 ? -16 : VIEW.width + 16) : w.x;
     const y = horiz ? w.y : -20;
-    const e = this.pool.spawn(`${look.anim}0_0`, x, y, { ...base, horiz, dir: horiz ? w.dir : w.up ? -1 : 1, stop: w.stop ?? null, docked: false, wreck: look.wreck, timer: 1.4, cartStage: 0 });
+    const e = this.pool.spawn(`${look.anim}0_0`, x, y, { ...base, horiz, dir: horiz ? w.dir : w.up ? -1 : 1, stop: w.stop ?? null, docked: false, wreck: look.wreck, timer: 1.4, cartStage: 0, flee: w.flee ?? null });
     e.u = s.parallax.stripU(y);
     e.look = look;
     e.play(`${look.anim}0`);
@@ -311,9 +312,48 @@ export const chainSplitCart = {
     s.cameras.main.shake(80, 0.002);
   },
 
-  /** The cart down: it leaves a power-up on the street. */
+  /** The cart down: it leaves a power-up on the street; the beast pulling it (if any) breaks free and runs off. */
   cartDown(e) {
     const c = ['red', 'blue', 'green'][Math.floor(Math.random() * 3)];
     this.scene.spawnPickup(c, e.x, e.y, -40);
+    const R = e.look?.runner;
+    if (!R) return;
+    // where it stood in the shafts, ahead of the cart; on along the cart's way, at a run
+    const [fx, fu] = e.horiz ? [e.dir, 0] : [0, -e.dir];
+    const r = this.runners.spawn(`${R.anim}_0`, e.x + fx * R.ahead, e.y, { u: e.u + fu * R.ahead, vx: fx * R.speed, vu: fu * R.speed, turn: e.flee });
+    r.play(R.anim);
+    this.scene.sfx.creak?.();
+  },
+
+  /**
+   * The beasts run off: along the cart's way, then (the wave's `flee`: [[x, u], ...]) from one point of their way
+   * out to the next, along the lanes and paths there, and on past the last one off the screen.
+   */
+  runAway(dt) {
+    const s = this.scene;
+    for (const r of this.runners.live) {
+      const v = Math.hypot(r.vx, r.vu);
+      const to = r.turn?.[0];
+      if (to) {
+        const [dx, du] = [to[0] - r.x, to[1] - r.u];
+        const d = Math.hypot(dx, du);
+        if (d < v * dt) {
+          r.x = to[0];
+          r.u = to[1];
+          r.turn = r.turn.length > 1 ? r.turn.slice(1) : null;
+          if (r.turn) {
+            const [nx, nu] = [r.turn[0][0] - r.x, r.turn[0][1] - r.u];
+            const n = Math.hypot(nx, nu) || 1;
+            [r.vx, r.vu] = [(nx / n) * v, (nu / n) * v];
+          }
+        } else [r.vx, r.vu] = [(dx / d) * v, (du / d) * v];
+      }
+      r.x += r.vx * dt;
+      r.u += r.vu * dt;
+      r.setRotation(Math.atan2(-r.vx, -r.vu)); // (it is drawn running down the screen)
+      r.y = s.parallax.screenY(r.u);
+      if (r.y > s.H + 30 || r.y < -40 || r.x < -30 || r.x > VIEW.width + 30) this.runners.kill(r);
+    }
+    this.runners.sweep();
   },
 };

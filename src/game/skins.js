@@ -47,6 +47,10 @@ export const SKINS = {
     carrier: { frame: 'glass_{c}_0', anim: 'glass_{c}' },
     heavy: { frame: 'manta_0', anim: 'manta' },
     turret: { base: 'coral_base', head: 'coral_head_', wreck: 'coral_wreck' },
+    // surume on a blue fishing rope, coconuts, Bise's water-buffalo cart (its buffalo runs off: enemies/chainSplitCart.js)
+    chain: { frame: 'ok_ika_0', eye: 'ok_ika_eye_', lit: 'ok_ika_lit_', burnt: 'ok_ika_burnt', pole: 'ok_pole', rope: 0x2a70b0 },
+    split: { frame: 'ok_yashi_0', anim: 'ok_yashi', one: 'ok_yashi_one_0', oneAnim: 'ok_yashi_one', sound: 'crock' },
+    cart: { anim: 'ok_gyu_', wreck: 'ok_gyu_wreck', debris: 0x9a7a40, runner: { anim: 'ok_gyu_run', speed: 40, ahead: 7 } },
   },
   sapporo: {
     trap: trap('sapporo', 'snow', 10, { kind: 'fan', n: 5, speed: 'normal', arc: 0.8 }, 3.8), // a snow cannon (enemies/traps.js)

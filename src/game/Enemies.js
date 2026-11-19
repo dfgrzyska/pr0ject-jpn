@@ -57,6 +57,7 @@ export class Enemies {
     this.pool = new Pool(scene, DEPTH.air, enemyTexture);
     this.heads = new Pool(scene, DEPTH.ground + 0.2, enemyTexture);
     this.wrecks = new Pool(scene, DEPTH.ground, enemyTexture);
+    this.runners = new Pool(scene, DEPTH.ground + 0.1, enemyTexture); // a cart's beast run off when it breaks (chainSplitCart.js)
     this.segPool = new Pool(scene, DEPTH.air - 0.12, enemyTexture); // the octopus's tentacle segments
     this.tailPool = new Pool(scene, DEPTH.air - 0.13, enemyTexture); // Kyūbi's tails
     this.heavy = null;
@@ -1137,6 +1138,7 @@ export class Enemies {
       if (w.y > H + 20) this.wrecks.kill(w);
     }
     this.wrecks.sweep();
+    this.runAway(dt);
     b.owner = null; // (what fires after this is no small enemy's)
   }
 

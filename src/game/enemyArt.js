@@ -149,7 +149,8 @@ export const CITY_ANIMS = {
   // the shared behaviours' looks (enemies/chainSplitCart.js): Onomichi's hassaku and ferry, Kyoto's shells and float
   o_hassaku: [four('o_hassaku'), 5], o_hassaku_one: [['o_hassaku_one_0', 'o_hassaku_one_1'], 6],
   ky_kai: [four('ky_kai'), 4], ky_kai_one: [['ky_kai_one_0', 'ky_kai_one_1'], 6],
-  ...Object.fromEntries([0, 1, 2, 3].flatMap((st) => [[`o_ferry_${st}`, [[`o_ferry_${st}_0`, `o_ferry_${st}_1`], 4]], [`ky_hoko_${st}`, [[`ky_hoko_${st}_0`, `ky_hoko_${st}_1`], 6]]])),
+  ok_yashi: [four('ok_yashi'), 4], ok_yashi_one: [['ok_yashi_one_0', 'ok_yashi_one_1'], 6], ok_gyu_run: [['ok_gyu_run_0', 'ok_gyu_run_1'], 8],
+  ...Object.fromEntries([0, 1, 2, 3].flatMap((st) => [[`o_ferry_${st}`, [[`o_ferry_${st}_0`, `o_ferry_${st}_1`], 4]], [`ky_hoko_${st}`, [[`ky_hoko_${st}_0`, `ky_hoko_${st}_1`], 6]], [`ok_gyu_${st}`, [[`ok_gyu_${st}_0`, `ok_gyu_${st}_1`], 3]]])),
   // Fukuoka
   f_tobiume: [four('f_tobiume'), 12], f_goma: [four('f_goma'), 16], f_fugu: [four('f_fugu'), 3],
   f_mentaiko: [four('f_mentaiko'), 5], f_mentaiko_one: [['f_mentaiko_one_0', 'f_mentaiko_one_1'], 6],

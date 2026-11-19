@@ -7,6 +7,7 @@
 // Every frame is three times the old one's size (old mask coordinate m -> fine (m + 1) * 3).
 import { HiSprite, S, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
 import { shisa } from './shisa540.mjs';
+import { okinawaNewFoes } from './newfoes.mjs';
 import { Raster, fbm } from '../../lib/raster.mjs';
 
 const INK = 0x14101c;
@@ -337,6 +338,7 @@ export function soul(f) {
 }
 
 export function okinawaEnemies(add) {
+  okinawaNewFoes(add); // (the surume on their ropes, the coconuts, the water-buffalo cart: newfoes.mjs)
   for (let f = 0; f < 4; f++) {
     add(`tobiuo_${f}`, tobiuo(f));
     add(`hari_${f}`, hari(f));
