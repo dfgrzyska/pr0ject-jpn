@@ -58,6 +58,14 @@ export const EXTRAS = {
   scoop: false,
   crane: false,
   guarding: false,
+  // Fukuoka (fukuoka.js)
+  rope: null, // a lantern's rope
+  slot: 0, // its place on it
+  eye: false, // a lantern with an eye, which fires
+  fuse: 0, // seconds until a lantern set alight burns (0: not alight)
+  chainK: 0, // its place in a run of burning lanterns
+  one: false, // one sac of a mentaiko pair, shot apart
+  cartStage: 0, // how far the oboro-guruma has broken up
 };
 
 // ?noprops: no decorative layers over the enemies (tip flames, crackling, steam), only what plays

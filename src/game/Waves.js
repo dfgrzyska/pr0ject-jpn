@@ -1,10 +1,12 @@
-import { ENEMIES, FILL, VIEW } from '../config.js';
+import { CHAIN, ENEMIES, FILL, VIEW } from '../config.js';
 
 const GAP = { popcorn: 0.3, diver: 0.45 };
 // what forms a wave worth a bonus when shot down to the last one (docs/plan-fukuoka.md, 5.2): the small fry, not the
 // traps, the ambushes nor the fights; waves of one type within PACK_WINDOW s of each other are one wave
 export const PACKED = new Set(['popcorn', 'diver', 'shooter', 'carrier', 'turret', 'chain', 'split', 'cart']);
 const PACK_WINDOW = 1.0;
+/** How many enemies a wave entry brings: its count, times the lanterns on each rope for Fukuoka's chains. */
+export const sizeOf = (w) => (w.count ?? 1) * (w.type === 'chain' ? (w.n ?? CHAIN.n) : 1);
 
 // Plays the stage schedule from the JSON file: { t, type, x, path, count, gap, color, pattern, ... }
 export class Waves {
@@ -25,7 +27,7 @@ export class Waves {
     for (let j = i; j < this.list.length && this.list[j].t - w.t <= PACK_WINDOW; j++) {
       const o = this.list[j];
       if (o.type !== w.type || this.packs.has(o)) continue;
-      pack.n += o.count ?? 1;
+      pack.n += sizeOf(o);
       this.packs.set(o, pack);
     }
     return pack.n > 1 ? pack : null;
@@ -33,7 +35,7 @@ export class Waves {
 
   /** Sum of multiplier contributions if every enemy in the stage is destroyed. */
   static totalWeight(list) {
-    return list.reduce((sum, w) => sum + (ENEMIES[w.type]?.weight ?? 0) * (w.count ?? 1), 0);
+    return list.reduce((sum, w) => sum + (ENEMIES[w.type]?.weight ?? 0) * sizeOf(w), 0);
   }
 
   skipTo(t) {
@@ -85,7 +87,7 @@ export class Waves {
   expand(w, pack = null) {
     const count = w.count ?? 1;
     // the enemies of one wave share a tally, so the last one down can pay the bonus (popcorn of one wave: a flock)
-    pack ??= PACKED.has(w.type) && count > 1 ? { n: count, hit: 0, lost: false } : null;
+    pack ??= PACKED.has(w.type) && sizeOf(w) > 1 ? { n: sizeOf(w), hit: 0, lost: false } : null;
     // manzai duos (Osaka): a named pair across two waves, or consecutive members of one wave in twos
     const named = w.duo ? (this.duos[w.duo] ??= { members: [], t: -1 }) : null;
     let duo = named;

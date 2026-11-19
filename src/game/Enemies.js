@@ -31,6 +31,7 @@ import { kawaguchikoDaidara } from './enemies/kawaguchiko-daidara.js';
 import { onomichiFunayurei } from './enemies/onomichi-funayurei.js';
 import { traps } from './enemies/traps.js';
 import { ambush } from './enemies/ambush.js';
+import { fukuoka } from './enemies/fukuoka.js';
 // the second phases of the minibosses (Yuki-onna and the Oranda-bune have theirs; the bunraku puppet's go by
 // its puppeteers): its name on the banner
 const HEAVY_P2 = { tanuki: 'TANUKI PIJE SAKE', manta: 'KORALOWA SPIRALA', raiju: 'PRZEŁADOWANIE PIORUNA', wani: 'FAŁSZYWE CIENIE', heikegani: 'PĘKNIĘTY PANCERZ' };
@@ -249,6 +250,16 @@ export class Enemies {
       case 'ambush':
         e = this.spawnAmbush(w, base, look); // (a city's ambusher, hiding in its map: ambush.js)
         break;
+      // Fukuoka's lanterns on a rope, its mentaiko, its oboro-guruma (fukuoka.js)
+      case 'chain':
+        e = this.spawnChain(w, base, look);
+        break;
+      case 'split':
+        e = this.spawnSplit(w, base, look);
+        break;
+      case 'cart':
+        e = this.spawnCart(w, base, look);
+        break;
       case 'steam':
         // a cloud of hot-spring steam drifting down the screen: hides what is under it, heats the guns
         e = this.pool.spawn(look.frame, w.x, -24, { ...base, ghost: true });
@@ -448,6 +459,9 @@ export class Enemies {
     if (e.duo) this.duoDown(e);
     if (e.type === 'kuroko' && e.master && !e.master.dead) e.master.recoil = 2.0;
     if (e.loot) this.returnLoot(e);
+    if (e.type === 'chain') this.chainDown(e); // (its neighbours catch fire: fukuoka.js)
+    if (e.type === 'split') this.splitDown(e, byBomb); // (its two sacs fly out, or a sac's roe spills)
+    if (e.type === 'cart') this.cartDown(e); // (a power-up left on the street)
     if (e.split && !byBomb) {
       // a volcanic bomb bursts into two smaller halves flying apart
       for (const side of [-1, 1]) {
@@ -926,6 +940,7 @@ export class Enemies {
     this.tele.clear();
     this.updateBossGroup(dt);
     this.updateDying(dt);
+    this.updateRopes(); // (Fukuoka's lanterns' ropes)
     for (const e of this.pool.live) {
       if (e.dead) continue;
       e.age += dt;
@@ -994,6 +1009,15 @@ export class Enemies {
           break;
         case 'ambush':
           this.ambusher(e, dt, b);
+          break;
+        case 'chain':
+          this.chain(e, dt, b);
+          break;
+        case 'split':
+          this.split(e, dt, b);
+          break;
+        case 'cart':
+          this.cart(e, dt, b);
           break;
         case 'steam': {
           e.y += (22 + (e.vy || 0)) * dt;
@@ -1437,4 +1461,4 @@ export class Enemies {
 }
 
 // each city's enemies and bosses live in its own module (src/game/enemies/): their methods join the class here
-Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, kaiken, tokyoKasa, tokyoTaiyaki, kawaguchikoUsagi, onomichiNekomata, tokyoKurogane, kawaguchikoDaidara, onomichiFunayurei, traps, ambush);
+Object.assign(Enemies.prototype, kyoto, okinawa, sapporo, kagoshima, osaka, beppu, hiroshima, nagasaki, encounters, jihanki, keicar, genba, nagai, heya, obachan, kaiken, tokyoKasa, tokyoTaiyaki, kawaguchikoUsagi, onomichiNekomata, tokyoKurogane, kawaguchikoDaidara, onomichiFunayurei, traps, ambush, fukuoka);

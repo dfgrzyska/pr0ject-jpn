@@ -6,6 +6,7 @@
 // drawing its bow at the ship. Each reads at a glance as something that will hurt (eyes, a scowl, spines, an arrow on
 // the string), never as a pickup. Seen from above like every city's, drawn with HiSprite (tools/lib/hisprite.mjs).
 import { HiSprite, tones, speckle, mottle, mix2, fur } from '../../lib/hisprite.mjs';
+import { fukuokaNewFoes } from './newfoes.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -299,5 +300,6 @@ export function fukuokaEnemies(add) {
   add('f_dai_base', standBase(false));
   add('f_dai_wreck', standBase(true));
   for (let i = 0; i < 16; i++) add(`f_ningyo_${i}`, archer(i));
+  fukuokaNewFoes(add); // (the lanterns on their ropes, the mentaiko, the oboro-guruma: newfoes.mjs)
 }
 export const FUKUOKA_PORTRAITS = [];

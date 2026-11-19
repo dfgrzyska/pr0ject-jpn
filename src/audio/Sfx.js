@@ -136,6 +136,29 @@ export class Sfx {
     this.blip('triangle', f * 1.5, f * 1.5, 0.12, 0.06, t + 0.06);
   }
 
+  /** A paper lantern catching fire on its string: a soft pop, a semitone higher for each one the fire has run on. */
+  chain(k = 0) {
+    if (!this.ready('chain', 0.05)) return;
+    const t = this.now();
+    const f = 520 * 2 ** (Math.min(k, 14) / 12);
+    this.blip('square', f * 0.5, f * 0.3, 0.03, 0.05, t, this.s.filter('lowpass', 1800));
+    this.blip('triangle', f, f * 1.02, 0.08, 0.06, t + 0.015);
+  }
+
+  /** A pair of roe sacs splitting, or one bursting: a wet pop. */
+  squelch() {
+    if (!this.ready('squelch', 0.08)) return;
+    const t = this.now();
+    this.blip('sine', 300, 120, 0.09, 0.09, t);
+  }
+
+  /** The ghost cart breaking up a stage: a crack of wood. */
+  creak() {
+    if (!this.ready('creak', 0.2)) return;
+    const t = this.now();
+    this.blip('sawtooth', 160, 70, 0.18, 0.08, t, this.s.filter('lowpass', 900));
+  }
+
   /** A bullet turned to points reaching the ship: the faintest tick. */
   coin() {
     if (!this.ready('coin', 0.035)) return;
