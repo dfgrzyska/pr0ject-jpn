@@ -123,3 +123,10 @@ Wszystko narysowane od zera, bez marek i postaci z cudzych dzieł. Przedmioty z 
 5. Testy, odkrycia bez zmian (to nie nowe yokai), commit.
 
 Pierwszy krok, wspólny: przeniesienie zachowań z `fukuoka.js` do wspólnego modułu, bez zmiany działania w Fukuoce, sprawdzone testami i botem.
+
+## 6. Dziennik
+
+| Data | Kto | Krok | Co zrobione | Uwagi |
+|---|---|---|---|---|
+| 2026-11-19 | Claude | 0 | Zachowania przeniesione do `src/game/enemies/chainSplitCart.js` (bez zmian w działaniu; skórka może zmienić kolory liny, światło, kolor punktów, dźwięk pary, odłamki i ogień wozu). Bot w Fukuoce jak przedtem. | |
+| 2026-11-19 | Claude | 1 (Onomichi, Kioto) | Projekty grafiki do akceptacji: `tools/art/onomichi/newfoes.mjs` (flagi tairyō-bata z leszczem nad falą, hassaku i jego połówki, prom z mostkiem-oczami, autami na pokładzie i rampą-szczęką, wrak nisko w wodzie) i `tools/art/kyoto/newfoes.mjs` (omikuji na słomianej linie między cynobrowymi słupkami z lisim ogniem, muszla kai-awase z oczami w szparze i jej złocone połówki z sosną i śliwą, yamaboko z drzewcem, sakaki, halabardą, gobelinami i twarzą demona, wrak przewrócony). Jeszcze nie w atlasach ani w grze. | Czeka na akceptację; prom ma 4 stopnie rozpadu, platforma też. |
