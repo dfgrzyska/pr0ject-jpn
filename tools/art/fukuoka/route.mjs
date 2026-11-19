@@ -149,6 +149,8 @@ export const GROUNDS = [
   { id: 'nanzoin_keidai', kind: 'gravel', rect: [50, 4760, 76, 100] },
   // Dazaifu: the approach's square, Tenmangu's grounds, the plum gardens, the museum's hill, the fields
   { id: 'dazaifu_ekimae', kind: 'plaza', rect: [76, 5212, 34, 22] },
+  { id: 'shinji_shima_1', kind: 'park', over: true, ell: [92, 5623.5, 12, 3.6] }, // the pond's two islands, the bridges' stepping stones
+  { id: 'shinji_shima_2', kind: 'park', over: true, ell: [92, 5637.5, 14, 3.6] },
   { id: 'tenmangu_keidai', kind: 'gravel', rect: [56, 5658, 72, 72] },
   { id: 'umeen_w', kind: 'ume', rect: [0, 5590, 50, 320] },
   { id: 'umeen_e', kind: 'ume', rect: [140, 5590, 40, 130] },

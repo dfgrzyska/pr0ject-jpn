@@ -11,10 +11,11 @@ export const UME = {
   red: [0xd8406a, 0xc02a58, 0xe8607e],
 };
 
-/** ume(kit)(x, u, r, colour, { weeping, old, petals }) - queues the tree at (x, u), r across its crown (logical). */
+/** ume(kit)(x, u, r, colour, { weeping, old, petals, bloom }) - queues the tree at (x, u), r across its crown (logical);
+ * bloom 0..1: how far into full flower (Dazaifu's groves at their best: 1). */
 export function umeKit(kit, S = 3) {
   const { P, FX, FY, queue, hi } = kit;
-  return (x, u, r, colour = 'white', { weeping = false, old = false, petals = true, seed = 0 } = {}) => {
+  return (x, u, r, colour = 'white', { weeping = false, old = false, petals = true, seed = 0, bloom = 0 } = {}) => {
     const [cx, cy] = [FX(x), FY(u)];
     const s = seed || Math.floor(hashPx(cx, cy, 77) * 1e6);
     const h = (a, b) => hashPx(cx + a, cy + b, s);
@@ -36,7 +37,7 @@ export function umeKit(kit, S = 3) {
     for (let k = 0; k < n; k++) bough(cx, cy, (k / n) * Math.PI * 2 + h(k, 2) * 0.8, R * (0.75 + h(k, 5) * 0.35), 0);
     queue(cy + R * 0.5, () => {
       if (petals)
-        for (let k = 0; k < R * R * 0.5; k++) {
+        for (let k = 0; k < R * R * (0.5 + bloom * 0.4); k++) {
           const [a, d] = [h(k, 31) * Math.PI * 2, Math.sqrt(h(k, 32)) * R * 1.15];
           P(cx + Math.round(Math.cos(a) * d), cy + Math.round(Math.sin(a) * d) + 2, pal[k % 3]); // fallen petals on the moss
         }
@@ -47,7 +48,7 @@ export function umeKit(kit, S = 3) {
       }
       // the flowers along the twigs, thicker towards their ends; a weeping tree's twigs hang down in curtains
       for (const [X, Y, depth, t] of segs) {
-        if (h(X, Y) > 0.45 + t * 0.55) continue;
+        if (h(X, Y) > 0.45 + t * 0.55 + bloom * 0.3) continue;
         const c = pal[Math.floor(h(Y, X) * 3)];
         // a cluster of two or three flowers on the twig, the lit side up and left
         P(X + (h(X, 1) < 0.5 ? 1 : -1), Y + (h(Y, 1) < 0.5 ? 1 : -1), c);
@@ -55,6 +56,7 @@ export function umeKit(kit, S = 3) {
         if (t > 0.35) P(X + 1, Y, shade(c, 0.9));
         if (t > 0.5) P(X, Y - 1, shade(c, 0.95));
         if (depth > 0 && t > 0.6) P(X, Y + 1, shade(c, 0.85));
+        if (bloom && t > 0.3 && h(X, Y + 7) < bloom * 0.6) { P(X + 2, Y - 1, c); P(X - 1, Y + 2, shade(c, 0.92)); } // in full flower: more along every twig
         if (weeping && t > 0.6 && h(X, Y + 3) < 0.35) for (let d = 1; d < 4 + h(X, 9) * 4; d++) P(X, Y + d, d % 2 ? c : 0x5a463a);
       }
       // the trunk, and an old tree's crutches: poles propping its longest boughs
