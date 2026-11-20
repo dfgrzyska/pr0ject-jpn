@@ -153,8 +153,8 @@ test('the oboro-guruma breaks up in three stages and keeps to its street', () =>
   }
 });
 
-test('the three are Fukuoka\'s (and Onomichi\'s, Kyoto\'s, Okinawa\'s, Nagasaki\'s, Kawaguchiko\'s; Sapporo, Kagoshima, Osaka and Beppu have two), in waves, their frames in each one\'s atlas', () => {
-  const cities = { fukuoka: 'stage12', onomichi: 'stage11', kyoto: 'stage1', okinawa: 'stage2', nagasaki: 'stage8', kawaguchiko: 'stage10', sapporo: 'stage3', kagoshima: 'stage4', osaka: 'stage5', beppu: 'stage6' };
+test('the three are Fukuoka\'s (and Onomichi\'s, Kyoto\'s, Okinawa\'s, Nagasaki\'s, Kawaguchiko\'s, Hiroshima\'s; Sapporo, Kagoshima, Osaka and Beppu have two), in waves, their frames in each one\'s atlas', () => {
+  const cities = { fukuoka: 'stage12', onomichi: 'stage11', kyoto: 'stage1', okinawa: 'stage2', nagasaki: 'stage8', kawaguchiko: 'stage10', sapporo: 'stage3', kagoshima: 'stage4', osaka: 'stage5', beppu: 'stage6', hiroshima: 'stage7' };
   const without = { cart: new Set(['sapporo']), split: new Set(['kagoshima', 'osaka', 'beppu']) }; // (snowploughs; bombs that split; manzai duos; eggs that hatch)
   for (const t of ['chain', 'split', 'cart']) {
     assert.ok(ENEMIES[t] && PACKED.has(t), t);
@@ -165,7 +165,7 @@ test('the three are Fukuoka\'s (and Onomichi\'s, Kyoto\'s, Okinawa\'s, Nagasaki\
     const has = new Set(Array.isArray(a.frames) ? a.frames.map((f) => f.filename) : Object.keys(a.frames));
     const { chain, split, cart } = SKINS[city];
     for (const f of [chain.frame, `${chain.eye}0`, `${chain.eye}1`, `${chain.lit}0`, `${chain.lit}1`, chain.burnt, chain.pole]) assert.ok(has.has(f), `${city}: ${f}`);
-    if (split) for (const f of [split.frame, split.one]) assert.ok(has.has(f), `${city}: ${f}`);
+    if (split) for (const f of [split.frame, split.one, split.other?.one ?? split.one]) assert.ok(has.has(f), `${city}: ${f}`);
     for (const f of chain.frames ?? []) assert.ok(has.has(f), `${city}: ${f}`);
     if (!cart) continue;
     assert.ok(has.has(cart.wreck), `${city}: ${cart.wreck}`);

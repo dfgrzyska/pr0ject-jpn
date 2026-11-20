@@ -219,5 +219,10 @@ export const SKINS = {
     carrier: { frame: 'manju_{c}_0', anim: 'manju_{c}' },
     heavy: { frame: 'heike_0', anim: 'heike', kind: 'heikegani', scale: 1.25 },
     turret: { base: 'hidoro_base', head: 'hidoro_head_', wreck: 'hidoro_wreck', pattern: 'tide' },
+    // the shared three (enemies/chainSplitCart.js): the oyster lines of the bay's rafts, a kendama of Hatsukaichi (its
+    // ball and its ken come apart), the gozabune of Kangen-sai come alive
+    chain: { frame: 'hr_kaki_0', frames: ['hr_kaki_0', 'hr_kaki_1'], eye: 'hr_kaki_eye_', lit: 'hr_kaki_lit_', burnt: 'hr_kaki_burnt', pole: 'hr_float', rope: 0x5a5a62 },
+    split: { frame: 'hr_kendama_0', anim: 'hr_kendama', one: 'hr_tama_0', oneAnim: 'hr_tama', other: { one: 'hr_ken_0', oneAnim: 'hr_ken' }, sound: 'crock' },
+    cart: { anim: 'hr_goza_', wreck: 'hr_goza_wreck', debris: 0x5a3418, light: 0xff9a30 },
   },
 };

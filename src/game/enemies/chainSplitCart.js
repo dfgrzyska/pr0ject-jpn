@@ -13,7 +13,8 @@
 // change the colours and sounds: chain { rope, char, light, text }, split { sound }, cart { debris, light }; a rope may
 // hang several things in turn (chain.frames, as Nagasaki's signal flags) and carry its fire further, to a line hung
 // close by (chain.cross: Kagoshima's ash), and hang high, over the city's steam drifting up past them (chain.high:
-// Beppu's baskets over the vents). A cart's look may have a beast pulling it that is no yokai (cart.runner):
+// Beppu's baskets over the vents). A pair may come apart into two different halves (split.other: the second half's
+// one and oneAnim, as Hiroshima's kendama, its ball and its ken). A cart's look may have a beast pulling it that is no yokai (cart.runner):
 // when the cart goes down it breaks free and runs off. A cart may drive faster (cart.speed) and swing round a corner
 // into a cross street (the wave's turn: Osaka's danjiri, yarimawashi).
 import { CART, CHAIN, DEPTH, SPLIT, SPLIT_ONE, VIEW } from '../../config.js';
@@ -210,7 +211,8 @@ export const chainSplitCart = {
     pack.n += 2;
     const L = e.look;
     for (const side of [-1, 1]) {
-      const o = this.pool.spawn(L.one, e.x + side * 5, e.y, {
+      const { one, oneAnim } = side > 0 && L.other ? L.other : L;
+      const o = this.pool.spawn(one, e.x + side * 5, e.y, {
         ...EXTRAS,
         type: 'split',
         def: SPLIT_ONE,
@@ -226,7 +228,7 @@ export const chainSplitCart = {
         u: 0,
         x0: e.x,
         bits: e.bits,
-        art: L.one,
+        art: one,
         one: true,
         look: L,
         pack,
@@ -240,7 +242,7 @@ export const chainSplitCart = {
         pattern: 'aimed',
       });
       o.setDepth(DEPTH.air);
-      o.play(L.oneAnim);
+      o.play(oneAnim);
     }
   },
 

@@ -7,6 +7,7 @@
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
 import { sankibo as sankibo540 } from './tengu540.mjs';
 import { crab } from './crab540.mjs';
+import { hiroshimaNewFoes } from './newfoes.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -410,5 +411,6 @@ export function hiroshimaEnemies(add) {
   for (let i = 0; i < 16; i++) add(`hidoro_head_${i}`, hidoroHead(i));
   for (const p of ['0', '1', '2', '3', 'fan_l', 'fan_r']) add(`sankibo_${p}`, sankibo540(p)); // tengu540.mjs
   for (const p of ['fan_up_l', 'fan_up_r']) add(`sankibo_${p}`, sankibo540(p)); // step 2a: the wind-up before a sweep
+  hiroshimaNewFoes(add); // (the oyster lines of the rafts, the kendama, the gozabune: newfoes.mjs)
 }
 export const HIROSHIMA_PORTRAITS = ['heike_0', 'sankibo_0', 'brazier_0'];
