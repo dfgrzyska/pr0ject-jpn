@@ -540,9 +540,9 @@ export function makeKit({ img, W, L, S, seed, props, tod, kinds, cloth = PAL.clo
   };
 
   /** A tree at (x, u), its crown r across (nature.mjs: broadleaf, sakura, pine, cedar, bamboo, tiny). */
-  const tree = (kind, x, u, r) => {
+  const tree = (kind, x, u, r, seed) => {
     if (kinds) kind = kinds(kind, x, u, r);
-    const s = Math.floor(rand() * 1e9);
+    const s = seed ?? Math.floor(rand() * 1e9); // (a seed of its own leaves the shared draws to the rest of the city)
     const [cx, cy] = [FX(x), FY(u)];
     const px = () => crownPixels(kind, cx, cy, r * S, rng(s), s & 1023);
     const off = Math.round((1.4 + r * 0.3) * S);

@@ -13,9 +13,11 @@
 import { lots } from './blocks.mjs';
 import { PAL, shade, blend } from './kit.mjs';
 import { hashPx } from '../hires.mjs';
+import { fbm, rng } from '../../lib/raster.mjs';
+import { near } from './geom.mjs';
 
 export function shinjuku(ctx) {
-  const { kit, blocks, pave, plot, claim, props } = ctx;
+  const { kit, blocks, pave, plot, claim, props, L, S } = ctx;
   const { building, house, tree, zebra, car, crowd, mark, ground, rand, pick, P, R, FX, FY, queue, shadowBox } = kit;
   kit.setSun(0.78);
 
@@ -366,107 +368,577 @@ export function shinjuku(ctx) {
   kit.traffic(141.5, 1800, -20, { sp: 23, gap: 210, s0: 0.5 });
   kit.traffic(144.6, 1800, -20, { sp: 18, gap: 280, s0: 0.9 });
 
-  // ---- Shinjuku Gyoen
+  // ---- Shinjuku Gyoen (u 1812-2092), in cherry time, the three gardens it keeps side by side. In by the Shinjuku
+  // gate (stone gateposts, the iron gates folded back, the ticket booth, a queue, the visitors' centre under its
+  // louvred roof); the Japanese garden: the upper pond in two lobes with an island of pines and a lantern, rock
+  // groupings and a pebble beach on its shores, clipped azaleas, black pines leaning over the water, maples in young
+  // leaf, the bridge at its waist, the Kyū-Goryōtei standing out over the water on its terrace; the English garden:
+  // the great mown lawn under Himalayan cedars and a tulip tree, ringed with cherries (Somei-yoshino, double ones of a
+  // deeper pink, two weeping ones), picnics on their sheets all round; the lower pond and the Rakuu-tei tea house
+  // with its deck and red parasol; the glasshouse, palms under its faceted glass; the French garden: pleached plane
+  // trees in two avenues, bedding in a parterre of box; out by the Sendagaya gate. A hedge and railings all round.
   {
-    // lawns paler where they are mown, the paths' edges
+    for (let k = 0; k < 1133; k++) rand(); // (the draws the old park took, so what comes after it keeps its draws)
+    const { wet, img, along: alongRoad } = ctx;
+    const hi = img.hi;
+    const FW = 180 * S;
+    const gr = rng(7400);
+    const T = (kind, x, u, r) => tree(kind, x, u, r, Math.floor(gr() * 1e9));
+    const fb = (x, y, seed, scale, oct = 2) => fbm(x, y, { seed, scale, octaves: oct });
+    const WALKS = ['gyoen_michi_1', 'gyoen_michi_2', 'gyoen_michi_3'].map((id) => ctx.ROADS.find((r) => r.id === id));
+    const P1 = [[36, 1896], [38, 1886], [46, 1880], [56, 1879], [64, 1883], [70, 1890], [74, 1893], [78, 1889], [86, 1884], [98, 1883], [108, 1887], [114, 1895], [113, 1905], [106, 1913], [96, 1917], [86, 1915], [78, 1911], [74, 1908], [70, 1912], [62, 1918], [50, 1919], [41, 1914], [36, 1906]];
+    const P2 = [[98, 1946], [104, 1938], [114, 1936], [124, 1940], [130, 1948], [129, 1958], [124, 1966], [126, 1976], [120, 1984], [110, 1986], [102, 1980], [100, 1970], [96, 1960]];
+    const inPoly = (pts, x, u) => {
+      let inside = false;
+      for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+        const [xi, ui] = pts[i];
+        const [xj, uj] = pts[j];
+        if (ui > u !== uj > u && x < ((xj - xi) * (u - ui)) / (uj - ui) + xi) inside = !inside;
+      }
+      return inside;
+    };
+    const shore = (pts, x, u) => near([...pts, pts[0]], x, u).d; // (how far from the pond's edge)
+    const LAWN = (x, u) => ((x - 58) / 44) ** 2 + ((u - 1954) / 30) ** 2; // (< 1 on the great lawn)
+    const ISLE = [52, 1899, 6, 4];
+    const isWet = (X, Yy) => wet[Yy * FW + X] === 2;
+    const onWalk = (x, u, pad = 0) => WALKS.some((r) => near(r.pts, x, u).d <= r.w / 2 + pad);
+    const PLOTS_HERE = [[20, 1990, 40, 30], [131, 1950, 15, 12], [84, 1915, 20, 11]];
+    const onPlot = (x, u) => PLOTS_HERE.some(([px, pu, w, h]) => x >= px && x < px + w && u >= pu && u < pu + h);
+    const FORMAL = [96, 1998, 48, 68];
+    const inFormal = (x, u) => x >= FORMAL[0] && x < FORMAL[0] + FORMAL[2] && u >= FORMAL[1] && u < FORMAL[1] + FORMAL[3];
+    const TURRET = [129, 1897]; // (a turret's stand comes here: open lawn round it)
+    const clearOf = (x, u, r) => Math.hypot(x - TURRET[0], u - TURRET[1]) > 9 + r && !onWalk(x, u, r * 0.6 + 0.5) && !onPlot(x, u) && !inPoly(P1, x, u) && !inPoly(P2, x, u);
+
+    // the ground: the lawn mown in broad stripes, the Japanese garden's moss and short grass, the woods' floor of
+    // leaf litter; petals fallen thick under the cherries (laid with the trees below)
     ground(() => {
-      for (let u = 1920; u < 1990; u += 1 / 3)
-        for (let x = 14; x < 104; x += 1 / 3) {
-          const d = ((x - 58) / 44) ** 2 + ((u - 1954) / 30) ** 2;
-          if (d < 1 && hashPx(FX(x), FY(u), 5) > d * 0.5) P(FX(x), FY(u), hashPx(FX(x), FY(u), 6) < 0.5 ? 0x76a455 : 0x6c9a4e);
+      for (let Yy = FY(2092); Yy < FY(1812); Yy++)
+        for (let X = 0; X < FX(158); X++) {
+          if (isWet(X, Yy)) continue;
+          const x = (X + 0.5) / S;
+          const u = L - (Yy + 0.5) / S;
+          if (onWalk(x, u) || onPlot(x, u) || inFormal(x, u)) continue;
+          const g = hashPx(X, Yy, 7401);
+          let c;
+          const lawn = LAWN(x, u);
+          if (lawn < 1) {
+            const band = Math.floor((x + Math.sin(u / 9) * 1.2) / 4.5) % 2;
+            c = shade(band ? 0x74a454 : 0x689a4c, 0.95 + fb(X * 0.2, Yy * 0.2, 7402, 3) * 0.1 + (g - 0.5) * 0.06);
+            if (lawn > 0.82) c = blend(c, 0x5a8a44, (lawn - 0.82) * 4);
+          } else if (u < 1932 && x < 120) {
+            const m = fb(X * 0.15, Yy * 0.15, 7403, 3);
+            c = shade(m < 0.45 ? 0x3e6a34 : m < 0.6 ? 0x4a7a3a : 0x5a8a40, 0.92 + g * 0.14); // (moss and short grass)
+          } else {
+            c = shade(0x507a3e, 0.92 + fb(X * 0.25, Yy * 0.25, 7404, 2) * 0.1 + (g - 0.5) * 0.08);
+            if (g > 0.95) c = g > 0.98 ? 0x6a5a3c : 0x7a6a44; // (leaf litter)
+          }
+          P(X, Yy, c);
+        }
+      // the walks: gravel, raked, its edges darker where the grass meets it
+      for (const r of WALKS)
+        alongRoad(r.pts, r.w / 2, (n, x, u, X, Yy) => {
+          const g = hashPx(X, Yy, 7405);
+          const c = shade(0xc8bca2, 0.9 + fb(X * 0.5, Yy * 0.5, 7406, 2) * 0.16 + (g - 0.5) * 0.1);
+          return n.d > r.w / 2 - 0.4 ? shade(c, 0.8) : g < 0.04 ? 0x9a8e78 : c;
+        });
+    });
+
+    // the ponds: deep green water under the trees' reflections, sky in it where it is open, water lilies in the
+    // upper pond's west lobe, petals drifting together along the shores; the rocks along the edges, a pebble beach
+    ground(() => {
+      for (let Yy = FY(1990); Yy < FY(1876); Yy++)
+        for (let X = FX(30); X < FX(134); X++) {
+          if (!isWet(X, Yy)) continue;
+          const x = (X + 0.5) / S;
+          const u = L - (Yy + 0.5) / S;
+          const P_ = u < 1925 ? P1 : P2;
+          const d = shore(P_, x, u);
+          const g = hashPx(X, Yy, 7407);
+          let c = blend(0x2a4a40, 0x3a6458, fb(X * 0.04, Yy * 0.12, 7408, 3));
+          if (d < 2.4) c = shade(c, 0.72 + d * 0.1); // (dark under the bank)
+          const sky = fb(X * 0.02, Yy * 0.5, 7409, 3);
+          if (sky > 0.66 && d > 3) c = blend(c, 0x9ab8b8, (sky - 0.66) * 1.6);
+          if (Math.hypot((x - 44) / 7, (u - 1892) / 6) < 1 || Math.hypot((x - 106) / 5, (u - 1975) / 6) < 1) {
+            // water lilies: round notched pads, a flower here and there
+            const pi = Math.floor(X / 5);
+            const pj = Math.floor(Yy / 4);
+            const pc = [pi * 5 + 2.5, pj * 4 + 2];
+            if (hashPx(pi, pj, 7410) < 0.6 && Math.hypot(X - pc[0], (Yy - pc[1]) * 1.2) < 2.2 && Math.atan2(Yy - pc[1], X - pc[0]) % 1.4 > -1.1) c = hashPx(pi, pj, 7411) < 0.12 && X === Math.round(pc[0]) ? 0xf8e8ee : g < 0.5 ? 0x4a8a3a : 0x5a9a44;
+          }
+          const raft = fb(X * 0.03, Yy * 0.06, 7412, 3) + (d < 3 ? 0.08 : 0);
+          if (raft > 0.7 && g < (raft - 0.68) * 1.6) c = g < 0.1 ? 0xffe8ee : g < 0.3 ? 0xf6c6d4 : 0xe6a8bc;
+          else if (g > 0.99) c = 0xf4c4d2;
+          P(X, Yy, c);
         }
     });
-    // the picnics: a sheet, two or three people, under the cherries
-    for (let k = 0; k < 16; k++) {
-      const [x, u] = [22 + rand() * 72, 1932 + rand() * 46];
-      const c = pick([0x4870c8, 0xd04848, 0xe8c040, 0xf0a0b8, 0x48a868, 0xe8e8e8]);
-      mark(x, u, (X, Y) => {
-        R(X, Y, 9, 6, c);
-        R(X, Y, 9, 1, shade(c, 1.2));
-        for (let i = 2; i < 9; i += 3) P(X + i, Y + 3, shade(c, 0.75));
-        kit.person(X + 1, Y - 2, k);
-        kit.person(X + 6, Y - 1, k + 30);
-      });
-    }
-    const inPond = (x, u) => Math.hypot((x - 76) / 41, (u - 1900) / 23) < 1 || Math.hypot((x - 112) / 21, (u - 1960) / 29) < 1;
-    // trees: a belt along the walls, cherry groves by the lawn and the ponds, pines at the tea house
-    for (let k = 0; k < 150; k++) {
-      const edge = k < 70;
-      const x = edge ? (k % 2 ? 2 + rand() * 8 : 148 + rand() * 8) : 6 + rand() * 146;
-      const u = edge ? 1816 + rand() * 272 : pick([1816 + rand() * 30, 2060 + rand() * 28, 1880 + rand() * 180]);
-      if (!edge && Math.hypot((x - 58) / 46, (u - 1954) / 32) < 1) continue;
-      if (inPond(x, u)) continue;
-      if (x > 16 && x < 64 && u > 1984 && u < 2026) continue; // (the glasshouse)
-      if (x > 92 && x < 148 && u > 1994 && u < 2070) continue; // (the formal garden)
-      tree(edge ? pick(['broadleaf', 'broadleaf', 'cedar']) : pick(['sakura', 'sakura', 'broadleaf', 'pine']), x, u, 2.6 + rand() * 2.2);
-    }
-    for (let k = 0; k < 22; k++) {
-      const a = (k / 22) * Math.PI * 2;
-      const [x, u] = [58 + Math.cos(a) * 48 + rand() * 3, 1954 + Math.sin(a) * 34 + rand() * 3];
-      if (!inPond(x, u)) tree('sakura', x, u, 3 + rand() * 1.4);
-    }
-    // the formal garden: a long lawn, rose beds down its middle, two rows of plane trees each side
-    pave(96, 1998, 48, 68, 'park', 61);
-    ground(() => {
-      for (let u = 2004; u < 2060; u += 14)
-        for (let j = 0; j < 8 * 3; j++)
-          for (let i = 0; i < 20 * 3; i++) {
-            const v = hashPx(i, j + u, 71);
-            P(FX(110) + i, FY(u + 8) + j, i === 0 || j === 0 || i === 59 || j === 23 ? 0x4a6a3a : v < 0.3 ? 0xd83a50 : v < 0.5 ? 0xf0a0b8 : v < 0.62 ? 0xf0d860 : 0x3e7a3c);
+    // rocks along the shores (ishigumi): grey boulders lit on top, moss on their shoulders; a pebble beach (suhama)
+    // on the upper pond's south-west shore
+    const rock = (x, u, r) =>
+      queue(FY(u) + Math.round(r * S * 0.5), () => {
+        const [CX, CY] = [FX(x), FY(u)];
+        const R_ = r * S;
+        for (let j = -R_; j <= R_; j++)
+          for (let i = -R_ - 1; i <= R_ + 1; i++) {
+            const e = (i / (R_ + 1)) ** 2 + (j / R_) ** 2 + (hashPx(CX + i, CY + j, 7413) - 0.5) * 0.2;
+            if (e > 1) continue;
+            let c = i + j < -R_ * 0.4 ? 0xb8b4aa : i + j > R_ * 0.5 ? 0x5e5c58 : 0x8a8680;
+            if (j < -R_ * 0.3 && hashPx(CX + i, CY + j, 7414) < 0.35) c = 0x5a7a3a;
+            P(CX + i, CY + j, c);
           }
+      }, () => shadowBox(FX(x) - r * S, FY(u) - r * S, r * S * 2, r * S * 2, 2, 0.6));
+    for (const P_ of [P1, P2])
+      for (let i = 0; i < P_.length; i++) {
+        const [ax, au] = P_[i];
+        const [bx, bu] = P_[(i + 1) % P_.length];
+        for (let t = 0; t < 1; t += 0.5) {
+          if (gr() < 0.45) continue;
+          const [x, u] = [ax + (bx - ax) * t, au + (bu - au) * t];
+          if (onWalk(x, u, 2) || onPlot(x, u) || Math.abs(x - 74) < 4) continue;
+          rock(x + (gr() - 0.5), u + (gr() - 0.5), 0.9 + gr() * 0.9);
+        }
+      }
+    ground(() => {
+      for (let Yy = FY(1898); Yy < FY(1878); Yy++)
+        for (let X = FX(36); X < FX(62); X++) {
+          const x = (X + 0.5) / S;
+          const u = L - (Yy + 0.5) / S;
+          const d = shore(P1, x, u);
+          if (d > 2.2 || (isWet(X, Yy) && d > 0.8) || x > 60) continue;
+          const g = hashPx(X, Yy, 7415);
+          P(X, Yy, g < 0.3 ? 0xd8d4cc : g < 0.6 ? 0xc0bcb2 : g < 0.85 ? 0xa8a49a : 0x8a867e);
+        }
     });
-    for (let u = 2002; u < 2066; u += 8) for (const x of [99, 104, 136, 141]) tree('broadleaf', x, u, 2.4);
-    // the glasshouse: white ribs over the green inside, a higher vault in the middle
-    {
-      const p = plot('gyoen_onshitsu');
-      const [X0, YT] = [FX(p.x), FY(p.u + p.h)];
-      const [gw, gh] = [p.w * 3, p.h * 3];
-      queue(FY(p.u), () => {
-        for (let j = 0; j < gh; j++)
-          for (let i = 0; i < gw; i++) {
-            const vault = Math.abs(i - gw / 2) < gw * 0.22;
-            const rib = i % 9 === 0 || j % 12 === 0 || Math.abs(Math.abs(i - gw / 2) - gw * 0.22) < 1.5 || Math.abs(j - gh / 2) < 1;
-            const leaf = hashPx(i >> 1, j >> 1, 81);
-            let c = rib ? 0xf8fcfc : blend(leaf < 0.4 ? 0x3a7a44 : leaf < 0.8 ? 0x58a058 : 0x8cc878, 0xc4ecf4, vault ? 0.5 : 0.3);
-            if ((i + j) % 31 < 4 && !rib) c = shade(c, 1.14);
-            if (i <= 1 || j <= 1 || i >= gw - 2 || j >= gh - 2) c = j >= gh - 2 || i >= gw - 2 ? 0x5a6a72 : 0xdce4e6;
-            P(X0 + i, YT + j, c);
-          }
-      }, () => shadowBox(X0, YT, gw, gh, 6, 0.7));
-    }
-    // the tea house on the pond's edge, a deck over the water; an arched bridge
-    {
-      const p = plot('gyoen_chaya');
-      pave(p.x, p.u, p.w, p.h, 'park', 63);
-      house(p.x + 2, p.u + 3, 13, 10, { tile: 0x7c6050, face: 2, s: 808 });
-      // its deck out over the water on posts
-      ground(() => {
-        for (let j = 0; j < 21; j++) for (let i = 0; i < 30; i++) P(FX(p.x - 9) + i, FY(p.u + 10) + j, i === 0 || j === 0 || j === 20 ? 0x6a4c30 : i % 3 === 0 ? 0x94744c : 0xb08c5c);
-        for (const j of [0, 20]) for (let i = 0; i < 30; i += 7) P(FX(p.x - 9) + i, FY(p.u + 10) + j + 1, 0x3a3028);
-      });
-      mark(p.x - 6, p.u + 6, (X, Y) => kit.parasol(X, Y, 0xc03a30));
-      crowd(p.x - 8, p.u + 5, 8, 4, 3);
-      for (const [x, u] of [[p.x - 2, p.u + 12], [p.x + 17, p.u + 2]]) tree('pine', x, u, 2.6);
-    }
-    // the bridge right across the pond at its waist, a red rail each side, a gravel path on from each end:
-    // south to the garden's walk, north to the lawn
+
+    // the island: two black pines and a snow-viewing lantern on it, rocks round its edge
+    const yukimi = (x, u) =>
+      queue(FY(u) + 2, () => {
+        const [X, Y_] = [FX(x), FY(u)];
+        for (const [i, j] of [[-2, 1], [2, 1], [0, 2]]) P(X + i, Y_ + j, 0x5a5650); // (its legs)
+        for (let j = -3; j <= 0; j++) for (let i = -4 + Math.abs(j + 1); i <= 4 - Math.abs(j + 1); i++) P(X + i, Y_ + j, j === -3 ? 0xc8c4ba : i < 0 ? 0xa8a49a : 0x7e7a72); // (the wide cap)
+        P(X, Y_ - 4, 0xd8d4ca); // (the jewel on top)
+      }, () => shadowBox(FX(x) - 4, FY(u) - 3, 9, 5, 3, 0.62));
+    yukimi(ISLE[0] + 2, ISLE[1] - 1);
+    T('pine', ISLE[0] - 2.5, ISLE[1] + 1, 2.6);
+    T('pine', ISLE[0] + 3.5, ISLE[1] + 2, 2);
+    for (const [dx, du, r] of [[-5, -1, 0.9], [4.5, -2.5, 1], [-1, -3.5, 0.8], [5.5, 1, 0.7]]) rock(ISLE[0] + dx, ISLE[1] + du, r);
+    yukimi(41, 1880.5);
+    yukimi(110, 1912);
+    yukimi(102, 1939);
+
+    // the bridge at the waist: a low arch of boards between red rails, its piers in the water, the gravel on from
+    // each end to the walk and to the lawn
     ground(() => {
-      const path = (x, u0, u1) => {
-        for (let Y = FY(u1); Y < FY(u0); Y++) for (let i = -3; i < 3; i++) P(FX(x) + i, Y, hashPx(FX(x) + i, Y, 9) < 0.5 ? 0xb9b1a0 : 0xa8a090);
-      };
-      path(74, 1862, 1881);
-      path(74, 1919, 1930);
-      const [X, Y0, Y1] = [FX(74), FY(1921), FY(1879)];
-      for (let Y = Y0; Y < Y1; Y++) {
-        const t = (Y - Y0) / (Y1 - Y0 - 1);
+      for (const [u0, u1] of [[1863.5, 1891], [1910, 1926]])
+        for (let Yy = FY(u1); Yy < FY(u0); Yy++) for (let i = -5; i < 5; i++) P(FX(74) + i, Yy, shade(0xc8bca2, 0.9 + hashPx(FX(74) + i, Yy, 7416) * 0.15));
+      const [X, Y0, Y1] = [FX(74), FY(1911), FY(1890)];
+      for (let Yy = Y0; Yy < Y1; Yy++) {
+        const t = (Yy - Y0) / (Y1 - Y0 - 1);
         const lift = Math.round((1 - (t * 2 - 1) ** 2) * 2);
-        for (let i = -4 - lift; i < 4 + lift; i++) P(X + i, Y, (Y - Y0) % 3 === 0 ? 0x8a6a48 : 0xb08c5c);
-        P(X - 5 - lift, Y, 0xc03a2a);
-        P(X + 4 + lift, Y, 0xc03a2a);
-        if (lift === 2) for (let i = 5 + lift; i < 9 + lift; i++) ctx.img.hi.tint(X + i, Y + 2, 0.75); // (its shadow on the water)
+        for (let i = -4 - lift; i < 4 + lift; i++) P(X + i, Yy, (Yy - Y0) % 3 === 0 ? 0x8a6a48 : 0xb08c5c);
+        P(X - 5 - lift, Yy, 0xc03a2a);
+        P(X + 4 + lift, Yy, 0xc03a2a);
+        if ((Yy - Y0) % 7 === 0) {
+          P(X - 5 - lift, Yy, 0x6a1a14);
+          P(X + 4 + lift, Yy, 0x6a1a14);
+        }
+        for (let i = 5 + lift; i < 9 + lift; i++) hi.tint(X + i, Yy + 2, 0.72); // (its shadow on the water)
       }
     });
-    crowd(72.5, 1886, 2, 28, 5);
-    crowd(84, 1814, 12, 40, 14);
+
+    // the Kyū-Goryōtei: the pavilion given for a prince's wedding, out over the water on its terrace - a hipped
+    // roof of grey tiles, its corners swept up and tipped with ornaments, a raised clerestory, red columns, a white
+    // balustrade round the terrace, people at the rail
+    {
+      const [x, u, w, h] = [84, 1915, 20, 11];
+      const [X0, YT, BW, BH] = [FX(x), FY(u + h), w * S, h * S];
+      queue(FY(u), () => {
+        // the terrace and its balustrade, over the water at the front
+        for (let j = BH - 10; j < BH; j++) for (let i = 0; i < BW; i++) P(X0 + i, YT + j, j === BH - 1 ? 0x6a5a4a : j === BH - 10 ? 0xe8e4da : i % 4 === 0 ? 0xd8d4ca : 0xb8a888);
+        for (let i = 0; i < BW; i += 3) for (let j = BH - 4; j < BH - 1; j++) P(X0 + i, YT + j, 0xf0ece4);
+        // the hall: red columns along its front, white walls and lattice between them
+        for (let j = 14; j < BH - 10; j++)
+          for (let i = 4; i < BW - 4; i++) {
+            const k = (i - 4) % 8;
+            P(X0 + i, YT + j, k < 2 ? (k ? 0xa82a1e : 0xd8402a) : j === 14 ? 0x2a2a26 : (i + j) % 3 === 0 ? 0x5a8a7a : 0xe8e4d8);
+          }
+        // the roof: grey tiles in rows, hips running to the corners, the corners swept up with their ornaments
+        const RY = 14;
+        for (let j = 0; j < RY; j++) {
+          const t = j / (RY - 1);
+          const inset = Math.round((1 - t) * 7);
+          for (let i = inset; i < BW - inset; i++) {
+            const hip = i - inset < 2 || BW - inset - 1 - i < 2;
+            let c = hip ? 0x3a3c3e : j < 5 ? 0x6a7270 : (i % 3 === 0 ? 0x4e5654 : 0x5e6664);
+            if (j === RY - 1) c = 0x2a2c2c;
+            P(X0 + i, YT + j, c);
+          }
+        }
+        for (let i = 9; i < BW - 9; i++) for (let j = 2; j < 5; j++) P(X0 + i, YT + j, j === 2 ? 0x8a9290 : 0x3a3c3e); // (the clerestory's ridge)
+        for (const [cx, s] of [[0, 1], [BW - 1, -1]]) for (let k = 0; k < 4; k++) P(X0 + cx + s * k, YT + RY - 2 - k, k === 3 ? 0xc8a050 : 0x3a3c3e); // (the swept-up corners)
+        for (let k = 0; k < 5; k++) kit.person(X0 + 4 + k * 12, YT + BH - 9, 7420 + k);
+      }, () => shadowBox(X0, YT, BW, BH - 10, 8, 0.6));
+    }
+
+    // the Rakuu-tei tea house on the lower pond: its thatched-look roof, a deck out over the water with the bench of
+    // red felt and the great red parasol (an outdoor tea), stepping stones up from the walk, pines
+    {
+      const [x, u] = [131, 1950];
+      house(x + 3, u + 2, 11, 9, { tile: 0x7a6a50, wall: 0xe0d6c0, face: 2, s: 7430, lantern: true });
+      ground(() => {
+        for (let j = 0; j < 18; j++) for (let i = 0; i < 15; i++) P(FX(x - 3) + i, FY(u + 9) + j, i === 0 || j === 0 || j === 17 ? 0x6a4c30 : i % 3 === 0 ? 0x94744c : 0xb08c5c);
+        for (let k = 0; k < 6; k++) {
+          const [X, Y_] = [FX(147 - k * 2.4), FY(u + 4 - k * 0.6)];
+          for (let j = -1; j <= 1; j++) for (let i = -2; i <= 2; i++) if (Math.abs(i) + Math.abs(j) < 3) P(X + i, Y_ + j, i + j < 0 ? 0xc8c4ba : 0x9a968c);
+        }
+      });
+      mark(x - 1, u + 6, (X, Y_) => {
+        R(X - 1, Y_ + 2, 6, 2, 0xc8302a);
+        kit.parasol(X + 2, Y_ - 2, 0xc8302a);
+      });
+      for (let k = 0; k < 3; k++) mark(x - 1.4 + k * 1.3, u + 4, (X, Y_) => kit.person(X, Y_, 7440 + k));
+      T('pine', x + 15, u + 12, 2.4);
+      T('pine', x - 1, u + 14, 2);
+    }
+
+    // clipped azaleas (karikomi) on the banks and slopes of the Japanese garden: green mounds, the first flowers
+    const azalea = (x, u, r) =>
+      queue(FY(u) + Math.round(r * S * 0.6), () => {
+        const [CX, CY] = [FX(x), FY(u)];
+        const R_ = r * S;
+        for (let j = -R_; j <= R_; j++)
+          for (let i = -R_ - 2; i <= R_ + 2; i++) {
+            const e = (i / (R_ + 2)) ** 2 + (j / R_) ** 2;
+            if (e > 1) continue;
+            const g = hashPx(CX + i, CY + j, 7450);
+            let c = e < 0.3 && i + j < 0 ? 0x7ab45a : i + j > R_ * 0.6 ? 0x2e5a2a : (i + j * 2) % 4 === 0 ? 0x4a8a3e : 0x5a9a48;
+            if (g < 0.07) c = g < 0.03 ? 0xf06aa8 : 0xd84a8a;
+            P(CX + i, CY + j, c);
+          }
+      }, () => shadowBox(FX(x) - r * S - 2, FY(u) - r * S, r * S * 2 + 4, r * S * 2, 2, 0.6));
+    for (let k = 0; k < 170; k++) {
+      const x = 30 + gr() * 104;
+      const u = 1868 + gr() * 62;
+      const r = 1.4 + gr() * 1.4;
+      const d = Math.min(shore(P1, x, u), u > 1930 ? 99 : 99);
+      if (d < 1.5 + r || d > 9 || !clearOf(x, u, r) || Math.abs(x - 74) < 6 + r) continue;
+      azalea(x, u, r);
+    }
+    // the Japanese garden's trees: black pines leaning out over the water, maples in their young leaf, a red one
+    for (let k = 0; k < 36; k++) {
+      const x = 26 + gr() * 108;
+      const u = 1866 + gr() * 64;
+      const near1 = shore(P1, x, u);
+      const kind = near1 < 6 ? 'pine' : gr() < 0.9 ? 'broadleaf' : 'nomura';
+      const r = kind === 'pine' ? 2.2 + gr() * 1.2 : 2 + gr() * 1.4;
+      if (near1 < 1.5 || inPoly(P1, x, u) || !clearOf(x, u, r) || Math.abs(x - 74) < 6) continue;
+      T(kind, x, u, r);
+    }
+
+    // the English garden: Himalayan cedars and a tulip tree standing on the lawn; the cherries round it
+    for (const [kind, x, u, r] of [['cedar', 22, 1944, 5.2], ['cedar', 30, 1968, 4.6], ['cedar', 18, 1976, 4], ['broadleaf', 70, 1972, 6.4], ['broadleaf', 92, 1936, 4.2]]) T(kind, x, u, r);
+    const cherries = [];
+    for (let k = 0; k < 34; k++) {
+      const a = (k / 34) * Math.PI * 2 + gr() * 0.12;
+      const x = 58 + Math.cos(a) * (45 + gr() * 5);
+      const u = 1954 + Math.sin(a) * (31 + gr() * 4);
+      const r = 3.4 + gr() * 2;
+      if (!clearOf(x, u, r * 0.6) || x < 4 || x > 154) continue;
+      cherries.push([x, u, r]);
+      T(gr() < 0.22 ? 'yaezakura' : 'sakura', x, u, r);
+    }
+    // two weeping cherries by the lawn's south end: their branches streaming down all round
+    for (const [x, u, r] of [[40, 1928.5, 4.2], [80, 1928, 3.8]]) {
+      T('sakura', x, u, r);
+      queue(FY(u) + Math.round(r * S * 0.6) + 1, () => {
+        const [CX, CY] = [FX(x), FY(u)];
+        const R_ = Math.round(r * S * 1.15);
+        for (let j = -R_; j <= R_; j++)
+          for (let i = -R_; i <= R_; i++) {
+            const d = Math.hypot(i, j) / R_;
+            if (d > 1) continue;
+            const a = Math.atan2(j, i);
+            const streak = Math.sin(a * 17 + d * 2) > 0.35;
+            if (!streak || d < 0.35) continue;
+            if (d > 0.9 && hashPx(CX + i, CY + j, 7460) < 0.5) continue;
+            P(CX + i, CY + j, hashPx(CX + i, CY + j, 7461) < 0.4 ? 0xfff0f4 : d > 0.75 ? 0xe8a0b9 : 0xf6c4d6);
+          }
+      });
+    }
+    // petals fallen under the cherries
+    ground(() => {
+      for (const [x, u, r] of cherries)
+        for (let k = 0; k < r * 40; k++) {
+          const a = gr() * Math.PI * 2;
+          const d = r * (0.6 + gr() * 0.9);
+          const [X, Y_] = [FX(x + Math.cos(a) * d), FY(u + Math.sin(a) * d)];
+          if (!isWet(X, Y_)) P(X, Y_, gr() < 0.5 ? 0xf4c4d2 : 0xffe4ec);
+        }
+    });
+    // the picnics: sheets spread under the cherries, blue tarps mostly, people sitting round them (the edge of the
+    // lawn is full, the middle open); bento, a flask, shoes left at the edge
+    const sheet = (x, u, k) => {
+      const c = [0x3a6ad0, 0x3a6ad0, 0x4a7ae0, 0xe8c040, 0xd8d0c0, 0xd04848, 0x48a868][k % 7];
+      const [w, h] = [9 + (k % 3) * 2, 6 + (k % 2) * 2];
+      mark(x, u, (X, Y_) => {
+        for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) P(X + i, Y_ + j, i === 0 || j === 0 || i === w - 1 || j === h - 1 ? shade(c, 0.8) : (i + j * 2) % 9 === 0 ? shade(c, 1.15) : c);
+        R(X + 3, Y_ + 2, 3, 2, 0xc02a2a);
+        P(X + 4, Y_ + 2, 0xf4f4ee);
+        P(X + w - 3, Y_ + 2, 0xd8d8d0);
+        for (let i = 0; i < 3; i++) P(X + 1 + i * 2, Y_ + h, i % 2 ? 0x2a2a2a : 0xe8e8e8);
+        const n = 2 + (k % 4);
+        for (let q = 0; q < n; q++) {
+          const side = q % 4;
+          const [px, py] = side === 0 ? [X + 1 + q * 2, Y_ - 3] : side === 1 ? [X + w - 1, Y_ + 1] : side === 2 ? [X - 2, Y_ + 2] : [X + 3 + q, Y_ + h - 4];
+          kit.person(px, py, 7470 + k * 7 + q);
+        }
+      });
+    };
+    let sheets = 0;
+    for (let k = 0; k < 120 && sheets < 30; k++) {
+      const a = gr() * Math.PI * 2;
+      const t = 0.62 + gr() * 0.3;
+      const x = 58 + Math.cos(a) * 44 * t;
+      const u = 1954 + Math.sin(a) * 30 * t;
+      if (!clearOf(x, u, 3) || inPoly(P2, x + 4, u)) continue;
+      sheet(x, u, sheets++);
+    }
+    // on the lawn: people lying in the sun, children running, a frisbee in the air; strollers on the walks
+    for (let k = 0; k < 26; k++) {
+      const x = 22 + gr() * 72;
+      const u = 1932 + gr() * 44;
+      if (LAWN(x, u) > 0.7 || !clearOf(x, u, 1)) continue;
+      mark(x, u, (X, Y_) => kit.person(X, Y_, 7600 + k));
+    }
+    mark(60, 1958, (X, Y_) => {
+      R(X, Y_, 2, 1, 0xf0f0f0);
+      hi.tint(X + 3, Y_ + 4, 0.7);
+    });
+    for (const r of WALKS)
+      for (let k = 0; k < (r.id === 'gyoen_michi_1' ? 46 : 8); k++) {
+        const i = Math.floor(gr() * (r.pts.length - 1));
+        const t = gr();
+        const [ax, au] = r.pts[i];
+        const [bx, bu] = r.pts[i + 1];
+        mark(ax + (bx - ax) * t + (gr() - 0.5) * 1.6, au + (bu - au) * t + (gr() - 0.5) * 1.6, (X, Y_) => kit.person(X, Y_, 7700 + k * 3 + r.id.length));
+      }
+    // by the ponds: photographers at the shore, people on the bridge, a gardener raking
+    for (let k = 0; k < 12; k++) {
+      const [x, u] = [74 + (gr() - 0.5) * 3, 1892 + gr() * 18];
+      mark(x, u, (X, Y_) => kit.person(X, Y_, 7800 + k));
+    }
+    for (let k = 0; k < 14; k++) {
+      const i = Math.floor(gr() * P1.length);
+      const [x, u] = P1[i];
+      const [x2, u2] = [x + (x - 75) * 0.12, u + (u - 1899) * 0.25];
+      if (!clearOf(x2, u2, 0.5) || shore(P1, x2, u2) < 0.8) continue;
+      mark(x2, u2, (X, Y_) => {
+        kit.person(X, Y_, 7900 + k);
+        if (k % 3 === 0) P(X + 2, Y_ + 1, 0x2a2a2e); // (a camera)
+      });
+    }
+    mark(58, 1873, (X, Y_) => {
+      kit.person(X, Y_, 7990);
+      for (let j = 0; j < 4; j++) P(X + 2 + j, Y_ - 1 + j, 0x8a6a40); // (the rake)
+    });
+
+    // the glasshouse: a great faceted roof of glass on white steel, palms and a pool seen under it, a walkway
+    // through, its entrance on the south side with people going in
+    {
+      const [x, u, w, h] = [20, 1990, 40, 30];
+      const [X0, YT, GW, GH] = [FX(x), FY(u + h), w * S, h * S];
+      const facet = (i, j) => Math.floor((i + (j >> 1)) / 15) + Math.floor((i - (j >> 1) + 600) / 15) * 7;
+      queue(FY(u), () => {
+        for (let j = 0; j < GH; j++)
+          for (let i = 0; i < GW; i++) {
+            const inner = hashPx(i >> 2, j >> 2, 7501);
+            const palm = Math.sin(i * 0.31) * Math.cos(j * 0.27) > 0.55 || inner < 0.12;
+            const pool = Math.hypot((i - GW * 0.62) / 16, (j - GH * 0.55) / 9) < 1;
+            const walkway = Math.abs(j - GH * 0.75 + (i - GW / 2) * 0.12) < 2;
+            let c = pool ? 0x4a8aa0 : walkway ? 0xc8bca4 : palm ? (hashPx(i, j, 7502) < 0.5 ? 0x2e6a3a : 0x3e7e44) : hashPx(i >> 1, j >> 1, 7503) < 0.4 ? 0x5a9a54 : 0x6aaa5e;
+            const f = facet(i, j);
+            c = blend(c, 0xd8eef4, 0.28 + (hashPx(f, 0, 7504) * 0.25)); // (the glass, each facet catching the light its own way)
+            const rib = (i + (j >> 1)) % 15 === 0 || (i - (j >> 1) + 600) % 15 === 0;
+            if (rib) c = 0xf4f8f8;
+            if (j < 2 || i < 2 || i >= GW - 2) c = 0xe8ecec;
+            if (j >= GH - 6) c = j === GH - 1 ? 0x3a4448 : (i % 6 < 2 ? 0x8a9aa0 : 0xbcd0d6); // (its glass front, the doors)
+            P(X0 + i, YT + j, c);
+          }
+        // the entrance canopy, people going in
+        R(X0 + GW / 2 - 12, YT + GH - 2, 24, 4, 0xe8ecec);
+        for (let k = 0; k < 8; k++) kit.person(X0 + GW / 2 - 14 + k * 4, YT + GH + 4 + (k % 2) * 2, 7510 + k);
+      }, () => shadowBox(X0, YT, GW, GH, 9, 0.66));
+      ground(() => {
+        for (let Yy = FY(u) ; Yy < FY(u - 4); Yy++) for (let X = X0 + GW / 2 - 16; X < X0 + GW / 2 + 16; X++) P(X, Yy, shade(0xc8bca2, 0.92 + hashPx(X, Yy, 7511) * 0.12));
+      });
+    }
+
+    // the French garden: two avenues of plane trees pleached into a hedge on stilts, gravel under them, benches; the
+    // long lawn between, a parterre of box with bedding in it (pansies, tulips, early roses) down the middle
+    {
+      const [x, u, w, h] = FORMAL;
+      ground(() => {
+        for (let Yy = FY(u + h); Yy < FY(u); Yy++)
+          for (let X = FX(x); X < FX(x + w); X++) {
+            const xx = (X + 0.5) / S;
+            const uu = L - (Yy + 0.5) / S;
+            const g = hashPx(X, Yy, 7520);
+            let c;
+            if (xx < x + 11 || xx > x + w - 11) c = shade(0xc8bca2, 0.9 + g * 0.14); // (the gravel under the planes)
+            else {
+              const band = Math.floor((uu - u) / 3) % 2;
+              c = shade(band ? 0x72a252 : 0x669848, 0.95 + g * 0.08);
+              const px = xx - (x + w / 2);
+              const pu = ((uu - u - 6) % 14 + 14) % 14;
+              const inBed = Math.abs(px) < 9 && pu > 2 && pu < 11 && uu > u + 6 && uu < u + h - 6;
+              if (inBed) {
+                const edge = Math.abs(px) > 8.3 || pu < 2.7 || pu > 10.3 || (Math.abs(px) < 0.7) || Math.abs(pu - 6.5) < 0.35;
+                c = edge ? 0x2e5a2a : g < 0.25 ? 0xd83a50 : g < 0.42 ? 0xf0a0c0 : g < 0.56 ? 0xf0d040 : g < 0.66 ? 0x8a5ad0 : g < 0.74 ? 0xf4f0e8 : 0x3e7a3c;
+              }
+            }
+            P(X, Yy, c);
+          }
+      });
+      // the pleached planes: square-cut crowns joined into one green wall along each avenue, their trunks below
+      for (const ax of [x + 2, x + w - 9])
+        queue(FY(u), () => {
+          const [XA, XB] = [FX(ax), FX(ax + 7)];
+          for (let Yy = FY(u + h - 2); Yy < FY(u + 2); Yy++)
+            for (let X = XA; X < XB; X++) {
+              const g = hashPx(X, Yy, 7521);
+              const k = (Yy - FY(u + h - 2)) % 24; // (one tree's square-cut crown to the next, a notch between)
+              if (k > 22 && (X - XA) % 7 > 1) {
+                P(X, Yy, 0x2a4a26);
+                continue;
+              }
+              const lit = 1 - (X - XA) / (XB - XA) * 0.5 - k / 24 * 0.25; // (lit from the top left, as everything is)
+              const leaf = fb(X * 0.6, Yy * 0.6, 7522, 2);
+              let c = shade(leaf < 0.4 ? 0x3a6a30 : leaf < 0.7 ? 0x4e8a3c : 0x66a24c, 0.75 + lit * 0.45);
+              if (g < 0.05) c = 0x8ac46a;
+              if (k === 0 || X === XA) c = 0x8ac46a;
+              P(X, Yy, c);
+            }
+        }, () => shadowBox(FX(ax), FY(u + h - 2), FX(7), FY(u + 2) - FY(u + h - 2), 6, 0.58));
+      for (let uu = u + 8; uu < u + h - 4; uu += 12)
+        for (const bx of [x + 10, x + w - 13])
+          mark(bx, uu, (X, Y_) => {
+            R(X, Y_, 2, 6, 0x8a6a48);
+            R(X, Y_, 1, 6, 0xa88a60);
+          });
+      for (let k = 0; k < 14; k++) mark(x + 10 + gr() * (w - 20), u + 4 + gr() * (h - 8), (X, Y_) => kit.person(X, Y_, 8000 + k));
+    }
+
+    // the woods: everywhere the gardens leave - a belt of zelkovas, camphors and cedars along the railings, groves
+    // between the walks, cherries scattered through them; open round the lawn, the ponds, the glasshouse and the gates
+    for (let gu = 1814; gu < 2092; gu += 4.6)
+      for (let gx = 1; gx < 157; gx += 4.6) {
+        const x = gx + gr() * 3.4;
+        const u = gu + gr() * 3.4;
+        const r = 2.3 + gr() * 2;
+        const roll = gr();
+        if (gr() < 0.2) continue;
+        if (!clearOf(x, u, r * 0.6) || inFormal(x, u) || LAWN(x, u) < 1.18 || x > 155.5) continue;
+        if (Math.min(shore(P1, x, u), shore(P2, x, u)) < 3 + r * 0.5) continue;
+        if (u < 1932 && x > 28 && x < 120 && shore(P1, x, u) < 14) continue; // (the Japanese garden keeps its own)
+        if (x > 15 && x < 65 && u > 1984 && u < 2026) continue; // (the glasshouse)
+        if ((x > 58 && x < 104 && u < 1834) || (x > 82 && x < 104 && u > 2074)) continue; // (the gates, the visitors' centre)
+        if (x > 126 && x < 150 && u > 1944 && u < 1966) continue; // (the tea house)
+        T(roll < 0.14 ? 'sakura' : roll < 0.17 ? 'yaezakura' : roll < 0.32 ? 'cedar' : roll < 0.38 ? 'pine' : 'broadleaf', x, u, r);
+      }
+
+    // the railings round it: black steel bars on a stone kerb, a hedge inside; the two gates
+    const rail = (pts) =>
+      ground(() => {
+        for (let i = 0; i + 1 < pts.length; i++) {
+          const [[ax, au], [bx, bu]] = [pts[i], pts[i + 1]];
+          const n = Math.ceil(Math.hypot(bx - ax, bu - au) * S);
+          for (let k = 0; k <= n; k++) {
+            const [X, Y_] = [FX(ax + ((bx - ax) * k) / n), FY(au + ((bu - au) * k) / n)];
+            if (onWalk((X + 0.5) / S, L - (Y_ + 0.5) / S, 0.6)) continue;
+            P(X, Y_, 0xa8a49a);
+            P(X, Y_ - 1, k % 4 === 0 ? 0x1a1a1e : 0x3a3a40);
+            hi.tint(X + 1, Y_ + 1, 0.75);
+          }
+        }
+      });
+    rail([[0, 1812.4], [157.6, 1812.4], [157.6, 2091.6], [0, 2091.6]]);
+    const gatePosts = (x, u) => {
+      for (const s of [-1, 1])
+        queue(FY(u) + 2, () => {
+          const X = FX(x + s * 3.2) - 2;
+          R(X, FY(u) - 4, 5, 6, 0xb8b0a0);
+          R(X, FY(u) - 4, 5, 1, 0xd8d0c0);
+          R(X + 4, FY(u) - 3, 1, 5, 0x8a8478);
+          for (let j = 0; j < 7; j++) P(X + (s < 0 ? 5 + (j >> 1) : -1 - (j >> 1)), FY(u) - 3 + j, 0x2a2a30); // (the iron gate folded back)
+        }, () => shadowBox(FX(x + s * 3.2) - 2, FY(u) - 4, 5, 6, 3, 0.6));
+    };
+    gatePosts(90, 1812.6);
+    gatePosts(90, 2091.8);
+    // the ticket booth and the queue along the avenue's pavement; the visitors' centre under its louvred roof
+    house(96, 1815, 6, 5, { tile: 0x5a5e62, wall: 0xe8e4dc, face: 2, s: 7530 });
+    house(98, 2082, 5, 5, { tile: 0x5a5e62, wall: 0xe8e4dc, face: 2, s: 7531 });
+    queue(FY(1815), () => {
+      // (a flat roof of pale panels with skylights and its plant, a deep eave of cedar louvres, a glass front)
+      const [X0, YT, BW, BH] = [FX(64), FY(1826), FX(16), FY(1815) - FY(1826)];
+      for (let j = 0; j < BH; j++)
+        for (let i = 0; i < BW; i++) {
+          let c;
+          if (j < BH - 9) {
+            c = (i % 12 === 0 || j % 10 === 0) ? 0x9a9690 : shade(0xc4c0b6, 0.96 + hashPx(i >> 2, j >> 2, 7533) * 0.08);
+            if (i % 12 > 3 && i % 12 < 9 && j % 10 > 3 && j % 10 < 7) c = 0x6a8a9a; // (the skylights)
+          } else if (j < BH - 6) c = (i % 2 ? 0x8a6440 : 0xb08454); // (the louvres)
+          else c = j === BH - 1 ? 0x3a3430 : i % 8 < 6 ? 0x7aa0b0 : 0xe4e0d6;
+          if (j === 0 || i === 0 || i === BW - 1) c = 0x7a766e;
+          P(X0 + i, YT + j, c);
+        }
+      for (const [i, j] of [[6, 4], [10, 4], [6, 8]]) R(X0 + i, YT + j, 3, 2, 0x8a8e94); // (the plant on its roof)
+    }, () => shadowBox(FX(64), FY(1826), FX(16), FY(1815) - FY(1826), 6, 0.62));
+    ground(() => {
+      for (let Yy = FY(1815); Yy < FY(1812.8); Yy++) for (let X = FX(64); X < FX(88.5); X++) P(X, Yy, shade(0xc8bca2, 0.92 + hashPx(X, Yy, 7532) * 0.12));
+    });
+    for (let k = 0; k < 22; k++) mark(92 + k * 2.6, 1803.4 + (k % 2) * 0.6, (X, Y_) => kit.person(X, Y_, 8100 + k)); // (the queue)
+    for (let k = 0; k < 6; k++) mark(64 + k * 3.4, 1813.6, (X, Y_) => kit.person(X, Y_, 8130 + k));
+    // lamps and benches along the walks
+    for (const r of WALKS.slice(0, 1))
+      for (let i = 0; i + 1 < r.pts.length; i++) {
+        const [[ax, au], [bx, bu]] = [r.pts[i], r.pts[i + 1]];
+        const len = Math.hypot(bx - ax, bu - au);
+        for (let d = 8; d < len - 4; d += 22) {
+          const [x, u] = [ax + ((bx - ax) * d) / len, au + ((bu - au) * d) / len];
+          const [nx, nu] = [-(bu - au) / len, (bx - ax) / len];
+          const [lx, lu] = [x + nx * 2.6, u + nu * 2.6];
+          if (!clearOf(lx, lu, 0) && !onWalk(lx, lu, 0) && LAWN(lx, lu) > 1) mark(lx, lu, (X, Y_) => kit.lamp(X, Y_));
+          const [bx2, bu2] = [x - nx * 2.8, u - nu * 2.8];
+          if (Math.hypot(bx2 - TURRET[0], bu2 - TURRET[1]) > 10 && !inPoly(P1, bx2, bu2) && !inPoly(P2, bx2, bu2))
+            mark(bx2, bu2, (X, Y_) => {
+              R(X - 3, Y_, 7, 2, 0x8a6a48);
+              R(X - 3, Y_, 7, 1, 0xa88a60);
+            });
+        }
+      }
+
+    // live: carp and ducks on the ponds, petals coming down over the lawn's cherries
+    const carp = (k) =>
+      kit.frame(3, 1.34, 1900, (put) => {
+        const c = [0xf08a2a, 0xf4f0e6, 0xe84a2a][k % 3];
+        for (let i = 0; i < 8; i++) for (let j = 1; j < 3; j++) if (Math.abs(j - 1.5) < 1 - Math.abs(i - 3.5) * 0.12) put(i, j, (i >> 1) % 2 ? c : 0xf8f4ec);
+        put(k > 2 ? 0 : 8, 1, c);
+      });
+    props.wander(50, 1900, 9, 5, [carp(0), carp(3)], { n: 3, sp: 2.4, turn: 'rot', fps: 2, idle: 0.3 });
+    props.wander(96, 1900, 9, 5, [carp(1), carp(4)], { n: 3, sp: 2.4, turn: 'rot', fps: 2, idle: 0.3 });
+    props.wander(112, 1960, 7, 10, [carp(2), carp(5)], { n: 3, sp: 2.4, turn: 'rot', fps: 2, idle: 0.3 });
+    const duck = (k) =>
+      kit.frame(2.34, 1.67, 1900, (put) => {
+        for (const [i, j] of [[1, 2], [2, 2], [3, 2], [4, 2], [2, 3], [3, 3], [4, 3], [5, 3]]) put(i, j, j === 3 ? 0x6a5a44 : 0x8a7454);
+        put(5 - k, 1, 0x2a6a4a);
+        put(6 - k, 1, 0x2a6a4a);
+        put(6 - k, 2, 0xe0b030);
+        for (let i = 1; i < 6; i++) put(i, 4, 0xc8d8d4, 0.5);
+      });
+    props.wander(100, 1898, 8, 4, [duck(0), duck(1)], { n: 2, sp: 1.6, turn: 'flip', fps: 1, idle: 0.4 });
+    const petals = (k) =>
+      kit.frame(4, 4, 1950, (put) => {
+        for (let q = 0; q < 5; q++) put(Math.floor(hashPx(q, 1, 9) * 8) + k, Math.floor(hashPx(q, 2, 9) * 6) + k * 1.4 | 0, q % 2 ? 0xffd0e0 : 0xffb0cc, 0.9 - k * 0.15);
+      }, true);
+    props.spot([[8, 1990, 100, 70], [30, 1932, 56, 14]], [petals(0), petals(1), petals(2), petals(3)], { rate: 9, fps: 5, a: 0.8 });
   }
 }

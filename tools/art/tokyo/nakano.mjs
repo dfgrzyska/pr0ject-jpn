@@ -3,11 +3,13 @@
 // Yakushi's little temple; low houses under tiled roofs, flats, car parks and pocket gardens along the lanes;
 // Ōme-kaidō under its street trees; cherries along the Kanda river. An afternoon.
 import { lots } from './blocks.mjs';
-import { PAL, shade } from './kit.mjs';
+import { PAL, shade, blend } from './kit.mjs';
+import { fbm, rng } from '../../lib/raster.mjs';
+import { hashPx } from '../hires.mjs';
 
 export function nakano(ctx) {
   const { kit, blocks, pave, plot, cover, props, L, S } = ctx;
-  const { building, house, tree, zebra, car, crowd, mark, ground, rand, pick, P, R, FX, FY } = kit;
+  const { building, house, tree, zebra, car, crowd, mark, ground, rand, pick, P, R, FX, FY, queue, shadowBox } = kit;
   kit.setSun(0.45);
 
   // ---- the station: a concourse over the tracks, platforms out to both sides under their canopies
@@ -213,14 +215,293 @@ export function nakano(ctx) {
   zebra(127, 544.4, 4, 7.3, 'x');
   zebra(149, 544.4, 4, 7.3, 'x');
 
-  // ---- the Kanda river: cherries leaning over it from the north bank, rails along the water
-  for (let x = 5; x < 178; x += 10.5) {
-    if (x > 128 && x < 152) continue;
-    tree('sakura', x + rand() * 2, 724 + rand() * 2, 3 + rand() * 0.8);
+  // ---- the Kanda river (u 700-722), the way it runs through Nakano: down in a channel of concrete walls, shallow
+  // and clear over stones, waterweed streaming in it, rafts of cherry petals (hana-ikada) drifting where the banks
+  // slow it; cherries on both banks leaning out over it until their crowns all but meet, steel railings along the
+  // walls, a promenade of tiles on the north bank with benches and lamps, people stopping to look; Ōme-kaidō over
+  // it on a bridge with stone parapets and lamps at its corners, a green steel footbridge from the lane at x 40
+  {
+    for (let k = 0; k < 60; k++) rand(); // (the draws the river took as a ruled line, so the houses after it come out as near as they can to before)
+    const kr = rng(7101);
+    const { wet, img } = ctx;
+    const FW = 180 * S;
+    const FH = L * S;
+    const hi = img.hi;
+    const BRIDGE = [FX(131.4), FX(148.6)]; // (Ōme-kaidō with its pavements)
+    const FOOT = [FX(38.5), FX(41.5)]; // (the footbridge)
+    const onBridge = (X) => (X >= BRIDGE[0] && X < BRIDGE[1]) || (X >= FOOT[0] && X < FOOT[1]);
+    // the channel, column by column: its top (under the north wall's coping) and its bottom row
+    const top = new Int32Array(FW).fill(-1);
+    const bot = new Int32Array(FW).fill(-1);
+    for (let X = 0; X < FW; X++)
+      for (let Yy = FY(726); Yy < FY(698); Yy++)
+        if (wet[Yy * FW + X] === 2) {
+          if (top[X] < 0) top[X] = Yy;
+          bot[X] = Yy;
+        }
+    ctx.claim(0, 697, 180, 37.6); // (both banks are the river's: no block of Shinjuku's on them)
+    const WALL = 7; // (fine rows of the north wall's face seen from above: the south wall shows only its coping)
+    const fb = (x, y, seed, scale, oct = 2) => fbm(x, y, { seed, scale, octaves: oct });
+    ground(() => {
+      for (let X = 0; X < FW; X++) {
+        if (top[X] < 0 || onBridge(X)) continue;
+        const [T, B] = [top[X], bot[X]];
+        // the copings: dressed concrete along both walls, lit on top, a dark joint every few metres
+        for (const [Yy, lit] of [[T - 2, 1], [T - 1, 0], [B + 1, 1], [B + 2, 0]]) P(X, Yy, X % 26 === 0 ? 0x6e6a62 : lit ? 0xd2cec2 : 0xa8a49a);
+        for (let Yy = T; Yy <= B; Yy++) {
+          const r = Yy - T;
+          let c;
+          if (r < WALL) {
+            // the north wall's face, in its own shade: panels of board-marked concrete, damp darkening to the water,
+            // a band of moss at the waterline, weep holes in a row, rust trailing from the drain outlets, a ladder
+            const damp = r / WALL;
+            c = shade(0x8e8a80, 0.78 - damp * 0.22 + (fb(X * 0.4, Yy, 7103, 3) - 0.5) * 0.12);
+            if (r % 3 === 2) c = shade(c, 0.94);
+            if (X % 21 === 0) c = 0x5a564e;
+            if (r >= WALL - 2) c = hashPx(X, Yy, 7105) < 0.6 ? 0x4a5a36 : 0x3a4a2c;
+            if (r === 2 && X % 21 === 10) c = 0x24221e;
+            const pipe = hashPx(Math.floor(X / 40), 1, 7107) < 0.45 && X % 40 >= 18 && X % 40 < 21;
+            if (pipe && r < 3) c = r === 0 ? 0x5a5e62 : 0x1a1a1c;
+            else if (pipe) c = 0x7a5a3a; // (the rust stain below it)
+            const lx = X % 97;
+            if (((lx === 40 || lx === 43) || (lx > 40 && lx < 43 && r % 2 === 1)) && r < WALL - 1) c = 0x3a3a3e;
+          } else {
+            // the water: shallow and clear, in the wall's shadow at first, then over its bed of stones and sand;
+            // the current drawing streaks along it, weed streaming, petals gathered into rafts
+            const t = (Yy - T - WALL) / Math.max(1, B - T - WALL); // (0 at the wall, 1 at the south coping)
+            const deep = 1 - Math.abs(t - 0.45) * 1.6;
+            c = blend(0x6a7a5c, 0x2a5258, Math.max(0, Math.min(1, deep * 0.9 + (fb(X * 0.05, Yy * 0.3, 7111, 4) - 0.5) * 0.5)));
+            if (r < WALL + 6) c = shade(c, 0.7 + (r - WALL) * 0.05); // (the wall's shadow on the water)
+            const streak = fb(X * 0.035, Yy * 0.9, 7113, 3, 3);
+            if (streak > 0.68) c = blend(c, 0x8aa8a0, Math.min(1, (streak - 0.68) * 2.2));
+            // stones on the bed showing through in the shallows
+            if (t > 0.62) {
+              const sx = Math.floor(X / 5);
+              const sy = Math.floor(Yy / 4);
+              const h = hashPx(sx, sy, 7115);
+              if (h < 0.4) {
+                const d = Math.hypot((X - (sx * 5 + 2 + hashPx(sx, sy, 7116) * 1.5)) / 2.2, (Yy - (sy * 4 + 2)) / 1.6);
+                if (d < 1) c = blend(c, h < 0.15 ? 0xa89a7c : 0x7c7462, 0.55 * (1 - d * 0.5));
+              }
+            }
+            // waterweed: dark green strands streaming with the current
+            const weed = fb(X * 0.06, Yy * 1.4, 7117, 2);
+            if (weed > 0.72 && t > 0.2 && t < 0.85) c = blend(c, hashPx(X, Yy, 7118) < 0.5 ? 0x2e4a26 : 0x4a6a32, 0.75);
+            // the petals: rafts of them where the water slows by the walls and behind the stones, strays everywhere
+            const raft = fb(X * 0.025, Yy * 0.25, 7119, 3) + (t < 0.18 || t > 0.86 ? 0.16 : 0);
+            const g = hashPx(X, Yy, 7121);
+            if (raft > 0.66 && g < (raft - 0.62) * 2.4) c = g < 0.12 ? 0xffe8ee : g < 0.3 ? 0xf8c8d6 : 0xe8a8bc;
+            else if (g > 0.985) c = 0xf4c4d2;
+          }
+          P(X, Yy, c);
+        }
+      }
+    });
+    // the promenade on the north bank: square tiles, petals swept to its edges; the south bank's strip between the
+    // lane and the railing: earth, moss and fallen petals
+    ground(() => {
+      for (let X = 0; X < FW; X++) {
+        if (top[X] < 0 || onBridge(X)) continue;
+        for (let Yy = FY(734.4); Yy < top[X] - 2; Yy++) {
+          const joint = X % 7 === 0 || Yy % 7 === 0;
+          let c = joint ? 0xa49c8c : shade(0xc8bea8, 0.95 + hashPx(X >> 2, Yy >> 2, 7123) * 0.1);
+          const g = hashPx(X, Yy, 7125);
+          if (g < 0.05 + (Yy > top[X] - 9 ? 0.08 : 0)) c = g < 0.02 ? 0xffe4ec : 0xf0b8cc;
+          P(X, Yy, c);
+        }
+        for (let Yy = bot[X] + 3; Yy < FY(696); Yy++) {
+          const g = hashPx(X, Yy, 7127);
+          const grass = fb(X * 0.3, Yy * 0.3, 7129, 2);
+          P(X, Yy, g < 0.04 ? 0xf0b8cc : g < 0.055 ? 0xffe4ec : grass < 0.62 ? shade((X + Yy * 3) % 5 === 0 ? 0x4e7a3a : 0x5e8a44, 0.9 + g * 0.2) : shade(0x6a5c44, 0.9 + g * 0.16));
+        }
+      }
+    });
+    // the railings along the walls' tops: steel posts and two rails, their shadow across the coping
+    for (const north of [true, false])
+      for (let X0 = 0; X0 < FW; X0 += 48) {
+        const X1 = Math.min(FW, X0 + 48);
+        const base = (X) => (north ? top[X] - 3 : bot[X] + 4);
+        let key = FH;
+        for (let X = X0; X < X1; X++) if (top[X] >= 0) key = Math.min(key, base(X));
+        if (key === FH) continue;
+        queue(key, () => {
+          for (let X = X0; X < X1; X++) {
+            if (top[X] < 0 || onBridge(X)) continue;
+            const Yb = base(X);
+            P(X, Yb - 3, 0xc4ccce);
+            P(X, Yb - 1, 0x8a9496);
+            if (X % 9 === 0) for (let j = 0; j < 4; j++) P(X, Yb - j, j === 3 ? 0xd8dee0 : 0x6a7476);
+            hi.tint(X + 1, Yb + 1, 0.8);
+          }
+        });
+      }
+    // the bridges: Ōme-kaidō's stone parapets and its lamps; the footbridge's green railings; their shadows
+    // across the water, to the lower right
+    ground(() => {
+      for (const [X0, w] of [[BRIDGE[1], 7], [FOOT[1], 4]])
+        for (let i = 0; i < w; i++) {
+          const X = X0 + i;
+          if (top[X] < 0) continue;
+          for (let Yy = top[X] + 1; Yy <= bot[X]; Yy++) hi.tint(X, Yy, 0.62 + i * 0.03);
+        }
+    });
+    for (const [XL, XR, kind] of [[BRIDGE[0], BRIDGE[1] - 2, 'stone'], [FOOT[0] - 1, FOOT[1], 'steel']]) {
+      const [YA, YB] = [Math.min(top[XL - 1], top[XR + 2]) - 3, Math.max(bot[XL - 1], bot[XR + 2]) + 3];
+      queue(YB + 1, () => {
+        for (const X of [XL, XR])
+          for (let Yy = YA - 2; Yy <= YB + 2; Yy++) {
+            const k = Yy - YA + 2;
+            if (kind === 'stone') {
+              P(X, Yy, k % 8 === 0 ? 0xe0dcd0 : 0xbcb8ac);
+              P(X + 1, Yy, k % 8 === 0 ? 0x9a968a : 0x8a867c);
+            } else P(X, Yy, k % 4 === 0 ? 0x2e5a44 : 0x4a8a64);
+          }
+        if (kind === 'stone')
+          for (const X of [XL, XR])
+            for (const Yy of [YA - 3, YB + 3]) {
+              R(X - 1, Yy - 1, 3, 3, 0xd8d4c8); // (the pillar at each corner, a lamp on it)
+              kit.lamp(X, Yy - 1);
+              P(X + (X === XL ? 2 : -2), Yy + 1, 0x6a5232); // (the bridge's name on a bronze plate)
+            }
+      });
+    }
+    // the cherries: on both banks, leaning out over the water, of every size; a few young ones newly planted
+    const banks = [];
+    for (let x = 3 + kr() * 4; x < 178; x += 8.5 + kr() * 4.5) banks.push([x, true]);
+    for (let x = 7 + kr() * 4; x < 178; x += 9 + kr() * 5) banks.push([x, false]);
+    for (const [x, north] of banks) {
+      if ((x > 126 && x < 154) || (x > 35 && x < 45)) continue;
+      const X = FX(x);
+      if (top[X] < 0) continue;
+      const edge = north ? L - top[X] / S : L - bot[X] / S;
+      const r = kr() < 0.12 ? 2.2 + kr() * 0.6 : 3.4 + kr() * 1.6;
+      const lean = (north ? -1 : 1) * (1.2 + kr() * 1.6);
+      tree('sakura', x + (kr() - 0.5) * 1.5, edge + (north ? 3.2 : -2.4) + lean, r, Math.floor(kr() * 1e9));
+    }
+    // along the street side of the promenade: a hedge of clipped azaleas in a stone kerb, zelkovas over it; where the
+    // river swings south and the bank is wide, a pocket of lawn with a bench, a vending machine and bicycles
+    ground(() => {
+      for (let X = 0; X < FW; X++) {
+        if (top[X] < 0 || onBridge(X) || (X >= FX(36) && X < FX(44))) continue;
+        for (let Yy = FY(734.2); Yy < FY(732); Yy++) {
+          const k = Yy - FY(734.2);
+          const g = hashPx(X, Yy, 7133);
+          P(X, Yy, k === 0 || Yy === FY(732) - 1 ? 0x9a968c : g < 0.06 ? 0xd84a8a : g < 0.1 ? 0xf08ab8 : shade(g < 0.5 ? 0x3e6a34 : 0x4e7c3c, 0.9 + hashPx(X >> 1, Yy, 7134) * 0.2));
+        }
+        const wide = top[X] - 4 - FY(731.6);
+        if (wide > 3 * S + 4)
+          for (let Yy = FY(731.6) + 2; Yy < FY(731.6) + 2 + Math.min(wide - 3 * S, 4 * S); Yy++) {
+            const g = hashPx(X, Yy, 7135);
+            P(X, Yy, g < 0.04 ? 0xf0b8cc : shade((X + Yy * 2) % 7 === 0 ? 0x5a8a44 : 0x669650, 0.92 + g * 0.14));
+          }
+      }
+    });
+    for (let x = 8; x < 178; x += 14 + kr() * 4) {
+      if ((x > 128 && x < 152) || (x > 34 && x < 46)) continue;
+      tree('broadleaf', x, 733.4, 2.1 + kr() * 0.5, Math.floor(kr() * 1e9));
+    }
+    for (const x of [96, 112]) {
+      const X = FX(x);
+      const Yy = FY(729);
+      queue(Yy + 6, () => {
+        R(X, Yy, 3, 6, 0xd83a30); // (a vending machine: red, its white panel, the buttons)
+        R(X, Yy + 2, 3, 2, 0xf0f0ec);
+        P(X + 1, Yy + 4, 0x3a8ad0);
+        for (let i = 0; i < 4; i++) {
+          // bicycles in a row beside it
+          const BX = X + 5 + i * 2;
+          P(BX, Yy + 1, 0x2a2a30);
+          P(BX, Yy + 2, [0xc83a3a, 0xe8e8e8, 0x3a6ac8, 0xe8c040][i]);
+          P(BX, Yy + 3, [0xc83a3a, 0xe8e8e8, 0x3a6ac8, 0xe8c040][i]);
+          P(BX, Yy + 4, 0x2a2a30);
+        }
+      }, () => shadowBox(X, Yy, 3, 6, 3, 0.66));
+    }
+    // benches facing the water, lamps along the promenade
+    for (let x = 14; x < 178; x += 31) {
+      if (x > 126 && x < 156) continue;
+      const X = FX(x + kr() * 6);
+      if (top[X] < 0) continue;
+      const Yb = top[X] - 7;
+      queue(Yb + 2, () => {
+        R(X, Yb, 8, 2, 0x8a6a48);
+        R(X, Yb, 8, 1, 0xa88a60);
+        P(X + 1, Yb + 2, 0x3a3436);
+        P(X + 6, Yb + 2, 0x3a3436);
+      }, () => shadowBox(X, Yb, 8, 2, 2, 0.7));
+    }
+    for (const x of [20, 66, 112, 168]) {
+      const X = FX(x);
+      if (top[X] > 0) queue(top[X] - 6, () => kit.lamp(X, top[X] - 6));
+    }
+    // people: along the promenade and at the railings, looking down at the petals, a phone raised; some crossing
+    // the footbridge; a white dog on its lead
+    for (let k = 0; k < 34; k++) {
+      const x = 2 + kr() * 176;
+      const atRail = kr() < 0.4;
+      const f = kr();
+      if ((x > 129 && x < 151) || (x > 37 && x < 43)) continue;
+      const X = FX(x);
+      if (top[X] < 0) continue;
+      const Yy = atRail ? top[X] - 8 : Math.round(FY(733.5) + f * (top[X] - 10 - FY(733.5)));
+      queue(Yy + 4, () => {
+        kit.person(X, Yy, 7200 + k);
+        if (atRail && hashPx(k, 3, 7131) < 0.5) P(X + 2, Yy + 1, 0xe8ecf0); // (the phone)
+      });
+    }
+    for (let k = 0; k < 3; k++) {
+      const Yy = FY(705 + k * 9);
+      queue(Yy + 4, () => kit.person(FX(39.3), Yy, 7300 + k));
+    }
+    {
+      const X = FX(96);
+      const Yy = top[X] - 9;
+      queue(Yy + 2, () => {
+        R(X, Yy, 3, 2, 0xe8e0d0);
+        P(X + 3, Yy - 1, 0xe8e0d0);
+        P(X + 3, Yy, 0x2a2228);
+      });
+    }
+    // in the water: a little egret standing in the shallows, carp holding against the current; ducks paddling
+    for (const [x, du] of [[62, 1], [158, 0]]) {
+      const X = FX(x);
+      const Yy = bot[X] - 3 + du;
+      queue(Yy + 1, () => {
+        R(X, Yy - 3, 2, 3, 0xf4f4f0);
+        P(X + 1, Yy - 4, 0xf4f4f0);
+        P(X + 2, Yy - 4, 0x2a2a2a);
+        P(X, Yy, 0x2a2a2a);
+        P(X + 1, Yy, 0xe0c040);
+        hi.tint(X + 1, Yy + 1, 0.7);
+      });
+    }
+    ground(() => {
+      for (const [x, c] of [[24, 0x3a3a34], [27, 0x3a3a34], [88, 0xe8783a], [118, 0x3a3a34], [170, 0xf0ece4]]) {
+        const X = FX(x);
+        const Yy = Math.round((top[X] + WALL + bot[X]) / 2);
+        for (let i = 0; i < 6; i++) for (let j = 0; j < 2; j++) if (!(i === 5 && j === 1)) P(X + i, Yy + j, blend(c, 0x2c4c4c, 0.45));
+      }
+    });
+    const duck = (k) =>
+      kit.frame(2.34, 1.67, 712, (put) => {
+        for (const [i, j] of [[1, 2], [2, 2], [3, 2], [4, 2], [2, 3], [3, 3], [4, 3], [5, 3]]) put(i, j, j === 3 ? 0x6a5a44 : 0x8a7454);
+        put(5 - k, 1, 0x3a5a3a);
+        put(6 - k, 1, 0x3a5a3a);
+        put(6 - k, 2, 0xe0b030);
+        for (let i = 1; i < 6; i++) put(i, 4, 0xc8d8d4, 0.5);
+      });
+    const ducks = [duck(0), duck(1)];
+    for (const [x, n] of [[78, 2], [104, 2], [170, 1]]) {
+      const X = FX(x);
+      props.wander(x, L - (top[X] + WALL + bot[X]) / 2 / S, 6, 0.8, ducks, { n, sp: 1.6, turn: 'flip', fps: 1, idle: 0.4 });
+    }
+    // petals coming down off the trees onto the water and the paths
+    const petals = (k) =>
+      kit.frame(4, 4, 712, (put) => {
+        for (let q = 0; q < 5; q++) put(Math.floor(hashPx(q, 1, 9) * 8) + k, Math.floor(hashPx(q, 2, 9) * 6) + k * 1.4 | 0, q % 2 ? 0xffd0e0 : 0xffb0cc, 0.9 - k * 0.15);
+      }, true);
+    props.spot([[0, 728, 128, 30], [152, 728, 28, 30]], [petals(0), petals(1), petals(2), petals(3)], { rate: 7, fps: 5, a: 0.8 });
   }
-  ground(() => {
-    for (let x = 0; x < 180; x += 1) if (!(x > 132 && x < 148)) P(FX(x), FY(721) , x % 3 ? 0xc8c8c0 : 0x6a6a66);
-  });
   void shade;
   void L;
   void S;

@@ -4,6 +4,8 @@ import { fbm, bayer, rgb, pack, mix } from '../lib/raster.mjs';
 export const RAMPS = {
   broadleaf: [0x1c3622, 0x2b5530, 0x447639, 0x74a050],
   sakura: [0x7e4060, 0xbe6a8c, 0xe8a0b9, 0xffd8e6],
+  yaezakura: [0x7a2a4a, 0xb04a76, 0xdc7aa2, 0xf6b4cc], // (the double cherries, a deeper pink)
+  nomura: [0x3a1220, 0x5e2030, 0x7e3040, 0x9e4a52], // (a red-leaved maple in spring, deep wine)
   cedar: [0x10221c, 0x1b3529, 0x2a4c3a, 0x456c52],
   bamboo: [0x29522a, 0x4a8438, 0x76ae4b, 0xb2d674],
   pine: [0x142c1d, 0x214329, 0x355f35, 0x557f45],

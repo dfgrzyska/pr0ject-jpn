@@ -59,9 +59,10 @@ export const TOD = [
 // painted (moats, ponds). Drawn over the ground and under everything else; its banks get a stone edge.
 // late: drawn after the land that is put back over the water (GROUNDS: over).
 export const WATER = [
-  { id: 'kanda_nakano', chain: [[0, 712, 5], [60, 706, 5], [120, 716, 5], [180, 708, 5]] },
-  { id: 'gyoen_ike', ell: [76, 1900, 38, 20] },
-  { id: 'gyoen_ike2', ell: [112, 1960, 18, 26] },
+  { id: 'kanda_nakano', chain: [[0, 713.9, 4.6], [12, 714.8, 4.9], [24, 713.9, 5.1], [36, 714.5, 5.1], [48, 715.4, 4.9], [60, 713.6, 4.6], [72, 710.3, 4.3], [84, 709.4, 4.1], [96, 709.7, 4.1], [108, 708.3, 4.3], [120, 706.9, 4.6], [132, 708.6, 4.9], [144, 711.4, 5.1], [156, 712.1, 5.1], [168, 712.2, 4.9], [180, 714.4, 4.6]] }, // (winding in its concrete channel)
+  // (Shinjuku Gyoen: the upper pond in two lobes with the bridge at its waist, the lower pond by the tea house)
+  { id: 'gyoen_ike', poly: [[36, 1896], [38, 1886], [46, 1880], [56, 1879], [64, 1883], [70, 1890], [74, 1893], [78, 1889], [86, 1884], [98, 1883], [108, 1887], [114, 1895], [113, 1905], [106, 1913], [96, 1917], [86, 1915], [78, 1911], [74, 1908], [70, 1912], [62, 1918], [50, 1919], [41, 1914], [36, 1906]] },
+  { id: 'gyoen_ike2', poly: [[98, 1946], [104, 1938], [114, 1936], [124, 1940], [130, 1948], [129, 1958], [124, 1966], [126, 1976], [120, 1984], [110, 1986], [102, 1980], [100, 1970], [96, 1960]] },
   { id: 'meiji_ike', ell: [66, 2620, 10, 22] },
   { id: 'kokyo_hori', ring: [8, 5166, 164, 604, 26] },
   { id: 'chidorigafuchi', ell: [26, 5690, 24, 64] },
@@ -83,6 +84,7 @@ export const GROUNDS = [
   { id: 'nakano_ekimae', kind: 'plaza', rect: [60, 180, 60, 26] },
   { id: 'chuo_koen', kind: 'park', rect: [0, 876, 38, 128] },
   { id: 'gyoen', kind: 'park', rect: [0, 1812, 158, 280] },
+  { id: 'gyoen_shima', kind: 'park', over: true, ell: [52, 1899, 6, 4] }, // (the island in the upper pond)
   { id: 'meiji_no_mori', kind: 'forest', rect: [0, 2110, 84, 650] },
   { id: 'yoyogi', kind: 'plaza', rect: [0, 2760, 84, 140] },
   { id: 'hachiko_mae', kind: 'plaza', rect: [100, 3150, 76, 146] },
@@ -130,6 +132,7 @@ export const ROADS = [
   { id: 'nakano_roji_4', cls: 'lane', w: 4, pts: [[0, 60], [134, 60]] },
   { id: 'nakano_roji_5', cls: 'lane', w: 4, pts: [[60, 0], [60, 115]] },
   { id: 'kanda_kishi', cls: 'lane', w: 4, pts: [[0, 694], [180, 694]] },
+  { id: 'kanda_hashi', cls: 'walk', w: 3, pts: [[40, 694], [40, 736]] }, // (a footbridge over the Kanda, the lane on to the avenue north of it)
   // Shinjuku
   { id: 'nishi_1', cls: 'street', w: 8, pts: [[0, 740], [180, 740]] },
   { id: 'nishi_2', cls: 'avenue', w: 10, pts: [[0, 870], [180, 870]] },
@@ -146,6 +149,7 @@ export const ROADS = [
   { id: 'gyoen_dori', cls: 'avenue', w: 10, pts: [[0, 1806], [180, 1806]] },
   { id: 'gyoen_michi_1', cls: 'walk', w: 3, pts: [[10, 1830], [60, 1866], [110, 1850], [150, 1880], [150, 2060], [90, 2080], [20, 2050], [10, 1830]] },
   { id: 'gyoen_michi_2', cls: 'walk', w: 3, pts: [[90, 1811], [90, 1858]] },
+  { id: 'gyoen_michi_3', cls: 'walk', w: 3, pts: [[90, 2080], [90, 2096]] }, // (out by the Sendagaya gate)
   { id: 'sendagaya_dori', cls: 'street', w: 8, pts: [[0, 2096], [166, 2096]] },
   // Harajuku and Shibuya: Meiji-dōri is the spine
   { id: 'meiji_dori', cls: 'avenue', w: 12, pts: [[166, 1806], [166, 2800], [150, 2850], [104, 2900], [90, 2960], [90, 2990]] },
@@ -316,7 +320,8 @@ export const PLOTS = [
   ['kabukicho_e', 20, 1706, 56, 90, 'hotele i bary'],
   ['golden_gai', 150, 1584, 28, 100, 'Golden Gai: sześć zaułków malutkich barów'],
   ['gyoen_onshitsu', 20, 1990, 40, 30, 'szklarnia'],
-  ['gyoen_chaya', 118, 1890, 18, 14, 'herbaciarnia nad stawem'],
+  ['gyoen_chaya', 131, 1950, 15, 12, 'herbaciarnia Rakuu-tei nad dolnym stawem'],
+  ['gyoen_goryotei', 84, 1915, 20, 11, 'pawilon Kyū-Goryōtei nad stawem'],
   // Harajuku
   ['otorii', 34, 2290, 14, 6, 'wielka drewniana torii', 'low'],
   ['sake_daru', 20, 2330, 10, 26, 'ściana beczek sake', 'low'],
