@@ -58,7 +58,8 @@ nakłada ten rysunek na mapę ogólną i płynnie przechodzi między nimi przy z
 
 - Przy nowych miastach: dopisać je do regionów (test `mapRegions` pilnuje kompletu) i dodać słowa
   liczby miast w podpisie menu (do 24).
-- Otwarte pytanie: czy podróż przechodzi przez wszystkie miasta, czy przez wybór, np. 12 z 24.
+- Decyzja autora (2026-11-20): jedna podróż przechodzi przez wszystkie 24 miasta.
+- Pomysł na później: odblokowywanie map za pieczątki. Na razie nic z tym nie robimy.
 
 ## Dziennik
 
