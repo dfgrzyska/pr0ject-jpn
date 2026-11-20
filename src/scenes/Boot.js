@@ -3,6 +3,7 @@ import { keepForOffline } from '../pwa.js';
 import { installLegacyPixelGrid } from '../rendering.js';
 import { ALL_STAGES as STAGES } from '../data/stages.js';
 import { ENCOUNTERS } from '../data/encounters.js';
+import { TILES } from '../data/japan.js';
 import { setFontScale } from '../game/fontScale.js';
 import { CITY_ANIMS, registerEnemyAtlas, registerSharedHi, spriteAnimTexture, unregisterEnemyAtlas } from '../game/enemyArt.js';
 
@@ -62,6 +63,7 @@ export class Boot extends Phaser.Scene {
     this.load.image('font540', 'font540.png'); // the same font at 540 px (the same layout times three)
     this.load.image('font540_ink', 'font540_ink.png');
     this.load.image('japan', 'japan.png'); // the map between stages (at 540 px)
+    for (const t of TILES) this.load.image(t.key, `${t.key}.png`); // (the same, finer, where the cities are)
     this.load.atlas('menu', 'menu.png', 'menu.json'); // the title screen (at 540 px)
     this.load.atlas('gacha', 'gacha.png', 'gacha.json'); // the gachapon screen (at 540 px)
     this.load.image('menu_waves', 'menu_waves.png');
@@ -76,7 +78,7 @@ export class Boot extends Phaser.Scene {
     installLegacyPixelGrid(this.game.renderer);
     this.load.on('complete', this.releaseUnusedStages, this);
     keepForOffline(); // what every city shares is in now
-    this.textures.get('japan').setFilter(Phaser.Textures.FilterMode.LINEAR); // (the city menu shows it at 0.8)
+    for (const key of ['japan', ...TILES.map((t) => t.key)]) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR); // (the map is shown at any zoom)
     const meta = this.cache.json.get('fontMeta');
     // Phaser 4: Parse returns the whole cache entry ({ data, texture, frame })
     // the 540 px font when it is there (shown at a third by pixelText), else the 1x one

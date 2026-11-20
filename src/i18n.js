@@ -166,6 +166,7 @@ const EN = {
   'PODRÓŻ PO JAPONII': 'JOURNEY ACROSS JAPAN',
   'DOTKNIJ, ABY LECIEĆ': 'TAP TO FLY',
   'ENTER - LECIMY': "ENTER - LET'S GO",
+  KIUSIU: 'KYŪSHŪ', // (the map's regions: the others are written the same in both)
   // ships
   'TWÓJ STATEK': 'YOUR SHIP',
   LOSUJ: 'DRAW',

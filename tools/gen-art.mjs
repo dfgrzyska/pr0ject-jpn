@@ -12,7 +12,8 @@ import { packAtlas, packAtlasTight } from './lib/spritekit.mjs';
 import { Raster } from './lib/raster.mjs';
 import { buildSprites } from './art/sprites.mjs';
 import { buildFont, buildFont540, FONT } from './art/font.mjs';
-import { buildJapanMap } from './art/japan.mjs';
+import { buildJapanMap, buildMapTile } from './art/japan.mjs';
+import { TILES } from '../src/data/japan.js';
 import { menuAtlas, menuWaves, menuWashi } from './art/menu.mjs';
 import { buildEnding, buildEndingClouds, buildEndingNight } from './art/ending.mjs';
 import * as kyoto from './art/kyoto/index.mjs';
@@ -157,6 +158,8 @@ console.log('menu');
 console.log('map of Japan');
 const japan = buildJapanMap();
 write('japan.png', japan.toPNG());
+// (and finer where the cities are, for the camera's close-ups)
+for (const t of TILES) write(`${t.key}.png`, buildMapTile(t).toPNG());
 if (preview) writeFileSync(join(previewDir, 'japan_x3.png'), japan.scaled(3).toPNG());
 
 console.log('ending');

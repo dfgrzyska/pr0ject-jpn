@@ -1,6 +1,7 @@
 import { DEPTH, RENDER_SCALE, VIEW } from '../config.js';
 import { STAGES, ALL_STAGES } from '../data/stages.js';
-import { MAP, project } from '../data/japan.js';
+import { REGIONS, project, regionOf } from '../data/japan.js';
+import { MapCamera, WHOLE, ease, fitView, lerpView, placeNames, shadeBands } from './mapCamera.js';
 import { pixelText } from './Hud.js';
 import { tr } from '../i18n.js';
 import { INK_FONT } from '../scenes/Boot.js';
@@ -17,7 +18,14 @@ const FINE = 1 / RENDER_SCALE; // the menu's art and the map are drawn at 540 px
 const CITY_KEY = 'shmupjp.startCity';
 // the caption counts the journey's cities (in words: each has its English in the phrasebook)
 const CITIES = { 9: 'DZIEWIĘĆ', 10: 'DZIESIĘĆ', 11: 'JEDENAŚCIE', 12: 'DWANAŚCIE' };
-const NORTH_TO_SOUTH = STAGES.map((_, i) => i).sort((a, b) => STAGES[b].map[1] - STAGES[a].map[1]);
+// the rail: the cities in their regions (docs/plan-mapa.md), the regions north to south, each region's cities north to south
+const regionAt = (i) => regionOf(ALL_STAGES[i].id) ?? { id: ALL_STAGES[i].id, name: '', stages: [ALL_STAGES[i].id], box: null };
+const GROUPS = [...REGIONS.map((r) => r.stages.map((id) => STAGES.findIndex((s) => s.id === id)).filter((i) => i >= 0)), ...STAGES.map((_, i) => i).filter((i) => !regionOf(STAGES[i].id)).map((i) => [i])]
+  .map((g) => g.sort((a, b) => STAGES[b].map[1] - STAGES[a].map[1]))
+  .filter((g) => g.length);
+const RAIL = GROUPS.flat();
+const GAP = 0.9; // (between two regions on the rail, in steps)
+const GLIDE = 0.45; // s for the camera to settle on a view
 export function lastCity() {
   try {
     const i = STAGES.findIndex((s) => s.id === localStorage.getItem(CITY_KEY));
@@ -35,13 +43,15 @@ export class JourneyMenu {
     this.items = [];
     const add = (o, depth = DEPTH.overlay + 1) => { this.items.push(o); return o.setDepth(depth); };
     this.bg = add(scene.add.rectangle(0, 0, VIEW.width, VIEW.maxHeight, 0x0c1830).setOrigin(0), DEPTH.overlay);
-    this.map = add(scene.add.image(0, 0, 'japan').setOrigin(0).setScale(0.8 * FINE), DEPTH.overlay);
+    this.cam = new MapCamera(scene, DEPTH.overlay, { x0: 0, x1: VIEW.width, y0: 0, y1: scene.H });
+    this.items.push(this.cam);
     this.sky = add(scene.add.rectangle(0, 0, VIEW.width, VIEW.maxHeight, 0x111b36).setOrigin(0), DEPTH.overlay + 0.04);
     this.cloth = add(scene.add.tileSprite(0, 0, VIEW.width, VIEW.maxHeight, 'menu_waves').setTileScale(FINE, FINE).setOrigin(0), DEPTH.overlay + 0.05);
     this.evening = add(scene.add.image(0, 0, 'menu', 'evening').setOrigin(0).setScale(FINE), DEPTH.overlay + 0.1);
     this.lanterns = [24, 156].map((x) => add(scene.add.image(x, 0, 'menu', 'lantern').setOrigin(0.5, 0).setScale(FINE), DEPTH.overlay + 0.3));
     this.clouds = [0, 1].map((i) => add(scene.add.image(30 + i * 100, 0, 'sprites', `cloud_${i}`).setAlpha(0.09), DEPTH.overlay));
     this.gfx = add(scene.add.graphics(), DEPTH.overlay + 1.5);
+    this.shade = add(scene.add.graphics(), DEPTH.overlay + 0.5); // (the night over the map behind the heading and the name)
     this.labels = STAGES.map((s) => add(pixelText(scene, 0, 0, s.name)));
     this.ship = add(sharedArt(scene.add.image(0, 0, 'sprites', scene.ship.frame)), DEPTH.overlay + 2);
     // (over the title it flies as it is fitted: its engine burning, its companion after it, a dragon's body behind its head)
@@ -57,6 +67,7 @@ export class JourneyMenu {
     // (eleven cities' worth of Polish no longer fits on one line: then it takes two)
     if (this.caption.width > VIEW.width - 6) this.caption.setText(tr(caption).replace('. ', '.\n')).setCenterAlign();
     this.heading = add(pixelText(scene, 90, 50, 'WYBIERZ MIASTO'));
+    this.regionName = add(pixelText(scene, 76, 63, '').setTint(0x9ab8cc));
     this.newGame = add(pixelText(scene, 85, 0, 'WYRUSZ W PODRÓŻ'), DEPTH.overlay + 2);
     // the collection: the stamp book, the yōkai album and the food journal, a tab each
     this.album = add(pixelText(scene, 90, 0, 'KOLEKCJA', 0.5, INK_FONT), DEPTH.overlay + 2);
@@ -85,18 +96,42 @@ export class JourneyMenu {
   }
 
   // (by index every stage is known, one in the works too: ?stage=9 opens the menu on it)
-  city(i) {
-    const [x, y] = project(...ALL_STAGES[i].map);
-    return { x: Math.round(x * this.map.scaleX * RENDER_SCALE), y: Math.round(y * this.map.scaleY * RENDER_SCALE + this.map.y) };
+  city(i, view) {
+    const [x, y] = this.cam.city(ALL_STAGES[i].map, view);
+    return { x, y };
+  }
+
+  /** The area of the screen the map is framed in: in the city menu, between the heading and the name, left of the rail. */
+  area(mode = this.mode) {
+    return mode === 'city' ? { x0: 2, x1: 150, y0: 72, y1: this.H - 82 } : { x0: 0, x1: VIEW.width, y0: 0, y1: this.H };
+  }
+
+  /** The view for a mode: the whole of Japan, or in the city menu the region of the chosen city. */
+  viewFor(index = this.index, mode = this.mode) {
+    if (mode !== 'city') return WHOLE;
+    const r = regionAt(index);
+    const pts = r.stages.map((id) => ALL_STAGES.find((s) => s.id === id)).filter(Boolean).map((s) => project(s.map[0], s.map[1]));
+    return fitView(pts, r.box, this.area('city'));
+  }
+
+  /** The camera glides to a view (from wherever it is now). */
+  glide(to, duration = GLIDE) {
+    this.camAnim = { from: this.cam.view, to, t: 0, duration };
+  }
+
+  /** The rail: where the k-th of its cities sits. */
+  railY(k) {
+    const g = GROUPS.findIndex((grp) => grp.includes(RAIL[k]));
+    const step = (this.railBottom - this.railTop) / Math.max(1, RAIL.length - 1 + GAP * (GROUPS.length - 1));
+    return this.railTop + (k + g * GAP) * step;
   }
 
   layout(H) {
     this.H = H;
     this.bg.setSize(VIEW.width, H);
-    const scale = this.mode === 'city' ? 0.8 : 1;
-    this.scene.tweens.killTweensOf(this.map);
-    this.map.setScale(scale * FINE);
-    this.map.y = Math.round((H - MAP.h * scale) / 2);
+    this.cam.setArea(this.area());
+    this.camAnim = null;
+    this.cam.set(this.viewFor());
     this.railTop = 80;
     this.railBottom = H - 100;
     const title = titleLayout(H);
@@ -119,19 +154,26 @@ export class JourneyMenu {
     this.subtitle.y = H - 58;
     this.next.y = H - 30;
     this.hint.y = H - 12;
+    shadeBands(this.shade.clear(), H, 56, 80, H - 92, H - 78);
     this.layoutLabels();
     const p = this.city(this.index);
     this.ship.setPosition(p.x, p.y);
     this.flight = null;
   }
 
+  // (only the names of the region in view: they fade in as the camera settles on it)
   layoutLabels() {
+    const region = regionAt(this.index);
+    const settled = Math.max(0, Math.min(1, (this.cam.view.z / this.viewFor().z - 0.6) / 0.35));
+    // (placed clear of each other, of the dots and of the ship; the chosen city's name first)
+    const shown = STAGES.map((_, i) => i).filter((i) => region.stages.includes(STAGES[i].id)).sort((a, b) => (b === this.index) - (a === this.index));
+    const dots = STAGES.map((_, i) => ({ ...this.city(i), r: 3 }));
+    const spots = placeNames(shown.map((i) => ({ ...dots[i], w: this.labels[i].width, h: this.labels[i].height, prefer: STAGES[i].map.slice(2) })),
+      [...dots, { x: this.ship.x, y: this.ship.y, r: 8 }], { x0: 2, x1: 150 });
     this.labels.forEach((label, i) => {
-      const p = this.city(i);
-      const half = label.width / 2;
-      const x = Math.max(half + 2, Math.min(148 - half, p.x + STAGES[i].map[2] * 0.8));
-      const y = p.y + (STAGES[i].id === 'stage7' ? -26 : STAGES[i].map[3] * 0.8);
-      label.setPosition(Math.round(x), Math.round(y));
+      const n = shown.indexOf(i);
+      if (n >= 0) label.setPosition(...spots[n]);
+      label.setVisible(this.mode === 'city' && n >= 0).setAlpha(settled);
     });
   }
 
@@ -143,9 +185,10 @@ export class JourneyMenu {
     const cities = mode === 'city';
     for (const o of [this.logo, this.tagline, this.caption, this.dev, ...this.menuButtons]) o.setVisible(title);
     for (const o of this.titleDecor) o.setVisible(title);
-    this.map.setVisible(cities || mode === 'backdrop');
+    this.cam.setVisible(cities || mode === 'backdrop');
     this.clouds.forEach((o) => o.setVisible(cities));
-    for (const o of [this.heading, this.name, this.subtitle, this.next, ...this.labels]) o.setVisible(cities);
+    this.shade.setVisible(cities);
+    for (const o of [this.heading, this.regionName, this.name, this.subtitle, this.next, ...this.labels]) o.setVisible(cities);
     this.caption.setVisible(title && this.captionFits);
     this.ship.setVisible(title || cities).setDepth(DEPTH.overlay + (title ? 0.5 : 2));
     if (cities) this.ship.setRotation(0).setFrame(this.scene.ship.frame);
@@ -153,9 +196,15 @@ export class JourneyMenu {
     this.flame.setVisible(title && !this.segs.length);
     this.back.setVisible(cities);
     this.hint.setVisible(title || cities);
-    this.scene.tweens.killTweensOf(this.map);
-    const scale = cities ? 0.8 : 1;
-    this.scene.tweens.add({ targets: this.map, scaleX: scale * FINE, scaleY: scale * FINE, y: Math.round((this.H - MAP.h * scale) / 2), alpha: title ? 0.58 : 1, duration: 450, ease: 'Sine.easeInOut' });
+    // (the area changes with the mode: the view on the screen kept as it is, then the camera glides to the mode's view)
+    const [sx, sy] = this.cam.toScreen(this.cam.view.cx, this.cam.view.cy);
+    const area = this.area();
+    const z = this.cam.view.z;
+    this.cam.setArea(area);
+    this.cam.set({ cx: this.cam.view.cx - (sx - (area.x0 + area.x1) / 2) / z, cy: this.cam.view.cy - (sy - (area.y0 + area.y1) / 2) / z, z });
+    this.flight = null;
+    this.glide(this.viewFor());
+    this.regionName.setText(tr(regionAt(this.index).name));
     this.name.setText(tr(ALL_STAGES[this.index].name)).setTint(0xffe080);
     this.subtitle.setText(tr(ALL_STAGES[this.index].subtitle));
     this.next.setTint(0xffe080);
@@ -163,25 +212,36 @@ export class JourneyMenu {
 
   choose(index) {
     if (index === this.index) return;
-    const from = { x: this.ship.x, y: this.ship.y };
-    const to = this.city(index);
-    const distance = Math.hypot(to.x - from.x, to.y - from.y) || 1;
-    const bend = Math.min(25, distance * 0.25);
-    this.flight = { from, to, cx: (from.x + to.x) / 2 + (to.y - from.y) / distance * bend,
-      cy: (from.y + to.y) / 2 - (to.x - from.x) / distance * bend, t: 0, duration: Math.min(0.7, 0.4 + distance / 500) };
+    // the flight is in map units, the camera going along: within a region it slides over, to another one it draws
+    // back halfway to show both cities and closes in on the new region
+    const f = this.flight;
+    const from = f ? f.at(ease(Math.min(1, f.t / f.duration))) : project(...ALL_STAGES[this.index].map);
+    const to = project(...ALL_STAGES[index].map);
+    const distance = Math.hypot(to[0] - from[0], to[1] - from[1]) || 1;
+    const bend = distance * 0.25;
+    const [cx, cy] = [(from[0] + to[0]) / 2 + ((to[1] - from[1]) / distance) * bend, (from[1] + to[1]) / 2 - ((to[0] - from[0]) / distance) * bend];
+    const at = (t) => [(1 - t) ** 2 * from[0] + 2 * (1 - t) * t * cx + t * t * to[0], (1 - t) ** 2 * from[1] + 2 * (1 - t) * t * cy + t * t * to[1]];
+    const across = regionAt(index).id !== regionAt(this.index).id;
+    const v0 = this.cam.view;
+    const v1 = this.viewFor(index);
+    const mid = across ? fitView([from, to], null, this.area(), { zMax: Math.min(v0.z, v1.z) }) : null;
+    this.camAnim = null;
+    this.flight = { at, v0, v1, mid, t: 0, duration: across ? 0.9 : Math.min(0.7, 0.4 + (distance * v1.z) / 500) };
     this.index = index;
+    this.regionName.setText(tr(regionAt(index).name));
     this.name.setText(tr(ALL_STAGES[index].name));
     this.subtitle.setText(tr(ALL_STAGES[index].subtitle));
   }
 
   step(delta) {
-    const pos = NORTH_TO_SOUTH.indexOf(this.index);
-    this.choose(NORTH_TO_SOUTH[Math.max(0, Math.min(NORTH_TO_SOUTH.length - 1, pos + delta))]);
+    const pos = RAIL.indexOf(this.index);
+    this.choose(RAIL[Math.max(0, Math.min(RAIL.length - 1, pos + delta))]);
   }
 
   slide(y) {
-    const k = Math.max(0, Math.min(1, (y - this.railTop) / (this.railBottom - this.railTop)));
-    this.choose(NORTH_TO_SOUTH[Math.round(k * (NORTH_TO_SOUTH.length - 1))]);
+    let best = 0;
+    RAIL.forEach((_, k) => { if (Math.abs(this.railY(k) - y) < Math.abs(this.railY(best) - y)) best = k; });
+    this.choose(RAIL[best]);
   }
 
   pointerDown(p) {
@@ -229,6 +289,7 @@ export class JourneyMenu {
   update(dt) {
     this.time += dt;
     this.modeTime += dt;
+    this.updateCamera(dt);
     this.layoutLabels();
     if (!this.flight && this.mode === 'city') { const p = this.city(this.index); this.ship.setPosition(p.x, p.y); }
     this.clouds.forEach((c, i) => c.setPosition(((this.time * (2 + i) + i * 100) % 240) - 30, this.H * (0.35 + i * 0.25)));
@@ -304,19 +365,29 @@ export class JourneyMenu {
     const railOffset = Math.round(34 * (1 - Math.min(1, this.modeTime / 0.35)) ** 2);
     g.fillStyle(0x132942).fillRoundedRect(153 + railOffset, this.railTop - 17, 25, this.railBottom - this.railTop + 34, 5);
     g.lineStyle(1, 0x66869e).lineBetween(166 + railOffset, this.railTop, 166 + railOffset, this.railBottom);
-    NORTH_TO_SOUTH.forEach((i, k) => {
-      const y = this.railTop + k * (this.railBottom - this.railTop) / Math.max(1, NORTH_TO_SOUTH.length - 1);
+    // (a gap in the line between two regions)
+    for (let n = 1; n < RAIL.length; n++) {
+      if (GROUPS.some((grp) => grp[0] === RAIL[n])) g.fillStyle(0x132942).fillRect(164 + railOffset, this.railY(n - 1) + 4, 5, this.railY(n) - this.railY(n - 1) - 8);
+    }
+    // (each region a stretch of its own; the chosen city's stretch in gold, a bracket at its side)
+    const chosen = GROUPS.find((grp) => grp.includes(this.index));
+    let n0 = 0;
+    for (const grp of GROUPS) {
+      const [a, b] = [this.railY(n0), this.railY(n0 + grp.length - 1)];
+      const on = grp === chosen;
+      g.lineStyle(on ? 2 : 1, on ? 0xc8a050 : 0x4a6a84).lineBetween(173 + railOffset, a - 3, 173 + railOffset, b + 3);
+      n0 += grp.length;
+    }
+    RAIL.forEach((i, n) => {
+      const y = this.railY(n);
       g.fillStyle(i === this.index ? 0xffe080 : 0x66869e).fillCircle(166 + railOffset, y, i === this.index ? 6 : 2);
       if (i === this.index) g.lineStyle(1, 0x0c1830).lineBetween(163 + railOffset, y, 169 + railOffset, y);
     });
     g.lineStyle(1, 0xffe080).strokeRoundedRect(32, this.next.y - 14, 116, 28, 3);
     const f = this.flight;
     if (!f) return;
-    f.to = this.city(this.index);
-    f.t += dt;
-    const k = Math.min(1, f.t / f.duration), e = k * k * (3 - 2 * k);
-    const at = (t) => ({ x: (1 - t) ** 2 * f.from.x + 2 * (1 - t) * t * f.cx + t * t * f.to.x,
-      y: (1 - t) ** 2 * f.from.y + 2 * (1 - t) * t * f.cy + t * t * f.to.y });
+    const k = Math.min(1, f.t / f.duration), e = ease(k);
+    const at = (t) => { const [x, y] = this.cam.toScreen(...f.at(t)); return { x, y }; };
     const p = at(e), ahead = at(Math.min(1, e + 0.01));
     this.ship.setPosition(Math.round(p.x), Math.round(p.y));
     if (k < 1) this.ship.setRotation(Math.atan2(ahead.y - p.y, ahead.x - p.x) + Math.PI / 2);
@@ -327,5 +398,22 @@ export class JourneyMenu {
     if (k === 1) { this.ship.setRotation(0); this.flight = null; }
   }
 
-  destroy() { this.scene.tweens.killTweensOf(this.map); this.items.forEach((o) => o.destroy()); }
+  /** The camera: along with the ship's flight, or gliding to its view. */
+  updateCamera(dt) {
+    const f = this.flight;
+    if (f) {
+      f.t += dt;
+      const e = ease(Math.min(1, f.t / f.duration));
+      if (!f.mid) this.cam.set(lerpView(f.v0, f.v1, e));
+      else this.cam.set(e < 0.5 ? lerpView(f.v0, f.mid, ease(e * 2)) : lerpView(f.mid, f.v1, ease(e * 2 - 1)));
+      return;
+    }
+    const c = this.camAnim;
+    if (!c) return;
+    c.t += dt;
+    this.cam.set(lerpView(c.from, c.to, ease(Math.min(1, c.t / c.duration))));
+    if (c.t >= c.duration) this.camAnim = null;
+  }
+
+  destroy() { this.items.forEach((o) => o.destroy()); }
 }
