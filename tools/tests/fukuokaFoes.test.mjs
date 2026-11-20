@@ -153,9 +153,9 @@ test('the oboro-guruma breaks up in three stages and keeps to its street', () =>
   }
 });
 
-test('the three are Fukuoka\'s (and Onomichi\'s, Kyoto\'s, Okinawa\'s, Nagasaki\'s, Kawaguchiko\'s; Sapporo has two), in waves, their frames in each one\'s atlas', () => {
-  const cities = { fukuoka: 'stage12', onomichi: 'stage11', kyoto: 'stage1', okinawa: 'stage2', nagasaki: 'stage8', kawaguchiko: 'stage10', sapporo: 'stage3', kagoshima: 'stage4' };
-  const without = { cart: new Set(['sapporo']), split: new Set(['kagoshima']) }; // (snowploughs; bombs that split)
+test('the three are Fukuoka\'s (and Onomichi\'s, Kyoto\'s, Okinawa\'s, Nagasaki\'s, Kawaguchiko\'s; Sapporo, Kagoshima and Osaka have two), in waves, their frames in each one\'s atlas', () => {
+  const cities = { fukuoka: 'stage12', onomichi: 'stage11', kyoto: 'stage1', okinawa: 'stage2', nagasaki: 'stage8', kawaguchiko: 'stage10', sapporo: 'stage3', kagoshima: 'stage4', osaka: 'stage5' };
+  const without = { cart: new Set(['sapporo']), split: new Set(['kagoshima', 'osaka']) }; // (snowploughs; bombs that split; manzai duos)
   for (const t of ['chain', 'split', 'cart']) {
     assert.ok(ENEMIES[t] && PACKED.has(t), t);
     for (const city of Object.keys(SKINS)) if (!cities[city] || without[t]?.has(city)) assert.equal(SKINS[city][t], undefined, `${city} has no ${t}`);

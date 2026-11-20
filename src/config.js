@@ -146,12 +146,14 @@ export const ENEMIES = {
  *   (not by a bomb) its two sacs (`one`) fly out at `flyOut` px/s, take aim for `aim` s and dive at `dive` px/s;
  *   a sac shot down spills `roe` grains of roe worth `roePts` each.
  * CART: drives its street at `speed` px/s, a fan of `spokes` shots every `every` s; it breaks up below each of
- *   `stages` (share of its HP): the blind torn off, a wheel gone (it limps), the roof on fire.
+ *   `stages` (share of its HP): the blind torn off, a wheel gone (it limps), the roof on fire. Swung round a corner
+ *   (a wave's turn): a quarter circle of radius `swing.r`, slewing `swing.over` past square and back, flinging
+ *   `swing.shots` handfuls of three off its outer side as it goes round.
  */
 export const CHAIN = { n: 6, every: 2.6, step: 0.11, bonus: 60, cross: 9, sag: 3 };
 export const SPLIT = { fall: 24, sway: 18, every: 1.7, flyOut: 70, aim: 0.3, dive: 210, roe: 6, roePts: 20 };
 export const SPLIT_ONE = { hp: 9, weight: 1, score: 100, radius: 5, explosion: 's' };
-export const CART = { speed: 14, every: 2.2, spokes: 7, stages: [0.7, 0.4, 0.15] };
+export const CART = { speed: 14, every: 2.2, spokes: 7, stages: [0.7, 0.4, 0.15], swing: { r: 8, over: 0.2, shots: 4 } };
 
 // Minibosses' HP (the wave's own `hp` wins); below `phase2` of its life each one breaks into its second phase
 export const HEAVY = { hp: { tanuki: 750, manta: 780, raiju: 800, wani: 820, heikegani: 820, kasa: 820, taiyaki: 980, usagi: 860, nekomata: 960, yatai: 960 }, phase2: 0.5 };

@@ -92,6 +92,8 @@ export const SKINS = {
     carrier: { frame: 'ame_{c}_0', anim: 'ame_{c}' },
     heavy: { frame: 'ningyo_0', kind: 'bunraku' },
     turret: { base: 'neko_base', head: 'neko_paw_', wreck: 'neko_wreck', beckon: true },
+    chain: { frame: 'os_kitcho_1', frames: ['os_kitcho_1', 'os_kitcho_0', 'os_kitcho_2'], eye: 'os_kitcho_eye_', lit: 'os_kitcho_lit_', burnt: 'os_kitcho_burnt', pole: 'os_pole', rope: 0xb8a060 }, // kitchō charms of Tōka Ebisu on a straw rope over Shinsekai (enemies/chainSplitCart.js); no pair: the duos
+    cart: { anim: 'os_danjiri_', wreck: 'os_danjiri_wreck', debris: 0x6a4a30, light: 0xff8a30, speed: 20 }, // a danjiri careering down a street of Shinsekai, swung round its corners (yarimawashi: the wave's turn)
   },
   // Beppu: eggs that hatch into little oni, pots whose shots bounce off the walls, monkeys that steal
   // power, steam nozzles puffing clouds that swell, plus geysers and steam clouds as the environment

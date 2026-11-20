@@ -13,7 +13,8 @@
 // change the colours and sounds: chain { rope, char, light, text }, split { sound }, cart { debris, light }; a rope may
 // hang several things in turn (chain.frames, as Nagasaki's signal flags) and carry its fire further, to a line hung
 // close by (chain.cross: Kagoshima's ash). A cart's look may have a beast pulling it that is no yokai (cart.runner):
-// when the cart goes down it breaks free and runs off.
+// when the cart goes down it breaks free and runs off. A cart may drive faster (cart.speed) and swing round a corner
+// into a cross street (the wave's turn: Osaka's danjiri, yarimawashi).
 import { CART, CHAIN, DEPTH, SPLIT, SPLIT_ONE, VIEW } from '../../config.js';
 import { volley } from '../../difficulty.js';
 import { slow, DOWN, TAU, EXTRAS } from './shared.js';
@@ -243,14 +244,16 @@ export const chainSplitCart = {
   /**
    * Down its street (w.x; w.up: up it, as a ferry crossing against the scroll), or across from a screen edge (w.dir
    * -1/1 at w.y), like Sapporo's snowploughs. w.stop: where its way ends (a u going up or down, an x going across):
-   * it stops there, as a ferry at its pier, and fights on where it lies.
+   * it stops there, as a ferry at its pier, and fights on where it lies. w.turn: [u, dir], going down its street it
+   * swings round at the cross street at u into it, off to the left (-1) or the right (1), without slowing: the
+   * danjiri's yarimawashi, flinging shots off its outer side as it slews round.
    */
   spawnCart(w, base, look) {
     const s = this.scene;
     const horiz = typeof w.dir === 'number';
     const x = horiz ? (w.dir > 0 ? -16 : VIEW.width + 16) : w.x;
     const y = horiz ? w.y : -20;
-    const e = this.pool.spawn(`${look.anim}0_0`, x, y, { ...base, horiz, dir: horiz ? w.dir : w.up ? -1 : 1, stop: w.stop ?? null, docked: false, wreck: look.wreck, timer: 1.4, cartStage: 0, flee: w.flee ?? null });
+    const e = this.pool.spawn(`${look.anim}0_0`, x, y, { ...base, horiz, dir: horiz ? w.dir : w.up ? -1 : 1, stop: w.stop ?? null, docked: false, wreck: look.wreck, timer: 1.4, cartStage: 0, flee: w.flee ?? null, turn: horiz || w.up ? null : w.turn ?? null, swing: null });
     e.u = s.parallax.stripU(y);
     e.look = look;
     e.play(`${look.anim}0`);
@@ -265,7 +268,14 @@ export const chainSplitCart = {
     if (st > e.cartStage) this.cartBreaks(e, st);
     // a wheel gone: it limps along slower, lurching
     const limp = e.cartStage >= 2;
-    const v = CART.speed * (limp ? 0.6 : 1) * (limp ? 0.75 + Math.abs(Math.sin(e.age * 4)) * 0.5 : 1);
+    const v = (L.speed ?? CART.speed) * (limp ? 0.6 : 1) * (limp ? 0.75 + Math.abs(Math.sin(e.age * 4)) * 0.5 : 1);
+    if (e.turn && !e.swing && e.u - e.turn[0] <= CART.swing.r) {
+      // the corner: it swings round into the cross street
+      e.swing = { p: 0, x: e.x, u: e.turn[0] + CART.swing.r, dir: e.turn[1], fling: 0 };
+      e.turn = null;
+      s.sfx.creak?.();
+    }
+    if (e.swing) return this.cartSwing(e, dt, v, b);
     if (!e.docked) {
       if (e.horiz) e.x += e.dir * v * dt;
       else e.u -= e.dir * v * dt;
@@ -297,6 +307,39 @@ export const chainSplitCart = {
       const [wx, wy] = e.horiz ? [e.x, e.y + side * 8] : [e.x + side * 8, e.y + 4];
       for (let i = 0; i < n; i++) b.fire(wx, wy, off + (i / n) * TAU, slow);
     }
+  },
+
+  /**
+   * The swing round the corner: a quarter turn about the corner's inner side, the cart slewing past square and back,
+   * its wheels skidding (dust, sparks), the street shaking; shots flung off its outer side as it goes round.
+   */
+  cartSwing(e, dt, v, b) {
+    const s = this.scene;
+    const W = e.swing;
+    const { r, over } = CART.swing;
+    W.p = Math.min(1, W.p + (v * dt) / ((Math.PI / 2) * r));
+    const a = (W.p * Math.PI) / 2;
+    e.x = W.x + W.dir * r * (1 - Math.cos(a));
+    e.u = W.u - r * Math.sin(a);
+    e.y = s.parallax.screenY(e.u);
+    // past square and back (it swings wide, its back end sliding out)
+    const k = W.p + Math.sin(W.p * Math.PI) * over;
+    e.setRotation(-W.dir * k * (Math.PI / 2));
+    if (Math.random() < dt * 30) s.fx.smoke(e.x - W.dir * 10 * Math.cos(a), e.y + 8, 1, 1, true);
+    if (Math.random() < dt * 12) s.fx.spark(e.x - W.dir * 8, e.y + 6, 0xffd080);
+    // the shots flung off its outer side, round the turn
+    if (this.canFire(e) && W.p * CART.swing.shots >= W.fling + 1) {
+      W.fling++;
+      const out = Math.atan2(Math.sin(a), -W.dir * Math.cos(a)); // (away from the corner it swings round)
+      for (const d of [-0.25, 0, 0.25]) b.fire(e.x, e.y, out + d + (W.fling % 2) * 0.12, slow);
+    }
+    if (W.p < 1) return;
+    // round: on along the cross street
+    e.swing = null;
+    e.horiz = true;
+    e.dir = W.dir;
+    e.setRotation(-e.dir * Math.PI / 2);
+    s.cameras.main.shake(120, 0.003);
   },
 
   /** The cart breaks up a stage further: bits fly, it creaks, and it looks it. */

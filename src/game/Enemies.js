@@ -497,6 +497,7 @@ export class Enemies {
       s.fx.explode(e.x, e.y, e.def.explosion, e.u, false, e.bits);
       const wr = this.wrecks.spawn(e.wreck ?? this.skin.turret.wreck, e.x, e.y, { u: e.u });
       if (e.horiz) wr.setRotation(-e.dir * Math.PI / 2);
+      else if (e.swing) wr.setRotation(e.rotation); // (a cart gone down as it swung round a corner)
     } else s.fx.explode(e.x, e.y, big ? 'm' : e.def.explosion, null, false, e.bits); // (a boss's body stays a moment: goDown)
     if (e.type === 'carrier') s.spawnPickup(e.color, e.x, e.y, -40);
     if (e.type === 'masu') {

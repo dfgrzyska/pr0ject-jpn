@@ -7,6 +7,7 @@
 // Every frame is three times the old one's size (old mask coordinate m -> fine (m + 1) * 3).
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
 import { Raster } from '../../lib/raster.mjs';
+import { osakaNewFoes } from './newfoes.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -562,5 +563,6 @@ export function osakaEnemies(add) {
   for (let i = 0; i < 3; i++) add(`tseg_${i}`, tseg(i));
   add('ttip', ttip());
   add('tako_pile', takoPile()); // the boss fight's mooring piles
+  osakaNewFoes(add); // (the kitchō charms on their rope, the danjiri: newfoes.mjs)
 }
 export const OSAKA_PORTRAITS = ['neko_base', 'tako_0'];
