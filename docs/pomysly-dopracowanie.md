@@ -235,10 +235,32 @@ Biurowce całej Osaki, 16.11 (`building()` w `tools/art/osaka/mid.mjs`):
 
 Zostało: Umeda Sky Building bez zmian (po poprawie cieni czyta się dobrze).
 
-### Kioto, Nagasaki
+### Kioto, Nagasaki — przejrzane 20.11
 
-- Nie przeglądane ponownie. Pomysły: Daimonji i Gion Matsuri w Kioto, fajerwerki w Osace,
-  lampiony i taniec smoka w Nagasaki. Przed budowaniem sprawdzić w grze, czy już nie istnieją.
+Pierwotne pomysły: Daimonji i Gion Matsuri w Kioto, fajerwerki w Osace, lampiony i taniec smoka w Nagasaki.
+Sprawdzone na całych pasach map i w grze (Kioto 185 i 205 s, Nagasaki 92, 185 i 200 s):
+
+- Daimonji już jest: góra o zmierzchu na końcu Kioto, ognie 大 migoczą i dymią, strażnicy niosą pochodnie,
+  lecą iskry (walka z Kyūbi).
+- Gion Matsuri jest jako wróg: yamaboko (wóz z silniejszych fal). Na mapie go nie ma i nie powinno: Kioto jest
+  w porze hanami, a Gion Matsuri to lipiec.
+- Lampiony w Nagasaki już są: sznury lampionów nad główną ulicą Shinchi (kołyszą się), park Minato z wielkimi
+  figurami z lampionów, lampiony w zaułkach i wzdłuż rzeki.
+- Taniec smoka już jest: boss Ja-odori. Do tego Oranda-bune i wieloryb z Kunchi (wóz).
+- Fajerwerków w Osace nie ma. Mają je już Onomichi (barki nad cieśniną), Nagasaki (po smoku) i Tokio (po mechu),
+  więc Osaka byłaby czwarta; Osaka jest w porze hanami, a Tenjin Matsuri to lipiec.
+
+Słabsze miejsca znalezione przy przeglądzie:
+
+- Kioto, las Kinkaku-ji przed Ryōan-ji (u ok. 3950–4400, ok. 15 s lotu): te same korony sakury i zieleni
+  w kółko, kilka małych pawilonów. Propozycja: sad Omuro-zakura z Ninna-ji (niskie, krzaczaste późne wiśnie,
+  głowy ludzi wśród kwiatów, ścieżka przez sad, herbaciarnia), brama Niōmon przy drodze x 140 (to Kinukake-no-michi)
+  i Kondō. Bez pięciokondygnacyjnej pagody: Kioto ma już pagodę Yasaka i pagody Kiyomizu. Stanowiska wieżyczek
+  (112, 4090) i (120, 4240) zostają; sad jest niski.
+- Nagasaki, góra Inasa (u 5376–6748): ciemny las z drogą i kolejką linową. Cisza pasuje do chwili pamięci
+  wyświetlanej nad nim; zostawić.
+
+Do decyzji autora: Omuro-zakura w Kioto; fajerwerki w Osace (polecam nie).
 
 ## Sprawy techniczne
 
