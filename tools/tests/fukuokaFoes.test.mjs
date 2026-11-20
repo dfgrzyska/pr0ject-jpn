@@ -153,8 +153,8 @@ test('the oboro-guruma breaks up in three stages and keeps to its street', () =>
   }
 });
 
-test('the three are Fukuoka\'s (and Onomichi\'s, Kyoto\'s, Okinawa\'s, Nagasaki\'s, Kawaguchiko\'s, Hiroshima\'s; Sapporo, Kagoshima, Osaka and Beppu have two), in waves, their frames in each one\'s atlas', () => {
-  const cities = { fukuoka: 'stage12', onomichi: 'stage11', kyoto: 'stage1', okinawa: 'stage2', nagasaki: 'stage8', kawaguchiko: 'stage10', sapporo: 'stage3', kagoshima: 'stage4', osaka: 'stage5', beppu: 'stage6', hiroshima: 'stage7' };
+test('the three are Fukuoka\'s (and Onomichi\'s, Kyoto\'s, Okinawa\'s, Nagasaki\'s, Kawaguchiko\'s, Hiroshima\'s, Tokyo\'s; Sapporo, Kagoshima, Osaka and Beppu have two), in waves, their frames in each one\'s atlas', () => {
+  const cities = { fukuoka: 'stage12', onomichi: 'stage11', kyoto: 'stage1', okinawa: 'stage2', nagasaki: 'stage8', kawaguchiko: 'stage10', sapporo: 'stage3', kagoshima: 'stage4', osaka: 'stage5', beppu: 'stage6', hiroshima: 'stage7', tokyo: 'stage9' };
   const without = { cart: new Set(['sapporo']), split: new Set(['kagoshima', 'osaka', 'beppu']) }; // (snowploughs; bombs that split; manzai duos; eggs that hatch)
   for (const t of ['chain', 'split', 'cart']) {
     assert.ok(ENEMIES[t] && PACKED.has(t), t);

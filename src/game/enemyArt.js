@@ -153,8 +153,9 @@ export const CITY_ANIMS = {
   ng_manju: [four('ng_manju'), 4], ng_manju_one: [['ng_manju_one_0', 'ng_manju_one_1'], 6],
   k_iga: [four('k_iga'), 4], k_iga_one: [['k_iga_one_0', 'k_iga_one_1'], 6],
   sp_jaga: [four('sp_jaga'), 4], sp_jaga_one: [['sp_jaga_one_0', 'sp_jaga_one_1'], 6],
+  tk_nigiri: [four('tk_nigiri'), 4], tk_neta: [['tk_neta_0', 'tk_neta_1'], 8], tk_shari: [['tk_shari_0', 'tk_shari_1'], 8],
   hr_kendama: [four('hr_kendama'), 5], hr_ken: [['hr_ken_0', 'hr_ken_1'], 8], hr_tama: [['hr_tama_0', 'hr_tama_1'], 6],
-  ...Object.fromEntries([0, 1, 2, 3].flatMap((st) => [[`o_ferry_${st}`, [[`o_ferry_${st}_0`, `o_ferry_${st}_1`], 4]], [`ky_hoko_${st}`, [[`ky_hoko_${st}_0`, `ky_hoko_${st}_1`], 6]], [`ok_gyu_${st}`, [[`ok_gyu_${st}_0`, `ok_gyu_${st}_1`], 3]], [`ng_kujira_${st}`, [[`ng_kujira_${st}_0`, `ng_kujira_${st}_1`], 5]], [`k_hakucho_${st}`, [[`k_hakucho_${st}_0`, `k_hakucho_${st}_1`], 4]], [`kg_imo_${st}`, [[`kg_imo_${st}_0`, `kg_imo_${st}_1`], 4]], [`os_danjiri_${st}`, [[`os_danjiri_${st}_0`, `os_danjiri_${st}_1`], 5]], [`bp_doro_${st}`, [[`bp_doro_${st}_0`, `bp_doro_${st}_1`], 4]], [`hr_goza_${st}`, [[`hr_goza_${st}_0`, `hr_goza_${st}_1`], 3]]])),
+  ...Object.fromEntries([0, 1, 2, 3].flatMap((st) => [[`o_ferry_${st}`, [[`o_ferry_${st}_0`, `o_ferry_${st}_1`], 4]], [`ky_hoko_${st}`, [[`ky_hoko_${st}_0`, `ky_hoko_${st}_1`], 6]], [`ok_gyu_${st}`, [[`ok_gyu_${st}_0`, `ok_gyu_${st}_1`], 3]], [`ng_kujira_${st}`, [[`ng_kujira_${st}_0`, `ng_kujira_${st}_1`], 5]], [`k_hakucho_${st}`, [[`k_hakucho_${st}_0`, `k_hakucho_${st}_1`], 4]], [`kg_imo_${st}`, [[`kg_imo_${st}_0`, `kg_imo_${st}_1`], 4]], [`os_danjiri_${st}`, [[`os_danjiri_${st}_0`, `os_danjiri_${st}_1`], 5]], [`bp_doro_${st}`, [[`bp_doro_${st}_0`, `bp_doro_${st}_1`], 4]], [`hr_goza_${st}`, [[`hr_goza_${st}_0`, `hr_goza_${st}_1`], 3]], [`tk_sanrin_${st}`, [[`tk_sanrin_${st}_0`, `tk_sanrin_${st}_1`], 6]]])),
   // Fukuoka
   f_tobiume: [four('f_tobiume'), 12], f_goma: [four('f_goma'), 16], f_fugu: [four('f_fugu'), 3],
   f_mentaiko: [four('f_mentaiko'), 5], f_mentaiko_one: [['f_mentaiko_one_0', 'f_mentaiko_one_1'], 6],

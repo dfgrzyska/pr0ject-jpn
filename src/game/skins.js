@@ -124,6 +124,11 @@ export const SKINS = {
     taiyaki: { frame: 'ty_kata_shut', kind: 'taiyaki' }, // the second miniboss: TAIYAKI (tokyo-taiyaki.js)
     turret: { base: 't_ac_base', head: 't_ac_', wreck: 't_ac_wreck' },
     bits: { frames: ['t_feather_0', 't_feather_1', 'dot_2'], tints: [0x2a2a34, 0x3a3e4c, 0x5a6070], speed: 60, life: 0.9, drag: 1.9, g: 14 },
+    // the shared three (enemies/chainSplitCart.js), the same in every set: washing on a line across a lane of Nakano
+    // and Shinjuku, nigiri from Tsukiji (the slice and the rice come apart), Kappabashi's old three-wheeler
+    chain: { frame: 'tk_sentaku_0', frames: ['tk_sentaku_0', 'tk_sentaku_1', 'tk_sentaku_2'], eye: 'tk_sentaku_eye_', lit: 'tk_sentaku_lit_', burnt: 'tk_sentaku_burnt', pole: 'tk_balcony', rope: 0xc8ccd4 },
+    split: { frame: 'tk_nigiri_0', anim: 'tk_nigiri', one: 'tk_neta_0', oneAnim: 'tk_neta', other: { one: 'tk_shari_0', oneAnim: 'tk_shari' }, sound: 'squelch' },
+    cart: { anim: 'tk_sanrin_', wreck: 'tk_sanrin_wreck', debris: 0x3a6a8a, light: 0xff9a30 },
     sets: {
       west: {},
       centre: {

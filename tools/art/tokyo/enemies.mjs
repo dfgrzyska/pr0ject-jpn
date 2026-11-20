@@ -17,6 +17,7 @@ import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/
 import { kasaEnemies } from './kasa.mjs';
 import { taiyakiEnemies } from './taiyaki.mjs';
 import { kuroganeEnemies } from './kurogane.mjs';
+import { tokyoNewFoes } from './newfoes.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -806,5 +807,6 @@ export function tokyoEnemies(add) {
   kasaEnemies(add); // the first miniboss (kasa.mjs)
   taiyakiEnemies(add); // the second (taiyaki.mjs)
   kuroganeEnemies(add); // the mech, in parts (kurogane.mjs)
+  tokyoNewFoes(add); // (the washing on its line, the nigiri, the three-wheeler of Kappabashi: newfoes.mjs)
 }
 export const TOKYO_PORTRAITS = ['t_komainu_0', 't_karasu_0', 'kg_portrait', 'ko_portrait', 'ty_big_0_0'];
