@@ -260,7 +260,24 @@ Słabsze miejsca znalezione przy przeglądzie:
 - Nagasaki, góra Inasa (u 5376–6748): ciemny las z drogą i kolejką linową. Cisza pasuje do chwili pamięci
   wyświetlanej nad nim; zostawić.
 
-Do decyzji autora: Omuro-zakura w Kioto; fajerwerki w Osace (polecam nie).
+Decyzja (20.11): Omuro-zakura tak, fajerwerków w Osace nie.
+
+Ninna-ji, zrobione 20.11 (`tools/art/kyoto/mid.mjs`, sekcja G i życie lasów). W miejscu czterech zwykłych polanek
+na zachód od drogi (podświątynia, herbaciarnia, staw z mostkiem, piknik):
+
+- dojście z drogi Kinukake-no-michi (przerwa w płocie przy u 3975) do Niōmon: wielka brama z gołego, spłowiałego
+  drewna, biały tynk, żelazne okucia, dach z dachówek bez złoceń, Niō w niszach (brama i dach umieją teraz
+  `plain`: bez farby i złota);
+- kamienna aleja na północ przez cynobrową Chūmon z dwoma królami niebios, latarnie kamienne parami;
+- na zachód od alei sad Omuro-zakura (x 3–43, u 4084–4194): gęste, niskie krzaczaste wiśnie w luźnych rzędach,
+  ziemia z mchem i opadłymi płatkami, ścieżka dookoła i jedna w poprzek (obie od alei, przez przerwy w niskim
+  płocie z bambusa), ludzie na ścieżkach i między krzewami;
+- na wschód Kannon-dō ze ścieżką do alei;
+- na końcu alei Kondō na kamiennym podium ze schodami: siedem przęseł spłowiałych cynobrowych słupów, czarne kratowe
+  okiennice podniesione w środkowych przęsłach nad złotym ołtarzem, dach z dachówek; przed nim biały żwir
+  i latarnie. Hala opata za nim gra teraz pałac Goten.
+- Nazwa na ekranie: NINNA-JI od u 3960 (`src/data/landmarks.js`). Losowe drzewa i ludzie w reszcie Kioto ułożyli
+  się na nowo (ten sam generator, inna kolejność losowania); układ i gęstość bez zmian.
 
 ## Sprawy techniczne
 
