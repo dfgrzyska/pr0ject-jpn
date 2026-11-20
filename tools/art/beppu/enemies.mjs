@@ -8,6 +8,7 @@
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
 import { Raster, mix as mixc } from '../../lib/raster.mjs';
 import { oni as oni540 } from './oni540.mjs';
+import { beppuNewFoes } from './newfoes.mjs';
 
 const INK = 0x14101c;
 const TAU = Math.PI * 2;
@@ -528,5 +529,6 @@ export function beppuEnemies(add) {
   for (let p = 0; p < 3; p++) add(`oni_${p}_c`, oni540(p, true, true));
   add('oni_hurt_c', oni540(3, true, true));
   add('masu', masu());
+  beppuNewFoes(add); // (the jigoku-mushi baskets on their rope, the hot-mud barrel cart: newfoes.mjs)
 }
 export const BEPPU_PORTRAITS = ['oni_0'];

@@ -12,7 +12,8 @@
 // Their looks are a skin's `chain`, `split` and `cart` (skins.js); their tuning CHAIN, SPLIT, CART (config.js). A look may
 // change the colours and sounds: chain { rope, char, light, text }, split { sound }, cart { debris, light }; a rope may
 // hang several things in turn (chain.frames, as Nagasaki's signal flags) and carry its fire further, to a line hung
-// close by (chain.cross: Kagoshima's ash). A cart's look may have a beast pulling it that is no yokai (cart.runner):
+// close by (chain.cross: Kagoshima's ash), and hang high, over the city's steam drifting up past them (chain.high:
+// Beppu's baskets over the vents). A cart's look may have a beast pulling it that is no yokai (cart.runner):
 // when the cart goes down it breaks free and runs off. A cart may drive faster (cart.speed) and swing round a corner
 // into a cross street (the wave's turn: Osaka's danjiri, yarimawashi).
 import { CART, CHAIN, DEPTH, SPLIT, SPLIT_ONE, VIEW } from '../../config.js';
@@ -49,6 +50,9 @@ export function ropeAt(rope, t) {
 const ROPE = 0x2a1c14; // the hemp rope
 const CHAR = 0x120c0a; // and where it burnt
 
+// (a rope hung high: over the strip's live steam and smoke, Props at DEPTH.mid + 0.5 + up to 1.1; under pick-ups)
+const HIGH = DEPTH.ground + 0.7;
+
 export const chainSplitCart = {
   // ---------------------------------------------------------------- chain
   /** w: { x, x2, n, skew }: a rope from x to x2 (by default the mirror of x), its far end `skew` px up the map. */
@@ -66,7 +70,7 @@ export const chainSplitCart = {
       const [x, u] = ropeAt(rope, (i + 1) / (n + 1));
       const eye = i % 3 === 1;
       const e = this.pool.spawn(eye ? `${look.eye}0` : look.frames?.[i % look.frames.length] ?? look.frame, x, s.parallax.screenY(u), { ...base, u, rope, slot: i, eye, wreck: look.burnt, timer: CHAIN.every * (0.4 + Math.random() * 0.8) });
-      e.setDepth(DEPTH.ground);
+      e.setDepth(look.high ? HIGH : DEPTH.ground);
       first ??= e;
     }
     return first;
@@ -121,7 +125,7 @@ export const chainSplitCart = {
   updateRopes() {
     const s = this.scene;
     if (!this.ropes?.length) return this.ropeG?.clear();
-    this.ropeG ??= s.add.graphics().setDepth(DEPTH.ground - 0.01);
+    this.ropeG ??= s.add.graphics().setDepth((this.ropes[0].look?.high ? HIGH : DEPTH.ground) - 0.01);
     const g = this.ropeG.clear();
     const R = 1 / 3; // (a fine pixel: the rope is a third of a pixel thick at 540 px)
     this.ropes = this.ropes.filter((r) => s.parallax.screenY(r.u + Math.min(0, r.skew)) - r.sag < s.H + 30);

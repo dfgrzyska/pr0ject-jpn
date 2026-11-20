@@ -107,6 +107,8 @@ export const SKINS = {
     geyser: { frame: 'boil_0', anim: 'boil', mud: 'mudboil_0', mudAnim: 'mudboil' },
     ambush: ambush('beppu', 'steam'), // a mud bozu in a boiling pool (enemies/ambush.js)
     steam: { frame: 'steamf_0' },
+    chain: { frame: 'bp_kago_0', frames: ['bp_kago_0', 'bp_kago_1', 'bp_kago_2'], eye: 'bp_kago_eye_', lit: 'bp_kago_lit_', burnt: 'bp_kago_burnt', pole: 'bp_post', high: true, rope: 0x9a8458, char: 0x3a3426, light: 0xe8f4ff, text: 0xd8f0ff }, // jigoku-mushi baskets over Kannawa's vents, bursting in steam (enemies/chainSplitCart.js); no pair: the eggs hatch
+    cart: { anim: 'bp_doro_', wreck: 'bp_doro_wreck', debris: 0x7a7a76, light: 0xff8a30 }, // a hand cart with a barrel of hot mud from the mud baths, across a street of the town
   },
   // Tokyo (docs/plan-tokyo.md): the longest city, its enemies in five sets, one per stretch of the flight (the
   // stage file's "sets"), drawn at 540 px (tools/art/tokyo/enemies.mjs). bits: what each set breaks into.

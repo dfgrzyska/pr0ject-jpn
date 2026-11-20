@@ -294,7 +294,7 @@ export class Enemies {
         return;
     }
     if (look?.scale) e.setScale((e.base *= look.scale));
-    e.setDepth(e.ground ? DEPTH.ground : DEPTH.air + (w.type === 'heavy' ? -0.1 : 0));
+    if (!(w.type === 'chain' && look?.high)) e.setDepth(e.ground ? DEPTH.ground : DEPTH.air + (w.type === 'heavy' ? -0.1 : 0)); // (a rope hung high keeps its own: chainSplitCart.js)
     if (w.type === 'steam') e.setDepth(DEPTH.player - 0.2); // over enemies and shots, under the ship and bullets
     if (this.skin.duos && w.duo) {
       e.duo = w.duo;
