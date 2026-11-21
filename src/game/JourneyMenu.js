@@ -290,6 +290,7 @@ export class JourneyMenu {
     this.time += dt;
     this.modeTime += dt;
     this.updateCamera(dt);
+    this.cam.tick(dt);
     this.layoutLabels();
     if (!this.flight && this.mode === 'city') { const p = this.city(this.index); this.ship.setPosition(p.x, p.y); }
     this.clouds.forEach((c, i) => c.setPosition(((this.time * (2 + i) + i * 100) % 240) - 30, this.H * (0.35 + i * 0.25)));

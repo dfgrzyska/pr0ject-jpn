@@ -211,6 +211,7 @@ export class JapanMap {
 
   update(dt) {
     this.t += dt;
+    this.cam.tick(dt);
     if (this.finale) return this.finaleUpdate();
     this.placeCamera();
     this.placeLabels();

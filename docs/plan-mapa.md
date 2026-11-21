@@ -159,3 +159,10 @@ mapa ogólna (między etapami) zyskuje to samo, ale w swojej skali.
   kropki miasta, z dala od statku; każda pojawia się od zbliżenia, przy którym nie zasłania wcześniejszej (markZoom).
   Nazwy miast je omijają (MapCamera.markSpots w placeNames, w menu i między etapami). Test: w widoku każdego regionu
   widać miniatury jego miast, żadna nie leży na innej, na statku ani na innym mieście.
+- 2026-11-21: iteracja 6 (dodatek, poza prośbą), życie na mapie (src/game/mapLife.js, rysunki w
+  tools/art/maplife.mjs). Promy kursują po swoich liniach tam i z powrotem, z przerwą w porcie, za nimi kilwater;
+  Shinkanseny jeżdżą po swoich liniach, po dwa na linii, lewą stroną; trasy to dokładnie te narysowane na mapie
+  (map_paths.json, zapisywane razem z mapą). Popiół Sakurajimy i dym Naka-dake na Aso wznoszą się i dryfują na wschód
+  (z krateru miniatury, gdy ją widać), para unosi się nad Beppu (Kannawa, Myōban, miasto) i nad stawem Umi Jigoku;
+  po mapie przesuwają się miękkie cienie chmur. Rusza się tylko to, co pływa, jedzie lub leci; czas płynie w menu
+  i między etapami (MapCamera.tick).

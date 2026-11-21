@@ -11,10 +11,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { packAtlas, packAtlasTight } from './lib/spritekit.mjs';
 import { mapMarks } from './art/mapmarks.mjs';
+import { mapClouds, mapLife } from './art/maplife.mjs';
 import { Raster } from './lib/raster.mjs';
 import { buildSprites } from './art/sprites.mjs';
 import { buildFont, buildFont540, FONT } from './art/font.mjs';
-import { buildJapanMap, buildMapTile } from './art/japan.mjs';
+import { buildJapanMap, buildMapTile, mapPaths } from './art/japan.mjs';
 import { TILES } from '../src/data/japan.js';
 import { menuAtlas, menuWaves, menuWashi } from './art/menu.mjs';
 import { buildEnding, buildEndingClouds, buildEndingNight } from './art/ending.mjs';
@@ -170,6 +171,14 @@ for (const t of TILES) write(`${t.key}.png`, buildMapTile(t).toPNG());
   const { raster, json } = packAtlas(mapMarks(), 256, 2, 'map_marks.png');
   write('map_marks.png', raster.toPNG());
   write('map_marks.json', Buffer.from(JSON.stringify(json)));
+  // and what moves over it (tools/art/maplife.mjs), with the ways it moves along
+  const life = packAtlas(mapLife(), 256, 2, 'map_life.png');
+  write('map_life.png', life.raster.toPNG());
+  write('map_life.json', Buffer.from(JSON.stringify(life.json)));
+  const clouds = packAtlas(mapClouds(), 256, 2, 'map_clouds.png');
+  write('map_clouds.png', clouds.raster.toPNG());
+  write('map_clouds.json', Buffer.from(JSON.stringify(clouds.json)));
+  write('map_paths.json', Buffer.from(JSON.stringify(mapPaths())));
 }
 if (preview) writeFileSync(join(previewDir, 'japan_x3.png'), japan.scaled(3).toPNG());
 }

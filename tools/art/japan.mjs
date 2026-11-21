@@ -1231,3 +1231,16 @@ function paintMap({ S, box, whole, inset = false }) {
     }
   return out;
 }
+
+/**
+ * The ways along which the map's life moves (src/game/mapLife.js), exactly as they are drawn above: each ferry line's
+ * smooth curve and each Shinkansen line, in map units, with the live volcanoes' craters (the ones that smoke).
+ */
+export function mapPaths() {
+  const r2 = (v) => Math.round(v * 100) / 100;
+  const thin = (pts) => pts.filter((_, i) => i % 3 === 0 || i === pts.length - 1).map(([x, y]) => [r2(x), r2(y)]);
+  return {
+    ferries: FERRIES.map((q) => thin(smoothPath(q, 6))),
+    shinkansen: SHINKANSEN.map((line) => line.map(([lon, la]) => project(lon, la).map(r2))),
+  };
+}

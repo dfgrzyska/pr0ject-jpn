@@ -1,4 +1,5 @@
 import { RENDER_SCALE } from '../config.js';
+import { MapLife } from './mapLife.js';
 import { INSET, MAP, MARKS, MARK_BOX, TILES, inInset, markZoom, project } from '../data/japan.js';
 
 // The map of Japan seen through a camera (docs/plan-mapa.md): a view is the map point (cx, cy) put in the middle
@@ -63,6 +64,8 @@ export class MapCamera {
       inset: inInset(...m.at),
       img: scene.add.image(0, 0, 'map_marks', m.key).setOrigin(0.5, 44 / 48).setScale(1 / RENDER_SCALE).setDepth(depth + 0.02),
     }));
+    this.life = new MapLife(scene, depth);
+    this.time = 0;
     this.area = area;
     this.view = WHOLE;
     this.alpha = 1;
@@ -114,6 +117,7 @@ export class MapCamera {
     // the tiles come in as the camera closes in, each between its zooms
     const { x0, x1, y0, y1 } = this.area;
     const onInset = insetFocus(this.view, this.area);
+    this.onInset = onInset;
     for (const { t, img } of this.tiles) {
       const a = smooth(t.fade[0], t.fade[1], z) * this.alpha * (t.inset ? onInset : 1);
       const [tx, ty] = this.toScreen(t.box[0], t.box[1]);
@@ -134,6 +138,14 @@ export class MapCamera {
       k.img.setVisible(on);
       if (on) k.img.setPosition(snap(k.x), snap(k.y)).setAlpha(a);
     }
+    this.life.place(this);
+  }
+
+  /** Time passes on the map: its ferries, trains, smoke and clouds move on (s). */
+  tick(dt) {
+    this.time += dt;
+    this.life.place(this);
+    return this;
   }
 
   /** The landmarks showing, as obstacles for the names ({ x, y, r } on the screen: two circles each, over the frame). */
@@ -150,6 +162,7 @@ export class MapCamera {
     this.base.setDepth(d);
     this.tiles.forEach(({ img }, n) => img.setDepth(d + 0.01 + n * 0.001));
     for (const k of this.marks) k.img.setDepth(d + 0.02);
+    this.life.setDepth(d);
     return this;
   }
 
@@ -157,6 +170,7 @@ export class MapCamera {
     this.base.destroy();
     for (const { img } of this.tiles) img.destroy();
     for (const k of this.marks) k.img.destroy();
+    this.life.destroy();
   }
 }
 
