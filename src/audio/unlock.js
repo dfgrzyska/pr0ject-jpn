@@ -32,7 +32,8 @@ function silentWav() {
   return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
 }
 
-export function installAudioUnlock(ctx) {
+/** getCtx: the context sound plays on now (Music may replace it); wake: called after every gesture (Music.wake). */
+export function installAudioUnlock(getCtx, wake = () => {}) {
   let media = null;
 
   const onGesture = () => {
@@ -55,6 +56,7 @@ export function installAudioUnlock(ctx) {
       }
       if (media.paused) media.play().catch(() => {});
     }
+    const ctx = getCtx();
     if (ctx.state !== 'running') {
       // starting a 1-sample buffer inside the gesture is what wakes older WebKit
       const src = ctx.createBufferSource();
@@ -63,6 +65,7 @@ export function installAudioUnlock(ctx) {
       src.start(0);
       ctx.resume?.().catch(() => {});
     }
+    wake();
   };
 
   for (const ev of GESTURES) document.addEventListener(ev, onGesture, { capture: true, passive: true });

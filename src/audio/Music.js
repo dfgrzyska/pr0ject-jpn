@@ -22,26 +22,8 @@ function loadEnabled() {
 
 export class Music {
   constructor(ctx, destination, game) {
-    this.ctx = ctx;
     this.enabled = loadEnabled();
-    // master = the speaker toggle (music + effects); out = music only (ducked on pause)
-    this.master = ctx.createGain();
-    this.master.gain.value = this.enabled ? 1 : 0;
-    // safety limiter: music peaks + a big explosion must never clip
-    const limiter = ctx.createDynamicsCompressor();
-    limiter.threshold.value = -4;
-    limiter.knee.value = 2;
-    limiter.ratio.value = 16;
-    limiter.attack.value = 0.002;
-    limiter.release.value = 0.12;
-    this.master.connect(limiter).connect(destination);
-    this.out = ctx.createGain();
-    this.out.gain.value = VOLUME;
-    const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -16;
-    comp.ratio.value = 3;
-    this.out.connect(comp).connect(this.master);
-    this.synth = new Synth(ctx, this.out);
+    this.wire(ctx, destination);
     this.sfx = new Sfx(ctx, this.master);
     this.sfx.muted = !this.enabled;
     this.songs = Object.fromEntries(Object.entries(SONGS).map(([k, v]) => [k, parseSong(k, v)]));
@@ -54,12 +36,110 @@ export class Music {
     this.paused = false;
     this.duckK = 1; // the music held down for a quiet moment (the Peace Park)
     this.lastFrame = 0;
+    // (the sound's health, see watch)
+    this.clock = { t: -1, at: 0, stuck: false, failed: false, rebuilt: 0 };
     game?.events.on('postrender', () => {
       this.lastFrame = performance.now();
+      this.watch();
       this.tick();
     });
-    this.timer = setInterval(() => performance.now() - this.lastFrame > 60 && this.tick(), 25);
-    installAudioUnlock(ctx);
+    this.timer = setInterval(() => performance.now() - this.lastFrame > 60 && (this.watch(), this.tick()), 25);
+    // (put away and back here, not by Phaser: it would keep at a context this may have replaced)
+    if (game?.sound) game.sound.pauseOnBlur = false;
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) this.ctx.suspend?.().catch(() => {});
+      else {
+        this.clock.t = -1;
+        this.ctx.resume?.().catch(() => {});
+      }
+    });
+    installAudioUnlock(() => this.ctx, () => this.wake());
+  }
+
+  /** The nodes everything plays through, on ctx: the speaker switch, the limiter, the music's own volume. */
+  wire(ctx, destination) {
+    this.ctx = ctx;
+    // master = the speaker toggle (music + effects); out = music only (ducked on pause)
+    this.master = ctx.createGain();
+    this.master.gain.value = this.enabled ? 1 : 0;
+    // safety limiter: music peaks + a big explosion must never clip
+    const limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -4;
+    limiter.knee.value = 2;
+    limiter.ratio.value = 16;
+    limiter.attack.value = 0.002;
+    limiter.release.value = 0.12;
+    this.master.connect(limiter).connect(destination);
+    this.out = ctx.createGain();
+    this.out.gain.value = this.paused ? 0 : VOLUME * (this.duckK ?? 1);
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -16;
+    comp.ratio.value = 3;
+    this.out.connect(comp).connect(this.master);
+    this.synth = new Synth(ctx, this.out);
+  }
+
+  /**
+   * Is the sound alive? Back from the background (an app switch, the phone locked) iOS may leave the context
+   * interrupted for good, or running with its clock stopped: nothing plays and nothing says so. A clock that
+   * stands still for a second while the page shows counts as stuck; the next touch (wake) builds the sound anew.
+   */
+  watch() {
+    const c = this.clock;
+    if (document.hidden || this.ctx.state !== 'running') {
+      c.t = -1;
+      return;
+    }
+    const now = performance.now();
+    const t = this.ctx.currentTime;
+    if (t !== c.t) {
+      c.t = t;
+      c.at = now;
+      c.stuck = false;
+    } else if (now - c.at > 1000) c.stuck = true;
+  }
+
+  /** A touch, a click, a key (unlock.js, after its own attempt to start the context): mend the sound if it is broken. */
+  wake() {
+    const c = this.clock;
+    if (document.hidden) return;
+    if (this.ctx.state === 'running' && !c.stuck) {
+      c.failed = false;
+      return;
+    }
+    // (a context that wouldn't start on the touch before this one, or a stopped clock: a new one, in this touch)
+    if (c.stuck || c.failed) {
+      if (performance.now() - c.rebuilt > 2000) this.rebuild();
+      return;
+    }
+    const ctx = this.ctx;
+    setTimeout(() => {
+      if (ctx === this.ctx && ctx.state !== 'running' && !document.hidden) c.failed = true;
+    }, 600);
+  }
+
+  /** A new context in place of the broken one, the music carrying on in it where it was. */
+  rebuild() {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    let ctx;
+    try {
+      ctx = new Ctx();
+    } catch {
+      return;
+    }
+    const old = this.ctx;
+    this.wire(ctx, ctx.destination);
+    this.sfx.attach(ctx, this.master);
+    // (started inside the touch: a one-sample sound is what wakes older WebKit)
+    const src = ctx.createBufferSource();
+    src.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+    src.connect(ctx.destination);
+    src.start(0);
+    ctx.resume?.().catch(() => {});
+    old.close?.().catch(() => {});
+    this.next = ctx.currentTime + 0.05;
+    Object.assign(this.clock, { t: -1, stuck: false, failed: false, rebuilt: performance.now() });
   }
 
   /** Switch song on the next bar line (or right away with now / when nothing plays). */

@@ -12,13 +12,19 @@ const VOICED = { basic: [1250, 520, 0.045, 0.055], spread: [760, 300, 0.04, 0.06
 
 export class Sfx {
   constructor(ctx, destination) {
+    this.attach(ctx, destination);
+    this.muted = false; // the speaker switched off: no sound is built at all (Music.toggle sets it)
+  }
+
+  /** Play on ctx into destination from now on (a new context, after iOS broke the last one: Music.rebuild). */
+  attach(ctx, destination) {
     this.ctx = ctx;
     this.out = ctx.createGain();
     this.out.gain.value = VOLUME;
     this.out.connect(destination);
     this.s = new Synth(ctx, this.out);
     this.last = {};
-    this.muted = false; // the speaker switched off: no sound is built at all (Music.toggle sets it)
+    this.rainBed = null;
   }
 
   now() {
