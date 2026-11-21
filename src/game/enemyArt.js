@@ -7,6 +7,7 @@ import { RENDER_SCALE } from '../config.js';
 
 const where = new Map(); // frame name -> texture key of the city atlas that has it
 const hi = new Set(); // frames sprites540 has: the shared sprites (effects, bullets, the ship...) at 540 px
+const lo = new Set(); // frames the old sprites atlas has
 const custom = new Map(); // frame name -> a texture made in the game that stands in for it (the painted ship)
 
 /** Show `frame` from the texture `key` from now on (null: from its atlas again). */
@@ -17,15 +18,30 @@ export function setCustomFrame(frame, key) {
 
 /** sprites540 is in: its frames are taken from there (docs/graphics-540-plan.md, step 6). */
 export function registerSharedHi(textures) {
+  if (textures.exists('sprites')) for (const name of textures.get('sprites').getFrameNames()) lo.add(name);
   if (!textures.exists('sprites540')) return;
   for (const name of textures.get('sprites540').getFrameNames()) hi.add(name);
   // the skins for the player's shots and the hitbox's markers are in the gachapon's atlas (tools/art)
   if (textures.exists('gacha')) for (const name of textures.get('gacha').getFrameNames()) if (name.startsWith('ps_') || name.startsWith('hitbox_') || name.startsWith('lifeicon_') || name.startsWith('pal_') || name.startsWith('seal_') || name.startsWith('pod_')) custom.set(name, 'gacha');
 }
 
-/** The texture a shared frame comes from: sprites540 when it has it, else the old sprites atlas. */
+/**
+ * The texture a shared frame comes from: sprites540 when it has it, else the old sprites atlas; a frame only a
+ * city's atlas has (Okinawa's squid on their rope, shown as an effect) from that atlas. Never the old atlas for a
+ * frame it doesn't have: Phaser would show its first frame instead (Nagasaki's Dutch ship).
+ */
 export function spriteTexture(frame) {
-  return custom.get(frame) ?? (hi.has(frame) ? 'sprites540' : 'sprites');
+  return custom.get(frame) ?? (hi.has(frame) ? 'sprites540' : lo.has(frame) || !where.has(frame) ? 'sprites' : where.get(frame));
+}
+
+/**
+ * A missing frame shows nothing instead of the atlas's first frame (Phaser's fallback: for the old atlas,
+ * Nagasaki's Dutch ship, which turned up over the menu and among Okinawa's enemies).
+ */
+export function blankFallback(texture) {
+  if (!texture || texture.has('__blank')) return;
+  texture.add('__blank', 0, 0, 0, 0, 0);
+  texture.firstFrame = '__blank';
 }
 
 /**
@@ -33,8 +49,8 @@ export function spriteTexture(frame) {
  * setScale is in the old art's terms (the third of the 540 px art is applied under it) and setFrame takes a frame
  * from whichever atlas has it. Returns the object.
  */
-export function sharedArt(obj) {
-  if (obj.sharedArt) return obj;
+export function sharedArt(obj, frame = obj.frame.name) {
+  if (obj.sharedArt) return obj.setFrame(frame);
   obj.sharedArt = true;
   const rawScale = obj.setScale;
   const rawFrame = obj.setFrame;
@@ -54,7 +70,7 @@ export function sharedArt(obj) {
     apply();
     return this;
   };
-  return obj.setFrame(obj.frame.name);
+  return obj.setFrame(frame);
 }
 
 /** The texture for an animation of shared frames: sprites540 only when it has every one of them. */

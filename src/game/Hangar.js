@@ -83,7 +83,7 @@ export class Hangar {
       this.items.push(o);
       return o.setDepth(depth);
     };
-    const shared = (frame, depth) => add(sharedArt(scene.add.image(0, 0, 'sprites', 'dot_2')).setFrame(frame), depth).setVisible(false);
+    const shared = (frame, depth) => add(sharedArt(scene.add.image(0, 0, 'sprites'), 'dot_2').setFrame(frame), depth).setVisible(false);
     this.bg = add(scene.add.rectangle(0, 0, W, VIEW.maxHeight, 0x0a1024).setOrigin(0), d - 0.5);
     this.cloth = add(scene.add.tileSprite(0, 0, W, VIEW.maxHeight, 'menu_waves').setTileScale(FINE, FINE).setOrigin(0).setAlpha(0.18), d - 0.4);
     this.gfx = add(scene.add.graphics(), d);
@@ -93,8 +93,8 @@ export class Hangar {
     this.owned = add(pixelText(scene, 176, 12, '', 1).setOrigin(1, 0.5).setTint(0x9aaec2), d + 1).setVisible(false);
     this.cardBtn = add(pixelText(scene, 154, 12, 'KARTA').setTint(0xffe080), d + 1); // the pilot's card (see PilotCard)
     // the ship, its engine burning, its companion; a dragon's body under its head (ship.anim.segs)
-    this.art = add(sharedArt(scene.add.image(36, 0, 'sprites', 'ship')).setScale(2), d + 1);
-    this.flame = add(sharedArt(scene.add.sprite(36, 0, 'sprites', 'flame_0')).setOrigin(0.5, 0).setScale(2).play('flame'), d + 0.9);
+    this.art = add(sharedArt(scene.add.image(36, 0, 'sprites'), 'ship').setScale(2), d + 1);
+    this.flame = add(sharedArt(scene.add.sprite(36, 0, 'sprites'), 'flame_0').setOrigin(0.5, 0).setScale(2).play('flame'), d + 0.9);
     this.palArt = add(scene.add.image(54, 0, 'gacha', 'part_companion').setScale(FINE), d + 1.05).setVisible(false);
     this.segArt = [0, 1, 2, 3, 4].map(() => shared('ship', d + 0.95));
     // its numbers (the PARTS tab)
@@ -108,7 +108,7 @@ export class Hangar {
     this.marker = shared('hitbox', d + 1.1);
     this.pods = [0, 1].map(() => shared('turret_wing', d + 1.12)); // the turrets on the wing tips, while their look is picked
     this.aura = [0, 1, 2, 3, 4, 5].map(() => shared('dot_2', d + 1.04));
-    this.boom = add(sharedArt(scene.add.sprite(0, 0, 'sprites', 'expl_m_0')), d + 1.06).setVisible(false);
+    this.boom = add(sharedArt(scene.add.sprite(0, 0, 'sprites'), 'expl_m_0'), d + 1.06).setVisible(false);
     this.bits = Array.from({ length: 72 }, () => ({ img: shared('dot_2', d + 1.03), life: 0 }));
     this.rings = [];
     this.hudScore = add(pixelText(scene, 138, 34, '00128400').setVisible(false), d + 1);
@@ -117,7 +117,7 @@ export class Hangar {
     this.tabs = TABS.map((t) => add(pixelText(scene, t.x, TAB_Y, t.name), d + 1));
     // the slots: a picture each (the kind's, or what is fitted; the hull itself)
     this.slotArt = Array.from({ length: PER_ROW * 2 }, () => add(scene.add.image(0, 0, 'gacha', 'part_gun').setScale(FINE), d + 1));
-    this.slotShip = add(sharedArt(scene.add.image(0, 0, 'sprites', 'ship')), d + 1.1);
+    this.slotShip = add(sharedArt(scene.add.image(0, 0, 'sprites'), 'ship'), d + 1.1);
     // the picked slot's name and how much of it is the player's; then the grid's pictures, or the list's rows
     this.head = add(pixelText(scene, 8, 0, '', 0).setOrigin(0, 0.5).setTint(0xffe080), d + 1);
     this.count = add(pixelText(scene, SORT_X - 5, 0, '', 1).setOrigin(1, 0.5).setTint(0x9aaec2), d + 1);

@@ -376,7 +376,7 @@ export class Fx {
     const H = s.H;
     const W = VIEW.width;
     const d = DEPTH.fx - 0.05;
-    const img = (frame, scale = 1) => sharedArt(s.add.image(-99, -99, 'sprites', 'dot_2')).setFrame(frame).setScale(scale).setDepth(d);
+    const img = (frame, scale = 1) => sharedArt(s.add.image(-99, -99, 'sprites'), 'dot_2').setFrame(frame).setScale(scale).setDepth(d);
     const fade = (t, dur, tail = 0.25) => Math.min(1, t / 0.12, (dur - t) / tail);
     let sc;
     if (kind === 'dragon') {

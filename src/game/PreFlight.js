@@ -25,12 +25,12 @@ export class PreFlight {
     this.box = scene.add.graphics().setDepth(d);
     this.back = pixelText(scene, 27, 12, '< WRÓĆ').setDepth(d);
     this.title = pixelText(scene, W / 2, 0, 'TWÓJ STATEK').setDepth(d).setTint(0xffd6e5);
-    this.art = sharedArt(scene.add.image(SHIP_X, 0, 'sprites', ship.frame)).setScale(2).setDepth(d + 1);
-    this.flame = sharedArt(scene.add.sprite(SHIP_X, 0, 'sprites', 'flame_0')).setOrigin(0.5, 0).setScale(2).setDepth(d).play('flame');
+    this.art = sharedArt(scene.add.image(SHIP_X, 0, 'sprites'), ship.frame).setScale(2).setDepth(d + 1);
+    this.flame = sharedArt(scene.add.sprite(SHIP_X, 0, 'sprites'), 'flame_0').setOrigin(0.5, 0).setScale(2).setDepth(d).play('flame');
     this.name = pixelText(scene, SHIP_X, 0, ship.name).setDepth(d).setTint(ship.color);
     this.labels = ['PRĘDKOŚĆ', 'SIŁA OGNIA', 'ŻYCIA'].map((l) => pixelText(scene, 68, 0, l, 0).setDepth(d).setTint(0xb0aec0));
-    this.pips = ship.stats.map((v) => [0, 1, 2].map((k) => sharedArt(scene.add.image(0, 0, 'sprites', k < v ? 'pip_on' : 'pip_off')).setScale(2).setDepth(d)));
-    this.lifeIcons = [0, 1, 2, 3, 4].map(() => sharedArt(scene.add.image(0, 0, 'sprites', ship.life)).setDepth(d));
+    this.pips = ship.stats.map((v) => [0, 1, 2].map((k) => sharedArt(scene.add.image(0, 0, 'sprites'), k < v ? 'pip_on' : 'pip_off').setScale(2).setDepth(d)));
+    this.lifeIcons = [0, 1, 2, 3, 4].map(() => sharedArt(scene.add.image(0, 0, 'sprites'), ship.life).setDepth(d));
     // the parts at work, each in its rarity's colour (the starter ones plain)
     const fitted = parts(loadout);
     const shown = fitted.slice(0, fitted.length > PARTS_SHOWN ? PARTS_SHOWN - 1 : PARTS_SHOWN);

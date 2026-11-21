@@ -56,7 +56,7 @@ export class FoodTrail {
     this.scene = scene;
     this.stops = FOODS.filter((f) => f.stage === scene.stage.id).map((entry) => ({
       entry, state: 'waiting', age: 0,
-      sprite: sharedArt(scene.add.image(0, 0, 'sprites', entry.frame)).setDepth(DEPTH.pickup).setVisible(false),
+      sprite: sharedArt(scene.add.image(0, 0, 'sprites'), entry.frame).setDepth(DEPTH.pickup).setVisible(false),
     }));
     this.halo = scene.add.graphics().setDepth(DEPTH.pickup - 0.01);
   }

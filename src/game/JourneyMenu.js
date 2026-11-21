@@ -53,13 +53,13 @@ export class JourneyMenu {
     this.gfx = add(scene.add.graphics(), DEPTH.overlay + 1.5);
     this.shade = add(scene.add.graphics(), DEPTH.overlay + 0.5); // (the night over the map behind the heading and the name)
     this.labels = STAGES.map((s) => add(pixelText(scene, 0, 0, s.name)));
-    this.ship = add(sharedArt(scene.add.image(0, 0, 'sprites', scene.ship.frame)), DEPTH.overlay + 2);
+    this.ship = add(sharedArt(scene.add.image(0, 0, 'sprites'), scene.ship.frame), DEPTH.overlay + 2);
     // (over the title it flies as it is fitted: its engine burning, its companion after it, a dragon's body behind its head)
     const body = scene.ship.anim?.segs;
-    this.flame = add(sharedArt(scene.add.sprite(0, 0, 'sprites', 'flame_0')).setOrigin(0.5, 0).play('flame'), DEPTH.overlay + 0.45);
+    this.flame = add(sharedArt(scene.add.sprite(0, 0, 'sprites'), 'flame_0').setOrigin(0.5, 0).play('flame'), DEPTH.overlay + 0.45);
     this.flameLong = flameLook(this.flame, scene.ship);
     this.pal = scene.ship.look?.pal ? add(scene.add.image(0, 0, 'gacha', scene.ship.look.pal).setScale(FINE), DEPTH.overlay + 0.5) : null;
-    this.segs = Array.from({ length: body?.n ?? 0 }, (_, i) => add(sharedArt(scene.add.image(0, 0, 'sprites', scene.ship.frame)).setFrame(`${scene.ship.frame}_${i === body.n - 1 ? 'tail' : 'seg'}`).setScale(1 - i * 0.045), DEPTH.overlay + 0.48 - i * 0.001));
+    this.segs = Array.from({ length: body?.n ?? 0 }, (_, i) => add(sharedArt(scene.add.image(0, 0, 'sprites'), scene.ship.frame).setFrame(`${scene.ship.frame}_${i === body.n - 1 ? 'tail' : 'seg'}`).setScale(1 - i * 0.045), DEPTH.overlay + 0.48 - i * 0.001));
     this.logo = add(scene.add.image(90, 0, 'menu', 'logo').setScale(FINE));
     this.tagline = add(pixelText(scene, 90, 0, 'LEĆ PRZEZ JAPONIĘ').setTint(0xffdba8));
     const caption = `${CITIES[STAGES.length] ?? STAGES.length} MIAST. JEDNA PODRÓŻ.`;

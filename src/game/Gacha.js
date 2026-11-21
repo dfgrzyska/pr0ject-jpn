@@ -403,7 +403,7 @@ export class Gacha {
     const it = this.item;
     const d = DEPTH.overlay + 9.2;
     this.prize?.destroy();
-    this.prize = it.kind === 'hull' ? sharedArt(this.scene.add.image(0, 0, 'sprites', it.ship.frame)) : this.scene.add.image(0, 0, 'gacha', it.pic ? it.pic : it.skin ? `${SHOT_FRAMES[it.kind].at(-1)}_${it.skin}` : `part_${it.kind}`);
+    this.prize = it.kind === 'hull' ? sharedArt(this.scene.add.image(0, 0, 'sprites'), it.ship.frame) : this.scene.add.image(0, 0, 'gacha', it.pic ? it.pic : it.skin ? `${SHOT_FRAMES[it.kind].at(-1)}_${it.skin}` : `part_${it.kind}`);
     this.prize.setDepth(d);
     this.prizeScale = it.kind === 'hull' ? 3 : it.pic ? FINE * (it.kind === 'marker' ? 6 : it.kind === 'life_icon' ? 5 : it.kind === 'decal' ? 8 : it.kind === 'seal' ? 3 : 4) : it.skin ? FINE * (it.kind === 'shot_laser' ? 3 : 6) : FINE * 2;
     const col = RARITY[it.rarity].color;

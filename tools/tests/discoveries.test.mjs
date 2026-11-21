@@ -49,7 +49,7 @@ function scene(stage = 'stage1', H = 320) {
   const s = { items: [], H, state: 'play', stage: stages.find((s) => s.id === stage), paused: false, top: 420, score: { mult: 1, score: 0, add(n) { this.score += n; } }, player: { alive: true, x: 90, y: 280 }, sfx: { pickup() {}, tick() {} }, fx: { text() {} }, hud: { cardT: 0, sealT: 0, bannerT: 0 }, closeBook() { this.closed = true; } };
   s.parallax = { screenY: (u) => s.top - u };
   s.add = {
-    image: (x, y, texture, frame) => new Item(s, 'image', x, y, frame).setFrame(frame),
+    image: (x, y, texture, frame) => (frame === undefined ? new Item(s, 'image', x, y) : new Item(s, 'image', x, y, frame).setFrame(frame)), // (no frame: the atlas's blank)
     graphics: () => new Item(s, 'graphics'),
     tileSprite: (x, y, w, h) => Object.assign(new Item(s, 'rect', x, y), { w, h, color: 0xe8dcc0 }),
     rectangle: (x, y, w, h, color) => Object.assign(new Item(s, 'rect', x, y), { w, h, color }),

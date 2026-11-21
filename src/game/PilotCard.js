@@ -44,9 +44,9 @@ export class PilotCard {
     const body = ship.anim?.segs;
     this.k = body ? 2 : 3;
     this.shipY = body ? top + 48 : top + 70;
-    this.art = add(sharedArt(scene.add.image(W / 2, this.shipY, 'sprites', 'ship')).setFrame(ship.frame).setScale(this.k), d + 1.1);
-    this.segs = Array.from({ length: body?.n ?? 0 }, (_, i) => add(sharedArt(scene.add.image(W / 2, 0, 'sprites', 'ship')).setFrame(`${ship.frame}_${i === body.n - 1 ? 'tail' : 'seg'}`).setScale(this.k * (1 - i * 0.045)), d + 1.05 - i * 0.001));
-    this.flame = add(sharedArt(scene.add.sprite(W / 2, 0, 'sprites', 'flame_0')).setOrigin(0.5, 0).setScale(this.k).play('flame'), d + 1);
+    this.art = add(sharedArt(scene.add.image(W / 2, this.shipY, 'sprites'), 'ship').setFrame(ship.frame).setScale(this.k), d + 1.1);
+    this.segs = Array.from({ length: body?.n ?? 0 }, (_, i) => add(sharedArt(scene.add.image(W / 2, 0, 'sprites'), 'ship').setFrame(`${ship.frame}_${i === body.n - 1 ? 'tail' : 'seg'}`).setScale(this.k * (1 - i * 0.045)), d + 1.05 - i * 0.001));
+    this.flame = add(sharedArt(scene.add.sprite(W / 2, 0, 'sprites'), 'flame_0').setOrigin(0.5, 0).setScale(this.k).play('flame'), d + 1);
     this.flameLong = flameLook(this.flame, ship);
     if (ship.anim?.segs) this.flame.setVisible(false);
     if (ship.look?.pal) this.pal = add(scene.add.image(W / 2 + 46, 0, 'gacha', ship.look.pal).setScale(FINE * 2), d + 1.1);

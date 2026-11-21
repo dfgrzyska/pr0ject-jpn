@@ -5,7 +5,7 @@ import { ALL_STAGES as STAGES } from '../data/stages.js';
 import { ENCOUNTERS } from '../data/encounters.js';
 import { TILES } from '../data/japan.js';
 import { setFontScale } from '../game/fontScale.js';
-import { CITY_ANIMS, registerEnemyAtlas, registerSharedHi, spriteAnimTexture, unregisterEnemyAtlas } from '../game/enemyArt.js';
+import { blankFallback, CITY_ANIMS, registerEnemyAtlas, registerSharedHi, spriteAnimTexture, unregisterEnemyAtlas } from '../game/enemyArt.js';
 
 /** Whether a city's enemies are drawn at 540 px, in an atlas of their own (bg/<id>/enemies.png). */
 const enemyArt = (id) => [...STAGES, ...ENCOUNTERS].some((st) => st.id === id && st.enemyArt);
@@ -104,13 +104,16 @@ export class Boot extends Phaser.Scene {
     this.legacyAnims = {};
     this.cityAnims = {}; // key -> the city atlas it plays from now
     registerSharedHi(this.textures);
+    for (const key of ['sprites', 'sprites540', 'gacha', 'portraits', 'menu']) if (this.textures.exists(key)) blankFallback(this.textures.get(key));
     const anim = (key, frames, frameRate, repeat = -1) => {
       this.legacyAnims[key] = [frames, frameRate, repeat];
       const tex = spriteAnimTexture(frames);
       this.anims.create({ key, frames: frames.map((frame) => ({ key: tex, frame })), frameRate, repeat });
     };
     this.textures.on('addtexture', (key) => {
-      if (key.startsWith('enemies_')) this.cityArtIn(key);
+      if (!key.startsWith('enemies_')) return;
+      this.cityArtIn(key);
+      blankFallback(this.textures.get(key)); // (after its frames are listed: the blank isn't one of them)
     });
     anim('flame', ['flame_0', 'flame_1', 'flame_2', 'flame_1'], 20);
     anim('flamew', ['flamew_0', 'flamew_1', 'flamew_2', 'flamew_1'], 20); // (white: tinted, see shipSkin.js)

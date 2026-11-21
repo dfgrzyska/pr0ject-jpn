@@ -14,12 +14,12 @@ export class Player {
   constructor(scene) {
     this.scene = scene;
     this.sprite = scene.add.sprite(0, 0, 'sprites', 'ship').setDepth(DEPTH.player);
-    this.flame = sharedArt(scene.add.sprite(0, 0, 'sprites', 'flame_0')).setOrigin(0.5, 0).setDepth(DEPTH.player - 0.1).play('flame');
-    this.dot = sharedArt(scene.add.image(0, 0, 'sprites', 'hitbox')).setDepth(DEPTH.player + 0.1);
-    this.pal = sharedArt(scene.add.image(0, 0, 'sprites', 'hitbox')).setDepth(DEPTH.player - 0.2).setVisible(false); // a companion out of the gachapon
-    this.aura = Array.from({ length: 6 }, () => sharedArt(scene.add.image(0, 0, 'sprites', 'dot_2')).setDepth(DEPTH.player + 0.04).setVisible(false)); // an aura out of the gachapon
+    this.flame = sharedArt(scene.add.sprite(0, 0, 'sprites'), 'flame_0').setOrigin(0.5, 0).setDepth(DEPTH.player - 0.1).play('flame');
+    this.dot = sharedArt(scene.add.image(0, 0, 'sprites'), 'hitbox').setDepth(DEPTH.player + 0.1);
+    this.pal = sharedArt(scene.add.image(0, 0, 'sprites'), 'hitbox').setDepth(DEPTH.player - 0.2).setVisible(false); // a companion out of the gachapon
+    this.aura = Array.from({ length: 6 }, () => sharedArt(scene.add.image(0, 0, 'sprites'), 'dot_2').setDepth(DEPTH.player + 0.04).setVisible(false)); // an aura out of the gachapon
     this.segs = []; // a dragon's body (ship.anim.segs): made when such a hull is fitted
-    this.muzzle = sharedArt(scene.add.image(0, 0, 'sprites', 'muzzle_0')).setDepth(DEPTH.player + 0.05).setVisible(false); // flash at the nose
+    this.muzzle = sharedArt(scene.add.image(0, 0, 'sprites'), 'muzzle_0').setDepth(DEPTH.player + 0.05).setVisible(false); // flash at the nose
     this.noseGlow = scene.add.image(0, 0, 'sprites', 'glow').setDepth(DEPTH.player - 0.05).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.bank = 0;
     this.thrust = 0;
@@ -27,11 +27,11 @@ export class Player {
     this.trailT = 0;
     this.shots = new Pool(scene, DEPTH.playerShot);
     // Setsubun: two beans circling the ship while it has beans to throw (blinking as they run out)
-    this.beanOrbit = [0, 1].map(() => sharedArt(scene.add.image(0, 0, 'sprites', 'ps_bean')).setDepth(DEPTH.player + 0.02).setVisible(false));
+    this.beanOrbit = [0, 1].map(() => sharedArt(scene.add.image(0, 0, 'sprites'), 'ps_bean').setDepth(DEPTH.player + 0.02).setVisible(false));
     // Sapporo: Yuki-onna's frost, the block of ice the ship is caught in when it freezes over
-    this.iceBlock = sharedArt(scene.add.image(0, 0, 'sprites', 'ice_block')).setDepth(DEPTH.player + 0.08).setVisible(false);
+    this.iceBlock = sharedArt(scene.add.image(0, 0, 'sprites'), 'ice_block').setDepth(DEPTH.player + 0.08).setVisible(false);
     // Tsuru: paper talismans circling the ship (OFUDA)
-    this.ofuda = Array.from({ length: OFUDA.max }, () => ({ on: false, t: 0, s: sharedArt(scene.add.image(0, 0, 'sprites', 'orizuru_0')).setScale(0.5).setTint(0xfff4e0).setDepth(DEPTH.player + 0.03).setVisible(false) }));
+    this.ofuda = Array.from({ length: OFUDA.max }, () => ({ on: false, t: 0, s: sharedArt(scene.add.image(0, 0, 'sprites'), 'orizuru_0').setScale(0.5).setTint(0xfff4e0).setDepth(DEPTH.player + 0.03).setVisible(false) }));
     this.ofudaCharge = 0; // grazes towards the next talisman
     this.momentum = 0; // Tsubame: 0..1, faster fire (MOMENTUM)
     this.rage = 0; // Oni: extra damage, higher up the screen
@@ -41,7 +41,7 @@ export class Player {
     this.turrets = 0;
     this.turretTimer = 0;
     this.shieldT = 0; // s left in which the bubble swallows what touches it, after it took a hit
-    this.turretArt = [0, 1].map(() => sharedArt(scene.add.image(0, 0, 'sprites', 'turret_wing')).setDepth(DEPTH.player + 0.01).setVisible(false));
+    this.turretArt = [0, 1].map(() => sharedArt(scene.add.image(0, 0, 'sprites'), 'turret_wing').setDepth(DEPTH.player + 0.01).setVisible(false));
     this.bubble = scene.add.graphics().setDepth(DEPTH.player - 0.2);
 
     this.setShip(scene.ship);
@@ -78,7 +78,7 @@ export class Player {
     // (a dragon's body: its segments, the tail last, each a little smaller than the one before)
     for (const g of this.segs) g.img.destroy();
     const body = ship.anim?.segs;
-    this.segs = Array.from({ length: body?.n ?? 0 }, (_, i) => ({ x: 0, y: 0, img: sharedArt(this.scene.add.image(0, 0, 'sprites', i === body.n - 1 ? `${ship.frame}_tail` : `${ship.frame}_seg`)).setScale(1 - i * 0.045).setDepth(DEPTH.player - 0.15 - i * 0.001).setVisible(false) }));
+    this.segs = Array.from({ length: body?.n ?? 0 }, (_, i) => ({ x: 0, y: 0, img: sharedArt(this.scene.add.image(0, 0, 'sprites'), i === body.n - 1 ? `${ship.frame}_tail` : `${ship.frame}_seg`).setScale(1 - i * 0.045).setDepth(DEPTH.player - 0.15 - i * 0.001).setVisible(false) }));
     this.segsAt = null;
     this.lives = this.fullLives();
     this.shipFrame(ship.frame);
