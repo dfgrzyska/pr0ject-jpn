@@ -25,11 +25,15 @@ export const REGIONS = [
 /** The region a stage's city is in. */
 export const regionOf = (id) => REGIONS.find((r) => r.stages.includes(id));
 
-// The map drawn again, finer, where the cities are (tools/art/japan.mjs): shown over the whole map when the camera
-// is close. box in map units, S fine pixels to a unit (the whole map has 3).
+// The map drawn again, finer (tools/art/japan.mjs), laid over the whole map as the camera closes in: box in map units,
+// S fine pixels to a unit (the whole map has 3), fade the zooms between which it comes in. japan_mid is all of Japan
+// without the whole map's ornaments (the junks, the clouds, the compass, Fuji's picture, Okinawa's frame), for the
+// zooms where the whole map would be blurred and for Hokkaidō; the west and the centre are one to one with the
+// screen in their regions' views (z 6: 18 fine pixels to a unit). The inset is Okinawa's chart in its frame, on
+// its own: close up it shows only when the camera is on it (MapCamera), not when Kantō's view brushes its corner.
 export const TILES = [
-  { key: 'japan_west', box: [0, 204, 70, 290], S: 13 },
-  { key: 'japan_centre', box: [50, 186, 132, 248], S: 15 },
-  { key: 'japan_north', box: [104, 86, 178, 152], S: 7 },
-  { key: 'japan_okinawa', box: [114, 222, 180, 278], S: 8 },
+  { key: 'japan_mid', box: [0, 34, 180, 352], S: 8, fade: [1.25, 1.8] },
+  { key: 'japan_west', box: [2, 185, 68, 293], S: 18, fade: [3.2, 4.4] },
+  { key: 'japan_centre', box: [50, 175, 135, 262], S: 18, fade: [3.2, 4.4] },
+  { key: 'japan_inset', box: [INSET.x - 2, INSET.y - 2, INSET.x + INSET.w + 2, INSET.y + INSET.h + 2], S: 10, fade: [1.25, 1.8], inset: true },
 ];

@@ -2,7 +2,7 @@
 // relief (lit from the north-west: plains, forest, bare rock and snow), rivers and Lake Biwa; Okinawa in an inset; a night-
 // blue sea with its shallows, wave-scales, the Kuroshio, junks and a whale, bands of cloud, a compass rose; Mt Fuji.
 // Coastlines are simplified polygons in lon/lat, projected with src/data/japan.js (the game's logical units x 3).
-import { Raster, fbm, mix, rng, scaleColor } from '../lib/raster.mjs';
+import { Raster, fbm, mix, noise2, rng, scaleColor } from '../lib/raster.mjs';
 import { hashPx } from './hires.mjs';
 import { MAP, INSET, project } from '../../src/data/japan.js';
 
@@ -127,22 +127,134 @@ const RIVERS = [
   [[135.68, 34.92], [135.68, 35.03], [135.6, 35.15]], // Katsura, through Kyoto's west
   [[130.6, 32.7], [130.75, 32.8], [130.95, 32.85]], // Shira, by Kumamoto
 ];
-// the ranges: lon, lat, half length and width in the game's units, how high
+// ---- the relief (docs/plan-mapa.md, iteration 1)
+// the ranges, each a ridge from end to end: lon/lat of its ends, half its width in km, how high (1 = 3000 m). Close up
+// the ridges run along each range's own axis, finer ones branching off them.
 const RANGES = [
-  [137.6, 36.2, 8, 14, 1.0], // the Japan Alps
-  [138.2, 36.0, 6, 10, 0.7],
-  [140.7, 39.6, 3.5, 26, 0.56], // the Ōu spine
-  [139.7, 37.5, 5, 9, 0.62],
-  [142.85, 43.5, 8, 8, 0.8], // Daisetsu
-  [142.85, 42.6, 3, 9, 0.72], // Hidaka
-  [144.4, 43.8, 7, 3, 0.45], // Shiretoko
-  [141.2, 42.85, 4, 4, 0.5],
-  [135.85, 34.0, 6, 5, 0.6], // Kii
-  [133.5, 33.75, 11, 3, 0.62], // Shikoku's spine
-  [133.2, 35.15, 14, 3, 0.42], // Chūgoku
-  [131.15, 32.75, 4, 9, 0.6], // Kyūshū, Aso
-  [130.75, 31.75, 2.5, 3, 0.4],
-  [139.0, 36.75, 5, 5, 0.6],
+  [[137.62, 36.95], [137.62, 36.05], 14, 1.0], // Hida, the Northern Alps
+  [[137.84, 35.95], [137.78, 35.45], 9, 0.86], // Kiso, the Central Alps
+  [[138.26, 35.85], [138.04, 35.12], 13, 0.95], // Akaishi, the Southern Alps
+  [[137.0, 36.0], [137.45, 35.6], 16, 0.52], // the Hida highlands, to Ontake
+  [[138.55, 36.95], [139.35, 36.75], 18, 0.62], // Echigo and Mikuni
+  [[138.55, 35.97], [139.15, 35.85], 14, 0.62], // Okuchichibu
+  [[139.05, 35.5], [139.25, 35.45], 7, 0.45], // Tanzawa
+  [[136.6, 36.5], [136.8, 35.85], 12, 0.58], // Ryōhaku, Hakusan
+  [[136.0, 35.75], [136.6, 35.5], 14, 0.38], // Echizen and Ibuki
+  [[136.45, 35.2], [136.38, 34.8], 7, 0.34], // Suzuka
+  [[135.88, 35.3], [135.82, 35.05], 5, 0.3], // Hira and Hiei, west of Biwa
+  [[135.3, 35.35], [135.75, 35.2], 14, 0.28], // Tanba
+  [[135.9, 34.42], [135.85, 33.9], 12, 0.6], // Ōmine
+  [[135.5, 34.15], [136.2, 34.0], 22, 0.42], // the Kii mountains
+  [[135.65, 34.75], [135.7, 34.45], 4, 0.22], // Ikoma and Kongō, between Osaka and Nara
+  [[135.15, 34.77], [135.35, 34.8], 3, 0.3], // Rokkō, over Kōbe
+  [[131.8, 34.45], [134.5, 35.25], 16, 0.38], // the Chūgoku mountains
+  [[132.3, 34.65], [133.3, 34.7], 12, 0.24], // the Kibi plateau
+  [[132.6, 33.65], [134.2, 33.85], 12, 0.6], // Ishizuchi and Tsurugi, Shikoku's spine
+  [[132.6, 33.3], [133.4, 33.2], 14, 0.34], // Shikoku's south
+  [[131.1, 32.95], [131.2, 32.0], 16, 0.52], // the Kyūshū mountains
+  [[130.4, 33.5], [131.0, 33.45], 9, 0.3], // Sefuri and Tsukushi
+  [[130.15, 33.25], [130.0, 33.0], 6, 0.22], // the hills of Saga and Nagasaki
+  [[140.9, 41.0], [140.8, 39.4], 13, 0.5], // Ōu, Tōhoku's spine
+  [[140.8, 39.4], [140.3, 37.9], 13, 0.5],
+  [[140.3, 37.9], [139.95, 37.1], 13, 0.5],
+  [[140.2, 39.9], [139.9, 38.3], 11, 0.42], // Dewa
+  [[141.55, 40.3], [141.35, 38.9], 15, 0.38], // the Kitakami highlands
+  [[140.6, 37.8], [140.45, 36.6], 11, 0.3], // Abukuma
+  [[139.6, 37.2], [139.4, 36.9], 12, 0.5], // Aizu and Oze
+  [[139.1, 37.6], [139.6, 38.2], 12, 0.5], // Iide and Asahi
+  [[138.85, 35.0], [138.98, 34.7], 6, 0.32], // Izu
+  [[140.05, 35.2], [140.2, 35.1], 8, 0.12], // the Bōsō hills
+  [[142.45, 43.05], [143.3, 42.05], 13, 0.68], // Hidaka
+  [[142.75, 43.85], [143.0, 43.5], 16, 0.7], // Daisetsu's massif
+  [[142.4, 44.5], [143.6, 43.9], 16, 0.4], // Kitami
+  [[145.25, 44.15], [144.9, 43.95], 5, 0.5], // Shiretoko
+  [[142.05, 43.35], [142.2, 42.75], 8, 0.45], // Yūbari
+  [[140.35, 42.5], [140.15, 41.6], 12, 0.34], // the Oshima peninsula
+  [[141.1, 42.95], [141.0, 42.6], 10, 0.38], // the hills south-west of Sapporo
+  [[144.0, 43.6], [144.6, 43.5], 12, 0.32], // Akan
+  [[142.1, 44.8], [141.95, 44.2], 10, 0.24], // Teshio
+];
+// the plains and the basins between the mountains, where the land lies flat (lon, lat, half their size in km)
+const BASINS = [
+  [139.65, 36.0, 70, 55], // Kantō
+  [136.8, 35.25, 28, 26], // Nōbi
+  [135.55, 34.7, 16, 22], // Osaka
+  [135.76, 35.0, 6, 9], // Kyoto
+  [135.8, 34.6, 7, 11], // Nara
+  [136.1, 35.15, 12, 18], // Ōmi, by Biwa
+  [139.0, 37.75, 20, 42], // Echigo
+  [137.2, 36.65, 16, 12], // Toyama
+  [136.6, 36.5, 8, 15], // Kanazawa
+  [136.2, 36.05, 10, 10], // Fukui
+  [138.57, 35.64, 9, 7], // Kōfu
+  [137.95, 36.25, 6, 18], // Matsumoto
+  [138.2, 36.65, 6, 12], // Nagano
+  [140.95, 38.2, 12, 25], // Sendai
+  [140.33, 38.3, 6, 18], // Yamagata
+  [139.85, 38.85, 10, 18], // Shōnai
+  [140.1, 39.7, 8, 15], // Akita
+  [140.4, 40.8, 14, 20], // Tsugaru
+  [141.15, 39.4, 8, 35], // Kitakami's valley
+  [139.9, 37.5, 9, 12], // Aizu
+  [140.45, 37.7, 6, 10], // Fukushima
+  [141.6, 43.2, 25, 35], // Ishikari
+  [143.2, 42.9, 35, 30], // Tokachi
+  [142.35, 43.75, 10, 10], // Kamikawa
+  [137.75, 34.75, 12, 6], // Hamamatsu
+  [138.38, 34.98, 7, 5], // Shizuoka
+  [133.92, 34.65, 16, 8], // Okayama
+  [132.45, 34.4, 4, 5], // Hiroshima's delta
+  [133.37, 34.5, 6, 4], // Fukuyama
+  [133.55, 33.56, 10, 5], // Kōchi
+  [134.5, 34.07, 15, 6], // Tokushima
+  [132.78, 33.82, 8, 7], // Matsuyama
+  [134.0, 34.27, 18, 7], // Sanuki
+  [132.75, 35.37, 12, 5], // Izumo
+  [130.45, 33.3, 18, 14], // Chikushi
+  [130.4, 33.6, 9, 6], // Fukuoka
+  [130.72, 32.8, 12, 12], // Kumamoto
+  [131.42, 32.0, 8, 20], // Miyazaki
+  [131.6, 33.22, 6, 4], // Ōita
+  [140.7, 41.85, 8, 6], // Hakodate
+];
+// the volcanoes: lon, lat, the radius of the cone and of its crater in km, how high (1 = 3000 m), whether it smokes,
+// whether it stands alone (the hills round its foot give way to it), how far down its snowcap reaches;
+// a caldera has instead the half sizes of its ring in km, its rim's height and its floor's (its cones are lines of
+// their own)
+const VOLCANOES = [
+  { at: [138.727, 35.361], km: 22, h: 1.26, crater: 0.8, cap: 0.38, lone: true }, // Fuji, white down its top half in spring
+  { at: [138.523, 36.406], km: 10, h: 0.85, crater: 0.5, live: true }, // Asama
+  { at: [137.48, 35.893], km: 10, h: 1.0, crater: 0.6 }, // Ontake
+  { at: [137.554, 36.106], km: 8, h: 1.0, crater: 0.3 }, // Norikura
+  { at: [136.771, 36.155], km: 9, h: 0.89, crater: 0.4 }, // Haku
+  { at: [138.37, 35.97], km: 12, h: 0.96, crater: 0.2 }, // Yatsugatake
+  { at: [139.49, 36.765], km: 5, h: 0.83, crater: 0.3 }, // Nantai
+  { at: [139.19, 36.56], km: 12, h: 0.6, crater: 1.2 }, // Akagi
+  { at: [138.11, 36.89], km: 8, h: 0.82, crater: 0.5 }, // Myōkō
+  { at: [140.07, 37.6], km: 9, h: 0.6, crater: 0.6 }, // Bandai
+  { at: [140.44, 38.14], km: 9, h: 0.6, crater: 0.5 }, // Zaō
+  { at: [140.05, 39.1], km: 12, h: 0.75, crater: 0.5, lone: true }, // Chōkai
+  { at: [141.0, 39.85], km: 10, h: 0.68, crater: 0.5, lone: true }, // Iwate
+  { at: [140.3, 40.65], km: 8, h: 0.55, crater: 0.3, lone: true }, // Iwaki
+  { at: [140.88, 40.66], km: 10, h: 0.53, crater: 0.4 }, // Hakkōda
+  { at: [133.54, 35.37], km: 10, h: 0.57, crater: 0.3, lone: true }, // Daisen
+  { at: [132.62, 35.14], km: 6, h: 0.39, crater: 0.4 }, // Sanbe
+  { at: [131.24, 33.09], km: 8, h: 0.59, crater: 0.4 }, // Kujū
+  { at: [131.39, 33.28], km: 5, h: 0.53, crater: 0.2 }, // Yufu and Tsurumi, over Beppu
+  { at: [130.29, 32.76], km: 10, h: 0.5, crater: 0.4, live: true }, // Unzen
+  { at: [130.87, 31.93], km: 12, h: 0.57, crater: 0.6, live: true }, // Kirishima
+  { at: [130.66, 31.58], km: 5.5, h: 0.37, crater: 0.5, live: true }, // Sakurajima
+  { at: [130.53, 31.18], km: 4, h: 0.31, crater: 0.2, lone: true }, // Kaimon, the Satsuma Fuji
+  { at: [140.81, 42.83], km: 8, h: 0.63, crater: 0.4, cap: 0.45, lone: true }, // Yōtei, the Ezo Fuji
+  { at: [142.85, 43.66], km: 14, h: 0.76, crater: 0.6 }, // Asahi, Daisetsu
+  { at: [142.68, 43.42], km: 8, h: 0.69, crater: 0.5, live: true }, // Tokachi
+  { at: [141.38, 42.69], km: 6, h: 0.34, crater: 0.4, live: true }, // Tarumae
+  { at: [131.08, 32.88], ring: [9, 12], rim: 0.36, floor: 0.06 }, // Aso, its caldera
+  { at: [131.09, 32.885], km: 5, h: 0.53, crater: 0.5, live: true }, // Aso's Naka-dake
+  { at: [139.02, 35.23], ring: [5.5, 6.5], rim: 0.36, floor: 0.14 }, // Hakone
+  { at: [139.02, 35.235], km: 3.5, h: 0.48, crater: 0.2, live: true }, // Hakone's Kami-yama, Ōwakudani's fumes
+  { at: [144.1, 43.45], ring: [12, 12], rim: 0.3, floor: 0.12 }, // Akan
+  { at: [144.0, 43.38], km: 5, h: 0.5, crater: 0.4, live: true }, // Meakan
 ];
 
 // what only the close-up tiles show (TILES in src/data/japan.js): the Inland Sea's islands by Onomichi and Hiroshima,
@@ -192,23 +304,64 @@ const SHINKANSEN = [
 ];
 const FUJI = [138.73, 35.36];
 
-const G = (x, y, cx, cy, rx, ry) => Math.exp(-(((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2));
 const smooth = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
 };
+const KM = 9; // km to a map unit (about: 1° of latitude is 12 units, of longitude 10)
+
+// ridged noise: sharp crests where the noise crosses its middle, finer crests weighted to sit on the bigger ones
+function ridged(x, y, seed, octaves) {
+  let sum = 0;
+  let norm = 0;
+  let amp = 0.55;
+  let f = 1;
+  let w = 1;
+  for (let o = 0; o < octaves; o++) {
+    let v = 1 - Math.abs(noise2(x * f, y * f, seed + o * 37) * 2 - 1);
+    v *= v;
+    sum += v * amp * w;
+    norm += amp;
+    w = Math.min(1, v * 1.7);
+    f *= 2.07;
+    amp *= 0.5;
+  }
+  return sum / norm;
+}
+
+// the rivers' courses as drawn: wandering off their straight lines, sampled finely (map units), so that the valleys
+// they cut and the water drawn in them are one
+const COURSES = RIVERS.map((pts) => {
+  const P = pts.map(([lon, la]) => project(lon, la));
+  const out = [];
+  for (let n = 0; n + 1 < P.length; n++) {
+    const base = Math.ceil(Math.hypot(P[n + 1][0] - P[n][0], P[n + 1][1] - P[n][1]) * 3);
+    const steps = base * 8;
+    for (let t = 0; t <= steps; t++) {
+      const u = t / steps;
+      const wob = ((fbm(P[n][0] * 3 + u * 40, P[n][1] * 3 + u * base, { seed: 212, scale: 12 }) - 0.5) * 8) / 3;
+      out.push([P[n][0] + (P[n + 1][0] - P[n][0]) * u + wob, P[n][1] + (P[n + 1][1] - P[n][1]) * u - wob * 0.6]);
+    }
+  }
+  const xs = out.map((p) => p[0]);
+  const ys = out.map((p) => p[1]);
+  return { pts: out, x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+});
 
 /** The whole map, 540 x 1260 (3 fine pixels to a unit). */
 export function buildJapanMap() {
   return paintMap({ S: 3, box: [0, 0, MAP.w, MAP.h], whole: true });
 }
 
-/** A close-up tile (TILES in src/data/japan.js): the same land and sea, finer, with the towns and the Shinkansen. */
-export function buildMapTile({ box, S }) {
-  return paintMap({ S, box, whole: false });
+/**
+ * A close-up tile (TILES in src/data/japan.js): the same land and sea, finer, with the towns and the Shinkansen, without
+ * the whole map's ornaments; Okinawa only on the inset's own tile (its chart in its frame, clear round it).
+ */
+export function buildMapTile({ box, S, inset = false }) {
+  return paintMap({ S, box, whole: false, inset });
 }
 
-function paintMap({ S, box, whole }) {
+function paintMap({ S, box, whole, inset = false }) {
   // (a tile is painted with a margin all round, the coast beyond its edge giving the shallows and the slopes, then cut)
   const M = whole ? 0 : 10;
   const ox = box[0] - M;
@@ -229,7 +382,10 @@ function paintMap({ S, box, whole }) {
     const ys = p.map((q) => q[1]);
     return { p, x0: Math.min(...xs) - 3, x1: Math.max(...xs) + 3, y0: Math.min(...ys) - 3, y1: Math.max(...ys) + 3 };
   };
-  const shapes = [HONSHU, KYUSHU, SHIKOKU, HOKKAIDO, OKINAWA, AWAJI, AMAKUSA].map(outline);
+  // (Okinawa lives in the inset: a close-up tile other than the inset's own leaves it out, the sea there plain)
+  const tile = !whole && !inset;
+  const shapes = [HONSHU, KYUSHU, SHIKOKU, HOKKAIDO, ...(tile ? [] : [OKINAWA]), AWAJI, AMAKUSA].map(outline);
+  const islets = tile ? ISLETS.filter(([lon]) => lon >= MAP.lon0) : ISLETS;
   const lakes = [BIWA].map(outline);
   const inside = ({ p, x0, x1, y0, y1 }, x, y) => {
     if (x < x0 || x > x1 || y < y0 || y > y1) return false;
@@ -265,7 +421,7 @@ function paintMap({ S, box, whole }) {
         wx += (fbm(x, y, { seed: 218, scale: 1.4, octaves: 3 }) - 0.5) * 0.7;
         wy += (fbm(x, y, { seed: 219, scale: 1.4, octaves: 3 }) - 0.5) * 0.7;
       }
-      if (shapes.some((s) => inside(s, wx, wy)) || ellipseAt(ISLETS, x + nx * 1.2, y + ny * 1.2)) land[Y * W + X] = 1;
+      if (shapes.some((s) => inside(s, wx, wy)) || ellipseAt(islets, x + nx * 1.2, y + ny * 1.2)) land[Y * W + X] = 1;
       if (!whole && ellipseAt(FINE_ISLETS, x + nx * 0.3, y + ny * 0.3, 1, 0.25)) land[Y * W + X] = 1;
       if (ellipseAt(LAKES, x + nx * 0.6, y + ny * 0.6) || lakes.some((l) => inside(l, x + nx * 0.6, y + ny * 0.6))) lake[Y * W + X] = 1;
       if (!whole && ellipseAt(FINE_LAKES, x + nx * 0.15, y + ny * 0.15, 1, 0.2)) lake[Y * W + X] = 1;
@@ -290,37 +446,133 @@ function paintMap({ S, box, whole }) {
   };
   const inland = dist(1);
   const offshore = dist(0);
-  // the height of the land: ranges, ridged noise, rising from the coast (close up, Fuji a cone of its own)
-  const ranges = RANGES.map(([lon, lat, rx, ry, h]) => {
-    const [cx, cy] = project(lon, lat);
-    return [cx, cy, rx, ry, h];
+  // ---- the height of the land (1 = 3000 m): rising from the coast into hills, the ranges along their axes with their
+  // ridges and the valleys between, the plains and basins flat, the rivers' valleys cut in, the volcanoes on top
+  const segs = RANGES.map(([[lo0, la0], [lo1, la1], km, h]) => {
+    const [x0, y0] = project(lo0, la0);
+    const [x1, y1] = project(lo1, la1);
+    const len = Math.hypot(x1 - x0, y1 - y0) || 1e-6;
+    return { x0, y0, len, ca: (x1 - x0) / len, sa: (y1 - y0) / len, w: km / KM, h };
   });
-  const [fujiX, fujiY] = project(...FUJI);
+  const basins = BASINS.map(([lon, la, rx, ry]) => [...project(lon, la), rx / KM, ry / KM]);
+  const cones = VOLCANOES.map((v) => ({ ...v, c: project(...v.at), R: (v.km ?? 0) / KM, rc: (v.crater ?? 0) / KM }));
+  // (as many octaves as the pixels can show: the finest crests a pixel and a half across)
+  const oct = (cell) => Math.max(1, Math.round(1 + Math.log2((cell * S) / 1.5)));
+  const nR = oct(1.9);
+  const nI = oct(2.6);
   const height = new Float32Array(W * H);
+  const ash = new Float32Array(W * H); // (bare ash and old lava round the craters of the live ones)
+  const capped = new Uint8Array(W * H); // (the snowcaps of the lone cones, down their gullies)
   for (let Y = 0; Y < H; Y++)
     for (let X = 0; X < W; X++) {
       const i = Y * W + X;
       if (!land[i]) continue;
       const x = ux(X);
       const y = uy(Y);
-      let r = 0;
-      for (const [cx, cy, rx, ry, h] of ranges) r = Math.max(r, G(x, y, cx, cy, rx * 1.15, ry * 1.15) * h);
-      const big = fbm(x, y, { seed: 203, scale: 9, octaves: whole ? 4 : 6 });
-      const ridged = 1 - Math.abs(fbm(x, y, { seed: 204, scale: 5, octaves: whole ? 3 : 5 }) * 2 - 1);
-      const coast = smooth(0, 9 * S, inland[i]);
-      let h = coast * (0.1 + big * 0.26) + (r * 0.75 + 0.1 * coast) * (0.32 + ridged * 0.95);
+      // the ranges: how high the nearest lifts the land, and the ridges along each, blended by nearness
+      let m = 0;
+      let det = 0;
+      let wsum = 0;
+      for (const s of segs) {
+        const px = x - s.x0;
+        const py = y - s.y0;
+        const along = px * s.ca + py * s.sa;
+        const t = Math.max(0, Math.min(s.len, along));
+        const d = Math.hypot(px - s.ca * t, py - s.sa * t);
+        if (d > s.w * 3) continue;
+        // (the crest higher and lower along the range, lower towards its ends)
+        const crest = s.h * (0.7 + 0.6 * fbm(along / 2.2 + s.x0, s.y0, { seed: 262, scale: 1, octaves: 2 })) * (0.65 + 0.35 * smooth(-0.3, 1, Math.min(along, s.len - along) / (s.len * 0.2 + 0.5)));
+        const g = Math.exp(-((d / s.w) ** 2));
+        if (g * crest > m) m = g * crest;
+        const wt = Math.exp(-((d / (s.w * 1.6)) ** 2));
+        const across = -px * s.sa + py * s.ca;
+        // (the spurs run off the main ridge across the range, the valleys between them draining down its flanks)
+        det += wt * ridged(along / 1.3 + s.x0 * 0.37, across / 3.4 + s.y0 * 0.37, 260, nR);
+        wsum += wt;
+      }
+      const wx = (fbm(x, y, { seed: 271, scale: 4, octaves: 2 }) - 0.5) * 2.2;
+      const wy = (fbm(x, y, { seed: 272, scale: 4, octaves: 2 }) - 0.5) * 2.2;
+      const iso = ridged((x + wx) / 2.6, (y + wy) / 2.6, 270, nI);
+      const local = wsum > 0 ? iso + (((det / wsum) * 0.75 + iso * 0.25) - iso) * Math.min(1, wsum * 3) : iso;
+      const big = fbm(x, y, { seed: 203, scale: 9, octaves: 3 });
+      const coast = smooth(0, 4 * S, inland[i]);
+      let h = coast * (0.12 + big * 0.3) * (0.55 + iso * 0.9) + m * (0.08 + local ** 1.4 * 1.5);
       h *= smooth(0, 4 * k, inland[i]);
-      if (!whole) {
-        const d = Math.hypot(x - fujiX, (y - fujiY) * 1.05);
-        const gully = (fbm(Math.atan2(y - fujiY, x - fujiX) * 9, d, { seed: 225, scale: 0.6, octaves: 2 }) - 0.5) * 0.12;
-        if (d < 2.8) h = Math.max(h, 1.12 * (1 - d / 2.8) ** 1.25 + gully * (d / 2.8));
+      // the plains and the basins
+      let b = 0;
+      for (const [cx, cy, rx, ry] of basins) {
+        const e = Math.hypot((x - cx) / rx, (y - cy) / ry);
+        if (e > 1.4) continue;
+        b = Math.max(b, smooth(1.05, 0.6, e + (fbm(x, y, { seed: 275, scale: 1.5, octaves: 3 }) - 0.5) * 0.45));
+      }
+      h *= 1 - b * 0.93;
+      // the rivers' valleys: a broad one, and the narrow cut of the river in it
+      let dr = 9;
+      for (const r of COURSES) {
+        if (x < r.x0 - 2.5 || x > r.x1 + 2.5 || y < r.y0 - 2.5 || y > r.y1 + 2.5) continue;
+        for (const [qx, qy] of r.pts) {
+          const d = (qx - x) ** 2 + (qy - y) ** 2;
+          if (d < dr) dr = d;
+        }
+      }
+      if (dr < 9) {
+        const d = Math.sqrt(dr);
+        h *= 1 - 0.45 * Math.exp(-((d / 1.0) ** 2)) - 0.3 * Math.exp(-((d / 0.3) ** 2));
+      }
+      // the volcanoes: cones furrowed by their gullies, with craters; calderas, a ring of rim round a flat floor
+      for (const v of cones) {
+        const [cx, cy] = v.c;
+        if (v.ring) {
+          const e = Math.hypot((x - cx) / (v.ring[0] / KM), (y - cy) / (v.ring[1] / KM));
+          if (e > 1.7) continue;
+          const rim = v.rim * (0.85 + fbm(Math.atan2(y - cy, x - cx) * 3, 0, { seed: 276, scale: 1, octaves: 3 }) * 0.3);
+          if (e < 0.9) h = v.floor + h * 0.12;
+          else if (e < 1) h = v.floor + (rim - v.floor) * smooth(0.9, 1, e);
+          else h = Math.max(h, rim * (1 - smooth(1, 1.7, e)));
+          continue;
+        }
+        const d = Math.hypot(x - cx, y - cy);
+        if (v.lone && d < v.R * 1.35) h *= 1 - 0.75 * smooth(1.35, 0.85, d / v.R);
+        if (d > v.R) continue;
+        const p = 1 - d / v.R;
+        const gully = fbm(Math.atan2(y - cy, x - cx) * v.R * 4, d * 3, { seed: 225, scale: 1, octaves: 3 });
+        let c = v.h * p ** 1.7 * (1 - (gully - 0.5) * 0.35 * (1 - p));
+        const rc = Math.max(v.rc, 1.2 / S);
+        if (d < rc) c = v.h * (1 - rc / v.R) ** 1.7 - v.h * 0.07 * (1 - (d / rc) ** 2);
+        if (c > h) h = c + (h - c) * 0.15 * (1 - p);
+        if (v.cap && c >= h - 0.02 && c > v.h * v.cap * (1 + (fbm(Math.atan2(y - cy, x - cx) * 14, d * 0.6, { seed: 226, scale: 1, octaves: 3 }) - 0.5) * 2.4)) capped[i] = 1;
+        if (v.live) ash[i] = Math.max(ash[i], smooth(v.R * 0.4, rc, d));
       }
       height[i] = Math.max(0, h);
     }
   const at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? 0 : height[y * W + x]);
+  // the land's curvature, to light the crests and darken the folds: the height against its blur over half a unit
+  const blur = (() => {
+    const r = Math.max(1, Math.round(S * 0.5));
+    const tmp = new Float32Array(W * H);
+    const out = new Float32Array(W * H);
+    for (let Y = 0; Y < H; Y++) {
+      let acc = 0;
+      for (let X = -r; X <= r; X++) acc += height[Y * W + Math.max(0, Math.min(W - 1, X))];
+      for (let X = 0; X < W; X++) {
+        tmp[Y * W + X] = acc / (2 * r + 1);
+        acc += height[Y * W + Math.min(W - 1, X + r + 1)] - height[Y * W + Math.max(0, X - r)];
+      }
+    }
+    for (let X = 0; X < W; X++) {
+      let acc = 0;
+      for (let Y = -r; Y <= r; Y++) acc += tmp[Math.max(0, Math.min(H - 1, Y)) * W + X];
+      for (let Y = 0; Y < H; Y++) {
+        out[Y * W + X] = acc / (2 * r + 1);
+        acc += tmp[Math.min(H - 1, Y + r + 1) * W + X] - tmp[Math.max(0, Y - r) * W + X];
+      }
+    }
+    return out;
+  })();
   const lat = (Y) => MAP.lat0 - (uy(Y) - MAP.oy) / MAP.sy;
-  const step = Math.max(2, Math.round(S / 4));
+  const step = Math.max(2, Math.round(S / 3));
   const surf = whole ? 0.55 : 0.55 / Math.sqrt(k);
+  const [fujiX, fujiY] = project(...FUJI);
 
   // ---- the sea and the land
   for (let Y = 0; Y < H; Y++)
@@ -330,12 +582,24 @@ function paintMap({ S, box, whole }) {
       const y = uy(Y);
       if (land[i] && !lake[i]) {
         const h = height[i];
-        const slope = ((at(X - step, Y) - at(X + step, Y)) + (at(X, Y - step) - at(X, Y + step))) * ((14 * S) / (3 * step));
+        // the light from the north-west, on the slope at this pixel and over a wider step (the big forms and the
+        // fine crests both), the crests lit and the folds darkened
+        const ex = S * 1.6; // (the heights exaggerated about five times)
+        const gx = ((at(X + 1, Y) - at(X - 1, Y)) * 0.55 * 0.5 + ((at(X + step, Y) - at(X - step, Y)) * 0.45) / (2 * step)) * ex;
+        const gy = ((at(X, Y + 1) - at(X, Y - 1)) * 0.55 * 0.5 + ((at(X, Y + step) - at(X, Y - step)) * 0.45) / (2 * step)) * ex;
+        const shade = Math.max(0.5, Math.min(1.5, (0.62 * gx + 0.62 * gy + 0.48) / Math.sqrt(1 + gx * gx + gy * gy) / 0.48));
+        const curv = Math.max(-0.3, Math.min(0.3, (h - blur[i]) * 5));
+        const steep = Math.hypot(gx, gy);
         const g = hashPx(X, Y, 205);
-        const north = smooth(40, 44, lat(Y));
-        const south = smooth(34, 31, lat(Y));
-        const snow = 0.86 - north * 0.2 + south * 0.2;
+        const la = lat(Y);
+        const north = smooth(40, 44, la);
+        const south = smooth(34, 31, la);
+        // (the tree line and the snow line fall going north; snow lies longer in the gullies)
+        const trees = 0.62 - north * 0.26 + south * 0.12;
+        let snow = 0.84 - north * 0.3 + south * 0.25 + (fbm(x, y, { seed: 280, scale: 0.8, octaves: 3 }) - 0.5) * 0.1 + curv * 0.5;
+        if (capped[i]) snow = Math.min(snow, h - 0.001);
         let c;
+        let lit = shade * (1 + curv);
         if (h < 0.1) {
           // the plains: fields in little patches, a town here and there
           const cell = hashPx(X >> 3, Y >> 3, 206);
@@ -355,20 +619,44 @@ function paintMap({ S, box, whole }) {
             if ((X + (row % 2) * 3) % 6 === 0 || Y % 4 === 0) c = scaleColor(c, 0.86);
             if (hashPx(X >> 1, Y >> 1, 232) < 0.01) c = 0x8a7466;
           }
-        } else if (h < 0.4) {
-          c = mix(0x4c8850, 0x367046, (h - 0.1) / 0.3);
-          const t = hashPx(X >> 1, Y >> 1, 208);
-          if (t < 0.18) c = scaleColor(c, 0.88);
-          else if (t > 0.86) c = scaleColor(c, 1.12);
-          // (close up, the crowns of the forest)
-          if (!whole && hashPx(X, Y, 220) < 0.14) c = scaleColor(c, 0.8);
+        } else if (h < trees) {
+          // the woods: spring's new leaves in the broadleaf hills, plantations of sugi and hinoki darker in patches,
+          // the conifers thickening towards the tree line; their crowns close up
+          const up = (h - 0.1) / (trees - 0.1);
+          c = mix(0x6a9e4c, 0x4a8046, Math.min(1, up * 1.3));
+          const plant = fbm(x, y, { seed: 240, scale: 1.1, octaves: 3 });
+          if (plant > 0.58 && up < 0.7) c = mix(0x2f6040, 0x3a6c48, hashPx(X >> 1, Y >> 1, 241));
+          if (up > 0.65) c = mix(c, 0x2e5444, (up - 0.65) / 0.35);
+          if (S >= 6) {
+            const cr = hashPx(X, Y, 242);
+            if (cr < 0.2) c = scaleColor(c, 0.84);
+            else if (cr > 0.9) c = scaleColor(c, 1.1);
+          }
+          // (wild cherries in flower among the low woods, south of Tōhoku)
+          if (!whole && up < 0.35 && la < 38.5 && hashPx(X, Y, 243) < 0.01) c = 0xe8bcc8;
+          // terraces of rice on the gentler slopes low down, flooded for the planting: their banks follow the land
+          // (the contours of the smoothed land, only where they fall a few pixels apart)
+          const bg = Math.hypot(blur[Math.min(i + 1, W * H - 1)] - blur[Math.max(i - 1, 0)], blur[Math.min(i + W, W * H - 1)] - blur[Math.max(i - W, 0)]) / 2;
+          if (S >= 12 && up < 0.3 && la < 38.5 && bg * S > 0.06 && bg * S < 0.2 && fbm(x, y, { seed: 245, scale: 0.7, octaves: 2 }) > 0.6) {
+            const f = (blur[i] * S * 2.6) % 1;
+            c = f < 0.3 ? mix(c, 0x4e7438, 0.6) : mix(0x7ea888, 0x86aa62, fbm(x, y, { seed: 247, scale: 0.25, octaves: 2 }));
+            lit = 1 + (lit - 1) * 0.6;
+          }
         } else if (h < snow) {
-          c = mix(0x4e6a44, 0x94886e, (h - 0.4) / Math.max(0.05, snow - 0.4));
+          // above the trees: creeping pine and alpine grass, then bare rock and scree
+          const t = (h - trees) / Math.max(0.05, snow - trees);
+          c = mix(0x56683e, 0x8a8070, Math.min(1, t * 1.5));
           if (g < 0.12) c = scaleColor(c, 0.9);
         } else {
-          c = mix(0xdfe4ea, 0xfafcff, g);
+          // snow, its shadows blue
+          c = mix(0xe6eaf2, 0xfcfdff, g);
+          if (lit < 1) c = mix(c, 0x8494bc, Math.min(1, (1 - lit) * 1.5));
+          lit = lit < 1 ? 1 - (1 - lit) * 0.35 : 1 + (lit - 1) * 0.3;
         }
-        c = scaleColor(c, Math.max(0.68, Math.min(1.45, 1 + slope)));
+        // cliffs, and the ash and old lava round the live craters
+        if (h > 0.25 && h < snow && steep > 1.7) c = mix(c, 0x7a7268, Math.min(0.6, (steep - 1.7) * 0.5));
+        if (ash[i] > 0) c = mix(c, hashPx(X, Y, 248) < 0.3 ? 0x5a4e4a : 0x7a6a5e, ash[i] * 0.85);
+        c = scaleColor(c, Math.max(0.55, Math.min(1.45, h < 0.1 ? 1 + (lit - 1) * 0.6 : lit)));
         if (inland[i] < 2.2 * (whole ? 1 : Math.max(1, k * 0.6))) c = hashPx(X, Y, 209) < 0.35 ? 0xc0ae78 : 0xdccc98; // the beach
         img.set(X, Y, c);
         continue;
@@ -429,25 +717,20 @@ function paintMap({ S, box, whole }) {
         }
     }
   }
-  // the rivers: from the mountains down to the sea, wandering
-  for (const pts of RIVERS) {
-    const P = pts.map(([lon, la]) => project(lon, la));
-    for (let n = 0; n + 1 < P.length; n++) {
-      const base = Math.ceil(Math.hypot(P[n + 1][0] - P[n][0], P[n + 1][1] - P[n][1]) * 3);
-      const steps = base * (whole ? 1 : Math.ceil(k * 1.5));
-      for (let t = 0; t <= steps; t++) {
-        const u = t / steps;
-        const wob = ((fbm(P[n][0] * 3 + u * 40, P[n][1] * 3 + u * base, { seed: 212, scale: 12 }) - 0.5) * 8) / 3;
-        const X = Math.round(fx(P[n][0] + (P[n + 1][0] - P[n][0]) * u + wob));
-        const Y = Math.round(fy(P[n][1] + (P[n + 1][1] - P[n][1]) * u - wob * 0.6));
-        if (X < 0 || Y < 0 || X >= W || Y >= H || !land[Y * W + X]) continue;
-        if (whole) {
-          img.set(X, Y, 0x5aa0c4);
-          img.set(X + 1, Y, 0x3e7ea0, 0.6);
-        } else {
-          blob(X + 1, Y, S / 10 + 0.4, 0x3e7ea0, 0.7);
-          blob(X, Y, S / 10, 0x5aa0c4);
-        }
+  // the rivers: from the mountains down to the sea, wandering, down the valleys they cut
+  for (const r of COURSES) {
+    let last = -1;
+    for (const [px, py] of r.pts) {
+      const X = Math.round(fx(px));
+      const Y = Math.round(fy(py));
+      if (X < 0 || Y < 0 || X >= W || Y >= H || !land[Y * W + X] || Y * W + X === last) continue;
+      last = Y * W + X;
+      if (whole) {
+        img.set(X, Y, 0x5aa0c4);
+        img.set(X + 1, Y, 0x3e7ea0, 0.6);
+      } else {
+        blob(X + 1, Y, S / 12 + 0.4, 0x3e7ea0, 0.5);
+        blob(X, Y, S / 12, 0x5aa0c4);
       }
     }
   }
@@ -610,8 +893,9 @@ function paintMap({ S, box, whole }) {
     }
   }
 
-  // ---- the Okinawa inset: a chart of its own, in a gilt frame, a dashed line from Kyūshū
-  {
+  // ---- the Okinawa inset: a chart of its own, in a gilt frame, a dashed line from Kyūshū (close up on its own tile,
+  // the dashed line only on the whole map)
+  if (!tile) {
     const x0 = Math.round(fx(INSET.x));
     const y0 = Math.round(fy(INSET.y));
     const w = Math.round(INSET.w * S);
@@ -646,7 +930,7 @@ function paintMap({ S, box, whole }) {
     const [ax, ay] = project(130.9, 30.9);
     const [bx, by] = [INSET.x, INSET.y + INSET.h / 2];
     const n = Math.round(Math.hypot(bx - ax, by - ay) * 3);
-    for (let t = 10; t < n - 6; t += whole ? 1 : 1 / k) {
+    for (let t = 10; whole && t < n - 6; t++) {
       if (Math.floor(t) % 12 >= 6) continue;
       const X = Math.round(fx(ax + ((bx - ax) * t) / n));
       const Y = Math.round(fy(ay + ((by - ay) * t) / n));
@@ -706,8 +990,22 @@ function paintMap({ S, box, whole }) {
       }
     return img;
   }
-  // a tile: its margin cut off, its edges fading into the whole map under it
+  // a tile: its margin cut off, its edges fading into the whole map under it; the inset clear round its frame
   const out = img.crop(M * S, M * S, W - 2 * M * S, H - 2 * M * S);
+  if (inset) {
+    const x0 = Math.round(fx(INSET.x)) - M * S;
+    const y0 = Math.round(fy(INSET.y)) - M * S;
+    const [w, h] = [Math.round(INSET.w * S), Math.round(INSET.h * S)];
+    const R = 6 * k;
+    const corners = [[x0, y0], [x0 + w - 1, y0], [x0, y0 + h - 1], [x0 + w - 1, y0 + h - 1]];
+    for (let Y = 0; Y < out.h; Y++)
+      for (let X = 0; X < out.w; X++) {
+        if (X >= x0 && X < x0 + w && Y >= y0 && Y < y0 + h) continue;
+        if (corners.some(([cx, cy]) => Math.abs(X - cx) + Math.abs(Y - cy) <= R)) continue;
+        out.data[(Y * out.w + X) * 4 + 3] = 0;
+      }
+    return out;
+  }
   const F = 4 * S;
   for (let Y = 0; Y < out.h; Y++)
     for (let X = 0; X < out.w; X++) {

@@ -3,6 +3,7 @@
 //   node tools/gen-art.mjs --preview      -> also writes previews to tools/preview/
 //   node tools/gen-art.mjs --only=stage1  -> only that stage's backgrounds & props (leaves shared assets untouched)
 //   node tools/gen-art.mjs --only=shared  -> only shared sprites, icons, font, map & ending
+//   node tools/gen-art.mjs --only=map     -> only the map of Japan and its close-up tiles
 //   node tools/gen-art.mjs --only=gacha   -> only the gachapon screen's atlas
 //   node tools/gen-art.mjs --only=enemies -> only the cities' 540 px enemies (bg/<id>/enemies.*) and the portraits
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -155,12 +156,18 @@ console.log('menu');
   write('menu_washi.png', menuWashi().toPNG());
 }
 
+}
+
+if (!only || only === 'shared' || only === 'map') {
 console.log('map of Japan');
 const japan = buildJapanMap();
 write('japan.png', japan.toPNG());
-// (and finer where the cities are, for the camera's close-ups)
+// (and finer for the camera's close-ups)
 for (const t of TILES) write(`${t.key}.png`, buildMapTile(t).toPNG());
 if (preview) writeFileSync(join(previewDir, 'japan_x3.png'), japan.scaled(3).toPNG());
+}
+
+if (!only || only === 'shared') {
 
 console.log('ending');
 const ending = buildEnding();

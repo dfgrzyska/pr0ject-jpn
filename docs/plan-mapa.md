@@ -106,3 +106,11 @@ mapa ogólna (między etapami) zyskuje to samo, ale w swojej skali.
 
 - 2026-11-20: plan; regiony, kamera w menu i między etapami, ostrzejsze rysunki regionów.
 - 2026-11-21: propozycja sześciu iteracji szczegółów mapy.
+- 2026-11-21: iteracja 1. Rzeźba: 42 pasma jako grzbiety z bocznymi grzbietami w poprzek osi, 40 kotlin i równin,
+  doliny rzek wcięte w góry, 33 wulkany (stożki ze żlebami i kraterami, kaldery Aso, Hakone i Akan, czynne z popiołem,
+  samotne stożki z płaskim podnóżem, Fuji i Yōtei z czapą śniegu w smugach), cieniowanie z krzywizną (grzbiety
+  jaśniej, fałdy ciemniej), granica lasu i śniegu zależna od szerokości, lasy liściaste, plantacje sugi, iglaste
+  pod granicą lasu, kwitnące dzikie wiśnie, tarasy ryżowe po warstwicach. Czysty kadr: kafel `japan_mid` (cała
+  Japonia, 8 px na jednostkę, bez ozdób) od zbliżenia 1,25, ostre kafle zachód i środek (18 px, 1:1) od 3,2,
+  wstawka Okinawy osobno, widoczna tylko w kadrze Okinawy (`insetFocus`). Test pilnuje, że każdy kadr regionu jest
+  ostry od brzegu do brzegu. Pliki mapy: 5,7 MB (było 2,3 MB). `node tools/gen-art.mjs --only=map` rysuje samą mapę.

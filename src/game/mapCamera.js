@@ -1,5 +1,5 @@
 import { RENDER_SCALE } from '../config.js';
-import { MAP, TILES, project } from '../data/japan.js';
+import { INSET, MAP, TILES, project } from '../data/japan.js';
 
 // The map of Japan seen through a camera (docs/plan-mapa.md): a view is the map point (cx, cy) put in the middle
 // of the screen's area and z screen units to a map unit. Close up, the finer tiles of the cities' stretches are laid
@@ -40,11 +40,22 @@ export function fitView(points, box, area, { padX = 30, padY = 16, zMax = 6, zMi
   return { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, z: Math.max(zMin, z) };
 }
 
+/**
+ * How much Okinawa's chart shows close up (0 to 1): only when the camera is on it, its middle well inside the area,
+ * not when another region's view brushes its corner (Kantō's).
+ */
+export function insetFocus(view, area) {
+  const hw = (area.x1 - area.x0) / 2 / view.z;
+  const hh = (area.y1 - area.y0) / 2 / view.z;
+  const [ix, iy] = [INSET.x + INSET.w / 2, INSET.y + INSET.h / 2];
+  return smooth(-4, 8, Math.min(ix - (view.cx - hw), view.cx + hw - ix, iy - (view.cy - hh), view.cy + hh - iy));
+}
+
 /** The whole map and its close-up tiles, placed by a view. */
 export class MapCamera {
   constructor(scene, depth, area) {
     this.base = scene.add.image(0, 0, 'japan').setOrigin(0).setDepth(depth);
-    this.tiles = TILES.map((t) => ({ t, img: scene.add.image(0, 0, t.key).setOrigin(0).setDepth(depth + 0.01) }));
+    this.tiles = TILES.map((t, n) => ({ t, img: scene.add.image(0, 0, t.key).setOrigin(0).setDepth(depth + 0.01 + n * 0.001) }));
     this.area = area;
     this.view = WHOLE;
     this.alpha = 1;
@@ -93,10 +104,11 @@ export class MapCamera {
     const snap = (v) => Math.round(v * RENDER_SCALE) / RENDER_SCALE;
     const [bx, by] = this.toScreen(0, 0);
     this.base.setScale(z / RENDER_SCALE).setPosition(snap(bx), snap(by)).setAlpha(this.alpha).setVisible(this.visible);
-    // the tiles come in as the camera closes in
-    const a = smooth(1.3, 2.1, z) * this.alpha;
+    // the tiles come in as the camera closes in, each between its zooms
     const { x0, x1, y0, y1 } = this.area;
+    const onInset = insetFocus(this.view, this.area);
     for (const { t, img } of this.tiles) {
+      const a = smooth(t.fade[0], t.fade[1], z) * this.alpha * (t.inset ? onInset : 1);
       const [tx, ty] = this.toScreen(t.box[0], t.box[1]);
       const w = (t.box[2] - t.box[0]) * z;
       const h = (t.box[3] - t.box[1]) * z;
@@ -109,7 +121,7 @@ export class MapCamera {
 
   setDepth(d) {
     this.base.setDepth(d);
-    for (const { img } of this.tiles) img.setDepth(d + 0.01);
+    this.tiles.forEach(({ img }, n) => img.setDepth(d + 0.01 + n * 0.001));
     return this;
   }
 

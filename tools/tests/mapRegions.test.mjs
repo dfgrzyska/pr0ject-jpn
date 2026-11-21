@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { REGIONS, TILES, project, regionOf } from '../../src/data/japan.js';
-import { fitView } from '../../src/game/mapCamera.js';
+import { fitView, insetFocus } from '../../src/game/mapCamera.js';
 
 const stages = Array.from({ length: 12 }, (_, i) => JSON.parse(readFileSync(new URL(`../../src/data/stage${i + 1}.json`, import.meta.url))));
 const inBox = ([x0, y0, x1, y1], x, y) => x >= x0 && x <= x1 && y >= y0 && y <= y1;
@@ -36,10 +36,27 @@ test("the city menu's view of each region is close, and shows its cities with ro
       const sy = (area.y0 + area.y1) / 2 + (y - v.cy) * v.z;
       assert.ok(sx >= area.x0 + 10 && sx <= area.x1 - 10 && sy >= area.y0 + 8 && sy <= area.y1 - 8, `${r.id}: a city at ${sx.toFixed(0)}, ${sy.toFixed(0)}`);
     }
-    // (the tile is never stretched more than twice over)
-    const tile = TILES.find((t) => inBox(t.box, r.box[0], r.box[1]) && inBox(t.box, r.box[2], r.box[3]));
-    assert.ok((v.z * 3) / tile.S <= 2, `${r.id}: the tile at ${((v.z * 3) / tile.S).toFixed(2)}x`);
   }
+});
+
+test("what each region's close-up shows of the map is drawn sharp edge to edge, in the menu and between stages", () => {
+  // (the view's whole screen, cut to where the map has anything; a tile counts when it is fully in at that zoom, at
+  // least three quarters as fine as the screen, and the view clear of its fading edge)
+  const content = [6, 50, 174, 345];
+  for (const H of [320, 420])
+    for (const [scene, area] of [['menu', { x0: 2, x1: 150, y0: 72, y1: H - 82 }], ['map', { x0: 2, x1: 178, y0: 40, y1: H - 54 }]])
+      for (const r of REGIONS) {
+        const v = fitView(r.stages.map((id) => project(...stages.find((s) => s.id === id).map)), r.box, area);
+        const [cx, cy] = [(area.x0 + area.x1) / 2, (area.y0 + area.y1) / 2];
+        const seen = [Math.max(content[0], v.cx - cx / v.z), Math.max(content[1], v.cy - cy / v.z), Math.min(content[2], v.cx + (180 - cx) / v.z), Math.min(content[3], v.cy + (H - cy) / v.z)];
+        const sharp = TILES.filter((t) => !t.inset && v.z >= t.fade[1] && t.S >= v.z * 3 * 0.75);
+        const tile = sharp.find((t) => seen[0] >= t.box[0] + 4 && seen[1] >= t.box[1] + 4 && seen[2] <= t.box[2] - 4 && seen[3] <= t.box[3] - 4);
+        assert.ok(tile, `${scene} ${H} ${r.id}: z ${v.z.toFixed(2)}, sees ${seen.map((n) => n.toFixed(0))}`);
+        // Okinawa's chart shows in its own region's view, in no other
+        const inset = TILES.find((t) => t.inset);
+        assert.equal(insetFocus(v, area) > 0.99 && v.z >= inset.fade[1], r.id === 'okinawa', `${scene} ${H} ${r.id}: the inset`);
+        if (r.id === 'okinawa') assert.ok(inset.S >= v.z * 3 * 0.75, `the inset at ${((v.z * 3) / inset.S).toFixed(2)}x`);
+      }
 });
 
 test('the region of a city is found by its stage', () => {
