@@ -50,5 +50,5 @@ test('traps, ambushes and fights form no wave', () => {
 test('a run of whole waves pays more each time, up to its cap', () => {
   assert.ok(FEEL.streakStep > 0 && FEEL.streakMax >= 2);
   assert.ok(FEEL.flockEach >= FEEL.waveEach);
-  for (const t of FEEL.heavyKill) assert.ok(FEEL.ownBullets.has(t), `${t} goes down hard and turns its bullets to points`);
+  assert.equal(FEEL.ownBullets.size, 0, 'a regular enemy shot down leaves its bullets in the air');
 });
