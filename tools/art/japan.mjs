@@ -1,132 +1,19 @@
 // The map of Japan at 540 px, shown between stages and to choose a city: the four main islands and their smaller ones, in
 // relief (lit from the north-west: plains, forest, bare rock and snow), rivers and Lake Biwa; Okinawa in an inset; a night-
 // blue sea with its shallows, wave-scales, the Kuroshio, junks and a whale, bands of cloud, a compass rose; Mt Fuji.
-// Coastlines are simplified polygons in lon/lat, projected with src/data/japan.js (the game's logical units x 3).
+// The geography (coasts, islands, lakes, rivers, trenches) is in japan-geo.mjs, in lon/lat, projected with
+// src/data/japan.js (the game's logical units x 3).
 import { Raster, fbm, mix, noise2, rng, scaleColor } from '../lib/raster.mjs';
 import { hashPx } from './hires.mjs';
-import { MAP, INSET, project } from '../../src/data/japan.js';
+import { MAP, INSET, inInset, project } from '../../src/data/japan.js';
+import { ARCHIPELAGOS, FINE_ISLANDS, FINE_LAKES, FLATS, HOKKAIDO, HONSHU, ISLANDS, ISLETS, KYUSHU, LAKES, LAKE_ISLES, LAKE_SHAPES, RIAS, RIVERS, SHIKOKU, TRENCHES } from './japan-geo.mjs';
 
 
-const HONSHU = [
-  [130.92, 33.95], [130.85, 34.25], [131.2, 34.45], [131.65, 34.67], [132.1, 34.95], [132.6, 35.4], [133.05, 35.58], [133.35, 35.5],
-  [133.65, 35.52], [134.25, 35.55], [134.8, 35.67], [135.2, 35.75], [135.45, 35.55], [135.85, 35.63], [136.05, 35.95], [136.25, 36.3],
-  [136.65, 36.65], [136.75, 37.0], [136.9, 37.4], [137.35, 37.5], [137.1, 37.05], [136.95, 36.8], [137.4, 36.85], [137.9, 37.05],
-  [138.25, 37.18], [138.6, 37.5], [139.05, 37.95], [139.45, 38.4], [139.75, 38.95], [140.0, 39.6], [139.75, 39.95], [140.0, 40.3],
-  [139.92, 40.62], [140.25, 41.0], [140.35, 41.25], [140.65, 41.0], [140.85, 40.85], [141.2, 41.15], [141.15, 41.45], [140.95, 41.5],
-  [141.4, 41.4], [141.45, 40.6], [141.85, 40.1], [142.05, 39.55], [141.75, 39.0], [141.6, 38.6], [141.1, 38.3], [140.95, 37.9],
-  [141.0, 37.4], [140.9, 36.9], [140.65, 36.4], [140.6, 36.1], [140.85, 35.72],
-  // (finer from here, for the close-ups: Kujūkuri, Bōsō, Tokyo Bay, Miura, Sagami Bay, Izu, Suruga, Ise and Mikawa Bays, Kii,
-  // Osaka Bay, the Inland Sea's coast to Shimonoseki)
-  [140.7, 35.6], [140.55, 35.47], [140.42, 35.33], [140.36, 35.18], [140.2, 35.1], [140.05, 35.0], [139.93, 34.91], [139.82, 34.95],
-  [139.84, 35.08], [139.82, 35.2], [139.78, 35.32], [139.9, 35.4], [140.05, 35.56], [139.95, 35.66], [139.8, 35.63], [139.76, 35.58],
-  [139.73, 35.53], [139.67, 35.46], [139.66, 35.36], [139.72, 35.24], [139.65, 35.14], [139.58, 35.2], [139.55, 35.29], [139.45, 35.3],
-  [139.3, 35.31], [139.16, 35.245], [139.12, 35.16], [139.08, 35.1], [139.12, 34.96], [139.1, 34.76], [138.97, 34.66], [138.85, 34.59],
-  [138.77, 34.7], [138.75, 34.85], [138.77, 35.0], [138.86, 35.08], [138.7, 35.13], [138.52, 35.02], [138.38, 34.93], [138.3, 34.8],
-  [138.22, 34.6], [137.95, 34.65], [137.72, 34.68], [137.58, 34.67], [137.35, 34.62], [137.03, 34.57], [137.12, 34.66], [137.3, 34.74],
-  [137.2, 34.81], [137.04, 34.84], [136.97, 34.72], [136.96, 34.68], [136.86, 34.74], [136.84, 34.9], [136.88, 35.04], [136.75, 35.05],
-  [136.64, 34.97], [136.55, 34.75], [136.62, 34.55], [136.85, 34.5], [136.9, 34.33], [136.7, 34.27], [136.4, 34.2], [136.25, 34.05],
-  [136.02, 33.75], [135.85, 33.5], [135.77, 33.43], [135.55, 33.5], [135.38, 33.65], [135.18, 33.85], [135.1, 34.0], [135.15, 34.2],
-  [135.08, 34.3], [135.25, 34.4], [135.42, 34.55], [135.43, 34.65], [135.4, 34.72], [135.25, 34.69], [135.2, 34.675], [135.05, 34.63],
-  [134.95, 34.64], [134.8, 34.73], [134.65, 34.77], [134.4, 34.73], [134.25, 34.68], [134.15, 34.62], [133.95, 34.55], [133.8, 34.48],
-  [133.6, 34.5], [133.45, 34.45], [133.36, 34.42], [133.25, 34.398], [133.08, 34.37], [132.95, 34.3], [132.78, 34.25], [132.6, 34.2],
-  [132.55, 34.3], [132.47, 34.35], [132.4, 34.33], [132.33, 34.3], [132.2, 34.2], [132.15, 34.1], [132.05, 34.0], [131.85, 33.95],
-  [131.6, 34.0], [131.4, 33.98], [131.15, 33.95],
-];
-const KYUSHU = [
-  [130.96, 33.95], [131.0, 33.85], [131.05, 33.75], [131.2, 33.62], [131.4, 33.57], [131.55, 33.67], [131.68, 33.62], [131.75, 33.5],
-  [131.7, 33.42], [131.55, 33.36], [131.5, 33.32], [131.505, 33.28], [131.55, 33.25], [131.7, 33.25], [131.87, 33.22], [131.85, 33.1],
-  [131.95, 33.0], [131.9, 32.85], [131.95, 32.75], [131.75, 32.6], [131.6, 32.4], [131.5, 32.1], [131.45, 31.9], [131.45, 31.6],
-  [131.35, 31.38], [131.1, 31.46], [130.95, 31.3], [130.85, 31.1], [130.68, 31.0], [130.72, 31.2], [130.75, 31.42], [130.77, 31.72],
-  [130.65, 31.72], [130.575, 31.6], [130.55, 31.45], [130.62, 31.25], [130.52, 31.17], [130.3, 31.25], [130.2, 31.35], [130.22, 31.55],
-  [130.17, 31.7], [130.2, 31.9], [130.25, 32.05], [130.35, 32.2], [130.5, 32.35], [130.55, 32.6], [130.62, 32.75], [130.6, 32.85],
-  [130.55, 33.0], [130.4, 33.15], [130.25, 33.15], [130.18, 33.05], [130.2, 32.87], [130.3, 32.82], [130.37, 32.75], [130.35, 32.62],
-  [130.25, 32.59], [130.15, 32.65], [130.12, 32.75], [130.05, 32.8], [129.98, 32.74], [129.92, 32.68], [129.85, 32.62], [129.76, 32.56],
-  [129.8, 32.68], [129.855, 32.735], [129.82, 32.78], [129.7, 32.85], [129.65, 33.0], [129.7, 33.15], [129.6, 33.25], [129.62, 33.38],
-  [129.8, 33.38], [129.9, 33.52], [130.05, 33.48], [130.2, 33.6], [130.3, 33.6], [130.38, 33.6], [130.42, 33.65], [130.45, 33.75],
-  [130.55, 33.85], [130.7, 33.93], [130.85, 33.92],
-];
-const SHIKOKU = [
-  [132.7, 33.85], [132.85, 34.05], [133.0, 34.08], [133.15, 33.97], [133.3, 33.98], [133.55, 34.03], [133.7, 34.18], [133.8, 34.3],
-  [133.95, 34.35], [134.05, 34.35], [134.25, 34.3], [134.45, 34.22], [134.6, 34.15], [134.58, 34.0], [134.7, 33.9], [134.55, 33.7],
-  [134.35, 33.5], [134.18, 33.25], [134.0, 33.45], [133.6, 33.5], [133.3, 33.38], [133.05, 33.0], [132.98, 32.72], [132.75, 32.8],
-  [132.55, 33.0], [132.45, 33.2], [132.35, 33.38], [132.0, 33.34], [132.3, 33.45], [132.5, 33.6], [132.6, 33.75],
-];
 const AWAJI = [
   [135.02, 34.6], [134.98, 34.5], [134.92, 34.38], [134.93, 34.3], [134.85, 34.2], [134.7, 34.17], [134.66, 34.25], [134.78, 34.37],
   [134.88, 34.48], [134.97, 34.58],
 ];
 const AMAKUSA = [[130.17, 32.6], [130.35, 32.55], [130.42, 32.45], [130.3, 32.38], [130.2, 32.25], [130.05, 32.2], [130.0, 32.35], [130.05, 32.5]];
-const BIWA = [
-  [136.07, 35.51], [136.15, 35.52], [136.2, 35.48], [136.25, 35.42], [136.27, 35.38], [136.24, 35.28], [136.17, 35.21], [136.08, 35.15],
-  [135.98, 35.08], [135.95, 35.03], [135.9, 34.98], [135.87, 35.0], [135.9, 35.08], [135.93, 35.13], [135.97, 35.24], [136.01, 35.32],
-  [136.03, 35.41], [136.04, 35.48],
-];
-const HOKKAIDO = [
-  [141.95, 45.52], [142.25, 45.2], [142.6, 44.75], [143.15, 44.35], [143.65, 44.15], [144.25, 44.0], [144.75, 43.95], [145.35, 44.35],
-  [145.1, 43.95], [145.3, 43.6], [145.6, 43.35], [145.15, 43.25], [144.4, 42.98], [143.6, 42.6], [143.25, 41.95], [142.75, 42.2],
-  [142.15, 42.5], [141.6, 42.6], [141.0, 42.35], [140.6, 42.55], [140.45, 42.15], [140.75, 42.0], [140.95, 41.75], [140.75, 41.75],
-  [140.45, 41.55], [140.05, 41.42], [139.9, 41.6], [140.1, 42.05], [139.8, 42.25], [139.85, 42.65], [140.3, 43.0], [140.35, 43.35],
-  [140.75, 43.2], [141.0, 43.15], [141.35, 43.3], [141.45, 43.8], [141.65, 44.3], [141.7, 44.9],
-];
-const OKINAWA = [
-  [127.68, 26.08], [127.85, 26.15], [127.82, 26.35], [128.0, 26.45], [128.1, 26.6], [128.3, 26.85], [128.2, 26.88], [128.0, 26.7],
-  [127.85, 26.6], [127.7, 26.45], [127.72, 26.3], [127.65, 26.2],
-];
-// small islands as ellipses: lon, lat, rx, ry (degrees)
-const ISLETS = [
-  [138.4, 38.05, 0.32, 0.22], // Sado
-  [129.32, 34.4, 0.08, 0.3], // Tsushima
-  [129.72, 33.8, 0.08, 0.07], // Iki
-  [133.2, 36.2, 0.12, 0.1], // Oki
-  [130.52, 30.35, 0.14, 0.11], // Yakushima
-  [130.98, 30.62, 0.07, 0.24], // Tanegashima
-  [134.25, 34.5, 0.1, 0.06], // Shōdoshima
-  [139.4, 34.75, 0.06, 0.06], // Izu Ōshima
-  [126.8, 26.35, 0.08, 0.06], // Kume
-  [132.31, 34.27, 0.07, 0.06], // Miyajima (Itsukushima)
-  [141.22, 45.18, 0.09, 0.08], // Rishiri
-  [141.02, 45.4, 0.04, 0.08], // Rebun
-  [139.45, 42.15, 0.06, 0.1], // Okushiri
-  [139.25, 38.45, 0.04, 0.05], // Awashima
-  [129.5, 33.35, 0.05, 0.08], // Hirado
-  [129.15, 32.72, 0.08, 0.16], // Gotō
-  [131.05, 34.05, 0.03, 0.04],
-  [133.4, 34.25, 0.04, 0.03], // the Inland Sea's little islands
-  [133.0, 34.15, 0.05, 0.04],
-  [132.72, 34.0, 0.05, 0.04],
-  [133.75, 34.42, 0.03, 0.025],
-  [139.55, 34.25, 0.03, 0.04], // the Izu chain
-  [139.28, 34.05, 0.03, 0.03],
-  [139.52, 33.88, 0.03, 0.03],
-  [139.8, 33.1, 0.05, 0.05],
-  [129.5, 28.3, 0.2, 0.1], // Amami
-  [129.75, 29.0, 0.05, 0.05], // Tokara
-  [130.2, 29.6, 0.05, 0.05],
-  [127.3, 26.2, 0.05, 0.04], // Kerama
-  [127.82, 26.72, 0.06, 0.04], // Ie
-];
-const LAKES = [
-  [140.88, 40.46, 0.05, 0.05], // Towada
-  [140.45, 36.05, 0.07, 0.07], // Kasumigaura
-  [141.2, 42.72, 0.05, 0.05], // Shikotsu
-  [144.35, 43.45, 0.07, 0.06], // Kussharo
-];
-const RIVERS = [
-  [[141.35, 43.24], [141.75, 43.28], [142.05, 43.55], [142.3, 43.75]], // Ishikari
-  [[140.95, 38.45], [141.1, 39.0], [141.2, 39.6]], // Kitakami
-  [[139.85, 38.85], [140.2, 38.4]], // Mogami
-  [[139.0, 37.9], [138.8, 37.3], [138.35, 36.8], [138.1, 36.4]], // Shinano
-  [[140.75, 35.75], [140.0, 36.05], [139.3, 36.4], [139.05, 36.7]], // Tone
-  [[136.72, 35.0], [136.95, 35.45], [137.3, 35.8]], // Kiso
-  [[135.45, 34.72], [135.75, 34.95], [136.0, 35.05]], // Yodo
-  [[130.45, 33.15], [130.8, 33.3], [131.1, 33.25]], // Chikugo
-  [[133.0, 33.05], [133.1, 33.4], [133.55, 33.75]], // Shimanto, Yoshino
-  [[132.45, 34.36], [132.5, 34.52], [132.62, 34.72]], // Ōta, its delta Hiroshima
-  [[139.78, 35.64], [139.68, 35.88], [139.35, 36.05]], // Ara, by Tokyo
-  [[139.75, 35.54], [139.45, 35.65], [139.1, 35.75]], // Tama
-  [[135.68, 34.92], [135.68, 35.03], [135.6, 35.15]], // Katsura, through Kyoto's west
-  [[130.6, 32.7], [130.75, 32.8], [130.95, 32.85]], // Shira, by Kumamoto
-];
 // ---- the relief (docs/plan-mapa.md, iteration 1)
 // the ranges, each a ridge from end to end: lon/lat of its ends, half its width in km, how high (1 = 3000 m). Close up
 // the ridges run along each range's own axis, finer ones branching off them.
@@ -249,6 +136,8 @@ const VOLCANOES = [
   { at: [142.85, 43.66], km: 14, h: 0.76, crater: 0.6 }, // Asahi, Daisetsu
   { at: [142.68, 43.42], km: 8, h: 0.69, crater: 0.5, live: true }, // Tokachi
   { at: [141.38, 42.69], km: 6, h: 0.34, crater: 0.4, live: true }, // Tarumae
+  { at: [141.24, 45.18], km: 7, h: 0.57, crater: 0.3, cap: 0.4, lone: true }, // Rishiri, out at sea
+  { at: [139.39, 34.73], km: 4, h: 0.25, crater: 0.5, live: true }, // Mihara on Izu Ōshima
   { at: [131.08, 32.88], ring: [9, 12], rim: 0.36, floor: 0.06 }, // Aso, its caldera
   { at: [131.09, 32.885], km: 5, h: 0.53, crater: 0.5, live: true }, // Aso's Naka-dake
   { at: [139.02, 35.23], ring: [5.5, 6.5], rim: 0.36, floor: 0.14 }, // Hakone
@@ -257,29 +146,7 @@ const VOLCANOES = [
   { at: [144.0, 43.38], km: 5, h: 0.5, crater: 0.4, live: true }, // Meakan
 ];
 
-// what only the close-up tiles show (TILES in src/data/japan.js): the Inland Sea's islands by Onomichi and Hiroshima,
-// the Fuji Five Lakes and Ashi; towns as patches of streets (lon, lat, radius in km); the Shinkansen lines
-const FINE_ISLETS = [
-  [133.2, 34.372, 0.035, 0.018], // Mukaishima, across the strait from Onomichi
-  [133.17, 34.31, 0.045, 0.035], // Innoshima
-  [133.09, 34.27, 0.04, 0.03], // Ikuchijima
-  [133.0, 34.23, 0.065, 0.05], // Ōmishima
-  [133.07, 34.15, 0.045, 0.04], // Ōshima
-  [132.47, 34.2, 0.05, 0.05], // Etajima
-  [132.52, 34.12, 0.05, 0.04], // Kurahashi
-  [132.4, 34.18, 0.03, 0.03], // Nōmijima
-  [133.99, 34.455, 0.02, 0.015], // Naoshima
-  [134.08, 34.47, 0.03, 0.02], // Teshima
-  [129.98, 32.62, 0.03, 0.03], // Iōjima off Nagasaki
-  [130.66, 31.58, 0.06, 0.05], // Sakurajima
-];
-const FINE_LAKES = [
-  [138.765, 35.517, 0.045, 0.011], // Kawaguchi
-  [138.87, 35.415, 0.03, 0.014], // Yamanaka
-  [138.69, 35.497, 0.025, 0.009], // Sai
-  [139.0, 35.21, 0.012, 0.03], // Ashi
-  [137.6, 34.74, 0.05, 0.05], // Hamana
-];
+// towns as patches of streets (lon, lat, radius in km), close up; the Shinkansen lines
 const TOWNS = [
   [139.74, 35.69, 19], [139.62, 35.47, 10], [139.64, 35.87, 9], [139.7, 35.55, 7], [140.11, 35.61, 7], // Tokyo, Yokohama, Saitama, Kawasaki, Chiba
   [139.55, 35.32, 4], [139.07, 35.1, 2.5], [139.15, 35.26, 3], [139.35, 35.65, 7], // Kamakura, Atami, Odawara, Hachiōji
@@ -329,24 +196,51 @@ function ridged(x, y, seed, octaves) {
   return sum / norm;
 }
 
-// the rivers' courses as drawn: wandering off their straight lines, sampled finely (map units), so that the valleys
-// they cut and the water drawn in them are one
-const COURSES = RIVERS.map((pts) => {
+// the rivers' courses as drawn, sampled finely (map units, with the width of the water there), so that the valleys they
+// cut and the water drawn in them are one: a smooth curve through their points, wandering a little, meandering more the
+// lower they get, wider towards the mouth; source and mouth stay where they are
+const COURSES = RIVERS.map(([pts, size], n) => {
   const P = pts.map(([lon, la]) => project(lon, la));
-  const out = [];
-  for (let n = 0; n + 1 < P.length; n++) {
-    const base = Math.ceil(Math.hypot(P[n + 1][0] - P[n][0], P[n + 1][1] - P[n][1]) * 3);
-    const steps = base * 8;
-    for (let t = 0; t <= steps; t++) {
+  // (Catmull-Rom through the points)
+  const curve = [];
+  for (let i = 0; i + 1 < P.length; i++) {
+    const [p0, p1, p2, p3] = [P[Math.max(0, i - 1)], P[i], P[i + 1], P[Math.min(P.length - 1, i + 2)]];
+    const steps = Math.max(2, Math.ceil(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) * 24));
+    for (let t = 0; t < steps; t++) {
       const u = t / steps;
-      const wob = ((fbm(P[n][0] * 3 + u * 40, P[n][1] * 3 + u * base, { seed: 212, scale: 12 }) - 0.5) * 8) / 3;
-      out.push([P[n][0] + (P[n + 1][0] - P[n][0]) * u + wob, P[n][1] + (P[n + 1][1] - P[n][1]) * u - wob * 0.6]);
+      const c = (a, b, c2, d) => 0.5 * (2 * b + (-a + c2) * u + (2 * a - 5 * b + 4 * c2 - d) * u * u + (-a + 3 * b - 3 * c2 + d) * u * u * u);
+      curve.push([c(p0[0], p1[0], p2[0], p3[0]), c(p0[1], p1[1], p2[1], p3[1])]);
     }
+  }
+  curve.push(P[P.length - 1]);
+  let len = 0;
+  const along = curve.map((q, i) => (len += i ? Math.hypot(q[0] - curve[i - 1][0], q[1] - curve[i - 1][1]) : 0));
+  const out = [];
+  let phase = n * 1.7;
+  for (let i = 0; i < curve.length; i++) {
+    const f = along[i] / len;
+    const [a, b] = [curve[Math.max(0, i - 1)], curve[Math.min(curve.length - 1, i + 1)]];
+    const tl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    const [nx, ny] = [-(b[1] - a[1]) / tl, (b[0] - a[0]) / tl];
+    // (the meanders: a swing whose length wavers, growing downstream; the slow wander over it)
+    if (i) phase += ((along[i] - along[i - 1]) / 0.42) * Math.PI * (0.7 + 0.6 * fbm(along[i], n * 13, { seed: 214, scale: 1.5, octaves: 2 }));
+    const ends = smooth(0, 0.06, f) * smooth(1, 0.94, f);
+    const off = ends * ((fbm(along[i] * 0.4, n * 7, { seed: 212, scale: 1, octaves: 2 }) - 0.5) * 0.7 + Math.sin(phase) * (0.02 + 0.13 * f ** 1.6) * (size > 1 ? 1 : 0.6));
+    const w = [0, 0.028, 0.045, 0.06][size] * (0.6 + 1.1 * f);
+    out.push([curve[i][0] + nx * off, curve[i][1] + ny * off, w]);
   }
   const xs = out.map((p) => p[0]);
   const ys = out.map((p) => p[1]);
-  return { pts: out, x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+  return { pts: out, size, x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
 });
+
+// the sea's colours by its depth (m), and its isobaths with how strongly each is drawn
+const DEEP = [[0, 0x3a7c98], [40, 0x2c6a8e], [200, 0x1c4670], [1000, 0x16305a], [3000, 0x11284e], [5500, 0x0c1c3c], [8000, 0x081530]];
+const seaColor = (d) => {
+  for (let n = 0; n + 1 < DEEP.length; n++) if (d < DEEP[n + 1][0]) return mix(DEEP[n][1], DEEP[n + 1][1], (d - DEEP[n][0]) / (DEEP[n + 1][0] - DEEP[n][0]));
+  return DEEP[DEEP.length - 1][1];
+};
+const ISOBATHS = [[200, 0.3], [1000, 0.18], [2000, 0.12], [3000, 0.1], [4000, 0.09], [5000, 0.08], [6000, 0.08], [7000, 0.1]];
 
 /** The whole map, 540 x 1260 (3 fine pixels to a unit). */
 export function buildJapanMap() {
@@ -384,9 +278,15 @@ function paintMap({ S, box, whole, inset = false }) {
   };
   // (Okinawa lives in the inset: a close-up tile other than the inset's own leaves it out, the sea there plain)
   const tile = !whole && !inset;
-  const shapes = [HONSHU, KYUSHU, SHIKOKU, HOKKAIDO, ...(tile ? [] : [OKINAWA]), AWAJI, AMAKUSA].map(outline);
-  const islets = tile ? ISLETS.filter(([lon]) => lon >= MAP.lon0) : ISLETS;
-  const lakes = [BIWA].map(outline);
+  const okinawan = (pts) => inInset(...pts[0]);
+  const shapes = [HONSHU, KYUSHU, SHIKOKU, HOKKAIDO].map(outline);
+  const isles = [AWAJI, AMAKUSA, ...ISLANDS, ...(whole ? [] : FINE_ISLANDS)].filter((pts) => !(tile && okinawan(pts))).map(outline);
+  const islets = tile ? ISLETS.filter(([lon, la]) => !inInset(lon, la)) : ISLETS;
+  const lakes = LAKE_SHAPES.map(outline);
+  const rias = RIAS.map(([lon, la, km, f]) => [...project(lon, la), km / KM, f]);
+  const strewn = ARCHIPELAGOS.map(([lon, la, kx, ky, f]) => [...project(lon, la), kx / KM, ky / KM, f]);
+  // (the drowned coasts kept off the cities' harbours)
+  const ports = [[129.87, 32.75], [130.4, 33.59], [130.55, 31.6], [131.49, 33.28], [132.45, 34.39], [133.2, 34.41], [135.5, 34.69], [139.7, 35.68], [127.68, 26.21]].map(([lon, la]) => project(lon, la));
   const inside = ({ p, x0, x1, y0, y1 }, x, y) => {
     if (x < x0 || x > x1 || y < y0 || y > y1) return false;
     let c = false;
@@ -400,14 +300,15 @@ function paintMap({ S, box, whole, inset = false }) {
   const ellipseAt = (list, x, y, grow = 1, least = 0.8) => {
     for (const [lon, lat, rx, ry] of list) {
       const [cx, cy] = project(lon, lat);
-      const west = lon < MAP.lon0;
+      const west = inInset(lon, lat);
       const sx = west ? INSET.sx : MAP.sx;
       const sy = west ? INSET.sy : MAP.sy;
       if (((x - cx) / Math.max(least, rx * sx * grow)) ** 2 + ((y - cy) / Math.max(least, ry * sy * grow)) ** 2 < 1) return true;
     }
     return false;
   };
-  // the coast: the polygons roughened at two scales, so they read as coast close up (and a third in the tiles)
+  // the coast: the polygons roughened at two scales, so they read as coast close up (and a third in the tiles), finely
+  // into inlets and islets where the coast is drowned; the smaller islands warped less, so they keep their shapes
   for (let Y = 0; Y < H; Y++)
     for (let X = 0; X < W; X++) {
       const x = ux(X + 0.5);
@@ -417,14 +318,41 @@ function paintMap({ S, box, whole, inset = false }) {
       // (close up the coast is drawn truer, warped less: the port cities must stand on their harbours)
       let wx = x + nx * (whole ? 3.4 : 1.1);
       let wy = y + ny * (whole ? 3.4 : 1.1);
+      let fx2 = 0;
+      let fy2 = 0;
       if (!whole) {
-        wx += (fbm(x, y, { seed: 218, scale: 1.4, octaves: 3 }) - 0.5) * 0.7;
-        wy += (fbm(x, y, { seed: 219, scale: 1.4, octaves: 3 }) - 0.5) * 0.7;
+        fx2 = fbm(x, y, { seed: 218, scale: 1.4, octaves: 3 }) - 0.5;
+        fy2 = fbm(x, y, { seed: 219, scale: 1.4, octaves: 3 }) - 0.5;
+        wx += fx2 * 0.7;
+        wy += fy2 * 0.7;
+        let r = 0;
+        for (const [cx, cy, rad, f] of rias) {
+          const d = Math.hypot(x - cx, y - cy);
+          if (d < rad) r = Math.max(r, smooth(rad, rad * 0.55, d) * f);
+        }
+        if (r > 0) {
+          for (const [px, py] of ports) r *= smooth(1.2, 2.2, Math.hypot(x - px, y - py));
+          wx += (fbm(x, y, { seed: 290, scale: 0.7, octaves: 4 }) - 0.5) * 2.4 * r;
+          wy += (fbm(x, y, { seed: 291, scale: 0.7, octaves: 4 }) - 0.5) * 2.4 * r;
+        }
       }
-      if (shapes.some((s) => inside(s, wx, wy)) || ellipseAt(islets, x + nx * 1.2, y + ny * 1.2)) land[Y * W + X] = 1;
-      if (!whole && ellipseAt(FINE_ISLETS, x + nx * 0.3, y + ny * 0.3, 1, 0.25)) land[Y * W + X] = 1;
-      if (ellipseAt(LAKES, x + nx * 0.6, y + ny * 0.6) || lakes.some((l) => inside(l, x + nx * 0.6, y + ny * 0.6))) lake[Y * W + X] = 1;
+      // (the islets strewn thick, where they are: the peaks of a fine noise standing out of the sea, kept off the harbours)
+      if (!whole) {
+        let f = 0;
+        for (const [cx, cy, rx, ry, t] of strewn) {
+          const e = Math.hypot((x - cx) / rx, (y - cy) / ry);
+          if (e < 1) f = Math.max(f, smooth(1, 0.6, e) * t);
+        }
+        if (f > 0) {
+          for (const [px, py] of ports) f *= smooth(0.6, 1.2, Math.hypot(x - px, y - py));
+          if (fbm(x, y, { seed: 296, scale: 0.55, octaves: 4 }) > 0.79 - f * 0.07) land[Y * W + X] = 1;
+        }
+      }
+      const iw = whole ? 1.2 : 0.3;
+      if (shapes.some((s) => inside(s, wx, wy)) || isles.some((s) => inside(s, x + nx * iw + fx2 * 0.25, y + ny * iw + fy2 * 0.25)) || ellipseAt(islets, x + nx * iw, y + ny * iw, 1, whole ? 0.8 : 0.12)) land[Y * W + X] = 1;
+      if (ellipseAt(LAKES, x + nx * 0.4, y + ny * 0.4, 1, whole ? 0.6 : 0.2) || lakes.some((l) => inside(l, x + nx * 0.3, y + ny * 0.3))) lake[Y * W + X] = 1;
       if (!whole && ellipseAt(FINE_LAKES, x + nx * 0.15, y + ny * 0.15, 1, 0.2)) lake[Y * W + X] = 1;
+      if (!whole && lake[Y * W + X] && ellipseAt(LAKE_ISLES, x, y, 1, 0.12)) lake[Y * W + X] = 0;
     }
   // distance inland (for the mountains) and out to sea (for the shallows), in fine pixels
   const dist = (target) => {
@@ -506,19 +434,20 @@ function paintMap({ S, box, whole, inset = false }) {
         b = Math.max(b, smooth(1.05, 0.6, e + (fbm(x, y, { seed: 275, scale: 1.5, octaves: 3 }) - 0.5) * 0.45));
       }
       h *= 1 - b * 0.93;
-      // the rivers' valleys: a broad one, and the narrow cut of the river in it
-      let dr = 9;
+      // the rivers' valleys: a broad one for the big rivers, and the narrow cut of the river in it
+      let cut = 0;
       for (const r of COURSES) {
         if (x < r.x0 - 2.5 || x > r.x1 + 2.5 || y < r.y0 - 2.5 || y > r.y1 + 2.5) continue;
-        for (const [qx, qy] of r.pts) {
-          const d = (qx - x) ** 2 + (qy - y) ** 2;
+        let dr = 9;
+        for (let q = 0; q < r.pts.length; q += 3) {
+          const d = (r.pts[q][0] - x) ** 2 + (r.pts[q][1] - y) ** 2;
           if (d < dr) dr = d;
         }
-      }
-      if (dr < 9) {
+        if (dr >= 9) continue;
         const d = Math.sqrt(dr);
-        h *= 1 - 0.45 * Math.exp(-((d / 1.0) ** 2)) - 0.3 * Math.exp(-((d / 0.3) ** 2));
+        cut = Math.max(cut, [0, 0.2, 0.35, 0.45][r.size] * Math.exp(-((d / [0, 0.5, 0.8, 1.0][r.size]) ** 2)) + 0.3 * Math.exp(-((d / 0.3) ** 2)));
       }
+      h *= 1 - Math.min(0.8, cut);
       // the volcanoes: cones furrowed by their gullies, with craters; calderas, a ring of rim round a flat floor
       for (const v of cones) {
         const [cx, cy] = v.c;
@@ -571,8 +500,36 @@ function paintMap({ S, box, whole, inset = false }) {
   })();
   const lat = (Y) => MAP.lat0 - (uy(Y) - MAP.oy) / MAP.sy;
   const step = Math.max(2, Math.round(S / 3));
-  const surf = whole ? 0.55 : 0.55 / Math.sqrt(k);
+  const surf = whole ? 0.55 : 1.3 / S; // (the surf's width in map units)
   const [fujiX, fujiY] = project(...FUJI);
+
+  // ---- the depth of the sea (m): the shelf to 200 m, the slope down to the basins, the trenches; the mud flats' places
+  const trenches = TRENCHES.map(([pts, m]) => ({ P: pts.map(([lon, la]) => project(lon, la)), m }));
+  const flats = FLATS.map(([lon, la, km]) => [...project(lon, la), km / KM]);
+  const depth = new Float32Array(W * H);
+  for (let Y = 0; Y < H; Y++)
+    for (let X = 0; X < W; X++) {
+      const i = Y * W + X;
+      if (land[i]) continue;
+      const x = ux(X);
+      const y = uy(Y);
+      const o = offshore[i] / S;
+      // (the basins still deepening slowly far out, so their isobaths run along the slopes and don't break into rings)
+      let d = o < 2.6 ? 200 * (o / 2.6) ** 1.3 : 200 + 3000 * smooth(2.6, 10, o) + 70 * Math.min(12, Math.max(0, o - 6));
+      d *= 1 + (fbm(x, y, { seed: 292, scale: 3, octaves: whole ? 3 : 4 }) - 0.5) * 0.18 * smooth(14, 5, o);
+      for (const { P, m } of trenches) {
+        let dt = 1e9;
+        for (let n = 0; n + 1 < P.length; n++) {
+          const [ax, ay] = P[n];
+          const [bx, by] = P[n + 1];
+          const l2 = (bx - ax) ** 2 + (by - ay) ** 2;
+          const t = Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / l2));
+          dt = Math.min(dt, Math.hypot(x - ax - t * (bx - ax), y - ay - t * (by - ay)));
+        }
+        d = Math.max(d, m * (0.55 * Math.exp(-((dt / 7) ** 2)) + 0.45 * Math.exp(-((dt / 2.2) ** 2))) * smooth(1.5, 5, o));
+      }
+      depth[i] = d;
+    }
 
   // ---- the sea and the land
   for (let Y = 0; Y < H; Y++)
@@ -657,22 +614,34 @@ function paintMap({ S, box, whole, inset = false }) {
         if (h > 0.25 && h < snow && steep > 1.7) c = mix(c, 0x7a7268, Math.min(0.6, (steep - 1.7) * 0.5));
         if (ash[i] > 0) c = mix(c, hashPx(X, Y, 248) < 0.3 ? 0x5a4e4a : 0x7a6a5e, ash[i] * 0.85);
         c = scaleColor(c, Math.max(0.55, Math.min(1.45, h < 0.1 ? 1 + (lit - 1) * 0.6 : lit)));
-        if (inland[i] < 2.2 * (whole ? 1 : Math.max(1, k * 0.6))) c = hashPx(X, Y, 209) < 0.35 ? 0xc0ae78 : 0xdccc98; // the beach
+        // the shore: a strip of sand where the land is low, rock where the hills come down to the sea
+        if (inland[i] < (whole ? 2.2 : 1 + S * 0.03)) {
+          if (!whole && blur[i] > 0.13) c = hashPx(X, Y, 209) < 0.4 ? 0x5e5850 : 0x7a7264;
+          else c = hashPx(X, Y, 209) < 0.35 ? 0xc0ae78 : 0xdccc98;
+        }
         img.set(X, Y, c);
         continue;
       }
-      // the sea: deepening away from the coast, lighter in the south
+      // the sea: coloured by its depth, a little lighter in the south; the isobaths as fine lines; the mud flats of
+      // the Ariake Sea bare at low tide, its creeks winding through them
       const o = lake[i] ? 0 : offshore[i] / S;
       const swell = fbm(x, y * 2.2, { seed: 210, scale: 18, octaves: whole ? 3 : 5 });
-      let c = mix(0x0c1a34, 0x16305a, swell * 0.7 + (y / MAP.h) * 0.35);
+      let c;
       if (lake[i]) c = mix(0x3a7a9a, 0x5a9ab4, swell);
       else {
-        c = mix(c, 0x1c4670, smooth(9, 2, o) * 0.7);
-        c = mix(c, 0x3a7c98, smooth(3, 0.6, o) * 0.75);
-        // contour lines of the shelf
-        const cw = whole ? 0.18 : Math.max(0.18 / k, 0.7 / S);
-        for (const n of [2.6, 5.6]) if (Math.abs(o - n - (swell - 0.5) * 2) < cw) c = mix(c, 0x6aa0b8, 0.2);
-        if (o < surf) c = 0xe0eeee; // the surf
+        const d = depth[i];
+        c = seaColor(d);
+        c = scaleColor(c, 0.9 + swell * 0.18 + (y / MAP.h) * 0.08);
+        for (const [L, a] of ISOBATHS) {
+          const r = X + 1 < W && !land[i + 1] ? depth[i + 1] : d;
+          const b = Y + 1 < H && !land[i + W] ? depth[i + W] : d;
+          if ((d - L) * (r - L) < 0 || (d - L) * (b - L) < 0) c = mix(c, 0x6aa0b8, a);
+        }
+        let mud = 0;
+        if (!whole && o < 0.9)
+          for (const [fx0, fy0, rad] of flats) mud = Math.max(mud, smooth(rad, rad * 0.5, Math.hypot(x - fx0, y - fy0)) * smooth(0.75, 0.2, o + (fbm(x, y, { seed: 293, scale: 0.4, octaves: 3 }) - 0.5) * 0.5));
+        if (mud > 0.5 && ridged(x * 2.2, y * 2.2, 294, 3) < 0.78) c = mix(0x7a705c, 0x988e74, fbm(x, y, { seed: 295, scale: 0.15, octaves: 2 }));
+        else if (o < surf) c = 0xe0eeee; // the surf
         else if (o < surf * 1.8 && hashPx(X >> 1, Y >> 1, 211) < 0.25) c = mix(c, 0xe0eeee, 0.5);
       }
       img.set(X, Y, c);
@@ -689,7 +658,7 @@ function paintMap({ S, box, whole, inset = false }) {
     const ROOFS = [0x8e8a86, 0xa29c94, 0x7c7c84, 0xb4aca0, 0x6e6a6c, 0x8a6a5a, 0x5e6e8c];
     for (const [lon, la, km] of TOWNS) {
       const [cx, cy] = project(lon, la);
-      const west = lon < MAP.lon0;
+      const west = inInset(lon, la);
       const rx = ((km * 1.6) / (111 * Math.cos((la * Math.PI) / 180))) * (west ? INSET.sx : MAP.sx);
       const ry = ((km * 1.6) / 111) * (west ? INSET.sy : MAP.sy);
       for (let Y = Math.floor(fy(cy - ry * 1.4)); Y <= fy(cy + ry * 1.4); Y++)
@@ -718,22 +687,23 @@ function paintMap({ S, box, whole, inset = false }) {
     }
   }
   // the rivers: from the mountains down to the sea, wandering, down the valleys they cut
-  for (const r of COURSES) {
-    let last = -1;
-    for (const [px, py] of r.pts) {
-      const X = Math.round(fx(px));
-      const Y = Math.round(fy(py));
-      if (X < 0 || Y < 0 || X >= W || Y >= H || !land[Y * W + X] || Y * W + X === last) continue;
-      last = Y * W + X;
-      if (whole) {
-        img.set(X, Y, 0x5aa0c4);
-        img.set(X + 1, Y, 0x3e7ea0, 0.6);
-      } else {
-        blob(X + 1, Y, S / 12 + 0.4, 0x3e7ea0, 0.5);
-        blob(X, Y, S / 12, 0x5aa0c4);
+  // (two passes: the banks' shadow, then the water, so a river crossing itself stays clean)
+  for (const pass of [0, 1])
+    for (const r of COURSES) {
+      if (whole && r.size < 2) continue;
+      let last = -1;
+      for (const [px, py, w] of r.pts) {
+        const X = Math.round(fx(px));
+        const Y = Math.round(fy(py));
+        if (X < 0 || Y < 0 || X >= W || Y >= H || !land[Y * W + X] || Y * W + X === last) continue;
+        last = Y * W + X;
+        if (whole) {
+          if (pass) img.set(X, Y, 0x5aa0c4, r.size > 2 ? 1 : 0.6);
+          else img.set(X + 1, Y, 0x3e7ea0, r.size > 2 ? 0.6 : 0.3);
+        } else if (!pass) blob(X + 1, Y + 1, w * S + 0.5, 0x2e5e70, 0.35);
+        else blob(X, Y, Math.max(0.5, w * S), mix(0x5aa0c4, 0x7ab8d4, hashPx(X >> 2, Y >> 2, 215) * 0.4));
       }
     }
-  }
   // ---- close up: the Shinkansen, a dashed black and white line on land, under the sea where it goes under the sea
   if (!whole) {
     const r = Math.max(0.8, S / 11);
@@ -907,6 +877,14 @@ function paintMap({ S, box, whole, inset = false }) {
         const o = offshore[Y * W + X] / S;
         let c = mix(0x1c5a84, 0x2a7ca0, fbm(ux(X) * 3, uy(Y) * 3, { seed: 217, scale: 24, octaves: whole ? 3 : 4 }));
         c = mix(c, 0x68c0c8, smooth(5, 0.7, o) * 0.85);
+        // close up the coral reefs: a pale lagoon inside the reef's edge, the breakers white along it, the deep blue
+        // dropping off beyond
+        if (!whole) {
+          const edge = 0.45 + (fbm(ux(X), uy(Y), { seed: 297, scale: 0.8, octaves: 3 }) - 0.5) * 0.4;
+          if (o < edge) c = mix(0xbaf0e2, 0x86d8cc, (o / edge) ** 2);
+          else if (o < edge + 1.5 / S) c = hashPx(X, Y, 298) < 0.55 ? 0xf2fbf8 : 0xbcece2;
+          else c = mix(c, 0x1a5a88, smooth(edge + 0.1, edge + 0.6, o) * 0.3 * smooth(2, 1, o));
+        }
         if (o < surf) c = 0xf0f8f4;
         img.set(X, Y, c);
       }

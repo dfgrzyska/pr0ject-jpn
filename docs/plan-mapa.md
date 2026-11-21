@@ -114,3 +114,16 @@ mapa ogólna (między etapami) zyskuje to samo, ale w swojej skali.
   Japonia, 8 px na jednostkę, bez ozdób) od zbliżenia 1,25, ostre kafle zachód i środek (18 px, 1:1) od 3,2,
   wstawka Okinawy osobno, widoczna tylko w kadrze Okinawy (`insetFocus`). Test pilnuje, że każdy kadr regionu jest
   ostry od brzegu do brzegu. Pliki mapy: 5,7 MB (było 2,3 MB). `node tools/gen-art.mjs --only=map` rysuje samą mapę.
+- 2026-11-21: iteracja 2. Geografia w `tools/art/japan-geo.mjs`. Gęstsze wybrzeże Morza Japońskiego (Shimane z
+  Shinji i Nakaumi, Tango, Wakasa, Noto, zatoka Toyama, Oga, Tsugaru, zatoka Mutsu, Shimokita) i Hokkaido (Uchiura,
+  Nemuro, Shiretoko); riasy wycinane drobno (Sanriku, Wakasa, Shima, Kii, Uwajima, Saikai i Hirado, Tsushima, Gotō,
+  Amakusa, Izu, Saiki), z dala od portów miast. Wyspy w swoich kształtach: Sado, Tsushima, Iki, Hirado, Gotō,
+  Yakushima, Tanegashima, Amami, Shōdoshima, Oki, Izu Ōshima z Miharą, Rishiri ze stożkiem, Rebun, Okushiri,
+  Okinawa z Motobu i Katsuren, Kume, Kerama, Ie, Aguni; Shimanami, Etajima, Kurahashi, Miyajima, Suō-Ōshima;
+  rozsiane wysepki Morza Wewnętrznego, Kujūku-shima, Matsushimy, zatoki Ago, Gotō, Amakusy; rafy Okinawy z laguną i
+  przybojem. Biwa z Chikubushimą, Kasumigaura, Shinji, Nakaumi, Inawashiro, Saroma, Towada, Shikotsu, Tōya z wyspą,
+  Kussharo, Suwa, Chūzenji, Tazawa, Ogawara, Mashū, Akan. 62 rzeki od źródła do ujścia, gładkie, meandrujące niżej,
+  szersze ku ujściu, z deltą Ōty w Hiroszimie. Morze barwione głębią, izobaty cienkimi liniami, rowy Japoński,
+  Izu-Ogasawara, Nankai i Ryūkyū, równie pływowe Ariake. Wąskie plaże tylko na płaskich brzegach, skały na
+  stromych, cienki przybój. Wstawka Okinawy obejmuje tylko to, co przy Okinawie (`inInset`): zachodnie Gotō
+  wychodziły dotąd pasem przez całą mapę.
