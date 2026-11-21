@@ -1,5 +1,5 @@
 import { RENDER_SCALE } from '../config.js';
-import { INSET, MAP, TILES, project } from '../data/japan.js';
+import { INSET, MAP, MARKS, MARK_BOX, TILES, inInset, markZoom, project } from '../data/japan.js';
 
 // The map of Japan seen through a camera (docs/plan-mapa.md): a view is the map point (cx, cy) put in the middle
 // of the screen's area and z screen units to a map unit. Close up, the finer tiles of the cities' stretches are laid
@@ -56,6 +56,13 @@ export class MapCamera {
   constructor(scene, depth, area) {
     this.base = scene.add.image(0, 0, 'japan').setOrigin(0).setDepth(depth);
     this.tiles = TILES.map((t, n) => ({ t, img: scene.add.image(0, 0, t.key).setOrigin(0).setDepth(depth + 0.01 + n * 0.001) }));
+    // the landmarks, standing on their places (their foot on the frame's row 44 of 48), the same size at any zoom
+    this.marks = MARKS.map((m, n) => ({
+      m,
+      from: markZoom[n],
+      inset: inInset(...m.at),
+      img: scene.add.image(0, 0, 'map_marks', m.key).setOrigin(0.5, 44 / 48).setScale(1 / RENDER_SCALE).setDepth(depth + 0.02),
+    }));
     this.area = area;
     this.view = WHOLE;
     this.alpha = 1;
@@ -117,17 +124,39 @@ export class MapCamera {
       img.setVisible(on);
       if (on) img.setScale(z / t.S).setPosition(snap(tx), snap(ty)).setAlpha(a);
     }
+    for (const k of this.marks) {
+      const a = smooth(k.from, k.from + 0.35, z) * this.alpha * (k.inset ? onInset : 1);
+      const [mx, my] = this.toScreen(...project(...k.m.at));
+      k.x = mx + k.m.off[0];
+      k.y = my + k.m.off[1];
+      k.a = a;
+      const on = this.visible && a > 0.01 && k.x > x0 - 10 && k.x < x1 + 10 && k.y > y0 - 2 && k.y < y1 + 16;
+      k.img.setVisible(on);
+      if (on) k.img.setPosition(snap(k.x), snap(k.y)).setAlpha(a);
+    }
+  }
+
+  /** The landmarks showing, as obstacles for the names ({ x, y, r } on the screen: two circles each, over the frame). */
+  markSpots() {
+    const [x0, y0, x1, y1] = MARK_BOX;
+    const r = (x1 - x0) / 2;
+    return this.marks.filter((k) => k.img.visible && k.a > 0.3).flatMap((k) => [
+      { x: k.x, y: k.y + y1 - r, r },
+      { x: k.x, y: k.y + y0 + r, r },
+    ]);
   }
 
   setDepth(d) {
     this.base.setDepth(d);
     this.tiles.forEach(({ img }, n) => img.setDepth(d + 0.01 + n * 0.001));
+    for (const k of this.marks) k.img.setDepth(d + 0.02);
     return this;
   }
 
   destroy() {
     this.base.destroy();
     for (const { img } of this.tiles) img.destroy();
+    for (const k of this.marks) k.img.destroy();
   }
 }
 

@@ -152,7 +152,7 @@ export class JapanMap {
     const shown = this.labels.filter((l) => l.region === focus).sort((a, b) => (b.k === this.pos + 1) - (a.k === this.pos + 1));
     const spots = placeNames(
       shown.map((l) => ({ x: dots[l.k][0], y: dots[l.k][1], w: l.text.width, h: l.text.height, prefer: this.stages[this.order[l.k]].map.slice(2) })),
-      [...dots.map(([x, y]) => ({ x, y, r: 4 })), ...seals.filter((_, k) => this.seals[k]).map(([x, y]) => ({ x, y, r: 4 }))],
+      [...dots.map(([x, y]) => ({ x, y, r: 4 })), ...seals.filter((_, k) => this.seals[k]).map(([x, y]) => ({ x, y, r: 4 })), ...this.cam.markSpots()],
       { x0: 0, x1: W - 1 },
     );
     for (const l of this.labels) {

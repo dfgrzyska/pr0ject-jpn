@@ -10,6 +10,7 @@ import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { packAtlas, packAtlasTight } from './lib/spritekit.mjs';
+import { mapMarks } from './art/mapmarks.mjs';
 import { Raster } from './lib/raster.mjs';
 import { buildSprites } from './art/sprites.mjs';
 import { buildFont, buildFont540, FONT } from './art/font.mjs';
@@ -164,6 +165,12 @@ const japan = buildJapanMap();
 write('japan.png', japan.toPNG());
 // (and finer for the camera's close-ups)
 for (const t of TILES) write(`${t.key}.png`, buildMapTile(t).toPNG());
+{
+  // its landmarks (tools/art/mapmarks.mjs)
+  const { raster, json } = packAtlas(mapMarks(), 256, 2, 'map_marks.png');
+  write('map_marks.png', raster.toPNG());
+  write('map_marks.json', Buffer.from(JSON.stringify(json)));
+}
 if (preview) writeFileSync(join(previewDir, 'japan_x3.png'), japan.scaled(3).toPNG());
 }
 

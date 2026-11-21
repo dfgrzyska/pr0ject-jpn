@@ -148,3 +148,14 @@ mapa ogólna (między etapami) zyskuje to samo, ale w swojej skali.
   Nagoya, Osaka, Kobe, Sakai, Kitakiusiu, Hakata, Hiroszima, Mizushima, Tomakomai i inne). Lotniska z płytą i
   pasami (Haneda, Narita, Kansai, Itami, Kobe, Centrair, Chitose, Fukuoka, Naha i inne), sztuczne wyspy lotnisk
   Kansai, Kobe, Centrair i Nagasaki.
+- 2026-11-21: iteracja 5, miejsca. Miniatury w 540 px (tools/art/mapmarks.mjs, atlas map_marks), przy każdym mieście
+  etapu to, o czym jest jego etap i pieczątka: Kinkaku-ji nad stawem (Kioto), zamek z miedzianymi dachami (Osaka),
+  Tokyo Tower w biało-pomarańczowe pasy, wieża telewizyjna z zegarem nad parkiem Ōdōri (Sapporo), czerwona pagoda
+  Chūreitō w kwitnących wiśniach (Kawaguchiko), pagoda Tennei-ji ze schodami i kotem (Onomichi), torii Itsukushimy
+  w morzu z jeleniem (Hiroszima), Fukuoka Tower i kwitnąca śliwa, staw Umi Jigoku z parą (Beppu), dymiąca
+  Sakurajima z promem (Kagoshima), Megane-bashi z odbiciem łuków (Nagasaki), Shurei-mon (Okinawa). Do tego słynne
+  miejsca bez etapu: zamek Himeji, chram w Ise, Yōmei-mon w Nikkō, wysepki Matsushimy, latarnia kotoji w Kenroku-en
+  (Kanazawa). Stoją na swoich miejscach (MARKS w src/data/japan.js), zawsze tej samej wielkości na ekranie, obok
+  kropki miasta, z dala od statku; każda pojawia się od zbliżenia, przy którym nie zasłania wcześniejszej (markZoom).
+  Nazwy miast je omijają (MapCamera.markSpots w placeNames, w menu i między etapami). Test: w widoku każdego regionu
+  widać miniatury jego miast, żadna nie leży na innej, na statku ani na innym mieście.

@@ -64,6 +64,7 @@ export class Boot extends Phaser.Scene {
     this.load.image('font540_ink', 'font540_ink.png');
     this.load.image('japan', 'japan.png'); // the map between stages (at 540 px)
     for (const t of TILES) this.load.image(t.key, `${t.key}.png`); // (the same, finer, where the cities are)
+    this.load.atlas('map_marks', 'map_marks.png', 'map_marks.json'); // its landmarks (at 540 px)
     this.load.atlas('menu', 'menu.png', 'menu.json'); // the title screen (at 540 px)
     this.load.atlas('gacha', 'gacha.png', 'gacha.json'); // the gachapon screen (at 540 px)
     this.load.image('menu_waves', 'menu_waves.png');

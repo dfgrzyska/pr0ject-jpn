@@ -169,7 +169,7 @@ export class JourneyMenu {
     const shown = STAGES.map((_, i) => i).filter((i) => region.stages.includes(STAGES[i].id)).sort((a, b) => (b === this.index) - (a === this.index));
     const dots = STAGES.map((_, i) => ({ ...this.city(i), r: 3 }));
     const spots = placeNames(shown.map((i) => ({ ...dots[i], w: this.labels[i].width, h: this.labels[i].height, prefer: STAGES[i].map.slice(2) })),
-      [...dots, { x: this.ship.x, y: this.ship.y, r: 8 }], { x0: 2, x1: 150 });
+      [...dots, { x: this.ship.x, y: this.ship.y, r: 8 }, ...this.cam.markSpots()], { x0: 2, x1: 150 });
     this.labels.forEach((label, i) => {
       const n = shown.indexOf(i);
       if (n >= 0) label.setPosition(...spots[n]);

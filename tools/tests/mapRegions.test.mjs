@@ -64,3 +64,32 @@ test('the region of a city is found by its stage', () => {
   assert.equal(regionOf('stage9').id, 'kanto');
   assert.equal(regionOf('nope'), undefined);
 });
+
+test("in the city menu's view of each region its cities' landmarks show, clear of each other, of the ship on its city and of the other cities", async () => {
+  const { MARKS, MARK_BOX, markZoom, inInset } = await import('../../src/data/japan.js');
+  const [bx0, by0, bx1, by1] = MARK_BOX;
+  for (const H of [320, 380, 420]) {
+    const area = { x0: 2, x1: 150, y0: 72, y1: H - 82 };
+    for (const r of REGIONS) {
+      const pts = r.stages.map((id) => project(...stages.find((s) => s.id === id).map));
+      const v = fitView(pts, r.box, area);
+      const scr = ([x, y]) => [(area.x0 + area.x1) / 2 + (x - v.cx) * v.z, (area.y0 + area.y1) / 2 + (y - v.cy) * v.z];
+      const shown = MARKS.map((m, n) => ({ m, n })).filter(({ m, n }) => markZoom[n] + 0.35 <= v.z && (!inInset(...m.at) || insetFocus(v, area) > 0.99)).map(({ m }) => {
+        const [x, y] = scr(project(...m.at));
+        return { m, box: [x + m.off[0] + bx0, y + m.off[1] + by0, x + m.off[0] + bx1, y + m.off[1] + by1] };
+      });
+      const near = (b, [x, y], rad) => Math.hypot(x - Math.max(b[0], Math.min(x, b[2])), y - Math.max(b[1], Math.min(y, b[3]))) < rad;
+      for (const id of r.stages) {
+        const mine = shown.find((k) => k.m.stage === id);
+        assert.ok(mine, `${H} ${r.id}: ${id}'s landmark does not show (zoom ${v.z.toFixed(2)})`);
+        const dot = scr(project(...stages.find((s) => s.id === id).map));
+        assert.ok(!near(mine.box, dot, 6.5), `${H} ${r.id}: ${id}'s landmark under the ship`);
+        assert.ok(mine.box[0] >= area.x0 && mine.box[2] <= area.x1 && mine.box[1] >= area.y0 - 8 && mine.box[3] <= area.y1 + 8, `${H} ${r.id}: ${id}'s landmark off the map`);
+      }
+      for (const a of shown) {
+        for (const b of shown) if (a !== b) assert.ok(a.box[2] <= b.box[0] || b.box[2] <= a.box[0] || a.box[3] <= b.box[1] || b.box[3] <= a.box[1], `${H} ${r.id}: ${a.m.key} over ${b.m.key}`);
+        for (const s of stages) if (s.id !== a.m.stage) assert.ok(!near(a.box, scr(project(...s.map)), 3), `${H} ${r.id}: ${a.m.key} over ${s.id}`);
+      }
+    }
+  }
+});
