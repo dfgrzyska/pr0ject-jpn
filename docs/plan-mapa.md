@@ -69,6 +69,12 @@ białe placki), wszystkie niziny pokrywa ten sam wzór poletek, miasta to szare 
 i są proste, nie ma dróg, mostów, promów, portów ani niczego, po czym poznać miejsce. Kafle są przy największym
 zbliżeniu powiększane ok. 1,2 raza.
 
+W grze (suwak po regionach) widać jeszcze, że w zbliżeniu przebija mapa ogólna: przy Tokio złoty róg ramki Okinawy
+i płaska Fuji-obrazek przy lewym brzegu, nad Okinawą powiększona dżonka, w Chūbu łuski fal, a tam, gdzie kafel się
+kończy (lewy brzeg Kantō, dół Chūgoku), mapa nagle robi się rozmyta. To idzie do iteracji 1: kafle sięgają
+wszystkiego, co widać w kadrze któregoś regionu, a ozdoby mapy ogólnej (dżonki, wieloryb, chmury, róża wiatrów,
+Fuji-obrazek, łuski, ramka Okinawy) gasną przy zbliżaniu.
+
 Każda iteracja to osobny commit, oglądany w menu przed następną. Wszystko rysuje `tools/art/japan.mjs`, więc
 mapa ogólna (między etapami) zyskuje to samo, ale w swojej skali.
 
