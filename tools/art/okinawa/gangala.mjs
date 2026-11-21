@@ -1087,50 +1087,64 @@ export function paintCave(k) {
         }
       extra(r);
     }, false);
-  // the overhang at the mouth: rock across the whole way, its front lit by the day, stalactites hanging from it
-  const archFrame = (flip, c) => {
-    const w = 192;
+  // the overhang at the mouth: rock across the whole way, its front lit by the day, stalactites hanging from it. Near the
+  // eye, it slides with the camera (z) by up to ARCH_SLIDE as the ship goes to a side: it reaches that far past both edges
+  // of the screen, or its end shows hanging in the air (the author saw it at the way out, flying hard left)
+  const ARCH_SLIDE = 22;
+  const archFrame = (flip, c, seed) => {
+    const w = W + 2 * ARCH_SLIDE;
     const h = 84;
     const lip = (i) => (40 + (fbm(i / 9, flip ? 7 : 3, { seed: 4103, scale: 4 }) - 0.5) * 22 + 8 * Math.sin(i / 40)) * S;
     const sy = (j) => (flip ? h * S - 1 - j : j);
+    const more = rng(seed); // (the stalactites over the wider ends: the rest of the roof keeps its own draws)
     return roofFrame(w, h, (i, j) => sy(j) < lip(i), (i, j) => Math.max(0, 1 - (lip(i) - sy(j)) / 30), c, (r) => {
-      for (let q = 0; q < 90; q++) {
-        const i = Math.floor(rr() * w * S);
-        const len = (6 + rr() * rr() * 34) * S * 0.5;
-        const wb = 2 + rr() * 5;
+      for (let q = 0; q < 120; q++) {
+        const R = q < 90 ? rr : more;
+        const i = Math.floor(R() * w * S);
+        const len = (6 + R() * R() * 34) * S * 0.5;
+        const wb = 2 + R() * 5;
         const j0 = lip(i) - 3;
-        stal(r, i, flip ? h * S - 1 - j0 : j0, 0, flip ? -1 : 1, wb, len, c, rr() < 0.5);
+        stal(r, i, flip ? h * S - 1 - j0 : j0, 0, flip ? -1 : 1, wb, len, c, R() < 0.5);
       }
     });
   };
-  const ARCH_IN = archFrame(false, 0xffdcaa);
-  const ARCH_OUT = archFrame(true, 0xfff0d0);
-  kit.loop(-6, C0 + 62, [ARCH_IN], { z: 0.75, ax: 90, au: C0 + 20, d: 0.97 });
-  kit.loop(-6, C1 + 30, [ARCH_OUT], { z: 0.75, ax: 90, au: C1 - 12, d: 0.97 });
+  const ARCH_IN = archFrame(false, 0xffdcaa, 4106);
+  const ARCH_OUT = archFrame(true, 0xfff0d0, 4107);
+  // (each held to its edge, ly: the way out's rock reaches 54 below the edge, so it rises at most 50 and never shows the
+  // grass under it; the mouth's 62 above the valley, so it sinks at most 55 and never leaves the cave behind it)
+  kit.loop(-ARCH_SLIDE, C0 + 62, [ARCH_IN], { z: 0.75, ax: 90, au: C0 + 20, d: 0.97, ly: [null, 55] });
+  kit.loop(-ARCH_SLIDE, C1 + 30, [ARCH_OUT], { z: 0.75, ax: 90, au: C1 - 12, d: 0.97, ly: [-50, null] });
   // the rock closing in at the sides, one piece after another, its rim lit in the colour of the hall
-  const sideFrame = (right, c, seed) => {
+  const sideFrame = (right, c, seed, h = 120, R = rr) => {
     const w = 40;
-    const h = 120;
     const rim = (j) => (12 + fbm(seed, j / 10, { seed: 4104, scale: 3, octaves: 2 }) * 16 + Math.sin(j / 40 + seed) * 4) * S;
     const sx = (i) => (right ? w * S - 1 - i : i);
     const fade = (j) => Math.min(1, j / 30, (h * S - 1 - j) / 30); // the ends tapering into the next piece
     return roofFrame(w, h, (i, j) => sx(i) < rim(j) * (0.55 + 0.45 * fade(j)), (i, j) => Math.max(0, 1 - (rim(j) * (0.55 + 0.45 * fade(j)) - sx(i)) / 24), c, (r) => {
-      for (let q = 0; q < 26; q++) {
-        const j = Math.floor(rr() * h * S);
+      for (let q = 0; q < Math.round((26 * h) / 120); q++) {
+        const j = Math.floor(R() * h * S);
         const i0 = rim(j) * (0.55 + 0.45 * fade(j)) - 3;
-        const len = (4 + rr() * rr() * 16) * S * 0.5;
-        stal(r, right ? w * S - 1 - i0 : i0, j, right ? -1 : 1, 0.15 * (rr() - 0.5), 1.5 + rr() * 3.5, len, c, rr() < 0.4);
+        const len = (4 + R() * R() * 16) * S * 0.5;
+        stal(r, right ? w * S - 1 - i0 : i0, j, right ? -1 : 1, 0.15 * (R() - 0.5), 1.5 + R() * 3.5, len, c, R() < 0.4);
       }
     });
   };
+  // (no piece reaches past SIDE_END: leaning away from the camera as they pass, the last ones stood out beyond the way out,
+  // over the grass in the day, where the overhang no longer hid them; shortened there, each with draws of its own)
+  const SIDE_END = C1 - 20;
+  const short = rng(4108);
   const sides = {};
   for (let u = C0 + 46, n = 0; u < C1 - 60; u += 104, n++) {
     const c = HALL(u)[0];
     const key = (k2) => `${c}_${k2}_${n % 2}`;
     sides[key('l')] ??= sideFrame(false, c, n % 2 ? 3 : 9);
     sides[key('r')] ??= sideFrame(true, c, n % 2 ? 6 : 12);
-    kit.loop(-14, u + 120, [sides[key('l')]], { z: 0.45, ax: 90, au: u + 60, d: 0.96, a: 0.95 });
-    kit.loop(W - 26, u + 172, [sides[key('r')]], { z: 0.45, ax: 90, au: u + 112, d: 0.96, a: 0.95 });
+    for (const [right, x, bottom] of [[false, -14, u], [true, W - 26, u + 52]]) {
+      const h = Math.min(120, SIDE_END - bottom);
+      if (h < 30) continue;
+      const frame = h === 120 ? sides[key(right ? 'r' : 'l')] : sideFrame(right, c, (right ? 6 : 3) + n, h, short);
+      kit.loop(x, bottom + h, [frame], { z: 0.45, ax: 90, au: bottom + h / 2, d: 0.96, a: 0.95 });
+    }
   }
   // clumps of stalactites hanging from the roof, nearer than the floor: soda straws, a drop shining on every tip
   const clump = (c) => k.sprite(26, 26, 2300, (r) => {

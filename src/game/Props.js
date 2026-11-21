@@ -187,7 +187,9 @@ export class Props {
     if (p.z) {
       const { camX, camY } = this.px;
       const base = this.px.screenY(p.au ?? p.u);
-      o.setPosition(this.snap(p.x + ((p.ax ?? p.x) - camX) * p.z), this.snap(this.px.screenY(p.u) + (base - camY) * p.z)).setAlpha(this.alphaOf(p));
+      // (ly: how far its height may move it up and down; an overhang keeps to the edge it hangs over)
+      const lean = p.ly ? Math.max(p.ly[0] ?? -Infinity, Math.min(p.ly[1] ?? Infinity, (base - camY) * p.z)) : (base - camY) * p.z;
+      o.setPosition(this.snap(p.x + ((p.ax ?? p.x) - camX) * p.z), this.snap(this.px.screenY(p.u) + lean)).setAlpha(this.alphaOf(p));
     } else o.setPosition(p.x, this.px.screenY(p.u)).setAlpha(this.alphaOf(p));
   }
 

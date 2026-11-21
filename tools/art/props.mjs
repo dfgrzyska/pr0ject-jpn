@@ -258,12 +258,14 @@ export class PropKit {
    * under the camera, by z times its distance from it (see Props). (ax, au): the point of the strip it is measured
    * from, by default where it stands, so the levels of one building can share theirs and stay together.
    * sc: shown this many times its size (a soft thing drawn at half the resolution, to save room).
+   * ly: [lo, hi], how far up (negative) and down its height may move it on the screen: an overhang that must keep to the
+   * edge it hangs over, or it shows a gap of ground under it and hangs in the air.
    */
-  loop(x, u, f, { fps = 6, seq, ph = this.rand(), a, d, tint, fx, z, ax, au, sc, by } = {}) {
+  loop(x, u, f, { fps = 6, seq, ph = this.rand(), a, d, tint, fx, z, ax, au, sc, by, ly } = {}) {
     const [, h] = this.maxSize(f);
     const m = z ? Math.ceil(Math.abs(z) * 520) : 0;
     // (by: [u, step] - not a cycle: frame 0 until the screen's top reaches u, the next every `step` px of the flight after)
-    return this.add({ k: 'loop', x, u, f, fps, seq, ph, a, d, tint, fx, z, ax, au, sc, by }, [u - h * (sc ?? 1) - m, u + m]);
+    return this.add({ k: 'loop', x, u, f, fps, seq, ph, a, d, tint, fx, z, ax, au, sc, by, ly }, [u - h * (sc ?? 1) - m, u + m]);
   }
 
   /**
