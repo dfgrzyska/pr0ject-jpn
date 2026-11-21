@@ -138,3 +138,13 @@ mapa ogólna (między etapami) zyskuje to samo, ale w swojej skali.
   parki; siatka prosto w Kioto, Narze, Nagoi, Sapporo, Asahikawie, Obihiro i Takayamie. Zamki w fosach (Pałac
   Cesarski, Osaka, Nagoya, Himeji, Kumamoto, Hiroszima i inne) jako znaki, parki (Nara, Ōdōri, Yoyogi, Shuri,
   Park Pokoju).
+- 2026-11-21: iteracja 4. Autostrady (Tōmei, Meishin, San'yō, Chūgoku, Kiusiu, Nagasaki, Ōita, Chūō, Kan-Etsu,
+  Tōhoku, Jōban, Hokuriku, Hokkaido i inne) bursztynowe w ciemnym obrysie; nad cieśninami mosty z jasnym pomostem,
+  cieniem na wodzie i pylonem przy brzegu (Akashi-Kaikyō, Ōnaruto, Seto-Ōhashi, Shimanami, Kanmon, Aqua-Line z
+  tunelem pod zatoką). Stare linie kolejowe ciemne z jasnymi kreskami (San'in, Uetsu, Ōu, Kisei, Nippō, Yosan, Dosan,
+  Hakodate, Nemuro, Sōya). Promy przerywaną linią (Aomori–Hakodate, Ōarai–Tomakomai, Tsuruga i Maizuru–Otaru, Sado,
+  Izu, Sakurajima, Yakushima, Iki i Tsushima, Gotō, Beppu–Osaka, Uno–Takamatsu, Hiroszima–Matsuyama, Miyajima,
+  Wakayama–Tokushima, Naha–Tokashiki i Kume). Porty z pirsami, dźwigami i falochronami (Tokio, Jokohama, Chiba,
+  Nagoya, Osaka, Kobe, Sakai, Kitakiusiu, Hakata, Hiroszima, Mizushima, Tomakomai i inne). Lotniska z płytą i
+  pasami (Haneda, Narita, Kansai, Itami, Kobe, Centrair, Chitose, Fukuoka, Naha i inne), sztuczne wyspy lotnisk
+  Kansai, Kobe, Centrair i Nagasaki.

@@ -6,7 +6,7 @@
 import { Raster, fbm, mix, noise2, rng, scaleColor } from '../lib/raster.mjs';
 import { hashPx } from './hires.mjs';
 import { MAP, INSET, inInset, project } from '../../src/data/japan.js';
-import { CASTLES, CROPS, CROPS_DEFAULT, PARKS, TOWNS, ARCHIPELAGOS, FINE_ISLANDS, FINE_LAKES, FLATS, HOKKAIDO, HONSHU, ISLANDS, ISLETS, KYUSHU, LAKES, LAKE_ISLES, LAKE_SHAPES, RIAS, RIVERS, SHIKOKU, TRENCHES } from './japan-geo.mjs';
+import { AIRPORTS, AIRPORT_ISLANDS, FERRIES, PORTS, RAILS, ROADS, CASTLES, CROPS, CROPS_DEFAULT, PARKS, TOWNS, ARCHIPELAGOS, FINE_ISLANDS, FINE_LAKES, FLATS, HOKKAIDO, HONSHU, ISLANDS, ISLETS, KYUSHU, LAKES, LAKE_ISLES, LAKE_SHAPES, RIAS, RIVERS, SHIKOKU, TRENCHES } from './japan-geo.mjs';
 
 
 const AWAJI = [
@@ -185,6 +185,24 @@ function ridged(x, y, seed, octaves) {
   return sum / norm;
 }
 
+// a line through its points (lon, lat[, 1 for a tunnel]) as a smooth curve, sampled finely (map units)
+function smoothPath(pts, per = 24) {
+  const P = pts.map(([lon, la, t]) => [...project(lon, la), t ?? 0]);
+  const out = [];
+  for (let i = 0; i + 1 < P.length; i++) {
+    const [p0, p1, p2, p3] = [P[Math.max(0, i - 1)], P[i], P[i + 1], P[Math.min(P.length - 1, i + 2)]];
+    const steps = Math.max(2, Math.ceil(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) * per));
+    for (let t = 0; t < steps; t++) {
+      const u = t / steps;
+      const c = (a, b, c2, d) => 0.5 * (2 * b + (-a + c2) * u + (2 * a - 5 * b + 4 * c2 - d) * u * u + (-a + 3 * b - 3 * c2 + d) * u * u * u);
+      out.push([c(p0[0], p1[0], p2[0], p3[0]), c(p0[1], p1[1], p2[1], p3[1]), p1[2] && p2[2] ? 1 : 0]);
+    }
+  }
+  const e = P[P.length - 1];
+  out.push([e[0], e[1], e[2]]);
+  return out;
+}
+
 // the rivers' courses as drawn, sampled finely (map units, with the width of the water there), so that the valleys they
 // cut and the water drawn in them are one: a smooth curve through their points, wandering a little, meandering more the
 // lower they get, wider towards the mouth; source and mouth stay where they are
@@ -269,7 +287,7 @@ function paintMap({ S, box, whole, inset = false }) {
   const tile = !whole && !inset;
   const okinawan = (pts) => inInset(...pts[0]);
   const shapes = [HONSHU, KYUSHU, SHIKOKU, HOKKAIDO].map(outline);
-  const isles = [AWAJI, AMAKUSA, ...ISLANDS, ...(whole ? [] : FINE_ISLANDS)].filter((pts) => !(tile && okinawan(pts))).map(outline);
+  const isles = [AWAJI, AMAKUSA, ...ISLANDS, ...(whole ? [] : [...FINE_ISLANDS, ...AIRPORT_ISLANDS])].filter((pts) => !(tile && okinawan(pts))).map(outline);
   const islets = tile ? ISLETS.filter(([lon, la]) => !inInset(lon, la)) : ISLETS;
   const lakes = LAKE_SHAPES.map(outline);
   const rias = RIAS.map(([lon, la, km, f]) => [...project(lon, la), km / KM, f]);
@@ -818,6 +836,113 @@ function paintMap({ S, box, whole, inset = false }) {
         else blob(X, Y, Math.max(0.5, w * S), mix(0x5aa0c4, 0x7ab8d4, hashPx(X >> 2, Y >> 2, 215) * 0.4));
       }
     }
+  // ---- close up: the ways. The expressways amber in a dark edge, on bridges over the straits (a pale deck, its shadow
+  // on the water, a tower where it leaves the shore), under the sea in their tunnels; the old main lines dark with pale
+  // ticks; the ferries' dashes across the sea; the harbours' piers and cranes behind their breakwaters; the airports'
+  // aprons and runways
+  if (!whole) {
+    const disc = (X, Y, r, c, a = 1) => {
+      if (r <= 0.6) return img.set(X, Y, c, a);
+      for (let j = Math.floor(-r); j <= r; j++) for (let i = Math.floor(-r); i <= r; i++) if (i * i + j * j <= r * r) img.set(X + i, Y + j, c, a);
+    };
+    const inside2 = (X, Y) => X >= 0 && Y >= 0 && X < W && Y < H;
+    const r = S >= 12 ? 0.8 : 0.4;
+    const roads = ROADS.map((pts) => smoothPath(pts, S));
+    for (const pass of [0, 1, 2])
+      for (const pts of roads) {
+        let last = -1;
+        let wasWater = null;
+        for (const [px, py, tunnel] of pts) {
+          const X = Math.round(fx(px));
+          const Y = Math.round(fy(py));
+          if (!inside2(X, Y) || Y * W + X === last) continue;
+          last = Y * W + X;
+          const water = !land[last] || lake[last];
+          if (tunnel && water) {
+            wasWater = null;
+            continue;
+          }
+          if (water) {
+            if (pass === 0) disc(X + 1, Y + 2, r + 0.4, 0x0c1828, 0.4);
+            else if (pass === 1) disc(X, Y, r, 0xe8e4da);
+            else if (wasWater === false && S >= 12) for (let j = 1; j <= 3; j++) img.set(X, Y - j, 0x3a3e4a);
+          } else if (pass === 0) disc(X, Y, r + 0.7, 0x5a3e22, 0.5);
+          else if (pass === 1) disc(X, Y, r, mix(0xe8b048, 0xf0c460, hashPx(X >> 2, Y >> 2, 340)));
+          else if (wasWater === true && S >= 12) for (let j = 1; j <= 3; j++) img.set(X, Y - j, 0x3a3e4a);
+          wasWater = water;
+        }
+      }
+    for (const pts of RAILS.map((q) => smoothPath(q, S))) {
+      let run = 0;
+      let last = -1;
+      for (const [px, py] of pts) {
+        const X = Math.round(fx(px));
+        const Y = Math.round(fy(py));
+        if (!inside2(X, Y) || Y * W + X === last) continue;
+        last = Y * W + X;
+        run++;
+        if (!land[last]) continue;
+        img.set(X, Y, run % 4 === 0 && S >= 12 ? 0xd8d4c8 : 0x34343e);
+      }
+    }
+    for (const pts of FERRIES.map((q) => smoothPath(q, S))) {
+      let run = 0;
+      let last = -1;
+      for (const [px, py] of pts) {
+        const X = Math.round(fx(px));
+        const Y = Math.round(fy(py));
+        if (!inside2(X, Y) || Y * W + X === last) continue;
+        last = Y * W + X;
+        run++;
+        if (!land[last] && run % 6 < 3) img.set(X, Y, 0xe8f0f4, 0.6);
+      }
+    }
+    for (const [lon, la, km] of PORTS) {
+      const [cx, cy] = project(lon, la);
+      const R = km / KM;
+      for (let Y = Math.max(1, Math.floor(fy(cy - R))); Y < Math.min(H - 1, fy(cy + R)); Y++)
+        for (let X = Math.max(1, Math.floor(fx(cx - R))); X < Math.min(W - 1, fx(cx + R)); X++) {
+          const i = Y * W + X;
+          if (land[i]) continue;
+          const x = ux(X);
+          const y = uy(Y);
+          const dd = Math.hypot(x - cx, y - cy) / R;
+          if (dd > 1) continue;
+          const o = offshore[i] / S;
+          const reach = 0.3 * (1 - dd * 0.6);
+          // (along the shore: the offshore distance's gradient gives its normal)
+          const gx = offshore[i + 1] - offshore[i - 1];
+          const gy = offshore[i + W] - offshore[i - W];
+          const gl = Math.hypot(gx, gy) || 1;
+          const along = (x * -gy + y * gx) / gl;
+          if (o < reach && ((along / 0.26) % 1 + 1) % 1 < 0.42) img.set(X, Y, o > reach - 1.2 / S && hashPx(X, Y, 341) < 0.5 ? 0xc84a3a : mix(0x9a9890, 0xb4b0a6, hashPx(X >> 1, Y >> 1, 342)));
+          else if (o > reach + 0.06 && o < reach + 0.06 + 1 / S && fbm(x, y, { seed: 343, scale: 0.3, octaves: 2 }) > 0.42) img.set(X, Y, 0xd8d4cc);
+        }
+    }
+    if (S >= 12) {
+      const pads = AIRPORT_ISLANDS.map(outline);
+      for (const pad of pads)
+        for (let Y = Math.max(0, Math.floor(fy(pad.y0))); Y < Math.min(H, fy(pad.y1)); Y++)
+          for (let X = Math.max(0, Math.floor(fx(pad.x0))); X < Math.min(W, fx(pad.x1)); X++) if (land[Y * W + X] && inside(pad, ux(X + 0.5), uy(Y + 0.5))) img.set(X, Y, 0xb4b4b0);
+      for (const [lon, la, hdg, runways] of AIRPORTS) {
+        const [cx, cy] = project(lon, la);
+        const [dx, dy] = [Math.sin((hdg * Math.PI) / 180), -Math.cos((hdg * Math.PI) / 180)];
+        const [X0, Y0] = [fx(cx), fy(cy)];
+        const k3 = (1.3 * S) / KM; // (km to pixels, the runways a little longer than they are, to read)
+        const long = Math.max(...runways.map(([l]) => l)) * k3;
+        const wide = (Math.max(...runways.map(([, o]) => Math.abs(o))) + 0.7) * k3;
+        for (let t = -long / 2 - 1; t <= long / 2 + 1; t += 0.5)
+          for (let w2 = -wide; w2 <= wide; w2 += 0.5) img.set(Math.round(X0 + dx * t - dy * w2), Math.round(Y0 + dy * t + dx * w2), 0xb8b8b4);
+        for (const [l, off] of runways)
+          for (let t = (-l * k3) / 2; t <= (l * k3) / 2; t += 0.5) {
+            const X = Math.round(X0 + dx * t - dy * off * k3);
+            const Y = Math.round(Y0 + dy * t + dx * off * k3);
+            img.set(X, Y, Math.abs(t) > (l * k3) / 2 - 1 ? 0xf4f4f0 : Math.floor(t) % 3 === 0 ? 0xe8e8e4 : 0x48484e);
+          }
+      }
+    }
+  }
+
   // ---- close up: the Shinkansen, a dashed black and white line on land, under the sea where it goes under the sea
   if (!whole) {
     const r = Math.max(0.8, S / 11);
