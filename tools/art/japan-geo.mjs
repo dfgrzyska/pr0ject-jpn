@@ -315,3 +315,85 @@ export const TRENCHES = [
   [[[138.7, 34.3], [137.5, 33.6], [136.0, 33.0], [134.5, 32.7], [133.0, 32.0], [132.2, 31.3]], 4200], // the Nankai Trough
   [[[132.2, 31.3], [131.4, 29.8], [130.2, 28.4], [129.2, 27.4]], 7000], // the Ryūkyū Trench
 ];
+
+// ---- the land (iteration 3): what the plains grow, by region, in spring. Each zone: lon, lat, radius in km, the
+// share of each crop (paddy: flooded for the planting; rice: just planted; wheat; rape: in flower; greens: vegetables
+// in rows; earth: ploughed; tea; peach, apple: in blossom; mikan: dark little trees; glass: greenhouses; pasture;
+// beet; lavender), how big its fields are (km), whether shelter belts line them (Hokkaidō) and whether they lie square
+const HONSHU_FIELDS = { paddy: 0.42, rice: 0.12, wheat: 0.07, greens: 0.17, earth: 0.1, rape: 0.03, glass: 0.03, peach: 0.02, apple: 0.02, mikan: 0.02 };
+export const CROPS_DEFAULT = { w: HONSHU_FIELDS, km: 1.6 };
+export const CROPS = [
+  // the north: big fields in a grid, wheat, potatoes, beet, pasture, shelter belts of larch
+  [142.6, 43.4, 260, { w: { wheat: 0.24, greens: 0.2, beet: 0.14, pasture: 0.24, earth: 0.12, paddy: 0.06 }, km: 3.4, belts: true, grid: true }],
+  [141.75, 43.35, 45, { w: { paddy: 0.45, rice: 0.15, wheat: 0.12, greens: 0.14, earth: 0.08, pasture: 0.06 }, km: 2.6, belts: true, grid: true }], // Ishikari's rice
+  [142.42, 43.35, 14, { w: { lavender: 0.3, wheat: 0.18, greens: 0.22, earth: 0.12, pasture: 0.18 }, km: 2.2, belts: true, grid: true }], // Furano
+  // the rice bowls
+  [139.0, 37.75, 55, { w: { paddy: 0.72, rice: 0.14, greens: 0.08, earth: 0.06 }, km: 1.8, grid: true }], // Echigo
+  [139.85, 38.85, 25, { w: { paddy: 0.72, rice: 0.14, greens: 0.08, earth: 0.06 }, km: 1.8, grid: true }], // Shonai
+  [140.1, 39.7, 30, { w: { paddy: 0.7, rice: 0.14, greens: 0.1, earth: 0.06 }, km: 1.8, grid: true }], // Akita
+  [140.95, 38.25, 35, { w: { paddy: 0.66, rice: 0.14, greens: 0.12, earth: 0.08 }, km: 1.8 }], // Sendai
+  [137.2, 36.65, 25, { w: { paddy: 0.74, rice: 0.14, greens: 0.07, earth: 0.05 }, km: 1.6 }], // Toyama
+  [140.45, 40.65, 28, { w: { apple: 0.42, paddy: 0.36, greens: 0.12, earth: 0.1 }, km: 1.4 }], // the apples of Tsugaru
+  [138.25, 36.62, 22, { w: { apple: 0.32, paddy: 0.3, greens: 0.2, earth: 0.18 }, km: 1.2 }], // the apples of Nagano
+  [138.6, 35.66, 14, { w: { peach: 0.55, paddy: 0.15, greens: 0.15, earth: 0.15 }, km: 1.0 }], // the peaches of Kofu
+  [133.85, 34.65, 18, { w: { peach: 0.2, paddy: 0.45, greens: 0.2, earth: 0.15 }, km: 1.2 }], // and of Okayama
+  // the greens and wheat of the Kanto loam
+  [139.7, 36.05, 70, { w: { greens: 0.3, wheat: 0.14, paddy: 0.3, rice: 0.06, earth: 0.14, glass: 0.06 }, km: 1.4 }],
+  // tea: Makinohara by Shizuoka, Uji, Chiran by Kagoshima
+  [138.15, 34.8, 32, { w: { tea: 0.48, mikan: 0.12, paddy: 0.2, greens: 0.12, earth: 0.08 }, km: 1.2 }],
+  [135.85, 34.85, 10, { w: { tea: 0.35, paddy: 0.35, greens: 0.2, earth: 0.1 }, km: 1.0 }],
+  [130.5, 31.35, 35, { w: { tea: 0.36, greens: 0.22, earth: 0.2, paddy: 0.12, glass: 0.1 }, km: 1.4 }],
+  // mikan: Arida in Wakayama, Ehime
+  [135.25, 34.08, 24, { w: { mikan: 0.45, paddy: 0.25, greens: 0.18, earth: 0.12 }, km: 1.0 }],
+  [132.75, 33.75, 30, { w: { mikan: 0.42, paddy: 0.28, greens: 0.18, earth: 0.12 }, km: 1.0 }],
+  // greenhouses: Kochi, the Atsumi peninsula, Kumamoto, Miyazaki
+  [133.6, 33.56, 20, { w: { glass: 0.4, paddy: 0.3, greens: 0.18, earth: 0.12 }, km: 1.0 }],
+  [137.15, 34.65, 16, { w: { glass: 0.42, greens: 0.3, earth: 0.14, paddy: 0.14 }, km: 1.0 }],
+  [130.7, 32.72, 22, { w: { glass: 0.25, paddy: 0.38, wheat: 0.14, greens: 0.15, earth: 0.08 }, km: 1.2 }],
+  [131.42, 32.0, 24, { w: { glass: 0.28, paddy: 0.32, greens: 0.25, earth: 0.15 }, km: 1.2 }],
+  // the wheat of the Chikushi plain, golden before the rice
+  [130.42, 33.28, 26, { w: { wheat: 0.36, paddy: 0.3, rice: 0.06, greens: 0.14, earth: 0.1, rape: 0.04 }, km: 1.6, grid: true }],
+  // the rape in flower in Izumo
+  [132.8, 35.37, 14, { w: { rape: 0.2, paddy: 0.5, greens: 0.18, earth: 0.12 }, km: 1.2 }],
+  // the sugar cane of Okinawa (young green, as rice) and its greens
+  [127.85, 26.5, 60, { w: { rice: 0.4, greens: 0.3, earth: 0.2, glass: 0.1 }, km: 0.6 }],
+];
+
+// ---- towns and cities: lon, lat, how far they spread (km), and whether their streets lie square (Kyoto, Sapporo...)
+export const TOWNS = [
+  [139.74, 35.69, 24], [139.62, 35.47, 12], [139.64, 35.87, 9], [139.7, 35.55, 7], [140.11, 35.61, 7], // Tokyo, Yokohama, Saitama, Kawasaki, Chiba
+  [139.55, 35.32, 4], [139.07, 35.1, 2.5], [139.15, 35.26, 3], [139.35, 35.65, 7], // Kamakura, Atami, Odawara, Hachioji
+  [139.98, 35.7, 5], [139.48, 35.92, 3], [139.88, 36.56, 4.5], [139.06, 36.39, 4], [139.0, 36.32, 3.5], [140.47, 36.37, 3.5], [140.1, 36.08, 2.5], [139.39, 36.15, 2.5], // Funabashi, Kawagoe, Utsunomiya, Maebashi, Takasaki, Mito, Tsukuba, Kumagaya
+  [135.5, 34.68, 14], [135.62, 34.81, 7], [135.18, 34.69, 8], [135.76, 35.01, 8, true], [135.81, 34.68, 4, true], [135.8, 34.89, 3], [134.69, 34.82, 5], // Osaka, Hirakata, Kobe, Kyoto, Nara, Uji, Himeji
+  [135.48, 34.57, 6], [135.86, 35.0, 3], [135.17, 34.23, 3.5], [134.99, 34.65, 3], [134.84, 34.76, 2.5], [135.38, 35.47, 2], [136.26, 35.27, 2], // Sakai, Otsu, Wakayama, Akashi, Kakogawa, Maizuru, Hikone
+  [136.91, 35.17, 13, true], [137.73, 34.71, 6], [138.38, 34.97, 6], [138.77, 35.5, 2], // Nagoya, Hamamatsu, Shizuoka, Fujikawaguchiko
+  [136.76, 35.42, 4.5], [137.39, 34.77, 3.5], [137.17, 34.95, 3], [137.15, 35.08, 3], [138.86, 35.1, 3], [138.68, 35.16, 3], [136.51, 34.72, 3], [136.62, 34.97, 3.5], [136.71, 34.49, 2], // Gifu, Toyohashi, Okazaki, Toyota, Numazu, Fuji, Tsu, Yokkaichi, Ise
+  [137.21, 36.7, 4.5], [137.02, 36.75, 3], [136.65, 36.56, 5], [136.22, 36.06, 3.5], [137.25, 36.14, 1.5, true], // Toyama, Takaoka, Kanazawa, Fukui, Takayama
+  [138.57, 35.66, 3.5], [138.19, 36.65, 4], [137.97, 36.24, 3.5], [138.25, 36.4, 2], // Kofu, Nagano, Matsumoto, Ueda
+  [139.04, 37.92, 6], [138.85, 37.45, 3], // Niigata, Nagaoka
+  [133.92, 34.66, 7], [133.2, 34.41, 2.5], [133.36, 34.49, 4], [132.46, 34.4, 8], [130.95, 33.96, 4], // Okayama, Onomichi, Fukuyama, Hiroshima, Shimonoseki
+  [133.77, 34.59, 4], [132.56, 34.25, 3], [132.74, 34.43, 2], [133.08, 34.4, 2], [132.22, 34.17, 2.5], [131.81, 34.05, 3], [131.47, 34.18, 2.5], [131.25, 33.95, 3], // Kurashiki, Kure, Higashi-Hiroshima, Mihara, Iwakuni, Shunan, Yamaguchi, Ube
+  [133.05, 35.47, 3], [132.75, 35.37, 2.5], [133.33, 35.43, 2.5], [134.24, 35.5, 3], [134.0, 35.07, 2], // Matsue, Izumo, Yonago, Tottori, Tsuyama
+  [134.05, 34.34, 4.5], [132.77, 33.84, 5], [133.53, 33.56, 4.5], [134.55, 34.07, 4], [133.0, 34.07, 3], [133.28, 33.96, 2.5], [133.8, 34.29, 2.5], [132.56, 33.22, 2], // Takamatsu, Matsuyama, Kochi, Tokushima, Imabari, Niihama, Marugame, Uwajima
+  [130.4, 33.59, 9], [130.87, 33.87, 7], [130.71, 32.8, 7], [129.87, 32.75, 4], [130.55, 31.59, 5], [131.49, 33.28, 3], [131.61, 33.23, 4], // Fukuoka, Kitakyushu, Kumamoto, Nagasaki, Kagoshima, Beppu, Oita
+  [130.51, 33.32, 3.5], [130.3, 33.26, 3], [129.72, 33.17, 3.5], [130.05, 32.84, 2], [130.45, 33.03, 3], [130.6, 32.5, 2.5], [131.42, 31.91, 4], [131.06, 31.72, 3], [131.67, 32.58, 2.5], [129.97, 33.45, 2], [130.76, 31.74, 2], [130.69, 33.64, 2], // Kurume, Saga, Sasebo, Isahaya, Omuta, Yatsushiro, Miyazaki, Miyakonojo, Nobeoka, Karatsu, Kirishima, Iizuka
+  [141.35, 43.06, 9, true], [141.0, 43.19, 3], [141.6, 42.64, 3], [142.36, 43.77, 4, true], [140.73, 41.77, 4], // Sapporo, Otaru, Tomakomai, Asahikawa, Hakodate
+  [144.38, 42.98, 3], [143.2, 42.92, 3, true], [143.9, 43.8, 2], [140.97, 42.32, 2.5], [141.55, 43.11, 3], // Kushiro, Obihiro, Kitami, Muroran, Ebetsu
+  [140.87, 38.27, 7], [140.74, 40.82, 3.5], [140.47, 40.6, 2.5], [141.49, 40.51, 3], [141.15, 39.7, 3.5], [140.1, 39.72, 3.5], [140.34, 38.25, 3.5], [140.47, 37.76, 3], [140.36, 37.4, 3.5], [140.89, 37.05, 3], [141.3, 38.43, 2], [139.84, 38.91, 2], // Sendai, Aomori, Hirosaki, Hachinohe, Morioka, Akita, Yamagata, Fukushima, Koriyama, Iwaki, Ishinomaki, Sakata
+  [127.69, 26.21, 5], [127.79, 26.33, 3], [127.98, 26.59, 1.5], [127.86, 26.38, 2], // Naha, Okinawa City, Nago, Uruma
+];
+// castles in their moats: lon, lat, the moat's side in km
+export const CASTLES = [
+  [139.752, 35.685, 1.8], [135.526, 34.687, 1.2], [136.901, 35.185, 1.0], [134.694, 34.839, 0.8], [130.706, 32.806, 1.0], // the Imperial Palace, Osaka, Nagoya, Himeji, Kumamoto
+  [132.459, 34.403, 0.7], [133.936, 34.665, 0.6], [136.66, 36.565, 0.8], [137.969, 36.239, 0.6], [136.252, 35.276, 0.8], // Hiroshima, Okayama, Kanazawa, Matsumoto, Hikone
+  [132.766, 33.846, 0.8], [133.531, 33.561, 0.6], [140.857, 38.253, 0.8], [130.383, 33.585, 0.9], [135.748, 35.014, 0.5], // Matsuyama, Kochi, Sendai, Fukuoka, Nijo
+];
+// parks and grounds in the towns: lon, lat, width and height in km
+export const PARKS = [
+  [135.762, 35.025, 0.7, 1.3], // the Imperial Palace in Kyoto
+  [135.84, 34.685, 2.0, 1.2], // Nara Park
+  [141.35, 43.06, 1.6, 0.12], // Odori in Sapporo
+  [139.7, 35.672, 1.0, 1.0], // Yoyogi and Meiji Jingu
+  [127.719, 26.217, 0.6, 0.5], // Shuri
+  [132.452, 34.395, 0.4, 0.6], // the Peace Park in Hiroshima
+];

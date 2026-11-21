@@ -6,7 +6,7 @@
 import { Raster, fbm, mix, noise2, rng, scaleColor } from '../lib/raster.mjs';
 import { hashPx } from './hires.mjs';
 import { MAP, INSET, inInset, project } from '../../src/data/japan.js';
-import { ARCHIPELAGOS, FINE_ISLANDS, FINE_LAKES, FLATS, HOKKAIDO, HONSHU, ISLANDS, ISLETS, KYUSHU, LAKES, LAKE_ISLES, LAKE_SHAPES, RIAS, RIVERS, SHIKOKU, TRENCHES } from './japan-geo.mjs';
+import { CASTLES, CROPS, CROPS_DEFAULT, PARKS, TOWNS, ARCHIPELAGOS, FINE_ISLANDS, FINE_LAKES, FLATS, HOKKAIDO, HONSHU, ISLANDS, ISLETS, KYUSHU, LAKES, LAKE_ISLES, LAKE_SHAPES, RIAS, RIVERS, SHIKOKU, TRENCHES } from './japan-geo.mjs';
 
 
 const AWAJI = [
@@ -146,18 +146,7 @@ const VOLCANOES = [
   { at: [144.0, 43.38], km: 5, h: 0.5, crater: 0.4, live: true }, // Meakan
 ];
 
-// towns as patches of streets (lon, lat, radius in km), close up; the Shinkansen lines
-const TOWNS = [
-  [139.74, 35.69, 19], [139.62, 35.47, 10], [139.64, 35.87, 9], [139.7, 35.55, 7], [140.11, 35.61, 7], // Tokyo, Yokohama, Saitama, Kawasaki, Chiba
-  [139.55, 35.32, 4], [139.07, 35.1, 2.5], [139.15, 35.26, 3], [139.35, 35.65, 7], // Kamakura, Atami, Odawara, Hachiōji
-  [135.5, 34.68, 14], [135.62, 34.81, 7], [135.18, 34.69, 8], [135.76, 35.01, 8], [135.81, 34.68, 4], [135.8, 34.89, 3], [134.69, 34.82, 5], // Osaka, Hirakata, Kobe, Kyoto, Nara, Uji, Himeji
-  [136.91, 35.17, 13], [137.73, 34.71, 6], [138.38, 34.97, 6], [138.77, 35.5, 2], // Nagoya, Hamamatsu, Shizuoka, Fujikawaguchiko
-  [133.92, 34.66, 7], [133.2, 34.41, 2.5], [133.36, 34.49, 4], [132.46, 34.4, 8], [130.95, 33.96, 4], // Okayama, Onomichi, Fukuyama, Hiroshima, Shimonoseki
-  [130.4, 33.59, 9], [130.87, 33.87, 7], [130.71, 32.8, 7], [129.87, 32.75, 4], [130.55, 31.59, 5], [131.49, 33.28, 3], [131.61, 33.23, 4], // Fukuoka, Kitakyūshū, Kumamoto, Nagasaki, Kagoshima, Beppu, Ōita
-  [141.35, 43.06, 9], [141.0, 43.19, 3], [141.6, 42.64, 3], [142.36, 43.77, 4], [140.73, 41.77, 4], // Sapporo, Otaru, Tomakomai, Asahikawa, Hakodate
-  [140.87, 38.27, 7], // Sendai
-  [127.69, 26.21, 5], [127.79, 26.33, 3], // Naha, Okinawa City
-];
+// the Shinkansen lines
 const SHINKANSEN = [
   [[129.87, 32.75], [130.02, 33.2]], // Nishi-Kyūshū: Nagasaki to Takeo-Onsen
   [[130.54, 31.58], [130.69, 32.79], [130.42, 33.59]], // Kyūshū: Kagoshima, Kumamoto, Hakata
@@ -391,6 +380,7 @@ function paintMap({ S, box, whole, inset = false }) {
   const height = new Float32Array(W * H);
   const ash = new Float32Array(W * H); // (bare ash and old lava round the craters of the live ones)
   const capped = new Uint8Array(W * H); // (the snowcaps of the lone cones, down their gullies)
+  const valley = new Float32Array(W * H); // (how deep in a river's valley: their floors are farmed)
   for (let Y = 0; Y < H; Y++)
     for (let X = 0; X < W; X++) {
       const i = Y * W + X;
@@ -448,6 +438,7 @@ function paintMap({ S, box, whole, inset = false }) {
         cut = Math.max(cut, [0, 0.2, 0.35, 0.45][r.size] * Math.exp(-((d / [0, 0.5, 0.8, 1.0][r.size]) ** 2)) + 0.3 * Math.exp(-((d / 0.3) ** 2)));
       }
       h *= 1 - Math.min(0.8, cut);
+      valley[i] = cut;
       // the volcanoes: cones furrowed by their gullies, with craters; calderas, a ring of rim round a flat floor
       for (const v of cones) {
         const [cx, cy] = v.c;
@@ -502,6 +493,93 @@ function paintMap({ S, box, whole, inset = false }) {
   const step = Math.max(2, Math.round(S / 3));
   const surf = whole ? 0.55 : 1.3 / S; // (the surf's width in map units)
   const [fujiX, fujiY] = project(...FUJI);
+
+  // ---- the fields close up: the plain cut into irregular districts, each with its own lay of fields (square in the
+  // north and on the old grids) and the crops of its region; field paths between them, shelter belts in Hokkaidō; hamlets
+  // of farmhouses in their groves scattered over them
+  const zones = CROPS.map(([lon, la, km, z]) => [...project(lon, la), km / KM, z]);
+  const districts = new Map();
+  const fieldsOf = (id, sx, sy, gx, gy) => {
+    let f = districts.get(id);
+    if (f) return f;
+    let z = CROPS_DEFAULT;
+    let r0 = Infinity;
+    for (const [cx, cy, r, zz] of zones) if (r < r0 && Math.hypot(sx - cx, sy - cy) < r) [z, r0] = [zz, r];
+    const ang = z.grid ? (hashPx(gx, gy, 303) - 0.5) * 0.12 : hashPx(gx, gy, 303) * Math.PI;
+    const pu = ((z.km * 2.2) / KM) * (0.75 + 0.5 * hashPx(gx, gy, 304));
+    const keys = Object.keys(z.w);
+    const total = keys.reduce((n, k2) => n + z.w[k2], 0);
+    f = { ca: Math.cos(ang), sa: Math.sin(ang), pu, pv: pu * (0.5 + 0.3 * hashPx(gx, gy, 305)), keys, cum: keys.map(((acc) => (k2) => (acc += z.w[k2] / total))(0)), belts: z.belts };
+    districts.set(id, f);
+    return f;
+  };
+  const HAMLET_ROOFS = [0x7c7c84, 0x5e6a7c, 0x8a6a5a, 0x9a948c, 0x4e5a6e];
+  const farmland = (X, Y, x, y, hamlets) => {
+    // (the district: the nearest of the jittered points of a grid)
+    const D = 1.4;
+    const gx0 = Math.floor(x / D);
+    const gy0 = Math.floor(y / D);
+    let best = 1e9;
+    let sx = 0;
+    let sy = 0;
+    let gx = 0;
+    let gy = 0;
+    for (let j = -1; j <= 1; j++)
+      for (let i = -1; i <= 1; i++) {
+        const cx = (gx0 + i + hashPx(gx0 + i, gy0 + j, 300)) * D;
+        const cy = (gy0 + j + hashPx(gx0 + i, gy0 + j, 301)) * D;
+        const d = (x - cx) ** 2 + (y - cy) ** 2;
+        if (d < best) [best, sx, sy, gx, gy] = [d, cx, cy, gx0 + i, gy0 + j];
+      }
+    const f = fieldsOf(gx * 7919 + gy * 104729, sx, sy, gx, gy);
+    const u = (x - sx) * f.ca + (y - sy) * f.sa;
+    const v = -(x - sx) * f.sa + (y - sy) * f.ca;
+    const pi = Math.floor(u / f.pu);
+    const pj = Math.floor(v / f.pv);
+    const ph = hashPx(pi + gx * 131, pj + gy * 137, 302);
+    const p2 = hashPx(pi + gx * 131, pj + gy * 137, 306);
+    let k2 = 0;
+    while (k2 < f.cum.length - 1 && ph > f.cum[k2]) k2++;
+    const a = Math.floor(u * S);
+    const b = Math.floor(v * S);
+    let c;
+    switch (f.keys[k2]) {
+      case 'paddy': c = (a + b * 3) % 13 === 0 ? 0xb0ccc4 : mix(0x74a08c, 0x8eb49a, p2); break; // (the water mirroring the sky, the seedlings in it)
+      case 'rice': c = b % 2 ? mix(0x7eaa56, 0x92bc60, p2) : mix(0x76a256, 0x88b25a, p2); break;
+      case 'wheat': c = mix(0xb0b25c, 0xccc472, p2); break;
+      case 'rape': c = b % 2 ? 0xe6d64c : 0xd4c442; break;
+      case 'greens': c = b % 2 ? mix(0x5e9446, 0x7aa850, p2) : 0x8a7656; break;
+      case 'earth': c = b % 2 ? 0x9a7c5a : 0x86694c; break;
+      case 'tea': c = b % 2 ? 0x2e6238 : 0x4a7e44; break;
+      case 'peach': c = a % 2 === 0 && b % 2 === 0 ? (hashPx(X, Y, 307) < 0.5 ? 0xf2b4c6 : 0xe496ae) : 0x6e8a4e; break;
+      case 'apple': c = a % 2 === 0 && b % 2 === 0 ? (hashPx(X, Y, 307) < 0.5 ? 0xf6f2ea : 0xe4ded2) : 0x6e8a4e; break;
+      case 'mikan': c = a % 2 === 0 && b % 2 === 0 ? 0x2e5a34 : 0x5e8248; break;
+      case 'glass': c = a % 3 === 0 ? 0x8a949a : mix(0xe4eaee, 0xcad4d8, p2); break;
+      case 'pasture': c = mix(0x74a454, 0x8ab65e, p2); break;
+      case 'beet': c = b % 2 ? 0x4e8a40 : 0x6e5a40; break;
+      case 'lavender': c = b % 2 ? 0x8a6cc0 : 0x5e7a48; break;
+      default: c = 0x7e9a58;
+    }
+    // (the paths between the fields, the shelter belts; the parcels too small at the mid scale for paths)
+    if (S >= 12) {
+      const eu = (u / f.pu - pi) * f.pu * S;
+      const ev = (v / f.pv - pj) * f.pv * S;
+      if (f.belts && (eu < 1.2 || ev < 1)) c = hashPx(X, Y, 308) < 0.7 ? 0x3e6a40 : 0x557e4a;
+      else if (eu < 0.9 || ev < 0.9) c = mix(c, 0xb4ac88, 0.3);
+    }
+    // a hamlet: farmhouses among the trees of their groves
+    const HC = 0.9;
+    const hx = Math.floor(x / HC);
+    const hy = Math.floor(y / HC);
+    if (hashPx(hx, hy, 309) < hamlets) {
+      const cx = (hx + 0.2 + 0.6 * hashPx(hx, hy, 310)) * HC;
+      const cy = (hy + 0.2 + 0.6 * hashPx(hx, hy, 311)) * HC;
+      const rad = 0.05 + 0.08 * hashPx(hx, hy, 312);
+      const d = Math.hypot(x - cx, y - cy) / rad + (hashPx(X, Y, 313) - 0.5) * 0.5;
+      if (d < 1) c = hashPx(X >> (S >= 12 ? 0 : 1), Y, 314) < 0.5 ? HAMLET_ROOFS[Math.floor(hashPx(X >> 1, Y >> 1, 315) * HAMLET_ROOFS.length)] : 0x456e40;
+    }
+    return c;
+  };
 
   // ---- the depth of the sea (m): the shelf to 200 m, the slope down to the basins, the trenches; the mud flats' places
   const trenches = TRENCHES.map(([pts, m]) => ({ P: pts.map(([lon, la]) => project(lon, la)), m }));
@@ -558,24 +636,13 @@ function paintMap({ S, box, whole, inset = false }) {
         let c;
         let lit = shade * (1 + curv);
         if (h < 0.1) {
-          // the plains: fields in little patches, a town here and there
-          const cell = hashPx(X >> 3, Y >> 3, 206);
-          c = mix(0x7e9a58, 0x5e8a4c, cell);
-          if (cell > 0.86) c = 0xa8a868;
-          if (hashPx(X >> 2, Y >> 2, 207) < 0.03) c = 0x9a8a78;
-          if (!whole) {
-            // close up: parcels in rows, each its own crop (young rice, greens, rapeseed in flower, ploughed earth, tea),
-            // the ridges between them, a farmhouse here and there; the patches above still tint them by the village
-            const row = Math.floor(Y / 4);
-            const col = Math.floor((X + (row % 2) * 3) / 6);
-            const p = hashPx(col, row, 230);
-            let f = p < 0.36 ? mix(0x8aac5e, 0x70a052, hashPx(col, row, 231)) : p < 0.52 ? 0x5a8a46 : p < 0.62 ? 0xd2c460 : p < 0.76 ? 0x9c8a60 : p < 0.88 ? 0x5e925e : 0x9ab070;
-            if (p >= 0.62 && p < 0.76 && Y % 2) f = scaleColor(f, 0.88); // (the furrows)
-            if (p >= 0.76 && p < 0.88 && X % 2) f = scaleColor(f, 0.84); // (the tea in its rows)
-            c = mix(f, c, 0.3);
-            if ((X + (row % 2) * 3) % 6 === 0 || Y % 4 === 0) c = scaleColor(c, 0.86);
-            if (hashPx(X >> 1, Y >> 1, 232) < 0.01) c = 0x8a7466;
-          }
+          // the plains: on the whole map fields in little patches; close up the fields of their region (farmland)
+          if (whole) {
+            const cell = hashPx(X >> 3, Y >> 3, 206);
+            c = mix(0x7e9a58, 0x5e8a4c, cell);
+            if (cell > 0.86) c = 0xa8a868;
+            if (hashPx(X >> 2, Y >> 2, 207) < 0.03) c = 0x9a8a78;
+          } else c = farmland(X, Y, x, y, 0.3);
         } else if (h < trees) {
           // the woods: spring's new leaves in the broadleaf hills, plantations of sugi and hinoki darker in patches,
           // the conifers thickening towards the tree line; their crowns close up
@@ -598,6 +665,11 @@ function paintMap({ S, box, whole, inset = false }) {
             const f = (blur[i] * S * 2.6) % 1;
             c = f < 0.3 ? mix(c, 0x4e7438, 0.6) : mix(0x7ea888, 0x86aa62, fbm(x, y, { seed: 247, scale: 0.25, octaves: 2 }));
             lit = 1 + (lit - 1) * 0.6;
+          }
+          // the floors of the valleys farmed, a hamlet here and there
+          if (!whole && valley[i] > 0.3 && up < 0.3 && steep < 1.1) {
+            c = farmland(X, Y, x, y, 0.45);
+            lit = 1 + (lit - 1) * 0.5;
           }
         } else if (h < snow) {
           // above the trees: creeping pine and alpine grass, then bare rock and scree
@@ -651,39 +723,81 @@ function paintMap({ S, box, whole, inset = false }) {
     if (r <= 0.6) return img.set(X, Y, c, a);
     for (let j = Math.floor(-r); j <= r; j++) for (let i = Math.floor(-r); i <= r; i++) if (i * i + j * j <= r * r && dry(X + i, Y + j)) img.set(X + i, Y + j, c, a);
   };
-  // ---- close up: the towns, blocks of roofs in a grid of streets, avenues every fourth, a park here and there; built up
-  // whole in the middle, thinning out into the fields at the edge
+  // ---- close up: the towns, spreading over the flat land and stopping at the hills: the downtown's tall blocks, light,
+  // each with its shadow, on broad avenues; the houses' roofs in a grid of streets around it, thinning out into the
+  // fields; temple groves and parks; the grid square in the old capitals and the north, turned elsewhere. Then the
+  // castles in their moats, the palaces' and the parks' grounds
   if (!whole) {
-    const grid = Math.max(3, Math.round(S * 0.32));
-    const ROOFS = [0x8e8a86, 0xa29c94, 0x7c7c84, 0xb4aca0, 0x6e6a6c, 0x8a6a5a, 0x5e6e8c];
-    for (const [lon, la, km] of TOWNS) {
+    const B = S >= 12 ? 3 : 2; // (a block and its street, in pixels)
+    const ROOFS = [0x8e8a86, 0xa29c94, 0x7c7c84, 0xb4aca0, 0x6e6a6c, 0x8a6a5a, 0x5e6e8c, 0x4e5a6e, 0x9a5e4e];
+    TOWNS.forEach(([lon, la, km, square], n) => {
       const [cx, cy] = project(lon, la);
       const west = inInset(lon, la);
       const rx = ((km * 1.6) / (111 * Math.cos((la * Math.PI) / 180))) * (west ? INSET.sx : MAP.sx);
       const ry = ((km * 1.6) / 111) * (west ? INSET.sy : MAP.sy);
+      const ang = square ? 0 : (hashPx(n, 0, 320) - 0.5) * 0.9;
+      const [ca, sa] = [Math.cos(ang), Math.sin(ang)];
+      const core = km >= 10 ? 0.4 : km >= 6 ? 0.32 : km >= 3 ? 0.2 : 0.1;
+      const fill = km >= 6 ? 3.2 : 2.4; // (the big cities built up solid further out)
+      const [X0, Y0] = [fx(cx), fy(cy)];
       for (let Y = Math.floor(fy(cy - ry * 1.4)); Y <= fy(cy + ry * 1.4); Y++)
         for (let X = Math.floor(fx(cx - rx * 1.4)); X <= fx(cx + rx * 1.4); X++) {
           if (!dry(X, Y)) continue;
           const x = ux(X);
           const y = uy(Y);
-          const d = Math.hypot((x - cx) / rx, (y - cy) / ry) + (fbm(x, y, { seed: 221, scale: 0.9, octaves: 2 }) - 0.5) * 0.8;
+          const i = Y * W + X;
+          let d = Math.hypot((x - cx) / rx, (y - cy) / ry) + (fbm(x, y, { seed: 221, scale: 0.9, octaves: 3 }) - 0.5) * 0.8;
+          d += smooth(0.07, 0.28, height[i]) * 1.6; // (up the hills it gives out)
           if (d >= 1) continue;
-          const gx = Math.floor(X / grid);
-          const gy = Math.floor(Y / grid);
-          const avenue = (X % (grid * 4) === 0 || Y % (grid * 4) === 0) && d < 0.85;
-          const street = X % grid === 0 || Y % grid === 0;
-          if (!avenue && hashPx(gx, gy, 222) > (1 - d) * 2.4 + 0.05) continue; // (fields between the houses at the edge)
+          const gu = (X - X0) * ca + (Y - Y0) * sa;
+          const gv = -(X - X0) * sa + (Y - Y0) * ca;
+          const bi = Math.floor(gu / B);
+          const bj = Math.floor(gv / B);
+          const [iu, iv] = [Math.floor(gu - bi * B), Math.floor(gv - bj * B)];
+          const avenue = ((bi % 6 === 0 && iu === 0) || (bj % 6 === 0 && iv === 0)) && d < 0.9;
+          const street = B > 2 ? iu === 0 || iv === 0 : false;
+          const downtown = d < core;
+          if (!avenue && hashPx(bi + n * 977, bj, 322) > (1 - d) * fill + 0.04) continue; // (fields between the houses at the edge)
           let c;
-          if (avenue) c = 0xd8ccb4;
-          else if (street) c = 0xb8ae9e;
-          else if (hashPx(gx, gy, 227) < 0.05) c = hashPx(X, Y, 228) < 0.4 ? 0x3e7a44 : 0x5a9a50; // a park, its trees
-          else {
-            c = ROOFS[Math.floor(hashPx(gx, gy, 223) * ROOFS.length)];
-            if ((X + Y) % grid === 1) c = scaleColor(c, 1.12); // (the lit side of the roofs)
-            if (hashPx(X, Y, 224) < 0.1) c = scaleColor(c, 0.84);
+          if (avenue) c = downtown ? 0xe0dacc : 0xd2c8b0;
+          else if (street) c = downtown ? 0x8e8a86 : 0xb8ae9e;
+          else if (hashPx(bi + n * 977, bj, 327) < (downtown ? 0.03 : 0.06)) c = hashPx(X, Y, 328) < 0.45 ? 0x3e7a44 : 0x5a9a50; // a grove, a park
+          else if (downtown) {
+            // (the tall blocks: light concrete and glass, their shadow on the far side)
+            const t = hashPx(bi + n * 977, bj, 323);
+            c = t < 0.15 ? 0x9ab0c8 : mix(0xc8c8c4, 0xeeece6, t);
+            if (iu === B - 1 || iv === B - 1) c = t > 0.6 ? 0x5e5e68 : 0x76767e;
+          } else {
+            c = ROOFS[Math.floor(hashPx(bi + n * 977, bj, 324) * ROOFS.length)];
+            if ((X + Y) % B === 1) c = scaleColor(c, 1.1); // (the lit side of the roofs)
+            if (hashPx(X, Y, 325) < 0.12) c = scaleColor(c, 0.84);
           }
           img.set(X, Y, c, street && !avenue ? 0.85 : 1);
         }
+    });
+    // the castles: a square of moat, the stone of the walls, the green of the grounds, the white keep
+    for (const [lon, la, km] of CASTLES) {
+      const [cx, cy] = project(lon, la);
+      // (drawn as a sign where it is smaller than that: at least five pixels across)
+      const half = Math.max(2.5, ((km / 2) * S) / KM);
+      if (S < 12) continue;
+      const ring = Math.max(1, half * 0.22);
+      const [X0, Y0] = [Math.round(fx(cx)), Math.round(fy(cy))];
+      for (let j = -Math.ceil(half); j <= half; j++)
+        for (let i = -Math.ceil(half); i <= half; i++) {
+          const e = half - Math.max(Math.abs(i), Math.abs(j));
+          if (e < 0) continue;
+          img.set(X0 + i, Y0 + j, e < ring ? 0x4a88a8 : e < ring + 1 ? 0xbab2a0 : hashPx(X0 + i, Y0 + j, 330) < 0.4 ? 0x3e7a44 : 0x5e9a52);
+        }
+      for (let j = -1; j <= 0; j++) for (let i = -1; i <= 0; i++) img.set(X0 + i, Y0 + j, j < 0 ? 0x3a4250 : 0xf2f0ea);
+    }
+    for (const [lon, la, wk, hk] of PARKS) {
+      const [cx, cy] = project(lon, la);
+      if (S < 12) continue;
+      const [hw, hh] = [Math.max(1.5, ((wk / 2) * S) / KM), Math.max(1.5, ((hk / 2) * S) / KM)];
+      const [X0, Y0] = [Math.round(fx(cx)), Math.round(fy(cy))];
+      for (let j = -Math.ceil(hh); j <= hh; j++)
+        for (let i = -Math.ceil(hw); i <= hw; i++) if (dry(X0 + i, Y0 + j)) img.set(X0 + i, Y0 + j, hashPx(X0 + i, Y0 + j, 331) < 0.4 ? 0x3e7a44 : 0x5e9a52);
     }
   }
   // the rivers: from the mountains down to the sea, wandering, down the valleys they cut

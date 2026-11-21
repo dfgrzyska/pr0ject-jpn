@@ -127,3 +127,14 @@ mapa ogólna (między etapami) zyskuje to samo, ale w swojej skali.
   Izu-Ogasawara, Nankai i Ryūkyū, równie pływowe Ariake. Wąskie plaże tylko na płaskich brzegach, skały na
   stromych, cienki przybój. Wstawka Okinawy obejmuje tylko to, co przy Okinawie (`inInset`): zachodnie Gotō
   wychodziły dotąd pasem przez całą mapę.
+- 2026-11-21: iteracja 3. Niziny pocięte na nieregularne dzielnice, każda z własnym ułożeniem pól (prosto na
+  północy, w misach ryżowych i na Chikushi) i uprawami swojego regionu wiosną (`CROPS` w `japan-geo.mjs`): zalane
+  pola ryżowe z odbiciem nieba, świeżo posadzony ryż, pszenica, kwitnący rzepak, warzywa w rzędach, zaorana ziemia,
+  herbata Makinohary, Uji i Chiranu, kwitnące brzoskwinie Kōfu i Okayamy, jabłonie Tsugaru i Nagano, mikan Aridy i
+  Ehime, szklarnie Kōchi, Atsumi, Kumamoto i Miyazaki, na Hokkaido wielkie pola pszenicy, buraków i pastwisk z
+  pasami drzew, lawenda Furano, trzcina Okinawy; miedze między polami, przysiółki w gajach. Dna dolin rzecznych w
+  górach uprawne, z przysiółkami. Miasta (ok. 120) rozlewają się po płaskim i stają u podnóża wzgórz: śródmieście z
+  jasnymi wysokimi blokami i ich cieniami, aleje, dachy domów w siatce ulic rzednące w pola, gaje świątynne i
+  parki; siatka prosto w Kioto, Narze, Nagoi, Sapporo, Asahikawie, Obihiro i Takayamie. Zamki w fosach (Pałac
+  Cesarski, Osaka, Nagoya, Himeji, Kumamoto, Hiroszima i inne) jako znaki, parki (Nara, Ōdōri, Yoyogi, Shuri,
+  Park Pokoju).
