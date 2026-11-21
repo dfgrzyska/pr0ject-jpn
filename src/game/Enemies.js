@@ -161,6 +161,7 @@ export class Enemies {
         e.sniper = !!look.sniper;
         e.bounce = !!look.bounce;
         e.aimT = 0;
+        e.burst = 0;
         e.stopY = w.y ?? 50 + Math.random() * 24;
         break;
       case 'diver':

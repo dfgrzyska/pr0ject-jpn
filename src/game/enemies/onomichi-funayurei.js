@@ -21,12 +21,12 @@ export const FUNA = {
   phase: [0.66, 0.33],
   armour: 0.4,
   open: { time: 3.6, take: 3 },
-  ladle: { hp: 12, take: 0.6, every: 1.15, splash: 3, arc: 0.5, down: 1.4, oars: 4.6, oarN: 7 },
-  pot: { fly: 1.0, r: 10, n: 8, count: 3 },
-  conch: { rings: 3, n: 18, gap: 0.32 },
+  ladle: { hp: 12, take: 0.6, every: 0.75, splash: 4, arc: 0.6, down: 1.4, oars: 3.2, oarN: 7 },
+  pot: { fly: 1.0, r: 10, n: 10, count: 4 },
+  conch: { rings: 4, n: 18, gap: 0.3 },
   shell: { every: 4.6, fly: 4.4, hp: 3, r: 6 },
   stun: { time: 3.8, take: 3.2 },
-  whirl: { turn: 3.4, every: 0.1, open: 2.8, rows: 2, warn: 1.05, live: 0.7, step: 13 },
+  whirl: { turn: 3.4, every: 0.075, open: 2.4, rows: 2, warn: 1.05, live: 0.7, step: 13 },
   outro: 10,
 };
 
@@ -186,7 +186,8 @@ export const onomichiFunayurei = {
     if (g.stun > 0) return; // (stunned by a firework: nothing from it)
     if (g.act) return this.fyAct(g, dt);
     if ((g.timer -= dt) > 0 || !this.canFire(e)) return;
-    const P = g.stage === 2 ? ['pots', 'conch', 'pots', 'pots', 'conch'] : ['spin', 'rest', 'hands'];
+    // (after the author's word that it attacked too little: shorter rests, and in the whirl the arms come up twice a round)
+    const P = g.stage === 2 ? ['pots', 'conch', 'pots', 'pots', 'conch'] : ['spin', 'hands', 'rest', 'hands'];
     g.act = { kind: P[g.plan++ % P.length], t: 0, done: {} };
   },
 
@@ -365,7 +366,7 @@ export const onomichiFunayurei = {
     const P = FUNA.pot;
     const n = rules().volley < 1 ? P.count - 1 : P.count;
     for (let i = 0; i < n; i++) if (once(`p${i}`, 0.15 + i * 0.32)) this.fyPot(g, i === 0 ? 0 : (i % 2 ? -1 : 1) * (22 + Math.random() * 16));
-    if (a.t > 0.15 + n * 0.32 + 0.8) this.fyDone(g, 0.9 / this.fyHaste(g));
+    if (a.t > 0.15 + n * 0.32 + 0.8) this.fyDone(g, 0.5 / this.fyHaste(g));
   },
 
   fyPot(g, off) {
@@ -432,7 +433,7 @@ export const onomichiFunayurei = {
         s.bullets.shot('eb_m', cx, cy, ang, slow * (1 + r * 0.1), 2.5);
       }
     }
-    if (a.t > 0.25 + C.rings * C.gap + 0.4) this.fyDone(g, 1.1 / this.fyHaste(g));
+    if (a.t > 0.25 + C.rings * C.gap + 0.4) this.fyDone(g, 0.6 / this.fyHaste(g));
   },
 
   /** The festival's gold shells: one now and then flies over the ship from a barge; shot, it bursts over it. */

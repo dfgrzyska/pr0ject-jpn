@@ -13,6 +13,9 @@ const MASU = { hp: 5, weight: 0, score: 300, radius: 7, explosion: 's' };
 // (tuned so the beans still decide it: about 30 s with every masu caught, over a minute with none)
 const ONI = { hp: 1700, armor: [0.12, 0.25, 0.45], at: [0.65, 0.3], beanK: 1.5 };
 
+// the false crocodiles' bites spread round the ship: each lands this share of its lane's distance from the real one
+const WANI_FAN = 0.45;
+
 export const beppu = {
   /** Beppu: is (x, y) inside a steam cloud? */
   steamAt(x, y) {
@@ -184,7 +187,7 @@ export const beppu = {
    * just ahead, flashes, then leaps at where the player was, jaws open (its body hurts), and swims off back up the
    * screen on the surface, where it can be shot. In the second phase two false shadows come too: the three of them
    * spread into three lanes round the player, cross over on the way, and the real one takes a different lane each
-   * dive; when it leaps, the false ones burst up as spouts of scalding water.
+   * dive; when it leaps the false ones leap too, each at its own mark in a fan over the ship, and every one bites.
    */
   waniDive(e, dt, b) {
     const s = this.scene;
@@ -221,7 +224,12 @@ export const beppu = {
         // it stops, the eyes fixed on the ship: where it will leap (a splash marks it)
         Object.assign(d, { phase: 'rise', t: 0, tx: pl.x, ty: pl.y });
         b.zone(pl.x, pl.y, 10, { warn: 0.5, live: 0.12 });
-        if (e.p2) for (const sh of e.shades ?? []) if (sh) b.zone(sh.x, sh.y + 6, 13, { warn: 0.5, live: 0.5 });
+        // (each false one marks its own bite: at the ship from its lane's side, the three a fan over the ship)
+        if (e.p2) for (const sh of e.shades ?? []) if (sh) {
+          sh.tx = Phaser.Math.Clamp(pl.x + (sh.x - e.x) * WANI_FAN, 12, VIEW.width - 12);
+          sh.ty = pl.y;
+          b.zone(sh.tx, sh.ty, 10, { warn: 0.5, live: 0.12 });
+        }
       }
     } else if (d.phase === 'rise') {
       e.flash = Math.floor(d.t * 20) % 2 ? 0.02 : 0;
@@ -238,7 +246,12 @@ export const beppu = {
         s.fx.puff('splash', e.x, e.y + 20, 0.5);
         s.fx.puff('splash', e.x, e.y - 10, 0.5);
         s.sfx.explode('s');
-        this.waniShadesOut(e); // (the false ones are spouts now)
+        // (the false ones leap too, each at its own mark, jaws wide: every one of them bites)
+        for (const sh of e.shades ?? []) if (sh) {
+          Object.assign(sh, { x0: sh.x, y0: sh.y, bit: false });
+          sh.setRotation(Math.atan2(sh.ty - sh.y, sh.tx - sh.x) - DOWN).setAlpha(e.alpha);
+          s.fx.puff('splash', sh.x, sh.y + 20, 0.4);
+        }
         Object.assign(d, { phase: 'leap', t: 0, x0: e.x, y0: e.y });
         e.setRotation(Math.atan2(d.ty - e.y, d.tx - e.x) - DOWN);
       }
@@ -249,6 +262,7 @@ export const beppu = {
       const ease = 1 - (1 - k) ** 2;
       e.x = d.x0 + (d.tx - d.x0) * ease;
       e.y = d.y0 + (d.ty - 8 - d.y0) * ease;
+      this.waniClonesLeap(e, k, ease);
       if (k >= 1) {
         s.fx.puff('splash', e.x, e.y, 0.6);
         // where it lands, the water flies: a ring of scalding drops (in the second phase, a denser one)
@@ -256,6 +270,9 @@ export const beppu = {
         Object.assign(d, { phase: 'back', t: 0 });
       }
     } else if (d.phase === 'back') {
+      // the false ones go back under where they landed
+      for (const sh of e.shades ?? []) if (sh) sh.setAlpha(Math.max(0, e.alpha * (1 - d.t / 0.4)));
+      if (d.t > 0.4 && e.shades) this.waniShadesOut(e);
       // back up the screen on the surface, swimming hard, turning to face down again at the top
       const hx = 90;
       const hy = 78;
@@ -299,6 +316,30 @@ export const beppu = {
       if (e.texture.has('wani_sub_1')) sh.setFrame(['wani_sub', 'wani_sub_1', 'wani_sub_2'][Math.floor(e.age * 6 + sh.ph * 3) % 3]);
     }
     return e.shades;
+  },
+
+  /**
+   * The false ones' leap (k: how far, ease: where along): out of the water at their marks, jaws opening and shutting
+   * like the real one's; one that comes down on the ship bites it, and each throws a few drops where it lands.
+   */
+  waniClonesLeap(e, k, ease) {
+    const s = this.scene;
+    const p = s.player;
+    for (const sh of e.shades ?? []) {
+      if (!sh || sh.x0 == null) continue;
+      if (e.texture.has('wani_half')) sh.setFrame(k < 0.15 || k >= 0.9 ? 'wani_half' : 'wani_1');
+      sh.x = sh.x0 + (sh.tx - sh.x0) * ease;
+      sh.y = sh.y0 + (sh.ty - 8 - sh.y0) * ease;
+      if (!sh.bit && k > 0.6 && p.alive && !p.god && p.invulnerable <= 0 && p.entering <= 0 && Math.hypot(p.x - sh.x, p.y - (sh.y + 12)) < 11) {
+        sh.bit = true;
+        p.hit();
+      }
+      if (k >= 1 && sh.x0 != null) {
+        sh.x0 = null;
+        s.fx.puff('splash', sh.x, sh.y, 0.5);
+        if (this.canFire(e)) s.bullets.ring(sh.x, sh.y, 6, Math.random() * TAU, slow * 0.9);
+      }
+    }
   },
 
   waniShadesOut(e) {

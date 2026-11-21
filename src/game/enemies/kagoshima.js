@@ -7,12 +7,15 @@ import { hasEnemyFrame } from '../enemyArt.js';
 
 // Sakurajima: HP of each side vent and of the crater; below `erupt` of the crater's life it erupts (phase 3)
 const VOLCANO = { vent: 360, crater: 1330, erupt: 0.4 };
+// the matchlock's volley: shots along the locked line, s between them
+const SNIPE = { burst: 3, gap: 0.11 };
 
 export const kagoshima = {
-  /** Tanegashima matchlock: a red aim line follows the player, locks and blinks, then one fast shot along it. */
+  /** Tanegashima matchlock: a red aim line follows the player, locks and blinks, then a volley of three fast shots along it. */
   snipe(e, dt, b) {
     if (!this.canFire(e)) {
       e.aimT = 0;
+      e.burst = 0;
       return;
     }
     e.aimT += dt;
@@ -26,9 +29,16 @@ export const kagoshima = {
       this.tele.lineBetween(ox, oy, ox + Math.cos(e.aimA) * 420, oy + Math.sin(e.aimA) * 420);
     }
     if (e.aimT < 1.25) return;
-    b.shot('eb_s', ox, oy, e.aimA, 150, 1.8);
-    this.scene.fx.spark(ox, oy + 2);
-    e.aimT = -0.5;
+    // a volley of three along the locked line, a beat apart (the author's word: one shot was too little)
+    e.burst ??= 0;
+    while (e.burst < SNIPE.burst && e.aimT >= 1.25 + e.burst * SNIPE.gap) {
+      b.shot('eb_s', ox, oy, e.aimA, 150, 1.8);
+      this.scene.fx.spark(ox, oy + 2);
+      e.burst++;
+    }
+    if (e.burst < SNIPE.burst) return;
+    e.burst = 0;
+    e.aimT = -0.6;
     if (--e.shots <= 0) {
       e.state = 'leave';
       e.timer = 0.5;

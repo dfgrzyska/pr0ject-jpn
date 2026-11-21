@@ -26,12 +26,13 @@ export const YATAI = {
   time: 110,
   rush: 0.45,
   guard: [0.25, 0.4, 0.25], // (by phase: at its griddles it is busy, and feels more of what comes in)
-  ramen: { ladle: 1.3, strands: 3, links: 9, gap: 0.05, wig: 4.5, wf: 8, spread: 0.42, bowls: 2, bowl: 105, back: 125, every: 3 },
+  // (after the author's word that it attacked too little and moved too slowly: quicker rounds, more at once, faster about)
+  ramen: { ladle: 1.05, flicks: [0.15, 0.5, 0.85], strands: 3, links: 9, gap: 0.05, wig: 4.5, wf: 8, spread: 0.42, bowls: 3, bowl: 105, back: 125, every: 4, idle: 0.35, rest: 0.55, roll: 75, rollEvery: 2 },
   kaedama: { up: 0.6, hang: 2.1, drop: 0.35, stun: 2.2 },
-  gyoza: { griddles: 2, r: 13, warn: 1, live: 0.9, n: 4, fly: 0.95, land: 10, valve: 3.4, back: 3, every: 2, drift: 24 },
+  gyoza: { griddles: 3, r: 13, warn: 1, live: 0.9, n: 5, fly: 0.95, land: 10, valve: 3.4, back: 3, every: 2, drift: 42, idle: 0.3 },
   hane: { fly: 0.9, short: 55, n: 7, lace: 8 },
   oil: { time: 1.2, every: 0.055, sweep: 0.75, wf: 5, speed: 1.3 },
-  shime: { warn: 1, speed: 120, legs: 2, stool: 0.12, fuse: 0.55, burst: 4, pant: 1.6 },
+  shime: { warn: 1, speed: 150, legs: 3, stool: 0.12, fuse: 0.55, burst: 4, pant: 1.0 },
 };
 
 // where it stands on Nakasu's bank (x, u: the row of stalls between the bank road and the houses), the second place
@@ -183,9 +184,9 @@ export const fukuokaYatai = {
       return;
     }
     if (g.act === 'idle') {
-      if (g.at > 0.6 / g.pace) {
+      if (g.at > R.idle / g.pace) {
         g.round++;
-        if (g.round % 3 === 0) {
+        if (g.round % R.rollEvery === 0) {
           g.home = 1 - g.home;
           this.ytAct(g, 'roll');
         } else this.ytAct(g, 'ladle');
@@ -193,14 +194,14 @@ export const fukuokaYatai = {
       return;
     }
     if (g.act === 'ladle') {
-      // two flicks of the ladle, a fan of wavy strands each
-      for (const at of [0.2, 0.75]) {
+      // three flicks of the ladle, a fan of wavy strands each, turned one way and the other
+      R.flicks.forEach((at, k) => {
         if (g.at >= at / g.pace && (g.flick ?? -1) < at) {
           g.flick = at;
-          if (this.canFire(e)) this.ytStrands0(e, g, at > 0.5 ? R.spread / 2 : 0);
+          if (this.canFire(e)) this.ytStrands0(e, g, [0, R.spread / 2, -R.spread / 2][k % 3]);
           s.sfx.creak?.();
         }
-      }
+      });
       if (g.at > R.ladle / g.pace) {
         g.flick = -1;
         this.ytAct(g, 'bowls');
@@ -212,8 +213,8 @@ export const fukuokaYatai = {
         g.said = true;
         if (this.canFire(e)) this.ytBowls(e, g);
       }
-      if (g.at > 0.9 / g.pace) {
-        if (g.round % R.every === 2 && !g.ball) this.ytToss(e, g); // (the round before it rolls)
+      if (g.at > R.rest / g.pace) {
+        if (g.round % R.every === 3 && !g.ball) this.ytToss(e, g); // (every other ladling: the rounds between are its rolls)
         this.ytAct(g, 'idle');
       }
     }
@@ -223,7 +224,7 @@ export const fukuokaYatai = {
   ytRoll(g, dt) {
     const [, tu] = HOME[g.home];
     const d = tu - g.u;
-    g.u += Math.sign(d) * Math.min(Math.abs(d), dt * 40 * g.pace);
+    g.u += Math.sign(d) * Math.min(Math.abs(d), dt * YATAI.ramen.roll * g.pace);
     return Math.abs(tu - g.u) < 0.5;
   },
 
@@ -348,7 +349,7 @@ export const fukuokaYatai = {
       if (Math.abs(tu - g.u) < 0.5) g.drift = 1 - g.drift;
     }
     if (g.act === 'idle') {
-      if (g.at > 0.5 / g.pace) {
+      if (g.at > G.idle / g.pace) {
         g.round++;
         this.ytAct(g, ['grill', 'hane', 'oil'][(g.round - 1) % 3]);
         if (g.round % G.every === 1 && !g.valve) this.ytShowValve(g);
@@ -363,7 +364,7 @@ export const fukuokaYatai = {
         SAY(s, g.x, this.ytY(g) - 34, 'HANETSUKI!', GOLD, 0.8);
         s.sfx.sizzle?.();
       }
-      if (g.at > 1.2 / g.pace) this.ytAct(g, 'idle');
+      if (g.at > 0.9 / g.pace) this.ytAct(g, 'idle');
       return;
     }
     if (g.act === 'oil') {
@@ -399,7 +400,7 @@ export const fukuokaYatai = {
           s.sfx.sizzle?.();
         }
       }
-      if (g.at > 1.2 / g.pace) this.ytAct(g, 'gyoza');
+      if (g.at > 0.9 / g.pace) this.ytAct(g, 'gyoza');
       return;
     }
     if (g.act === 'gyoza') {
