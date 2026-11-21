@@ -6,7 +6,7 @@
 // Every frame is three times the old one's size (old mask coordinate m -> fine (m + 1) * 3).
 import { HiSprite, tones, fur, speckle, crackle, mottle, mix2 } from '../../lib/hisprite.mjs';
 import { sankibo as sankibo540 } from './tengu540.mjs';
-import { crab } from './crab540.mjs';
+import { crab, CRAB_CX, CRAB_CY } from './crab540.mjs';
 import { hiroshimaNewFoes } from './newfoes.mjs';
 
 const INK = 0x14101c;
@@ -197,8 +197,8 @@ export function hidoroHead(i) {
 // ---------------------------------------------------------------- heavy: the Heike crab (42 x 30 -> 132 x 96): two strides, and its guard
 /** The carapace split by a blow: cracks running out from one spot, a lit lip on their upper side, a chip gone. */
 function crackedShell(r) {
-  const cx = 66;
-  const cy = 38;
+  const cx = CRAB_CX;
+  const cy = CRAB_CY;
   const onShell = (x, y) => {
     const t = (y - (cy - 20)) / 40;
     return t > 0.05 && t < 0.95 && Math.abs(x - cx) < 17 * Math.sin(Math.PI * Math.min(1, 0.25 + t * 0.85)) * (1 - Math.max(0, t - 0.7) * 1.1) && r.alpha(x, y);

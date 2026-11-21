@@ -1,11 +1,18 @@
-// Hiroshima's heavy at 540 px (44 x 32 -> 132 x 96): the taka-ashi-gani, the Japanese spider crab of the deep
+// Hiroshima's heavy at 540 px (CRAB_W x CRAB_H): the taka-ashi-gani, the Japanese spider crab of the deep
 // water, crawling up out of the Inland Sea. A small pear-shaped carapace knobbed with tubercles and spines, the
-// grooves of its regions, two short horns at the front, eyes on stalks; its legs four times its width, orange
+// grooves of its regions, two short horns at the front, eyes on stalks; its legs long and thin, spanning some four
+// times its width (the front pair the longest, as in the real crab; after the author's word they were too short), orange
 // mottled with white, the joints knobbed and the segments spined, the tips dark and pointed; short claws held in
 // front. Frames 0..3 the stride (alternate legs lifting); guard: the legs drawn in and the claws crossed.
 import { HiSprite, tones, speckle, mottle, mix2 } from '../../lib/hisprite.mjs';
 
 const INK = 0x14101c;
+// the frame (three times the old one's, padded: sprites.mjs), and where the carapace's middle sits in it, 10 px above the
+// frame's middle as ever, so it stays where the game's hit circle is (the cracked shell is laid over it there: enemies.mjs)
+export const CRAB_W = 204;
+export const CRAB_H = 186;
+export const CRAB_CX = 102;
+export const CRAB_CY = 83;
 const RAMPS = {
   o: tones([0x6a2008, 0xd0582a, 0xffa860]), // the orange shell
   e: tones([0x3a1406, 0x6a2a10, 0xa04a20]), // the dark tips, the grooves
@@ -48,9 +55,9 @@ function leg(s, root, angs, L, r0, seed) {
 }
 
 export function crab(mode) {
-  const s = new HiSprite(132, 96, RAMPS);
-  const cx = 66;
-  const cy = 38;
+  const s = new HiSprite(CRAB_W, CRAB_H, RAMPS);
+  const cx = CRAB_CX;
+  const cy = CRAB_CY;
   const guard = mode === 'guard';
   const stride = guard ? 0 : mode;
   // ---- the eight walking legs: up and out, the knee high, the long shins arching down to the tips
@@ -59,8 +66,9 @@ export function crab(mode) {
     const tuck = guard ? 0.35 : 0;
     const base = (sx > 0 ? 0 : Math.PI) + sx * (-0.55 + k * 0.42);
     const angs = [base - sx * 0.7 + lift, base - sx * 0.1 + lift + sx * tuck, base + sx * 0.42 + lift + sx * tuck * 1.6, base + sx * 0.8 + lift + sx * tuck * 2];
-    const L = [7, 27, 11, 25].map((v, i) => v * (guard && i > 1 ? 0.8 : 1) * (1 - k * 0.03));
-    leg(s, [cx + sx * 10, cy - 7 + k * 5.5], angs, L, 3.3, 10 * (k + 1) + (sx > 0 ? 5 : 0));
+    // (the merus and the propodus long and thin: the front pair, nearest the claws, the longest)
+    const L = [8, 44, 13, 42].map((v, i) => v * (guard && i > 1 ? 0.7 : 1) * (0.8 + k * 0.08));
+    leg(s, [cx + sx * 10, cy - 7 + k * 5.5], angs, L, 2.7, 10 * (k + 1) + (sx > 0 ? 5 : 0));
   }
   // ---- the claws: short, held out in front, or crossed over each other on guard
   for (const sx of [-1, 1]) {

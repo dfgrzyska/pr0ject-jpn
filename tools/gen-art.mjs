@@ -3,6 +3,7 @@
 //   node tools/gen-art.mjs --preview      -> also writes previews to tools/preview/
 //   node tools/gen-art.mjs --only=stage1  -> only that stage's backgrounds & props (leaves shared assets untouched)
 //   node tools/gen-art.mjs --only=shared  -> only shared sprites, icons, font, map & ending
+//   node tools/gen-art.mjs --only=sprites -> only the shared sprites (the old 1x atlas)
 //   node tools/gen-art.mjs --only=map     -> only the map of Japan and its close-up tiles
 //   node tools/gen-art.mjs --only=gacha   -> only the gachapon screen's atlas
 //   node tools/gen-art.mjs --only=enemies -> only the cities' 540 px enemies (bg/<id>/enemies.*) and the portraits
@@ -123,13 +124,15 @@ const write = (rel, buf) => {
   console.log('  ', rel, `${(buf.length / 1024).toFixed(1)} KB`);
 };
 
-if (!only || only === 'shared') {
+if (!only || only === 'shared' || only === 'sprites') {
 console.log('sprites');
 const { raster: atlas, json } = packAtlas(buildSprites(), 256);
 write('sprites.png', atlas.toPNG());
 write('sprites.json', Buffer.from(JSON.stringify(json)));
 if (preview) writeFileSync(join(previewDir, 'sprites_x4.png'), atlas.scaled(4, 0x30304a).toPNG());
+}
 
+if (!only || only === 'shared') {
 console.log('icons');
 {
   // the app's icon (tools/art/icon.mjs): drawn at 256 px, each pixel 2 x 2 at 512; 192 px from the same picture, smoothed

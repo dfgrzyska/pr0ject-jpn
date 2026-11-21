@@ -10,6 +10,7 @@
 //   (sankibo_0..1, sankibo_fan_l, sankibo_fan_r, brazier_0..1, eb_feather_0..1, misen_fire_0..1)
 import { MATERIALS, Mask, renderMask } from '../../lib/spritekit.mjs';
 import { Raster } from '../../lib/raster.mjs';
+import { CRAB_W, CRAB_H } from './crab540.mjs';
 
 const MAT = {
   ...MATERIALS,
@@ -22,6 +23,13 @@ const MAT = {
 };
 
 const render = (m, opts = {}) => renderMask(m, { materials: MAT, ...opts });
+// the old crab in a frame a third the size of the 540 px one (crab540.mjs: CRAB_W x CRAB_H, its long legs), centred the same,
+// so either is shown round the same point
+const crabFrame = (r) => {
+  const out = new Raster(CRAB_W / 3, CRAB_H / 3);
+  out.blit(r, (CRAB_W / 3 - r.w) / 2, (CRAB_H / 3 - r.h) / 2);
+  return out;
+};
 const raw = (rows) => renderMask(Mask.fromRows(rows), { outline: false, materials: MAT });
 const TAU = Math.PI * 2;
 
@@ -386,7 +394,7 @@ export function hiroshimaSprites(add) {
       // bright specular glint showing metallic deflection
       m.set(cx - 4, 23, 'w');
       m.set(cx + 4, 23, 'w');
-      add('heike_guard', render(m, { glow: 'w' }));
+      add('heike_guard', crabFrame(render(m, { glow: 'w' })));
     } else {
       // Wide-open menacing samurai pincers poised to snap!
       const open = mode === 1 ? 1 : 0;
@@ -397,7 +405,7 @@ export function hiroshimaSprites(add) {
         m.line(cx + s * 16, 25, cx + s * (14 + open), 28, 'W');
         m.line(cx + s * 11, 25, cx + s * (12 - open), 28, 'H');
       }
-      add(`heike_${mode}`, render(m));
+      add(`heike_${mode}`, crabFrame(render(m)));
     }
   }
 
