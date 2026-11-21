@@ -61,6 +61,42 @@ nakłada ten rysunek na mapę ogólną i płynnie przechodzi między nimi przy z
 - Decyzja autora (2026-11-20): jedna podróż przechodzi przez wszystkie 24 miasta.
 - Pomysł na później: odblokowywanie map za pieczątki. Na razie nic z tym nie robimy.
 
+## Więcej szczegółów: iteracje (propozycja, 2026-11-21)
+
+Stan dziś, w zbliżeniach regionów: góry to gładkie plamy cienia bez grzbietów i dolin (Alpy i środek Hokkaido to
+białe placki), wszystkie niziny pokrywa ten sam wzór poletek, miasta to szare kwadraty, małe wyspy to elipsy
+(Morze Wewnętrzne, Izu, Okinawa), Okinawa to patyk w pustej ramce, Biwa ma zły kształt, rzek jest kilkanaście
+i są proste, nie ma dróg, mostów, promów, portów ani niczego, po czym poznać miejsce. Kafle są przy największym
+zbliżeniu powiększane ok. 1,2 raza.
+
+Każda iteracja to osobny commit, oglądany w menu przed następną. Wszystko rysuje `tools/art/japan.mjs`, więc
+mapa ogólna (między etapami) zyskuje to samo, ale w swojej skali.
+
+1. **Rzeźba terenu.** Wysokość z grzbietów i dolin (pasma z nazwami: Alpy Północne, Środkowe, Południowe jako
+   trzy grzbiety, Ōu, Chūgoku, Shikoku, Kiusiu, Hidaka, Daisetsu), doliny rzek wcinające się w góry, kotliny
+   (Nara, Kioto, Matsumoto, Kōfu). Cieniowanie z ostrymi grzbietami i żlebami. Wulkany jako stożki z kraterami:
+   Fuji na nowo, Asama, Aso z kalderą, Unzen, Kirishima, Sakurajima, Yōtei, Daisetsu. Śnieg tylko na szczytach,
+   las mieszany (iglasty ciemniej, liściasty jaśniej), tarasy ryżowe na zboczach. Kafle w skali 1:1 do zbliżenia.
+2. **Wybrzeża i wody.** Gęstsze linie brzegu: riasy Sanriku, Wakasa i Shimy, Noto, Kii, Ariake z równiami
+   pływowymi. Wyspy jako prawdziwe kształty zamiast elips: Shōdoshima, wyspy Shimanami, Etajima, Miyajima,
+   Gotō, Iki, Tsushima, Yakushima, Tanegashima, Izu, Okinawa w prawdziwym kształcie z Keramą i Kume, rafy i
+   laguny. Biwa poprawiona, nowe jeziora (Towada, Inawashiro, Suwa, Kasumigaura, Shinji, Shikotsu, Tōya, Akan).
+   Kilkadziesiąt rzek, meandrujących, z deltami. Głębia morza w warstwicach, rów japoński.
+3. **Ziemia i miasta.** Pola według regionu: duże prostokąty Hokkaido i lawenda Furano, ryż w dolinach z
+   połyskiem wody, herbata Shizuoki i Kagoshimy, sady, szklarnie. Miasta w swoim kształcie (wzdłuż zatoki, w
+   kotlinie), ze śródmieściem wyższym i jaśniejszym, przedmieściami rozpływającymi się w pola, parkami i
+   zamkowymi fosami. Wioski wzdłuż dolin.
+4. **Komunikacja.** Autostrady i zwykła kolej (cieńsze niż Shinkansen), mosty: Akashi-Kaikyō, Seto-Ōhashi,
+   Shimanami-Kaidō, Kanmon, Tokyo Bay Aqua-Line. Promy przerywaną linią, porty z falochronami i dźwigami,
+   lotniska (Haneda, Kansai na swojej wyspie, Centrair, Fukuoka, Naha).
+5. **Miejsca.** Miniaturka przy każdym mieście z jego etapu (pagoda Kioto, zamek Osaki, kopuła Hiroszimy,
+   torii Miyajimy w wodzie, Skytree, wieża zegarowa Sapporo, Shuri, dymiąca Sakurajima, pary Beppu,
+   pagoda Chūreitō nad Kawaguchiko) i znane miejsca bez etapu (Himeji, Ise, Nikkō, Matsushima, Kanazawa).
+   Miniaturki nie wchodzą pod nazwy miast (dopisane do przeszkód w `placeNames`).
+6. **(dodatek, poza prośbą) Życie na mapie.** Promy płynące po swoich liniach, pociągi Shinkansen, dym
+   Sakurajimy i Aso, pary Beppu, cienie chmur. Rusza się tylko to, co pływa, jedzie lub leci.
+
 ## Dziennik
 
 - 2026-11-20: plan; regiony, kamera w menu i między etapami, ostrzejsze rysunki regionów.
+- 2026-11-21: propozycja sześciu iteracji szczegółów mapy.
